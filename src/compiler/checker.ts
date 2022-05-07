@@ -14349,25 +14349,48 @@ namespace ts {
                             const unionElements: Type[] = [];
                             const typeArguments = getTypeArguments(t);
                             let ii = 0;
-                            const len = typeArguments.length;
+                            let len = typeArguments.length;
+                            let restIdx: number;
+                            let restElementFlags: ElementFlags[] = [];
+                            let restType: Type[] = [];
+                            let restLabeledElementDeclaration: readonly (NamedTupleMember | ParameterDeclaration)[] = [];
+                            if (t.target.elementFlags.slice(-1)[0] & ElementFlags.Rest){
+                                restIdx = len-1;
+                                restElementFlags = t.target.elementFlags.slice(-1);;
+                                restType = typeArguments.slice(-1);
+                                if (t.target.labeledElementDeclarations) {
+                                    restLabeledElementDeclaration = t.target.labeledElementDeclarations.slice(-1);
+                                }
+                                len--;
+                            }
                             for (;ii<len && t.target.elementFlags[ii] & ElementFlags.Required; ii++);
                             if (ii===len) return; // no optional found (shouldn't happen)
-                            if (t.target.elementFlags[ii] & ElementFlags.Rest){
-                                // this is an error, unless its the last 'i', but it is taken care of elsewhere
-                            }
                             else {
                                 Debug.assert(t.target.elementFlags[ii] & ElementFlags.Optional, `t.target.elementFlags[ii] & ElementFlags.Optional`);
-                                if (ii){
-                                    // the first has no optionals at all
-                                    const newElems = typeArguments.slice(0,ii);
+                                // if (ii){
+                                //     // the first has no optionals at all
+                                //     const newElems = typeArguments.slice(0,ii);
+                                //     const newTarg = createTupleTargetType(
+                                //         t.target.elementFlags.slice(0,ii),
+                                //         t.target.readonly,
+                                //         t.target.labeledElementDeclarations?.slice(0,ii)
+                                //     );
+                                //     const newTuple = createTypeReference(newTarg, newElems);
+                                //     unionElements.push(newTuple);
+                                // }
+                                if (ii) ii--; // the first unionElement contains only requireds
+                                for (;ii<len && !(t.target.elementFlags[ii] & ElementFlags.Rest); ii++){
+                                    const newElems = [...typeArguments.slice(0,ii+1), ...restType];
                                     const newTarg = createTupleTargetType(
-                                        t.target.elementFlags.slice(0,ii),
+                                        [... t.target.elementFlags.slice(0,ii+1), ...restElementFlags],
                                         t.target.readonly,
-                                        t.target.labeledElementDeclarations?.slice(0,ii)
+                                        t.target.labeledElementDeclarations?
+                                        [...t.target.labeledElementDeclarations.slice(0,ii+1), ...restLabeledElementDeclaration] : undefined
                                     );
                                     const newTuple = createTypeReference(newTarg, newElems);
                                     unionElements.push(newTuple);
                                 }
+                                getUnionType(unionElements);
                             }
                         }
                     }
