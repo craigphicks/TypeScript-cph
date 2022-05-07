@@ -14343,6 +14343,37 @@ namespace ts {
                 return createTypeReference(target, elementTypes);
             }
             if (target.combinedFlags & ElementFlags.Variadic) {
+                elementTypes.forEach((t,i)=>{
+                    if (target.elementFlags[i] & ElementFlags.Variadic && isTupleType(t)){
+                        if (t.target.combinedFlags & ElementFlags.Optional) {
+                            const unionElements: Type[] = [];
+                            const typeArguments = getTypeArguments(t);
+                            let ii = 0;
+                            const len = typeArguments.length;
+                            for (;ii<len && t.target.elementFlags[ii] & ElementFlags.Required; ii++);
+                            if (ii===len) return; // no optional found (shouldn't happen)
+                            if (t.target.elementFlags[ii] & ElementFlags.Rest){
+                                // this is an error, unless its the last 'i', but it is taken care of elsewhere
+                            }
+                            else {
+                                Debug.assert(t.target.elementFlags[ii] & ElementFlags.Optional, `t.target.elementFlags[ii] & ElementFlags.Optional`);
+                                if (ii){
+                                    // the first has no optionals at all
+                                    const newElems = typeArguments.slice(0,ii);
+                                    const newTarg = createTupleTargetType(
+                                        t.target.elementFlags.slice(0,ii),
+                                        t.target.readonly,
+                                        t.target.labeledElementDeclarations?.slice(0,ii)
+                                    );
+                                    const newTuple = createTypeReference(newTarg, newElems);
+                                    unionElements.push(newTuple);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            if (target.combinedFlags & ElementFlags.Variadic) {
                 // Transform [A, ...(X | Y | Z)] into [A, ...X] | [A, ...Y] | [A, ...Z]
                 const unionIndex = findIndex(elementTypes, (t, i) => !!(target.elementFlags[i] & ElementFlags.Variadic && t.flags & (TypeFlags.Never | TypeFlags.Union)));
                 if (unionIndex >= 0) {
