@@ -14367,6 +14367,9 @@ namespace ts {
                                     const newTuple = createTypeReference(newTarg, newElems);
                                     unionElements.push(newTuple);
                                 }
+                                
+                                // It is not absolutely necessary to create this temporary union type.  However, getUnionType is fairly lightweight
+                                // and it reduces the number of code branches doing it this way.
                                 unionType = getUnionType(unionElements,UnionReduction.None,t.aliasSymbol,t.aliasTypeArguments,t);
                             }
                         }
@@ -14377,7 +14380,7 @@ namespace ts {
                     if (unionType){
                         const etTmp = [...elementTypes.slice(0,i), unionType, ...elementTypes.slice(i+1)];
                         return checkCrossProductUnion(map(etTmp, (t, i) => target.elementFlags[i] & ElementFlags.Variadic ? t : unknownType)) ?
-                        mapType(unionType, t => createNormalizedTupleType(target, replaceElement(elementTypes, i, t))) :
+                        mapType(unionType, t => createNormalizedTupleType(target, replaceElement(etTmp, i, t))) :
                         errorType;
 
                     }
