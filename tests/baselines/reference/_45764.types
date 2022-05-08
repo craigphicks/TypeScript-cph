@@ -1,0 +1,39 @@
+=== tests/cases/compiler/_45764.ts ===
+// @ strict: true
+// @ exactOptionalPropertyTypes: true
+
+type T1 = [x:number,y?:boolean];
+>T1 : [x: number, y?: boolean]
+
+type T2 = [...T1, ...any[]];
+>T2 : [number, ...any[]] | [number, boolean, ...any[]]
+
+type T3 = [...([x:number]|[x:number,y:boolean]), ...any[]];
+>T3 : [number, ...any[]] | [number, boolean, ...any[]]
+
+const t2a:T2 = [1, "x"];
+>t2a : [number, ...any[]] | [number, boolean, ...any[]]
+>[1, "x"] : [number, string]
+>1 : 1
+>"x" : "x"
+
+const t2b:T2 = [1, true, "x"];
+>t2b : [number, ...any[]] | [number, boolean, ...any[]]
+>[1, true, "x"] : [number, true, string]
+>1 : 1
+>true : true
+>"x" : "x"
+
+const t3a:T3 = [1, "x"];
+>t3a : [number, ...any[]] | [number, boolean, ...any[]]
+>[1, "x"] : [number, string]
+>1 : 1
+>"x" : "x"
+
+const t3b:T3 = [1, true, "x"];
+>t3b : [number, ...any[]] | [number, boolean, ...any[]]
+>[1, true, "x"] : [number, true, string]
+>1 : 1
+>true : true
+>"x" : "x"
+

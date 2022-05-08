@@ -1,0 +1,30 @@
+=== tests/cases/compiler/_45764.ts ===
+// @ strict: true
+// @ exactOptionalPropertyTypes: true
+
+type T1 = [x:number,y?:boolean];
+>T1 : Symbol(T1, Decl(_45764.ts, 0, 0))
+
+type T2 = [...T1, ...any[]];
+>T2 : Symbol(T2, Decl(_45764.ts, 3, 32))
+>T1 : Symbol(T1, Decl(_45764.ts, 0, 0))
+
+type T3 = [...([x:number]|[x:number,y:boolean]), ...any[]];
+>T3 : Symbol(T3, Decl(_45764.ts, 4, 28))
+
+const t2a:T2 = [1, "x"];
+>t2a : Symbol(t2a, Decl(_45764.ts, 7, 5))
+>T2 : Symbol(T2, Decl(_45764.ts, 3, 32))
+
+const t2b:T2 = [1, true, "x"];
+>t2b : Symbol(t2b, Decl(_45764.ts, 8, 5))
+>T2 : Symbol(T2, Decl(_45764.ts, 3, 32))
+
+const t3a:T3 = [1, "x"];
+>t3a : Symbol(t3a, Decl(_45764.ts, 10, 5))
+>T3 : Symbol(T3, Decl(_45764.ts, 4, 28))
+
+const t3b:T3 = [1, true, "x"];
+>t3b : Symbol(t3b, Decl(_45764.ts, 11, 5))
+>T3 : Symbol(T3, Decl(_45764.ts, 4, 28))
+

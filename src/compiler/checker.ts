@@ -14343,6 +14343,7 @@ namespace ts {
                 return createTypeReference(target, elementTypes);
             }
             if (target.combinedFlags & ElementFlags.Variadic) {
+                // Using a for loop because we might have to return from the middle of it.
                 for (let i=0; i<elementTypes.length;i++) {
                     const t = elementTypes[i];
                     let unionType: Type | undefined;
@@ -14353,23 +14354,41 @@ namespace ts {
                             let ii = 0;
                             const len = typeArguments.length;
                             for (;ii<len && t.target.elementFlags[ii] & (ElementFlags.Required | ElementFlags.Rest); ii++);
-                            if (ii!==len) {
-                                Debug.assert(t.target.elementFlags[ii] & ElementFlags.Optional, `t.target.elementFlags[ii] & ElementFlags.Optional`);
+                            if (ii!==len && t.target.elementFlags[ii] & ElementFlags.Optional) {
                                 if (ii) ii--; // the first unionElement contains only requireds, if there are any.
                                 for (;ii<len && !(t.target.elementFlags[ii] & ElementFlags.Rest); ii++){
                                     const newElems = typeArguments.slice(0,ii+1);
+                                    const newElementFlags = t.target.elementFlags.slice(0,ii+1).map(f=>f & ~ElementFlags.Optional);
                                     const newTarg = createTupleTargetType(
-                                        t.target.elementFlags.slice(0,ii+1),
+                                        newElementFlags,
                                         t.target.readonly,
                                         t.target.labeledElementDeclarations?.slice(0,ii+1)
                                     );
                                     const newTuple = createTypeReference(newTarg, newElems);
                                     unionElements.push(newTuple);
                                 }
+                                Debug.assert(ii===len, "expecting to ii===len");
+                                // if (true) {
 
                                 // It is not absolutely necessary to create this temporary union type.  However, getUnionType is fairly lightweight
-                                // and it reduces the number of code branches doing it this way.
-                                unionType = getUnionType(unionElements,UnionReduction.None,t.aliasSymbol,t.aliasTypeArguments,t);
+                                // and it reduces the number of code branches doing it this way. Specifically, checkCrossProductUnion accepts only an
+                                // array of unions which it uses for debug purposes.
+                                // Otherwise we could call createNormalizedTupleType in a loop from here.
+                                console.log(`setting up dummy type for i=${i}, t.aliasSymbol.escapedName=${t.aliasSymbol?.escapedName}`);
+                                // Setting origin to "t" causes a crash in getUnionTypeFromSortedList where origin is expected to have type member.
+                                unionType = getUnionType(unionElements,UnionReduction.None,t.aliasSymbol,t.aliasTypeArguments, /* origin */ undefined);
+
+                                // }
+                                // else
+                                // {
+                                //     return (() => {
+                                //         unionElements.forEach(noptTuple=>{
+                                //             const etTmp = [...elementTypes.slice(0,i), noptTuple, ...elementTypes.slice(i+1)];
+                                //             createNormalizedTupleType(target, etTmp);
+                                //         });
+                                //         return target;
+                                //     })();
+                                // }
                             }
                         }
                     }
