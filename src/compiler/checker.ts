@@ -14343,22 +14343,21 @@ namespace ts {
                 return createTypeReference(target, elementTypes);
             }
             if (target.combinedFlags & ElementFlags.Variadic) {
-                for (i=0; i<elementTypes.length;i++)
+                for (let i=0; i<elementTypes.length;i++) {
                     const t = elementTypes[i];
-                    let unionType: Type|undefined;
+                    let unionType: Type | undefined;
                     if (target.elementFlags[i] & ElementFlags.Variadic && isTupleType(t)){
                         if (t.target.combinedFlags & ElementFlags.Optional) {
                             const unionElements: Type[] = [];
                             const typeArguments = getTypeArguments(t);
                             let ii = 0;
                             const len = typeArguments.length;
-                            for (;ii<len && t.target.elementFlags[ii] & ElementFlags.Required; ii++);
-                            if (ii===len) return; // no optional found (shouldn't happen)
-                            else {
+                            for (;ii<len && t.target.elementFlags[ii] & (ElementFlags.Required | ElementFlags.Rest); ii++);
+                            if (ii!==len) {
                                 Debug.assert(t.target.elementFlags[ii] & ElementFlags.Optional, `t.target.elementFlags[ii] & ElementFlags.Optional`);
-                                if (ii) ii--; // the first unionElement contains only requireds
+                                if (ii) ii--; // the first unionElement contains only requireds, if there are any.
                                 for (;ii<len && !(t.target.elementFlags[ii] & ElementFlags.Rest); ii++){
-                                    const newElems = [...typeArguments.slice(0,ii+1), ...restType];
+                                    const newElems = typeArguments.slice(0,ii+1);
                                     const newTarg = createTupleTargetType(
                                         t.target.elementFlags.slice(0,ii+1),
                                         t.target.readonly,
@@ -14367,7 +14366,7 @@ namespace ts {
                                     const newTuple = createTypeReference(newTarg, newElems);
                                     unionElements.push(newTuple);
                                 }
-                                
+
                                 // It is not absolutely necessary to create this temporary union type.  However, getUnionType is fairly lightweight
                                 // and it reduces the number of code branches doing it this way.
                                 unionType = getUnionType(unionElements,UnionReduction.None,t.aliasSymbol,t.aliasTypeArguments,t);
