@@ -14343,68 +14343,55 @@ namespace ts {
                 return createTypeReference(target, elementTypes);
             }
             if (target.combinedFlags & ElementFlags.Variadic) {
-                elementTypes.forEach((t,i)=>{
+                for (i=0; i<elementTypes.length;i++)
+                    const t = elementTypes[i];
+                    let unionType: Type|undefined;
                     if (target.elementFlags[i] & ElementFlags.Variadic && isTupleType(t)){
                         if (t.target.combinedFlags & ElementFlags.Optional) {
                             const unionElements: Type[] = [];
                             const typeArguments = getTypeArguments(t);
                             let ii = 0;
-                            let len = typeArguments.length;
-                            let restIdx: number;
-                            let restElementFlags: ElementFlags[] = [];
-                            let restType: Type[] = [];
-                            let restLabeledElementDeclaration: readonly (NamedTupleMember | ParameterDeclaration)[] = [];
-                            if (t.target.elementFlags.slice(-1)[0] & ElementFlags.Rest){
-                                restIdx = len-1;
-                                restElementFlags = t.target.elementFlags.slice(-1);;
-                                restType = typeArguments.slice(-1);
-                                if (t.target.labeledElementDeclarations) {
-                                    restLabeledElementDeclaration = t.target.labeledElementDeclarations.slice(-1);
-                                }
-                                len--;
-                            }
+                            const len = typeArguments.length;
                             for (;ii<len && t.target.elementFlags[ii] & ElementFlags.Required; ii++);
                             if (ii===len) return; // no optional found (shouldn't happen)
                             else {
                                 Debug.assert(t.target.elementFlags[ii] & ElementFlags.Optional, `t.target.elementFlags[ii] & ElementFlags.Optional`);
-                                // if (ii){
-                                //     // the first has no optionals at all
-                                //     const newElems = typeArguments.slice(0,ii);
-                                //     const newTarg = createTupleTargetType(
-                                //         t.target.elementFlags.slice(0,ii),
-                                //         t.target.readonly,
-                                //         t.target.labeledElementDeclarations?.slice(0,ii)
-                                //     );
-                                //     const newTuple = createTypeReference(newTarg, newElems);
-                                //     unionElements.push(newTuple);
-                                // }
                                 if (ii) ii--; // the first unionElement contains only requireds
                                 for (;ii<len && !(t.target.elementFlags[ii] & ElementFlags.Rest); ii++){
                                     const newElems = [...typeArguments.slice(0,ii+1), ...restType];
                                     const newTarg = createTupleTargetType(
-                                        [... t.target.elementFlags.slice(0,ii+1), ...restElementFlags],
+                                        t.target.elementFlags.slice(0,ii+1),
                                         t.target.readonly,
-                                        t.target.labeledElementDeclarations?
-                                        [...t.target.labeledElementDeclarations.slice(0,ii+1), ...restLabeledElementDeclaration] : undefined
+                                        t.target.labeledElementDeclarations?.slice(0,ii+1)
                                     );
                                     const newTuple = createTypeReference(newTarg, newElems);
                                     unionElements.push(newTuple);
                                 }
-                                getUnionType(unionElements);
+                                unionType = getUnionType(unionElements,UnionReduction.None,t.aliasSymbol,t.aliasTypeArguments,t);
                             }
                         }
                     }
-                });
-            }
-            if (target.combinedFlags & ElementFlags.Variadic) {
-                // Transform [A, ...(X | Y | Z)] into [A, ...X] | [A, ...Y] | [A, ...Z]
-                const unionIndex = findIndex(elementTypes, (t, i) => !!(target.elementFlags[i] & ElementFlags.Variadic && t.flags & (TypeFlags.Never | TypeFlags.Union)));
-                if (unionIndex >= 0) {
-                    return checkCrossProductUnion(map(elementTypes, (t, i) => target.elementFlags[i] & ElementFlags.Variadic ? t : unknownType)) ?
-                        mapType(elementTypes[unionIndex], t => createNormalizedTupleType(target, replaceElement(elementTypes, unionIndex, t))) :
+                    if (!unionType && t.flags & (TypeFlags.Never | TypeFlags.Union)){
+                        unionType = t;
+                    }
+                    if (unionType){
+                        const etTmp = [...elementTypes.slice(0,i), unionType, ...elementTypes.slice(i+1)];
+                        return checkCrossProductUnion(map(etTmp, (t, i) => target.elementFlags[i] & ElementFlags.Variadic ? t : unknownType)) ?
+                        mapType(unionType, t => createNormalizedTupleType(target, replaceElement(elementTypes, i, t))) :
                         errorType;
+
+                    }
                 }
             }
+            // if (target.combinedFlags & ElementFlags.Variadic) {
+            //     // Transform [A, ...(X | Y | Z)] into [A, ...X] | [A, ...Y] | [A, ...Z]
+            //     const unionIndex = findIndex(elementTypes, (t, i) => !!(target.elementFlags[i] & ElementFlags.Variadic && t.flags & (TypeFlags.Never | TypeFlags.Union)));
+            //     if (unionIndex >= 0) {
+            //         return checkCrossProductUnion(map(elementTypes, (t, i) => target.elementFlags[i] & ElementFlags.Variadic ? t : unknownType)) ?
+            //             mapType(elementTypes[unionIndex], t => createNormalizedTupleType(target, replaceElement(elementTypes, unionIndex, t))) :
+            //             errorType;
+            //     }
+            // }
             // We have optional, rest, or variadic elements that may need normalizing. Normalization ensures that all variadic
             // elements are generic and that the tuple type has one of the following layouts, disregarding variadic elements:
             // (1) Zero or more required elements, followed by zero or more optional elements, followed by zero or one rest element.
