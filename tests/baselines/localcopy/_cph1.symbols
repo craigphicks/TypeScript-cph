@@ -1,0 +1,13 @@
+=== tests/cases/compiler/_cph1.ts ===
+// @strict true
+
+{
+    type T1 = [number, ...[b?: boolean]];
+>T1 : Symbol(T1, Decl(_cph1.ts, 2, 1))
+
+    const t1:T1 = [1 as const];
+>t1 : Symbol(t1, Decl(_cph1.ts, 4, 9))
+>T1 : Symbol(T1, Decl(_cph1.ts, 2, 1))
+>const : Symbol(const)
+}
+

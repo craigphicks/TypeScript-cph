@@ -27513,73 +27513,180 @@ namespace ts {
         function checkArrayLiteral(node: ArrayLiteralExpression, checkMode: CheckMode | undefined, forceTuple: boolean | undefined): Type {
             const elements = node.elements;
             const elementCount = elements.length;
-            const elementTypes: Type[] = [];
-            const elementFlags: ElementFlags[] = [];
             const contextualType = getApparentTypeOfContextualType(node);
             const inDestructuringPattern = isAssignmentTarget(node);
             const inConstContext = isConstContext(node);
-            let hasOmittedExpression = false;
-            for (let i = 0; i < elementCount; i++) {
-                const e = elements[i];
-                if (e.kind === SyntaxKind.SpreadElement) {
-                    if (languageVersion < ScriptTarget.ES2015) {
-                        checkExternalEmitHelpers(e, compilerOptions.downlevelIteration ? ExternalEmitHelpers.SpreadIncludes : ExternalEmitHelpers.SpreadArray);
-                    }
-                    const spreadType = checkExpression((e as SpreadElement).expression, checkMode, forceTuple);
-                    if (isArrayLikeType(spreadType)) {
-                        elementTypes.push(spreadType);
-                        elementFlags.push(ElementFlags.Variadic);
-                    }
-                    else if (inDestructuringPattern) {
-                        // Given the following situation:
-                        //    var c: {};
-                        //    [...c] = ["", 0];
-                        //
-                        // c is represented in the tree as a spread element in an array literal.
-                        // But c really functions as a rest element, and its purpose is to provide
-                        // a contextual type for the right hand side of the assignment. Therefore,
-                        // instead of calling checkExpression on "...c", which will give an error
-                        // if c is not iterable/array-like, we need to act as if we are trying to
-                        // get the contextual element type from it. So we do something similar to
-                        // getContextualTypeForElementExpression, which will crucially not error
-                        // if there is no index type / iterated type.
-                        const restElementType = getIndexTypeOfType(spreadType, numberType) ||
-                            getIteratedTypeOrElementType(IterationUse.Destructuring, spreadType, undefinedType, /*errorNode*/ undefined, /*checkAssignability*/ false) ||
-                            unknownType;
-                        elementTypes.push(restElementType);
-                        elementFlags.push(ElementFlags.Rest);
-                    }
-                    else {
-                        elementTypes.push(checkIteratedTypeOrElementType(IterationUse.Spread, spreadType, undefinedType, (e as SpreadElement).expression));
-                        elementFlags.push(ElementFlags.Rest);
-                    }
+            if (/*!inDestructuringPattern &&*/ contextualType && elements /*&& elements.length*/ && isTupleType(contextualType)){
+                // console.group("checkArrayLiteral");
+                // console.log("node", (node as any).getText());
+                // console.log("contextualType:",typeToString(contextualType, node));
+                // console.group("elements");
+                // elements.forEach(e=>console.log((e as any).getText()));
+                // console.groupEnd();
+
+                const getContextualTypeForElementExpression_alt = (arrayContextualType: Readonly<TupleTypeReference>, index: number): Type =>{
+                    return (
+                        // getTypeOfPropertyOfContextualType automatically extends the first rest element to infinity which breaks the below code
+                        // getTypeOfPropertyOfContextualType(arrayContextualType, "" + index as __String)
+                        (arrayContextualType as any).typeArguments![index]
+                        || mapType(
+                            arrayContextualType,
+                            t => getIteratedTypeOrElementType(IterationUse.Element, t, undefinedType, /*errorNode*/ undefined, /*checkAssignability*/ false),
+                            /*noReductions*/ true));
+                };
+                // Experiment with forcing all flags to be required.
+                const ef = (_: ElementFlags) => ElementFlags.Required;
+                //forceTuple = true;
+                const elementTypes: Type[] = [];
+                const elementFlags: ElementFlags[] = [];
+                const elementTypesRev: Type[] = [];
+                const elementFlagsRev: ElementFlags[] = [];
+                const ctypeArguments = getTypeArguments(contextualType);
+                const ctarget = contextualType.target;
+                const hasVariadic = ctarget.elementFlags.some(f => f & ElementFlags.Variadic);
+                Debug.assert(!hasVariadic, "!hasVariadic");
+                let forwardElementsIndex = -1;
+                let forwardContextIndex = -1;
+                let i = 0;
+                for (;i<ctypeArguments.length && i<elements.length && ctarget.elementFlags[i]===ElementFlags.Required ;i++) {
+                        const elementContextualType = getContextualTypeForElementExpression_alt(contextualType, i);
+                        const type = checkExpressionForMutableLocation(elements[i], checkMode, elementContextualType, forceTuple);
+                        elementTypes.push(type);
+                        elementFlags.push(ef(ElementFlags.Required));
                 }
-                else if (exactOptionalPropertyTypes && e.kind === SyntaxKind.OmittedExpression) {
-                    hasOmittedExpression = true;
-                    elementTypes.push(missingType);
-                    elementFlags.push(ElementFlags.Optional);
+                // During matching of optionals we have to use `isRelatedToWorker` to enable decision about when to break (with no error)
+                for (;i<ctypeArguments.length && i<elements.length && ctarget.elementFlags[i]===ElementFlags.Optional ;i++) {
+                    const elementContextualType = getContextualTypeForElementExpression_alt(contextualType, i);
+                    const type = checkExpressionForMutableLocation(elements[i], checkMode, elementContextualType, forceTuple);
+                    if (!isTypeAssignableTo(type,elementContextualType)) break;
+                    elementTypes.push(type);
+                    elementFlags.push(ef(ElementFlags.Optional));
+                }
+                forwardElementsIndex = i;
+                // Note: there might not be a Rest in the middle
+                forwardContextIndex = i;
+                // Match backwards from the end - expect Required,Optional,Rest - exactly the same but in reverse
+                let ic = ctypeArguments.length - 1;
+                let ie = elementCount - 1;
+                for (; ic>=forwardContextIndex && ie>=forwardElementsIndex && ctarget.elementFlags[ic]===ElementFlags.Required; ic--,ie--){
+                    const elementContextualType = getContextualTypeForElementExpression_alt(contextualType, ic);
+                    const type = checkExpressionForMutableLocation(elements[ie], checkMode, elementContextualType, forceTuple);
+                    elementTypesRev.push(type);
+                    elementFlagsRev.push(ef(ElementFlags.Required));
+                }
+                for (; ic>=forwardContextIndex && ie>=forwardElementsIndex && ctarget.elementFlags[ic]===ElementFlags.Optional; ic--,ie--){
+                    const elementContextualType = getContextualTypeForElementExpression_alt(contextualType, ic);
+                    const type = checkExpressionForMutableLocation(elements[ie], checkMode, elementContextualType, forceTuple);
+                    if (!isTypeAssignableTo(type,elementContextualType)) break;
+                    elementTypesRev.push(type);
+                    elementFlagsRev.push(ef(ElementFlags.Optional));
+                }
+                // if the elements have all been used, we are done
+                if (elementTypes.length+elementTypesRev.length===elements.length) {
+                    // position matching accompilshed
+                }
+                else if (ic>=forwardContextIndex) {
+                    // there SHOULD be at most one contextual rest type, which the remainder of elements should match
+                    for (i=forwardElementsIndex;i<=ie;i++){
+                        const elementContextualType = getContextualTypeForElementExpression_alt(contextualType, ic);
+                        const type = checkExpressionForMutableLocation(elements[i], checkMode, elementContextualType, forceTuple);
+                        elementTypes.push(type);
+                        elementFlags.push(ef(ElementFlags.Rest));
+                    }
                 }
                 else {
-                    const elementContextualType = getContextualTypeForElementExpression(contextualType, elementTypes.length);
-                    const type = checkExpressionForMutableLocation(e, checkMode, elementContextualType, forceTuple);
-                    elementTypes.push(addOptionality(type, /*isProperty*/ true, hasOmittedExpression));
-                    elementFlags.push(hasOmittedExpression ? ElementFlags.Optional : ElementFlags.Required);
-                    if (contextualType && someType(contextualType, isTupleLikeType) && checkMode && checkMode & CheckMode.Inferential && !(checkMode & CheckMode.SkipContextSensitive) && isContextSensitive(e)) {
-                        const inferenceContext = getInferenceContext(node);
-                        Debug.assert(inferenceContext);  // In CheckMode.Inferential we should always have an inference context
-                        addIntraExpressionInferenceSite(inferenceContext, e, type);
+                    // no contextual elements left to match
+                    for (i=forwardElementsIndex;i<=ie;i++){
+                        const type = checkExpressionForMutableLocation(elements[i], checkMode, neverType, forceTuple);
+                        elementTypes.push(type);
+                        elementFlags.push(ef(ElementFlags.Rest));
                     }
                 }
+                elementTypes.push(...elementTypesRev.reverse());
+                elementFlags.push(...elementFlagsRev.reverse());
+                // if (elementFlags.length===1 && forceTuple){
+                //     elementFlags[0] = ElementFlags.Required;
+                // }
+                let rt: Type;
+                if (forceTuple || inConstContext || contextualType && someType(contextualType, isTupleLikeType)) {
+                    rt= createArrayLiteralType(createTupleType(elementTypes, elementFlags, /*readonly*/ inConstContext));
+                }
+                else {
+                    rt = createArrayLiteralType(createArrayType(elementTypes.length ?
+                        getUnionType(sameMap(elementTypes, (t, i) => elementFlags[i] & ElementFlags.Variadic ? getIndexedAccessTypeOrUndefined(t, numberType) || anyType : t), UnionReduction.Subtype) :
+                        strictNullChecks ? implicitNeverType : undefinedWideningType, inConstContext));
+                }
+                //const rt = createArrayLiteralType(createTupleType(elementTypes, elementFlags, /*readonly*/ inConstContext));
+                // console.log(typeToString(rt,node));
+                // console.groupEnd();
+                return rt;
             }
-            if (inDestructuringPattern) {
-                return createTupleType(elementTypes, elementFlags);
+            else {
+                const elementTypes: Type[] = [];
+                const elementFlags: ElementFlags[] = [];
+                let hasOmittedExpression = false;
+                for (let i = 0; i < elementCount; i++) {
+                    const e = elements[i];
+                    if (e.kind === SyntaxKind.SpreadElement) {
+                        if (languageVersion < ScriptTarget.ES2015) {
+                            checkExternalEmitHelpers(e, compilerOptions.downlevelIteration ? ExternalEmitHelpers.SpreadIncludes : ExternalEmitHelpers.SpreadArray);
+                        }
+                        const spreadType = checkExpression((e as SpreadElement).expression, checkMode, forceTuple);
+                        if (isArrayLikeType(spreadType)) {
+                            elementTypes.push(spreadType);
+                            elementFlags.push(ElementFlags.Variadic);
+                        }
+                        else if (inDestructuringPattern) {
+                            // Given the following situation:
+                            //    var c: {};
+                            //    [...c] = ["", 0];
+                            //
+                            // c is represented in the tree as a spread element in an array literal.
+                            // But c really functions as a rest element, and its purpose is to provide
+                            // a contextual type for the right hand side of the assignment. Therefore,
+                            // instead of calling checkExpression on "...c", which will give an error
+                            // if c is not iterable/array-like, we need to act as if we are trying to
+                            // get the contextual element type from it. So we do something similar to
+                            // getContextualTypeForElementExpression, which will crucially not error
+                            // if there is no index type / iterated type.
+                            const restElementType = getIndexTypeOfType(spreadType, numberType) ||
+                                getIteratedTypeOrElementType(IterationUse.Destructuring, spreadType, undefinedType, /*errorNode*/ undefined, /*checkAssignability*/ false) ||
+                                unknownType;
+                            elementTypes.push(restElementType);
+                            elementFlags.push(ElementFlags.Rest);
+                        }
+                        else {
+                            elementTypes.push(checkIteratedTypeOrElementType(IterationUse.Spread, spreadType, undefinedType, (e as SpreadElement).expression));
+                            elementFlags.push(ElementFlags.Rest);
+                        }
+                    }
+                    else if (exactOptionalPropertyTypes && e.kind === SyntaxKind.OmittedExpression) {
+                        hasOmittedExpression = true;
+                        elementTypes.push(missingType);
+                        elementFlags.push(ElementFlags.Optional);
+                    }
+                    else {
+                        const elementContextualType = getContextualTypeForElementExpression(contextualType, elementTypes.length);
+                        const type = checkExpressionForMutableLocation(e, checkMode, elementContextualType, forceTuple);
+                        elementTypes.push(addOptionality(type, /*isProperty*/ true, hasOmittedExpression));
+                        elementFlags.push(hasOmittedExpression ? ElementFlags.Optional : ElementFlags.Required);
+                        if (contextualType && someType(contextualType, isTupleLikeType) && checkMode && checkMode & CheckMode.Inferential && !(checkMode & CheckMode.SkipContextSensitive) && isContextSensitive(e)) {
+                            const inferenceContext = getInferenceContext(node);
+                            Debug.assert(inferenceContext);  // In CheckMode.Inferential we should always have an inference context
+                            addIntraExpressionInferenceSite(inferenceContext, e, type);
+                        }
+                    }
+                }
+                if (inDestructuringPattern) {
+                    return createTupleType(elementTypes, elementFlags);
+                }
+                if (forceTuple || inConstContext || contextualType && someType(contextualType, isTupleLikeType)) {
+                    return createArrayLiteralType(createTupleType(elementTypes, elementFlags, /*readonly*/ inConstContext));
+                }
+                return createArrayLiteralType(createArrayType(elementTypes.length ?
+                    getUnionType(sameMap(elementTypes, (t, i) => elementFlags[i] & ElementFlags.Variadic ? getIndexedAccessTypeOrUndefined(t, numberType) || anyType : t), UnionReduction.Subtype) :
+                    strictNullChecks ? implicitNeverType : undefinedWideningType, inConstContext));
             }
-            if (forceTuple || inConstContext || contextualType && someType(contextualType, isTupleLikeType)) {
-                return createArrayLiteralType(createTupleType(elementTypes, elementFlags, /*readonly*/ inConstContext));
-            }
-            return createArrayLiteralType(createArrayType(elementTypes.length ?
-                getUnionType(sameMap(elementTypes, (t, i) => elementFlags[i] & ElementFlags.Variadic ? getIndexedAccessTypeOrUndefined(t, numberType) || anyType : t), UnionReduction.Subtype) :
-                strictNullChecks ? implicitNeverType : undefinedWideningType, inConstContext));
         }
 
         function createArrayLiteralType(type: Type) {

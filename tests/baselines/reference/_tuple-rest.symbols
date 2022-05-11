@@ -1,0 +1,32 @@
+=== tests/cases/compiler/_tuple-rest.ts ===
+// exactOptionalPropertyTypes: true
+
+// type T1 = [x:number,y?:boolean];
+// type T2 = [...T1, "$"];
+
+// const t2a:T2 = [1, "$"];
+// const t2b:T2 = [1, true, "$"];
+
+type Last = "$";
+>Last : Symbol(Last, Decl(_tuple-rest.ts, 0, 0))
+
+type T11 = [x:1,...y:boolean[]];
+>T11 : Symbol(T11, Decl(_tuple-rest.ts, 8, 16))
+
+type T11m = [z?:string];
+>T11m : Symbol(T11m, Decl(_tuple-rest.ts, 9, 32))
+
+type T12 = [...T11, ...T11m,Last];
+>T12 : Symbol(T12, Decl(_tuple-rest.ts, 10, 24))
+>T11 : Symbol(T11, Decl(_tuple-rest.ts, 8, 16))
+>T11m : Symbol(T11m, Decl(_tuple-rest.ts, 9, 32))
+>Last : Symbol(Last, Decl(_tuple-rest.ts, 0, 0))
+
+const t12a:T12 = [1, "$"];
+>t12a : Symbol(t12a, Decl(_tuple-rest.ts, 13, 5))
+>T12 : Symbol(T12, Decl(_tuple-rest.ts, 10, 24))
+
+const t12b:T12 = [1, true, "$"];
+>t12b : Symbol(t12b, Decl(_tuple-rest.ts, 14, 5))
+>T12 : Symbol(T12, Decl(_tuple-rest.ts, 10, 24))
+
