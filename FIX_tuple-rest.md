@@ -217,3 +217,7 @@ Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/dest
 
 Test failure:
 Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringWithLiteralInitializers2.ts
+
+Having some problem when variadic of array is in Type.
+Why is that not already converted to tuple at parse time?
+
