@@ -14,4 +14,3 @@ tt2 = [5];
 tt2 = ['abc', 5];
 tt2 = ['abc', 'def', 5];
 tt2 = ['abc', 'def', 5, 6];  // Error
-
