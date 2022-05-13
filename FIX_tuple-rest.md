@@ -177,47 +177,46 @@ function isTypeAssignableTo(source: Type, target: Type): boolean {
 }
 ```
 
-excessPropertyCheckWithUnions
-controlFlowBindingPatternOrder
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/controlFlow/controlFlowBindingPatternOrder.ts
-  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬............................................................]
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/declarationsAndAssignments.ts
+Last test with new code entry contstraint
+```
 
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringArrayBindingPatternAndAssignment1ES5.ts
+``` 
 
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringArrayBindingPatternAndAssignment1ES5iterable.ts
+ 80958 passing (5m)
+  3 failing
 
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringArrayBindingPatternAndAssignment1ES6.ts
+  1) 
+       
+         conformance tests
+           conformance tests for tests/cases/conformance/types/tuple/variadicTuples2.ts
+             Correct type/symbol baselines for tests/cases/conformance/types/tuple/variadicTuples2.ts:
+     Error: New baseline created at tests/baselines/local/variadicTuples2.types
+      at writeComparison (src/harness/harnessIO.ts:1400:31)
+      at Object.runBaseline (src/harness/harnessIO.ts:1419:13)
+      at checkBaseLines (src/harness/harnessIO.ts:763:30)
+      at Object.doTypeAndSymbolBaseline (src/harness/harnessIO.ts:726:17)
+      at CompilerTest.verifyTypesAndSymbols (src/testRunner/compilerRunner.ts:318:22)
+      at Context.<anonymous> (src/testRunner/compilerRunner.ts:93:84)
+      at processImmediate (node:internal/timers:466:21)
 
-Test failure:
-Correct errors for tests/cases/conformance/es6/destructuring/destructuringParameterDeclaration2.ts
+  2) 
+       
+         conformance tests
+           conformance tests for tests/cases/conformance/types/tuple/variadicTuples1.ts
+             Correct errors for tests/cases/conformance/types/tuple/variadicTuples1.ts:
+     Error: New baseline created at tests/baselines/local/variadicTuples1.errors.txt
+      at writeComparison (src/harness/harnessIO.ts:1400:31)
+      at Object.runBaseline (src/harness/harnessIO.ts:1419:13)
+      at Object.doErrorBaseline (src/harness/harnessIO.ts:700:22)
+      at CompilerTest.verifyDiagnostics (src/testRunner/compilerRunner.ts:259:22)
+      at Context.<anonymous> (src/testRunner/compilerRunner.ts:88:69)
+      at processImmediate (node:internal/timers:466:21)
 
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringParameterDeclaration2.ts
-  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬...........................................................]
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringVariableDeclaration1ES5.ts
-
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringVariableDeclaration1ES5iterable.ts
-
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringVariableDeclaration1ES6.ts
-
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringVariableDeclaration2.ts
-
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringWithLiteralInitializers.ts
-
-Test failure:
-Correct type/symbol baselines for tests/cases/conformance/es6/destructuring/destructuringWithLiteralInitializers2.ts
-
-Having some problem when variadic of array is in Type.
-Why is that not already converted to tuple at parse time?
-
+  3) 
+       
+         conformance tests
+           conformance tests for tests/cases/conformance/types/tuple/variadicTuples1.ts
+             Correct type/symbol baselines for tests/cases/conformance/types/tuple/variadicTuples1.ts:
+     Error: New baseline created at tests/baselines/local/variadicTuples1.types
+      at writeComparison (src/harness/harnessIO.ts:1400:31)
+      at Object.runBaseline (src/harness/harnessIO.ts:1419:13)
