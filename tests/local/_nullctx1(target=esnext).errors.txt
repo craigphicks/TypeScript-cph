@@ -1,0 +1,18 @@
+tests/cases/conformance/_nullctx1.ts(4,10): error TS2322: Type 'number | number[]' is not assignable to type 'number'.
+  Type 'number[]' is not assignable to type 'number'.
+tests/cases/conformance/_nullctx1.ts(4,23): error TS2488: Type 'number | number[]' must have a '[Symbol.iterator]()' method that returns an iterator.
+
+
+==== tests/cases/conformance/_nullctx1.ts (2 errors) ====
+    class A {
+        #field = 1;
+        constructor() {
+            [this.#field, [this.#field]] = [1, [2]];
+             ~~~~~~~~~~~
+!!! error TS2322: Type 'number | number[]' is not assignable to type 'number'.
+!!! error TS2322:   Type 'number[]' is not assignable to type 'number'.
+                          ~~~~~~~~~~~~~
+!!! error TS2488: Type 'number | number[]' must have a '[Symbol.iterator]()' method that returns an iterator.
+        }
+    }
+    

@@ -222,3 +222,211 @@ Last test with new code entry contstraint
       at Object.runBaseline (src/harness/harnessIO.ts:1419:13)
 
 
+
+
+case !(!contextualType || isTupleType(contextualType))
+
+
+controlFlowAssignmentPatternOrder
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/classDeclarations/classHeritageSpecification/derivedTypeDoesNotRequireExtendsClause.ts"
+  [▬▬▬▬▬▬▬...........................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers1.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers1.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers1.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers2.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers2.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers2.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬......................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/classDeclarations/classHeritageSpecification/derivedTypeDoesNotRequireExtendsClause.ts"
+  [▬▬▬▬▬▬▬...........................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers1.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers1.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers1.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers2.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers2.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/classes/members/instanceAndStaticMembers/thisAndSuperInStaticMembers2.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬......................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/controlFlowAssignmentPatternOrder.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/controlFlowBindingPatternOrder.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/controlFlowDestructuringDeclaration.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/controlFlowOptionalChain.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬.....................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/dependentDestructuredVariables.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/neverReturningFunctions1.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/typeGuardsTypeParameters.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬....................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/directives/multiline.tsx"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬..................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/dynamicImport/importCallExpressionSpecifierNotStringTypeError.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬.................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2020/es2020IntlAPIs.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2020/localesObjectArgument.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment4.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment4.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment4.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment4.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment6.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment6.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment6.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment6.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment7.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment7.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment7.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment7.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment8.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment8.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment8.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment8.ts""
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/controlFlowBindingPatternOrder.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/controlFlowDestructuringDeclaration.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/controlFlowOptionalChain.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬.....................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/dependentDestructuredVariables.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/neverReturningFunctions1.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/controlFlow/typeGuardsTypeParameters.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬....................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/directives/multiline.tsx"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬..................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/dynamicImport/importCallExpressionSpecifierNotStringTypeError.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬.................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2020/es2020IntlAPIs.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2020/localesObjectArgument.ts"
+  [▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬................................................................................]
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment4.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment4.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment4.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment4.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment6.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment6.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment6.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment6.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment7.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment7.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment7.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment7.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment8.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment8.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment8.ts"
+
+Test failure:
+"before all" hook for "Correct errors for tests/cases/conformance/es2021/logicalAssignment/logicalAssignment8.ts"

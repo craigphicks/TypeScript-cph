@@ -27518,43 +27518,52 @@ namespace ts {
             const contextualType = getApparentTypeOfContextualType(node);
             const inDestructuringPattern = isAssignmentTarget(node);
             const inConstContext = isConstContext(node);
-            if (contextualType && isTupleType(contextualType)) {
+            let clog = false;
+            clog=true;
+            const newcode = !!(!contextualType || (contextualType && isTupleType(contextualType)));
+            if (clog){
+                console.group("checkArrayLiteral()");
+                console.log(`NEWCODE -> ${newcode}`);
+                console.log("node:", (node as any).getText());
+                for (let p = node.parent; !!p; p=p.parent){
+                    if (p.kind===SyntaxKind.SourceFile) break;
+                    console.log("upnode:", (p as any).getText());
+                }
+                console.log(`inDestructuringPattern: ${inDestructuringPattern}`);
+                console.log(`inConstContext: ${inConstContext}`);
+                if (!contextualType) console.log("contextualType: <undefined>");
+                else {
+                    console.log("contextualType:",typeToString(contextualType, node));
+                    console.log(`isTupleType:${isTupleType(contextualType)}`);
+                    console.log(`isTupleLikeType:${isTupleLikeType(contextualType)}`);
+                    console.log(`isArrayType:${isArrayType(contextualType)}`);
+                    console.log(`isArrayLikeType:${isArrayLikeType(contextualType)}`);
+                    if (isTupleType(contextualType) || isArrayType(contextualType)) {
+                        console.group("contextualType types");
+                        const cArgTypes = getTypeArguments(contextualType);
+                        if (isTupleType(contextualType)) {
+                            cArgTypes.forEach((t,i)=> {
+                                console.log(`${i}, t=${typeToString(t,node)}, f=${contextualType.target.elementFlags[i]}`);
+                            });
+                        }
+                        else {
+                            cArgTypes.forEach((t,i)=> {
+                                console.log(`${i}, t=${typeToString(t,node)}`);
+                            });
+                        }
+                        console.groupEnd();
+                    }
+                    else {
+                        console.log("contextualType, !isTupleType && !isArrayType");
+                    }
+                }
+                console.group("elements");
+                elements.forEach(e=>console.log((e as any).getText()));
+                console.groupEnd();
+            }
+            if (!contextualType || (contextualType && isTupleType(contextualType))) {
+                Debug.assert(newcode);
                 Debug.assert(elements,"!!elements"); // OK, at least for case satisfying (contextualType && isTupleType(contextualType))
-                // let clog = false;
-                // clog=false;
-                // if (clog){
-                //     console.group("checkArrayLiteral()");
-                //     console.log("node:", (node as any).getText());
-                //     for (let p = node.parent; !!p; p=p.parent){
-                //         if (p.kind===SyntaxKind.SourceFile) break;
-                //         console.log("upnode:", (p as any).getText());
-                //     }
-                //     if (!contextualType) console.log("contextualType: <undefined>");
-                //     else {
-                //         console.log("contextualType:",typeToString(contextualType, node));
-                //         if (isTupleType(contextualType) || isArrayType(contextualType)) {
-                //             console.group("contextualType types");
-                //             const cArgTypes = getTypeArguments(contextualType);
-                //             if (isTupleType(contextualType)) {
-                //                 cArgTypes.forEach((t,i)=> {
-                //                     console.log(`${i}, t=${typeToString(t,node)}, f=${contextualType.target.elementFlags[i]}`);
-                //                 });
-                //             }
-                //             else {
-                //                 cArgTypes.forEach((t,i)=> {
-                //                     console.log(`${i}, t=${typeToString(t,node)}`);
-                //                 });
-                //             }
-                //             console.groupEnd();
-                //         }
-                //         else {
-                //             Debug.assert(false, "contextualType is neither tupple nor array type");
-                //         }
-                //     }
-                //     console.group("elements");
-                //     elements.forEach(e=>console.log((e as any).getText()));
-                //     console.groupEnd();
-                // }
                 /**
                  * `getContextualTypeForElementExpression_alt`
                  * is a workaround for `getContextualTypeForElementExpression` which fails when accessing indices beyond the first
@@ -27643,58 +27652,68 @@ namespace ts {
                         if (!calcAssignable) return { type:missingType, flags: ElementFlags.Optional, omittedExpression:true };
                         else return { type:missingType, flags: ElementFlags.Optional, omittedExpression:true, assignable: getAssignable(missingType, ElementFlags.Optional) };
                     }
-                    else if (ctx===undefined || cidx === undefined){
-                        const type = checkExpressionForMutableLocation(e, checkMode, /* contextualType */ undefined, forceTuple);
-                        const flags = ElementFlags.Required;
-                        return { type, flags, assignable: false }; // there is no corresponding context type so it must be false.
-                    }
+                    // else if (ctx===undefined || cidx === undefined){
+                    //     const type = checkExpressionForMutableLocation(e, checkMode, /* contextualType */ undefined, forceTuple);
+                    //     const flags = ElementFlags.Required;
+                    //     return { type, flags, assignable: false }; // there is no corresponding context type so it must be false.
+                    // }
                     else /* if (ctx!==undefined && cidx === undefined) */ {
-                        const cTarget = ctx.target;
-                        let cArgTypes = getTypeArguments(ctx);
-                        /**
-                         * NOTE!!!
-                         * The condition (cTarget.elementFlags.length < getTypeArguments(ctx).length) does occur.
-                         * It happens when there is tuple type which an unknow generic type in, e.g., [...T]
-                         * followed by an instantiation of that type, e.g. [...T] = ["hello"].
-                         * Then the types contained are [string, T] (length 2) but ctx.target.elementFlags is [ElementFlags.Required] (length 1).
-                         * The workaround here is to slice getTypeArguments(ctx)
-                         * to get an array of types which is the same length as the ctx.target.elementFlags.
-                         * This conformance in length is required when reading from the ends of the arrays.
-                         */
-                        if (cTarget.elementFlags.length<cArgTypes.length){
-                            cArgTypes = getTypeArguments(ctx).slice(0,cTarget.elementFlags.length);
-                        }
-                        Debug.assert(cTarget.elementFlags.length<=cArgTypes.length,"cTarget.elementFlags.length<=cArgTypes.length");
-                        const [ elementContextualType, _elementContextualFlag ] = getContextualTypeForElementExpression_alt(ctx, cidx);
-                        let type = checkExpressionForMutableLocation(e, checkMode, elementContextualType, forceTuple);
-                        if (contextualType && someType(contextualType, isTupleLikeType) && checkMode && checkMode & CheckMode.Inferential && !(checkMode & CheckMode.SkipContextSensitive) && isContextSensitive(e)) {
-                            const inferenceContext = getInferenceContext(node);
-                            Debug.assert(inferenceContext);  // In CheckMode.Inferential we should always have an inference context
-                            addIntraExpressionInferenceSite(inferenceContext, e, type);
-                        }
+                        let type;
                         let flags = ElementFlags.Required;
                         let assignable: boolean | undefined;
-                        if (calcAssignable){
-                            assignable = getAssignable_aux(type, ElementFlags.Required, elementContextualType, _elementContextualFlag);
+                        if (ctx) {
+                            Debug.assert(cidx!==undefined);
+                            const cTarget = ctx.target;
+                            let cArgTypes = getTypeArguments(ctx);
+                            /**
+                             * NOTE!!!
+                             * The condition (cTarget.elementFlags.length < getTypeArguments(ctx).length) does occur.
+                             * It happens when there is tuple type which an unknow generic type in, e.g., [...T]
+                             * followed by an instantiation of that type, e.g. [...T] = ["hello"].
+                             * Then the types contained are [string, T] (length 2) but ctx.target.elementFlags is [ElementFlags.Required] (length 1).
+                             * The workaround here is to slice getTypeArguments(ctx)
+                             * to get an array of types which is the same length as the ctx.target.elementFlags.
+                             * This conformance in length is required when reading from the ends of the arrays.
+                             */
+                            if (cTarget.elementFlags.length<cArgTypes.length){
+                                cArgTypes = getTypeArguments(ctx).slice(0,cTarget.elementFlags.length);
+                            }
+                            Debug.assert(cTarget.elementFlags.length<=cArgTypes.length,"cTarget.elementFlags.length<=cArgTypes.length");
+                            const [ elementContextualType, _elementContextualFlag ] = getContextualTypeForElementExpression_alt(ctx, cidx);
+                            type = checkExpressionForMutableLocation(e, checkMode, elementContextualType, forceTuple);
+                            if (contextualType && someType(contextualType, isTupleLikeType) && checkMode && checkMode & CheckMode.Inferential && !(checkMode & CheckMode.SkipContextSensitive) && isContextSensitive(e)) {
+                                const inferenceContext = getInferenceContext(node);
+                                Debug.assert(inferenceContext);  // In CheckMode.Inferential we should always have an inference context
+                                addIntraExpressionInferenceSite(inferenceContext, e, type);
+                            }
+                            if (calcAssignable){
+                                assignable = getAssignable_aux(type, ElementFlags.Required, elementContextualType, _elementContextualFlag);
+                            }
+                        }
+                        else {
+                            Debug.assert(!calcAssignable,"!calcAssignable");
+                            type = checkExpressionForMutableLocation(e, checkMode, /* contextualType */ undefined, forceTuple);
                         }
                         if (hadOmittedExpression){
                             type = addOptionality(type, /*isProperty*/ true, hadOmittedExpression);
                             flags = ElementFlags.Optional;
                         }
-                        const ret: ReturnType<typeof getTypeAndFlag> = { type, flags, origFlags: cTarget.elementFlags[cidx] };
+                        const ret: ReturnType<typeof getTypeAndFlag> = { type, flags /*, origFlags: cTarget.elementFlags[cidx] */ };
                         if (calcAssignable) ret.assignable = assignable;
                         return ret;
                     }
                 };
                 const elementTypes: Type[] = [];
                 const elementFlags: ElementFlags[] = [];
-                // if (!contextualType) {
-                //     elements.forEach((_,i)=>{
-                //         const {type, flags} = getTypeAndFlag(/* ctx */ undefined, /* cidx */ undefined, elements, i, /* hadOmittedExpression */ false);
-                //         elementTypes.push(type);
-                //         elementFlags.push(flags);
-                //     });
-                // }
+                if (!contextualType) {
+                    let hadOmittedExpression = false;
+                    elements.forEach((_,i)=>{
+                        const {type, flags, omittedExpression} = getTypeAndFlag(/* ctx */ undefined, /* cidx */ undefined, elements, i, hadOmittedExpression);
+                        if (omittedExpression) hadOmittedExpression = true;
+                        elementTypes.push(type);
+                        elementFlags.push(flags);
+                    });
+                }
                 // else if (isArrayType(contextualType) && !isTupleType(contextualType)) {
                 //     const elementContextualType = getContextualTypeForElementExpression(contextualType, 0);
                 //     elements.forEach((e)=>{
@@ -27710,7 +27729,7 @@ namespace ts {
                 //     });
                 // }
                 // else if (isTupleType(contextualType))
-                {
+                else if (contextualType) {
                     Debug.assert(isTupleType(contextualType),"isTupleType(contextualType)");
                     const elementTypesRev: Type[] = [];
                     const elementFlagsRev: ElementFlags[] = [];
@@ -27857,7 +27876,7 @@ namespace ts {
                 if (inDestructuringPattern) {
                     rt= createTupleType(elementTypes, elementFlags);
                 }
-                if (forceTuple || inConstContext || contextualType && someType(contextualType, isTupleLikeType)) {
+                else if (forceTuple || inConstContext || contextualType && someType(contextualType, isTupleLikeType)) {
                     rt= createArrayLiteralType(createTupleType(elementTypes, elementFlags, /*readonly*/ inConstContext));
                 }
                 else {
@@ -27865,13 +27884,17 @@ namespace ts {
                         getUnionType(sameMap(elementTypes, (t, i) => elementFlags[i] & ElementFlags.Variadic ? getIndexedAccessTypeOrUndefined(t, numberType) || anyType : t), UnionReduction.Subtype) :
                         strictNullChecks ? implicitNeverType : undefinedWideningType, inConstContext));
                 }
-                // if (clog) {
-                //     console.log(typeToString(rt,node));
-                //     console.groupEnd();
-                // }
+                if (clog) {
+                    console.log(typeToString(rt,node));
+                    console.groupEnd();
+                }
                 return rt;
             }
             else /* (!(contextualType && isTupleType(contextualType))) */ {
+                Debug.assert(!newcode);
+                let bomb=false;
+                bomb=false;
+                Debug.assert(!bomb,"old code");
                 /**
                  * Note: Below is the existing code v4.7dev,
                  * still used for case (!(contextualType && isTupleType(contextualType))).
@@ -27936,15 +27959,23 @@ namespace ts {
                         }
                     }
                 }
+                let rtype: Type;
                 if (inDestructuringPattern) {
-                    return createTupleType(elementTypes, elementFlags);
+                    rtype = createTupleType(elementTypes, elementFlags);
                 }
-                if (forceTuple || inConstContext || contextualType && someType(contextualType, isTupleLikeType)) {
-                    return createArrayLiteralType(createTupleType(elementTypes, elementFlags, /*readonly*/ inConstContext));
+                else if (forceTuple || inConstContext || contextualType && someType(contextualType, isTupleLikeType)) {
+                    rtype = createArrayLiteralType(createTupleType(elementTypes, elementFlags, /*readonly*/ inConstContext));
                 }
-                return createArrayLiteralType(createArrayType(elementTypes.length ?
-                    getUnionType(sameMap(elementTypes, (t, i) => elementFlags[i] & ElementFlags.Variadic ? getIndexedAccessTypeOrUndefined(t, numberType) || anyType : t), UnionReduction.Subtype) :
-                    strictNullChecks ? implicitNeverType : undefinedWideningType, inConstContext));
+                else {
+                    rtype = createArrayLiteralType(createArrayType(elementTypes.length ?
+                        getUnionType(sameMap(elementTypes, (t, i) => elementFlags[i] & ElementFlags.Variadic ? getIndexedAccessTypeOrUndefined(t, numberType) || anyType : t), UnionReduction.Subtype) :
+                        strictNullChecks ? implicitNeverType : undefinedWideningType, inConstContext));
+                }
+                if (clog) {
+                    console.log(typeToString(rtype,node));
+                    console.groupEnd();
+                }
+                return rtype;
             }
         }
 
