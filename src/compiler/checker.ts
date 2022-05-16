@@ -27519,8 +27519,9 @@ namespace ts {
             const inDestructuringPattern = isAssignmentTarget(node);
             const inConstContext = isConstContext(node);
             let clog = false;
-            clog=true;
-            const newcode = !!(!contextualType || (contextualType && isTupleType(contextualType)));
+            clog=false;
+            let newcode = true; //!!(!contextualType || (contextualType && isTupleType(contextualType)));
+            newcode = true;
             if (clog){
                 console.group("checkArrayLiteral()");
                 console.log(`NEWCODE -> ${newcode}`);
@@ -27538,6 +27539,7 @@ namespace ts {
                     console.log(`isTupleLikeType:${isTupleLikeType(contextualType)}`);
                     console.log(`isArrayType:${isArrayType(contextualType)}`);
                     console.log(`isArrayLikeType:${isArrayLikeType(contextualType)}`);
+                    console.log(`!!(type.flags & TypeFlags.Union):${!!(contextualType.flags & TypeFlags.Union)}`);
                     if (isTupleType(contextualType) || isArrayType(contextualType)) {
                         console.group("contextualType types");
                         const cArgTypes = getTypeArguments(contextualType);
@@ -27561,9 +27563,10 @@ namespace ts {
                 elements.forEach(e=>console.log((e as any).getText()));
                 console.groupEnd();
             }
-            if (!contextualType || (contextualType && isTupleType(contextualType))) {
+            if (newcode) { //(!contextualType || (contextualType && isTupleType(contextualType))) {
                 Debug.assert(newcode);
                 Debug.assert(elements,"!!elements"); // OK, at least for case satisfying (contextualType && isTupleType(contextualType))
+                const maxContextualTypeLength = 100; //Number.MAX_SAFE_INTEGER;
                 /**
                  * `getContextualTypeForElementExpression_alt`
                  * is a workaround for `getContextualTypeForElementExpression` which fails when accessing indices beyond the first
@@ -27585,8 +27588,8 @@ namespace ts {
                  * @param index
                  * @returns
                  */
-                const getContextualTypeForElementExpression_alt = (arrayContextualType: Readonly<TupleTypeReference>, index: number): [Type, ElementFlags] =>{
-                    return [ getTypeArguments(arrayContextualType)[index], arrayContextualType.target.elementFlags[index] ];
+                //  const getContextualTypeForElementExpression_alt = (arrayContextualType: Readonly<TupleTypeReference>, index: number): [Type, ElementFlags] =>{
+                //     return [ getTypeArguments(arrayContextualType)[index], arrayContextualType.target.elementFlags[index] ];
                     /**
                      * For reference, this is the code from `getContextualTypeForElementExpression`
                      */
@@ -27598,8 +27601,41 @@ namespace ts {
                     //         t => getIteratedTypeOrElementType(IterationUse.Element, t, undefinedType, /*errorNode*/ undefined, /*checkAssignability*/ false),
                     //         /*noReductions*/ true));
 
+                //};
+                const getContextualTypeForElementExpression_altTypeAndFlag=(arrayContextualType: Readonly<Type>, index: number): [Type, ElementFlags] => {
+                    Debug.assert(!!arrayContextualType,"!!arrayContextualType");
+                    if (isTupleType(arrayContextualType)) {
+                        return [ getTypeArguments(arrayContextualType)[index], arrayContextualType.target.elementFlags[index] ];
+                    }
+                    else {
+                        return [getContextualTypeForElementExpression(arrayContextualType, index) as Type, ElementFlags.Required];
+                    }
                 };
-                const getTypeAndFlag = (ctx: Readonly<TupleTypeReference> | undefined, cidx: number | undefined, elems: NodeArray<Expression>, eidx: number, hadOmittedExpression: boolean, calcAssignable?: boolean): {type: Type, flags: ElementFlags, assignable?: boolean, origFlags?: ElementFlags, omittedExpression?: true}=>{
+                const getContextualTypeForElementExpression_altLength=(arrayContextualType: Readonly<Type>): number => {
+                    Debug.assert(!!arrayContextualType,"!!arrayContextualType");
+                    if (isTupleType(arrayContextualType)) {
+                        return arrayContextualType.target.elementFlags.length;
+                    }
+                    else if (isTupleLikeType(arrayContextualType)) {
+                        return maxContextualTypeLength; // It doesn't have to be like this.  There really is a length.
+                    }
+                    else if (!!(arrayContextualType.flags && TypeFlags.Union)) {
+                        return maxContextualTypeLength; // What's going on here
+                    }
+                    else {
+                        return 1; //maxContextualTypeLength;
+                    }
+                };
+                const getContextualTypeForElementExpression_altFlags=(arrayContextualType: Readonly<Type>, index: number): ElementFlags => {
+                    if (arrayContextualType && isTupleType(arrayContextualType)) {
+                        return arrayContextualType.target.elementFlags[index];
+                    }
+                    else {
+                        return ElementFlags.Required;
+                    }
+                };
+
+                const getTypeAndFlag = (ctx: Readonly</* TupleTypeReference */ Type> | undefined, cidx: number | undefined, elems: NodeArray<Expression>, eidx: number, hadOmittedExpression: boolean, calcAssignable?: boolean): {type: Type, flags: ElementFlags, assignable?: boolean, origFlags?: ElementFlags, omittedExpression?: true}=>{
                     const getAssignable_aux = (typeToTest: Type, flagToTest: ElementFlags, ctype: Type, cflag: ElementFlags) => {
                         const assignable1 = isTypeAssignableTo(typeToTest, ctype);
                         // if the element is variadic but the context is not, then shouldn't be assignable
@@ -27608,7 +27644,7 @@ namespace ts {
                     };
                     const getAssignable = (typeToTest: Type, flagToTest: ElementFlags) => {
                         if (ctx===undefined || cidx===undefined) return false;
-                        const [ elementContextualType, _elementContextualFlag ] = getContextualTypeForElementExpression_alt(ctx, cidx);
+                        const [ elementContextualType, _elementContextualFlag ] = getContextualTypeForElementExpression_altTypeAndFlag(ctx, cidx);
                         return getAssignable_aux(typeToTest, flagToTest, elementContextualType, _elementContextualFlag);
                     };
                     const e = elems[eidx];
@@ -27661,10 +27697,38 @@ namespace ts {
                         let type;
                         let flags = ElementFlags.Required;
                         let assignable: boolean | undefined;
+                        // if (ctx && isTupleType(ctx)) {
+                        //     Debug.assert(cidx!==undefined);
+                        //     const cTarget = ctx.target;
+                        //     let cArgTypes = getTypeArguments(ctx);
+                        //     /**
+                        //      * NOTE!!!
+                        //      * The condition (cTarget.elementFlags.length < getTypeArguments(ctx).length) does occur.
+                        //      * It happens when there is tuple type which an unknow generic type in, e.g., [...T]
+                        //      * followed by an instantiation of that type, e.g. [...T] = ["hello"].
+                        //      * Then the types contained are [string, T] (length 2) but ctx.target.elementFlags is [ElementFlags.Required] (length 1).
+                        //      * The workaround here is to slice getTypeArguments(ctx)
+                        //      * to get an array of types which is the same length as the ctx.target.elementFlags.
+                        //      * This conformance in length is required when reading from the ends of the arrays.
+                        //      */
+                        //     if (cTarget.elementFlags.length<cArgTypes.length){
+                        //         cArgTypes = getTypeArguments(ctx).slice(0,cTarget.elementFlags.length);
+                        //     }
+                        //     Debug.assert(cTarget.elementFlags.length<=cArgTypes.length,"cTarget.elementFlags.length<=cArgTypes.length");
+                        //     const [ elementContextualType, _elementContextualFlag ] = getContextualTypeForElementExpression_alt(ctx, cidx);
+                        //     type = checkExpressionForMutableLocation(e, checkMode, elementContextualType, forceTuple);
+                        //     if (contextualType && someType(contextualType, isTupleLikeType) && checkMode && checkMode & CheckMode.Inferential && !(checkMode & CheckMode.SkipContextSensitive) && isContextSensitive(e)) {
+                        //         const inferenceContext = getInferenceContext(node);
+                        //         Debug.assert(inferenceContext);  // In CheckMode.Inferential we should always have an inference context
+                        //         addIntraExpressionInferenceSite(inferenceContext, e, type);
+                        //     }
+                        //     if (calcAssignable){
+                        //         assignable = getAssignable_aux(type, ElementFlags.Required, elementContextualType, _elementContextualFlag);
+                        //     }
+                        // }
                         if (ctx) {
                             Debug.assert(cidx!==undefined);
-                            const cTarget = ctx.target;
-                            let cArgTypes = getTypeArguments(ctx);
+                            //const clength = getContextualTypeForElementExpression_altLength(ctx);
                             /**
                              * NOTE!!!
                              * The condition (cTarget.elementFlags.length < getTypeArguments(ctx).length) does occur.
@@ -27675,11 +27739,11 @@ namespace ts {
                              * to get an array of types which is the same length as the ctx.target.elementFlags.
                              * This conformance in length is required when reading from the ends of the arrays.
                              */
-                            if (cTarget.elementFlags.length<cArgTypes.length){
-                                cArgTypes = getTypeArguments(ctx).slice(0,cTarget.elementFlags.length);
-                            }
-                            Debug.assert(cTarget.elementFlags.length<=cArgTypes.length,"cTarget.elementFlags.length<=cArgTypes.length");
-                            const [ elementContextualType, _elementContextualFlag ] = getContextualTypeForElementExpression_alt(ctx, cidx);
+                            // if (cTarget.elementFlags.length<cArgTypes.length){
+                            //     cArgTypes = getTypeArguments(ctx).slice(0,cTarget.elementFlags.length);
+                            // }
+                            // Debug.assert(cTarget.elementFlags.length<=cArgTypes.length,"cTarget.elementFlags.length<=cArgTypes.length");
+                            const [ elementContextualType, _elementContextualFlag ] = getContextualTypeForElementExpression_altTypeAndFlag(ctx, cidx);
                             type = checkExpressionForMutableLocation(e, checkMode, elementContextualType, forceTuple);
                             if (contextualType && someType(contextualType, isTupleLikeType) && checkMode && checkMode & CheckMode.Inferential && !(checkMode & CheckMode.SkipContextSensitive) && isContextSensitive(e)) {
                                 const inferenceContext = getInferenceContext(node);
@@ -27703,6 +27767,7 @@ namespace ts {
                         return ret;
                     }
                 };
+
                 const elementTypes: Type[] = [];
                 const elementFlags: ElementFlags[] = [];
                 if (!contextualType) {
@@ -27714,27 +27779,22 @@ namespace ts {
                         elementFlags.push(flags);
                     });
                 }
-                // else if (isArrayType(contextualType) && !isTupleType(contextualType)) {
-                //     const elementContextualType = getContextualTypeForElementExpression(contextualType, 0);
-                //     elements.forEach((e)=>{
-                //         const type = checkExpressionForMutableLocation(e, checkMode, elementContextualType, forceTuple);
-                //         if (contextualType && someType(contextualType, isTupleLikeType) && checkMode && checkMode & CheckMode.Inferential && !(checkMode & CheckMode.SkipContextSensitive) && isContextSensitive(e)) {
-                //             const inferenceContext = getInferenceContext(node);
-                //             Debug.assert(inferenceContext);  // In CheckMode.Inferential we should always have an inference context
-                //             addIntraExpressionInferenceSite(inferenceContext, e, type);
-                //         }
-                //         const flags = ElementFlags.Required;
+                // else if (contextualType && !isTupleType(contextualType)) {
+                //     let hadOmittedExpression = false;
+                //     elements.forEach((e,i)=>{
+                //         const {type, flags, omittedExpression} = getTypeAndFlag(/* ctx */ undefined, /* cidx */ undefined, elements, i, hadOmittedExpression);
+                //         if (omittedExpression) hadOmittedExpression = true;
                 //         elementTypes.push(type);
                 //         elementFlags.push(flags);
                 //     });
                 // }
-                // else if (isTupleType(contextualType))
-                else if (contextualType) {
-                    Debug.assert(isTupleType(contextualType),"isTupleType(contextualType)");
+                else if (contextualType) { // && isTupleType(contextualType)) {
+                    //Debug.assert(isTupleType(contextualType),"isTupleType(contextualType)");
                     const elementTypesRev: Type[] = [];
                     const elementFlagsRev: ElementFlags[] = [];
-                    const ctypeArguments = getTypeArguments(contextualType);
-                    const ctarget = contextualType.target;
+                    //const ctypeArguments = getTypeArguments(contextualType);
+                    const clength = getContextualTypeForElementExpression_altLength(contextualType);
+                    //const ctarget = contextualType.target;
                     let forwardElementsIndex = -1;
                     let forwardContextIndex = -1;
                     let hadForwardOmittedExpression = false;
@@ -27758,7 +27818,7 @@ namespace ts {
                         }
                     };
                     const goForwardRequired = () => {
-                        for (;ic<ctypeArguments.length && ie<elements.length && ctarget.elementFlags[ic]===ElementFlags.Required ;ic++,ie++) {
+                        for (;ic<clength && ie<elements.length && getContextualTypeForElementExpression_altFlags(contextualType,ic)===ElementFlags.Required ;ic++,ie++) {
                                 const {type, flags, omittedExpression} = getTypeAndFlag(contextualType,ic,elements,ie,hadForwardOmittedExpression);
                                 if (omittedExpression) hadForwardOmittedExpression = true;
                                 elementTypes.push(type);
@@ -27771,7 +27831,7 @@ namespace ts {
                      */
                     // During matching of optionals we have to use `isAssignableTo` to enable decision about when to break (with no error)
                     const goForwardOptional = () => {
-                            for (;ic<ctypeArguments.length && ie<elements.length && ctarget.elementFlags[ic]===ElementFlags.Optional ;ic++,ie++) {
+                            for (;ic<clength && ie<elements.length && getContextualTypeForElementExpression_altFlags(contextualType,ic)===ElementFlags.Optional ;ic++,ie++) {
                             const {type, flags, omittedExpression, assignable} = getTypeAndFlag(contextualType,ic,elements,ie,hadForwardOmittedExpression, /* calcAssignable */ true);
                             if (omittedExpression) hadForwardOmittedExpression = true;
                             if (!assignable) break;
@@ -27795,7 +27855,7 @@ namespace ts {
                         }
                     };
                     const goBackwardRequired = () => {
-                        for (; ic>=forwardContextIndex && ie>=forwardElementsIndex && ctarget.elementFlags[ic]===ElementFlags.Required; ic--,ie--){
+                        for (; ic>=forwardContextIndex && ie>=forwardElementsIndex && getContextualTypeForElementExpression_altFlags(contextualType,ic)===ElementFlags.Required; ic--,ie--){
                             const {type, flags, omittedExpression} = getTypeAndFlag(contextualType,ic,elements,ie,hadBackwardOmittedExpression);
                             if (omittedExpression) hadBackwardOmittedExpression = true;
                             elementTypesRev.push(type);
@@ -27804,7 +27864,7 @@ namespace ts {
                     };
                     // During matching of optionals we have to use `isAssignableTo` to enable decision about when to break (with no error)
                     const goBackwardOptional = () => {
-                        for (; ic>=forwardContextIndex && ie>=forwardElementsIndex && ctarget.elementFlags[ic]===ElementFlags.Optional; ic--,ie--){
+                        for (; ic>=forwardContextIndex && ie>=forwardElementsIndex && getContextualTypeForElementExpression_altFlags(contextualType,ic)===ElementFlags.Optional; ic--,ie--){
                             const {type, flags, omittedExpression, assignable} = getTypeAndFlag(contextualType,ic,elements,ie,hadBackwardOmittedExpression, /* calcAssignable */ true);
                             if (omittedExpression) hadBackwardOmittedExpression = true;
                             if (!assignable) break;
@@ -27814,12 +27874,12 @@ namespace ts {
                     };
 
                     goForwardRequired();
-                    for (;ic<ctypeArguments.length && ctarget.elementFlags[ic]===ElementFlags.Variadic; ic++) {
+                    for (;ic<clength && getContextualTypeForElementExpression_altFlags(contextualType,ic)===ElementFlags.Variadic; ic++) {
                         goForwardOneVariadic();
                         goForwardRequired();
                     }
                     goForwardOptional();
-                    for (;ic<ctypeArguments.length && ctarget.elementFlags[ic]===ElementFlags.Variadic; ic++) {
+                    for (;ic<clength && getContextualTypeForElementExpression_altFlags(contextualType,ic)===ElementFlags.Variadic; ic++) {
                         goForwardOneVariadic();
                         goForwardOptional();
                     }
@@ -27827,19 +27887,19 @@ namespace ts {
                     // Note: there might not be a Rest in the middle
                     forwardContextIndex = ic;
                     // Match backwards from the end - expect Required,Optional,Rest - exactly the same but in reverse
-                    ic = ctypeArguments.length - 1;
+                    ic = clength - 1;
                     ie = elementCount - 1;
                     goBackwardRequired();
-                    for (;ic>=forwardContextIndex && ctarget.elementFlags[ic]===ElementFlags.Variadic; ic--) {
+                    for (;ic>=forwardContextIndex && getContextualTypeForElementExpression_altFlags(contextualType,ic)===ElementFlags.Variadic; ic--) {
                         goBackwardOneVariadic();
                         goBackwardRequired();
                     }
                     goBackwardOptional();
-                    for (;ic>=forwardContextIndex && ctarget.elementFlags[ic]===ElementFlags.Variadic; ic--) {
+                    for (;ic>=forwardContextIndex && getContextualTypeForElementExpression_altFlags(contextualType,ic)===ElementFlags.Variadic; ic--) {
                         goBackwardOneVariadic();
                         goBackwardOptional();
                     }
-                    //Debug.assert(ctarget.elementFlags[ic]!==ElementFlags.Variadic, "ctarget.elementFlags[ic]!==ElementFlags.Variadic");
+                    //Debug.assert(getContextualTypeForElementExpression_flags(contextualType,ic)!==ElementFlags.Variadic, "getContextualTypeForElementExpression_flags(contextualType,ic)!==ElementFlags.Variadic");
 
                     // if the elements have all been used, we are done
                     if (elementTypes.length+elementTypesRev.length===elements.length) {
@@ -27890,11 +27950,11 @@ namespace ts {
                 }
                 return rt;
             }
-            else /* (!(contextualType && isTupleType(contextualType))) */ {
+            else { /* (!(contextualType && isTupleType(contextualType))) */
                 Debug.assert(!newcode);
                 let bomb=false;
-                bomb=false;
-                Debug.assert(!bomb,"old code");
+                bomb=true;
+                Debug.assert(!bomb,"old code"); // not running this code but want to keep it for possible analysis use.
                 /**
                  * Note: Below is the existing code v4.7dev,
                  * still used for case (!(contextualType && isTupleType(contextualType))).
