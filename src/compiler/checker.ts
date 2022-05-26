@@ -3,6 +3,7 @@ namespace ts {
     let myDebug = false;
     let myNoCache = false;
     let myDisable = false;
+    let myMaxDepth = 0;
 
     const ambientModuleSymbolRegex = /^".+"$/;
     const anon = "(anonymous)" as __String & string;
@@ -380,6 +381,7 @@ namespace ts {
             getCurrentFlowNode:() => flowTypeQueryState.flowStack.slice(-1)[0],
             pushFlow:(flow: FlowNode) =>{
                 flowTypeQueryState.flowStack.push(flow);
+                myMaxDepth = Math.max(myMaxDepth, flowTypeQueryState.flowStack.length);
                 if (isFlowCondition(flow)){
                     flowTypeQueryState.conditionStack.push({ flow, flowStackIndex:flowTypeQueryState.getFlowStackIndex() });
                 }
@@ -23211,10 +23213,20 @@ namespace ts {
                 case SyntaxKind.Identifier:
                     if (!isThisInTypeQuery(node)) {
                         const symbol = getResolvedSymbol(node as Identifier);
-                        return symbol !== unknownSymbol ? `${flowContainer ? getNodeId(flowContainer) : "-1"}|${getTypeId(declaredType)}|${getTypeId(initialType)}|${getSymbolId(symbol)}` : undefined;
+                        if (!flowTypeQueryState.disable){
+                            const key = `${flowContainer ? getNodeId(flowContainer) : "-1"}|${getTypeId(declaredType)}|${getTypeId(initialType)}|`;
+                            if (myDebug){
+                                return key + `${getNodeId(node)}: ${(node as any).getText()},[${node.pos},${node.end}]`;
+                            }
+                            return key + `${getNodeId(node)}`;
+                        }
+                        else {
+                            return symbol !== unknownSymbol ? `${flowContainer ? getNodeId(flowContainer) : "-1"}|${getTypeId(declaredType)}|${getTypeId(initialType)}|${getSymbolId(symbol)}` : undefined;
+                        }
                     }
                     // falls through
                 case SyntaxKind.ThisKeyword:
+                    // This case also doesn't distinguish between reference nodes.  IWOZERE.
                     return `0|${flowContainer ? getNodeId(flowContainer) : "-1"}|${getTypeId(declaredType)}|${getTypeId(initialType)}`;
                 case SyntaxKind.NonNullExpression:
                 case SyntaxKind.ParenthesizedExpression:
@@ -24298,6 +24310,20 @@ namespace ts {
             }
             return false;
         }
+        function getSymbolForConstantReference(node: Node): Symbol|undefined {
+            let symbol: Symbol | undefined;
+            switch (node.kind) {
+                case SyntaxKind.Identifier: {
+                    symbol = getResolvedSymbol(node as Identifier);
+                    if (isConstVariable(symbol) || isParameterOrCatchClauseVariable(symbol)) return symbol;
+                }
+                break;
+                case SyntaxKind.PropertyAccessExpression:
+                case SyntaxKind.ElementAccessExpression:
+                    // The resolvedSymbol property is initialized by checkPropertyAccess or checkElementAccess before we get here.
+                    return isConstantReference((node as AccessExpression).expression) && isReadonlySymbol(getNodeLinks(node).resolvedSymbol || unknownSymbol);
+            }
+        }
 
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode) {
             flowTypeQueryState.disable = myDisable;
@@ -24319,6 +24345,9 @@ namespace ts {
         }
         function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode) {
             //const dbgNarrowType = false;
+            if (isConstantReference(reference)){
+
+            }
 
             let key: string | undefined;
             let isKeySet = false;
@@ -41953,6 +41982,7 @@ namespace ts {
             // quiet = false;
             let writingFlowTxt=false;
             let ofilenameRoot="";
+            myMaxDepth = 0;
             // not incrementing dbgFlowFileCnt because it is only the last one that is desired
             if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" /* && dbgFlowFileCnt===0*/) {
                 myDebug = !!process.env.myDebug;
@@ -41977,6 +42007,7 @@ namespace ts {
                     const write = (s: string)=>contents+=s;
                     writeFlowNodesUp(write, [node.endFlowNode!],dbgFlow_mapPeType);
                     sys.writeFile(`${ofilenameRoot}.after.txt`, contents);
+                    console.log(`myMaxDepth: ${myMaxDepth}`);
                 }
                 myDebug = false;
                 myDisable = false;
@@ -45758,6 +45789,7 @@ namespace ts {
             write(`# of FlowNodes:${nextFID-1}`);
             write(`# of unique Nodes referenced:${nextNID-1}`);
             write(`# of unique text positions referenced:${nextNID-1}`);
+            write(`myMaxDepth:${myMaxDepth}`);
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////

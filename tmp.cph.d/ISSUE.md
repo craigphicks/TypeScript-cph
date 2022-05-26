@@ -424,3 +424,11 @@ End of very shallow intro.
 
 node built/local/tsc -p src/compiler/tsconfig.json --noEmit
 
+
+
+```
+4) compiler tests
+       compiler tests for tests/cases/compiler/controlFlowManyConsecutiveConditionsNoTimeout.ts
+         "before all" hook for "Correct errors for tests/cases/compiler/controlFlowManyConsecutiveConditionsNoTimeout.ts":
+     RangeError: Maximum call stack size exceeded
+```
