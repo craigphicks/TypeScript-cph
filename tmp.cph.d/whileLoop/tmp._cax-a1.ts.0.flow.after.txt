@@ -1,0 +1,121 @@
+~~~~~~
+id: 2, FID: 1, flags: LoopLabel|Label|Referenced|Shared
+antecedents:[2]
+ -~~~~~~
+ -id: undefined, FID: 2, NID: 1, TID: 1, flags: Assignment|Referenced
+ -isBug = obj?.bug(), (955,974), VariableDeclaration
+ -antecedent:
+ - -~~~~~~
+ - -id: undefined, FID: 3, flags: BranchLabel|Label|Referenced
+ - -antecedents:[3]
+ - - -~~~~~~
+ - - -id: undefined, FID: 4, NID: 2, TID: 2, flags: FalseCondition|Condition|Referenced
+ - - -obj, (963,967), Identifier
+ - - -utype: X1 | undefined
+ - - -antecedent:
+ - - - -~~~~~~
+ - - - -id: 1, FID: 5, flags: Start|Referenced|Shared
+ - - -~~~~~~
+ - - -id: undefined, FID: 6, NID: 3, TID: 3, flags: TrueCondition|Condition|Referenced
+ - - -obj?.bug(), (963,974), CallExpression
+ - - -utype: number[] | undefined
+ - - -antecedent:
+ - - - -~~~~~~
+ - - - -id: undefined, FID: 7, NID: 2, TID: 2, flags: TrueCondition|Condition|Referenced|Shared
+ - - - -obj, (963,967), Identifier
+ - - - -utype: X1 | undefined
+ - - - -antecedent:
+ - - - - -~~~~~~
+ - - - - -id: 1, FID: 5, flags: Start|Referenced|Shared
+ - - -~~~~~~
+ - - -id: undefined, FID: 8, NID: 3, TID: 3, flags: FalseCondition|Condition|Referenced
+ - - -obj?.bug(), (963,974), CallExpression
+ - - -utype: number[] | undefined
+ - - -antecedent:
+ - - - -~~~~~~
+ - - - -id: undefined, FID: 7, NID: 2, TID: 2, flags: TrueCondition|Condition|Referenced|Shared
+ - - - -obj, (963,967), Identifier
+ - - - -utype: X1 | undefined
+ - - - -antecedent:
+ - - - - -~~~~~~
+ - - - - -id: 1, FID: 5, flags: Start|Referenced|Shared
+ -~~~~~~
+ -id: undefined, FID: 9, flags: BranchLabel|Label|Referenced
+ -antecedents:[2]
+ - -~~~~~~
+ - -id: undefined, FID: 10, flags: BranchLabel|Label|Referenced
+ - -antecedents:[2]
+ - - -~~~~~~
+ - - -id: undefined, FID: 11, NID: 4, TID: 4, flags: Assignment|Referenced
+ - - -t = obj.bug, (3262,3274), VariableDeclaration
+ - - -antecedent:
+ - - - -~~~~~~
+ - - - -id: 4, FID: 12, NID: 5, TID: 5, flags: TrueCondition|Condition|Referenced|Shared
+ - - - -isBug, (3232,3237), Identifier
+ - - - -utype: number[] | undefined
+ - - - -antecedent:
+ - - - - -~~~~~~
+ - - - - -id: 3, FID: 13, flags: BranchLabel|Label|Referenced|Shared
+ - - - - -antecedents:[2]
+ - - - - - -~~~~~~
+ - - - - - -id: undefined, FID: 14, NID: 6, TID: 6, flags: TrueCondition|Condition|Referenced
+ - - - - - -!obj, (2939,2943), PrefixUnaryExpression
+ - - - - - -utype: boolean
+ - - - - - -antecedent:
+ - - - - - - -~~~~~~
+ - - - - - - -id: 2, FID: 1, flags: LoopLabel|Label|Referenced|Shared, RECURSIVE REFERENCE!!!
+ - - - - - -~~~~~~
+ - - - - - -id: undefined, FID: 15, NID: 7, TID: 7, flags: TrueCondition|Condition|Referenced
+ - - - - - -obj.kind!=="foo", (2946,2963), BinaryExpression
+ - - - - - -utype: boolean
+ - - - - - -antecedent:
+ - - - - - - -~~~~~~
+ - - - - - - -id: undefined, FID: 16, NID: 6, TID: 6, flags: FalseCondition|Condition|Referenced|Shared
+ - - - - - - -!obj, (2939,2943), PrefixUnaryExpression
+ - - - - - - -utype: boolean
+ - - - - - - -antecedent:
+ - - - - - - - -~~~~~~
+ - - - - - - - -id: 2, FID: 1, flags: LoopLabel|Label|Referenced|Shared, RECURSIVE REFERENCE!!!
+ - - -~~~~~~
+ - - -id: undefined, FID: 17, NID: 5, TID: 5, flags: FalseCondition|Condition|Referenced|Shared
+ - - -isBug, (3232,3237), Identifier
+ - - -utype: number[] | undefined
+ - - -antecedent:
+ - - - -~~~~~~
+ - - - -id: 3, FID: 13, flags: BranchLabel|Label|Referenced|Shared
+ - - - -antecedents:[2]
+ - - - - -~~~~~~
+ - - - - -id: undefined, FID: 14, NID: 6, TID: 6, flags: TrueCondition|Condition|Referenced
+ - - - - -!obj, (2939,2943), PrefixUnaryExpression
+ - - - - -utype: boolean
+ - - - - -antecedent:
+ - - - - - -~~~~~~
+ - - - - - -id: 2, FID: 1, flags: LoopLabel|Label|Referenced|Shared, RECURSIVE REFERENCE!!!
+ - - - - -~~~~~~
+ - - - - -id: undefined, FID: 15, NID: 7, TID: 7, flags: TrueCondition|Condition|Referenced
+ - - - - -obj.kind!=="foo", (2946,2963), BinaryExpression
+ - - - - -utype: boolean
+ - - - - -antecedent:
+ - - - - - -~~~~~~
+ - - - - - -id: undefined, FID: 16, NID: 6, TID: 6, flags: FalseCondition|Condition|Referenced|Shared
+ - - - - - -!obj, (2939,2943), PrefixUnaryExpression
+ - - - - - -utype: boolean
+ - - - - - -antecedent:
+ - - - - - - -~~~~~~
+ - - - - - - -id: 2, FID: 1, flags: LoopLabel|Label|Referenced|Shared, RECURSIVE REFERENCE!!!
+ - -~~~~~~
+ - -id: undefined, FID: 18, NID: 7, TID: 7, flags: FalseCondition|Condition|Referenced|Shared
+ - -obj.kind!=="foo", (2946,2963), BinaryExpression
+ - -utype: boolean
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: undefined, FID: 16, NID: 6, TID: 6, flags: FalseCondition|Condition|Referenced|Shared
+ - - -!obj, (2939,2943), PrefixUnaryExpression
+ - - -utype: boolean
+ - - -antecedent:
+ - - - -~~~~~~
+ - - - -id: 2, FID: 1, flags: LoopLabel|Label|Referenced|Shared, RECURSIVE REFERENCE!!!
+
+# of FlowNodes:18
+# of unique Nodes referenced:7
+# of unique text positions referenced:7

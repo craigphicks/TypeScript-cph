@@ -1,0 +1,2641 @@
+[17:05:41] Using gulpfile /mnt/common/github/TypeScript-cph/Gulpfile.js
+[17:05:41] Starting 'runtests'...
+[17:05:41] Starting 'generateLibs'...
+[17:05:41] Starting 'buildScripts'...
+[17:05:41] Finished 'generateLibs' after 248 ms
+[17:05:41] Finished 'buildScripts' after 272 ms
+[17:05:41] Starting 'generateDiagnostics'...
+[17:05:41] Finished 'generateDiagnostics' after 608 μs
+[17:05:41] Starting 'buildShims'...
+[17:05:41] Starting 'buildDebugTools'...
+[17:05:42] Finished 'buildShims' after 263 ms
+[17:05:42] Finished 'buildDebugTools' after 263 ms
+[17:05:42] Starting 'buildTsc'...
+[17:05:42] Starting 'buildTests'...
+[17:05:42] Starting 'buildTypescriptServicesOut'...
+[17:05:42] Starting 'buildServerLibraryOut'...
+[17:05:42] Finished 'buildTsc' after 310 ms
+[17:05:42] Finished 'buildTests' after 310 ms
+[17:05:42] Finished 'buildTypescriptServicesOut' after 310 ms
+[17:05:42] Starting 'createTypescriptServicesJs'...
+[17:05:42] Finished 'buildServerLibraryOut' after 310 ms
+[17:05:42] Starting 'createServerLibraryJs'...
+[17:05:42] Finished 'createServerLibraryJs' after 15 ms
+[17:05:42] Starting 'createServerLibraryDts'...
+[17:05:42] Finished 'createTypescriptServicesJs' after 20 ms
+[17:05:42] Starting 'createTypescriptServicesDts'...
+[17:05:42] Finished 'createServerLibraryDts' after 7.2 ms
+[17:05:42] Finished 'createTypescriptServicesDts' after 4.5 ms
+[17:05:42] Starting 'createTypescriptJs'...
+[17:05:42] Finished 'createTypescriptJs' after 12 ms
+[17:05:42] Starting 'createTypescriptDts'...
+[17:05:42] Finished 'createTypescriptDts' after 4.51 ms
+[17:05:42] Starting 'createTypescriptStandaloneDts'...
+[17:05:42] Finished 'createTypescriptStandaloneDts' after 2.96 ms
+[17:05:42] Starting 'runTests'...
+[17:05:42] Running tests with config: {"test":["_cax-a1"],"light":true,"noColor":false,"timeout":40000,"keepFailed":false}
+[17:05:42] > /home/craig/.nvm/versions/node/v16.14.2/bin/node /mnt/common/github/TypeScript-cph/node_modules/mocha/bin/_mocha -R /mnt/common/github/TypeScript-cph/scripts/failed-tests.js -O "reporter=mocha-fivemat-progress-reporter" -g "_cax-a1" --colors -t 40000 built/local/run.js
+
+    [0mcompiler tests[0m
+process.env.DBG=1
+checkSourceElement
+  declare type X1Foo = Readonly<{ kind: "foo", foo: string, bug: () => number[] }> ;
+  checkSourceElement
+    Readonly<{ kind: "foo", foo: string, bug: () => number[] }>
+    checkSourceElement
+      { kind: "foo", foo: string, bug: () => number[] }
+      checkSourceElement
+        kind: "foo",
+        checkSourceElement
+          "foo"
+        checkExpressionWorker
+          node: "foo", [37,43]
+          checkExpressionWorker return: "foo", [37,43] -> "foo"
+      checkSourceElement
+        foo: string,
+        checkSourceElement
+          string
+      checkSourceElement
+        bug: () => number[]
+        checkSourceElement
+          () => number[]
+          checkSourceElement
+            number[]
+            checkSourceElement
+              number
+checkSourceElement
+  declare type X1Bar = Readonly<{ kind: "bar", bar: number, bug: () => number[] }> ;
+  checkSourceElement
+    Readonly<{ kind: "bar", bar: number, bug: () => number[] }>
+    checkSourceElement
+      { kind: "bar", bar: number, bug: () => number[] }
+      checkSourceElement
+        kind: "bar",
+        checkSourceElement
+          "bar"
+        checkExpressionWorker
+          node: "bar", [120,126]
+          checkExpressionWorker return: "bar", [120,126] -> "bar"
+      checkSourceElement
+        bar: number,
+        checkSourceElement
+          number
+      checkSourceElement
+        bug: () => number[]
+        checkSourceElement
+          () => number[]
+          checkSourceElement
+            number[]
+            checkSourceElement
+              number
+checkSourceElement
+  declare type X1Baz = Readonly<{ kind: "baz", baz: boolean, bug: () => number[] }>;
+  checkSourceElement
+    Readonly<{ kind: "baz", baz: boolean, bug: () => number[] }>
+    checkSourceElement
+      { kind: "baz", baz: boolean, bug: () => number[] }
+      checkSourceElement
+        kind: "baz",
+        checkSourceElement
+          "baz"
+        checkExpressionWorker
+          node: "baz", [204,210]
+          checkExpressionWorker return: "baz", [204,210] -> "baz"
+      checkSourceElement
+        baz: boolean,
+        checkSourceElement
+          boolean
+      checkSourceElement
+        bug: () => number[]
+        checkSourceElement
+          () => number[]
+          checkSourceElement
+            number[]
+            checkSourceElement
+              number
+checkSourceElement
+  declare type X1 = | X1Foo | X1Bar | X1Baz ;
+  checkSourceElement
+    | X1Foo | X1Bar | X1Baz
+    checkSourceElement
+      X1Foo
+    checkSourceElement
+      X1Bar
+    checkSourceElement
+      X1Baz
+checkSourceElement
+  declare const obj: undefined | X1;
+  checkSourceElement
+    obj: undefined | X1
+    checkSourceElement
+      undefined | X1
+      checkSourceElement
+        undefined
+      checkSourceElement
+        X1
+checkSourceElement
+  declare const ubool:()=>boolean;
+  checkSourceElement
+    ubool:()=>boolean
+    checkSourceElement
+      ()=>boolean
+      checkSourceElement
+        boolean
+checkSourceElement
+  {
+      // const isFoo = obj && obj.kind === "foo";
+      // const isBar = obj && obj.kind === "bar";
+      // const isBaz = obj && obj.kind === "baz";
+      const isBug = obj?.bug();
+      // if (isFoo) {
+      //     // check empty blocks work too
+      // }
+      // if (isBar) {
+      //     obj.bar;
+      // }
+      // if (isBaz) {
+      //     const xbaz = obj.baz;
+      // }
+      // if (isBug) {
+      //     obj;
+      // }
+      // if (isFoo) {
+      //     if (isFoo) {
+      //         const t = obj.foo;
+      //     }
+      //     if (isBar) {
+      //         const t = obj.bar;
+      //     }
+      //     if (isBaz) {
+      //         const t = obj.baz;
+      //     }
+      //     if (isBug) {
+      //         const t = obj.bug;
+      //     }
+      // } else {
+      //     if (isFoo) {
+      //         const t = obj.foo;
+      //     }
+      //     if (isBar) {
+      //         const t = obj.bar;
+      //     }
+      //     if (isBaz) {
+      //         const t = obj.baz;
+      //     }
+      //     if (isBug) {
+      //         const t = obj.bug;
+      //     }
+      // }
+      // if (!obj || obj.kind!=="foo") {
+      //     // if (isFoo) {
+      //     //     const t = obj.foo;
+      //     // }
+      //     // if (isBar) {
+      //     //     const t = obj.bar;
+      //     // }
+      //     // if (isBaz) {
+      //     //     const t = obj.baz;
+      //     // }
+      //     if (isBug) {
+      //         const t = obj.bug;
+      //     }
+      // }        
+      while (ubool()) { 
+          // if (isFoo) {
+          //     if (isFoo) {
+          //         const t = obj.foo;
+          //     }
+          //     if (isBar) {
+          //         const t = obj.bar;
+          //     }
+          //     if (isBaz) {
+          //         const t = obj.baz;
+          //     }
+          //     if (isBug) {
+          //         const t = obj.bug;
+          //     }
+          // } else {
+          //     if (isFoo) {
+          //         const t = obj.foo;
+          //     }
+          //     if (isBar) {
+          //         const t = obj.bar;
+          //     }
+          //     if (isBaz) {
+          //         const t = obj.baz;
+          //     }
+          //     if (isBug) {
+          //         const t = obj.bug;
+          //     }
+          // }
+          if (!obj || obj.kind!=="foo") {
+              // if (isFoo) {
+              //     const t = obj.foo;
+              // }
+              // if (isBar) {
+              //     const t = obj.bar;
+              // }
+              // if (isBaz) {
+              //     const t = obj.baz;
+              // }
+              if (isBug) {
+                  const t = obj.bug;
+              }
+          }        
+      }
+  }
+  checkSourceElement
+    const isBug = obj?.bug();
+    checkSourceElement
+      isBug = obj?.bug()
+      checkExpressionWorker
+        node: obj?.bug, [963,972]
+        checkExpressionWorker
+          node: obj, [963,967]
+          getFlowTypeOfReference
+            reference: obj
+            declaredType: X1 | undefined
+            Start|Referenced|Shared
+            sharedFlowStart(cache): 0
+            getTypeAtFlowNode
+              (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+              pushFlow(Start|Referenced|Shared)
+              0: , Start|Referenced|Shared
+              (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+              popFlow()->Start|Referenced|Shared
+              (out) , Start|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+            sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+            sharedFlowCount: 0, evolvedType: X1 | undefined
+            return resultType: X1 | undefined
+          In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+          checkExpressionWorker return: obj, [963,967] -> X1 | undefined
+        getFlowTypeOfReference
+          reference: obj?.bug
+          declaredType: (() => number[]) | (() => number[]) | (() => number[])
+          Start|Referenced|Shared
+          sharedFlowStart(cache): 0
+          getTypeAtFlowNode
+            (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+            pushFlow(Start|Referenced|Shared)
+            0: , Start|Referenced|Shared
+            (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+            popFlow()->Start|Referenced|Shared
+            (out) , Start|Referenced|Shared, flowDepth: 0, ret: (() => number[]) | (() => number[]) | (() => number[])
+          sharedFlowCount: 0, typeAtFlowNode: (() => number[]) | (() => number[]) | (() => number[])
+          sharedFlowCount: 0, evolvedType: (() => number[]) | (() => number[]) | (() => number[])
+          return resultType: (() => number[]) | (() => number[]) | (() => number[])
+        checkExpressionWorker return: obj?.bug, [963,972] -> (() => number[]) | (() => number[]) | (() => number[]) | undefined
+      checkExpressionWorker
+        node: obj?.bug(), [963,974]
+        checkExpressionWorker
+          node: obj?.bug, [963,972]
+          checkExpressionWorker
+            node: obj, [963,967]
+            getFlowTypeOfReference
+              reference: obj
+              declaredType: X1 | undefined
+              Start|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(Start|Referenced|Shared)
+                0: , Start|Referenced|Shared
+                (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+                popFlow()->Start|Referenced|Shared
+                (out) , Start|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+              sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+              sharedFlowCount: 0, evolvedType: X1 | undefined
+              return resultType: X1 | undefined
+            In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+            checkExpressionWorker return: obj, [963,967] -> X1 | undefined
+          getFlowTypeOfReference
+            reference: obj?.bug
+            declaredType: (() => number[]) | (() => number[]) | (() => number[])
+            Start|Referenced|Shared
+            sharedFlowStart(cache): 0
+            getTypeAtFlowNode
+              (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+              pushFlow(Start|Referenced|Shared)
+              0: , Start|Referenced|Shared
+              (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+              popFlow()->Start|Referenced|Shared
+              (out) , Start|Referenced|Shared, flowDepth: 0, ret: (() => number[]) | (() => number[]) | (() => number[])
+            sharedFlowCount: 0, typeAtFlowNode: (() => number[]) | (() => number[]) | (() => number[])
+            sharedFlowCount: 0, evolvedType: (() => number[]) | (() => number[]) | (() => number[])
+            return resultType: (() => number[]) | (() => number[]) | (() => number[])
+          checkExpressionWorker return: obj?.bug, [963,972] -> (() => number[]) | (() => number[]) | (() => number[]) | undefined
+        checkExpressionWorker return: obj?.bug(), [963,974] -> number[] | undefined
+  checkSourceElement
+    while (ubool()) { 
+            // if (isFoo) {
+            //     if (isFoo) {
+            //         const t = obj.foo;
+            //     }
+            //     if (isBar) {
+            //         const t = obj.bar;
+            //     }
+            //     if (isBaz) {
+            //         const t = obj.baz;
+            //     }
+            //     if (isBug) {
+            //         const t = obj.bug;
+            //     }
+            // } else {
+            //     if (isFoo) {
+            //         const t = obj.foo;
+            //     }
+            //     if (isBar) {
+            //         const t = obj.bar;
+            //     }
+            //     if (isBaz) {
+            //         const t = obj.baz;
+            //     }
+            //     if (isBug) {
+            //         const t = obj.bug;
+            //     }
+            // }
+            if (!obj || obj.kind!=="foo") {
+                // if (isFoo) {
+                //     const t = obj.foo;
+                // }
+                // if (isBar) {
+                //     const t = obj.bar;
+                // }
+                // if (isBaz) {
+                //     const t = obj.baz;
+                // }
+                if (isBug) {
+                    const t = obj.bug;
+                }
+            }        
+        }
+    checkExpressionWorker
+      node: ubool(), [2194,2201]
+      checkExpressionWorker
+        node: ubool, [2194,2199]
+        getFlowTypeOfReference
+          reference: ubool
+          declaredType: () => boolean
+          LoopLabel|Label|Referenced|Shared
+          sharedFlowStart(cache): 0
+          getTypeAtFlowNode
+            (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+            pushFlow(LoopLabel|Label|Referenced|Shared)
+            0: , LoopLabel|Label|Referenced|Shared
+            (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+            getTypeAtFlowNode
+              (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+              pushFlow(Assignment|Referenced)
+              0: , LoopLabel|Label|Referenced|Shared
+              1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+              (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 2
+              (dbgiter:1) , BranchLabel|Label|Referenced, flowDepth: 2
+              getTypeAtFlowBranchLabel
+                (in) , BranchLabel|Label|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                flowStack
+                  0: , LoopLabel|Label|Referenced|Shared
+                  1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                briter:0, ante:[obj, (963,967)], FalseCondition|Condition|Referenced
+                getTypeAtFlowNode
+                  (in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                  pushFlow(FalseCondition|Condition|Referenced)
+                  0: , LoopLabel|Label|Referenced|Shared
+                  1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                  2: [obj, (963,967)], FalseCondition|Condition|Referenced
+                  (dbgiter:0) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3
+                  getTypeAtFlowCondition
+                    (fc  in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3
+                    getTypeAtFlowNode
+                      (in) , Start|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                      pushFlow(Start|Referenced|Shared)
+                      0: , LoopLabel|Label|Referenced|Shared
+                      1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                      2: [obj, (963,967)], FalseCondition|Condition|Referenced
+                      3: , Start|Referenced|Shared
+                      (dbgiter:0) , Start|Referenced|Shared, flowDepth: 4
+                      popFlow()->Start|Referenced|Shared
+                      (out) , Start|Referenced|Shared, flowDepth: 3, ret: () => boolean
+                    (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: () => boolean, narrowedType: () => boolean
+                    (fc out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3, ret: () => boolean
+                  popFlow()->FalseCondition|Condition|Referenced
+                  (out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 2, ret: () => boolean
+                briter:0, flowType: () => boolean, type: () => boolean
+                (out) , BranchLabel|Label|Referenced, flowDepth: 2, ret: () => boolean
+              popFlow()->Assignment|Referenced
+              (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 1, ret: () => boolean
+            popFlow()->LoopLabel|Label|Referenced|Shared
+            (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: () => boolean
+          sharedFlowCount: 0, typeAtFlowNode: () => boolean
+          sharedFlowCount: 0, evolvedType: () => boolean
+          return resultType: () => boolean
+        In getIdentifier(), getFlowTypeOfReference returned () => boolean
+        checkExpressionWorker return: ubool, [2194,2199] -> () => boolean
+      checkExpressionWorker return: ubool(), [2194,2201] -> boolean
+    checkSourceElement
+      { 
+              // if (isFoo) {
+              //     if (isFoo) {
+              //         const t = obj.foo;
+              //     }
+              //     if (isBar) {
+              //         const t = obj.bar;
+              //     }
+              //     if (isBaz) {
+              //         const t = obj.baz;
+              //     }
+              //     if (isBug) {
+              //         const t = obj.bug;
+              //     }
+              // } else {
+              //     if (isFoo) {
+              //         const t = obj.foo;
+              //     }
+              //     if (isBar) {
+              //         const t = obj.bar;
+              //     }
+              //     if (isBaz) {
+              //         const t = obj.baz;
+              //     }
+              //     if (isBug) {
+              //         const t = obj.bug;
+              //     }
+              // }
+              if (!obj || obj.kind!=="foo") {
+                  // if (isFoo) {
+                  //     const t = obj.foo;
+                  // }
+                  // if (isBar) {
+                  //     const t = obj.bar;
+                  // }
+                  // if (isBaz) {
+                  //     const t = obj.baz;
+                  // }
+                  if (isBug) {
+                      const t = obj.bug;
+                  }
+              }        
+          }
+      checkSourceElement
+        if (!obj || obj.kind!=="foo") {
+                    // if (isFoo) {
+                    //     const t = obj.foo;
+                    // }
+                    // if (isBar) {
+                    //     const t = obj.bar;
+                    // }
+                    // if (isBaz) {
+                    //     const t = obj.baz;
+                    // }
+                    if (isBug) {
+                        const t = obj.bug;
+                    }
+                }
+        checkExpressionWorker
+          node: !obj || obj.kind!=="foo", [2939,2963]
+          checkExpressionWorker
+            node: !obj, [2939,2943]
+            checkExpressionWorker
+              node: obj, [2940,2943]
+              getFlowTypeOfReference
+                reference: obj
+                declaredType: X1 | undefined
+                LoopLabel|Label|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(LoopLabel|Label|Referenced|Shared)
+                  0: , LoopLabel|Label|Referenced|Shared
+                  (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowNode
+                    (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    pushFlow(Assignment|Referenced)
+                    0: , LoopLabel|Label|Referenced|Shared
+                    1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                    (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 2
+                    (dbgiter:1) , BranchLabel|Label|Referenced, flowDepth: 2
+                    getTypeAtFlowBranchLabel
+                      (in) , BranchLabel|Label|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                      flowStack
+                        0: , LoopLabel|Label|Referenced|Shared
+                        1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                      briter:0, ante:[obj, (963,967)], FalseCondition|Condition|Referenced
+                      getTypeAtFlowNode
+                        (in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                        pushFlow(FalseCondition|Condition|Referenced)
+                        0: , LoopLabel|Label|Referenced|Shared
+                        1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                        2: [obj, (963,967)], FalseCondition|Condition|Referenced
+                        (dbgiter:0) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3
+                        getTypeAtFlowCondition
+                          (fc  in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3
+                          getTypeAtFlowNode
+                            (in) , Start|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                            pushFlow(Start|Referenced|Shared)
+                            0: , LoopLabel|Label|Referenced|Shared
+                            1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                            2: [obj, (963,967)], FalseCondition|Condition|Referenced
+                            3: , Start|Referenced|Shared
+                            (dbgiter:0) , Start|Referenced|Shared, flowDepth: 4
+                            popFlow()->Start|Referenced|Shared
+                            (out) , Start|Referenced|Shared, flowDepth: 3, ret: X1 | undefined
+                          (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: undefined
+                          (fc out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3, ret: undefined
+                        popFlow()->FalseCondition|Condition|Referenced
+                        (out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 2, ret: undefined
+                      briter:0, flowType: undefined, type: undefined
+                      briter:1, ante:[obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                      getTypeAtFlowNode
+                        (in) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                        pushFlow(TrueCondition|Condition|Referenced)
+                        0: , LoopLabel|Label|Referenced|Shared
+                        1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                        2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                        (dbgiter:0) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 3
+                        getTypeAtFlowCondition
+                          (fc  in) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 3
+                          getTypeAtFlowNode
+                            (in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                            pushFlow(TrueCondition|Condition|Referenced|Shared)
+                            0: , LoopLabel|Label|Referenced|Shared
+                            1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                            2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                            3: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                            (dbgiter:0) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4
+                            getTypeAtFlowCondition
+                              (fc  in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4
+                              getTypeAtFlowNode
+                                (in) , Start|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                                pushFlow(Start|Referenced|Shared)
+                                0: , LoopLabel|Label|Referenced|Shared
+                                1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                3: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                                4: , Start|Referenced|Shared
+                                (dbgiter:0) , Start|Referenced|Shared, flowDepth: 5
+                                popFlow()->Start|Referenced|Shared
+                                (out) , Start|Referenced|Shared, flowDepth: 4, ret: X1 | undefined
+                              (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1 | undefined, narrowedType: X1
+                              (fc out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4, ret: X1
+                            popFlow()->TrueCondition|Condition|Referenced|Shared
+                            (out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 3, ret: X1
+                          checkExpressionWorker
+                            node: obj?.bug, [963,972]
+                            checkExpressionWorker
+                              node: obj, [963,967]
+                              getFlowTypeOfReference
+                                reference: obj
+                                declaredType: X1 | undefined
+                                Start|Referenced|Shared
+                                sharedFlowStart(cache): 0
+                                getTypeAtFlowNode
+                                  (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): 2
+                                  pushFlow(Start|Referenced|Shared)
+                                  0: , LoopLabel|Label|Referenced|Shared
+                                  1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                  2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                  3: , Start|Referenced|Shared
+                                  (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+                                  popFlow()->Start|Referenced|Shared
+                                  (out) , Start|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+                                sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+                                sharedFlowCount: 0, evolvedType: X1 | undefined
+                                return resultType: X1 | undefined
+                              In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+                              checkExpressionWorker return: obj, [963,967] -> X1 | undefined
+                            getFlowTypeOfReference
+                              reference: obj?.bug
+                              declaredType: (() => number[]) | (() => number[]) | (() => number[])
+                              Start|Referenced|Shared
+                              sharedFlowStart(cache): 0
+                              getTypeAtFlowNode
+                                (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): 2
+                                pushFlow(Start|Referenced|Shared)
+                                0: , LoopLabel|Label|Referenced|Shared
+                                1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                3: , Start|Referenced|Shared
+                                (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+                                popFlow()->Start|Referenced|Shared
+                                (out) , Start|Referenced|Shared, flowDepth: 0, ret: (() => number[]) | (() => number[]) | (() => number[])
+                              sharedFlowCount: 0, typeAtFlowNode: (() => number[]) | (() => number[]) | (() => number[])
+                              sharedFlowCount: 0, evolvedType: (() => number[]) | (() => number[]) | (() => number[])
+                              return resultType: (() => number[]) | (() => number[]) | (() => number[])
+                            checkExpressionWorker return: obj?.bug, [963,972] -> (() => number[]) | (() => number[]) | (() => number[]) | undefined
+                          (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1, narrowedType: X1
+                          (fc out) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 3, ret: X1
+                        popFlow()->TrueCondition|Condition|Referenced
+                        (out) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: X1
+                      briter:1, flowType: X1, type: X1
+                      briter:2, ante:[obj?.bug(), (963,974)], FalseCondition|Condition|Referenced
+                      getTypeAtFlowNode
+                        (in) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                        pushFlow(FalseCondition|Condition|Referenced)
+                        0: , LoopLabel|Label|Referenced|Shared
+                        1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                        2: [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced
+                        (dbgiter:0) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 3
+                        getTypeAtFlowCondition
+                          (fc  in) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 3
+                          getTypeAtFlowNode
+                            (in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                            pushFlow(TrueCondition|Condition|Referenced|Shared)
+                            0: , LoopLabel|Label|Referenced|Shared
+                            1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                            2: [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced
+                            3: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                            (dbgiter:0) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4
+                            getTypeAtFlowCondition
+                              (fc  in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4
+                              getTypeAtFlowNode
+                                (in) , Start|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                                pushFlow(Start|Referenced|Shared)
+                                0: , LoopLabel|Label|Referenced|Shared
+                                1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                2: [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced
+                                3: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                                4: , Start|Referenced|Shared
+                                (dbgiter:0) , Start|Referenced|Shared, flowDepth: 5
+                                popFlow()->Start|Referenced|Shared
+                                (out) , Start|Referenced|Shared, flowDepth: 4, ret: X1 | undefined
+                              (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1 | undefined, narrowedType: X1
+                              (fc out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4, ret: X1
+                            popFlow()->TrueCondition|Condition|Referenced|Shared
+                            (out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 3, ret: X1
+                          (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1, narrowedType: X1
+                          (fc out) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 3, ret: X1
+                        popFlow()->FalseCondition|Condition|Referenced
+                        (out) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 2, ret: X1
+                      briter:2, flowType: X1, type: X1
+                      br/antecedentTypes[0]: undefined
+                      br/antecedentTypes[1]: X1
+                      brTmpType: X1 | undefined
+                      (out) , BranchLabel|Label|Referenced, flowDepth: 2, ret: X1 | undefined
+                    popFlow()->Assignment|Referenced
+                    (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 1, ret: X1 | undefined
+                  popFlow()->LoopLabel|Label|Referenced|Shared
+                  (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+                sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+                sharedFlowCount: 0, evolvedType: X1 | undefined
+                return resultType: X1 | undefined
+              In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+              checkExpressionWorker return: obj, [2940,2943] -> X1 | undefined
+            checkExpressionWorker
+              node: obj, [2940,2943]
+              getFlowTypeOfReference
+                reference: obj
+                declaredType: X1 | undefined
+                LoopLabel|Label|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(LoopLabel|Label|Referenced|Shared)
+                  0: , LoopLabel|Label|Referenced|Shared
+                  (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+                  popFlow()->LoopLabel|Label|Referenced|Shared
+                  (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+                sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+                sharedFlowCount: 0, evolvedType: X1 | undefined
+                return resultType: X1 | undefined
+              In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+              checkExpressionWorker return: obj, [2940,2943] -> X1 | undefined
+            checkExpressionWorker return: !obj, [2939,2943] -> boolean
+          checkExpressionWorker
+            node: obj.kind, [2946,2955]
+            checkExpressionWorker
+              node: obj, [2946,2950]
+              getFlowTypeOfReference
+                reference: obj
+                declaredType: X1 | undefined
+                FalseCondition|Condition|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(FalseCondition|Condition|Referenced|Shared)
+                  0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                  (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowCondition
+                    (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                    getTypeAtFlowNode
+                      (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                      pushFlow(LoopLabel|Label|Referenced|Shared)
+                      0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                      1: , LoopLabel|Label|Referenced|Shared
+                      (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 2
+                      popFlow()->LoopLabel|Label|Referenced|Shared
+                      (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, ret: X1 | undefined
+                    (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: X1
+                    (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1, ret: X1
+                  popFlow()->FalseCondition|Condition|Referenced|Shared
+                  (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, ret: X1
+                sharedFlowCount: 0, typeAtFlowNode: X1
+                sharedFlowCount: 0, evolvedType: X1
+                return resultType: X1
+              In getIdentifier(), getFlowTypeOfReference returned X1
+              checkExpressionWorker return: obj, [2946,2950] -> X1
+            getFlowTypeOfReference
+              reference: obj.kind
+              declaredType: "foo" | "bar" | "baz"
+              FalseCondition|Condition|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(FalseCondition|Condition|Referenced|Shared)
+                0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                getTypeAtFlowCondition
+                  (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowNode
+                    (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    pushFlow(LoopLabel|Label|Referenced|Shared)
+                    0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                    1: , LoopLabel|Label|Referenced|Shared
+                    (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 2
+                    getTypeAtFlowNode
+                      (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                      pushFlow(Assignment|Referenced)
+                      0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                      1: , LoopLabel|Label|Referenced|Shared
+                      2: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                      (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 3
+                      (dbgiter:1) , BranchLabel|Label|Referenced, flowDepth: 3
+                      getTypeAtFlowBranchLabel
+                        (in) , BranchLabel|Label|Referenced, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                        flowStack
+                          0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                          1: , LoopLabel|Label|Referenced|Shared
+                          2: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                        briter:0, ante:[obj, (963,967)], FalseCondition|Condition|Referenced
+                        getTypeAtFlowNode
+                          (in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                          pushFlow(FalseCondition|Condition|Referenced)
+                          0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                          1: , LoopLabel|Label|Referenced|Shared
+                          2: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                          3: [obj, (963,967)], FalseCondition|Condition|Referenced
+                          (dbgiter:0) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 4
+                          getTypeAtFlowCondition
+                            (fc  in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 4
+                            getTypeAtFlowNode
+                              (in) , Start|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                              pushFlow(Start|Referenced|Shared)
+                              0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                              1: , LoopLabel|Label|Referenced|Shared
+                              2: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                              3: [obj, (963,967)], FalseCondition|Condition|Referenced
+                              4: , Start|Referenced|Shared
+                              (dbgiter:0) , Start|Referenced|Shared, flowDepth: 5
+                              popFlow()->Start|Referenced|Shared
+                              (out) , Start|Referenced|Shared, flowDepth: 4, ret: "foo" | "bar" | "baz"
+                            (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: "foo" | "bar" | "baz", narrowedType: "foo" | "bar" | "baz"
+                            (fc out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 4, ret: "foo" | "bar" | "baz"
+                          popFlow()->FalseCondition|Condition|Referenced
+                          (out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3, ret: "foo" | "bar" | "baz"
+                        briter:0, flowType: "foo" | "bar" | "baz", type: "foo" | "bar" | "baz"
+                        (out) , BranchLabel|Label|Referenced, flowDepth: 3, ret: "foo" | "bar" | "baz"
+                      popFlow()->Assignment|Referenced
+                      (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 2, ret: "foo" | "bar" | "baz"
+                    popFlow()->LoopLabel|Label|Referenced|Shared
+                    (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, ret: "foo" | "bar" | "baz"
+                  (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: "foo" | "bar" | "baz", narrowedType: "foo" | "bar" | "baz"
+                  (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1, ret: "foo" | "bar" | "baz"
+                popFlow()->FalseCondition|Condition|Referenced|Shared
+                (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, ret: "foo" | "bar" | "baz"
+              sharedFlowCount: 0, typeAtFlowNode: "foo" | "bar" | "baz"
+              sharedFlowCount: 0, evolvedType: "foo" | "bar" | "baz"
+              return resultType: "foo" | "bar" | "baz"
+            checkExpressionWorker return: obj.kind, [2946,2955] -> "foo" | "bar" | "baz"
+          checkExpressionWorker
+            node: "foo", [2958,2963]
+            checkExpressionWorker return: "foo", [2958,2963] -> "foo"
+          checkExpressionWorker return: !obj || obj.kind!=="foo", [2939,2963] -> boolean
+        checkExpressionWorker
+          node: obj.kind!=="foo", [2946,2963]
+          checkExpressionWorker
+            node: obj.kind, [2946,2955]
+            checkExpressionWorker
+              node: obj, [2946,2950]
+              getFlowTypeOfReference
+                reference: obj
+                declaredType: X1 | undefined
+                FalseCondition|Condition|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(FalseCondition|Condition|Referenced|Shared)
+                  0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                  (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowCondition
+                    (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                    getTypeAtFlowNode
+                      (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                      pushFlow(LoopLabel|Label|Referenced|Shared)
+                      0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                      1: , LoopLabel|Label|Referenced|Shared
+                      (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 2
+                      popFlow()->LoopLabel|Label|Referenced|Shared
+                      (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, ret: X1 | undefined
+                    (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: X1
+                    (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1, ret: X1
+                  popFlow()->FalseCondition|Condition|Referenced|Shared
+                  (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, ret: X1
+                sharedFlowCount: 0, typeAtFlowNode: X1
+                sharedFlowCount: 0, evolvedType: X1
+                return resultType: X1
+              In getIdentifier(), getFlowTypeOfReference returned X1
+              checkExpressionWorker return: obj, [2946,2950] -> X1
+            getFlowTypeOfReference
+              reference: obj.kind
+              declaredType: "foo" | "bar" | "baz"
+              FalseCondition|Condition|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(FalseCondition|Condition|Referenced|Shared)
+                0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                getTypeAtFlowCondition
+                  (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowNode
+                    (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    pushFlow(LoopLabel|Label|Referenced|Shared)
+                    0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                    1: , LoopLabel|Label|Referenced|Shared
+                    (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 2
+                    popFlow()->LoopLabel|Label|Referenced|Shared
+                    (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, ret: "foo" | "bar" | "baz"
+                  (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: "foo" | "bar" | "baz", narrowedType: "foo" | "bar" | "baz"
+                  (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1, ret: "foo" | "bar" | "baz"
+                popFlow()->FalseCondition|Condition|Referenced|Shared
+                (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, ret: "foo" | "bar" | "baz"
+              sharedFlowCount: 0, typeAtFlowNode: "foo" | "bar" | "baz"
+              sharedFlowCount: 0, evolvedType: "foo" | "bar" | "baz"
+              return resultType: "foo" | "bar" | "baz"
+            checkExpressionWorker return: obj.kind, [2946,2955] -> "foo" | "bar" | "baz"
+          checkExpressionWorker
+            node: "foo", [2958,2963]
+            checkExpressionWorker return: "foo", [2958,2963] -> "foo"
+          checkExpressionWorker return: obj.kind!=="foo", [2946,2963] -> boolean
+        checkExpressionWorker
+          node: !obj, [2939,2943]
+          checkExpressionWorker
+            node: obj, [2940,2943]
+            getFlowTypeOfReference
+              reference: obj
+              declaredType: X1 | undefined
+              LoopLabel|Label|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(LoopLabel|Label|Referenced|Shared)
+                0: , LoopLabel|Label|Referenced|Shared
+                (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+                popFlow()->LoopLabel|Label|Referenced|Shared
+                (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+              sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+              sharedFlowCount: 0, evolvedType: X1 | undefined
+              return resultType: X1 | undefined
+            In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+            checkExpressionWorker return: obj, [2940,2943] -> X1 | undefined
+          checkExpressionWorker
+            node: obj, [2940,2943]
+            getFlowTypeOfReference
+              reference: obj
+              declaredType: X1 | undefined
+              LoopLabel|Label|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(LoopLabel|Label|Referenced|Shared)
+                0: , LoopLabel|Label|Referenced|Shared
+                (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+                popFlow()->LoopLabel|Label|Referenced|Shared
+                (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+              sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+              sharedFlowCount: 0, evolvedType: X1 | undefined
+              return resultType: X1 | undefined
+            In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+            checkExpressionWorker return: obj, [2940,2943] -> X1 | undefined
+          checkExpressionWorker return: !obj, [2939,2943] -> boolean
+        checkSourceElement
+          {
+                      // if (isFoo) {
+                      //     const t = obj.foo;
+                      // }
+                      // if (isBar) {
+                      //     const t = obj.bar;
+                      // }
+                      // if (isBaz) {
+                      //     const t = obj.baz;
+                      // }
+                      if (isBug) {
+                          const t = obj.bug;
+                      }
+                  }
+          checkSourceElement
+            if (isBug) {
+                            const t = obj.bug;
+                        }
+            checkExpressionWorker
+              node: isBug, [3232,3237]
+              getFlowTypeOfReference
+                reference: isBug
+                declaredType: number[] | undefined
+                BranchLabel|Label|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(BranchLabel|Label|Referenced|Shared)
+                  0: , BranchLabel|Label|Referenced|Shared
+                  (dbgiter:0) , BranchLabel|Label|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowBranchLabel
+                    (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    flowStack
+                      0: , BranchLabel|Label|Referenced|Shared
+                    briter:0, ante:[!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                    getTypeAtFlowNode
+                      (in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                      pushFlow(TrueCondition|Condition|Referenced)
+                      0: , BranchLabel|Label|Referenced|Shared
+                      1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                      (dbgiter:0) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2
+                      getTypeAtFlowCondition
+                        (fc  in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2
+                        getTypeAtFlowNode
+                          (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                          pushFlow(LoopLabel|Label|Referenced|Shared)
+                          0: , BranchLabel|Label|Referenced|Shared
+                          1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                          2: , LoopLabel|Label|Referenced|Shared
+                          (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 3
+                          getTypeAtFlowNode
+                            (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                            pushFlow(Assignment|Referenced)
+                            0: , BranchLabel|Label|Referenced|Shared
+                            1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                            2: , LoopLabel|Label|Referenced|Shared
+                            3: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                            (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 4
+                            popFlow()->Assignment|Referenced
+                            (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 3, ret: number[] | undefined
+                          popFlow()->LoopLabel|Label|Referenced|Shared
+                          (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 2, ret: number[] | undefined
+                        (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: number[] | undefined, narrowedType: number[] | undefined
+                        (fc out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: number[] | undefined
+                      popFlow()->TrueCondition|Condition|Referenced
+                      (out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 1, ret: number[] | undefined
+                    briter:0, flowType: number[] | undefined, type: number[] | undefined
+                    (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, ret: number[] | undefined
+                  popFlow()->BranchLabel|Label|Referenced|Shared
+                  (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 0, ret: number[] | undefined
+                sharedFlowCount: 0, typeAtFlowNode: number[] | undefined
+                sharedFlowCount: 0, evolvedType: number[] | undefined
+                return resultType: number[] | undefined
+              In getIdentifier(), getFlowTypeOfReference returned number[] | undefined
+              checkExpressionWorker return: isBug, [3232,3237] -> number[] | undefined
+            checkExpressionWorker
+              node: isBug, [3232,3237]
+              getFlowTypeOfReference
+                reference: isBug
+                declaredType: number[] | undefined
+                BranchLabel|Label|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(BranchLabel|Label|Referenced|Shared)
+                  0: , BranchLabel|Label|Referenced|Shared
+                  (dbgiter:0) , BranchLabel|Label|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowBranchLabel
+                    (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    flowStack
+                      0: , BranchLabel|Label|Referenced|Shared
+                    briter:0, ante:[!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                    getTypeAtFlowNode
+                      (in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                      pushFlow(TrueCondition|Condition|Referenced)
+                      0: , BranchLabel|Label|Referenced|Shared
+                      1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                      (dbgiter:0) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2
+                      getTypeAtFlowCondition
+                        (fc  in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2
+                        getTypeAtFlowNode
+                          (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                          pushFlow(LoopLabel|Label|Referenced|Shared)
+                          0: , BranchLabel|Label|Referenced|Shared
+                          1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                          2: , LoopLabel|Label|Referenced|Shared
+                          (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 3
+                          popFlow()->LoopLabel|Label|Referenced|Shared
+                          (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 2, ret: number[] | undefined
+                        (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: number[] | undefined, narrowedType: number[] | undefined
+                        (fc out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: number[] | undefined
+                      popFlow()->TrueCondition|Condition|Referenced
+                      (out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 1, ret: number[] | undefined
+                    briter:0, flowType: number[] | undefined, type: number[] | undefined
+                    (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, ret: number[] | undefined
+                  popFlow()->BranchLabel|Label|Referenced|Shared
+                  (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 0, ret: number[] | undefined
+                sharedFlowCount: 0, typeAtFlowNode: number[] | undefined
+                sharedFlowCount: 0, evolvedType: number[] | undefined
+                return resultType: number[] | undefined
+              In getIdentifier(), getFlowTypeOfReference returned number[] | undefined
+              checkExpressionWorker return: isBug, [3232,3237] -> number[] | undefined
+            checkSourceElement
+              {
+                              const t = obj.bug;
+                          }
+              checkSourceElement
+                const t = obj.bug;
+                checkSourceElement
+                  t = obj.bug
+                  checkExpressionWorker
+                    node: obj.bug, [3266,3274]
+                    checkExpressionWorker
+                      node: obj, [3266,3270]
+                      getFlowTypeOfReference
+                        reference: obj
+                        declaredType: X1 | undefined
+                        TrueCondition|Condition|Referenced|Shared
+                        sharedFlowStart(cache): 0
+                        getTypeAtFlowNode
+                          (in) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                          pushFlow(TrueCondition|Condition|Referenced|Shared)
+                          0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                          (dbgiter:0) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1
+                          getTypeAtFlowCondition
+                            (fc  in) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1
+                            getTypeAtFlowNode
+                              (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                              pushFlow(BranchLabel|Label|Referenced|Shared)
+                              0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                              1: , BranchLabel|Label|Referenced|Shared
+                              (dbgiter:0) , BranchLabel|Label|Referenced|Shared, flowDepth: 2
+                              getTypeAtFlowBranchLabel
+                                (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                                flowStack
+                                  0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                  1: , BranchLabel|Label|Referenced|Shared
+                                briter:0, ante:[!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                getTypeAtFlowNode
+                                  (in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                                  pushFlow(TrueCondition|Condition|Referenced)
+                                  0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                  1: , BranchLabel|Label|Referenced|Shared
+                                  2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                  (dbgiter:0) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                  getTypeAtFlowCondition
+                                    (fc  in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                    getTypeAtFlowNode
+                                      (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                                      pushFlow(LoopLabel|Label|Referenced|Shared)
+                                      0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                      1: , BranchLabel|Label|Referenced|Shared
+                                      2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                      3: , LoopLabel|Label|Referenced|Shared
+                                      (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 4
+                                      popFlow()->LoopLabel|Label|Referenced|Shared
+                                      (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 3, ret: X1 | undefined
+                                    (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1 | undefined, narrowedType: undefined
+                                    (fc out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3, ret: undefined
+                                  popFlow()->TrueCondition|Condition|Referenced
+                                  (out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: undefined
+                                briter:0, flowType: undefined, type: undefined
+                                briter:1, ante:[obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced
+                                getTypeAtFlowNode
+                                  (in) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                                  pushFlow(TrueCondition|Condition|Referenced)
+                                  0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                  1: , BranchLabel|Label|Referenced|Shared
+                                  2: [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced
+                                  (dbgiter:0) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                  getTypeAtFlowCondition
+                                    (fc  in) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                    getTypeAtFlowNode
+                                      (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                                      pushFlow(FalseCondition|Condition|Referenced|Shared)
+                                      0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                      1: , BranchLabel|Label|Referenced|Shared
+                                      2: [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced
+                                      3: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                                      (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 4
+                                      getTypeAtFlowCondition
+                                        (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 4
+                                        getTypeAtFlowNode
+                                          (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                                          pushFlow(LoopLabel|Label|Referenced|Shared)
+                                          0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                          1: , BranchLabel|Label|Referenced|Shared
+                                          2: [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced
+                                          3: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                                          4: , LoopLabel|Label|Referenced|Shared
+                                          (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 5
+                                          popFlow()->LoopLabel|Label|Referenced|Shared
+                                          (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 4, ret: X1 | undefined
+                                        (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: X1
+                                        (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 4, ret: X1
+                                      popFlow()->FalseCondition|Condition|Referenced|Shared
+                                      (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 3, ret: X1
+                                    checkExpressionWorker
+                                      node: "foo", [2958,2963]
+                                      checkExpressionWorker return: "foo", [2958,2963] -> "foo"
+                                    (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1, narrowedType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                    (fc out) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 3, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                  popFlow()->TrueCondition|Condition|Referenced
+                                  (out) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                briter:1, flowType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>, type: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                br/antecedentTypes[0]: undefined
+                                br/antecedentTypes[1]: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                brTmpType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                                (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 2, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                              popFlow()->BranchLabel|Label|Referenced|Shared
+                              (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                            (fc ) flow.id: 4, asumeTrue:true, nonEvolvingType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined, narrowedType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                            (fc out) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                          popFlow()->TrueCondition|Condition|Referenced|Shared
+                          (out) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 0, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                        sharedFlowCount: 0, typeAtFlowNode: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                        sharedFlowCount: 0, evolvedType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                        return resultType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                      In getIdentifier(), getFlowTypeOfReference returned Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                      checkExpressionWorker return: obj, [3266,3270] -> Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                    getFlowTypeOfReference
+                      reference: obj.bug
+                      declaredType: (() => number[]) | (() => number[])
+                      TrueCondition|Condition|Referenced|Shared
+                      sharedFlowStart(cache): 0
+                      getTypeAtFlowNode
+                        (in) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                        pushFlow(TrueCondition|Condition|Referenced|Shared)
+                        0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                        (dbgiter:0) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1
+                        getTypeAtFlowCondition
+                          (fc  in) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1
+                          getTypeAtFlowNode
+                            (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                            pushFlow(BranchLabel|Label|Referenced|Shared)
+                            0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                            1: , BranchLabel|Label|Referenced|Shared
+                            (dbgiter:0) , BranchLabel|Label|Referenced|Shared, flowDepth: 2
+                            getTypeAtFlowBranchLabel
+                              (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                              flowStack
+                                0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                1: , BranchLabel|Label|Referenced|Shared
+                              briter:0, ante:[!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                              getTypeAtFlowNode
+                                (in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                                pushFlow(TrueCondition|Condition|Referenced)
+                                0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                1: , BranchLabel|Label|Referenced|Shared
+                                2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                (dbgiter:0) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                getTypeAtFlowCondition
+                                  (fc  in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                  getTypeAtFlowNode
+                                    (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                                    pushFlow(LoopLabel|Label|Referenced|Shared)
+                                    0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                    1: , BranchLabel|Label|Referenced|Shared
+                                    2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                    3: , LoopLabel|Label|Referenced|Shared
+                                    (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 4
+                                    getTypeAtFlowNode
+                                      (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                                      pushFlow(Assignment|Referenced)
+                                      0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                      1: , BranchLabel|Label|Referenced|Shared
+                                      2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                      3: , LoopLabel|Label|Referenced|Shared
+                                      4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                      (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 5
+                                      (dbgiter:1) , BranchLabel|Label|Referenced, flowDepth: 5
+                                      getTypeAtFlowBranchLabel
+                                        (in) , BranchLabel|Label|Referenced, flowDepth: 5, flowTypeQueryState.getFlowStackIndex(): 4
+                                        flowStack
+                                          0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                          1: , BranchLabel|Label|Referenced|Shared
+                                          2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                          3: , LoopLabel|Label|Referenced|Shared
+                                          4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                        adding alias: isBug = obj?.bug(), condition: TrueCondition|Condition|Referenced|Shared
+                                        briter:0, ante:[obj, (963,967)], FalseCondition|Condition|Referenced
+                                        skipping because aliasFlowTF is true but anteTF is false
+                                        briter:1, ante:[obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                        getTypeAtFlowNode
+                                          (in) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 5, flowTypeQueryState.getFlowStackIndex(): 4
+                                          pushFlow(TrueCondition|Condition|Referenced)
+                                          0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                          1: , BranchLabel|Label|Referenced|Shared
+                                          2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                          3: , LoopLabel|Label|Referenced|Shared
+                                          4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                          5: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                          (dbgiter:0) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 6
+                                          getTypeAtFlowCondition
+                                            (fc  in) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 6
+                                            getTypeAtFlowNode
+                                              (in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 6, flowTypeQueryState.getFlowStackIndex(): 5
+                                              pushFlow(TrueCondition|Condition|Referenced|Shared)
+                                              0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                              1: , BranchLabel|Label|Referenced|Shared
+                                              2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                              3: , LoopLabel|Label|Referenced|Shared
+                                              4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                              5: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                              6: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                                              (dbgiter:0) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 7
+                                              getTypeAtFlowCondition
+                                                (fc  in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 7
+                                                getTypeAtFlowNode
+                                                  (in) , Start|Referenced|Shared, flowDepth: 7, flowTypeQueryState.getFlowStackIndex(): 6
+                                                  pushFlow(Start|Referenced|Shared)
+                                                  0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                                  1: , BranchLabel|Label|Referenced|Shared
+                                                  2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                                  3: , LoopLabel|Label|Referenced|Shared
+                                                  4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                                  5: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                                  6: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                                                  7: , Start|Referenced|Shared
+                                                  (dbgiter:0) , Start|Referenced|Shared, flowDepth: 8
+                                                  popFlow()->Start|Referenced|Shared
+                                                  (out) , Start|Referenced|Shared, flowDepth: 7, ret: (() => number[]) | (() => number[])
+                                                (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: (() => number[]) | (() => number[]), narrowedType: (() => number[]) | (() => number[])
+                                                (fc out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 7, ret: (() => number[]) | (() => number[])
+                                              popFlow()->TrueCondition|Condition|Referenced|Shared
+                                              (out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 6, ret: (() => number[]) | (() => number[])
+                                            (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: (() => number[]) | (() => number[]), narrowedType: (() => number[]) | (() => number[])
+                                            (fc out) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 6, ret: (() => number[]) | (() => number[])
+                                          popFlow()->TrueCondition|Condition|Referenced
+                                          (out) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 5, ret: (() => number[]) | (() => number[])
+                                        briter:1, flowType: (() => number[]) | (() => number[]), type: (() => number[]) | (() => number[])
+                                        (out) , BranchLabel|Label|Referenced, flowDepth: 5, ret: (() => number[]) | (() => number[])
+                                      popFlow()->Assignment|Referenced
+                                      (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 4, ret: (() => number[]) | (() => number[])
+                                    popFlow()->LoopLabel|Label|Referenced|Shared
+                                    (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 3, ret: (() => number[]) | (() => number[])
+                                  (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: (() => number[]) | (() => number[]), narrowedType: (() => number[]) | (() => number[])
+                                  (fc out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3, ret: (() => number[]) | (() => number[])
+                                popFlow()->TrueCondition|Condition|Referenced
+                                (out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: (() => number[]) | (() => number[])
+                              briter:0, flowType: (() => number[]) | (() => number[]), type: (() => number[]) | (() => number[])
+                              (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 2, ret: (() => number[]) | (() => number[])
+                            popFlow()->BranchLabel|Label|Referenced|Shared
+                            (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, ret: (() => number[]) | (() => number[])
+                          (fc ) flow.id: 4, asumeTrue:true, nonEvolvingType: (() => number[]) | (() => number[]), narrowedType: (() => number[]) | (() => number[])
+                          (fc out) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1, ret: (() => number[]) | (() => number[])
+                        popFlow()->TrueCondition|Condition|Referenced|Shared
+                        (out) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 0, ret: (() => number[]) | (() => number[])
+                      sharedFlowCount: 0, typeAtFlowNode: (() => number[]) | (() => number[])
+                      sharedFlowCount: 0, evolvedType: (() => number[]) | (() => number[])
+                      return resultType: (() => number[]) | (() => number[])
+                    checkExpressionWorker return: obj.bug, [3266,3274] -> (() => number[]) | (() => number[])
+checkSourceElement
+  
+process.env.DBG=1
+checkSourceElement
+  declare type X1Foo = Readonly<{ kind: "foo", foo: string, bug: () => number[] }> ;
+  checkSourceElement
+    Readonly<{ kind: "foo", foo: string, bug: () => number[] }>
+    checkSourceElement
+      { kind: "foo", foo: string, bug: () => number[] }
+      checkSourceElement
+        kind: "foo",
+        checkSourceElement
+          "foo"
+        checkExpressionWorker
+          node: "foo", [37,43]
+          checkExpressionWorker return: "foo", [37,43] -> "foo"
+      checkSourceElement
+        foo: string,
+        checkSourceElement
+          string
+      checkSourceElement
+        bug: () => number[]
+        checkSourceElement
+          () => number[]
+          checkSourceElement
+            number[]
+            checkSourceElement
+              number
+checkSourceElement
+  declare type X1Bar = Readonly<{ kind: "bar", bar: number, bug: () => number[] }> ;
+  checkSourceElement
+    Readonly<{ kind: "bar", bar: number, bug: () => number[] }>
+    checkSourceElement
+      { kind: "bar", bar: number, bug: () => number[] }
+      checkSourceElement
+        kind: "bar",
+        checkSourceElement
+          "bar"
+        checkExpressionWorker
+          node: "bar", [120,126]
+          checkExpressionWorker return: "bar", [120,126] -> "bar"
+      checkSourceElement
+        bar: number,
+        checkSourceElement
+          number
+      checkSourceElement
+        bug: () => number[]
+        checkSourceElement
+          () => number[]
+          checkSourceElement
+            number[]
+            checkSourceElement
+              number
+checkSourceElement
+  declare type X1Baz = Readonly<{ kind: "baz", baz: boolean, bug: () => number[] }>;
+  checkSourceElement
+    Readonly<{ kind: "baz", baz: boolean, bug: () => number[] }>
+    checkSourceElement
+      { kind: "baz", baz: boolean, bug: () => number[] }
+      checkSourceElement
+        kind: "baz",
+        checkSourceElement
+          "baz"
+        checkExpressionWorker
+          node: "baz", [204,210]
+          checkExpressionWorker return: "baz", [204,210] -> "baz"
+      checkSourceElement
+        baz: boolean,
+        checkSourceElement
+          boolean
+      checkSourceElement
+        bug: () => number[]
+        checkSourceElement
+          () => number[]
+          checkSourceElement
+            number[]
+            checkSourceElement
+              number
+checkSourceElement
+  declare type X1 = | X1Foo | X1Bar | X1Baz ;
+  checkSourceElement
+    | X1Foo | X1Bar | X1Baz
+    checkSourceElement
+      X1Foo
+    checkSourceElement
+      X1Bar
+    checkSourceElement
+      X1Baz
+checkSourceElement
+  declare const obj: undefined | X1;
+  checkSourceElement
+    obj: undefined | X1
+    checkSourceElement
+      undefined | X1
+      checkSourceElement
+        undefined
+      checkSourceElement
+        X1
+checkSourceElement
+  declare const ubool:()=>boolean;
+  checkSourceElement
+    ubool:()=>boolean
+    checkSourceElement
+      ()=>boolean
+      checkSourceElement
+        boolean
+checkSourceElement
+  {
+      // const isFoo = obj && obj.kind === "foo";
+      // const isBar = obj && obj.kind === "bar";
+      // const isBaz = obj && obj.kind === "baz";
+      const isBug = obj?.bug();
+      // if (isFoo) {
+      //     // check empty blocks work too
+      // }
+      // if (isBar) {
+      //     obj.bar;
+      // }
+      // if (isBaz) {
+      //     const xbaz = obj.baz;
+      // }
+      // if (isBug) {
+      //     obj;
+      // }
+      // if (isFoo) {
+      //     if (isFoo) {
+      //         const t = obj.foo;
+      //     }
+      //     if (isBar) {
+      //         const t = obj.bar;
+      //     }
+      //     if (isBaz) {
+      //         const t = obj.baz;
+      //     }
+      //     if (isBug) {
+      //         const t = obj.bug;
+      //     }
+      // } else {
+      //     if (isFoo) {
+      //         const t = obj.foo;
+      //     }
+      //     if (isBar) {
+      //         const t = obj.bar;
+      //     }
+      //     if (isBaz) {
+      //         const t = obj.baz;
+      //     }
+      //     if (isBug) {
+      //         const t = obj.bug;
+      //     }
+      // }
+      // if (!obj || obj.kind!=="foo") {
+      //     // if (isFoo) {
+      //     //     const t = obj.foo;
+      //     // }
+      //     // if (isBar) {
+      //     //     const t = obj.bar;
+      //     // }
+      //     // if (isBaz) {
+      //     //     const t = obj.baz;
+      //     // }
+      //     if (isBug) {
+      //         const t = obj.bug;
+      //     }
+      // }        
+      while (ubool()) { 
+          // if (isFoo) {
+          //     if (isFoo) {
+          //         const t = obj.foo;
+          //     }
+          //     if (isBar) {
+          //         const t = obj.bar;
+          //     }
+          //     if (isBaz) {
+          //         const t = obj.baz;
+          //     }
+          //     if (isBug) {
+          //         const t = obj.bug;
+          //     }
+          // } else {
+          //     if (isFoo) {
+          //         const t = obj.foo;
+          //     }
+          //     if (isBar) {
+          //         const t = obj.bar;
+          //     }
+          //     if (isBaz) {
+          //         const t = obj.baz;
+          //     }
+          //     if (isBug) {
+          //         const t = obj.bug;
+          //     }
+          // }
+          if (!obj || obj.kind!=="foo") {
+              // if (isFoo) {
+              //     const t = obj.foo;
+              // }
+              // if (isBar) {
+              //     const t = obj.bar;
+              // }
+              // if (isBaz) {
+              //     const t = obj.baz;
+              // }
+              if (isBug) {
+                  const t = obj.bug;
+              }
+          }        
+      }
+  }
+  checkSourceElement
+    const isBug = obj?.bug();
+    checkSourceElement
+      isBug = obj?.bug()
+      checkExpressionWorker
+        node: obj?.bug, [963,972]
+        checkExpressionWorker
+          node: obj, [963,967]
+          getFlowTypeOfReference
+            reference: obj
+            declaredType: X1 | undefined
+            Start|Referenced|Shared
+            sharedFlowStart(cache): 0
+            getTypeAtFlowNode
+              (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+              pushFlow(Start|Referenced|Shared)
+              0: , Start|Referenced|Shared
+              (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+              popFlow()->Start|Referenced|Shared
+              (out) , Start|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+            sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+            sharedFlowCount: 0, evolvedType: X1 | undefined
+            return resultType: X1 | undefined
+          In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+          checkExpressionWorker return: obj, [963,967] -> X1 | undefined
+        getFlowTypeOfReference
+          reference: obj?.bug
+          declaredType: (() => number[]) | (() => number[]) | (() => number[])
+          Start|Referenced|Shared
+          sharedFlowStart(cache): 0
+          getTypeAtFlowNode
+            (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+            pushFlow(Start|Referenced|Shared)
+            0: , Start|Referenced|Shared
+            (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+            popFlow()->Start|Referenced|Shared
+            (out) , Start|Referenced|Shared, flowDepth: 0, ret: (() => number[]) | (() => number[]) | (() => number[])
+          sharedFlowCount: 0, typeAtFlowNode: (() => number[]) | (() => number[]) | (() => number[])
+          sharedFlowCount: 0, evolvedType: (() => number[]) | (() => number[]) | (() => number[])
+          return resultType: (() => number[]) | (() => number[]) | (() => number[])
+        checkExpressionWorker return: obj?.bug, [963,972] -> (() => number[]) | (() => number[]) | (() => number[]) | undefined
+      checkExpressionWorker
+        node: obj?.bug(), [963,974]
+        checkExpressionWorker
+          node: obj?.bug, [963,972]
+          checkExpressionWorker
+            node: obj, [963,967]
+            getFlowTypeOfReference
+              reference: obj
+              declaredType: X1 | undefined
+              Start|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(Start|Referenced|Shared)
+                0: , Start|Referenced|Shared
+                (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+                popFlow()->Start|Referenced|Shared
+                (out) , Start|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+              sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+              sharedFlowCount: 0, evolvedType: X1 | undefined
+              return resultType: X1 | undefined
+            In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+            checkExpressionWorker return: obj, [963,967] -> X1 | undefined
+          getFlowTypeOfReference
+            reference: obj?.bug
+            declaredType: (() => number[]) | (() => number[]) | (() => number[])
+            Start|Referenced|Shared
+            sharedFlowStart(cache): 0
+            getTypeAtFlowNode
+              (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+              pushFlow(Start|Referenced|Shared)
+              0: , Start|Referenced|Shared
+              (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+              popFlow()->Start|Referenced|Shared
+              (out) , Start|Referenced|Shared, flowDepth: 0, ret: (() => number[]) | (() => number[]) | (() => number[])
+            sharedFlowCount: 0, typeAtFlowNode: (() => number[]) | (() => number[]) | (() => number[])
+            sharedFlowCount: 0, evolvedType: (() => number[]) | (() => number[]) | (() => number[])
+            return resultType: (() => number[]) | (() => number[]) | (() => number[])
+          checkExpressionWorker return: obj?.bug, [963,972] -> (() => number[]) | (() => number[]) | (() => number[]) | undefined
+        checkExpressionWorker return: obj?.bug(), [963,974] -> number[] | undefined
+  checkSourceElement
+    while (ubool()) { 
+            // if (isFoo) {
+            //     if (isFoo) {
+            //         const t = obj.foo;
+            //     }
+            //     if (isBar) {
+            //         const t = obj.bar;
+            //     }
+            //     if (isBaz) {
+            //         const t = obj.baz;
+            //     }
+            //     if (isBug) {
+            //         const t = obj.bug;
+            //     }
+            // } else {
+            //     if (isFoo) {
+            //         const t = obj.foo;
+            //     }
+            //     if (isBar) {
+            //         const t = obj.bar;
+            //     }
+            //     if (isBaz) {
+            //         const t = obj.baz;
+            //     }
+            //     if (isBug) {
+            //         const t = obj.bug;
+            //     }
+            // }
+            if (!obj || obj.kind!=="foo") {
+                // if (isFoo) {
+                //     const t = obj.foo;
+                // }
+                // if (isBar) {
+                //     const t = obj.bar;
+                // }
+                // if (isBaz) {
+                //     const t = obj.baz;
+                // }
+                if (isBug) {
+                    const t = obj.bug;
+                }
+            }        
+        }
+    checkExpressionWorker
+      node: ubool(), [2194,2201]
+      checkExpressionWorker
+        node: ubool, [2194,2199]
+        getFlowTypeOfReference
+          reference: ubool
+          declaredType: () => boolean
+          LoopLabel|Label|Referenced|Shared
+          sharedFlowStart(cache): 0
+          getTypeAtFlowNode
+            (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+            pushFlow(LoopLabel|Label|Referenced|Shared)
+            0: , LoopLabel|Label|Referenced|Shared
+            (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+            getTypeAtFlowNode
+              (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+              pushFlow(Assignment|Referenced)
+              0: , LoopLabel|Label|Referenced|Shared
+              1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+              (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 2
+              (dbgiter:1) , BranchLabel|Label|Referenced, flowDepth: 2
+              getTypeAtFlowBranchLabel
+                (in) , BranchLabel|Label|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                flowStack
+                  0: , LoopLabel|Label|Referenced|Shared
+                  1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                briter:0, ante:[obj, (963,967)], FalseCondition|Condition|Referenced
+                getTypeAtFlowNode
+                  (in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                  pushFlow(FalseCondition|Condition|Referenced)
+                  0: , LoopLabel|Label|Referenced|Shared
+                  1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                  2: [obj, (963,967)], FalseCondition|Condition|Referenced
+                  (dbgiter:0) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3
+                  getTypeAtFlowCondition
+                    (fc  in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3
+                    getTypeAtFlowNode
+                      (in) , Start|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                      pushFlow(Start|Referenced|Shared)
+                      0: , LoopLabel|Label|Referenced|Shared
+                      1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                      2: [obj, (963,967)], FalseCondition|Condition|Referenced
+                      3: , Start|Referenced|Shared
+                      (dbgiter:0) , Start|Referenced|Shared, flowDepth: 4
+                      popFlow()->Start|Referenced|Shared
+                      (out) , Start|Referenced|Shared, flowDepth: 3, ret: () => boolean
+                    (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: () => boolean, narrowedType: () => boolean
+                    (fc out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3, ret: () => boolean
+                  popFlow()->FalseCondition|Condition|Referenced
+                  (out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 2, ret: () => boolean
+                briter:0, flowType: () => boolean, type: () => boolean
+                (out) , BranchLabel|Label|Referenced, flowDepth: 2, ret: () => boolean
+              popFlow()->Assignment|Referenced
+              (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 1, ret: () => boolean
+            popFlow()->LoopLabel|Label|Referenced|Shared
+            (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: () => boolean
+          sharedFlowCount: 0, typeAtFlowNode: () => boolean
+          sharedFlowCount: 0, evolvedType: () => boolean
+          return resultType: () => boolean
+        In getIdentifier(), getFlowTypeOfReference returned () => boolean
+        checkExpressionWorker return: ubool, [2194,2199] -> () => boolean
+      checkExpressionWorker return: ubool(), [2194,2201] -> boolean
+    checkSourceElement
+      { 
+              // if (isFoo) {
+              //     if (isFoo) {
+              //         const t = obj.foo;
+              //     }
+              //     if (isBar) {
+              //         const t = obj.bar;
+              //     }
+              //     if (isBaz) {
+              //         const t = obj.baz;
+              //     }
+              //     if (isBug) {
+              //         const t = obj.bug;
+              //     }
+              // } else {
+              //     if (isFoo) {
+              //         const t = obj.foo;
+              //     }
+              //     if (isBar) {
+              //         const t = obj.bar;
+              //     }
+              //     if (isBaz) {
+              //         const t = obj.baz;
+              //     }
+              //     if (isBug) {
+              //         const t = obj.bug;
+              //     }
+              // }
+              if (!obj || obj.kind!=="foo") {
+                  // if (isFoo) {
+                  //     const t = obj.foo;
+                  // }
+                  // if (isBar) {
+                  //     const t = obj.bar;
+                  // }
+                  // if (isBaz) {
+                  //     const t = obj.baz;
+                  // }
+                  if (isBug) {
+                      const t = obj.bug;
+                  }
+              }        
+          }
+      checkSourceElement
+        if (!obj || obj.kind!=="foo") {
+                    // if (isFoo) {
+                    //     const t = obj.foo;
+                    // }
+                    // if (isBar) {
+                    //     const t = obj.bar;
+                    // }
+                    // if (isBaz) {
+                    //     const t = obj.baz;
+                    // }
+                    if (isBug) {
+                        const t = obj.bug;
+                    }
+                }
+        checkExpressionWorker
+          node: !obj || obj.kind!=="foo", [2939,2963]
+          checkExpressionWorker
+            node: !obj, [2939,2943]
+            checkExpressionWorker
+              node: obj, [2940,2943]
+              getFlowTypeOfReference
+                reference: obj
+                declaredType: X1 | undefined
+                LoopLabel|Label|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(LoopLabel|Label|Referenced|Shared)
+                  0: , LoopLabel|Label|Referenced|Shared
+                  (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowNode
+                    (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    pushFlow(Assignment|Referenced)
+                    0: , LoopLabel|Label|Referenced|Shared
+                    1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                    (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 2
+                    (dbgiter:1) , BranchLabel|Label|Referenced, flowDepth: 2
+                    getTypeAtFlowBranchLabel
+                      (in) , BranchLabel|Label|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                      flowStack
+                        0: , LoopLabel|Label|Referenced|Shared
+                        1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                      briter:0, ante:[obj, (963,967)], FalseCondition|Condition|Referenced
+                      getTypeAtFlowNode
+                        (in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                        pushFlow(FalseCondition|Condition|Referenced)
+                        0: , LoopLabel|Label|Referenced|Shared
+                        1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                        2: [obj, (963,967)], FalseCondition|Condition|Referenced
+                        (dbgiter:0) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3
+                        getTypeAtFlowCondition
+                          (fc  in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3
+                          getTypeAtFlowNode
+                            (in) , Start|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                            pushFlow(Start|Referenced|Shared)
+                            0: , LoopLabel|Label|Referenced|Shared
+                            1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                            2: [obj, (963,967)], FalseCondition|Condition|Referenced
+                            3: , Start|Referenced|Shared
+                            (dbgiter:0) , Start|Referenced|Shared, flowDepth: 4
+                            popFlow()->Start|Referenced|Shared
+                            (out) , Start|Referenced|Shared, flowDepth: 3, ret: X1 | undefined
+                          (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: undefined
+                          (fc out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3, ret: undefined
+                        popFlow()->FalseCondition|Condition|Referenced
+                        (out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 2, ret: undefined
+                      briter:0, flowType: undefined, type: undefined
+                      briter:1, ante:[obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                      getTypeAtFlowNode
+                        (in) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                        pushFlow(TrueCondition|Condition|Referenced)
+                        0: , LoopLabel|Label|Referenced|Shared
+                        1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                        2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                        (dbgiter:0) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 3
+                        getTypeAtFlowCondition
+                          (fc  in) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 3
+                          getTypeAtFlowNode
+                            (in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                            pushFlow(TrueCondition|Condition|Referenced|Shared)
+                            0: , LoopLabel|Label|Referenced|Shared
+                            1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                            2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                            3: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                            (dbgiter:0) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4
+                            getTypeAtFlowCondition
+                              (fc  in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4
+                              getTypeAtFlowNode
+                                (in) , Start|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                                pushFlow(Start|Referenced|Shared)
+                                0: , LoopLabel|Label|Referenced|Shared
+                                1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                3: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                                4: , Start|Referenced|Shared
+                                (dbgiter:0) , Start|Referenced|Shared, flowDepth: 5
+                                popFlow()->Start|Referenced|Shared
+                                (out) , Start|Referenced|Shared, flowDepth: 4, ret: X1 | undefined
+                              (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1 | undefined, narrowedType: X1
+                              (fc out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4, ret: X1
+                            popFlow()->TrueCondition|Condition|Referenced|Shared
+                            (out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 3, ret: X1
+                          checkExpressionWorker
+                            node: obj?.bug, [963,972]
+                            checkExpressionWorker
+                              node: obj, [963,967]
+                              getFlowTypeOfReference
+                                reference: obj
+                                declaredType: X1 | undefined
+                                Start|Referenced|Shared
+                                sharedFlowStart(cache): 0
+                                getTypeAtFlowNode
+                                  (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): 2
+                                  pushFlow(Start|Referenced|Shared)
+                                  0: , LoopLabel|Label|Referenced|Shared
+                                  1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                  2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                  3: , Start|Referenced|Shared
+                                  (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+                                  popFlow()->Start|Referenced|Shared
+                                  (out) , Start|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+                                sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+                                sharedFlowCount: 0, evolvedType: X1 | undefined
+                                return resultType: X1 | undefined
+                              In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+                              checkExpressionWorker return: obj, [963,967] -> X1 | undefined
+                            getFlowTypeOfReference
+                              reference: obj?.bug
+                              declaredType: (() => number[]) | (() => number[]) | (() => number[])
+                              Start|Referenced|Shared
+                              sharedFlowStart(cache): 0
+                              getTypeAtFlowNode
+                                (in) , Start|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): 2
+                                pushFlow(Start|Referenced|Shared)
+                                0: , LoopLabel|Label|Referenced|Shared
+                                1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                2: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                3: , Start|Referenced|Shared
+                                (dbgiter:0) , Start|Referenced|Shared, flowDepth: 1
+                                popFlow()->Start|Referenced|Shared
+                                (out) , Start|Referenced|Shared, flowDepth: 0, ret: (() => number[]) | (() => number[]) | (() => number[])
+                              sharedFlowCount: 0, typeAtFlowNode: (() => number[]) | (() => number[]) | (() => number[])
+                              sharedFlowCount: 0, evolvedType: (() => number[]) | (() => number[]) | (() => number[])
+                              return resultType: (() => number[]) | (() => number[]) | (() => number[])
+                            checkExpressionWorker return: obj?.bug, [963,972] -> (() => number[]) | (() => number[]) | (() => number[]) | undefined
+                          (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1, narrowedType: X1
+                          (fc out) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 3, ret: X1
+                        popFlow()->TrueCondition|Condition|Referenced
+                        (out) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: X1
+                      briter:1, flowType: X1, type: X1
+                      briter:2, ante:[obj?.bug(), (963,974)], FalseCondition|Condition|Referenced
+                      getTypeAtFlowNode
+                        (in) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                        pushFlow(FalseCondition|Condition|Referenced)
+                        0: , LoopLabel|Label|Referenced|Shared
+                        1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                        2: [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced
+                        (dbgiter:0) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 3
+                        getTypeAtFlowCondition
+                          (fc  in) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 3
+                          getTypeAtFlowNode
+                            (in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                            pushFlow(TrueCondition|Condition|Referenced|Shared)
+                            0: , LoopLabel|Label|Referenced|Shared
+                            1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                            2: [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced
+                            3: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                            (dbgiter:0) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4
+                            getTypeAtFlowCondition
+                              (fc  in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4
+                              getTypeAtFlowNode
+                                (in) , Start|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                                pushFlow(Start|Referenced|Shared)
+                                0: , LoopLabel|Label|Referenced|Shared
+                                1: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                2: [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced
+                                3: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                                4: , Start|Referenced|Shared
+                                (dbgiter:0) , Start|Referenced|Shared, flowDepth: 5
+                                popFlow()->Start|Referenced|Shared
+                                (out) , Start|Referenced|Shared, flowDepth: 4, ret: X1 | undefined
+                              (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1 | undefined, narrowedType: X1
+                              (fc out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 4, ret: X1
+                            popFlow()->TrueCondition|Condition|Referenced|Shared
+                            (out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 3, ret: X1
+                          (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1, narrowedType: X1
+                          (fc out) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 3, ret: X1
+                        popFlow()->FalseCondition|Condition|Referenced
+                        (out) [obj?.bug(), (963,974)], FalseCondition|Condition|Referenced, flowDepth: 2, ret: X1
+                      briter:2, flowType: X1, type: X1
+                      br/antecedentTypes[0]: undefined
+                      br/antecedentTypes[1]: X1
+                      brTmpType: X1 | undefined
+                      (out) , BranchLabel|Label|Referenced, flowDepth: 2, ret: X1 | undefined
+                    popFlow()->Assignment|Referenced
+                    (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 1, ret: X1 | undefined
+                  popFlow()->LoopLabel|Label|Referenced|Shared
+                  (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+                sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+                sharedFlowCount: 0, evolvedType: X1 | undefined
+                return resultType: X1 | undefined
+              In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+              checkExpressionWorker return: obj, [2940,2943] -> X1 | undefined
+            checkExpressionWorker
+              node: obj, [2940,2943]
+              getFlowTypeOfReference
+                reference: obj
+                declaredType: X1 | undefined
+                LoopLabel|Label|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(LoopLabel|Label|Referenced|Shared)
+                  0: , LoopLabel|Label|Referenced|Shared
+                  (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+                  popFlow()->LoopLabel|Label|Referenced|Shared
+                  (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+                sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+                sharedFlowCount: 0, evolvedType: X1 | undefined
+                return resultType: X1 | undefined
+              In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+              checkExpressionWorker return: obj, [2940,2943] -> X1 | undefined
+            checkExpressionWorker return: !obj, [2939,2943] -> boolean
+          checkExpressionWorker
+            node: obj.kind, [2946,2955]
+            checkExpressionWorker
+              node: obj, [2946,2950]
+              getFlowTypeOfReference
+                reference: obj
+                declaredType: X1 | undefined
+                FalseCondition|Condition|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(FalseCondition|Condition|Referenced|Shared)
+                  0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                  (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowCondition
+                    (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                    getTypeAtFlowNode
+                      (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                      pushFlow(LoopLabel|Label|Referenced|Shared)
+                      0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                      1: , LoopLabel|Label|Referenced|Shared
+                      (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 2
+                      popFlow()->LoopLabel|Label|Referenced|Shared
+                      (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, ret: X1 | undefined
+                    (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: X1
+                    (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1, ret: X1
+                  popFlow()->FalseCondition|Condition|Referenced|Shared
+                  (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, ret: X1
+                sharedFlowCount: 0, typeAtFlowNode: X1
+                sharedFlowCount: 0, evolvedType: X1
+                return resultType: X1
+              In getIdentifier(), getFlowTypeOfReference returned X1
+              checkExpressionWorker return: obj, [2946,2950] -> X1
+            getFlowTypeOfReference
+              reference: obj.kind
+              declaredType: "foo" | "bar" | "baz"
+              FalseCondition|Condition|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(FalseCondition|Condition|Referenced|Shared)
+                0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                getTypeAtFlowCondition
+                  (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowNode
+                    (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    pushFlow(LoopLabel|Label|Referenced|Shared)
+                    0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                    1: , LoopLabel|Label|Referenced|Shared
+                    (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 2
+                    getTypeAtFlowNode
+                      (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                      pushFlow(Assignment|Referenced)
+                      0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                      1: , LoopLabel|Label|Referenced|Shared
+                      2: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                      (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 3
+                      (dbgiter:1) , BranchLabel|Label|Referenced, flowDepth: 3
+                      getTypeAtFlowBranchLabel
+                        (in) , BranchLabel|Label|Referenced, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                        flowStack
+                          0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                          1: , LoopLabel|Label|Referenced|Shared
+                          2: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                        briter:0, ante:[obj, (963,967)], FalseCondition|Condition|Referenced
+                        getTypeAtFlowNode
+                          (in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                          pushFlow(FalseCondition|Condition|Referenced)
+                          0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                          1: , LoopLabel|Label|Referenced|Shared
+                          2: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                          3: [obj, (963,967)], FalseCondition|Condition|Referenced
+                          (dbgiter:0) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 4
+                          getTypeAtFlowCondition
+                            (fc  in) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 4
+                            getTypeAtFlowNode
+                              (in) , Start|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                              pushFlow(Start|Referenced|Shared)
+                              0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                              1: , LoopLabel|Label|Referenced|Shared
+                              2: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                              3: [obj, (963,967)], FalseCondition|Condition|Referenced
+                              4: , Start|Referenced|Shared
+                              (dbgiter:0) , Start|Referenced|Shared, flowDepth: 5
+                              popFlow()->Start|Referenced|Shared
+                              (out) , Start|Referenced|Shared, flowDepth: 4, ret: "foo" | "bar" | "baz"
+                            (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: "foo" | "bar" | "baz", narrowedType: "foo" | "bar" | "baz"
+                            (fc out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 4, ret: "foo" | "bar" | "baz"
+                          popFlow()->FalseCondition|Condition|Referenced
+                          (out) [obj, (963,967)], FalseCondition|Condition|Referenced, flowDepth: 3, ret: "foo" | "bar" | "baz"
+                        briter:0, flowType: "foo" | "bar" | "baz", type: "foo" | "bar" | "baz"
+                        (out) , BranchLabel|Label|Referenced, flowDepth: 3, ret: "foo" | "bar" | "baz"
+                      popFlow()->Assignment|Referenced
+                      (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 2, ret: "foo" | "bar" | "baz"
+                    popFlow()->LoopLabel|Label|Referenced|Shared
+                    (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, ret: "foo" | "bar" | "baz"
+                  (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: "foo" | "bar" | "baz", narrowedType: "foo" | "bar" | "baz"
+                  (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1, ret: "foo" | "bar" | "baz"
+                popFlow()->FalseCondition|Condition|Referenced|Shared
+                (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, ret: "foo" | "bar" | "baz"
+              sharedFlowCount: 0, typeAtFlowNode: "foo" | "bar" | "baz"
+              sharedFlowCount: 0, evolvedType: "foo" | "bar" | "baz"
+              return resultType: "foo" | "bar" | "baz"
+            checkExpressionWorker return: obj.kind, [2946,2955] -> "foo" | "bar" | "baz"
+          checkExpressionWorker
+            node: "foo", [2958,2963]
+            checkExpressionWorker return: "foo", [2958,2963] -> "foo"
+          checkExpressionWorker return: !obj || obj.kind!=="foo", [2939,2963] -> boolean
+        checkExpressionWorker
+          node: obj.kind!=="foo", [2946,2963]
+          checkExpressionWorker
+            node: obj.kind, [2946,2955]
+            checkExpressionWorker
+              node: obj, [2946,2950]
+              getFlowTypeOfReference
+                reference: obj
+                declaredType: X1 | undefined
+                FalseCondition|Condition|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(FalseCondition|Condition|Referenced|Shared)
+                  0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                  (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowCondition
+                    (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                    getTypeAtFlowNode
+                      (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                      pushFlow(LoopLabel|Label|Referenced|Shared)
+                      0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                      1: , LoopLabel|Label|Referenced|Shared
+                      (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 2
+                      popFlow()->LoopLabel|Label|Referenced|Shared
+                      (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, ret: X1 | undefined
+                    (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: X1
+                    (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1, ret: X1
+                  popFlow()->FalseCondition|Condition|Referenced|Shared
+                  (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, ret: X1
+                sharedFlowCount: 0, typeAtFlowNode: X1
+                sharedFlowCount: 0, evolvedType: X1
+                return resultType: X1
+              In getIdentifier(), getFlowTypeOfReference returned X1
+              checkExpressionWorker return: obj, [2946,2950] -> X1
+            getFlowTypeOfReference
+              reference: obj.kind
+              declaredType: "foo" | "bar" | "baz"
+              FalseCondition|Condition|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(FalseCondition|Condition|Referenced|Shared)
+                0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                getTypeAtFlowCondition
+                  (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowNode
+                    (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    pushFlow(LoopLabel|Label|Referenced|Shared)
+                    0: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                    1: , LoopLabel|Label|Referenced|Shared
+                    (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 2
+                    popFlow()->LoopLabel|Label|Referenced|Shared
+                    (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 1, ret: "foo" | "bar" | "baz"
+                  (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: "foo" | "bar" | "baz", narrowedType: "foo" | "bar" | "baz"
+                  (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 1, ret: "foo" | "bar" | "baz"
+                popFlow()->FalseCondition|Condition|Referenced|Shared
+                (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 0, ret: "foo" | "bar" | "baz"
+              sharedFlowCount: 0, typeAtFlowNode: "foo" | "bar" | "baz"
+              sharedFlowCount: 0, evolvedType: "foo" | "bar" | "baz"
+              return resultType: "foo" | "bar" | "baz"
+            checkExpressionWorker return: obj.kind, [2946,2955] -> "foo" | "bar" | "baz"
+          checkExpressionWorker
+            node: "foo", [2958,2963]
+            checkExpressionWorker return: "foo", [2958,2963] -> "foo"
+          checkExpressionWorker return: obj.kind!=="foo", [2946,2963] -> boolean
+        checkExpressionWorker
+          node: !obj, [2939,2943]
+          checkExpressionWorker
+            node: obj, [2940,2943]
+            getFlowTypeOfReference
+              reference: obj
+              declaredType: X1 | undefined
+              LoopLabel|Label|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(LoopLabel|Label|Referenced|Shared)
+                0: , LoopLabel|Label|Referenced|Shared
+                (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+                popFlow()->LoopLabel|Label|Referenced|Shared
+                (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+              sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+              sharedFlowCount: 0, evolvedType: X1 | undefined
+              return resultType: X1 | undefined
+            In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+            checkExpressionWorker return: obj, [2940,2943] -> X1 | undefined
+          checkExpressionWorker
+            node: obj, [2940,2943]
+            getFlowTypeOfReference
+              reference: obj
+              declaredType: X1 | undefined
+              LoopLabel|Label|Referenced|Shared
+              sharedFlowStart(cache): 0
+              getTypeAtFlowNode
+                (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                pushFlow(LoopLabel|Label|Referenced|Shared)
+                0: , LoopLabel|Label|Referenced|Shared
+                (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 1
+                popFlow()->LoopLabel|Label|Referenced|Shared
+                (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 0, ret: X1 | undefined
+              sharedFlowCount: 0, typeAtFlowNode: X1 | undefined
+              sharedFlowCount: 0, evolvedType: X1 | undefined
+              return resultType: X1 | undefined
+            In getIdentifier(), getFlowTypeOfReference returned X1 | undefined
+            checkExpressionWorker return: obj, [2940,2943] -> X1 | undefined
+          checkExpressionWorker return: !obj, [2939,2943] -> boolean
+        checkSourceElement
+          {
+                      // if (isFoo) {
+                      //     const t = obj.foo;
+                      // }
+                      // if (isBar) {
+                      //     const t = obj.bar;
+                      // }
+                      // if (isBaz) {
+                      //     const t = obj.baz;
+                      // }
+                      if (isBug) {
+                          const t = obj.bug;
+                      }
+                  }
+          checkSourceElement
+            if (isBug) {
+                            const t = obj.bug;
+                        }
+            checkExpressionWorker
+              node: isBug, [3232,3237]
+              getFlowTypeOfReference
+                reference: isBug
+                declaredType: number[] | undefined
+                BranchLabel|Label|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(BranchLabel|Label|Referenced|Shared)
+                  0: , BranchLabel|Label|Referenced|Shared
+                  (dbgiter:0) , BranchLabel|Label|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowBranchLabel
+                    (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    flowStack
+                      0: , BranchLabel|Label|Referenced|Shared
+                    briter:0, ante:[!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                    getTypeAtFlowNode
+                      (in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                      pushFlow(TrueCondition|Condition|Referenced)
+                      0: , BranchLabel|Label|Referenced|Shared
+                      1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                      (dbgiter:0) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2
+                      getTypeAtFlowCondition
+                        (fc  in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2
+                        getTypeAtFlowNode
+                          (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                          pushFlow(LoopLabel|Label|Referenced|Shared)
+                          0: , BranchLabel|Label|Referenced|Shared
+                          1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                          2: , LoopLabel|Label|Referenced|Shared
+                          (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 3
+                          getTypeAtFlowNode
+                            (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                            pushFlow(Assignment|Referenced)
+                            0: , BranchLabel|Label|Referenced|Shared
+                            1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                            2: , LoopLabel|Label|Referenced|Shared
+                            3: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                            (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 4
+                            popFlow()->Assignment|Referenced
+                            (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 3, ret: number[] | undefined
+                          popFlow()->LoopLabel|Label|Referenced|Shared
+                          (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 2, ret: number[] | undefined
+                        (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: number[] | undefined, narrowedType: number[] | undefined
+                        (fc out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: number[] | undefined
+                      popFlow()->TrueCondition|Condition|Referenced
+                      (out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 1, ret: number[] | undefined
+                    briter:0, flowType: number[] | undefined, type: number[] | undefined
+                    (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, ret: number[] | undefined
+                  popFlow()->BranchLabel|Label|Referenced|Shared
+                  (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 0, ret: number[] | undefined
+                sharedFlowCount: 0, typeAtFlowNode: number[] | undefined
+                sharedFlowCount: 0, evolvedType: number[] | undefined
+                return resultType: number[] | undefined
+              In getIdentifier(), getFlowTypeOfReference returned number[] | undefined
+              checkExpressionWorker return: isBug, [3232,3237] -> number[] | undefined
+            checkExpressionWorker
+              node: isBug, [3232,3237]
+              getFlowTypeOfReference
+                reference: isBug
+                declaredType: number[] | undefined
+                BranchLabel|Label|Referenced|Shared
+                sharedFlowStart(cache): 0
+                getTypeAtFlowNode
+                  (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                  pushFlow(BranchLabel|Label|Referenced|Shared)
+                  0: , BranchLabel|Label|Referenced|Shared
+                  (dbgiter:0) , BranchLabel|Label|Referenced|Shared, flowDepth: 1
+                  getTypeAtFlowBranchLabel
+                    (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                    flowStack
+                      0: , BranchLabel|Label|Referenced|Shared
+                    briter:0, ante:[!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                    getTypeAtFlowNode
+                      (in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                      pushFlow(TrueCondition|Condition|Referenced)
+                      0: , BranchLabel|Label|Referenced|Shared
+                      1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                      (dbgiter:0) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2
+                      getTypeAtFlowCondition
+                        (fc  in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2
+                        getTypeAtFlowNode
+                          (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                          pushFlow(LoopLabel|Label|Referenced|Shared)
+                          0: , BranchLabel|Label|Referenced|Shared
+                          1: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                          2: , LoopLabel|Label|Referenced|Shared
+                          (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 3
+                          popFlow()->LoopLabel|Label|Referenced|Shared
+                          (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 2, ret: number[] | undefined
+                        (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: number[] | undefined, narrowedType: number[] | undefined
+                        (fc out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: number[] | undefined
+                      popFlow()->TrueCondition|Condition|Referenced
+                      (out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 1, ret: number[] | undefined
+                    briter:0, flowType: number[] | undefined, type: number[] | undefined
+                    (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, ret: number[] | undefined
+                  popFlow()->BranchLabel|Label|Referenced|Shared
+                  (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 0, ret: number[] | undefined
+                sharedFlowCount: 0, typeAtFlowNode: number[] | undefined
+                sharedFlowCount: 0, evolvedType: number[] | undefined
+                return resultType: number[] | undefined
+              In getIdentifier(), getFlowTypeOfReference returned number[] | undefined
+              checkExpressionWorker return: isBug, [3232,3237] -> number[] | undefined
+            checkSourceElement
+              {
+                              const t = obj.bug;
+                          }
+              checkSourceElement
+                const t = obj.bug;
+                checkSourceElement
+                  t = obj.bug
+                  checkExpressionWorker
+                    node: obj.bug, [3266,3274]
+                    checkExpressionWorker
+                      node: obj, [3266,3270]
+                      getFlowTypeOfReference
+                        reference: obj
+                        declaredType: X1 | undefined
+                        TrueCondition|Condition|Referenced|Shared
+                        sharedFlowStart(cache): 0
+                        getTypeAtFlowNode
+                          (in) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                          pushFlow(TrueCondition|Condition|Referenced|Shared)
+                          0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                          (dbgiter:0) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1
+                          getTypeAtFlowCondition
+                            (fc  in) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1
+                            getTypeAtFlowNode
+                              (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                              pushFlow(BranchLabel|Label|Referenced|Shared)
+                              0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                              1: , BranchLabel|Label|Referenced|Shared
+                              (dbgiter:0) , BranchLabel|Label|Referenced|Shared, flowDepth: 2
+                              getTypeAtFlowBranchLabel
+                                (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                                flowStack
+                                  0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                  1: , BranchLabel|Label|Referenced|Shared
+                                briter:0, ante:[!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                getTypeAtFlowNode
+                                  (in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                                  pushFlow(TrueCondition|Condition|Referenced)
+                                  0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                  1: , BranchLabel|Label|Referenced|Shared
+                                  2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                  (dbgiter:0) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                  getTypeAtFlowCondition
+                                    (fc  in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                    getTypeAtFlowNode
+                                      (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                                      pushFlow(LoopLabel|Label|Referenced|Shared)
+                                      0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                      1: , BranchLabel|Label|Referenced|Shared
+                                      2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                      3: , LoopLabel|Label|Referenced|Shared
+                                      (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 4
+                                      popFlow()->LoopLabel|Label|Referenced|Shared
+                                      (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 3, ret: X1 | undefined
+                                    (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1 | undefined, narrowedType: undefined
+                                    (fc out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3, ret: undefined
+                                  popFlow()->TrueCondition|Condition|Referenced
+                                  (out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: undefined
+                                briter:0, flowType: undefined, type: undefined
+                                briter:1, ante:[obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced
+                                getTypeAtFlowNode
+                                  (in) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                                  pushFlow(TrueCondition|Condition|Referenced)
+                                  0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                  1: , BranchLabel|Label|Referenced|Shared
+                                  2: [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced
+                                  (dbgiter:0) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                  getTypeAtFlowCondition
+                                    (fc  in) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                    getTypeAtFlowNode
+                                      (in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                                      pushFlow(FalseCondition|Condition|Referenced|Shared)
+                                      0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                      1: , BranchLabel|Label|Referenced|Shared
+                                      2: [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced
+                                      3: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                                      (dbgiter:0) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 4
+                                      getTypeAtFlowCondition
+                                        (fc  in) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 4
+                                        getTypeAtFlowNode
+                                          (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                                          pushFlow(LoopLabel|Label|Referenced|Shared)
+                                          0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                          1: , BranchLabel|Label|Referenced|Shared
+                                          2: [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced
+                                          3: [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared
+                                          4: , LoopLabel|Label|Referenced|Shared
+                                          (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 5
+                                          popFlow()->LoopLabel|Label|Referenced|Shared
+                                          (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 4, ret: X1 | undefined
+                                        (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: X1
+                                        (fc out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 4, ret: X1
+                                      popFlow()->FalseCondition|Condition|Referenced|Shared
+                                      (out) [!obj, (2939,2943)], FalseCondition|Condition|Referenced|Shared, flowDepth: 3, ret: X1
+                                    checkExpressionWorker
+                                      node: "foo", [2958,2963]
+                                      checkExpressionWorker return: "foo", [2958,2963] -> "foo"
+                                    (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: X1, narrowedType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                    (fc out) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 3, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                  popFlow()->TrueCondition|Condition|Referenced
+                                  (out) [obj.kind!=="foo", (2946,2963)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                briter:1, flowType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>, type: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                br/antecedentTypes[0]: undefined
+                                br/antecedentTypes[1]: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }>
+                                brTmpType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                                (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 2, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                              popFlow()->BranchLabel|Label|Referenced|Shared
+                              (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                            (fc ) flow.id: 4, asumeTrue:true, nonEvolvingType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined, narrowedType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                            (fc out) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                          popFlow()->TrueCondition|Condition|Referenced|Shared
+                          (out) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 0, ret: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                        sharedFlowCount: 0, typeAtFlowNode: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                        sharedFlowCount: 0, evolvedType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                        return resultType: Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                      In getIdentifier(), getFlowTypeOfReference returned Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                      checkExpressionWorker return: obj, [3266,3270] -> Readonly<{ kind: "bar"; bar: number; bug: () => number[]; }> | Readonly<{ kind: "baz"; baz: boolean; bug: () => number[]; }> | undefined
+                    getFlowTypeOfReference
+                      reference: obj.bug
+                      declaredType: (() => number[]) | (() => number[])
+                      TrueCondition|Condition|Referenced|Shared
+                      sharedFlowStart(cache): 0
+                      getTypeAtFlowNode
+                        (in) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 0, flowTypeQueryState.getFlowStackIndex(): -1
+                        pushFlow(TrueCondition|Condition|Referenced|Shared)
+                        0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                        (dbgiter:0) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1
+                        getTypeAtFlowCondition
+                          (fc  in) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1
+                          getTypeAtFlowNode
+                            (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, flowTypeQueryState.getFlowStackIndex(): 0
+                            pushFlow(BranchLabel|Label|Referenced|Shared)
+                            0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                            1: , BranchLabel|Label|Referenced|Shared
+                            (dbgiter:0) , BranchLabel|Label|Referenced|Shared, flowDepth: 2
+                            getTypeAtFlowBranchLabel
+                              (in) , BranchLabel|Label|Referenced|Shared, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                              flowStack
+                                0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                1: , BranchLabel|Label|Referenced|Shared
+                              briter:0, ante:[!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                              getTypeAtFlowNode
+                                (in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, flowTypeQueryState.getFlowStackIndex(): 1
+                                pushFlow(TrueCondition|Condition|Referenced)
+                                0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                1: , BranchLabel|Label|Referenced|Shared
+                                2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                (dbgiter:0) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                getTypeAtFlowCondition
+                                  (fc  in) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3
+                                  getTypeAtFlowNode
+                                    (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 3, flowTypeQueryState.getFlowStackIndex(): 2
+                                    pushFlow(LoopLabel|Label|Referenced|Shared)
+                                    0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                    1: , BranchLabel|Label|Referenced|Shared
+                                    2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                    3: , LoopLabel|Label|Referenced|Shared
+                                    (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 4
+                                    getTypeAtFlowNode
+                                      (in) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+                                      pushFlow(Assignment|Referenced)
+                                      0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                      1: , BranchLabel|Label|Referenced|Shared
+                                      2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                      3: , LoopLabel|Label|Referenced|Shared
+                                      4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                      (dbgiter:0) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 5
+                                      (dbgiter:1) , BranchLabel|Label|Referenced, flowDepth: 5
+                                      getTypeAtFlowBranchLabel
+                                        (in) , BranchLabel|Label|Referenced, flowDepth: 5, flowTypeQueryState.getFlowStackIndex(): 4
+                                        flowStack
+                                          0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                          1: , BranchLabel|Label|Referenced|Shared
+                                          2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                          3: , LoopLabel|Label|Referenced|Shared
+                                          4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                        adding alias: isBug = obj?.bug(), condition: TrueCondition|Condition|Referenced|Shared
+                                        briter:0, ante:[obj, (963,967)], FalseCondition|Condition|Referenced
+                                        skipping because aliasFlowTF is true but anteTF is false
+                                        briter:1, ante:[obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                        getTypeAtFlowNode
+                                          (in) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 5, flowTypeQueryState.getFlowStackIndex(): 4
+                                          pushFlow(TrueCondition|Condition|Referenced)
+                                          0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                          1: , BranchLabel|Label|Referenced|Shared
+                                          2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                          3: , LoopLabel|Label|Referenced|Shared
+                                          4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                          5: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                          (dbgiter:0) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 6
+                                          getTypeAtFlowCondition
+                                            (fc  in) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 6
+                                            getTypeAtFlowNode
+                                              (in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 6, flowTypeQueryState.getFlowStackIndex(): 5
+                                              pushFlow(TrueCondition|Condition|Referenced|Shared)
+                                              0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                              1: , BranchLabel|Label|Referenced|Shared
+                                              2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                              3: , LoopLabel|Label|Referenced|Shared
+                                              4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                              5: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                              6: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                                              (dbgiter:0) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 7
+                                              getTypeAtFlowCondition
+                                                (fc  in) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 7
+                                                getTypeAtFlowNode
+                                                  (in) , Start|Referenced|Shared, flowDepth: 7, flowTypeQueryState.getFlowStackIndex(): 6
+                                                  pushFlow(Start|Referenced|Shared)
+                                                  0: [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared
+                                                  1: , BranchLabel|Label|Referenced|Shared
+                                                  2: [!obj, (2939,2943)], TrueCondition|Condition|Referenced
+                                                  3: , LoopLabel|Label|Referenced|Shared
+                                                  4: [isBug = obj?.bug(), (955,974)], Assignment|Referenced
+                                                  5: [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced
+                                                  6: [obj, (963,967)], TrueCondition|Condition|Referenced|Shared
+                                                  7: , Start|Referenced|Shared
+                                                  (dbgiter:0) , Start|Referenced|Shared, flowDepth: 8
+                                                  popFlow()->Start|Referenced|Shared
+                                                  (out) , Start|Referenced|Shared, flowDepth: 7, ret: (() => number[]) | (() => number[])
+                                                (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: (() => number[]) | (() => number[]), narrowedType: (() => number[]) | (() => number[])
+                                                (fc out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 7, ret: (() => number[]) | (() => number[])
+                                              popFlow()->TrueCondition|Condition|Referenced|Shared
+                                              (out) [obj, (963,967)], TrueCondition|Condition|Referenced|Shared, flowDepth: 6, ret: (() => number[]) | (() => number[])
+                                            (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: (() => number[]) | (() => number[]), narrowedType: (() => number[]) | (() => number[])
+                                            (fc out) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 6, ret: (() => number[]) | (() => number[])
+                                          popFlow()->TrueCondition|Condition|Referenced
+                                          (out) [obj?.bug(), (963,974)], TrueCondition|Condition|Referenced, flowDepth: 5, ret: (() => number[]) | (() => number[])
+                                        briter:1, flowType: (() => number[]) | (() => number[]), type: (() => number[]) | (() => number[])
+                                        (out) , BranchLabel|Label|Referenced, flowDepth: 5, ret: (() => number[]) | (() => number[])
+                                      popFlow()->Assignment|Referenced
+                                      (out) [isBug = obj?.bug(), (955,974)], Assignment|Referenced, flowDepth: 4, ret: (() => number[]) | (() => number[])
+                                    popFlow()->LoopLabel|Label|Referenced|Shared
+                                    (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 3, ret: (() => number[]) | (() => number[])
+                                  (fc ) flow.id: undefined, asumeTrue:true, nonEvolvingType: (() => number[]) | (() => number[]), narrowedType: (() => number[]) | (() => number[])
+                                  (fc out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 3, ret: (() => number[]) | (() => number[])
+                                popFlow()->TrueCondition|Condition|Referenced
+                                (out) [!obj, (2939,2943)], TrueCondition|Condition|Referenced, flowDepth: 2, ret: (() => number[]) | (() => number[])
+                              briter:0, flowType: (() => number[]) | (() => number[]), type: (() => number[]) | (() => number[])
+                              (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 2, ret: (() => number[]) | (() => number[])
+                            popFlow()->BranchLabel|Label|Referenced|Shared
+                            (out) , BranchLabel|Label|Referenced|Shared, flowDepth: 1, ret: (() => number[]) | (() => number[])
+                          (fc ) flow.id: 4, asumeTrue:true, nonEvolvingType: (() => number[]) | (() => number[]), narrowedType: (() => number[]) | (() => number[])
+                          (fc out) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 1, ret: (() => number[]) | (() => number[])
+                        popFlow()->TrueCondition|Condition|Referenced|Shared
+                        (out) [isBug, (3232,3237)], TrueCondition|Condition|Referenced|Shared, flowDepth: 0, ret: (() => number[]) | (() => number[])
+                      sharedFlowCount: 0, typeAtFlowNode: (() => number[]) | (() => number[])
+                      sharedFlowCount: 0, evolvedType: (() => number[]) | (() => number[])
+                      return resultType: (() => number[]) | (() => number[])
+                    checkExpressionWorker return: obj.bug, [3266,3274] -> (() => number[]) | (() => number[])
+checkSourceElement
+  
+[31m
+Test failure:
+Correct errors for tests/cases/compiler/_cax-a1.ts
+[0m[J[90m  [[0m[31m[0m...................................[90m][0m[31m
+Test failure:
+Correct JS output for tests/cases/compiler/_cax-a1.ts
+[0m[31m
+Test failure:
+Correct type/symbol baselines for tests/cases/compiler/_cax-a1.ts
+[0m
+
+[92m [0m[32m 3 passing[0m[90m (3s)[0m
+[31m  3 failing[0m
+
+[0m  1) compiler tests
+       compiler tests for tests/cases/compiler/_cax-a1.ts
+         Correct errors for tests/cases/compiler/_cax-a1.ts:
+[0m[31m     Error: New baseline created at tests/baselines/local/_cax-a1.errors.txt[0m[90m
+      at writeComparison (src/harness/harnessIO.ts:1400:31)
+      at Object.runBaseline (src/harness/harnessIO.ts:1419:13)
+      at Object.doErrorBaseline (src/harness/harnessIO.ts:700:22)
+      at CompilerTest.verifyDiagnostics (src/testRunner/compilerRunner.ts:259:22)
+      at Context.<anonymous> (src/testRunner/compilerRunner.ts:88:69)
+      at processImmediate (node:internal/timers:466:21)
+[0m
+[0m  2) compiler tests
+       compiler tests for tests/cases/compiler/_cax-a1.ts
+         Correct JS output for tests/cases/compiler/_cax-a1.ts:
+[0m[31m     Error: New baseline created at tests/baselines/local/_cax-a1.js[0m[90m
+      at writeComparison (src/harness/harnessIO.ts:1400:31)
+      at Object.runBaseline (src/harness/harnessIO.ts:1419:13)
+      at Object.doJsEmitBaseline (src/harness/harnessIO.ts:929:22)
+      at CompilerTest.verifyJavaScriptOutput (src/testRunner/compilerRunner.ts:286:26)
+      at Context.<anonymous> (src/testRunner/compilerRunner.ts:91:86)
+      at processImmediate (node:internal/timers:466:21)
+[0m
+[0m  3) compiler tests
+       compiler tests for tests/cases/compiler/_cax-a1.ts
+         Correct type/symbol baselines for tests/cases/compiler/_cax-a1.ts:
+[0m[31m     Error: New baseline created at tests/baselines/local/_cax-a1.types
+    at writeComparison (/mnt/common/github/TypeScript-cph/src/harness/harnessIO.ts:1400:31)
+    at Object.runBaseline (/mnt/common/github/TypeScript-cph/src/harness/harnessIO.ts:1419:13)
+    at checkBaseLines (/mnt/common/github/TypeScript-cph/src/harness/harnessIO.ts:763:30)
+    at Object.doTypeAndSymbolBaseline (/mnt/common/github/TypeScript-cph/src/harness/harnessIO.ts:726:17)
+    at CompilerTest.verifyTypesAndSymbols (/mnt/common/github/TypeScript-cph/src/testRunner/compilerRunner.ts:318:22)
+    at Context.<anonymous> (/mnt/common/github/TypeScript-cph/src/testRunner/compilerRunner.ts:93:84)
+    at callFn (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runnable.js:366:21)
+    at Test.Runnable.run (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runnable.js:354:5)
+    at Runner.runTest (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:666:10)
+    at /mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:789:12
+    at next (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:581:14)
+    at /mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:591:7
+    at next (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:474:14)
+    at Immediate._onImmediate (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:559:5)
+    at processImmediate (node:internal/timers:466:21)
+Error: New baseline created at tests/baselines/local/_cax-a1.symbols
+    at writeComparison (/mnt/common/github/TypeScript-cph/src/harness/harnessIO.ts:1400:31)
+    at Object.runBaseline (/mnt/common/github/TypeScript-cph/src/harness/harnessIO.ts:1419:13)
+    at checkBaseLines (/mnt/common/github/TypeScript-cph/src/harness/harnessIO.ts:763:30)
+    at Object.doTypeAndSymbolBaseline (/mnt/common/github/TypeScript-cph/src/harness/harnessIO.ts:733:17)
+    at CompilerTest.verifyTypesAndSymbols (/mnt/common/github/TypeScript-cph/src/testRunner/compilerRunner.ts:318:22)
+    at Context.<anonymous> (/mnt/common/github/TypeScript-cph/src/testRunner/compilerRunner.ts:93:84)
+    at callFn (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runnable.js:366:21)
+    at Test.Runnable.run (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runnable.js:354:5)
+    at Runner.runTest (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:666:10)
+    at /mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:789:12
+    at next (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:581:14)
+    at /mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:591:7
+    at next (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:474:14)
+    at Immediate._onImmediate (/mnt/common/github/TypeScript-cph/node_modules/mocha/lib/runner.js:559:5)
+    at processImmediate (node:internal/timers:466:21)[0m[90m
+  Error: Error: New baseline created at tests/baselines/local/_cax-a1.types
+      at writeComparison (src/harness/harnessIO.ts:1400:31)
+      at Object.runBaseline (src/harness/harnessIO.ts:1419:13)
+      at checkBaseLines (src/harness/harnessIO.ts:763:30)
+      at Object.doTypeAndSymbolBaseline (src/harness/harnessIO.ts:726:17)
+      at CompilerTest.verifyTypesAndSymbols (src/testRunner/compilerRunner.ts:318:22)
+      at Context.<anonymous> (src/testRunner/compilerRunner.ts:93:84)
+      at processImmediate (node:internal/timers:466:21)  
+  Error: New baseline created at tests/baselines/local/_cax-a1.symbols
+      at writeComparison (src/harness/harnessIO.ts:1400:31)
+      at Object.runBaseline (src/harness/harnessIO.ts:1419:13)
+      at checkBaseLines (src/harness/harnessIO.ts:763:30)
+      at Object.doTypeAndSymbolBaseline (src/harness/harnessIO.ts:733:17)
+      at CompilerTest.verifyTypesAndSymbols (src/testRunner/compilerRunner.ts:318:22)
+      at Context.<anonymous> (src/testRunner/compilerRunner.ts:93:84)
+      at processImmediate (node:internal/timers:466:21)
+      at Object.doTypeAndSymbolBaseline (src/harness/harnessIO.ts:740:23)
+      at CompilerTest.verifyTypesAndSymbols (src/testRunner/compilerRunner.ts:318:22)
+      at Context.<anonymous> (src/testRunner/compilerRunner.ts:93:84)
+      at processImmediate (node:internal/timers:466:21)
+[0m
+
+

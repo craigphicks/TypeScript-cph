@@ -1,6 +1,9 @@
 /* @internal */
 namespace ts {
     let myDebug = false;
+    let myNoCache = false;
+    let myDisable = false;
+
     const ambientModuleSymbolRegex = /^".+"$/;
     const anon = "(anonymous)" as __String & string;
 
@@ -309,6 +312,8 @@ namespace ts {
     }
 
     export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
+        // @ts-ignore-error
+        // eslint-disable-next-line prefer-const
         let dbgFlowFileCnt = 0;
         // @ts-ignore-error
         let dbgFlow_mapPeType: ESMap<string,Type> | undefined;
@@ -326,6 +331,7 @@ namespace ts {
 
         interface FlowTypeQueryState {
             disable: boolean;
+            noCache: boolean;
             getFlowTypeOfReferenceStack: GetFlowTypeOfReferenceCall[];
             flowStack: FlowNode[];
             conditionStack: {
@@ -351,6 +357,10 @@ namespace ts {
             str += `, ${Debug.formatFlowFlags(flow.flags)}`;
             return str;
         };
+        const dbgFlowTypeToString = (flowType: FlowType): string => {
+            if (!flowType.flags) return "IncompleteType";
+            return typeToString(flowType as Type);
+        };
         const dbgWriteStack = (write: (s: string) => void, flows: FlowNode[]): void => {
             flows.forEach((f,i)=>{
                 const str = `${i}: ${dbgFlowToString(f)}`;
@@ -358,7 +368,8 @@ namespace ts {
             });
         };
         const flowTypeQueryState: FlowTypeQueryState = {
-            disable: false,
+            disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
+            noCache: false, // ditto
             getFlowTypeOfReferenceStack:[],
             flowStack:[],
             conditionStack:[],
@@ -24289,6 +24300,8 @@ namespace ts {
         }
 
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode) {
+            flowTypeQueryState.disable = myDisable;
+            flowTypeQueryState.noCache = myNoCache;
             if (myDebug) {
                 console.group(`getFlowTypeOfReference`);
                 console.log(`reference: ${(reference as any).getText()}`);
@@ -24298,9 +24311,9 @@ namespace ts {
                     //Debug.printControlFlowGraph(flowNode);
                 }
             }
-            if (!flowTypeQueryState.disable) flowTypeQueryState.getFlowTypeOfReferenceStack.push({ reference, declaredType });
+            /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.push({ reference, declaredType });
             const r = getFlowTypeOfReference_aux(reference,declaredType,initialType,flowContainer, flowNode);
-            if (!flowTypeQueryState.disable) flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
+            /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
             if (myDebug) console.groupEnd();
             return r;
         }
@@ -24359,8 +24372,7 @@ namespace ts {
 
             }
             function dbgft2s(flowType: FlowType): string {
-                if (flowType.flags===0) return "IncompleteType";
-                else return typeToString(flowType as Type);
+                return dbgFlowTypeToString(flowType);
             }
             function getTypeAtFlowNode(flow: FlowNode): FlowType {
                 if (myDebug) {
@@ -24409,7 +24421,7 @@ namespace ts {
                     //flowTypeQueryState;
 
                     const flags = flow.flags;
-                    if (flags & FlowFlags.Shared) {
+                    if (!flowTypeQueryState.noCache && flags & FlowFlags.Shared) {
                         // We cache results of flow type resolution for shared nodes that were previously visited in
                         // the same getFlowTypeOfReference invocation. A node is considered shared when it is the
                         // antecedent of more than one node.
@@ -24893,17 +24905,38 @@ namespace ts {
             }
 
             function getTypeAtFlowLoopLabel(flow: FlowLabel): FlowType {
+                if (myDebug){
+                    console.group("getTypeAtFlowLoopLabel");
+                    console.log(dbgFlowToString(flow));
+                }
+                const r = getTypeAtFlowLoopLabel_aux(flow);
+                if (myDebug){
+                    console.log(`getTypeAtFlowLoopLabel, flow: ${dbgFlowToString(flow)}, return: ${dbgFlowTypeToString(r)}`);
+                    console.groupEnd();
+                }
+                return r;
+            }
+            function getTypeAtFlowLoopLabel_aux(flow: FlowLabel): FlowType {
                 // If we have previously computed the control flow type for the reference at
                 // this flow loop junction, return the cached type.
                 const id = getFlowNodeId(flow);
                 const cache = flowLoopCaches[id] || (flowLoopCaches[id] = new Map<string, Type>());
                 const key = getOrSetCacheKey();
+                if (myDebug){
+                    console.log(`getTypeAtFlowLoopLabel, (flowNode)id: ${id}, key:${key}`);
+                }
                 if (!key) {
                     // No cache key is generated when binding patterns are in unnarrowable situations
+                    if (myDebug){
+                        console.log(`getTypeAtFlowLoopLabel, No cache key is generated when binding patterns are in unnarrowable situations`);
+                    }
                     return declaredType;
                 }
                 const cached = cache.get(key);
                 if (cached) {
+                    if (myDebug){
+                        console.log(`getTypeAtFlowLoopLabel, cached`);
+                    }
                     return cached;
                 }
                 // If this flow loop junction and reference are already being processed, return
@@ -24916,7 +24949,10 @@ namespace ts {
                 // path that leads to the top.
                 for (let i = flowLoopStart; i < flowLoopCount; i++) {
                     if (flowLoopNodes[i] === flow && flowLoopKeys[i] === key && flowLoopTypes[i].length) {
-                        return createFlowType(getUnionOrEvolvingArrayType(flowLoopTypes[i], UnionReduction.Literal), /*incomplete*/ true);
+                            if (myDebug){
+                                console.log(`getTypeAtFlowLoopLabel, this flow loop junction and reference are already being processed, incomplete`);
+                            }
+                            return createFlowType(getUnionOrEvolvingArrayType(flowLoopTypes[i], UnionReduction.Literal), /*incomplete*/ true);
                     }
                 }
                 // Add the flow loop junction and reference to the in-process stack and analyze
@@ -24929,11 +24965,13 @@ namespace ts {
                     if (!firstAntecedentType) {
                         // The first antecedent of a loop junction is always the non-looping control
                         // flow path that leads to the top.
+                        if (myDebug) console.log(`getTypeAtFlowLoopLabel, The first antecedent of a loop junction is always the non-looping control`);
                         flowType = firstAntecedentType = getTypeAtFlowNode(antecedent);
                     }
                     else {
                         // All but the first antecedent are the looping control flow paths that lead
                         // back to the loop junction. We track these on the flow loop stack.
+                        if (myDebug) console.log(`getTypeAtFlowLoopLabel, All but the first antecedent`);
                         flowLoopNodes[flowLoopCount] = flow;
                         flowLoopKeys[flowLoopCount] = key;
                         flowLoopTypes[flowLoopCount] = antecedentTypes;
@@ -24948,6 +24986,9 @@ namespace ts {
                         // the resulting type and bail out.
                         const cached = cache.get(key);
                         if (cached) {
+                            if (myDebug){
+                                console.log(`getTypeAtFlowLoopLabel, If we see a value appear in the cache it is a sign`);
+                            }
                             return cached;
                         }
                     }
@@ -24971,6 +25012,9 @@ namespace ts {
                 const result = getUnionOrEvolvingArrayType(antecedentTypes, subtypeReduction ? UnionReduction.Subtype : UnionReduction.Literal);
                 if (isIncomplete(firstAntecedentType!)) {
                     return createFlowType(result, /*incomplete*/ true);
+                }
+                if (myDebug){
+                    console.log(`getTypeAtFlowLoopLabel, cache.set(${key}, ${typeToString(result)}`);
                 }
                 cache.set(key, result);
                 return result;
@@ -41905,19 +41949,25 @@ namespace ts {
             tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
             performance.mark("beforeCheck");
             const re = /^tests\/cases\/compiler\/_cax/;
-            let quiet = true;
-            quiet = true;
+            // let quiet = true;
+            // quiet = false;
             let writingFlowTxt=false;
-            if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" && dbgFlowFileCnt===0) {
+            let ofilenameRoot="";
+            // not incrementing dbgFlowFileCnt because it is only the last one that is desired
+            if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" /* && dbgFlowFileCnt===0*/) {
+                myDebug = !!process.env.myDebug;
+                myDisable = !!process.env.myDisable;
+                myNoCache = !!process.env.myNoCache;
+                console.log(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}`);
                 if (node.endFlowNode) {
                     writingFlowTxt = true;
                     dbgFlow_mapPeType = new Map<string,Type>();
                     let contents = "";
                     const write = (s: string)=>contents+=s;
                     writeFlowNodesUp(write, [node.endFlowNode]);
-                    sys.writeFile(`tmp.${getBaseFileName(node.originalFileName)}.${dbgFlowFileCnt}.flow.before.txt`, contents);
+                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.da${myDisable?1:0}.nc${myNoCache?1:0}.${dbgFlowFileCnt}.flow`;
+                    sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
                 }
-                myDebug = !quiet;
                 Debug.isDebugging=true;
             }
             checkSourceFileWorker(node);
@@ -41926,9 +41976,11 @@ namespace ts {
                     let contents = "";
                     const write = (s: string)=>contents+=s;
                     writeFlowNodesUp(write, [node.endFlowNode!],dbgFlow_mapPeType);
-                    sys.writeFile(`tmp.${getBaseFileName(node.originalFileName)}.${dbgFlowFileCnt++}.flow.after.txt`, contents);
+                    sys.writeFile(`${ofilenameRoot}.after.txt`, contents);
                 }
                 myDebug = false;
+                myDisable = false;
+                myNoCache = false;
                 Debug.isDebugging=false;
             }
             performance.mark("afterCheck");
@@ -45623,6 +45675,7 @@ namespace ts {
             const map_peID = new Map<string,number>(); // TID, text ID
             const map_nID = new Map<Node,number>(); // NID, node ID
             const map_fID = new Map<FlowNode,number>(); // FID, physical FlowNode object ID
+            const set_loopDetect = new Set<FlowNode>();
             const write = (s: string) => {
                 writeIn(s+sys.newLine);
             };
@@ -45637,6 +45690,7 @@ namespace ts {
                 return (node as any).getText();
             };
             const doOne = (fn: FlowNode)=>{
+                const recursiveReference = set_loopDetect.has(fn);
                 currentIndent++;
                 write(indent()+"~~~~~~");
                 let node: Node | undefined;
@@ -45660,17 +45714,23 @@ namespace ts {
                 if (node && map_nID.has(node)) idstr += `, NID: ${map_nID.get(node)}`;
                 if (pekey && map_peID.has(pekey)) idstr += `, TID: ${map_peID.get(pekey)}`;
                 idstr += `, flags: ${Debug.formatFlowFlags(fn.flags)}`;
+                if (recursiveReference) idstr += `, RECURSIVE REFERENCE!!!`;
                 write(indent()+idstr);
                 if (node) {
                     const {pos, end} = node;
-                    const symbol = getSymbolAtLocation(node);
+                //    const symbol = getSymbolAtLocation(node);
                 //    const type = symbol ? getTypeOfSymbol(symbol) : undefined;
                 //    , ${type? `type: ${typeToString(type)}`:""}
                     let str = `${getText(node)}, (${pos},${end})`;
-                    if (symbol && symbol.id) str += `, sid: ${symbol.id}`;
+                //    if (symbol && symbol.id) str += `, sid: ${symbol.id}`;
                     str += ", "+Debug.formatSyntaxKind(node.kind);
                     write(indent()+str);
                 }
+                if (recursiveReference){
+                    currentIndent--;
+                    return;
+                }
+                set_loopDetect.add(fn);
                 if (utype) {
                     write(indent()+`utype: ${typeToString(utype)}`);
                 }
@@ -45690,6 +45750,7 @@ namespace ts {
                     write(indent()+"antecedent:");
                     doOne((fn as any).antecedent);
                 }
+                set_loopDetect.delete(fn);
                 currentIndent--;
             };
             arrFlowNodes.forEach(fn=>doOne(fn));
