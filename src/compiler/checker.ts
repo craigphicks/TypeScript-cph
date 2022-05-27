@@ -3,6 +3,7 @@ namespace ts {
     let myDebug = false;
     let myNoCache = false;
     let myDisable = false;
+    let myNoGetFlowCacheKeyFix = false;
     let myMaxDepth = 0;
 
     const ambientModuleSymbolRegex = /^".+"$/;
@@ -333,6 +334,7 @@ namespace ts {
         interface FlowTypeQueryState {
             disable: boolean;
             noCache: boolean;
+            noGetFlowCacheKeyFix: boolean;
             getFlowTypeOfReferenceStack: GetFlowTypeOfReferenceCall[];
             flowStack: FlowNode[];
             conditionStack: {
@@ -374,6 +376,7 @@ namespace ts {
         const flowTypeQueryState: FlowTypeQueryState = {
             disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
             noCache: false, // ditto
+            noGetFlowCacheKeyFix: false, // ditto
             getFlowTypeOfReferenceStack:[],
             flowStack:[],
             conditionStack:[],
@@ -23216,7 +23219,7 @@ namespace ts {
                 case SyntaxKind.Identifier:
                     if (!isThisInTypeQuery(node)) {
                         const symbol = getResolvedSymbol(node as Identifier);
-                        if (!flowTypeQueryState.disable){
+                        if (!flowTypeQueryState.disable && !flowTypeQueryState.noGetFlowCacheKeyFix){
                             const key = `${flowContainer ? getNodeId(flowContainer) : "-1"}|${getTypeId(declaredType)}|${getTypeId(initialType)}|`;
                             if (myDebug){
                                 return key + `${getNodeId(node)}: ${(node as any).getText()},[${node.pos},${node.end}]`;
@@ -24333,6 +24336,7 @@ namespace ts {
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode) {
             flowTypeQueryState.disable = myDisable;
             flowTypeQueryState.noCache = myNoCache;
+            flowTypeQueryState.noGetFlowCacheKeyFix = myNoGetFlowCacheKeyFix;
             if (myDebug) {
                 console.group(`getFlowTypeOfReference`);
                 console.log(`reference: ${(reference as any).getText()}`);
@@ -42025,17 +42029,18 @@ namespace ts {
             myMaxDepth = 0;
             // not incrementing dbgFlowFileCnt because it is only the last one that is desired
             if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" /* && dbgFlowFileCnt===0*/) {
-                myDebug = !!process.env.myDebug;
-                myDisable = !!process.env.myDisable;
-                myNoCache = !!process.env.myNoCache;
-                console.log(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}`);
+                myDebug = !!Number(process.env.myDebug);
+                myDisable = !!Number(process.env.myDisable);
+                myNoCache = !!Number(process.env.myNoCache);
+                myNoGetFlowCacheKeyFix = !!Number(process.env.myNoGetFlowCacheKeyFix);
+                console.log(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}, myNoGetFlowCacheKeyFix=${myNoGetFlowCacheKeyFix}`);
                 if (node.endFlowNode) {
                     writingFlowTxt = true;
                     dbgFlow_mapPeType = new Map<string,Type>();
                     let contents = "";
                     const write = (s: string)=>contents+=s;
                     writeFlowNodesUp(write, [node.endFlowNode]);
-                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.da${myDisable?1:0}.nc${myNoCache?1:0}.${dbgFlowFileCnt}.flow`;
+                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.da${myDisable?1:0}.nc${myNoCache?1:0}.${dbgFlowFileCnt}.ngfc${myNoGetFlowCacheKeyFix}.flow`;
                     sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
                 }
                 Debug.isDebugging=true;
