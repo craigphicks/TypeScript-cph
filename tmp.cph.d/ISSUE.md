@@ -432,3 +432,17 @@ node built/local/tsc -p src/compiler/tsconfig.json --noEmit
          "before all" hook for "Correct errors for tests/cases/compiler/controlFlowManyConsecutiveConditionsNoTimeout.ts":
      RangeError: Maximum call stack size exceeded
 ```
+
+```
+{
+    const symbolRo = getSymbolIfConstantReadonlyReference(reference);
+    if (symbolRo && symbolRo.declarations?.length===1) {
+        const declaration = symbolRo.declarations[0];
+        const type = getTypeOfSymbolAtLocation(symbolRo,declaration);
+        if (!isErrorType(type)){
+            return type;
+        }
+    }
+}
+```
+

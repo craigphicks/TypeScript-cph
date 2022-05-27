@@ -362,6 +362,9 @@ namespace ts {
             if (!flowType.flags) return "IncompleteType";
             return typeToString(flowType as Type);
         };
+        const dbgNodeToString = (node: Node): string => {
+            return `${(node as any).getText()}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
+        };
         const dbgWriteStack = (write: (s: string) => void, flows: FlowNode[]): void => {
             flows.forEach((f,i)=>{
                 const str = `${i}: ${dbgFlowToString(f)}`;
@@ -24310,7 +24313,7 @@ namespace ts {
             }
             return false;
         }
-        function getSymbolForConstantReference(node: Node): Symbol|undefined {
+        function getSymbolIfConstantReadonlyReference(node: Node): Symbol | undefined {
             let symbol: Symbol | undefined;
             switch (node.kind) {
                 case SyntaxKind.Identifier: {
@@ -24319,9 +24322,11 @@ namespace ts {
                 }
                 break;
                 case SyntaxKind.PropertyAccessExpression:
-                case SyntaxKind.ElementAccessExpression:
+                case SyntaxKind.ElementAccessExpression:{
                     // The resolvedSymbol property is initialized by checkPropertyAccess or checkElementAccess before we get here.
-                    return isConstantReference((node as AccessExpression).expression) && isReadonlySymbol(getNodeLinks(node).resolvedSymbol || unknownSymbol);
+                    symbol = isConstantReference((node as AccessExpression).expression)? getNodeLinks(node).resolvedSymbol: undefined;
+                    if (symbol && isReadonlySymbol(symbol)) return symbol;
+                }
             }
         }
 
@@ -24345,9 +24350,6 @@ namespace ts {
         }
         function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode) {
             //const dbgNarrowType = false;
-            if (isConstantReference(reference)){
-
-            }
 
             let key: string | undefined;
             let isKeySet = false;
@@ -24359,6 +24361,44 @@ namespace ts {
                 return declaredType;
             }
             flowInvocationCount++;
+            if (!flowTypeQueryState.disable) {
+                const symbolRo = getSymbolIfConstantReadonlyReference(reference);
+                let type: Type | undefined;
+                if (symbolRo) {
+                    if (symbolRo.valueDeclaration && isVariableDeclaration(symbolRo.valueDeclaration)) {
+                        if (symbolRo.valueDeclaration.initializer){
+                            const initSymbol = getSymbolAtLocation(symbolRo.valueDeclaration.initializer) || symbolRo.valueDeclaration.initializer.symbol;
+                            if (initSymbol) {
+                                type = getTypeOfSymbol(initSymbol);
+                                if (!type || isErrorType(type)) {
+                                    type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration.initializer);
+                                }
+                                if (!type || isErrorType(type)) {
+                                    type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration);
+                                }
+                            }
+                        }
+                    }
+                    if (!type || isErrorType(type)) type = getTypeOfSymbol(symbolRo);
+                    if (!type || isErrorType(type) && symbolRo.declarations?.length===1) type = getTypeOfSymbolAtLocation(symbolRo, symbolRo.declarations![0]);
+                    const isNonNarrowableType = (type: Type) => {
+                        // TODO: implement also structured objects of literals
+                        return type.flags & (
+                            TypeFlags.StringLiteral
+                            | TypeFlags.NumberLiteral
+                            | TypeFlags.BooleanLiteral  // hopefully this doesn't include boolean union of true/false
+                            | TypeFlags.EnumLiteral     // hopefully this doesn't include union of enum types
+                            | TypeFlags.BigIntLiteral) &&
+                            !(type.flags & TypeFlags.Union);
+                    };
+                    if (!isErrorType(type) && isNonNarrowableType(type)) {
+                        if (myDebug) console.log(`getFlowTypeOfReference, short cut for const/ro literal type: ${dbgNodeToString(reference)} -> ${typeToString(type)}`);
+                        return type;
+                    }
+                }
+            }
+
+
             const sharedFlowStart = sharedFlowCount;
             if (myDebug) {
                 console.log(`sharedFlowStart(cache): ${sharedFlowStart}`);
