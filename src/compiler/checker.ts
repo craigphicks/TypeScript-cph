@@ -42027,10 +42027,10 @@ namespace ts {
             let writingFlowTxt=false;
             let ofilenameRoot="";
             myMaxDepth = 0;
+            myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
             // not incrementing dbgFlowFileCnt because it is only the last one that is desired
             if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" /* && dbgFlowFileCnt===0*/) {
                 myDebug = !!Number(process.env.myDebug);
-                myDisable = !!Number(process.env.myDisable);
                 myNoCache = !!Number(process.env.myNoCache);
                 myNoGetFlowCacheKeyFix = !!Number(process.env.myNoGetFlowCacheKeyFix);
                 console.log(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}, myNoGetFlowCacheKeyFix=${myNoGetFlowCacheKeyFix}`);
