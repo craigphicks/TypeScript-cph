@@ -3,7 +3,7 @@ namespace ts {
     let myDebug = false;
     let myNoCache = false;
     let myDisable = false;
-    let myNoGetFlowCacheKeyFix = false;
+    let myGetFlowCacheKeyFix = false;
     let myMaxDepth = 0;
 
     const ambientModuleSymbolRegex = /^".+"$/;
@@ -319,9 +319,46 @@ namespace ts {
         let dbgFlowFileCnt = 0;
         // @ts-ignore-error
         let dbgFlow_mapPeType: ESMap<string,Type> | undefined;
+        const dbgFlowToString = (flow: FlowNode | undefined): string => {
+            if (!flow) return "<undef>";
+            let str = "";
+            if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
+            str += `, ${Debug.formatFlowFlags(flow.flags)}`;
+            return str;
+        };
+        const dbgFlowTypeToString = (flowType: FlowType): string => {
+            if (!flowType.flags) return "IncompleteType";
+            return typeToString(flowType as Type);
+        };
+        const dbgNodeToString = (node: Node | undefined): string => {
+            return !node?"<undef>":`${(node as any).getText()}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
+        };
+        const dbgWriteStack = (write: (s: string) => void, flows: FlowNode[]): void => {
+            flows.forEach((f,i)=>{
+                let str = `${i}: ${dbgFlowToString(f)}`;
+                const rsiNext = flowTypeQueryState.getFlowTypeOfReferenceStack.findIndex(c=>c.other.flowStackIndex > i);
+                const rsi = (rsiNext===-1) ? flowTypeQueryState.getFlowTypeOfReferenceStack.length-1 : rsiNext-1;
+                const ref = flowTypeQueryState.getFlowTypeOfReferenceStack[rsi];
+                str += `::: [${rsi}] ${dbgNodeToString(ref.reference)}`;
+                if (ref.other.isConstReadonly) str += ", CONST/RO";
+                flowTypeQueryState.aliasModeStack.forEach((a,j)=>{
+                    if (a.flowStackIndex===i){
+                        str += `::: alias[${j}]: ${a.aliasSymbol.escapedName} `;
+                    }
+                });
+                write(str);
+            });
+        };
         interface GetFlowTypeOfReferenceCall {
             reference: Node,
             declaredType: Type,
+            initialType: Type,
+            flowContainer: Node | undefined,
+            flowNode: FlowNode | undefined
+            other: {
+                isConstReadonly: boolean,
+                flowStackIndex: Number
+            }
         };
         type AliasMode = & {
             flowStackIndex: number;
@@ -334,7 +371,7 @@ namespace ts {
         interface FlowTypeQueryState {
             disable: boolean;
             noCache: boolean;
-            noGetFlowCacheKeyFix: boolean;
+            getFlowCacheKeyFix: boolean;
             getFlowTypeOfReferenceStack: GetFlowTypeOfReferenceCall[];
             flowStack: FlowNode[];
             conditionStack: {
@@ -348,42 +385,30 @@ namespace ts {
              * */
             aliasModeStack: AliasMode[];
             getFlowStackIndex: () => number;
-            getTopQueryNode: () => Node;
+            getCurrentQueryNode: () => Node;
+            // getReferenceCall: (i: Number) => GetFlowTypeOfReferenceCall,
+            getCurrentReferenceCall: () => { index: Number, params: GetFlowTypeOfReferenceCall };
             //getParentFlowNode: () => FlowNode | undefined;
             getCurrentFlowNode: () => FlowNode;
             pushFlow: (flow: FlowNode) => void;
             popFlow: () => void;
-        };
-        const dbgFlowToString = (flow: FlowNode): string => {
-            let str = "";
-            if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
-            str += `, ${Debug.formatFlowFlags(flow.flags)}`;
-            return str;
-        };
-        const dbgFlowTypeToString = (flowType: FlowType): string => {
-            if (!flowType.flags) return "IncompleteType";
-            return typeToString(flowType as Type);
-        };
-        const dbgNodeToString = (node: Node): string => {
-            return `${(node as any).getText()}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
-        };
-        const dbgWriteStack = (write: (s: string) => void, flows: FlowNode[]): void => {
-            flows.forEach((f,i)=>{
-                const str = `${i}: ${dbgFlowToString(f)}`;
-                write(str);
-            });
+            //inAliasMode: () => boolean;
         };
         const flowTypeQueryState: FlowTypeQueryState = {
             disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
             noCache: false, // ditto
-            noGetFlowCacheKeyFix: false, // ditto
+            getFlowCacheKeyFix: false, // ditto
             getFlowTypeOfReferenceStack:[],
             flowStack:[],
             conditionStack:[],
             aliasModeStack:[],
             getFlowStackIndex: () => flowTypeQueryState.flowStack.length-1,
-            getTopQueryNode:() => flowTypeQueryState.getFlowTypeOfReferenceStack[0].reference,
-            //getParentFlowNode:() => (flowTypeQueryState.flowStack.length<2) ? undefined : flowTypeQueryState.flowStack.slice(-2)[0],
+            getCurrentQueryNode:() => flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].reference,
+            // getReferenceCall: (i: Number) => flowTypeQueryState.getFlowTypeOfReferenceStack[i],
+            getCurrentReferenceCall: () => ({
+                index: flowTypeQueryState.getFlowTypeOfReferenceStack.length-1,
+                params: flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0]
+            }),
             getCurrentFlowNode:() => flowTypeQueryState.flowStack.slice(-1)[0],
             pushFlow:(flow: FlowNode) =>{
                 flowTypeQueryState.flowStack.push(flow);
@@ -398,6 +423,9 @@ namespace ts {
                 }
             },
             popFlow:() =>{
+                if (myDebug){
+                    dbgWriteStack((s: string)=>console.log(s), flowTypeQueryState.flowStack);
+                }
                 const popped = flowTypeQueryState.flowStack.pop();
                 if (flowTypeQueryState.conditionStack.length && flowTypeQueryState.conditionStack.slice(-1)[0].flowStackIndex===flowTypeQueryState.flowStack.length){
                     flowTypeQueryState.conditionStack.pop();
@@ -410,7 +438,9 @@ namespace ts {
                     console.log(`popFlow()->${Debug.formatFlowFlags(popped!.flags)}`);
                 }
 
-            }
+            },
+            //inAliasMode: ()=> !!flowTypeQueryState.aliasModeStack.length;
+
         };
 
         // // @ ts-expect-error , because its not being used yet
@@ -23215,15 +23245,28 @@ namespace ts {
         // leftmost identifier followed by zero or more property names separated by dots.
         // The result is undefined if the reference isn't a dotted name.
         function getFlowCacheKey(node: Node, declaredType: Type, initialType: Type, flowContainer: Node | undefined): string | undefined {
+            if (myDebug){
+                console.log(`getFlowCacheKey(node: ${dbgNodeToString(node)}, declaredType: ${typeToString(declaredType)}, initialType: ${typeToString(initialType)
+                }), flowContainer:${flowContainer?getNodeId(flowContainer):undefined}`);
+            }
+            const r = getFlowCacheKey_aux(node,declaredType,initialType,flowContainer);
+            if (myDebug) {
+                console.log(`getFlowCacheKey return ${r}`);
+                console.groupEnd();
+            }
+            return r;
+        }
+        function getFlowCacheKey_aux(node: Node, declaredType: Type, initialType: Type, flowContainer: Node | undefined): string | undefined {
             switch (node.kind) {
                 case SyntaxKind.Identifier:
                     if (!isThisInTypeQuery(node)) {
                         const symbol = getResolvedSymbol(node as Identifier);
-                        if (!flowTypeQueryState.disable && !flowTypeQueryState.noGetFlowCacheKeyFix){
+                        if (!flowTypeQueryState.disable && flowTypeQueryState.getFlowCacheKeyFix){
+                            console.log(`getFlowCacheKey, USING KEY WITH NODE`);
                             const key = `${flowContainer ? getNodeId(flowContainer) : "-1"}|${getTypeId(declaredType)}|${getTypeId(initialType)}|`;
-                            if (myDebug){
-                                return key + `${getNodeId(node)}: ${(node as any).getText()},[${node.pos},${node.end}]`;
-                            }
+                            // if (myDebug){
+                            //     return key + `${getNodeId(node)}: ${(node as any).getText()},[${node.pos},${node.end}]`;
+                            // }
                             return key + `${getNodeId(node)}`;
                         }
                         else {
@@ -24336,18 +24379,23 @@ namespace ts {
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode) {
             flowTypeQueryState.disable = myDisable;
             flowTypeQueryState.noCache = myNoCache;
-            flowTypeQueryState.noGetFlowCacheKeyFix = myNoGetFlowCacheKeyFix;
+            flowTypeQueryState.getFlowCacheKeyFix = myGetFlowCacheKeyFix;
+            const nrecs=flowTypeQueryState.getFlowTypeOfReferenceStack.length;
             if (myDebug) {
-                console.group(`getFlowTypeOfReference`);
-                console.log(`reference: ${(reference as any).getText()}`);
-                console.log(`declaredType: ${typeToString(declaredType)}`);
+                console.group(`getFlowTypeOfReference: reference ${dbgNodeToString(reference)}, declaredType${typeToString(declaredType)
+                }, ${
+                    nrecs===0?"":`initialType: ${typeToString(initialType)}, flowContainer: ${dbgNodeToString(flowContainer)}, flowNode: ${dbgFlowToString(flowNode)}`
+                }`);
                 if (flowNode) {
                     console.log(Debug.formatFlowFlags(flowNode.flags));
                     //Debug.printControlFlowGraph(flowNode);
                 }
             }
-            /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.push({ reference, declaredType });
-            const r = getFlowTypeOfReference_aux(reference,declaredType,initialType,flowContainer, flowNode);
+            /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.push({
+                reference, declaredType, initialType, flowContainer, flowNode,
+                other: { isConstReadonly: false, flowStackIndex: flowTypeQueryState.flowStack.length }
+            });
+            const r = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode);
             /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
             if (myDebug) console.groupEnd();
             return r;
@@ -24369,6 +24417,11 @@ namespace ts {
                 const symbolRo = getSymbolIfConstantReadonlyReference(reference);
                 let type: Type | undefined;
                 if (symbolRo) {
+                    if (myDebug){
+                        console.log(`getFlowTypeByReference: reference ${dbgNodeToString(reference)} is const/readonly`);
+                        flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly=true;
+                    }
+                    // Because the declared type may be wider than the initializer type.
                     if (symbolRo.valueDeclaration && isVariableDeclaration(symbolRo.valueDeclaration)) {
                         if (symbolRo.valueDeclaration.initializer){
                             const initSymbol = getSymbolAtLocation(symbolRo.valueDeclaration.initializer) || symbolRo.valueDeclaration.initializer.symbol;
@@ -24383,8 +24436,9 @@ namespace ts {
                             }
                         }
                     }
-                    if (!type || isErrorType(type)) type = getTypeOfSymbol(symbolRo);
-                    if (!type || isErrorType(type) && symbolRo.declarations?.length===1) type = getTypeOfSymbolAtLocation(symbolRo, symbolRo.declarations![0]);
+                    if (!type) type = declaredType;
+                    // if (!type || isErrorType(type)) type = getTypeOfSymbol(symbolRo);
+                    // if (!type || isErrorType(type) && symbolRo.declarations?.length===1) type = getTypeOfSymbolAtLocation(symbolRo, symbolRo.declarations![0]);
                     const isNonNarrowableType = (type: Type) => {
                         // TODO: implement also structured objects of literals
                         return type.flags & (
@@ -24846,7 +24900,7 @@ namespace ts {
                             return node.parent;
                         })();
                         const encloses = (()=>{
-                            let node = flowTypeQueryState.getTopQueryNode();
+                            let node = flowTypeQueryState.getCurrentQueryNode();
                             while (node.parent && node.parent!==conditionScopeNode) node = node.parent;
                             return !!node.parent;
                         })();
@@ -24979,8 +25033,7 @@ namespace ts {
 
             function getTypeAtFlowLoopLabel(flow: FlowLabel): FlowType {
                 if (myDebug){
-                    console.group("getTypeAtFlowLoopLabel");
-                    console.log(dbgFlowToString(flow));
+                    console.group(`getTypeAtFlowLoopLabel: ${dbgFlowToString(flow)}`);
                 }
                 const r = getTypeAtFlowLoopLabel_aux(flow);
                 if (myDebug){
@@ -24994,10 +25047,17 @@ namespace ts {
                 // this flow loop junction, return the cached type.
                 const id = getFlowNodeId(flow);
                 const cache = flowLoopCaches[id] || (flowLoopCaches[id] = new Map<string, Type>());
+                function cacheGet(key: string){
+                    const r = cache.get(key);
+                    if (myDebug){
+                        console.group(`getTypeAtFlowLoopLabel: ${`cache.get(${key}) -> ${r?typeToString(r):undefined}`}`);
+                    }
+                    return r;
+                };
                 const key = getOrSetCacheKey();
-                if (myDebug){
-                    console.log(`getTypeAtFlowLoopLabel, (flowNode)id: ${id}, key:${key}`);
-                }
+                // if (myDebug){
+                //     console.log(`getTypeAtFlowLoopLabel, (flowNode)id: ${id}, key:${key}`);
+                // }
                 if (!key) {
                     // No cache key is generated when binding patterns are in unnarrowable situations
                     if (myDebug){
@@ -25005,12 +25065,16 @@ namespace ts {
                     }
                     return declaredType;
                 }
-                const cached = cache.get(key);
-                if (cached) {
+                if (!flowTypeQueryState.disable && flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly){
                     if (myDebug){
-                        console.log(`getTypeAtFlowLoopLabel, cached`);
+                        console.log(`getTypeAtFlowLoopLabel, do not read loop cache, because const/readonly`);
                     }
-                    return cached;
+                }
+                else {
+                    const cached = cacheGet(key);
+                    if (cached) {
+                        return cached;
+                    }
                 }
                 // If this flow loop junction and reference are already being processed, return
                 // the union of the types computed for each branch so far, marked as incomplete.
@@ -25042,6 +25106,14 @@ namespace ts {
                         flowType = firstAntecedentType = getTypeAtFlowNode(antecedent);
                     }
                     else {
+                        // if the current reference type is const/readonly, then no need to conpute the looping control flow paths [cph estimate]
+                        if (!flowTypeQueryState.disable){
+                            if (myDebug){
+                                console.log(`getTypeAtFlowLoopLabel, Skipping all but first antecedent because const/readonly`);
+                            }
+                            if (flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly) continue;
+                        }
+
                         // All but the first antecedent are the looping control flow paths that lead
                         // back to the loop junction. We track these on the flow loop stack.
                         if (myDebug) console.log(`getTypeAtFlowLoopLabel, All but the first antecedent`);
@@ -25057,7 +25129,7 @@ namespace ts {
                         // If we see a value appear in the cache it is a sign that control flow analysis
                         // was restarted and completed by checkExpressionCached. We can simply pick up
                         // the resulting type and bail out.
-                        const cached = cache.get(key);
+                        const cached = cacheGet(key);
                         if (cached) {
                             if (myDebug){
                                 console.log(`getTypeAtFlowLoopLabel, If we see a value appear in the cache it is a sign`);
@@ -35232,8 +35304,8 @@ namespace ts {
             currentNode = node;
             instantiationCount = 0;
             if (myDebug) {
-                console.group("checkExpressionWorker");
-                console.log(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
+                console.group(`checkExpression ${dbgNodeToString(node)}`);
+                //console.log(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
             }
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
             if (myDebug) {
@@ -35248,12 +35320,14 @@ namespace ts {
                 if (dbgFlow_mapPeType?.has(pekey)) {
                     const tmp = dbgFlow_mapPeType?.get(pekey);
                     if (tmp!==peType) {
-                        Debug.assert(tmp===peType,`${typeToString(tmp!)}!==${typeToString(peType)}`);
+                        // They can be not equal during loop analysis - even in original code
+                        console.log(`checkExpression: tmp!==peType,${typeToString(tmp!)}!==${typeToString(peType)}`);
+                        // Debug.assert(tmp===peType,`${typeToString(tmp!)}!==${typeToString(peType)}`);
                     }
                 }
                 else dbgFlow_mapPeType?.set(pekey,peType);
 
-                console.log(`checkExpressionWorker return: ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(uninstantiatedType)}`);
+                console.log(`checkExpression return: ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(uninstantiatedType)}`);
                 console.groupEnd();
             }
             const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
@@ -41682,8 +41756,7 @@ namespace ts {
                 currentNode = node;
                 instantiationCount = 0;
                 if (myDebug) {
-                    console.group("checkSourceElement");
-                    console.log((node as any).getText());
+                    console.group(`checkSourceElement: ${dbgNodeToString(node)}`);
                 }
                 checkSourceElementWorker(node);
                 if (myDebug) console.groupEnd();
@@ -42028,19 +42101,20 @@ namespace ts {
             let ofilenameRoot="";
             myMaxDepth = 0;
             myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
+            myGetFlowCacheKeyFix = !!Number(process.env.myGetFlowCacheKeyFix); // Fro reasons unknown, this lingers after the intended test has finished - may always linger to be clear.
             // not incrementing dbgFlowFileCnt because it is only the last one that is desired
-            if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" /* && dbgFlowFileCnt===0*/) {
+            if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts") dbgFlowFileCnt++;
+            if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" && dbgFlowFileCnt===1) {
                 myDebug = !!Number(process.env.myDebug);
                 myNoCache = !!Number(process.env.myNoCache);
-                myNoGetFlowCacheKeyFix = !!Number(process.env.myNoGetFlowCacheKeyFix);
-                console.log(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}, myNoGetFlowCacheKeyFix=${myNoGetFlowCacheKeyFix}`);
+                console.log(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}, myNoGetFlowCacheKeyFix=${myGetFlowCacheKeyFix}`);
                 if (node.endFlowNode) {
                     writingFlowTxt = true;
                     dbgFlow_mapPeType = new Map<string,Type>();
                     let contents = "";
                     const write = (s: string)=>contents+=s;
                     writeFlowNodesUp(write, [node.endFlowNode]);
-                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.da${myDisable?1:0}.nc${myNoCache?1:0}.${dbgFlowFileCnt}.ngfc${myNoGetFlowCacheKeyFix}.flow`;
+                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.da${myDisable?1:0}.nc${myNoCache?1:0}.${dbgFlowFileCnt++}.gfc${myGetFlowCacheKeyFix}.flow`;
                     sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
                 }
                 Debug.isDebugging=true;

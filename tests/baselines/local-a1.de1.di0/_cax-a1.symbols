@@ -1,0 +1,63 @@
+=== tests/cases/compiler/_cax-a1.ts ===
+declare type X1Foo = Readonly<{ kind: "foo", foo: string, bug: () => number[] }> ;
+>X1Foo : Symbol(X1Foo, Decl(_cax-a1.ts, 0, 0))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>kind : Symbol(kind, Decl(_cax-a1.ts, 0, 31))
+>foo : Symbol(foo, Decl(_cax-a1.ts, 0, 44))
+>bug : Symbol(bug, Decl(_cax-a1.ts, 0, 57))
+
+declare type X1Bar = Readonly<{ kind: "bar", bar: number, bug: () => number[] }> ; 
+>X1Bar : Symbol(X1Bar, Decl(_cax-a1.ts, 0, 82))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>kind : Symbol(kind, Decl(_cax-a1.ts, 1, 31))
+>bar : Symbol(bar, Decl(_cax-a1.ts, 1, 44))
+>bug : Symbol(bug, Decl(_cax-a1.ts, 1, 57))
+
+declare type X1Baz = Readonly<{ kind: "baz", baz: boolean, bug: () => number[] }>;
+>X1Baz : Symbol(X1Baz, Decl(_cax-a1.ts, 1, 82))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>kind : Symbol(kind, Decl(_cax-a1.ts, 2, 31))
+>baz : Symbol(baz, Decl(_cax-a1.ts, 2, 44))
+>bug : Symbol(bug, Decl(_cax-a1.ts, 2, 58))
+
+declare type X1 = | X1Foo | X1Bar | X1Baz ; 
+>X1 : Symbol(X1, Decl(_cax-a1.ts, 2, 82))
+>X1Foo : Symbol(X1Foo, Decl(_cax-a1.ts, 0, 0))
+>X1Bar : Symbol(X1Bar, Decl(_cax-a1.ts, 0, 82))
+>X1Baz : Symbol(X1Baz, Decl(_cax-a1.ts, 1, 82))
+
+declare const obj: undefined | X1;
+>obj : Symbol(obj, Decl(_cax-a1.ts, 5, 13))
+>X1 : Symbol(X1, Decl(_cax-a1.ts, 2, 82))
+
+declare const ubool:()=>boolean;
+>ubool : Symbol(ubool, Decl(_cax-a1.ts, 6, 13))
+{
+    const isBug = obj?.bug();
+>isBug : Symbol(isBug, Decl(_cax-a1.ts, 8, 9))
+>obj?.bug : Symbol(bug, Decl(_cax-a1.ts, 0, 57), Decl(_cax-a1.ts, 1, 57), Decl(_cax-a1.ts, 2, 58))
+>obj : Symbol(obj, Decl(_cax-a1.ts, 5, 13))
+>bug : Symbol(bug, Decl(_cax-a1.ts, 0, 57), Decl(_cax-a1.ts, 1, 57), Decl(_cax-a1.ts, 2, 58))
+
+    while (ubool()) { 
+>ubool : Symbol(ubool, Decl(_cax-a1.ts, 6, 13))
+
+        if (!obj || obj.kind!=="foo") {
+>obj : Symbol(obj, Decl(_cax-a1.ts, 5, 13))
+>obj.kind : Symbol(kind, Decl(_cax-a1.ts, 0, 31), Decl(_cax-a1.ts, 1, 31), Decl(_cax-a1.ts, 2, 31))
+>obj : Symbol(obj, Decl(_cax-a1.ts, 5, 13))
+>kind : Symbol(kind, Decl(_cax-a1.ts, 0, 31), Decl(_cax-a1.ts, 1, 31), Decl(_cax-a1.ts, 2, 31))
+
+            if (isBug) {
+>isBug : Symbol(isBug, Decl(_cax-a1.ts, 8, 9))
+
+                const t = obj.bug;  // `t` and `obj.bug` are correctly typed, but `obj` is "possibly unedfined"
+>t : Symbol(t, Decl(_cax-a1.ts, 12, 21))
+>obj.bug : Symbol(bug, Decl(_cax-a1.ts, 1, 57), Decl(_cax-a1.ts, 2, 58))
+>obj : Symbol(obj, Decl(_cax-a1.ts, 5, 13))
+>bug : Symbol(bug, Decl(_cax-a1.ts, 1, 57), Decl(_cax-a1.ts, 2, 58))
+            }
+        }        
+    }
+}
+
