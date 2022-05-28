@@ -365,7 +365,7 @@ namespace fakes {
                 while (fs.shadowRoot) {
                     try {
                         const shadowRootStats = fs.shadowRoot.existsSync(canonicalFileName) ? fs.shadowRoot.statSync(canonicalFileName) : undefined!; // TODO: GH#18217
-                        if (shadowRootStats.dev !== stats.dev ||
+                        if (!shadowRootStats || shadowRootStats.dev !== stats.dev ||
                             shadowRootStats.ino !== stats.ino ||
                             shadowRootStats.mtimeMs !== stats.mtimeMs) {
                             break;

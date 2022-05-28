@@ -114,6 +114,12 @@ namespace Harness {
                 // Workaround to ensure we output 'C' instead of 'typeof C' for base class expressions
                 // let type = this.checker.getTypeAtLocation(node);
                 let type = ts.isExpressionWithTypeArgumentsInClassExtendsClause(node.parent) ? this.checker.getTypeAtLocation(node.parent) : undefined;
+                // if (!type || type.flags & ts.TypeFlags.Any) {
+                //     let tmpType: ts.Type | undefined;
+                //     const symbol = this.checker.getSymbolAtLocation(node);
+                //     if (symbol) tmpType = this.checker.getTypeOfSymbolAtLocation(symbol, node.parent);
+                //     if (tmpType && (tmpType as any).intrinsicName!=="error") type = tmpType;
+                // }
                 if (!type || type.flags & ts.TypeFlags.Any) type = this.checker.getTypeAtLocation(node);
                 // Distinguish `errorType`s from `any`s; but only if the file has no errors.
                 // Additionally,

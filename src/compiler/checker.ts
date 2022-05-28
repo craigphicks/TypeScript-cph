@@ -24624,11 +24624,13 @@ namespace ts {
                         // simply return the non-auto declared type to reduce follow-on errors.
                         type = convertAutoToAny(declaredType);
                     }
-                    if (sharedFlow) {
-                        // Record visited node and the associated type in the cache.
-                        sharedFlowNodes[sharedFlowCount] = sharedFlow;
-                        sharedFlowTypes[sharedFlowCount] = type;
-                        sharedFlowCount++;
+                    if (!flowTypeQueryState.noCache) {
+                        if (sharedFlow) {
+                            // Record visited node and the associated type in the cache.
+                            sharedFlowNodes[sharedFlowCount] = sharedFlow;
+                            sharedFlowTypes[sharedFlowCount] = type;
+                            sharedFlowCount++;
+                        }
                     }
                     flowDepth--;
                     flowTypeQueryState.popFlow();
@@ -35303,8 +35305,9 @@ namespace ts {
             const saveCurrentNode = currentNode;
             currentNode = node;
             instantiationCount = 0;
+            const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
             if (myDebug) {
-                console.group(`checkExpression ${dbgNodeToString(node)}`);
+                console.group(`checkExpression ${dbgNodeToString(node)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
                 //console.log(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
             }
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
@@ -35321,13 +35324,13 @@ namespace ts {
                     const tmp = dbgFlow_mapPeType?.get(pekey);
                     if (tmp!==peType) {
                         // They can be not equal during loop analysis - even in original code
-                        console.log(`checkExpression: tmp!==peType,${typeToString(tmp!)}!==${typeToString(peType)}`);
+                        console.log(`checkExpression: tmp!==peType,${typeToString(tmp!)}!==${typeToString(peType)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
                         // Debug.assert(tmp===peType,`${typeToString(tmp!)}!==${typeToString(peType)}`);
                     }
                 }
                 else dbgFlow_mapPeType?.set(pekey,peType);
 
-                console.log(`checkExpression return: ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(uninstantiatedType)}`);
+                console.log(`checkExpression return: ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(uninstantiatedType)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
                 console.groupEnd();
             }
             const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
@@ -42101,12 +42104,13 @@ namespace ts {
             let ofilenameRoot="";
             myMaxDepth = 0;
             myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
-            myGetFlowCacheKeyFix = !!Number(process.env.myGetFlowCacheKeyFix); // Fro reasons unknown, this lingers after the intended test has finished - may always linger to be clear.
+            myGetFlowCacheKeyFix = !!Number(process.env.myGetFlowCacheKeyFix); // Fro reasons unknown, this lingers after the intended test has finished - make it always linger to be clear.
+            myNoCache = !!Number(process.env.myNoCache); // ditto
             // not incrementing dbgFlowFileCnt because it is only the last one that is desired
             if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts") dbgFlowFileCnt++;
             if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" && dbgFlowFileCnt===1) {
                 myDebug = !!Number(process.env.myDebug);
-                myNoCache = !!Number(process.env.myNoCache);
+                //myNoCache = !!Number(process.env.myNoCache);
                 console.log(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}, myNoGetFlowCacheKeyFix=${myGetFlowCacheKeyFix}`);
                 if (node.endFlowNode) {
                     writingFlowTxt = true;
