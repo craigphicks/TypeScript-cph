@@ -446,3 +446,7 @@ node built/local/tsc -p src/compiler/tsconfig.json --noEmit
 }
 ```
 
+Failing
+tests/cases/conformance/controlFlow/controlFlowAliasing.ts
+tests/cases/conformance/controlFlow/controlFlowGenericTypes.ts
+tests/cases/conformance/controlFlow/dependentDestructuredVariables.ts

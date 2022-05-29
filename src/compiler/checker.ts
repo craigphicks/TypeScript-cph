@@ -369,6 +369,7 @@ namespace ts {
         };
 
         interface FlowTypeQueryState {
+            typeCache: ESMap<Node, Type>;
             disable: boolean;
             noCache: boolean;
             getFlowCacheKeyFix: boolean;
@@ -395,6 +396,7 @@ namespace ts {
             //inAliasMode: () => boolean;
         };
         const flowTypeQueryState: FlowTypeQueryState = {
+            typeCache: new Map<Node,Type>(),
             disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
             noCache: false, // ditto
             getFlowCacheKeyFix: false, // ditto
@@ -24376,7 +24378,7 @@ namespace ts {
             }
         }
 
-        function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode) {
+        function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode): Type {
             flowTypeQueryState.disable = myDisable;
             flowTypeQueryState.noCache = myNoCache;
             flowTypeQueryState.getFlowCacheKeyFix = myGetFlowCacheKeyFix;
@@ -24395,12 +24397,21 @@ namespace ts {
                 reference, declaredType, initialType, flowContainer, flowNode,
                 other: { isConstReadonly: false, flowStackIndex: flowTypeQueryState.flowStack.length }
             });
-            const r = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode);
+            const type = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode);
             /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
+            if (flowTypeQueryState.getFlowTypeOfReferenceStack.length===0){
+                if (myDebug) {
+                    console.group(`getFlowTypeOfReference: reference: ${dbgNodeToString(reference)}, return:${typeToString(type)}, declaredType${typeToString(declaredType)}`);
+                }
+
+                if (!flowTypeQueryState.typeCache.has(reference)){
+                    flowTypeQueryState.typeCache.set(reference,type);
+                }
+            }
             if (myDebug) console.groupEnd();
-            return r;
+            return type;
         }
-        function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode) {
+        function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode): Type {
             //const dbgNarrowType = false;
 
             let key: string | undefined;
@@ -24411,6 +24422,11 @@ namespace ts {
             }
             if (!flowNode) {
                 return declaredType;
+            }
+            if (!flowTypeQueryState.disable && flowTypeQueryState.typeCache.has(reference)){
+                const type = flowTypeQueryState.typeCache.get(reference)!;
+                if (myDebug) console.log("getFlowTypeOfReference: cache hit");
+                return type;
             }
             flowInvocationCount++;
             if (!flowTypeQueryState.disable) {
@@ -35229,7 +35245,11 @@ namespace ts {
                 return quickType;
             }
             // If a type has been cached for the node, return it.
-            if (node.flags & NodeFlags.TypeCached && flowTypeCache) {
+            /**
+             * The flowTypeCache sometimes has incorrect or intermediate values - try using only types
+             * cached or retrieved from cache at the top level of getFlowTypeOfRefernce
+             */
+            if (flowTypeQueryState.disable && node.flags & NodeFlags.TypeCached && flowTypeCache) {
                 const cachedType = flowTypeCache[getNodeId(node)];
                 if (cachedType) {
                     return cachedType;
