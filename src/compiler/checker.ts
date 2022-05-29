@@ -24382,11 +24382,27 @@ namespace ts {
             flowTypeQueryState.disable = myDisable;
             flowTypeQueryState.noCache = myNoCache;
             flowTypeQueryState.getFlowCacheKeyFix = myGetFlowCacheKeyFix;
-            const nrecs=flowTypeQueryState.getFlowTypeOfReferenceStack.length;
+
+
+            /**
+             * isOriginalCall: indicates result is cachable as a "true result", and that if a cached result exists it can be returned as the correct result.
+             * Conditions
+             *   flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 &&
+             *   initialType === declaredType &&
+             *   reference.flowNode === flowNode &&
+             * are required because
+             * (1) getFlowTypeOfReference may be called recursively
+             * (2) some flow control now takes place above getFlowTypeOfReference, where it passes different initialType or flowNode
+             * and in these situations the result type may be narrower than when called at the top level, and therefore should not be cached
+             * as a top level result.
+             */
+             const isOriginalCall = flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 && initialType === declaredType && reference.flowNode === flowNode;
+
+
             if (myDebug) {
-                console.group(`getFlowTypeOfReference: reference ${dbgNodeToString(reference)}, declaredType${typeToString(declaredType)
+                console.group(`getFlowTypeOfReference(in): reference ${dbgNodeToString(reference)}, declaredType: ${typeToString(declaredType)
                 }, ${
-                    nrecs===0?"":`initialType: ${typeToString(initialType)}, flowContainer: ${dbgNodeToString(flowContainer)}, flowNode: ${dbgFlowToString(flowNode)}`
+                    `initialType: ${typeToString(initialType)}, flowContainer: ${dbgNodeToString(flowContainer)}, flowNode: ${dbgFlowToString(flowNode)}`
                 }`);
                 if (flowNode) {
                     console.log(Debug.formatFlowFlags(flowNode.flags));
@@ -24397,13 +24413,12 @@ namespace ts {
                 reference, declaredType, initialType, flowContainer, flowNode,
                 other: { isConstReadonly: false, flowStackIndex: flowTypeQueryState.flowStack.length }
             });
-            const type = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode);
+            const type = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode!, isOriginalCall);
             /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
-            if (flowTypeQueryState.getFlowTypeOfReferenceStack.length===0){
-                if (myDebug) {
-                    console.group(`getFlowTypeOfReference: reference: ${dbgNodeToString(reference)}, return:${typeToString(type)}, declaredType${typeToString(declaredType)}`);
-                }
-
+            if (myDebug) {
+                console.group(`getFlowTypeOfReference(out): reference: ${dbgNodeToString(reference)}, return:${typeToString(type)}, declaredType: ${typeToString(declaredType)}`);
+            }
+            if (isOriginalCall){
                 if (!flowTypeQueryState.typeCache.has(reference)){
                     flowTypeQueryState.typeCache.set(reference,type);
                 }
@@ -24411,7 +24426,7 @@ namespace ts {
             if (myDebug) console.groupEnd();
             return type;
         }
-        function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode): Type {
+        function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer: Node | undefined, flowNode: FlowNode, isOriginalCall: boolean): Type {
             //const dbgNarrowType = false;
 
             let key: string | undefined;
@@ -24423,7 +24438,7 @@ namespace ts {
             if (!flowNode) {
                 return declaredType;
             }
-            if (!flowTypeQueryState.disable && flowTypeQueryState.typeCache.has(reference)){
+            if (!flowTypeQueryState.disable && isOriginalCall && flowTypeQueryState.typeCache.has(reference)){
                 const type = flowTypeQueryState.typeCache.get(reference)!;
                 if (myDebug) console.log("getFlowTypeOfReference: cache hit");
                 return type;
