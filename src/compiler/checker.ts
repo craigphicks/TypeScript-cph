@@ -24390,19 +24390,22 @@ namespace ts {
              *   flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 &&
              *   initialType === declaredType &&
              *   reference.flowNode === flowNode &&
+             *   isFlowWithNode(flowNode) && reference === flowNode.node // externally, a reference's flow node may be adjusted to match flowNode, relying on side effects, so this cond also necessary
              * are required because
              * (1) getFlowTypeOfReference may be called recursively
              * (2) some flow control now takes place above getFlowTypeOfReference, where it passes different initialType or flowNode
              * and in these situations the result type may be narrower than when called at the top level, and therefore should not be cached
              * as a top level result.
              */
-             const isOriginalCall = flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 && initialType === declaredType && reference.flowNode === flowNode;
-
+            const isOriginalCall = flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 && initialType === declaredType
+            && reference.flowNode === flowNode && isFlowWithNode(flowNode) && reference === flowNode.node;
 
             if (myDebug) {
                 console.group(`getFlowTypeOfReference(in): reference ${dbgNodeToString(reference)}, declaredType: ${typeToString(declaredType)
                 }, ${
                     `initialType: ${typeToString(initialType)}, flowContainer: ${dbgNodeToString(flowContainer)}, flowNode: ${dbgFlowToString(flowNode)}`
+                }, ${
+                    `[ depth: ${flowTypeQueryState.getFlowTypeOfReferenceStack.length}, isOriginalCall: ${isOriginalCall}`
                 }`);
                 if (flowNode) {
                     console.log(Debug.formatFlowFlags(flowNode.flags));
@@ -24452,37 +24455,45 @@ namespace ts {
                         console.log(`getFlowTypeByReference: reference ${dbgNodeToString(reference)} is const/readonly`);
                         flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly=true;
                     }
-                    // Because the declared type may be wider than the initializer type.
-                    if (symbolRo.valueDeclaration && isVariableDeclaration(symbolRo.valueDeclaration)) {
-                        if (symbolRo.valueDeclaration.initializer){
-                            const initSymbol = getSymbolAtLocation(symbolRo.valueDeclaration.initializer) || symbolRo.valueDeclaration.initializer.symbol;
-                            if (initSymbol) {
-                                type = getTypeOfSymbol(initSymbol);
-                                if (!type || isErrorType(type)) {
-                                    type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration.initializer);
-                                }
-                                if (!type || isErrorType(type)) {
-                                    type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration);
+                    /* if (isOriginalCall) */ {
+                        /**
+                         * Here we test if the const/ro type is non-narrowable, in which case the type can be returned early.
+                         * However, if it os not an original call, the intention may be to use he flow nodes for narrowing, so this branch is not performed.
+                         * Ooops.  If the `isOriginalCall` check is performed, then the `never` start re-appearing in the `.type` report files,
+                         * which we do not want.
+                         */
+                        // Because the declared type may be wider than the initializer type.
+                        if (symbolRo.valueDeclaration && isVariableDeclaration(symbolRo.valueDeclaration)) {
+                            if (symbolRo.valueDeclaration.initializer){
+                                const initSymbol = getSymbolAtLocation(symbolRo.valueDeclaration.initializer) || symbolRo.valueDeclaration.initializer.symbol;
+                                if (initSymbol) {
+                                    type = getTypeOfSymbol(initSymbol);
+                                    if (!type || isErrorType(type)) {
+                                        type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration.initializer);
+                                    }
+                                    if (!type || isErrorType(type)) {
+                                        type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration);
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (!type) type = declaredType;
-                    // if (!type || isErrorType(type)) type = getTypeOfSymbol(symbolRo);
-                    // if (!type || isErrorType(type) && symbolRo.declarations?.length===1) type = getTypeOfSymbolAtLocation(symbolRo, symbolRo.declarations![0]);
-                    const isNonNarrowableType = (type: Type) => {
-                        // TODO: implement also structured objects of literals
-                        return type.flags & (
-                            TypeFlags.StringLiteral
-                            | TypeFlags.NumberLiteral
-                            | TypeFlags.BooleanLiteral  // hopefully this doesn't include boolean union of true/false
-                            | TypeFlags.EnumLiteral     // hopefully this doesn't include union of enum types
-                            | TypeFlags.BigIntLiteral) &&
-                            !(type.flags & TypeFlags.Union);
-                    };
-                    if (!isErrorType(type) && isNonNarrowableType(type)) {
-                        if (myDebug) console.log(`getFlowTypeOfReference, short cut for const/ro literal type: ${dbgNodeToString(reference)} -> ${typeToString(type)}`);
-                        return type;
+                        if (!type) type = declaredType;
+                        // if (!type || isErrorType(type)) type = getTypeOfSymbol(symbolRo);
+                        // if (!type || isErrorType(type) && symbolRo.declarations?.length===1) type = getTypeOfSymbolAtLocation(symbolRo, symbolRo.declarations![0]);
+                        const isNonNarrowableType = (type: Type) => {
+                            // TODO: implement also structured objects of literals
+                            return type.flags & (
+                                TypeFlags.StringLiteral
+                                | TypeFlags.NumberLiteral
+                                | TypeFlags.BooleanLiteral  // hopefully this doesn't include boolean union of true/false
+                                | TypeFlags.EnumLiteral     // hopefully this doesn't include union of enum types
+                                | TypeFlags.BigIntLiteral) &&
+                                !(type.flags & TypeFlags.Union);
+                        };
+                        if (!isErrorType(type) && isNonNarrowableType(type)) {
+                            if (myDebug) console.log(`getFlowTypeOfReference, short cut for const/ro literal type: ${dbgNodeToString(reference)} -> ${typeToString(type)}`);
+                            return type;
+                        }
                     }
                 }
             }
