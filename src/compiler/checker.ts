@@ -349,6 +349,28 @@ namespace ts {
                 write(str);
             });
         };
+        //let lastGroup = "";
+        // @ts-ignore
+        function upToNewLine(s: string): string{
+            const nl = sys.newLine;
+            let i=0;
+            for(; i<s.length && s[i]!== nl ; i++);
+            return s.slice(0,i);
+        }
+        function consoleGroup(sIn: string){
+            //const s = sIn.slice(0,Math.min(80,sIn.length));
+            //const s = upToNewLine(sIn);
+            console.group(`${sIn}`);
+            //lastGroup = s;
+        }
+        function consoleGroupEnd(){
+            console.groupEnd();
+        }
+        function consoleLog(s: string): void {
+            console.log(s);
+            //console.log(upToNewLine(s));
+            // console.log(s.slice(0,Math.min(80,s.length)));
+        }
         interface GetFlowTypeOfReferenceCall {
             reference: Node,
             declaredType: Type,
@@ -370,6 +392,7 @@ namespace ts {
 
         interface FlowTypeQueryState {
             typeCache: ESMap<Node, Type>;
+            altTypeCache: ESMap<string, Type>;
             disable: boolean;
             noCache: boolean;
             getFlowCacheKeyFix: boolean;
@@ -397,6 +420,7 @@ namespace ts {
         };
         const flowTypeQueryState: FlowTypeQueryState = {
             typeCache: new Map<Node,Type>(),
+            altTypeCache: new Map<string, Type>(),
             disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
             noCache: false, // ditto
             getFlowCacheKeyFix: false, // ditto
@@ -420,13 +444,13 @@ namespace ts {
                 }
 
                 if (myDebug){
-                    console.log(`pushFlow(${Debug.formatFlowFlags(flow.flags)})`);
-                    dbgWriteStack((s: string)=>console.log(s), flowTypeQueryState.flowStack);
+                    consoleLog(`pushFlow(${Debug.formatFlowFlags(flow.flags)})`);
+                    dbgWriteStack((s: string)=>consoleLog(s), flowTypeQueryState.flowStack);
                 }
             },
             popFlow:() =>{
                 if (myDebug){
-                    dbgWriteStack((s: string)=>console.log(s), flowTypeQueryState.flowStack);
+                    dbgWriteStack((s: string)=>consoleLog(s), flowTypeQueryState.flowStack);
                 }
                 const popped = flowTypeQueryState.flowStack.pop();
                 if (flowTypeQueryState.conditionStack.length && flowTypeQueryState.conditionStack.slice(-1)[0].flowStackIndex===flowTypeQueryState.flowStack.length){
@@ -437,7 +461,7 @@ namespace ts {
                     flowTypeQueryState.aliasModeStack.pop();
                 }
                 if (myDebug){
-                    console.log(`popFlow()->${Debug.formatFlowFlags(popped!.flags)}`);
+                    consoleLog(`popFlow()->${Debug.formatFlowFlags(popped!.flags)}`);
                 }
 
             },
@@ -23248,13 +23272,13 @@ namespace ts {
         // The result is undefined if the reference isn't a dotted name.
         function getFlowCacheKey(node: Node, declaredType: Type, initialType: Type, flowContainer: Node | undefined): string | undefined {
             if (myDebug){
-                console.log(`getFlowCacheKey(node: ${dbgNodeToString(node)}, declaredType: ${typeToString(declaredType)}, initialType: ${typeToString(initialType)
+                consoleGroup(`getFlowCacheKey(node: ${dbgNodeToString(node)}, declaredType: ${typeToString(declaredType)}, initialType: ${typeToString(initialType)
                 }), flowContainer:${flowContainer?getNodeId(flowContainer):undefined}`);
             }
             const r = getFlowCacheKey_aux(node,declaredType,initialType,flowContainer);
             if (myDebug) {
-                console.log(`getFlowCacheKey return ${r}`);
-                console.groupEnd();
+                consoleLog(`getFlowCacheKey return ${r}`);
+                consoleGroupEnd();
             }
             return r;
         }
@@ -23264,7 +23288,7 @@ namespace ts {
                     if (!isThisInTypeQuery(node)) {
                         const symbol = getResolvedSymbol(node as Identifier);
                         if (!flowTypeQueryState.disable && flowTypeQueryState.getFlowCacheKeyFix){
-                            console.log(`getFlowCacheKey, USING KEY WITH NODE`);
+                            consoleLog(`getFlowCacheKey, USING KEY WITH NODE`);
                             const key = `${flowContainer ? getNodeId(flowContainer) : "-1"}|${getTypeId(declaredType)}|${getTypeId(initialType)}|`;
                             // if (myDebug){
                             //     return key + `${getNodeId(node)}: ${(node as any).getText()},[${node.pos},${node.end}]`;
@@ -24401,14 +24425,14 @@ namespace ts {
             && reference.flowNode === flowNode && isFlowWithNode(flowNode) && reference === flowNode.node;
 
             if (myDebug) {
-                console.group(`getFlowTypeOfReference(in): reference ${dbgNodeToString(reference)}, declaredType: ${typeToString(declaredType)
+                consoleGroup(`getFlowTypeOfReference(in): reference ${dbgNodeToString(reference)}, declaredType: ${typeToString(declaredType)
                 }, ${
-                    `initialType: ${typeToString(initialType)}, flowContainer: ${dbgNodeToString(flowContainer)}, flowNode: ${dbgFlowToString(flowNode)}`
+                    `initialType: ${typeToString(initialType)}, flowContainer: ${flowContainer?getNodeId(flowContainer):-1}, flowNode: ${dbgFlowToString(flowNode)}`
                 }, ${
                     `[ depth: ${flowTypeQueryState.getFlowTypeOfReferenceStack.length}, isOriginalCall: ${isOriginalCall}`
                 }`);
                 if (flowNode) {
-                    console.log(Debug.formatFlowFlags(flowNode.flags));
+                    consoleLog(Debug.formatFlowFlags(flowNode.flags));
                     //Debug.printControlFlowGraph(flowNode);
                 }
             }
@@ -24419,14 +24443,18 @@ namespace ts {
             const type = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode!, isOriginalCall);
             /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
             if (myDebug) {
-                console.group(`getFlowTypeOfReference(out): reference: ${dbgNodeToString(reference)}, return:${typeToString(type)}, declaredType: ${typeToString(declaredType)}`);
+                consoleLog(`getFlowTypeOfReference(out): reference: ${dbgNodeToString(reference)}, return:${typeToString(type)}, declaredType: ${typeToString(declaredType)}`);
             }
             if (isOriginalCall){
                 if (!flowTypeQueryState.typeCache.has(reference)){
                     flowTypeQueryState.typeCache.set(reference,type);
                 }
             }
-            if (myDebug) console.groupEnd();
+            else {
+                const key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
+                if (key && !flowTypeQueryState.altTypeCache.has(key)) flowTypeQueryState.altTypeCache.set(key,type);
+            }
+            if (myDebug) consoleGroupEnd();
             return type;
         }
         function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer: Node | undefined, flowNode: FlowNode, isOriginalCall: boolean): Type {
@@ -24441,10 +24469,22 @@ namespace ts {
             if (!flowNode) {
                 return declaredType;
             }
-            if (!flowTypeQueryState.disable && isOriginalCall && flowTypeQueryState.typeCache.has(reference)){
-                const type = flowTypeQueryState.typeCache.get(reference)!;
-                if (myDebug) console.log("getFlowTypeOfReference: cache hit");
-                return type;
+            if (!flowTypeQueryState.disable) {
+                if (isOriginalCall) {
+                    if (flowTypeQueryState.typeCache.has(reference)){
+                        const type = flowTypeQueryState.typeCache.get(reference)!;
+                        if (myDebug) consoleLog("getFlowTypeOfReference: cache hit (orig)");
+                        return type;
+                    }
+                }
+                else {
+                    const key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
+                    if (key && flowTypeQueryState.altTypeCache.has(key)) {
+                        const type = flowTypeQueryState.altTypeCache.get(key)!;
+                        if (myDebug) consoleLog("getFlowTypeOfReference: cache hit (alt");
+                        return type;
+                    }
+                }
             }
             flowInvocationCount++;
             if (!flowTypeQueryState.disable) {
@@ -24452,7 +24492,7 @@ namespace ts {
                 let type: Type | undefined;
                 if (symbolRo) {
                     if (myDebug){
-                        console.log(`getFlowTypeByReference: reference ${dbgNodeToString(reference)} is const/readonly`);
+                        consoleLog(`getFlowTypeByReference: reference ${dbgNodeToString(reference)} is const/readonly`);
                         flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly=true;
                     }
                     /* if (isOriginalCall) */ {
@@ -24491,7 +24531,7 @@ namespace ts {
                                 !(type.flags & TypeFlags.Union);
                         };
                         if (!isErrorType(type) && isNonNarrowableType(type)) {
-                            if (myDebug) console.log(`getFlowTypeOfReference, short cut for const/ro literal type: ${dbgNodeToString(reference)} -> ${typeToString(type)}`);
+                            if (myDebug) consoleLog(`getFlowTypeOfReference, short cut for const/ro literal type: ${dbgNodeToString(reference)} -> ${typeToString(type)}`);
                             return type;
                         }
                     }
@@ -24501,16 +24541,16 @@ namespace ts {
 
             const sharedFlowStart = sharedFlowCount;
             if (myDebug) {
-                console.log(`sharedFlowStart(cache): ${sharedFlowStart}`);
+                consoleLog(`sharedFlowStart(cache): ${sharedFlowStart}`);
             }
             const typeAtFlowNode = getTypeAtFlowNode(flowNode);
             if (myDebug) {
                 const t2s = (ft: FlowType) => (!ft.flags) ? "<IncompleteType>" : typeToString(ft as Type);
-                console.log(`sharedFlowCount: ${sharedFlowCount}, typeAtFlowNode: ${t2s(typeAtFlowNode)}`);
+                consoleLog(`sharedFlowCount: ${sharedFlowCount}, typeAtFlowNode: ${t2s(typeAtFlowNode)}`);
             }
             const evolvedType = getTypeFromFlowType(typeAtFlowNode);
             if (myDebug) {
-                console.log(`sharedFlowCount: ${sharedFlowCount}, evolvedType: ${typeToString(evolvedType)}`);
+                consoleLog(`sharedFlowCount: ${sharedFlowCount}, evolvedType: ${typeToString(evolvedType)}`);
             }
             sharedFlowCount = sharedFlowStart;
             // When the reference is 'x' in an 'x.length', 'x.push(value)', 'x.unshift(value)' or x[n] = value' operation,
@@ -24519,10 +24559,10 @@ namespace ts {
             // type mismatch errors.
             const resultType = getObjectFlags(evolvedType) & ObjectFlags.EvolvingArray && isEvolvingArrayOperationTarget(reference) ? autoArrayType : finalizeEvolvingArrayType(evolvedType);
             if (resultType === unreachableNeverType || reference.parent && reference.parent.kind === SyntaxKind.NonNullExpression && !(resultType.flags & TypeFlags.Never) && getTypeWithFacts(resultType, TypeFacts.NEUndefinedOrNull).flags & TypeFlags.Never) {
-                if (myDebug) console.log(`return declaredType: ${typeToString(declaredType)}`);
+                if (myDebug) consoleLog(`return declaredType: ${typeToString(declaredType)}`);
                 return declaredType;
             }
-            if (myDebug) console.log(`return resultType: ${typeToString(resultType)}`);
+            if (myDebug) consoleLog(`return resultType: ${typeToString(resultType)}`);
             // The non-null unknown type should never escape control flow analysis.
             return resultType === nonNullUnknownType ? unknownType : resultType;
 
@@ -24545,9 +24585,9 @@ namespace ts {
             }
             function getTypeAtFlowNode(flow: FlowNode): FlowType {
                 if (myDebug) {
-                    console.group("getTypeAtFlowNode");
-                    //console.log((dbgff(flow)));
-                    console.log(`(in) ${dbgff(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
+                    consoleGroup("getTypeAtFlowNode");
+                    //consoleLog((dbgff(flow)));
+                    consoleLog(`(in) ${dbgff(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
                 }
 //                if (!flowTypeQueryState.disable) flowTypeQueryState.pushFlow(flow);
                 const r = getTypeAtFlowNode_aux(flow);
@@ -24561,8 +24601,8 @@ namespace ts {
                 // }
 
                 if (myDebug) {
-                    console.log(`(out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
-                    console.groupEnd();
+                    consoleLog(`(out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
+                    consoleGroupEnd();
                 }
                 return r;
             }
@@ -24581,7 +24621,7 @@ namespace ts {
                 let dbgiter=0;
                 while (true) {
                     if (myDebug) {
-                        console.log(`(dbgiter:${dbgiter++}) ${dbgff(flow)}, flowDepth: ${flowDepth}`);
+                        consoleLog(`(dbgiter:${dbgiter++}) ${dbgff(flow)}, flowDepth: ${flowDepth}`);
                     }
 
                     /**
@@ -24596,6 +24636,7 @@ namespace ts {
                         // antecedent of more than one node.
                         for (let i = sharedFlowStart; i < sharedFlowCount; i++) {
                             if (sharedFlowNodes[i] === flow) {
+                                if (myDebug) consoleLog(`getTypeAtFlowNode: sharedFlowNodes hit ${i}/${sharedFlowCount}`);
                                 flowDepth--;
                                 flowTypeQueryState.popFlow();
                                 return sharedFlowTypes[i];
@@ -24805,14 +24846,14 @@ namespace ts {
 
             function getTypeAtFlowCondition(flow: FlowCondition): FlowType {
                 if (myDebug) {
-                    console.group("getTypeAtFlowCondition");
-                    //console.log((dbgff(flow)));
-                    console.log(`(fc  in) ${dbgff(flow)}, flowDepth: ${flowDepth}`);
+                    consoleGroup("getTypeAtFlowCondition");
+                    //consoleLog((dbgff(flow)));
+                    consoleLog(`(fc  in) ${dbgff(flow)}, flowDepth: ${flowDepth}`);
                 }
                 const r = getTypeAtFlowCondition_aux(flow);
                 if (myDebug) {
-                    console.log(`(fc out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
-                    console.groupEnd();
+                    consoleLog(`(fc out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
+                    consoleGroupEnd();
                 }
                 return r;
             }
@@ -24835,7 +24876,7 @@ namespace ts {
                 const narrowedType = narrowType(nonEvolvingType, flow.node, assumeTrue);
                 //if (myDebug && flow.id===3) dbgNarrowType = false;
                 if (myDebug) {
-                    console.log(`(fc ) flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
+                    consoleLog(`(fc ) flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
                 }
                 if (narrowedType === nonEvolvingType) {
                     return flowType;
@@ -24875,17 +24916,17 @@ namespace ts {
 
             function getTypeAtFlowBranchLabel(flow: FlowLabel): FlowType {
                 if (myDebug) {
-                    console.group("getTypeAtFlowBranchLabel");
-                    //console.log((dbgff(flow)));
-                    console.log(`(in) ${dbgff(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
+                    consoleGroup("getTypeAtFlowBranchLabel");
+                    //consoleLog((dbgff(flow)));
+                    consoleLog(`(in) ${dbgff(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
                     // flow.antecedents?.forEach(a=>{
-                    //     //console.log(`a.flags`)
+                    //     //consoleLog(`a.flags`)
                     // })
                 }
                 const r = getTypeAtFlowBranchLabel_aux(flow);
                 if (myDebug) {
-                    console.log(`(out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
-                    console.groupEnd();
+                    consoleLog(`(out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
+                    consoleGroupEnd();
                 }
                 return r;
             }
@@ -24920,9 +24961,9 @@ namespace ts {
                 tmp = true;
                 if (tmp){
                     if (myDebug){
-                        console.group("flowStack");
-                        dbgWriteStack((s: string)=>console.log(s), flowTypeQueryState.flowStack);
-                        console.groupEnd();
+                        consoleGroup("flowStack");
+                        dbgWriteStack((s: string)=>consoleLog(s), flowTypeQueryState.flowStack);
+                        consoleGroupEnd();
                     }
                 }
                 if (!flowTypeQueryState.disable && isFlowAssignment(flowTypeQueryState.getCurrentFlowNode())){
@@ -24950,7 +24991,7 @@ namespace ts {
                         })();
                         if (!encloses){
                             if (myDebug){
-                                console.log(`not adding alias: condition ${dbgFlowToString(condition.flow)} does not enclose top reference`);
+                                consoleLog(`not adding alias: condition ${dbgFlowToString(condition.flow)} does not enclose top reference`);
                             }
                         }
                         else {
@@ -24973,7 +25014,7 @@ namespace ts {
                                 };
                                 flowTypeQueryState.aliasModeStack.push(localAliasMode.aliasMode);
                                 if (myDebug){
-                                    console.log(`adding alias: ${(currentFlow.node as any).getText()}, condition: ${Debug.formatFlowFlags(aliasFlowCondition.flags)}`);
+                                    consoleLog(`adding alias: ${(currentFlow.node as any).getText()}, condition: ${Debug.formatFlowFlags(aliasFlowCondition.flags)}`);
                                 }
                             }
                         }
@@ -24982,7 +25023,7 @@ namespace ts {
 
                 for (const antecedent of flow.antecedents!) {
                     if (myDebug){
-                        console.log(`briter:${++briter}, ante:${dbgff(antecedent)}`);
+                        consoleLog(`briter:${++briter}, ante:${dbgff(antecedent)}`);
                     }
                     if (!bypassFlow && antecedent.flags & FlowFlags.SwitchClause && (antecedent as FlowSwitchClause).clauseStart === (antecedent as FlowSwitchClause).clauseEnd) {
                         // The antecedent is the bypass branch of a potentially exhaustive switch statement.
@@ -24995,7 +25036,7 @@ namespace ts {
                         if (localAliasMode.isAliasFlowConditionBoolean && isFlowCondition(antecedent) && isFlowConditionBoolean(antecedent)) {
                             if (localAliasMode.aliasFlowConditionTF !== getFlowConditionBoolean(antecedent)){
                                 if (myDebug){
-                                    console.log(`skipping because aliasFlowTF is ${localAliasMode.aliasFlowConditionTF} but anteTF is ${getFlowConditionBoolean(antecedent)}`);
+                                    consoleLog(`skipping because aliasFlowTF is ${localAliasMode.aliasFlowConditionTF} but anteTF is ${getFlowConditionBoolean(antecedent)}`);
                                 }
                                 continue; // There is redundancy because a full type assigment is being used for boolean decisions.
                             }
@@ -25018,7 +25059,7 @@ namespace ts {
 
 
                     if (myDebug){
-                        console.log(`briter:${briter}, flowType: ${dbgft2s(flowType)}, type: ${typeToString(type)}`);
+                        consoleLog(`briter:${briter}, flowType: ${dbgft2s(flowType)}, type: ${typeToString(type)}`);
                     }
 
                     // If the type at a particular antecedent path is the declared type and the
@@ -25067,9 +25108,9 @@ namespace ts {
                 const brTmpType = getUnionOrEvolvingArrayType(antecedentTypes, subtypeReduction ? UnionReduction.Subtype : UnionReduction.Literal);
                 if (myDebug) {
                     antecedentTypes.forEach((t,i)=>{
-                        console.log(`br/antecedentTypes[${i}]: ${typeToString(t)}`);
+                        consoleLog(`br/antecedentTypes[${i}]: ${typeToString(t)}`);
                     });
-                    console.log(`brTmpType: ${typeToString(brTmpType)}`);
+                    consoleLog(`brTmpType: ${typeToString(brTmpType)}`);
                 }
                 return createFlowType(brTmpType, seenIncomplete);
                 //return createFlowType(getUnionOrEvolvingArrayType(antecedentTypes, subtypeReduction ? UnionReduction.Subtype : UnionReduction.Literal), seenIncomplete);
@@ -25077,12 +25118,12 @@ namespace ts {
 
             function getTypeAtFlowLoopLabel(flow: FlowLabel): FlowType {
                 if (myDebug){
-                    console.group(`getTypeAtFlowLoopLabel: ${dbgFlowToString(flow)}`);
+                    consoleGroup(`getTypeAtFlowLoopLabel: ${dbgFlowToString(flow)}`);
                 }
                 const r = getTypeAtFlowLoopLabel_aux(flow);
                 if (myDebug){
-                    console.log(`getTypeAtFlowLoopLabel, flow: ${dbgFlowToString(flow)}, return: ${dbgFlowTypeToString(r)}`);
-                    console.groupEnd();
+                    consoleLog(`getTypeAtFlowLoopLabel, flow: ${dbgFlowToString(flow)}, return: ${dbgFlowTypeToString(r)}`);
+                    consoleGroupEnd();
                 }
                 return r;
             }
@@ -25094,24 +25135,24 @@ namespace ts {
                 function cacheGet(key: string){
                     const r = cache.get(key);
                     if (myDebug){
-                        console.group(`getTypeAtFlowLoopLabel: ${`cache.get(${key}) -> ${r?typeToString(r):undefined}`}`);
+                        consoleLog(`getTypeAtFlowLoopLabel: ${`cache.get(${key}) -> ${r?typeToString(r):undefined}`}`);
                     }
                     return r;
                 };
                 const key = getOrSetCacheKey();
                 // if (myDebug){
-                //     console.log(`getTypeAtFlowLoopLabel, (flowNode)id: ${id}, key:${key}`);
+                //     consoleLog(`getTypeAtFlowLoopLabel, (flowNode)id: ${id}, key:${key}`);
                 // }
                 if (!key) {
                     // No cache key is generated when binding patterns are in unnarrowable situations
                     if (myDebug){
-                        console.log(`getTypeAtFlowLoopLabel, No cache key is generated when binding patterns are in unnarrowable situations`);
+                        consoleLog(`getTypeAtFlowLoopLabel, No cache key is generated when binding patterns are in unnarrowable situations`);
                     }
                     return declaredType;
                 }
                 if (!flowTypeQueryState.disable && flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly){
                     if (myDebug){
-                        console.log(`getTypeAtFlowLoopLabel, do not read loop cache, because const/readonly`);
+                        consoleLog(`getTypeAtFlowLoopLabel, do not read loop cache, because const/readonly`);
                     }
                 }
                 else {
@@ -25131,7 +25172,7 @@ namespace ts {
                 for (let i = flowLoopStart; i < flowLoopCount; i++) {
                     if (flowLoopNodes[i] === flow && flowLoopKeys[i] === key && flowLoopTypes[i].length) {
                             if (myDebug){
-                                console.log(`getTypeAtFlowLoopLabel, this flow loop junction and reference are already being processed, incomplete`);
+                                consoleLog(`getTypeAtFlowLoopLabel, this flow loop junction and reference are already being processed, incomplete`);
                             }
                             return createFlowType(getUnionOrEvolvingArrayType(flowLoopTypes[i], UnionReduction.Literal), /*incomplete*/ true);
                     }
@@ -25146,21 +25187,21 @@ namespace ts {
                     if (!firstAntecedentType) {
                         // The first antecedent of a loop junction is always the non-looping control
                         // flow path that leads to the top.
-                        if (myDebug) console.log(`getTypeAtFlowLoopLabel, The first antecedent of a loop junction is always the non-looping control`);
+                        if (myDebug) consoleLog(`getTypeAtFlowLoopLabel, The first antecedent of a loop junction is always the non-looping control`);
                         flowType = firstAntecedentType = getTypeAtFlowNode(antecedent);
                     }
                     else {
                         // if the current reference type is const/readonly, then no need to conpute the looping control flow paths [cph estimate]
                         if (!flowTypeQueryState.disable){
                             if (myDebug){
-                                console.log(`getTypeAtFlowLoopLabel, Skipping all but first antecedent because const/readonly`);
+                                consoleLog(`getTypeAtFlowLoopLabel, Skipping all but first antecedent because const/readonly`);
                             }
                             if (flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly) continue;
                         }
 
                         // All but the first antecedent are the looping control flow paths that lead
                         // back to the loop junction. We track these on the flow loop stack.
-                        if (myDebug) console.log(`getTypeAtFlowLoopLabel, All but the first antecedent`);
+                        if (myDebug) consoleLog(`getTypeAtFlowLoopLabel, All but the first antecedent`);
                         flowLoopNodes[flowLoopCount] = flow;
                         flowLoopKeys[flowLoopCount] = key;
                         flowLoopTypes[flowLoopCount] = antecedentTypes;
@@ -25176,7 +25217,7 @@ namespace ts {
                         const cached = cacheGet(key);
                         if (cached) {
                             if (myDebug){
-                                console.log(`getTypeAtFlowLoopLabel, If we see a value appear in the cache it is a sign`);
+                                consoleLog(`getTypeAtFlowLoopLabel, If we see a value appear in the cache it is a sign`);
                             }
                             return cached;
                         }
@@ -25203,7 +25244,7 @@ namespace ts {
                     return createFlowType(result, /*incomplete*/ true);
                 }
                 if (myDebug){
-                    console.log(`getTypeAtFlowLoopLabel, cache.set(${key}, ${typeToString(result)}`);
+                    consoleLog(`getTypeAtFlowLoopLabel, cache.set(${key}, ${typeToString(result)}`);
                 }
                 cache.set(key, result);
                 return result;
@@ -26342,7 +26383,7 @@ namespace ts {
                 type === autoType || type === autoArrayType ? undefinedType :
                 getOptionalType(type);
             const flowType = getFlowTypeOfReference(node, type, initialType, flowContainer);
-            if (myDebug) console.log(`In getIdentifier(), getFlowTypeOfReference returned ${typeToString(flowType)}`);
+            if (myDebug) consoleLog(`In getIdentifier(), getFlowTypeOfReference returned ${typeToString(flowType)}`);
             // A variable is considered uninitialized when it is possible to analyze the entire control flow graph
             // from declaration to use, and when the variable's declared type doesn't include undefined but the
             // control flow based type does include undefined.
@@ -35353,8 +35394,8 @@ namespace ts {
             instantiationCount = 0;
             const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
             if (myDebug) {
-                console.group(`checkExpression ${dbgNodeToString(node)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
-                //console.log(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
+                consoleGroup(`checkExpression ${dbgNodeToString(node)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
+                //consoleLog(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
             }
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
             if (myDebug) {
@@ -35364,20 +35405,20 @@ namespace ts {
                 // if (symbol) {
                 //     // get a type which has not been affected by "getFlowTypeOfReference"
                 //     peType = checker.getTypeOfSymbol(symbol);
-                //     console.log(`checkExpressionWorker tos(sal): ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(peType)}`);
+                //     consoleLog(`checkExpressionWorker tos(sal): ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(peType)}`);
                 // }
                 if (dbgFlow_mapPeType?.has(pekey)) {
                     const tmp = dbgFlow_mapPeType?.get(pekey);
                     if (tmp!==peType) {
                         // They can be not equal during loop analysis - even in original code
-                        console.log(`checkExpression: tmp!==peType,${typeToString(tmp!)}!==${typeToString(peType)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
+                        consoleLog(`checkExpression: tmp!==peType,${typeToString(tmp!)}!==${typeToString(peType)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
                         // Debug.assert(tmp===peType,`${typeToString(tmp!)}!==${typeToString(peType)}`);
                     }
                 }
                 else dbgFlow_mapPeType?.set(pekey,peType);
 
-                console.log(`checkExpression return: ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(uninstantiatedType)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
-                console.groupEnd();
+                consoleLog(`checkExpression return: ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(uninstantiatedType)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
+                consoleGroupEnd();
             }
             const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
             if (isConstEnumObjectType(type)) {
@@ -41805,10 +41846,10 @@ namespace ts {
                 currentNode = node;
                 instantiationCount = 0;
                 if (myDebug) {
-                    console.group(`checkSourceElement: ${dbgNodeToString(node)}`);
+                    consoleGroup(`checkSourceElement: ${dbgNodeToString(node)}`);
                 }
                 checkSourceElementWorker(node);
-                if (myDebug) console.groupEnd();
+                if (myDebug) consoleGroupEnd();
                 currentNode = saveCurrentNode;
             }
         }
@@ -42157,8 +42198,8 @@ namespace ts {
             if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" && dbgFlowFileCnt===1) {
                 myDebug = !!Number(process.env.myDebug);
                 //myNoCache = !!Number(process.env.myNoCache);
-                console.log(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}, myNoGetFlowCacheKeyFix=${myGetFlowCacheKeyFix}`);
-                if (node.endFlowNode) {
+                consoleLog(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}, myNoGetFlowCacheKeyFix=${myGetFlowCacheKeyFix}`);
+                if (myDebug && node.endFlowNode) {
                     writingFlowTxt = true;
                     dbgFlow_mapPeType = new Map<string,Type>();
                     let contents = "";
@@ -42176,7 +42217,7 @@ namespace ts {
                     const write = (s: string)=>contents+=s;
                     writeFlowNodesUp(write, [node.endFlowNode!],dbgFlow_mapPeType);
                     sys.writeFile(`${ofilenameRoot}.after.txt`, contents);
-                    console.log(`myMaxDepth: ${myMaxDepth}`);
+                    consoleLog(`myMaxDepth: ${myMaxDepth}`);
                 }
                 myDebug = false;
                 myDisable = false;
@@ -43241,8 +43282,8 @@ namespace ts {
                             //     let a, b
                             //     { let x = 1; a = () => x; }
                             //     { let x = 100; b = () => x; }
-                            //     console.log(a()); // should print '1'
-                            //     console.log(b()); // should print '100'
+                            //     consoleLog(a()); // should print '1'
+                            //     consoleLog(b()); // should print '100'
                             //     OR
                             //   - binding is declared inside loop but not in inside initializer of iteration statement or directly inside loop body
                             //     * variables from initializer are passed to rewritten loop body as parameters so they are not captured directly

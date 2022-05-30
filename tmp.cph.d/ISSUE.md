@@ -450,3 +450,39 @@ Failing
 tests/cases/conformance/controlFlow/controlFlowAliasing.ts
 tests/cases/conformance/controlFlow/controlFlowGenericTypes.ts
 tests/cases/conformance/controlFlow/dependentDestructuredVariables.ts
+
+        CompilerBaselineRunner.prototype.runSuite = function (fileName, test, configuration) {
+            var _this = this;
+            // Mocha holds onto the closure environment of the describe callback even after the test is done.
+            // Everything declared here should be cleared out in the "after" callback.
+            var compilerTest;
+            before(function () {
+                console.log(test.file);  <----------------- added to find name of file hanging
+                var payload;
+                if (test && test.content) {
+                    var rootDir = test.file.indexOf("conformance") === -1 ? "tests/cases/compiler/" : ts.getDirectoryPath(test.file) + "/";
+                    payload = Harness.TestCaseParser.makeUnitsFromTest(test.content, test.file, rootDir);
+                }
+                compilerTest = new CompilerTest(fileName, payload, configuration);
+            });
+
+tests/cases/compiler/binaryArithmeticControlFlowGraphNotTooLarge.ts  <- hangs
+
+Although `binaryArithmeticControlFlowGraphNotTooLarge` is passing the original code, 
+the logging shows O(N^2) behavior when `blocks` appears on the r.h.s.
+
+`blocks` is assigned only once at the top `blocks = this.blocks`, but `block[<literal number>]` appears many times on the rhs.
+It is when evaluation such a rhs `block` / `block[<literal number>]` that antecdents are followed all the way back to the top
+resulting in O(N^2) behavior.  
+
+This is worth solving.  But I should roll back some changes made for caching when `isOriginalCall` is false:  `altTypeCache`.
+But doing that will result in hanging on `binaryArithmeticControlFlowGraphNotTooLarge`.
+To avoid that it seems necessary to roll back all caching changes - get rid of `typeCache` and go back to using only the existing `cache`.
+Then check complete test suite. 
+Once that is stable, then investigate this problem further.
+
+
+
+
+
+
