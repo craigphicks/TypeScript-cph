@@ -482,7 +482,18 @@ Then check complete test suite.
 Once that is stable, then investigate this problem further.
 
 
+needs fixing 
+ typeOfThis  // cannot find this 
+ literalTypeWidening // strange, but const types should be automatically widened at assignment even though their value is immutable.
+ initializerReferencingConstructorLocals // cannot find this 
+ capturedLetConstInLoop7_ES6 // a const may have a never type where at unreachable locations
+ capturedLetConstInLoop7 // original has no error on an abviously false condition because it is unreachable anyway
+ 
+Re: literalTypeWidening // strange, but const types should be automatically widened at assignment even though their value is immutable.
+How does that affect conditions?  
+Conditions are always calculated using the flow, so for a const that is the narrower rhs of the assignment.
 
+So undo the early const change.
 
 
 

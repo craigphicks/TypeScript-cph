@@ -391,8 +391,8 @@ namespace ts {
         };
 
         interface FlowTypeQueryState {
-            typeCache: ESMap<Node, Type>;
-            altTypeCache: ESMap<string, Type>;
+            // typeCache: ESMap<Node, Type>;
+            // altTypeCache: ESMap<string, Type>;
             disable: boolean;
             noCache: boolean;
             getFlowCacheKeyFix: boolean;
@@ -419,8 +419,8 @@ namespace ts {
             //inAliasMode: () => boolean;
         };
         const flowTypeQueryState: FlowTypeQueryState = {
-            typeCache: new Map<Node,Type>(),
-            altTypeCache: new Map<string, Type>(),
+            // typeCache: new Map<Node,Type>(),
+            // altTypeCache: new Map<string, Type>(),
             disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
             noCache: false, // ditto
             getFlowCacheKeyFix: false, // ditto
@@ -24385,22 +24385,23 @@ namespace ts {
             }
             return false;
         }
-        function getSymbolIfConstantReadonlyReference(node: Node): Symbol | undefined {
-            let symbol: Symbol | undefined;
-            switch (node.kind) {
-                case SyntaxKind.Identifier: {
-                    symbol = getResolvedSymbol(node as Identifier);
-                    if (isConstVariable(symbol) || isParameterOrCatchClauseVariable(symbol)) return symbol;
-                }
-                break;
-                case SyntaxKind.PropertyAccessExpression:
-                case SyntaxKind.ElementAccessExpression:{
-                    // The resolvedSymbol property is initialized by checkPropertyAccess or checkElementAccess before we get here.
-                    symbol = isConstantReference((node as AccessExpression).expression)? getNodeLinks(node).resolvedSymbol: undefined;
-                    if (symbol && isReadonlySymbol(symbol)) return symbol;
-                }
-            }
-        }
+
+        // function getSymbolIfConstantReadonlyReference(node: Node): Symbol | undefined {
+        //     let symbol: Symbol | undefined;
+        //     switch (node.kind) {
+        //         case SyntaxKind.Identifier: {
+        //             symbol = getResolvedSymbol(node as Identifier);
+        //             if (isConstVariable(symbol) || isParameterOrCatchClauseVariable(symbol)) return symbol;
+        //         }
+        //         break;
+        //         case SyntaxKind.PropertyAccessExpression:
+        //         case SyntaxKind.ElementAccessExpression:{
+        //             // The resolvedSymbol property is initialized by checkPropertyAccess or checkElementAccess before we get here.
+        //             symbol = isConstantReference((node as AccessExpression).expression)? getNodeLinks(node).resolvedSymbol: undefined;
+        //             if (symbol && isReadonlySymbol(symbol)) return symbol;
+        //         }
+        //     }
+        // }
 
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode): Type {
             flowTypeQueryState.disable = myDisable;
@@ -24445,20 +24446,21 @@ namespace ts {
             if (myDebug) {
                 consoleLog(`getFlowTypeOfReference(out): reference: ${dbgNodeToString(reference)}, return:${typeToString(type)}, declaredType: ${typeToString(declaredType)}`);
             }
-            if (isOriginalCall){
-                if (!flowTypeQueryState.typeCache.has(reference)){
-                    flowTypeQueryState.typeCache.set(reference,type);
-                }
-            }
-            else {
-                const key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
-                if (key && !flowTypeQueryState.altTypeCache.has(key)) flowTypeQueryState.altTypeCache.set(key,type);
-            }
+            // if (isOriginalCall){
+            //     if (!flowTypeQueryState.typeCache.has(reference)){
+            //         flowTypeQueryState.typeCache.set(reference,type);
+            //     }
+            // }
+            // else {
+            //     const key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
+            //     if (key && !flowTypeQueryState.altTypeCache.has(key)) flowTypeQueryState.altTypeCache.set(key,type);
+            // }
             if (myDebug) consoleGroupEnd();
             return type;
         }
         function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer: Node | undefined, flowNode: FlowNode, isOriginalCall: boolean): Type {
             //const dbgNarrowType = false;
+            if (isOriginalCall){/* */}
 
             let key: string | undefined;
             let isKeySet = false;
@@ -24469,74 +24471,75 @@ namespace ts {
             if (!flowNode) {
                 return declaredType;
             }
-            if (!flowTypeQueryState.disable) {
-                if (isOriginalCall) {
-                    if (flowTypeQueryState.typeCache.has(reference)){
-                        const type = flowTypeQueryState.typeCache.get(reference)!;
-                        if (myDebug) consoleLog("getFlowTypeOfReference: cache hit (orig)");
-                        return type;
-                    }
-                }
-                else {
-                    const key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
-                    if (key && flowTypeQueryState.altTypeCache.has(key)) {
-                        const type = flowTypeQueryState.altTypeCache.get(key)!;
-                        if (myDebug) consoleLog("getFlowTypeOfReference: cache hit (alt");
-                        return type;
-                    }
-                }
-            }
+            // if (!flowTypeQueryState.disable) {
+            //     if (isOriginalCall) {
+            //         if (flowTypeQueryState.typeCache.has(reference)){
+            //             const type = flowTypeQueryState.typeCache.get(reference)!;
+            //             if (myDebug) consoleLog("getFlowTypeOfReference: cache hit (orig)");
+            //             return type;
+            //         }
+            //     }
+            //     else {
+            //         const key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
+            //         if (key && flowTypeQueryState.altTypeCache.has(key)) {
+            //             const type = flowTypeQueryState.altTypeCache.get(key)!;
+            //             if (myDebug) consoleLog("getFlowTypeOfReference: cache hit (alt");
+            //             return type;
+            //         }
+            //     }
+            // }
             flowInvocationCount++;
-            if (!flowTypeQueryState.disable) {
-                const symbolRo = getSymbolIfConstantReadonlyReference(reference);
-                let type: Type | undefined;
-                if (symbolRo) {
-                    if (myDebug){
-                        consoleLog(`getFlowTypeByReference: reference ${dbgNodeToString(reference)} is const/readonly`);
-                        flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly=true;
-                    }
-                    /* if (isOriginalCall) */ {
-                        /**
-                         * Here we test if the const/ro type is non-narrowable, in which case the type can be returned early.
-                         * However, if it os not an original call, the intention may be to use he flow nodes for narrowing, so this branch is not performed.
-                         * Ooops.  If the `isOriginalCall` check is performed, then the `never` start re-appearing in the `.type` report files,
-                         * which we do not want.
-                         */
-                        // Because the declared type may be wider than the initializer type.
-                        if (symbolRo.valueDeclaration && isVariableDeclaration(symbolRo.valueDeclaration)) {
-                            if (symbolRo.valueDeclaration.initializer){
-                                const initSymbol = getSymbolAtLocation(symbolRo.valueDeclaration.initializer) || symbolRo.valueDeclaration.initializer.symbol;
-                                if (initSymbol) {
-                                    type = getTypeOfSymbol(initSymbol);
-                                    if (!type || isErrorType(type)) {
-                                        type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration.initializer);
-                                    }
-                                    if (!type || isErrorType(type)) {
-                                        type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration);
-                                    }
-                                }
-                            }
-                        }
-                        if (!type) type = declaredType;
-                        // if (!type || isErrorType(type)) type = getTypeOfSymbol(symbolRo);
-                        // if (!type || isErrorType(type) && symbolRo.declarations?.length===1) type = getTypeOfSymbolAtLocation(symbolRo, symbolRo.declarations![0]);
-                        const isNonNarrowableType = (type: Type) => {
-                            // TODO: implement also structured objects of literals
-                            return type.flags & (
-                                TypeFlags.StringLiteral
-                                | TypeFlags.NumberLiteral
-                                | TypeFlags.BooleanLiteral  // hopefully this doesn't include boolean union of true/false
-                                | TypeFlags.EnumLiteral     // hopefully this doesn't include union of enum types
-                                | TypeFlags.BigIntLiteral) &&
-                                !(type.flags & TypeFlags.Union);
-                        };
-                        if (!isErrorType(type) && isNonNarrowableType(type)) {
-                            if (myDebug) consoleLog(`getFlowTypeOfReference, short cut for const/ro literal type: ${dbgNodeToString(reference)} -> ${typeToString(type)}`);
-                            return type;
-                        }
-                    }
-                }
-            }
+
+            // if (!flowTypeQueryState.disable) {
+            //     const symbolRo = getSymbolIfConstantReadonlyReference(reference);
+            //     let type: Type | undefined;
+            //     if (symbolRo) {
+            //         if (myDebug){
+            //             consoleLog(`getFlowTypeByReference: reference ${dbgNodeToString(reference)} is const/readonly`);
+            //             flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly=true;
+            //         }
+            //         /* if (isOriginalCall) */ {
+            //             /**
+            //              * Here we test if the const/ro type is non-narrowable, in which case the type can be returned early.
+            //              * However, if it os not an original call, the intention may be to use he flow nodes for narrowing, so this branch is not performed.
+            //              * Ooops.  If the `isOriginalCall` check is performed, then the `never` start re-appearing in the `.type` report files,
+            //              * which we do not want.
+            //              */
+            //             // Because the declared type may be wider than the initializer type.
+            //             if (symbolRo.valueDeclaration && isVariableDeclaration(symbolRo.valueDeclaration)) {
+            //                 if (symbolRo.valueDeclaration.initializer){
+            //                     const initSymbol = getSymbolAtLocation(symbolRo.valueDeclaration.initializer) || symbolRo.valueDeclaration.initializer.symbol;
+            //                     if (initSymbol) {
+            //                         type = getTypeOfSymbol(initSymbol);
+            //                         if (!type || isErrorType(type)) {
+            //                             type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration.initializer);
+            //                         }
+            //                         if (!type || isErrorType(type)) {
+            //                             type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration);
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //             if (!type) type = declaredType;
+            //             // if (!type || isErrorType(type)) type = getTypeOfSymbol(symbolRo);
+            //             // if (!type || isErrorType(type) && symbolRo.declarations?.length===1) type = getTypeOfSymbolAtLocation(symbolRo, symbolRo.declarations![0]);
+            //             const isNonNarrowableType = (type: Type) => {
+            //                 // TODO: implement also structured objects of literals
+            //                 return type.flags & (
+            //                     TypeFlags.StringLiteral
+            //                     | TypeFlags.NumberLiteral
+            //                     | TypeFlags.BooleanLiteral  // hopefully this doesn't include boolean union of true/false
+            //                     | TypeFlags.EnumLiteral     // hopefully this doesn't include union of enum types
+            //                     | TypeFlags.BigIntLiteral) &&
+            //                     !(type.flags & TypeFlags.Union);
+            //             };
+            //             if (!isErrorType(type) && isNonNarrowableType(type)) {
+            //                 if (myDebug) consoleLog(`getFlowTypeOfReference, short cut for const/ro literal type: ${dbgNodeToString(reference)} -> ${typeToString(type)}`);
+            //                 return type;
+            //             }
+            //         }
+            //     }
+            // }
 
 
             const sharedFlowStart = sharedFlowCount;
@@ -35316,7 +35319,7 @@ namespace ts {
              * The flowTypeCache sometimes has incorrect or intermediate values - try using only types
              * cached or retrieved from cache at the top level of getFlowTypeOfRefernce
              */
-            if (flowTypeQueryState.disable && node.flags & NodeFlags.TypeCached && flowTypeCache) {
+            if (/* flowTypeQueryState.disable && */ node.flags & NodeFlags.TypeCached && flowTypeCache) {
                 const cachedType = flowTypeCache[getNodeId(node)];
                 if (cachedType) {
                     return cachedType;
@@ -43282,8 +43285,8 @@ namespace ts {
                             //     let a, b
                             //     { let x = 1; a = () => x; }
                             //     { let x = 100; b = () => x; }
-                            //     consoleLog(a()); // should print '1'
-                            //     consoleLog(b()); // should print '100'
+                            //     console.log(a()); // should print '1'
+                            //     console.log(b()); // should print '100'
                             //     OR
                             //   - binding is declared inside loop but not in inside initializer of iteration statement or directly inside loop body
                             //     * variables from initializer are passed to rewritten loop body as parameters so they are not captured directly
