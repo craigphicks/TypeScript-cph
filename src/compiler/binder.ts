@@ -173,6 +173,8 @@ namespace ts {
 
     const binder = createBinder();
 
+    const myDisableFlowJoin = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
+
     export function bindSourceFile(file: SourceFile, options: CompilerOptions) {
         performance.mark("beforeBind");
         perfLogger.logStartBindFile("" + file.fileName);
@@ -1020,6 +1022,12 @@ namespace ts {
             return initFlowNode({ flags: FlowFlags.Call, antecedent, node });
         }
 
+        function createFlowJoin(antecedent: FlowNode, node: Expression | VariableDeclaration | ArrayBindingElement): FlowNode {
+            if (myDisableFlowJoin) return antecedent;
+            setFlowNodeReferenced(antecedent);
+            return initFlowNode({ flags:FlowFlags.Join, antecedent, node });
+        }
+
         function finishFlowLabel(flow: FlowLabel): FlowNode {
             const antecedents = flow.antecedents;
             if (!antecedents) {
@@ -1408,7 +1416,10 @@ namespace ts {
 
         function bindAssignmentTargetFlow(node: Expression) {
             if (isNarrowableReference(node)) {
-                currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
+
+                const joinFlow = createFlowJoin(currentFlow, node);
+                currentFlow = createFlowMutation(FlowFlags.Assignment, joinFlow, node);
+                // currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
             }
             else if (node.kind === SyntaxKind.ArrayLiteralExpression) {
                 for (const e of (node as ArrayLiteralExpression).elements) {
@@ -1643,7 +1654,9 @@ namespace ts {
                 }
             }
             else {
-                currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
+                const joinFlow = createFlowJoin(currentFlow, node);
+                currentFlow = createFlowMutation(FlowFlags.Assignment, joinFlow, node);
+                // currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
             }
         }
 

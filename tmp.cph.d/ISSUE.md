@@ -495,5 +495,71 @@ Conditions are always calculated using the flow, so for a const that is the narr
 
 So undo the early const change.
 
+Now we are back to passing all runtests, but the bug fix no longer works inside loops.
+I.e., _cax-a4 is working, but not _cax-a1 or _cax-a2.
+
+The problem is probably that `getTypeOfExpression` again reads cached values 
+```
+            if (/* flowTypeQueryState.disable && */ node.flags & NodeFlags.TypeCached && flowTypeCache) {
+                const cachedType = flowTypeCache[getNodeId(node)];
+                if (cachedType) {
+                    return cachedType;
+                }
+            }
+```
+despite the fact that checkExpression itself is returning correct values.
+
+Next:  Try overwriting `flowTypeCache[getNodeId(node)]` with the return value of `getFlowTypeOfReference` when the call is not recursive.
+Nope - undo that.
+
+Here:
+```
+getTypeAtFlowNode
+    (in) , LoopLabel|Label|Referenced|Shared, flowDepth: 4, flowTypeQueryState.getFlowStackIndex(): 3
+    pushFlow(LoopLabel|Label|Referenced|Shared)
+    0: [isBug, (475,480)], TrueCondition|Condition|Referenced|Shared::: [0] obj, [509,513], Identifier
+    1: , BranchLabel|Label|Referenced|Shared::: [0] obj, [509,513], Identifier
+    2: [obj.kind!=="foo", (438,455)], TrueCondition|Condition|Referenced::: [0] obj, [509,513], Identifier
+    3: [!obj, (431,435)], FalseCondition|Condition|Referenced|Shared::: [0] obj, [509,513], Identifier
+    4: , LoopLabel|Label|Referenced|Shared::: [0] obj, [509,513], Identifier
+    (dbgiter:0) , LoopLabel|Label|Referenced|Shared, flowDepth: 5
+    getTypeAtFlowNode: sharedFlowNodes hit 0/1
+    0: [isBug, (475,480)], TrueCondition|Condition|Referenced|Shared::: [0] obj, [509,513], Identifier
+    1: , BranchLabel|Label|Referenced|Shared::: [0] obj, [509,513], Identifier
+    2: [obj.kind!=="foo", (438,455)], TrueCondition|Condition|Referenced::: [0] obj, [509,513], Identifier
+    3: [!obj, (431,435)], FalseCondition|Condition|Referenced|Shared::: [0] obj, [509,513], Identifier
+    4: , LoopLabel|Label|Referenced|Shared::: [0] obj, [509,513], Identifier
+    popFlow()->LoopLabel|Label|Referenced|Shared
+    (out) , LoopLabel|Label|Referenced|Shared, flowDepth: 4, ret: X1 | undefined
+  (fc ) flow.id: undefined, asumeTrue:false, nonEvolvingType: X1 | undefined, narrowedType: X1
+  (fc out) [!obj, (431,435)], FalseCondition|Condition|Referenced|Shared, flowDepth: 4, ret: X1
+
+```
+It's popping out at the loop label, because, I think, it decides it has detected an instance of some reference to obj which has declared type,
+so it decides there is no need to look further - expecting only to be able to widen types.
+
+Anyway, it's clear that to prevent having to traverse all the way back to alias assignments, they will have to be encapsulated 
+and made available for evaluation at the point of condition.  So that has to be done before anything else.
+What that means is any assigment should be formulated as closure.  
+We could either simulate that for each assignment, creating an articifcal closusre and caching it, or do it properly in bind, adding in a closure element
+which can just be passed over in getTypeAtFlowNode.
+
+The at least we should be able to evaluate obj 
+```
+    0: [isBug, (475,480)], TrueCondition|Condition|Referenced|Shared::: [0] obj, [509,513], Identifier
+    1: , BranchLabel|Label|Referenced|Shared::: [0] obj, [509,513], Identifier
+    2: [obj.kind!=="foo", (438,455)], TrueCondition|Condition|Referenced::: [0] obj, [509,513], Identifier
+    3: [!obj, (431,435)], FalseCondition|Condition|Referenced|Shared::: [0] obj, [509,513], Identifier
+    4: , LoopLabel|Label|Referenced|Shared::: [0] obj, [509,513], Identifier
+```
+before getting ejected at the loop label.
+
+
+
+
+
+
+
+
 
 

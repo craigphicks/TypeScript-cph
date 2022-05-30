@@ -1984,10 +1984,11 @@ declare namespace ts {
         ReduceLabel = 1024,
         Referenced = 2048,
         Shared = 4096,
+        Join = 8192,
         Label = 12,
         Condition = 96
     }
-    export type FlowNode = FlowStart | FlowLabel | FlowAssignment | FlowCondition | FlowSwitchClause | FlowArrayMutation | FlowCall | FlowReduceLabel;
+    export type FlowNode = FlowStart | FlowLabel | FlowAssignment | FlowCondition | FlowSwitchClause | FlowArrayMutation | FlowCall | FlowReduceLabel | FlowJoin;
     export interface FlowNodeBase {
         flags: FlowFlags;
         id?: number;
@@ -1999,6 +2000,10 @@ declare namespace ts {
         antecedents: FlowNode[] | undefined;
     }
     export interface FlowAssignment extends FlowNodeBase {
+        node: Expression | VariableDeclaration | BindingElement;
+        antecedent: FlowNode;
+    }
+    export interface FlowJoin extends FlowNodeBase {
         node: Expression | VariableDeclaration | BindingElement;
         antecedent: FlowNode;
     }

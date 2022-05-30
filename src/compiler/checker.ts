@@ -24264,7 +24264,10 @@ namespace ts {
                     return lastFlowNodeReachable;
                 }
                 const flags = flow.flags;
-                if (flags & FlowFlags.Shared) {
+                if (flags & FlowFlags.Join){
+                    flow = (flow as FlowJoin).antecedent;
+                }
+                else if (flags & FlowFlags.Shared) {
                     if (!noCacheCheck) {
                         const id = getFlowNodeId(flow);
                         const reachable = flowNodeReachable[id];
@@ -24340,7 +24343,10 @@ namespace ts {
                     }
                     noCacheCheck = false;
                 }
-                if (flags & (FlowFlags.Assignment | FlowFlags.Condition | FlowFlags.ArrayMutation | FlowFlags.SwitchClause)) {
+                if (flags & FlowFlags.Join){
+                    flow = (flow as FlowJoin).antecedent;
+                }
+                else if (flags & (FlowFlags.Assignment | FlowFlags.Condition | FlowFlags.ArrayMutation | FlowFlags.SwitchClause)) {
                     flow = (flow as FlowAssignment | FlowCondition | FlowArrayMutation | FlowSwitchClause).antecedent;
                 }
                 else if (flags & FlowFlags.Call) {
@@ -24648,7 +24654,12 @@ namespace ts {
                         sharedFlow = flow;
                     }
                     let type: FlowType | undefined;
-                    if (flags & FlowFlags.Assignment) {
+                    if (flags & FlowFlags.Join) {
+                        // For now do nothing.
+                        flow = (flow as FlowJoin).antecedent;
+                        continue;
+                    }
+                    else if (flags & FlowFlags.Assignment) {
                         type = getTypeAtFlowAssignment(flow as FlowAssignment);
                         if (!type) {
                             flow = (flow as FlowAssignment).antecedent;

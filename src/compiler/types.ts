@@ -3459,6 +3459,7 @@ namespace ts {
         ReduceLabel    = 1 << 10, // Temporarily reduce antecedents of label
         Referenced     = 1 << 11, // Referenced as antecedent once
         Shared         = 1 << 12, // Referenced as antecedent more than once
+        Join           = 1 << 13, // Marks the end of an Assignment
 
         Label = BranchLabel | LoopLabel,
         Condition = TrueCondition | FalseCondition,
@@ -3472,7 +3473,8 @@ namespace ts {
         | FlowSwitchClause
         | FlowArrayMutation
         | FlowCall
-        | FlowReduceLabel;
+        | FlowReduceLabel
+        | FlowJoin;
 
     export interface FlowNodeBase {
         flags: FlowFlags;
@@ -3497,6 +3499,12 @@ namespace ts {
         node: Expression | VariableDeclaration | BindingElement;
         antecedent: FlowNode;
     }
+
+    export interface FlowJoin extends FlowNodeBase {
+        node: Expression | VariableDeclaration | BindingElement; // same as the node of the Flow being joined.
+        antecedent: FlowNode;
+    }
+
 
     export interface FlowCall extends FlowNodeBase {
         node: CallExpression;
