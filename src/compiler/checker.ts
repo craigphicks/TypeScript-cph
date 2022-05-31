@@ -38290,7 +38290,14 @@ namespace ts {
              * even inside a descendent loop.
              */
             if (!flowTypeQueryState.disable && node.flowNode && isFlowAssignment(node.flowNode) && isVariableDeclaration(node) && node.initializer) {
-                const symbol = getSymbolAtLocation(node) || node.symbol;
+                if (myDebug){
+                    consoleLog(`checkVariableLikeDeclaration: test for assignable: ${dbgNodeToString(node)}  !!node.symbol=${!!node.symbol}`);
+                }
+                const getSymbolAtNode = (node: Node) => {
+                    // getSymbolAtLocation(node) || node.symbol;
+                    return node.symbol;
+                }
+                const symbol = getSymbolAtNode(node);
                 if (symbol && !flowTypeQueryState.aliasableAssignments.has(symbol) && isConstVariable(symbol)){
                     // antiVsitor inverts true/false
                     const antiVisitor = (node1: Node): boolean=>{
@@ -38300,7 +38307,8 @@ namespace ts {
                             case SyntaxKind.PropertyAccessExpression:
                                 return true;
                             case SyntaxKind.Identifier:{
-                                const symbol1 = getSymbolAtLocation(node1) || node1.symbol;
+                                const symbol1 = getSymbolAtNode(node1);
+                                if (!symbol1) return false;
                                 const type1 = getDeclaredTypeOfSymbol(symbol1);
                                 const isTypeImmutableWhenLhsIsConst = (t: Type): boolean =>{
                                     if (t.aliasSymbol?.escapedName==="Readonly") return true;

@@ -1656,6 +1656,10 @@ namespace ts {
             else {
                 const joinFlow = createFlowJoin(currentFlow, node);
                 currentFlow = createFlowMutation(FlowFlags.Assignment, joinFlow, node);
+                if (!myDisableFlowJoin){
+                    // node.flowNode is not getting set but we need it now for alias assignments.
+                    node.flowNode = currentFlow;
+                }
                 // currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
             }
         }
