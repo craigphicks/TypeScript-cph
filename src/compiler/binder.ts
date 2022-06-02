@@ -173,7 +173,7 @@ namespace ts {
 
     const binder = createBinder();
 
-    const myDisableFlowJoin = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
+    const myDisable = !!Number(process.env.myDisable); // Disable inserting FlowJoin, etc.
 
     export function bindSourceFile(file: SourceFile, options: CompilerOptions) {
         performance.mark("beforeBind");
@@ -1022,10 +1022,10 @@ namespace ts {
             return initFlowNode({ flags: FlowFlags.Call, antecedent, node });
         }
 
-        function createFlowJoin(antecedent: FlowNode, node: Expression | VariableDeclaration | ArrayBindingElement): FlowNode {
-            if (myDisableFlowJoin) return antecedent;
+        function createFlowJoin({antecedent, joinNode}: {antecedent: FlowNode, joinNode: Expression | VariableDeclaration | ArrayBindingElement}): FlowJoin {
+            //if (myDisable) return antecedent;
             setFlowNodeReferenced(antecedent);
-            return initFlowNode({ flags:FlowFlags.Join, antecedent, node });
+            return initFlowNode({ flags:FlowFlags.Join, antecedent, joinNode }) as FlowJoin;
         }
 
         function finishFlowLabel(flow: FlowLabel): FlowNode {
@@ -1417,9 +1417,9 @@ namespace ts {
         function bindAssignmentTargetFlow(node: Expression) {
             if (isNarrowableReference(node)) {
 
-                const joinFlow = createFlowJoin(currentFlow, node);
-                currentFlow = createFlowMutation(FlowFlags.Assignment, joinFlow, node);
-                // currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
+                // const joinFlow = createFlowJoin(currentFlow, node);
+                // currentFlow = createFlowMutation(FlowFlags.Assignment, joinFlow, node);
+                currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
             }
             else if (node.kind === SyntaxKind.ArrayLiteralExpression) {
                 for (const e of (node as ArrayLiteralExpression).elements) {
@@ -1646,17 +1646,16 @@ namespace ts {
             currentFlow = finishFlowLabel(postExpressionLabel);
         }
 
-        function bindInitializedVariableFlow(node: VariableDeclaration | ArrayBindingElement) {
+        function bindInitializedVariableFlow(node: VariableDeclaration | ArrayBindingElement, setNodeFlowNode: boolean) {
             const name = !isOmittedExpression(node) ? node.name : undefined;
             if (isBindingPattern(name)) {
                 for (const child of name.elements) {
-                    bindInitializedVariableFlow(child);
+                    bindInitializedVariableFlow(child, setNodeFlowNode);
                 }
             }
             else {
-                const joinFlow = createFlowJoin(currentFlow, node);
-                currentFlow = createFlowMutation(FlowFlags.Assignment, joinFlow, node);
-                if (!myDisableFlowJoin){
+                currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
+                if (setNodeFlowNode){
                     // node.flowNode is not getting set but we need it now for alias assignments.
                     node.flowNode = currentFlow;
                 }
@@ -1665,9 +1664,15 @@ namespace ts {
         }
 
         function bindVariableDeclarationFlow(node: VariableDeclaration) {
+            //let join: FlowJoin | undefined;
+            let setNodeFlowNode = false;
+            if (!myDisable && node.initializer) {
+                setNodeFlowNode = true;
+                currentFlow = createFlowJoin({ antecedent: currentFlow, joinNode: node });
+            }
             bindEachChild(node);
             if (node.initializer || isForInOrOfStatement(node.parent.parent)) {
-                bindInitializedVariableFlow(node);
+                bindInitializedVariableFlow(node, setNodeFlowNode);
             }
         }
 

@@ -1,9 +1,8 @@
 /* @internal */
 namespace ts {
     let myDebug = false;
-    let myNoCache = false;
     let myDisable = false;
-    let myGetFlowCacheKeyFix = false;
+    let myNoAliasAction = false;
     let myMaxDepth = 0;
 
     const ambientModuleSymbolRegex = /^".+"$/;
@@ -323,6 +322,7 @@ namespace ts {
             if (!flow) return "<undef>";
             let str = "";
             if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
+            if (isFlowJoin(flow)) str += `[${(flow.joinNode as any).getText()}, (${flow.joinNode.pos},${flow.joinNode.end})]`;
             str += `, ${Debug.formatFlowFlags(flow.flags)}`;
             return str;
         };
@@ -376,7 +376,8 @@ namespace ts {
             declaredType: Type,
             initialType: Type,
             flowContainer: Node | undefined,
-            flowNode: FlowNode | undefined
+            flowNode: FlowNode | undefined,
+            joinMap: JoinMap | undefined,
             other: {
                 isConstReadonly: boolean,
                 flowStackIndex: Number
@@ -389,10 +390,21 @@ namespace ts {
             tempNarrowedType?: Type; // each flow branch independently narrows a type.
             initalNarrowedType: Type; // each flow branch starts out with this type.
         };
+        type AliasAssignableState = & {
+            node: Node;
+            inUse: boolean; // to prevent recursion
+        };
+        type JoinMap = & {
+            joinNode: Node;
+            mapTo: FlowNode;
+            aliasFlow: FlowAssignment;
+            conditionAssumeTrue: boolean;
+            //symbol: Symbol;
+        };
 
         interface FlowTypeQueryState {
             disable: boolean;
-            aliasableAssignments: ESMap<Symbol, Node>;  // A set of Symbols might do it.
+            aliasableAssignments: ESMap<Symbol, AliasAssignableState>;
             getFlowTypeOfReferenceStack: GetFlowTypeOfReferenceCall[];
             flowStack: FlowNode[];
             conditionStack: {
@@ -417,7 +429,7 @@ namespace ts {
         };
         const flowTypeQueryState: FlowTypeQueryState = {
             disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
-            aliasableAssignments: new Map<Symbol, Node>(),  // A set of Symbols might do it.
+            aliasableAssignments: new Map<Symbol, AliasAssignableState>(),  // A set of Symbols might do it.
             getFlowTypeOfReferenceStack:[],
             flowStack:[],
             conditionStack:[],
@@ -24249,7 +24261,10 @@ namespace ts {
                 }
                 const flags = flow.flags;
                 if (flags & FlowFlags.Join){
-                    flow = (flow as FlowJoin).antecedent;
+                    flow = getJoinAntecdent(flow as FlowJoin);
+                    // This assert fails !!! Called from getFlowTypeOfReference but not inside it.
+                    // Debug.assert(flowTypeQueryState.getFlowTypeOfReferenceStack.length===0,"flowTypeQueryState.getFlowTypeOfReferenceStack.length===0");
+                    //flow = (flow as FlowJoin).antecedent;
                 }
                 else if (flags & FlowFlags.Shared) {
                     if (!noCacheCheck) {
@@ -24328,7 +24343,10 @@ namespace ts {
                     noCacheCheck = false;
                 }
                 if (flags & FlowFlags.Join){
-                    flow = (flow as FlowJoin).antecedent;
+                    flow = getJoinAntecdent(flow as FlowJoin);
+                    // This assert might fail like it fails in isReachableFlowNodeWorker
+                    // Debug.assert(flowTypeQueryState.getFlowTypeOfReferenceStack.length===0,"flowTypeQueryState.getFlowTypeOfReferenceStack.length===0");
+                    //flow = (flow as FlowJoin).antecedent;
                 }
                 else if (flags & (FlowFlags.Assignment | FlowFlags.Condition | FlowFlags.ArrayMutation | FlowFlags.SwitchClause)) {
                     flow = (flow as FlowAssignment | FlowCondition | FlowArrayMutation | FlowSwitchClause).antecedent;
@@ -24393,7 +24411,36 @@ namespace ts {
         //     }
         // }
 
-        function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode): Type {
+        // function getSymbolOfNodeAlways(node: Node): Symbol{
+        //     if (node.kind === SyntaxKind.Identifier) {
+        //         const symbol = getResolvedSymbol(node as Identifier);
+        //         Debug.assert(!node.symbol || symbol!==node.symbol, "!node.symbol || symbol!==node.symbol [1]");
+        //     }
+        //     else {
+        //         const tmp = flowAnalysisDisabled;
+        //         flowAnalysisDisabled = true;
+        //         const symbol = getSymbolAtLocation(node);
+        //         flowAnalysisDisabled = tmp;
+        //         Debug.assert(!node.symbol || symbol!==node.symbol, "!node.symbol || symbol!==node.symbol [2]");
+        //         if (symbol) return symbol;
+        //         else if (node.symbol) return node.symbol;
+        //     }
+        //     Debug.assert(false, "getSymbolOfNodeAlways: failed to get symbol");
+        // }
+
+        // @ts-ignore
+        function getJoinAntecdent(flow: FlowJoin): FlowNode {
+            if (flowTypeQueryState.disable) return flow.antecedent;
+            if (flowTypeQueryState.getFlowTypeOfReferenceStack.length && flowTypeQueryState.getCurrentReferenceCall().params.joinMap){
+                const joinMap = flowTypeQueryState.getCurrentReferenceCall().params.joinMap!;
+                if (joinMap.joinNode === flow.joinNode) return joinMap.mapTo;
+            }
+            return flow.antecedent;
+        }
+
+
+        function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode,
+            joinMap: JoinMap | undefined=undefined): Type {
             flowTypeQueryState.disable = myDisable;
 
             /**
@@ -24409,46 +24456,32 @@ namespace ts {
              * and in these situations the result type may be narrower than when called at the top level, and therefore should not be cached
              * as a top level result.
              */
-            const isOriginalCall = flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 && initialType === declaredType
-            && reference.flowNode === flowNode && isFlowWithNode(flowNode) && reference === flowNode.node;
-
+            // const isOriginalCall = flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 && initialType === declaredType
+            // && reference.flowNode === flowNode && isFlowWithNode(flowNode) && reference === flowNode.node;
+            let dbgstr="";
             if (myDebug) {
-                consoleGroup(`getFlowTypeOfReference(in): reference ${dbgNodeToString(reference)}, declaredType: ${typeToString(declaredType)
-                }, ${
-                    `initialType: ${typeToString(initialType)}, flowContainer: ${flowContainer?getNodeId(flowContainer):-1}, flowNode: ${dbgFlowToString(flowNode)}`
-                }, ${
-                    `[ depth: ${flowTypeQueryState.getFlowTypeOfReferenceStack.length}, isOriginalCall: ${isOriginalCall}`
-                }`);
-                if (flowNode) {
-                    consoleLog(Debug.formatFlowFlags(flowNode.flags));
-                    //Debug.printControlFlowGraph(flowNode);
-                }
+                dbgstr = `reference ${dbgNodeToString(reference)}, declaredType: ${typeToString(declaredType)}`
+                + `, initialType: ${typeToString(initialType)}, flowContainer: ${flowContainer?getNodeId(flowContainer):-1}, flowNode: ${dbgFlowToString(flowNode)}`
+                + (joinMap?`, joinMap={ joinNode: ${dbgNodeToString(joinMap.joinNode)}, mapTo: ${dbgFlowToString(joinMap.mapTo)}}, aliasFlow: ${dbgFlowToString(joinMap.aliasFlow)}`:"")
+                + `[depth:${flowTypeQueryState.getFlowTypeOfReferenceStack.length}`;
             }
-            /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.push({
-                reference, declaredType, initialType, flowContainer, flowNode,
+            if (myDebug) {
+                consoleGroup(`(in ) getFlowTypeOfReference: ` + dbgstr);
+            }
+            flowTypeQueryState.getFlowTypeOfReferenceStack.push({
+                reference, declaredType, initialType, flowContainer, flowNode, joinMap,
                 other: { isConstReadonly: false, flowStackIndex: flowTypeQueryState.flowStack.length }
             });
-            const type = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode!, isOriginalCall);
-            /* if (!flowTypeQueryState.disable) */ flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
+            const type = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode!, joinMap);
+            flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
             if (myDebug) {
-                consoleLog(`getFlowTypeOfReference(out): reference: ${dbgNodeToString(reference)}, return:${typeToString(type)}, declaredType: ${typeToString(declaredType)}`);
+                consoleLog(`(out) getFlowTypeOfReference: ${dbgstr}, return: ${typeToString(type)}`);
             }
-            // if (isOriginalCall){
-            //     if (!flowTypeQueryState.typeCache.has(reference)){
-            //         flowTypeQueryState.typeCache.set(reference,type);
-            //     }
-            // }
-            // else {
-            //     const key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
-            //     if (key && !flowTypeQueryState.altTypeCache.has(key)) flowTypeQueryState.altTypeCache.set(key,type);
-            // }
             if (myDebug) consoleGroupEnd();
             return type;
         }
-        function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer: Node | undefined, flowNode: FlowNode, isOriginalCall: boolean): Type {
-            //const dbgNarrowType = false;
-            if (isOriginalCall){/* */}
-
+        function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer: Node | undefined, flowNode: FlowNode, joinMap: JoinMap | undefined): Type {
+            if (joinMap){/* */}
             let key: string | undefined;
             let isKeySet = false;
             let flowDepth = 0;
@@ -24458,89 +24491,16 @@ namespace ts {
             if (!flowNode) {
                 return declaredType;
             }
-            // if (!flowTypeQueryState.disable) {
-            //     if (isOriginalCall) {
-            //         if (flowTypeQueryState.typeCache.has(reference)){
-            //             const type = flowTypeQueryState.typeCache.get(reference)!;
-            //             if (myDebug) consoleLog("getFlowTypeOfReference: cache hit (orig)");
-            //             return type;
-            //         }
-            //     }
-            //     else {
-            //         const key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
-            //         if (key && flowTypeQueryState.altTypeCache.has(key)) {
-            //             const type = flowTypeQueryState.altTypeCache.get(key)!;
-            //             if (myDebug) consoleLog("getFlowTypeOfReference: cache hit (alt");
-            //             return type;
-            //         }
-            //     }
-            // }
             flowInvocationCount++;
 
-            // if (!flowTypeQueryState.disable) {
-            //     const symbolRo = getSymbolIfConstantReadonlyReference(reference);
-            //     let type: Type | undefined;
-            //     if (symbolRo) {
-            //         if (myDebug){
-            //             consoleLog(`getFlowTypeByReference: reference ${dbgNodeToString(reference)} is const/readonly`);
-            //             flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly=true;
-            //         }
-            //         /* if (isOriginalCall) */ {
-            //             /**
-            //              * Here we test if the const/ro type is non-narrowable, in which case the type can be returned early.
-            //              * However, if it os not an original call, the intention may be to use he flow nodes for narrowing, so this branch is not performed.
-            //              * Ooops.  If the `isOriginalCall` check is performed, then the `never` start re-appearing in the `.type` report files,
-            //              * which we do not want.
-            //              */
-            //             // Because the declared type may be wider than the initializer type.
-            //             if (symbolRo.valueDeclaration && isVariableDeclaration(symbolRo.valueDeclaration)) {
-            //                 if (symbolRo.valueDeclaration.initializer){
-            //                     const initSymbol = getSymbolAtLocation(symbolRo.valueDeclaration.initializer) || symbolRo.valueDeclaration.initializer.symbol;
-            //                     if (initSymbol) {
-            //                         type = getTypeOfSymbol(initSymbol);
-            //                         if (!type || isErrorType(type)) {
-            //                             type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration.initializer);
-            //                         }
-            //                         if (!type || isErrorType(type)) {
-            //                             type = getTypeOfSymbolAtLocation(initSymbol, symbolRo.valueDeclaration);
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //             if (!type) type = declaredType;
-            //             // if (!type || isErrorType(type)) type = getTypeOfSymbol(symbolRo);
-            //             // if (!type || isErrorType(type) && symbolRo.declarations?.length===1) type = getTypeOfSymbolAtLocation(symbolRo, symbolRo.declarations![0]);
-            //             const isNonNarrowableType = (type: Type) => {
-            //                 // TODO: implement also structured objects of literals
-            //                 return type.flags & (
-            //                     TypeFlags.StringLiteral
-            //                     | TypeFlags.NumberLiteral
-            //                     | TypeFlags.BooleanLiteral  // hopefully this doesn't include boolean union of true/false
-            //                     | TypeFlags.EnumLiteral     // hopefully this doesn't include union of enum types
-            //                     | TypeFlags.BigIntLiteral) &&
-            //                     !(type.flags & TypeFlags.Union);
-            //             };
-            //             if (!isErrorType(type) && isNonNarrowableType(type)) {
-            //                 if (myDebug) consoleLog(`getFlowTypeOfReference, short cut for const/ro literal type: ${dbgNodeToString(reference)} -> ${typeToString(type)}`);
-            //                 return type;
-            //             }
-            //         }
-            //     }
-            // }
-
-
             const sharedFlowStart = sharedFlowCount;
-            if (myDebug) {
-                consoleLog(`sharedFlowStart(cache): ${sharedFlowStart}`);
-            }
+            // if (myDebug) {
+            //     consoleLog(`sharedFlowStart(cache): ${sharedFlowStart}`);
+            // }
             const typeAtFlowNode = getTypeAtFlowNode(flowNode);
-            if (myDebug) {
-                const t2s = (ft: FlowType) => (!ft.flags) ? "<IncompleteType>" : typeToString(ft as Type);
-                consoleLog(`sharedFlowCount: ${sharedFlowCount}, typeAtFlowNode: ${t2s(typeAtFlowNode)}`);
-            }
             const evolvedType = getTypeFromFlowType(typeAtFlowNode);
             if (myDebug) {
-                consoleLog(`sharedFlowCount: ${sharedFlowCount}, evolvedType: ${typeToString(evolvedType)}`);
+                consoleLog(`typeAtFlowNode: ${dbgFlowTypeToString(typeAtFlowNode)}, evolvedType: ${typeToString(evolvedType)}`);
             }
             sharedFlowCount = sharedFlowStart;
             // When the reference is 'x' in an 'x.length', 'x.push(value)', 'x.unshift(value)' or x[n] = value' operation,
@@ -24564,34 +24524,16 @@ namespace ts {
                 return key = getFlowCacheKey(reference, declaredType, initialType, flowContainer);
             }
 
-            function dbgff(fn: FlowNode): string{
-                return dbgFlowToString(fn);
-                //return `id=${fn.id}}, ${(fn as any).__debugFlowFlags ? (fn as any).__debugFlowFlags : "no __debugFlowFlags"}, ${Debug.formatFlowFlags(fn.flags)}`;
-                //return `id=${fn.id}}, ${Debug.formatFlowFlags(fn.flags)}`;
-
-            }
-            function dbgft2s(flowType: FlowType): string {
-                return dbgFlowTypeToString(flowType);
-            }
             function getTypeAtFlowNode(flow: FlowNode): FlowType {
                 if (myDebug) {
                     consoleGroup("getTypeAtFlowNode");
                     //consoleLog((dbgff(flow)));
-                    consoleLog(`(in) ${dbgff(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
+                    consoleLog(`(in) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
                 }
-//                if (!flowTypeQueryState.disable) flowTypeQueryState.pushFlow(flow);
                 const r = getTypeAtFlowNode_aux(flow);
-//                if (!flowTypeQueryState.disable) flowTypeQueryState.popFlow();
-                // if (flowTypeQueryState.conditionStack.length && flowTypeQueryState.conditionStack.slice(-1)[0].flowStackIndex===flowTypeQueryState.flowStack.length){
-                //     flowTypeQueryState.conditionStack.pop();
-                // }
-                // if (flowTypeQueryState.aliasModeStack.length && flowTypeQueryState.aliasModeStack.slice(-1)[0].flowStackIndex===flowTypeQueryState.flowStack.length){
-                //     // make sure the accumulated types are moved to the correponding condition before poppping!
-                //     flowTypeQueryState.aliasModeStack.pop();
-                // }
 
                 if (myDebug) {
-                    consoleLog(`(out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
+                    consoleLog(`(out) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, ret: ${dbgFlowTypeToString(r)}`);
                     consoleGroupEnd();
                 }
                 return r;
@@ -24611,13 +24553,8 @@ namespace ts {
                 let dbgiter=0;
                 while (true) {
                     if (myDebug) {
-                        consoleLog(`(dbgiter:${dbgiter++}) ${dbgff(flow)}, flowDepth: ${flowDepth}`);
+                        consoleLog(`(dbgiter:${dbgiter++}) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}`);
                     }
-
-                    /**
-                     * Check flowTypeA
-                     */
-                    //flowTypeQueryState;
 
                     const flags = flow.flags;
                     if (flags & FlowFlags.Shared) {
@@ -24636,9 +24573,19 @@ namespace ts {
                     }
                     let type: FlowType | undefined;
                     if (flags & FlowFlags.Join) {
-                        // For now do nothing.
-                        flow = (flow as FlowJoin).antecedent;
-                        continue;
+                        if (flowTypeQueryState.disable || !joinMap) {
+                            flow = (flow as FlowJoin).antecedent;
+                            continue;
+                        }
+                        else if ((flow as FlowJoin).joinNode && joinMap.joinNode === (flow as FlowJoin).joinNode) {
+                            if (myDebug) consoleLog(`getTypeAtFlowNode: FlowJoin remap`);
+                            flow = joinMap.mapTo;
+                            continue;
+                        }
+                        else {
+                            flow = (flow as FlowJoin).antecedent;
+                            continue;
+                        }
                     }
                     else if (flags & FlowFlags.Assignment) {
                         type = getTypeAtFlowAssignment(flow as FlowAssignment);
@@ -24720,9 +24667,25 @@ namespace ts {
                     getInitialType(node as VariableDeclaration | BindingElement) :
                     getAssignedType(node), reference);
             }
-
             function getTypeAtFlowAssignment(flow: FlowAssignment) {
+                if (myDebug) {
+                    consoleGroup(`getTypeAtFlowAssignment[in](flow: ${dbgFlowToString(flow)})`);
+                }
+                const flowType = getTypeAtFlowAssignment_aux(flow);
+                if (myDebug) {
+                    consoleLog(`getTypeAtFlowAssignment[out](flow: ${dbgFlowToString(flow)}) return: ${
+                        flowType? dbgFlowTypeToString(flowType) : "<undef>"
+                    }`);
+                    consoleGroupEnd();
+                }
+                return flowType;
+            }
+
+            function getTypeAtFlowAssignment_aux(flow: FlowAssignment) {
                 const node = flow.node;
+                if (!flowTypeQueryState.disable && joinMap && joinMap.aliasFlow===flow && flowDepth!==1){
+                    return initialType; // the actual alias is performed higher up
+                }
                 // Assignments only narrow the computed type if the declared type is a union type. Thus, we
                 // only need to evaluate the assigned type if the declared type is a union type.
                 if (isMatchingReference(reference, node)) {
@@ -24841,23 +24804,72 @@ namespace ts {
                 if (myDebug) {
                     consoleGroup("getTypeAtFlowCondition");
                     //consoleLog((dbgff(flow)));
-                    consoleLog(`(fc  in) ${dbgff(flow)}, flowDepth: ${flowDepth}`);
+                    consoleLog(`(fc  in) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}`);
                 }
                 const r = getTypeAtFlowCondition_aux(flow);
                 if (myDebug) {
-                    consoleLog(`(fc out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
+                    consoleLog(`(fc out) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, ret: ${dbgFlowTypeToString(r)}`);
                     consoleGroupEnd();
                 }
                 return r;
             }
             function getTypeAtFlowCondition_aux(flow: FlowCondition): FlowType {
+                const assumeTrue = (flow.flags & FlowFlags.TrueCondition) !== 0;
                 if (!flowTypeQueryState.disable){
-                    const symbol = getSymbolAtLocation(flow.node) || flow.node.symbol;
-                    if (flowTypeQueryState.aliasableAssignments.has(symbol)){
-                        const aliasFlow = flowTypeQueryState.aliasableAssignments.get(symbol)!.flowNode!;
+                    //const symbol = getSymbolOfNodeAlways(flow.node);
+                    // consoleLog(`!!getSymbolAtLocation(flow.node) = ${!!getSymbolAtLocation(flow.node)}`);
+                    // flowAnalysisDisabled = true;
+                    // consoleLog(`!!getSymbolAtLocation(flow.node)[flowAnalysisDisabled] = ${!!getSymbolAtLocation(flow.node)}`);
+                    // flowAnalysisDisabled = false;
+                    // consoleLog(`!!flow.node.symbol = ${!!flow.node.symbol}`);
+                    flowAnalysisDisabled = true;
+                    const symbol = getSymbolAtLocation(flow.node);
+                    flowAnalysisDisabled = false;
+                    if (symbol && flowTypeQueryState.aliasableAssignments.has(symbol)){
+                        const aliasableState = flowTypeQueryState.aliasableAssignments.get(symbol)!;
+                        const aliasNode = aliasableState.node;
+                        const aliasFlow = aliasNode.flowNode!;
+                        const inUse = aliasableState.inUse;
+                        Debug.assert(isFlowAssignment(aliasFlow),"isFlowAssignment(aliasFlow)");
                         if (myDebug){
-                            consoleLog(`getTypeAtFlowCondition: has alias: ${dbgFlowToString(aliasFlow)}`);
-                            consoleLog(`getTypeAtFlowCondition: new code coming here soon`);
+                            consoleLog(`getTypeAtFlowCondition: has alias: ${dbgFlowToString(aliasFlow)}, inUse:${inUse}`);
+                        }
+                        // let False = false;
+                        // False = false;
+                        if (!myNoAliasAction) {
+                            if (inUse) {
+                                if (myDebug){
+                                    consoleLog(`getTypeAtFlowCondition: alias in use, return condition narrowed intialType`);
+                                }
+                                    const narrowedType = narrowType(initialType, flow.node, assumeTrue);
+                                return narrowedType;
+                            }
+                            if (reference === aliasNode){
+                                // this may never happen
+                                if (myDebug){
+                                    consoleLog(`getTypeAtFlowCondition: alias case reference===aliasNode, , return condition narrowed intialType`);
+                                }
+                                const narrowedType = narrowType(initialType, flow.node, assumeTrue);
+                                return narrowedType;
+                            }
+                            else {
+                                /**
+                                 * Call getFlowTypeOfReference with a special argument that will get put on the
+                                 * getFlowTypeOfReferenceStack to indicate Join -> correct antecdent mapping.
+                                 *
+                                 */
+                                if (myDebug){
+                                    consoleLog(`getTypeAtFlowCondition: alias case: reference!==aliasNode`);
+                                }
+                                aliasableState.inUse = true;
+                                const flowType = getFlowTypeOfReference(reference, declaredType, initialType, flowContainer, aliasFlow,
+                                    { joinNode: aliasNode, mapTo: flow.antecedent, aliasFlow, conditionAssumeTrue: assumeTrue });
+                                aliasableState.inUse = false;
+                                return flowType;
+                            }
+                        }
+                        else {
+                            consoleLog(`getTypeAtFlowCondition: alias action disabled`);
                         }
                     }
                 }
@@ -24874,7 +24886,6 @@ namespace ts {
                 // have the complete type. We proceed by switching to the silent never type which
                 // doesn't report errors when operators are applied to it. Note that this is the
                 // *only* place a silent never type is ever generated.
-                const assumeTrue = (flow.flags & FlowFlags.TrueCondition) !== 0;
                 const nonEvolvingType = finalizeEvolvingArrayType(type);
                 //if (myDebug && flow.id===3) dbgNarrowType = true;
                 const narrowedType = narrowType(nonEvolvingType, flow.node, assumeTrue);
@@ -24922,14 +24933,14 @@ namespace ts {
                 if (myDebug) {
                     consoleGroup("getTypeAtFlowBranchLabel");
                     //consoleLog((dbgff(flow)));
-                    consoleLog(`(in) ${dbgff(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
+                    consoleLog(`(in) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
                     // flow.antecedents?.forEach(a=>{
                     //     //consoleLog(`a.flags`)
                     // })
                 }
                 const r = getTypeAtFlowBranchLabel_aux(flow);
                 if (myDebug) {
-                    consoleLog(`(out) ${dbgff(flow)}, flowDepth: ${flowDepth}, ret: ${dbgft2s(r)}`);
+                    consoleLog(`(out) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, ret: ${dbgFlowTypeToString(r)}`);
                     consoleGroupEnd();
                 }
                 return r;
@@ -24941,16 +24952,10 @@ namespace ts {
                 let seenIncomplete = false;
                 let bypassFlow: FlowSwitchClause | undefined;
                 let briter = -1;
-                /*
-                    If parent is assignment and assignment lhs symbol corresponds to an existing condition that has a symbol
-                    (an therefore must be a single identifier) consider it an eligible alias.
-                */
-
-
 
                 for (const antecedent of flow.antecedents!) {
                     if (myDebug){
-                        consoleLog(`briter:${++briter}, ante:${dbgff(antecedent)}`);
+                        consoleLog(`briter:${++briter}, ante:${dbgFlowToString(antecedent)}`);
                     }
                     if (!bypassFlow && antecedent.flags & FlowFlags.SwitchClause && (antecedent as FlowSwitchClause).clauseStart === (antecedent as FlowSwitchClause).clauseEnd) {
                         // The antecedent is the bypass branch of a potentially exhaustive switch statement.
@@ -24958,11 +24963,22 @@ namespace ts {
                         continue;
                     }
 
+                    if (!flowTypeQueryState.disable && joinMap){
+                        if (joinMap.aliasFlow.antecedent===flow){
+                            if (myDebug) consoleLog("getTypeAtFlowBranchLabel: aliasing action");
+                            Debug.assert(isFlowCondition(antecedent),"isFlowCondition(antecedent)");
+                            if (getFlowConditionBoolean(antecedent)!==joinMap.conditionAssumeTrue){
+                                if (myDebug) consoleLog("getTypeAtFlowBranchLabel: aliasing - skip skip antecedent with mismatched boolean sense");
+                                continue;
+                            }
+                        }
+                    }
+
                     const flowType = getTypeAtFlowNode(antecedent);
                     const type = getTypeFromFlowType(flowType);
 
                     if (myDebug){
-                        consoleLog(`briter:${briter}, flowType: ${dbgft2s(flowType)}, type: ${typeToString(type)}`);
+                        consoleLog(`briter:${briter}, flowType: ${dbgFlowTypeToString(flowType)}, type: ${typeToString(type)}`);
                     }
 
                     // If the type at a particular antecedent path is the declared type and the
@@ -38296,7 +38312,7 @@ namespace ts {
                 const getSymbolAtNode = (node: Node) => {
                     // getSymbolAtLocation(node) || node.symbol;
                     return node.symbol;
-                }
+                };
                 const symbol = getSymbolAtNode(node);
                 if (symbol && !flowTypeQueryState.aliasableAssignments.has(symbol) && isConstVariable(symbol)){
                     // antiVsitor inverts true/false
@@ -38330,7 +38346,7 @@ namespace ts {
                     const rhsro = !forEachChild(node.initializer, (node: Node)=>!antiVisitor(node)); // true when no child returns true
                     if (rhsro){
                         if (myDebug) consoleLog(`aliasableAssignments.set(symbolId:${getSymbolId(symbol)},node:${dbgNodeToString(node)}`);
-                        flowTypeQueryState.aliasableAssignments.set(symbol,node);
+                        flowTypeQueryState.aliasableAssignments.set(symbol,{ node, inUse:false });
                     }
                 }
             }
@@ -42139,21 +42155,20 @@ namespace ts {
             let ofilenameRoot="";
             myMaxDepth = 0;
             myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
-            myGetFlowCacheKeyFix = !!Number(process.env.myGetFlowCacheKeyFix); // Fro reasons unknown, this lingers after the intended test has finished - make it always linger to be clear.
-            myNoCache = !!Number(process.env.myNoCache); // ditto
+            myNoAliasAction = !!Number(process.env.myNoAliasAction);
             // not incrementing dbgFlowFileCnt because it is only the last one that is desired
             if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts") dbgFlowFileCnt++;
             if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" && dbgFlowFileCnt===1) {
                 myDebug = !!Number(process.env.myDebug);
                 //myNoCache = !!Number(process.env.myNoCache);
-                consoleLog(`myDebug=${myDebug}, myNoCache=${myNoCache}, myDisable=${myDisable}, myNoGetFlowCacheKeyFix=${myGetFlowCacheKeyFix}`);
+                consoleLog(`myDebug=${myDebug}, myDisable=${myDisable}`);
                 if (myDebug && node.endFlowNode) {
                     writingFlowTxt = true;
                     dbgFlow_mapPeType = new Map<string,Type>();
                     let contents = "";
                     const write = (s: string)=>contents+=s;
                     writeFlowNodesUp(write, [node.endFlowNode]);
-                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.da${myDisable?1:0}.nc${myNoCache?1:0}.${dbgFlowFileCnt++}.gfc${myGetFlowCacheKeyFix}.flow`;
+                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisable?1:0}.${dbgFlowFileCnt++}.flow`;
                     sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
                 }
                 Debug.isDebugging=true;
@@ -42169,7 +42184,6 @@ namespace ts {
                 }
                 myDebug = false;
                 myDisable = false;
-                myNoCache = false;
                 Debug.isDebugging=false;
             }
             performance.mark("afterCheck");
@@ -45931,6 +45945,9 @@ namespace ts {
                     write(indent()+"target:");
                     doOne(fn.target);
                 }
+                else if (isFlowJoin(fn)){
+                    write(indent()+`joinNode: ${dbgNodeToString(fn.joinNode)}`);
+                }
                 if ((fn as any).antecedents) {
                     write(indent()+`antecedents:[${((fn as any).antecedents as FlowNode[]).length}]`);
                     ((fn as any).antecedents as Readonly<FlowNode[]>).forEach(a => doOne(a));
@@ -46031,6 +46048,9 @@ namespace ts {
     }
     export function isFlowReduceLabel(fn: FlowNode | undefined): fn is FlowReduceLabel {
         return !!fn &&  !!(fn.flags & FlowFlags.ReduceLabel);
+    }
+    export function isFlowJoin(fn: FlowNode): fn is FlowJoin {
+        return !!fn &&  !!(fn.flags & FlowFlags.Join);
     }
     export function isFlowWithNode(fn: FlowNode | undefined): fn is FlowNode & {node: Node} {
         return !!fn &&  !!(fn as any).node;

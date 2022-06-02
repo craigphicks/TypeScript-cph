@@ -3501,7 +3501,7 @@ namespace ts {
     }
 
     export interface FlowJoin extends FlowNodeBase {
-        node: Expression | VariableDeclaration | BindingElement; // same as the node of the Flow being joined.
+        joinNode: Expression | VariableDeclaration | BindingElement; // same as the node of the Flow being joined.
         antecedent: FlowNode;
     }
 
