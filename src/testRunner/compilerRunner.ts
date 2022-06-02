@@ -76,6 +76,7 @@ namespace Harness {
         private runSuite(fileName: string, test?: CompilerFileBasedTest, configuration?: FileBasedTestConfiguration) {
             // Mocha holds onto the closure environment of the describe callback even after the test is done.
             // Everything declared here should be cleared out in the "after" callback.
+            // console.log(fileName);
             let compilerTest!: CompilerTest;
             before(() => {
                 let payload;
@@ -158,6 +159,7 @@ namespace Harness {
         private otherFiles: Compiler.TestFile[];
 
         constructor(fileName: string, testCaseContent?: TestCaseParser.TestCaseContent, configurationOverrides?: TestCaseParser.CompilerSettings) {
+            //console.log(fileName);
             this.fileName = fileName;
             this.justName = vpath.basename(fileName);
             this.configuredName = this.justName;

@@ -1,9 +1,27 @@
+
+//const NodeFs = require("fs");
 /* @internal */
 namespace ts {
     let myDebug = false;
     let myDisable = false;
     let myNoAliasAction = false;
     let myMaxDepth = 0;
+    interface SystemWithAppendFile extends System {
+        openFileForWriteFd(path: string): number; // returns number which is file description
+        writeFileFd(fd: number, data: string): void;
+    }
+    const mySys: SystemWithAppendFile = (()=>{
+        const nodeFs = require("fs");
+        return {
+            ...sys,
+            openFileForWriteFd: (path: string) => {
+                return nodeFs.openSync(path,"w+");
+            },
+            writeFileFd: (fd: number, data: string) => {
+                nodeFs.writeFileSync(fd, data);
+            }
+        };
+    })();
 
     const ambientModuleSymbolRegex = /^".+"$/;
     const anon = "(anonymous)" as __String & string;
@@ -322,7 +340,7 @@ namespace ts {
             if (!flow) return "<undef>";
             let str = "";
             if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
-            if (isFlowJoin(flow)) str += `[${(flow.joinNode as any).getText()}, (${flow.joinNode.pos},${flow.joinNode.end})]`;
+            if (isFlowJoin(flow)) str += `[joinNode:${(flow.joinNode as any).getText()}, (${flow.joinNode.pos},${flow.joinNode.end})]`;
             str += `, ${Debug.formatFlowFlags(flow.flags)}`;
             return str;
         };
@@ -357,17 +375,47 @@ namespace ts {
             for(; i<s.length && s[i]!== nl ; i++);
             return s.slice(0,i);
         }
+        type MyConsole = & {
+            fd: number;
+            currentIndent: number;
+            oneIndent: string;
+            indent(): string;
+            log(s: string): void;
+            group(s: string): void;
+            groupEnd(): void;
+        };
+        const myConsole: MyConsole = {
+            fd:0,
+            currentIndent: 0,
+            oneIndent: "  ",
+            indent(){ return myConsole.oneIndent.repeat(myConsole.currentIndent); },
+            log(s: string){
+                if (!myConsole.fd) {
+                    const filename = process.env.myFilename?? "tmp.txt";
+                    myConsole.fd = mySys.openFileForWriteFd(filename);
+                }
+                mySys.writeFileFd(myConsole.fd, myConsole.indent()+s+mySys.newLine);
+            },
+            group(s: string){
+                myConsole.currentIndent += 1;
+                myConsole.log(s);
+            },
+            groupEnd(){
+                myConsole.currentIndent = Math.max(0, myConsole.currentIndent-1);
+            }
+
+        };
         function consoleGroup(sIn: string){
             //const s = sIn.slice(0,Math.min(80,sIn.length));
             //const s = upToNewLine(sIn);
-            console.group(`${sIn}`);
+            myConsole.group(`${sIn}`);
             //lastGroup = s;
         }
         function consoleGroupEnd(){
-            console.groupEnd();
+            myConsole.groupEnd();
         }
         function consoleLog(s: string): void {
-            console.log(s);
+            myConsole.log(s);
             //console.log(upToNewLine(s));
             // console.log(s.slice(0,Math.min(80,s.length)));
         }
@@ -429,7 +477,7 @@ namespace ts {
         };
         const flowTypeQueryState: FlowTypeQueryState = {
             disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
-            aliasableAssignments: new Map<Symbol, AliasAssignableState>(),  // A set of Symbols might do it.
+            aliasableAssignments: new Map<Symbol, AliasAssignableState>(),  
             getFlowTypeOfReferenceStack:[],
             flowStack:[],
             conditionStack:[],
@@ -24481,7 +24529,6 @@ namespace ts {
             return type;
         }
         function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer: Node | undefined, flowNode: FlowNode, joinMap: JoinMap | undefined): Type {
-            if (joinMap){/* */}
             let key: string | undefined;
             let isKeySet = false;
             let flowDepth = 0;
@@ -42166,7 +42213,13 @@ namespace ts {
                     writingFlowTxt = true;
                     dbgFlow_mapPeType = new Map<string,Type>();
                     let contents = "";
-                    const write = (s: string)=>contents+=s;
+                    let write = (s: string)=>{
+                        contents+=s;
+                    };
+                    let False = false;
+                    False = false;
+                    if (False) write = console.log;
+                    //const write = (s: string)=>contents+=s;
                     writeFlowNodesUp(write, [node.endFlowNode]);
                     ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisable?1:0}.${dbgFlowFileCnt++}.flow`;
                     sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
@@ -45956,7 +46009,7 @@ namespace ts {
                     write(indent()+"antecedent:");
                     doOne((fn as any).antecedent);
                 }
-                set_loopDetect.delete(fn);
+                //set_loopDetect.delete(fn);
                 currentIndent--;
             };
             arrFlowNodes.forEach(fn=>doOne(fn));
