@@ -359,11 +359,11 @@ namespace ts {
                 const ref = flowTypeQueryState.getFlowTypeOfReferenceStack[rsi];
                 str += `::: [${rsi}] ${dbgNodeToString(ref.reference)}`;
                 if (ref.other.isConstReadonly) str += ", CONST/RO";
-                flowTypeQueryState.aliasModeStack.forEach((a,j)=>{
-                    if (a.flowStackIndex===i){
-                        str += `::: alias[${j}]: ${a.aliasSymbol.escapedName} `;
-                    }
-                });
+                // flowTypeQueryState.aliasModeStack.forEach((a,j)=>{
+                //     if (a.flowStackIndex===i){
+                //         str += `::: alias[${j}]: ${a.aliasSymbol.escapedName} `;
+                //     }
+                // });
                 write(str);
             });
         };
@@ -431,16 +431,19 @@ namespace ts {
                 flowStackIndex: Number
             }
         };
-        type AliasMode = & {
-            flowStackIndex: number;
-            conditionStackIndex: number;
-            aliasSymbol: Symbol;
-            tempNarrowedType?: Type; // each flow branch independently narrows a type.
-            initalNarrowedType: Type; // each flow branch starts out with this type.
-        };
+        // type AliasMode = & {
+        //     flowStackIndex: number;
+        //     conditionStackIndex: number;
+        //     aliasSymbol: Symbol;
+        //     tempNarrowedType?: Type; // each flow branch independently narrows a type.
+        //     initalNarrowedType: Type; // each flow branch starts out with this type.
+        // };
         type AliasAssignableState = & {
-            node: Node;
-            inUse: boolean; // to prevent recursion
+            readonly node: Node;
+            readonly valueReadonly: boolean;
+            readonly antecedentIsJoin: boolean;
+            readonly constVariable: boolean;
+            inUse: boolean; // to prevent recursion of aliases
         };
         type JoinMap = & {
             joinNode: Node;
@@ -464,7 +467,7 @@ namespace ts {
              * simple model first - only do aliasing when a condition is expressed as a single identifier
              *
              * */
-            aliasModeStack: AliasMode[];
+            //aliasModeStack: AliasMode[];
             getFlowStackIndex: () => number;
             getCurrentQueryNode: () => Node;
             // getReferenceCall: (i: Number) => GetFlowTypeOfReferenceCall,
@@ -477,11 +480,11 @@ namespace ts {
         };
         const flowTypeQueryState: FlowTypeQueryState = {
             disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
-            aliasableAssignments: new Map<Symbol, AliasAssignableState>(),  
+            aliasableAssignments: new Map<Symbol, AliasAssignableState>(),
             getFlowTypeOfReferenceStack:[],
             flowStack:[],
             conditionStack:[],
-            aliasModeStack:[],
+            //aliasModeStack:[],
             getFlowStackIndex: () => flowTypeQueryState.flowStack.length-1,
             getCurrentQueryNode:() => flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].reference,
             // getReferenceCall: (i: Number) => flowTypeQueryState.getFlowTypeOfReferenceStack[i],
@@ -510,10 +513,10 @@ namespace ts {
                 if (flowTypeQueryState.conditionStack.length && flowTypeQueryState.conditionStack.slice(-1)[0].flowStackIndex===flowTypeQueryState.flowStack.length){
                     flowTypeQueryState.conditionStack.pop();
                 }
-                if (flowTypeQueryState.aliasModeStack.length && flowTypeQueryState.aliasModeStack.slice(-1)[0].flowStackIndex===flowTypeQueryState.flowStack.length){
-                    // make sure the accumulated types are moved to the correponding condition before poppping!
-                    flowTypeQueryState.aliasModeStack.pop();
-                }
+                // if (flowTypeQueryState.aliasModeStack.length && flowTypeQueryState.aliasModeStack.slice(-1)[0].flowStackIndex===flowTypeQueryState.flowStack.length){
+                //     // make sure the accumulated types are moved to the correponding condition before poppping!
+                //     flowTypeQueryState.aliasModeStack.pop();
+                // }
                 if (myDebug){
                     consoleLog(`popFlow()->${Debug.formatFlowFlags(popped!.flags)}`);
                 }
@@ -24731,7 +24734,7 @@ namespace ts {
             function getTypeAtFlowAssignment_aux(flow: FlowAssignment) {
                 const node = flow.node;
                 if (!flowTypeQueryState.disable && joinMap && joinMap.aliasFlow===flow && flowDepth!==1){
-                    return initialType; // the actual alias is performed higher up
+                    return initialType; // the actual alias is performed further down at the condition
                 }
                 // Assignments only narrow the computed type if the declared type is a union type. Thus, we
                 // only need to evaluate the assigned type if the declared type is a union type.
@@ -24869,9 +24872,9 @@ namespace ts {
                     // consoleLog(`!!getSymbolAtLocation(flow.node)[flowAnalysisDisabled] = ${!!getSymbolAtLocation(flow.node)}`);
                     // flowAnalysisDisabled = false;
                     // consoleLog(`!!flow.node.symbol = ${!!flow.node.symbol}`);
-                    flowAnalysisDisabled = true;
+                    //flowAnalysisDisabled = true;
                     const symbol = getSymbolAtLocation(flow.node);
-                    flowAnalysisDisabled = false;
+                    //flowAnalysisDisabled = false;
                     if (symbol && flowTypeQueryState.aliasableAssignments.has(symbol)){
                         const aliasableState = flowTypeQueryState.aliasableAssignments.get(symbol)!;
                         const aliasNode = aliasableState.node;
@@ -24899,20 +24902,37 @@ namespace ts {
                                 const narrowedType = narrowType(initialType, flow.node, assumeTrue);
                                 return narrowedType;
                             }
-                            else {
+                            else if (aliasableState.constVariable && aliasableState.valueReadonly && aliasableState.antecedentIsJoin) {
                                 /**
+                                 * It's not necessary to have value readonly and even const,
+                                 * if if only the type and never the values are referenced.
+                                 * For example
+                                 * ```
+                                 * declare type Foo:{ foo:()=>[] };
+                                 * declare const obj = undefined | Foo;
+                                 * const isFoo = obj?.foo();
+                                 * if (isFoo) { obj.foo() }; // Foo not readonly
+                                 * ```
+                                 * That is TODO.
                                  * Call getFlowTypeOfReference with a special argument that will get put on the
                                  * getFlowTypeOfReferenceStack to indicate Join -> correct antecdent mapping.
                                  *
                                  */
                                 if (myDebug){
-                                    consoleLog(`getTypeAtFlowCondition: alias case: reference!==aliasNode`);
+                                    consoleLog(`getTypeAtFlowCondition: alias processing`);
                                 }
                                 aliasableState.inUse = true;
                                 const flowType = getFlowTypeOfReference(reference, declaredType, initialType, flowContainer, aliasFlow,
                                     { joinNode: aliasNode, mapTo: flow.antecedent, aliasFlow, conditionAssumeTrue: assumeTrue });
                                 aliasableState.inUse = false;
                                 return flowType;
+                            }
+                            else if (aliasableState.constVariable && aliasableState.valueReadonly) {
+                                if (myDebug){
+                                    consoleLog(`getTypeAtFlowCondition: const/RO so narrow by alias type`);
+                                }
+                                const narrowedType = narrowType(initialType, flow.node, assumeTrue);
+                                return narrowedType;
                             }
                         }
                         else {
@@ -38347,56 +38367,6 @@ namespace ts {
                 checkSourceElement(node.type);
             }
 
-            /**
-             * Add any assignment to flowTypeQueryState.aliasableAssignments if and only if it can be
-             * executed "out-of-order" with getFlowTypeAtReference at any condition further down,
-             * even inside a descendent loop.
-             */
-            if (!flowTypeQueryState.disable && node.flowNode && isFlowAssignment(node.flowNode) && isVariableDeclaration(node) && node.initializer) {
-                if (myDebug){
-                    consoleLog(`checkVariableLikeDeclaration: test for assignable: ${dbgNodeToString(node)}  !!node.symbol=${!!node.symbol}`);
-                }
-                const getSymbolAtNode = (node: Node) => {
-                    // getSymbolAtLocation(node) || node.symbol;
-                    return node.symbol;
-                };
-                const symbol = getSymbolAtNode(node);
-                if (symbol && !flowTypeQueryState.aliasableAssignments.has(symbol) && isConstVariable(symbol)){
-                    // antiVsitor inverts true/false
-                    const antiVisitor = (node1: Node): boolean=>{
-                        switch (node1.kind) {
-                            case SyntaxKind.CallExpression: // doesn't matter whether the return type is const/ro or not
-                                return true;
-                            case SyntaxKind.PropertyAccessExpression:
-                                return true;
-                            case SyntaxKind.Identifier:{
-                                const symbol1 = getSymbolAtNode(node1);
-                                if (!symbol1) return false;
-                                const type1 = getDeclaredTypeOfSymbol(symbol1);
-                                const isTypeImmutableWhenLhsIsConst = (t: Type): boolean =>{
-                                    if (t.aliasSymbol?.escapedName==="Readonly") return true;
-                                    if (t.flags & TypeFlags.Object) return false; // TODO: perhaps every member is const but whole not readonly?
-                                    if (t.flags & TypeFlags.UnionOrIntersection) {
-                                        return (t as UnionOrIntersectionType).types.every(tt=>isTypeImmutableWhenLhsIsConst(tt));
-                                    }
-                                    else return true; // these are covered by the "const"-ness of the lhs.
-                                };
-                                return isTypeImmutableWhenLhsIsConst(type1);
-                            }
-                            case SyntaxKind.QuestionDotToken:
-                                return true;
-                            default:
-                                return false;
-                        }
-                    };
-                    // now check the rhs is "readonly"
-                    const rhsro = !forEachChild(node.initializer, (node: Node)=>!antiVisitor(node)); // true when no child returns true
-                    if (rhsro){
-                        if (myDebug) consoleLog(`aliasableAssignments.set(symbolId:${getSymbolId(symbol)},node:${dbgNodeToString(node)}`);
-                        flowTypeQueryState.aliasableAssignments.set(symbol,{ node, inUse:false });
-                    }
-                }
-            }
 
             // JSDoc `function(string, string): string` syntax results in parameters with no name
             if (!node.name) {
@@ -38490,6 +38460,7 @@ namespace ts {
             }
 
             const type = convertAutoToAny(getTypeOfSymbol(symbol));
+            let declarationType: Type | undefined;
             if (node === symbol.valueDeclaration) {
                 // Node is the primary declaration of the symbol, just validate the initializer
                 // Don't validate for-in initializer as it is already an error
@@ -38512,7 +38483,7 @@ namespace ts {
             else {
                 // Node is a secondary declaration, check that type is identical to primary declaration and check that
                 // initializer is consistent with type associated with the node
-                const declarationType = convertAutoToAny(getWidenedTypeForVariableLikeDeclaration(node));
+                declarationType = convertAutoToAny(getWidenedTypeForVariableLikeDeclaration(node));
 
                 if (!isErrorType(type) && !isErrorType(declarationType) &&
                     !isTypeIdenticalTo(type, declarationType) &&
@@ -38533,6 +38504,76 @@ namespace ts {
                     checkVarDeclaredNamesNotShadowed(node);
                 }
                 checkCollisionsForDeclarationName(node, node.name);
+            }
+
+            /**
+             * Add any assignment to flowTypeQueryState.aliasableAssignments if and only if it can be
+             * executed "out-of-order" with getFlowTypeAtReference at any condition further down,
+             * even inside a descendent loop.
+             */
+             if (!flowTypeQueryState.disable && !flowTypeQueryState.aliasableAssignments.has(symbol) &&
+                node.flowNode && isFlowAssignment(node.flowNode) && isVariableDeclaration(node)) {
+                if (myDebug){
+                    consoleLog(`checkVariableLikeDeclaration: adding FlowAssignment: ${dbgFlowToString(node.flowNode)}`);
+                }
+                // //const symbol = getSymbolOfNode(node);
+                // // @ts-ignore
+                // const type0 = getTypeOfSymbol(symbol);
+                // // @ts-ignore
+                // const type = convertAutoToAny(type0);
+                // if (symbol && !flowTypeQueryState.aliasableAssignments.has(symbol) && isConstVariable(symbol)){
+                //     // antiVsitor inverts true/false
+                //     const antiVisitor = (node1: Node): boolean=>{
+                //         switch (node1.kind) {
+                //             case SyntaxKind.CallExpression:
+                //                 return true; // it really depends on whether the return value is accessed, or only the return type. Must defer.
+                //             case SyntaxKind.PropertyAccessExpression:
+                //                 return true;
+                //             case SyntaxKind.Identifier:{
+                //                 const symbol1 = getSymbolOfNode(node1);
+                //                 if (!symbol1) return false;
+                //                 const type1 = getDeclaredTypeOfSymbol(symbol1);
+                //                 const isTypeImmutableWhenLhsIsConst = (t: Type): boolean =>{
+                //                     if (t.aliasSymbol?.escapedName==="Readonly") return true;
+                //                     if (t.flags & TypeFlags.Object) return false; // TODO: perhaps every member is const but whole not readonly?
+                //                     if (t.flags & TypeFlags.UnionOrIntersection) {
+                //                         return (t as UnionOrIntersectionType).types.every(tt=>isTypeImmutableWhenLhsIsConst(tt));
+                //                     }
+                //                     else return true; // these are covered by the "const"-ness of the lhs.
+                //                 };
+                //                 return isTypeImmutableWhenLhsIsConst(type1);
+                //             }
+                //             case SyntaxKind.QuestionDotToken:
+                //                 return true;
+                //             default:
+                //                 return false;
+                //         }
+                //     };
+                //     // now check the rhs is "readonly"
+                //const rhsro = !antiVisitor(node) && !forEachChild(node.initializer, (node: Node)=>!antiVisitor(node)); // true when no child returns true
+                //if (rhsro){
+                const constVariable = !!isConstVariable(symbol);
+                const valueReadonly = everyType(type, (t: Type)=>{
+                    return t.aliasSymbol?.escapedName==="Readonly" || !(t.flags & TypeFlags.Object);
+                }) && constVariable;
+                // const valueReadonly = !!isConstVariable(symbol) && (type.aliasSymbol?.escapedName==="Readonly" || !(type.flags & TypeFlags.Object));
+                const antecedentIsJoin = isFlowJoin(node.flowNode.antecedent);
+                if (myDebug) {
+                    consoleLog(`aliasableAssignments.set(symbolId: ${
+                        getSymbolId(symbol)}, node: ${
+                        dbgNodeToString(node)}, valueReadOnly: ${
+                        valueReadonly}, antecedentIsJoin: ${
+                        antecedentIsJoin}, constVariable: ${
+                        constVariable}`
+                    );
+                }
+                /**
+                 * aliasAssignable:
+                 */
+
+                flowTypeQueryState.aliasableAssignments.set(symbol,{ node, inUse:false, valueReadonly, antecedentIsJoin, constVariable });
+                //}
+
             }
         }
 
@@ -46083,6 +46124,9 @@ namespace ts {
     }
     export function isFlowLabel(fn: FlowNode | undefined): fn is FlowLabel {
         return !!fn &&  !!(fn.flags & FlowFlags.Label);
+    }
+    export function isFlowBranch(fn: FlowNode | undefined): fn is FlowLabel {
+        return !!fn && !!(fn.flags & FlowFlags.BranchLabel);
     }
     export function isFlowAssignment(fn: FlowNode | undefined): fn is FlowAssignment {
         return !!fn &&  !!(fn.flags & FlowFlags.Assignment);
