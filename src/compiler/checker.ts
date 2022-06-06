@@ -5,7 +5,10 @@ namespace ts {
     let myDebug = false;
     let myDisable = false;
     let myNoAliasAction = false;
-    let myMaxDepth = 0;
+    const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):10000;
+    let myNumLinesOut=0;
+    let myMaxDepth = 0; // introspection data
+    let myCurrentSourceFilename = "";
     interface SystemWithAppendFile extends System {
         openFileForWriteFd(path: string): number; // returns number which is file description
         writeFileFd(fd: number, data: string): void;
@@ -22,6 +25,73 @@ namespace ts {
             }
         };
     })();
+    //mySys.enableCPUProfiler("tmp.prof",()=>{});
+    type MyConsole = & {
+        fd: number;
+        currentIndent: number;
+        oneIndent: string;
+        numOutLines: number;
+        indent(): string;
+        log(s: string): void;
+        group(s: string): void;
+        groupEnd(): void;
+    };
+    const myConsole: MyConsole = {
+        fd:0,
+        currentIndent: 0,
+        oneIndent: "  ",
+        numOutLines: 0,
+        indent(){ return myConsole.oneIndent.repeat(myConsole.currentIndent); },
+        log(s: string){
+            if (this.numOutLines>=myMaxLinesOut) {
+                if (this.numOutLines===myMaxLinesOut) {
+                    mySys.writeFileFd(myConsole.fd, "REACHED MAX LINE LIMIT = "+myMaxLinesOut+sys.newLine);
+                    myDebug = false;
+                    throw new Error("REACHED MAX DEBUG LINE LIMIT");
+                }
+                myNumLinesOut = ++myConsole.numOutLines;
+                return;
+            }
+            if (!myConsole.fd) {
+                let filename = "";
+                if (process.env.myDbgOutFilename) {
+                    filename = process.env.myDbgOutFilename;
+                }
+                else {
+                    filename = "tmp.";
+                    if (process.env.myTestFilename) filename += process.env.myTestFilename + ".";
+                    filename += `de${myDebug?1:0}.di${myDisable?1:0}.naa${myNoAliasAction?1:0}.txt`;
+                }
+                myConsole.fd = mySys.openFileForWriteFd(filename);
+            }
+            mySys.writeFileFd(myConsole.fd, myConsole.indent()+s+mySys.newLine);
+            myNumLinesOut = ++myConsole.numOutLines;
+        },
+        group(s: string){
+            myConsole.currentIndent++;
+            myConsole.log(s);
+        },
+        groupEnd(){
+            myConsole.currentIndent--;
+            Debug.assert(myConsole.currentIndent>=0,"myConsole.currentIndent>=0");
+        }
+
+    };
+    function consoleGroup(sIn: string){
+        //const s = sIn.slice(0,Math.min(80,sIn.length));
+        //const s = upToNewLine(sIn);
+        myConsole.group(`${sIn}`);
+        //lastGroup = s;
+    }
+    function consoleGroupEnd(){
+        myConsole.groupEnd();
+    }
+    function consoleLog(s: string): void {
+        myConsole.log(s);
+        //console.log(upToNewLine(s));
+        // console.log(s.slice(0,Math.min(80,s.length)));
+    }
+
 
     const ambientModuleSymbolRegex = /^".+"$/;
     const anon = "(anonymous)" as __String & string;
@@ -334,8 +404,6 @@ namespace ts {
         // @ts-ignore-error
         // eslint-disable-next-line prefer-const
         let dbgFlowFileCnt = 0;
-        // @ts-ignore-error
-        let dbgFlow_mapPeType: ESMap<string,Type> | undefined;
         const dbgFlowToString = (flow: FlowNode | undefined): string => {
             if (!flow) return "<undef>";
             let str = "";
@@ -375,50 +443,6 @@ namespace ts {
             for(; i<s.length && s[i]!== nl ; i++);
             return s.slice(0,i);
         }
-        type MyConsole = & {
-            fd: number;
-            currentIndent: number;
-            oneIndent: string;
-            indent(): string;
-            log(s: string): void;
-            group(s: string): void;
-            groupEnd(): void;
-        };
-        const myConsole: MyConsole = {
-            fd:0,
-            currentIndent: 0,
-            oneIndent: "  ",
-            indent(){ return myConsole.oneIndent.repeat(myConsole.currentIndent); },
-            log(s: string){
-                if (!myConsole.fd) {
-                    const filename = process.env.myFilename?? "tmp.txt";
-                    myConsole.fd = mySys.openFileForWriteFd(filename);
-                }
-                mySys.writeFileFd(myConsole.fd, myConsole.indent()+s+mySys.newLine);
-            },
-            group(s: string){
-                myConsole.currentIndent += 1;
-                myConsole.log(s);
-            },
-            groupEnd(){
-                myConsole.currentIndent = Math.max(0, myConsole.currentIndent-1);
-            }
-
-        };
-        function consoleGroup(sIn: string){
-            //const s = sIn.slice(0,Math.min(80,sIn.length));
-            //const s = upToNewLine(sIn);
-            myConsole.group(`${sIn}`);
-            //lastGroup = s;
-        }
-        function consoleGroupEnd(){
-            myConsole.groupEnd();
-        }
-        function consoleLog(s: string): void {
-            myConsole.log(s);
-            //console.log(upToNewLine(s));
-            // console.log(s.slice(0,Math.min(80,s.length)));
-        }
         interface GetFlowTypeOfReferenceCall {
             reference: Node,
             declaredType: Type,
@@ -443,6 +467,11 @@ namespace ts {
             readonly valueReadonly: boolean;
             readonly antecedentIsJoin: boolean;
             readonly constVariable: boolean;
+            readonly aliasable: boolean; // constVariable && valueReadonly && !antecedentIsJoin
+            readonly lhsType: Type;
+            readonly declarationType: Type | undefined;
+            readonly initializerType: Type | undefined;
+            readonly preferredType: Type;
             inUse: boolean; // to prevent recursion of aliases
         };
         type JoinMap = & {
@@ -24543,6 +24572,21 @@ namespace ts {
             }
             flowInvocationCount++;
 
+            // if (!flowTypeQueryState.disable){
+            //     if (reference.kind===SyntaxKind.Identifier){
+            //         const symbol = getSymbolAtLocation(reference as Identifier);
+            //         if (symbol && flowTypeQueryState.aliasableAssignments.has(symbol)){
+            //             const assignmentState = flowTypeQueryState.aliasableAssignments.get(symbol)!;
+            //             if (assignmentState.constVariable && assignmentState.valueReadonly){
+            //                 if (myDebug) consoleLog(`getFlowTypeOfReference: ${dbgNodeToString(reference)} is const/RO, can early return`);
+            //                 if (!myNoAliasAction){
+            //                     return assignmentState.preferredType;
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
+
             const sharedFlowStart = sharedFlowCount;
             // if (myDebug) {
             //     consoleLog(`sharedFlowStart(cache): ${sharedFlowStart}`);
@@ -24688,7 +24732,6 @@ namespace ts {
                             reference.kind !== SyntaxKind.ElementAccessExpression &&
                             reference.kind !== SyntaxKind.ThisKeyword) {
                             flow = container.flowNode!;
-                            // if (!flowTypeQueryState.disable) flowTypeQueryState.pushFlow(flow); --???
                             continue;
                         }
                         // At the top of the flow we have the initial type.
@@ -24865,105 +24908,92 @@ namespace ts {
             }
             function getTypeAtFlowCondition_aux(flow: FlowCondition): FlowType {
                 const assumeTrue = (flow.flags & FlowFlags.TrueCondition) !== 0;
-                if (!flowTypeQueryState.disable){
-                    //const symbol = getSymbolOfNodeAlways(flow.node);
-                    // consoleLog(`!!getSymbolAtLocation(flow.node) = ${!!getSymbolAtLocation(flow.node)}`);
-                    // flowAnalysisDisabled = true;
-                    // consoleLog(`!!getSymbolAtLocation(flow.node)[flowAnalysisDisabled] = ${!!getSymbolAtLocation(flow.node)}`);
-                    // flowAnalysisDisabled = false;
-                    // consoleLog(`!!flow.node.symbol = ${!!flow.node.symbol}`);
-                    //flowAnalysisDisabled = true;
+                const getTypeAtFlowConditionPostProcess = (type: Type, optFlowType?: FlowType): FlowType => {
+                    // If we have an antecedent type (meaning we're reachable in some way), we first
+                    // attempt to narrow the antecedent type. If that produces the never type, and if
+                    // the antecedent type is incomplete (i.e. a transient type in a loop), then we
+                    // take the type guard as an indication that control *could* reach here once we
+                    // have the complete type. We proceed by switching to the silent never type which
+                    // doesn't report errors when operators are applied to it. Note that this is the
+                    // *only* place a silent never type is ever generated.
+                    const nonEvolvingType = finalizeEvolvingArrayType(type);
+                    //if (myDebug && flow.id===3) dbgNarrowType = true;
+                    const narrowedType = narrowType(nonEvolvingType, flow.node, assumeTrue);
+                    //if (myDebug && flow.id===3) dbgNarrowType = false;
+                    if (myDebug) {
+                        consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
+                    }
+                    if (optFlowType && narrowedType === nonEvolvingType) {
+                        return optFlowType;
+                    }
+                    return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
+                };
+
+                let assignmentState: AliasAssignableState | undefined;
+                if (!flowTypeQueryState.disable && flow.node.kind===SyntaxKind.Identifier){
                     const symbol = getSymbolAtLocation(flow.node);
-                    //flowAnalysisDisabled = false;
+                    /**
+                     * In fact `getSymbolAtLocation` does return falsy at 2 tests in the full run
+                     * - circularOptionalityRemoval
+                     * - jsFileClassPropertyType3
+                     */
+                    //Debug.assert(symbol, "getSymbolAtLocation not false in getTypeAtFlowCondition");
                     if (symbol && flowTypeQueryState.aliasableAssignments.has(symbol)){
-                        const aliasableState = flowTypeQueryState.aliasableAssignments.get(symbol)!;
-                        const aliasNode = aliasableState.node;
-                        const aliasFlow = aliasNode.flowNode!;
-                        const inUse = aliasableState.inUse;
-                        Debug.assert(isFlowAssignment(aliasFlow),"isFlowAssignment(aliasFlow)");
-                        if (myDebug){
-                            consoleLog(`getTypeAtFlowCondition: has alias: ${dbgFlowToString(aliasFlow)}, inUse:${inUse}`);
+                        assignmentState = flowTypeQueryState.aliasableAssignments.get(symbol)!;
+                        if (myDebug) consoleLog(`condition ${dbgFlowToString(flow)} corresponds to assigmentment ${dbgFlowToString(assignmentState.node.flowNode)}`);
+                    };
+                }
+                // Not sure if it would make any difference to introduce constant aliases here.
+                // if (assignmentState && !assignmentState.aliasable && !assignmentState.antecedentIsJoin &&
+                //     assignmentState.constVariable && assignmentState.valueReadonly){
+                //      if (!myNoAliasAction){
+                //         const flowType = getTypeAtFlowConditionPostProcess(initialType);
+                //         if (myDebug) consoleLog(`condition ${dbgFlowToString(flow)} early return ${dbgFlowTypeToString(flowType)}`);
+                //      }
+                // }
+
+                const tempFlowType = getTypeAtFlowNode(flow.antecedent);
+                const tempType = getTypeFromFlowType(tempFlowType);
+                if (tempType.flags & TypeFlags.Never) {
+                    return tempFlowType;
+                }
+                if (assignmentState?.aliasable){
+                    const aliasNode = assignmentState.node;
+                    const aliasFlow = aliasNode.flowNode!;
+                    const inUse = assignmentState.inUse;
+                    Debug.assert(isFlowAssignment(aliasFlow),"isFlowAssignment(aliasFlow)");
+                    if (myDebug){
+                        consoleLog(`getTypeAtFlowCondition: has alias: ${dbgFlowToString(aliasFlow)}, inUse:${inUse}`);
+                    }
+                    if (!myNoAliasAction) {
+                        if (inUse) {
+                            if (myDebug){
+                                consoleLog(`getTypeAtFlowCondition: alias already in use, ignore to prevent infinite loop`);
+                            }
                         }
-                        // let False = false;
-                        // False = false;
-                        if (!myNoAliasAction) {
-                            if (inUse) {
-                                if (myDebug){
-                                    consoleLog(`getTypeAtFlowCondition: alias in use, return condition narrowed intialType`);
-                                }
-                                    const narrowedType = narrowType(initialType, flow.node, assumeTrue);
-                                return narrowedType;
-                            }
-                            if (reference === aliasNode){
-                                // this may never happen
-                                if (myDebug){
-                                    consoleLog(`getTypeAtFlowCondition: alias case reference===aliasNode, , return condition narrowed intialType`);
-                                }
-                                const narrowedType = narrowType(initialType, flow.node, assumeTrue);
-                                return narrowedType;
-                            }
-                            else if (aliasableState.constVariable && aliasableState.valueReadonly && aliasableState.antecedentIsJoin) {
-                                /**
-                                 * It's not necessary to have value readonly and even const,
-                                 * if if only the type and never the values are referenced.
-                                 * For example
-                                 * ```
-                                 * declare type Foo:{ foo:()=>[] };
-                                 * declare const obj = undefined | Foo;
-                                 * const isFoo = obj?.foo();
-                                 * if (isFoo) { obj.foo() }; // Foo not readonly
-                                 * ```
-                                 * That is TODO.
-                                 * Call getFlowTypeOfReference with a special argument that will get put on the
-                                 * getFlowTypeOfReferenceStack to indicate Join -> correct antecdent mapping.
-                                 *
-                                 */
-                                if (myDebug){
-                                    consoleLog(`getTypeAtFlowCondition: alias processing`);
-                                }
-                                aliasableState.inUse = true;
-                                const flowType = getFlowTypeOfReference(reference, declaredType, initialType, flowContainer, aliasFlow,
-                                    { joinNode: aliasNode, mapTo: flow.antecedent, aliasFlow, conditionAssumeTrue: assumeTrue });
-                                aliasableState.inUse = false;
-                                return flowType;
-                            }
-                            else if (aliasableState.constVariable && aliasableState.valueReadonly) {
-                                if (myDebug){
-                                    consoleLog(`getTypeAtFlowCondition: const/RO so narrow by alias type`);
-                                }
-                                const narrowedType = narrowType(initialType, flow.node, assumeTrue);
-                                return narrowedType;
+                        else if (reference === aliasNode){
+                            // this may never happen
+                            if (myDebug){
+                                consoleLog(`getTypeAtFlowCondition: alias case reference===aliasNode,  should use as alias`);
                             }
                         }
                         else {
-                            consoleLog(`getTypeAtFlowCondition: alias action disabled`);
+                            if (myDebug){
+                                consoleLog(`getTypeAtFlowCondition: alias processing`);
+                            }
+                            assignmentState.inUse = true;
+                            const dummyStartFlow: FlowStart = { flags: FlowFlags.Start, id:-1 };
+                            const type = getFlowTypeOfReference(reference, declaredType, tempType, flowContainer, aliasFlow,
+                                { joinNode: aliasNode, mapTo: dummyStartFlow, aliasFlow, conditionAssumeTrue: assumeTrue });
+                            assignmentState.inUse = false;
+                            return getTypeAtFlowConditionPostProcess(type);
                         }
                     }
+                    else {
+                        if (myDebug) consoleLog(`getTypeAtFlowCondition: alias action disabled`);
+                    }
                 }
-
-                const flowType = getTypeAtFlowNode(flow.antecedent);
-                const type = getTypeFromFlowType(flowType);
-                if (type.flags & TypeFlags.Never) {
-                    return flowType;
-                }
-                // If we have an antecedent type (meaning we're reachable in some way), we first
-                // attempt to narrow the antecedent type. If that produces the never type, and if
-                // the antecedent type is incomplete (i.e. a transient type in a loop), then we
-                // take the type guard as an indication that control *could* reach here once we
-                // have the complete type. We proceed by switching to the silent never type which
-                // doesn't report errors when operators are applied to it. Note that this is the
-                // *only* place a silent never type is ever generated.
-                const nonEvolvingType = finalizeEvolvingArrayType(type);
-                //if (myDebug && flow.id===3) dbgNarrowType = true;
-                const narrowedType = narrowType(nonEvolvingType, flow.node, assumeTrue);
-                //if (myDebug && flow.id===3) dbgNarrowType = false;
-                if (myDebug) {
-                    consoleLog(`(fc ) flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
-                }
-                if (narrowedType === nonEvolvingType) {
-                    return flowType;
-                }
-                return createFlowType(narrowedType, isIncomplete(flowType));
+                return getTypeAtFlowConditionPostProcess(tempType,tempFlowType);
             }
 
             function getTypeAtSwitchClause(flow: FlowSwitchClause): FlowType {
@@ -24999,11 +25029,7 @@ namespace ts {
             function getTypeAtFlowBranchLabel(flow: FlowLabel): FlowType {
                 if (myDebug) {
                     consoleGroup("getTypeAtFlowBranchLabel");
-                    //consoleLog((dbgff(flow)));
                     consoleLog(`(in) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, flowTypeQueryState.getFlowStackIndex(): ${flowTypeQueryState.getFlowStackIndex()}`);
-                    // flow.antecedents?.forEach(a=>{
-                    //     //consoleLog(`a.flags`)
-                    // })
                 }
                 const r = getTypeAtFlowBranchLabel_aux(flow);
                 if (myDebug) {
@@ -25020,26 +25046,29 @@ namespace ts {
                 let bypassFlow: FlowSwitchClause | undefined;
                 let briter = -1;
 
+
+
                 for (const antecedent of flow.antecedents!) {
                     if (myDebug){
                         consoleLog(`briter:${++briter}, ante:${dbgFlowToString(antecedent)}`);
-                    }
-                    if (!bypassFlow && antecedent.flags & FlowFlags.SwitchClause && (antecedent as FlowSwitchClause).clauseStart === (antecedent as FlowSwitchClause).clauseEnd) {
-                        // The antecedent is the bypass branch of a potentially exhaustive switch statement.
-                        bypassFlow = antecedent as FlowSwitchClause;
-                        continue;
                     }
 
                     if (!flowTypeQueryState.disable && joinMap){
                         if (joinMap.aliasFlow.antecedent===flow){
                             if (myDebug) consoleLog("getTypeAtFlowBranchLabel: aliasing action");
-                            Debug.assert(isFlowCondition(antecedent),"isFlowCondition(antecedent)");
+                            Debug.assert(isFlowCondition(antecedent),"isFlowCondition(anteceden "+myCurrentSourceFilename);
                             if (getFlowConditionBoolean(antecedent)!==joinMap.conditionAssumeTrue){
                                 if (myDebug) consoleLog("getTypeAtFlowBranchLabel: aliasing - skip skip antecedent with mismatched boolean sense");
                                 continue;
                             }
                         }
                     }
+                    else if (!bypassFlow && antecedent.flags & FlowFlags.SwitchClause && (antecedent as FlowSwitchClause).clauseStart === (antecedent as FlowSwitchClause).clauseEnd) {
+                        // The antecedent is the bypass branch of a potentially exhaustive switch statement.
+                        bypassFlow = antecedent as FlowSwitchClause;
+                        continue;
+                    }
+
 
                     const flowType = getTypeAtFlowNode(antecedent);
                     const type = getTypeFromFlowType(flowType);
@@ -25130,12 +25159,7 @@ namespace ts {
                     }
                     return declaredType;
                 }
-                if (!flowTypeQueryState.disable && flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly){
-                    if (myDebug){
-                        consoleLog(`getTypeAtFlowLoopLabel, do not read loop cache, because const/readonly`);
-                    }
-                }
-                else {
+                {
                     const cached = cacheGet(key);
                     if (cached) {
                         return cached;
@@ -25171,13 +25195,6 @@ namespace ts {
                         flowType = firstAntecedentType = getTypeAtFlowNode(antecedent);
                     }
                     else {
-                        // if the current reference type is const/readonly, then no need to conpute the looping control flow paths [cph estimate]
-                        if (!flowTypeQueryState.disable){
-                            if (myDebug){
-                                consoleLog(`getTypeAtFlowLoopLabel, Skipping all but first antecedent because const/readonly`);
-                            }
-                            if (flowTypeQueryState.getFlowTypeOfReferenceStack.slice(-1)[0].other.isConstReadonly) continue;
-                        }
 
                         // All but the first antecedent are the looping control flow paths that lead
                         // back to the loop junction. We track these on the flow loop stack.
@@ -35374,38 +35391,21 @@ namespace ts {
             instantiationCount = 0;
             const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
             if (myDebug) {
-                consoleGroup(`checkExpression ${dbgNodeToString(node)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
+                consoleGroup(`checkExpression[in]: ${dbgNodeToString(node)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
                 //consoleLog(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
             }
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
-            if (myDebug) {
-                const pekey = `${node.pos},${node.end}`;
-                // const symbol = checker.getSymbolAtLocation(node);
-                const peType: Type = uninstantiatedType;
-                // if (symbol) {
-                //     // get a type which has not been affected by "getFlowTypeOfReference"
-                //     peType = checker.getTypeOfSymbol(symbol);
-                //     consoleLog(`checkExpressionWorker tos(sal): ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(peType)}`);
-                // }
-                if (dbgFlow_mapPeType?.has(pekey)) {
-                    const tmp = dbgFlow_mapPeType?.get(pekey);
-                    if (tmp!==peType) {
-                        // They can be not equal during loop analysis - even in original code
-                        consoleLog(`checkExpression: tmp!==peType,${typeToString(tmp!)}!==${typeToString(peType)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
-                        // Debug.assert(tmp===peType,`${typeToString(tmp!)}!==${typeToString(peType)}`);
-                    }
-                }
-                else dbgFlow_mapPeType?.set(pekey,peType);
-
-                consoleLog(`checkExpression return: ${(node as any).getText()}, [${node.pos},${node.end}] -> ${typeToString(uninstantiatedType)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
-                consoleGroupEnd();
-            }
             const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
             if (isConstEnumObjectType(type)) {
                 checkConstEnumAccess(node, type);
             }
             currentNode = saveCurrentNode;
             tracing?.pop();
+            if (myDebug) {
+                consoleLog(`checkExpression[out]: ${dbgNodeToString(node)} -> ${typeToString(type)}`);
+                consoleGroupEnd();
+                //consoleLog(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
+            }
             return type;
         }
 
@@ -38461,10 +38461,11 @@ namespace ts {
 
             const type = convertAutoToAny(getTypeOfSymbol(symbol));
             let declarationType: Type | undefined;
+            let initializer: Expression | undefined;
             if (node === symbol.valueDeclaration) {
                 // Node is the primary declaration of the symbol, just validate the initializer
                 // Don't validate for-in initializer as it is already an error
-                const initializer = getEffectiveInitializer(node);
+                initializer = getEffectiveInitializer(node);
                 if (initializer) {
                     const isJSObjectLiteralInitializer = isInJSFile(node) &&
                         isObjectLiteralExpression(initializer) &&
@@ -38514,66 +38515,144 @@ namespace ts {
              if (!flowTypeQueryState.disable && !flowTypeQueryState.aliasableAssignments.has(symbol) &&
                 node.flowNode && isFlowAssignment(node.flowNode) && isVariableDeclaration(node)) {
                 if (myDebug){
-                    consoleLog(`checkVariableLikeDeclaration: adding FlowAssignment: ${dbgFlowToString(node.flowNode)}`);
+                    consoleLog(`checkVariableLikeDeclaration: testing FlowAssignment for alias ability: ${dbgFlowToString(node.flowNode)}`);
                 }
-                // //const symbol = getSymbolOfNode(node);
-                // // @ts-ignore
-                // const type0 = getTypeOfSymbol(symbol);
-                // // @ts-ignore
-                // const type = convertAutoToAny(type0);
-                // if (symbol && !flowTypeQueryState.aliasableAssignments.has(symbol) && isConstVariable(symbol)){
-                //     // antiVsitor inverts true/false
-                //     const antiVisitor = (node1: Node): boolean=>{
-                //         switch (node1.kind) {
-                //             case SyntaxKind.CallExpression:
-                //                 return true; // it really depends on whether the return value is accessed, or only the return type. Must defer.
-                //             case SyntaxKind.PropertyAccessExpression:
-                //                 return true;
-                //             case SyntaxKind.Identifier:{
-                //                 const symbol1 = getSymbolOfNode(node1);
-                //                 if (!symbol1) return false;
-                //                 const type1 = getDeclaredTypeOfSymbol(symbol1);
-                //                 const isTypeImmutableWhenLhsIsConst = (t: Type): boolean =>{
-                //                     if (t.aliasSymbol?.escapedName==="Readonly") return true;
-                //                     if (t.flags & TypeFlags.Object) return false; // TODO: perhaps every member is const but whole not readonly?
-                //                     if (t.flags & TypeFlags.UnionOrIntersection) {
-                //                         return (t as UnionOrIntersectionType).types.every(tt=>isTypeImmutableWhenLhsIsConst(tt));
-                //                     }
-                //                     else return true; // these are covered by the "const"-ness of the lhs.
-                //                 };
-                //                 return isTypeImmutableWhenLhsIsConst(type1);
-                //             }
-                //             case SyntaxKind.QuestionDotToken:
-                //                 return true;
-                //             default:
-                //                 return false;
-                //         }
-                //     };
-                //     // now check the rhs is "readonly"
-                //const rhsro = !antiVisitor(node) && !forEachChild(node.initializer, (node: Node)=>!antiVisitor(node)); // true when no child returns true
-                //if (rhsro){
-                const constVariable = !!isConstVariable(symbol);
-                const valueReadonly = everyType(type, (t: Type)=>{
-                    return t.aliasSymbol?.escapedName==="Readonly" || !(t.flags & TypeFlags.Object);
-                }) && constVariable;
-                // const valueReadonly = !!isConstVariable(symbol) && (type.aliasSymbol?.escapedName==="Readonly" || !(type.flags & TypeFlags.Object));
-                const antecedentIsJoin = isFlowJoin(node.flowNode.antecedent);
-                if (myDebug) {
-                    consoleLog(`aliasableAssignments.set(symbolId: ${
-                        getSymbolId(symbol)}, node: ${
-                        dbgNodeToString(node)}, valueReadOnly: ${
-                        valueReadonly}, antecedentIsJoin: ${
-                        antecedentIsJoin}, constVariable: ${
-                        constVariable}`
-                    );
+
+                //let initializerType0: Type | undefined;
+                let initializerType: Type | undefined;
+                initializer ||= node.initializer;
+                if (initializer) {
+                    const initializerSymbol = getSymbolAtLocation(initializer);
+                    if (initializerSymbol){
+                        initializerType = getTypeOfSymbol(initializerSymbol);
+                    }
                 }
+
+                // So rare as to be not worthwhile
+                // const evalBooleanOfType = (t: Type): boolean | "mixed" => {
+                //     if (t===nullType || t===undefined || t===falseType) return false;
+                //     else if (isLiteralType(t)) return !!(t as LiteralType).value;
+                //     else if (t===trueType || (t.flags & TypeFlags.Object) || isFunctionType(t)) return true;
+                //     else if (t.flags & TypeFlags.UnionOrIntersection) {
+                //         const uitypes = (t as UnionOrIntersectionType).types;
+                //         const test = evalBooleanOfType(uitypes[0]);
+                //         if (test==="mixed") return "mixed";
+                //         if (uitypes.length===1) return test;
+                //         if (uitypes.slice(1).every(tt=>evalBooleanOfType(tt)===test)) return test;
+                //     }
+                //     return "mixed";
+                // };
+
+
                 /**
-                 * aliasAssignable:
+                 * It's not necessary to have value readonly and even const,
+                 * if if only the type and never the values are referenced.
+                 * For example
+                 * ```
+                 * declare type Foo:{ foo:()=>[] };
+                 * declare const obj = undefined | Foo;
+                 * const isFoo = obj?.foo();
+                 * if (isFoo) { obj.foo() }; // Foo not readonly
+                 * ```
+                 * That is TODO.
+                 * Call getFlowTypeOfReference with a special argument that will get put on the
+                 * getFlowTypeOfReferenceStack to indicate Join -> correct antecdent mapping.
+                 *
                  */
+                let firstIdent=false;
+                const visitorRO = (n: Node): undefined | "fail" => {
+                    if (n===node.name) return; // don't need to analyze the lhs
+                    switch (n.kind){
+                        case SyntaxKind.CallExpression:
+                            return forEachChild(n, visitorRO); // the result of the call is effectively a constant
+                        case SyntaxKind.ElementAccessExpression:
+                        case SyntaxKind.PropertyAccessExpression:
+                            return forEachChild(n, visitorRO); //
+                        case SyntaxKind.Identifier:{
+                            if (firstIdent){
+                                // first identifier is the root, it is const if the lhs is const.
+                                firstIdent = true;
+                                return;
+                            }
+                            const s = getSymbolAtLocation(n as Identifier);
+                            if (!s){
+                                return "fail";
+                            }
+                            if (!s.declarations) {
+                                return "fail";
+                            }
+                            else {
+                                /* a member can share a name with multiple types */
+                                if (!(s.flags & SymbolFlags.Optional)) return;
+                                const allok = !s.declarations.some(d=>{
+                                    /**
+                                     * `const ds = getSymbolAtLocation(d);` Nope, Seems no symbols exist at this level.`
+                                     * Look for `questionToken` instead.
+                                     */
+                                    //
+                                    if (!isDeclarationReadonly(d) && (d as any).questionToken){
+                                        return "fail";
+                                    }
+                                });
+                                if (!allok) {
+                                    return "fail";
+                                }
+                            }
+                            if (s.flags & SymbolFlags.Optional && !isDeclarationReadonly(s.declarations[0])){
+                                return "fail";
+                            }
+                            return;
+                        }
+                        default: return forEachChild(n, visitorRO);
+                    }
+                };
 
-                flowTypeQueryState.aliasableAssignments.set(symbol,{ node, inUse:false, valueReadonly, antecedentIsJoin, constVariable });
-                //}
+                const lhsType = type;
+                const preferredType = initializerType ?? declarationType ?? lhsType;
+                let aliasable=false;
 
+                //consoleLog(`0: ${typeToString(initializerType0??unknownType)}, 1: ${typeToString(initializerType1??unknownType)}`);
+                const constVariable = !!isConstVariable(symbol);
+                const antecedentIsJoin = isFlowJoin(node.flowNode.antecedent);
+                let valueReadonly = !antecedentIsJoin && constVariable && everyType(preferredType, (t: Type)=>{
+                    return t.aliasSymbol?.escapedName==="Readonly" || !(t.flags & TypeFlags.Object);
+                });
+                if (myDebug && valueReadonly) {
+                    consoleLog("valueReadonly by type alone");
+                }
+
+                if (!antecedentIsJoin && constVariable && !valueReadonly) {
+                    valueReadonly = !visitorRO(node);
+                    if (myDebug && valueReadonly) {
+                        consoleLog("valueReadonly by visitorRO");
+                    }
+                }
+
+                // const valueReadonly = !!isConstVariable(symbol) && (type.aliasSymbol?.escapedName==="Readonly" || !(type.flags & TypeFlags.Object));
+                aliasable = constVariable && !antecedentIsJoin && valueReadonly;
+                if (aliasable) {
+                    if (myDebug) {
+                        consoleLog(`aliasableAssignments.set(symbolId: ${
+                            getSymbolId(symbol)}, node: ${
+                            dbgNodeToString(node)}, valueReadOnly: ${
+                            valueReadonly}, antecedentIsJoin: ${
+                            antecedentIsJoin}, constVariable: ${
+                            constVariable}, aliasable: ${
+                            aliasable}, lhsType: ${
+                            typeToString(lhsType)}, preferredType: ${typeToString(preferredType)}, initializerType: ${
+                            initializerType ? typeToString(initializerType) : "<undef>"}, declarationType: ${
+                            declarationType ? typeToString(declarationType) : "<undef>"}`
+                        );
+                    }
+                    /**
+                     * aliasAssignable:
+                     */
+
+                    flowTypeQueryState.aliasableAssignments.set(symbol,{
+                        node, inUse:false, valueReadonly, antecedentIsJoin, constVariable, aliasable,
+                        lhsType, declarationType, initializerType, preferredType
+                    });
+                }
             }
         }
 
@@ -42235,24 +42314,29 @@ namespace ts {
 
         function checkSourceFile(node: SourceFile) {
             tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
+            performance.enable();
             performance.mark("beforeCheck");
+
             const re = /^tests\/cases\/compiler\/_cax/;
-            // let quiet = true;
-            // quiet = false;
-            let writingFlowTxt=false;
+            myCurrentSourceFilename = node.originalFileName;
             let ofilenameRoot="";
             myMaxDepth = 0;
             myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
             myNoAliasAction = !!Number(process.env.myNoAliasAction);
-            // not incrementing dbgFlowFileCnt because it is only the last one that is desired
-            if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts") dbgFlowFileCnt++;
-            if (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts" && dbgFlowFileCnt===1) {
+            const myTestFilename = process.env.myTestFilename?? "";
+            const nameMatched = getBaseFileName(node.originalFileName) === (myTestFilename+".ts") ||
+                (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts");
+            let hrstart: bigint | undefined;
+            let currentTestFile: string | undefined;
+            if (nameMatched) {
+                hrstart = process.hrtime.bigint();
+                currentTestFile = getBaseFileName(node.originalFileName);
+            }
+            if (nameMatched && dbgFlowFileCnt===0) {
                 myDebug = !!Number(process.env.myDebug);
-                //myNoCache = !!Number(process.env.myNoCache);
-                consoleLog(`myDebug=${myDebug}, myDisable=${myDisable}`);
-                if (myDebug && node.endFlowNode) {
-                    writingFlowTxt = true;
-                    dbgFlow_mapPeType = new Map<string,Type>();
+                consoleLog(`myDebug=${myDebug}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
+                if (nameMatched){//(myDebug && node.endFlowNode) {
+                    //writingFlowTxt = true;
                     let contents = "";
                     let write = (s: string)=>{
                         contents+=s;
@@ -42261,27 +42345,99 @@ namespace ts {
                     False = false;
                     if (False) write = console.log;
                     //const write = (s: string)=>contents+=s;
-                    writeFlowNodesUp(write, [node.endFlowNode]);
+                    const endFlowNodes: FlowNode[]=[];
+                    // @ts-ignore
+                    const flowNodes: FlowNode[]=[];
+                    // endFlowNodes is at least not always easy to find, might not even exist in any container?
+                    const setv = new Set<FlowNode>();
+                    const visitorEfn = (n: Node) => {
+                        //if ((n as any).endFlowNode) endFlowNodes.push((n as any).endFlowNode);
+                        if ((n as any).flowNode){
+                            const fn = (n as any).flowNode as FlowNode;
+                            if (!setv.has(fn) && !isFlowStart(fn)){
+                                flowNodes.push(fn);
+                                setv.add(fn);
+                            }
+                        }
+                        if ((n as any).endFlowNode){
+                            const fn = (n as any).endFlowNode as FlowNode;
+                            if (!setv.has(fn) && !isFlowStart(fn)){
+                                flowNodes.push(fn);
+                                setv.add(fn);
+                            }
+                        }
+                        forEachChild(n, visitorEfn);
+                    };
+                    visitorEfn(node);
+                    const setAnte = new Set<FlowNode>();
+                    //const setNotAnte = new Set<FlowNode>();
+                    // some flow nodes are not referenced by any node
+                    const addAntesToSet = (f: FlowNode) => {
+                        if ((f as any).antecedent) {
+                            if (!setAnte.has((f as any).antecedent)) setAnte.add((f as any).antecedent);
+                        }
+                        if ((f as any).antecedents) {
+                            (f as any).antecedents.forEach((a: FlowNode)=>{
+                                if (!setAnte.has(a)) setAnte.add(a);
+                            });
+                        }
+                    };
+                    flowNodes.forEach(f=>addAntesToSet(f));
+                    // get antecedents of antecedents until no change
+                    let change = true;
+                    while (change) {
+                        const size = setAnte.size;
+                        setAnte.forEach(a=>addAntesToSet(a));
+                        change = setAnte.size!==size;
+                    }
+                    setv.clear();
+                    const visitMark=(f: FlowNode) => {
+                        if (setv.has(f)) return;
+                        setv.add(f);
+                        if ((f as any).antecedent) {
+                            const a: FlowNode = (f as any).antecedent;
+                            getFlowNodeId(a);
+                            visitMark(a);
+                        }
+                        else if ((f as any).antecedents) {
+                            (f as any).antecedents.forEach((a: FlowNode)=>{
+                                getFlowNodeId(a);
+                                visitMark(a);
+                            });
+                        }
+                    };
+                    flowNodes.forEach(f=>{
+                        if (!setAnte.has(f)) {
+                            (f as any).isEndFlowNode = true;
+                            getFlowNodeId(f);
+                            endFlowNodes.push(f);
+                            visitMark(f);
+                        }
+                    });
+                    //endFlowNodes.forEach(f=>)
+                    // let n = node as ReadonlyTextRange & SourceFile;
+                    // while (true){
+                    //     if (n.endFlowNode && !isFlowStart(n.endFlowNode)){
+                    //         endFlowNodes.push(n.endFlowNode);
+                    //     }
+                    //     if (n.nextContainer) n = n.nextContainer as ReadonlyTextRange & SourceFile;
+                    //     else break;
+                    // }
+                    writeFlowNodesUp(write, endFlowNodes);
                     ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisable?1:0}.${dbgFlowFileCnt++}.flow`;
                     sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
                 }
-                Debug.isDebugging=true;
             }
             checkSourceFileWorker(node);
             if (myDebug) {
-                if (writingFlowTxt) {
-                    let contents = "";
-                    const write = (s: string)=>contents+=s;
-                    writeFlowNodesUp(write, [node.endFlowNode!],dbgFlow_mapPeType);
-                    sys.writeFile(`${ofilenameRoot}.after.txt`, contents);
-                    consoleLog(`myMaxDepth: ${myMaxDepth}`);
-                }
                 myDebug = false;
                 myDisable = false;
-                Debug.isDebugging=false;
+            }
+            if (nameMatched){
+                const hrtime = process.hrtime.bigint() - hrstart!;
+                consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
             }
             performance.mark("afterCheck");
-            performance.measure("Check", "beforeCheck", "afterCheck");
             tracing?.pop();
         }
 
@@ -45984,7 +46140,12 @@ namespace ts {
                 return " -".repeat(currentIndent);
             };
             const getText = (node: Node) => {
-                return (node as any).getText();
+                let t = "";
+                if ((node as any).getText && (node as any).getText()) t = (node as any).getText();
+                else if ((node as any).escapedText) t = (node as any).escapedText;
+                else if ((node as any).escapedName) t = (node as any).escapedName;
+                t += ` [${node.pos},${node.end}]`;
+                return t;
             };
             const doOne = (fn: FlowNode)=>{
                 const recursiveReference = set_loopDetect.has(fn);
@@ -46011,7 +46172,7 @@ namespace ts {
                 if (node && map_nID.has(node)) idstr += `, NID: ${map_nID.get(node)}`;
                 if (pekey && map_peID.has(pekey)) idstr += `, TID: ${map_peID.get(pekey)}`;
                 idstr += `, flags: ${Debug.formatFlowFlags(fn.flags)}`;
-                if (recursiveReference) idstr += `, RECURSIVE REFERENCE!!!`;
+                if (recursiveReference) idstr += `, REPEAT REFERENCE!!!`;
                 write(indent()+idstr);
                 if (node) {
                     const {pos, end} = node;
@@ -46040,7 +46201,7 @@ namespace ts {
                     doOne(fn.target);
                 }
                 else if (isFlowJoin(fn)){
-                    write(indent()+`joinNode: ${dbgNodeToString(fn.joinNode)}`);
+                    write(indent()+`joinNode: ${getText(fn.joinNode)}`);
                 }
                 if ((fn as any).antecedents) {
                     write(indent()+`antecedents:[${((fn as any).antecedents as FlowNode[]).length}]`);

@@ -2004,7 +2004,7 @@ declare namespace ts {
         antecedent: FlowNode;
     }
     export interface FlowJoin extends FlowNodeBase {
-        node: Expression | VariableDeclaration | BindingElement;
+        joinNode: Expression | VariableDeclaration | BindingElement;
         antecedent: FlowNode;
     }
     export interface FlowCall extends FlowNodeBase {

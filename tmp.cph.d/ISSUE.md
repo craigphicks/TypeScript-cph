@@ -564,3 +564,99 @@ tests/cases/conformance/expressions/binaryOperators/logicalAndOperator/logicalAn
 
 
 
+# high priority to fix:
+
+instantiationExpressionErrors.errors.txt
+
+# medium - additional errors not coming out
+
+unusedMultipleParameter2InFunctionExpression.errors.txt
+unusedMultipleParameter1InFunctionExpression.errors.txt
+
+# stupid extra errors (on top of existing erros):
+
+mappedTypeProperties.errors.txt
+
+
+# improvement: wring error removed
+unusedLocalsOnFunctionDeclarationWithinFunctionExpression1.errors.txt
+
+
+Passing all tests!
+
+
+Now compiling tsserver.
+Not compiling corePublic.ts  Looks like a possible bug, 
+either in adding `FlowJoin` or in creating flow branches for  `X ?? Y` statements.
+
+The statement 
+```
+    const constructor = NativeCollections[nativeFactory]() ?? ShimCollections?.[shimFactory](getIterator);
+
+```
+is crashing on an assert
+```
+Debug.assert(isFlowCondition(antecedent)
+```
+for each antecedent in `getTypeAtFlowBranchLabel_aux`.
+
+The bug can be recreated with this test code:
+
+```
+declare function fn():number|undefined;
+declare function fb():boolean;
+declare const foo: undefined | { fb: typeof fb };
+const z = fn() ?? foo?.fb();  // IS: number | boolean | undefined , SHOULD BE: number | boolean
+```
+which is producing the flow structure:
+```
+~~~~~~
+id: 1, FID: 1, NID: 1, TID: 1, flags: Assignment
+z = fn() ?? foo?.fb() [343,365], (343,365), VariableDeclaration
+antecedent:
+ -~~~~~~
+ -id: 2, FID: 2, flags: BranchLabel|Label|Referenced
+ -antecedents:[4]
+ - -~~~~~~
+ - -id: 3, FID: 3, flags: Referenced|Shared|Join
+ - -joinNode: z = fn() ?? foo?.fb() [343,365]
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 4, FID: 4, flags: Start|Referenced
+ - -~~~~~~
+ - -id: 5, FID: 5, NID: 2, TID: 2, flags: FalseCondition|Condition|Referenced
+ - -foo [355,359], (355,359), Identifier
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 3, FID: 3, flags: Referenced|Shared|Join, REPEAT REFERENCE!!!
+ - -~~~~~~
+ - -id: 6, FID: 6, NID: 3, TID: 3, flags: TrueCondition|Condition|Referenced
+ - -foo?.fb() [355,365], (355,365), CallExpression
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 7, FID: 7, NID: 2, TID: 2, flags: TrueCondition|Condition|Referenced|Shared
+ - - -foo [355,359], (355,359), Identifier
+ - - -antecedent:
+ - - - -~~~~~~
+ - - - -id: 3, FID: 3, flags: Referenced|Shared|Join, REPEAT REFERENCE!!!
+ - -~~~~~~
+ - -id: 8, FID: 8, NID: 3, TID: 3, flags: FalseCondition|Condition|Referenced
+ - -foo?.fb() [355,365], (355,365), CallExpression
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 7, FID: 7, NID: 2, TID: 2, flags: TrueCondition|Condition|Referenced|Shared, REPEAT REFERENCE!!!
+ - - -foo [355,359], (355,359), Identifier
+
+# of FlowNodes:8
+# of unique Nodes referenced:3
+```
+There is **no condition** on the first antecedent,
+and the and the later antecedents jump straight to ShimCollection.  
+
+Seems to happen when the first term is a CallExpression,
+as though a call expression cannot return undefined.
+
+However this code 
+```
+
+```
