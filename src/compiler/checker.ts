@@ -8,6 +8,7 @@ namespace ts {
     const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):10000;
     let myNumLinesOut=0;
     let myMaxDepth = 0; // introspection data
+    // @ts-ignore
     let myCurrentSourceFilename = "";
     interface SystemWithAppendFile extends System {
         openFileForWriteFd(path: string): number; // returns number which is file description
@@ -24342,9 +24343,6 @@ namespace ts {
                 const flags = flow.flags;
                 if (flags & FlowFlags.Join){
                     flow = getJoinAntecdent(flow as FlowJoin);
-                    // This assert fails !!! Called from getFlowTypeOfReference but not inside it.
-                    // Debug.assert(flowTypeQueryState.getFlowTypeOfReferenceStack.length===0,"flowTypeQueryState.getFlowTypeOfReferenceStack.length===0");
-                    //flow = (flow as FlowJoin).antecedent;
                 }
                 else if (flags & FlowFlags.Shared) {
                     if (!noCacheCheck) {
@@ -24424,9 +24422,6 @@ namespace ts {
                 }
                 if (flags & FlowFlags.Join){
                     flow = getJoinAntecdent(flow as FlowJoin);
-                    // This assert might fail like it fails in isReachableFlowNodeWorker
-                    // Debug.assert(flowTypeQueryState.getFlowTypeOfReferenceStack.length===0,"flowTypeQueryState.getFlowTypeOfReferenceStack.length===0");
-                    //flow = (flow as FlowJoin).antecedent;
                 }
                 else if (flags & (FlowFlags.Assignment | FlowFlags.Condition | FlowFlags.ArrayMutation | FlowFlags.SwitchClause)) {
                     flow = (flow as FlowAssignment | FlowCondition | FlowArrayMutation | FlowSwitchClause).antecedent;
@@ -24697,6 +24692,14 @@ namespace ts {
                     }
                     else if (flags & FlowFlags.Condition) {
                         type = getTypeAtFlowCondition(flow as FlowCondition);
+                        if (!type) {
+                            /**
+                             * This can happen when binder: createFlowCondition is passed a null expression while binding a
+                             * logicalLikeExpression
+                             */
+                            flow = (flow as FlowCondition).antecedent;
+                            continue;
+                        }
                     }
                     else if (flags & FlowFlags.SwitchClause) {
                         type = getTypeAtSwitchClause(flow as FlowSwitchClause);
@@ -24893,7 +24896,7 @@ namespace ts {
                 return undefined;
             }
 
-            function getTypeAtFlowCondition(flow: FlowCondition): FlowType {
+            function getTypeAtFlowCondition(flow: FlowCondition): FlowType | undefined {
                 if (myDebug) {
                     consoleGroup("getTypeAtFlowCondition");
                     //consoleLog((dbgff(flow)));
@@ -24901,33 +24904,21 @@ namespace ts {
                 }
                 const r = getTypeAtFlowCondition_aux(flow);
                 if (myDebug) {
-                    consoleLog(`(fc out) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, ret: ${dbgFlowTypeToString(r)}`);
+                    consoleLog(`(fc out) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, ret: ${(r===undefined)? "<undef>": dbgFlowTypeToString(r)}`);
                     consoleGroupEnd();
                 }
                 return r;
             }
-            function getTypeAtFlowCondition_aux(flow: FlowCondition): FlowType {
+            function getTypeAtFlowCondition_aux(flow: FlowCondition): FlowType | undefined {
+                if (!flow.node){
+                    if (!!(flow.flags & FlowFlags.Unreachable)) {
+                        Debug.assert(!(flow.flags|FlowFlags.AlwaysTrue));
+                        return convertAutoToAny(declaredType);
+                    }
+                    if (!!(flow.flags & FlowFlags.AlwaysTrue)) return undefined; // go on to the antecedent
+                    Debug.assert(false);
+                }
                 const assumeTrue = (flow.flags & FlowFlags.TrueCondition) !== 0;
-                const getTypeAtFlowConditionPostProcess = (type: Type, optFlowType?: FlowType): FlowType => {
-                    // If we have an antecedent type (meaning we're reachable in some way), we first
-                    // attempt to narrow the antecedent type. If that produces the never type, and if
-                    // the antecedent type is incomplete (i.e. a transient type in a loop), then we
-                    // take the type guard as an indication that control *could* reach here once we
-                    // have the complete type. We proceed by switching to the silent never type which
-                    // doesn't report errors when operators are applied to it. Note that this is the
-                    // *only* place a silent never type is ever generated.
-                    const nonEvolvingType = finalizeEvolvingArrayType(type);
-                    //if (myDebug && flow.id===3) dbgNarrowType = true;
-                    const narrowedType = narrowType(nonEvolvingType, flow.node, assumeTrue);
-                    //if (myDebug && flow.id===3) dbgNarrowType = false;
-                    if (myDebug) {
-                        consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
-                    }
-                    if (optFlowType && narrowedType === nonEvolvingType) {
-                        return optFlowType;
-                    }
-                    return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
-                };
 
                 let assignmentState: AliasAssignableState | undefined;
                 if (!flowTypeQueryState.disable && flow.node.kind===SyntaxKind.Identifier){
@@ -24943,6 +24934,35 @@ namespace ts {
                         if (myDebug) consoleLog(`condition ${dbgFlowToString(flow)} corresponds to assigmentment ${dbgFlowToString(assignmentState.node.flowNode)}`);
                     };
                 }
+
+                /**
+                 *
+                 * @param type
+                 * @param optFlowType : If not provided, flowTypeQueryState.aliasableAssignments has been used so narrowing bypassed
+                 * @returns
+                 */
+                const getTypeAtFlowConditionPostProcess = (type: Type, optFlowType?: FlowType): FlowType => {
+                    const nonEvolvingType = finalizeEvolvingArrayType(type);
+                    //if (!optFlowType) return createFlowType(nonEvolvingType, /* incomplete */ false);
+                    {
+                        // If we have an antecedent type (meaning we're reachable in some way), we first
+                        // attempt to narrow the antecedent type. If that produces the never type, and if
+                        // the antecedent type is incomplete (i.e. a transient type in a loop), then we
+                        // take the type guard as an indication that control *could* reach here once we
+                        // have the complete type. We proceed by switching to the silent never type which
+                        // doesn't report errors when operators are applied to it. Note that this is the
+                        // *only* place a silent never type is ever generated.
+                        const narrowedType = narrowType(nonEvolvingType, flow.node!, assumeTrue);
+                        if (myDebug) {
+                            consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
+                        }
+                        if (optFlowType && narrowedType === nonEvolvingType) {
+                            return optFlowType;
+                        }
+                        return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
+                    }
+                };
+
                 // Not sure if it would make any difference to introduce constant aliases here.
                 // if (assignmentState && !assignmentState.aliasable && !assignmentState.antecedentIsJoin &&
                 //     assignmentState.constVariable && assignmentState.valueReadonly){
@@ -24954,6 +24974,9 @@ namespace ts {
 
                 const tempFlowType = getTypeAtFlowNode(flow.antecedent);
                 const tempType = getTypeFromFlowType(tempFlowType);
+                if (myDebug){
+                    consoleLog(`tempFlowType: ${dbgFlowTypeToString(tempFlowType)}, tempType:${typeToString(tempType)}, tempType.flags & TypeFlags.Never = ${tempType.flags & TypeFlags.Never}`);
+                }
                 if (tempType.flags & TypeFlags.Never) {
                     return tempFlowType;
                 }
@@ -25056,7 +25079,14 @@ namespace ts {
                     if (!flowTypeQueryState.disable && joinMap){
                         if (joinMap.aliasFlow.antecedent===flow){
                             if (myDebug) consoleLog("getTypeAtFlowBranchLabel: aliasing action");
-                            Debug.assert(isFlowCondition(antecedent),"isFlowCondition(anteceden "+myCurrentSourceFilename);
+                            /**
+                             * In the binding phase some conditions are "cancelled" and replaced with either their antecedent or "unreachable".
+                             * If not a condition it means:
+                             * - if `antecedent.flags & FLowFlags.Unreachable` then path NEVER taken
+                             * - otherwise, path is ALWAYS taken (and therefore following antecedent in the loop are NEVER taken)
+                             * See the documentation of `createFlowCondition` for details.
+                             */
+                            Debug.assert(isFlowCondition(antecedent),"isFlowCondition(antecedent)"); // +myCurrentSourceFilename);
                             if (getFlowConditionBoolean(antecedent)!==joinMap.conditionAssumeTrue){
                                 if (myDebug) consoleLog("getTypeAtFlowBranchLabel: aliasing - skip skip antecedent with mismatched boolean sense");
                                 continue;
@@ -25896,9 +25926,22 @@ namespace ts {
                 return type;
             }
 
+            function narrowType(type: Type, expr: Expression, assumeTrue: boolean): Type {
+                if (myDebug){
+                    consoleGroup(`narrowType[in ]: type:${typeToString(type)}, expr=${dbgNodeToString(expr)}, assumeTrue=${assumeTrue}`);
+                }
+                const r = narrowType_aux(type,expr,assumeTrue);
+                if (myDebug){
+                    consoleLog(`narrowType[out]: return type:${typeToString(r)}`);
+                    consoleGroupEnd();
+                }
+                return r;
+            }
+
             // Narrow the given type based on the given expression having the assumed boolean value. The returned type
             // will be a subtype or the same type as the argument.
-            function narrowType(type: Type, expr: Expression, assumeTrue: boolean): Type {
+            function narrowType_aux(type: Type, expr: Expression, assumeTrue: boolean): Type {
+
                 // for `a?.b`, we emulate a synthetic `a !== null && a !== undefined` condition for `a`
                 if (isExpressionOfOptionalChainRoot(expr) ||
                     isBinaryExpression(expr.parent) && expr.parent.operatorToken.kind === SyntaxKind.QuestionQuestionToken && expr.parent.left === expr) {

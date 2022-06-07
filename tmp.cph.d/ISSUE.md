@@ -600,13 +600,13 @@ Debug.assert(isFlowCondition(antecedent)
 ```
 for each antecedent in `getTypeAtFlowBranchLabel_aux`.
 
-The bug can be recreated with this test code:
+The bug cannot be recreated with this test code:
 
 ```
 declare function fn():number|undefined;
 declare function fb():boolean;
 declare const foo: undefined | { fb: typeof fb };
-const z = fn() ?? foo?.fb();  // IS: number | boolean | undefined , SHOULD BE: number | boolean
+const z = fn() ?? foo?.fb();  
 ```
 which is producing the flow structure:
 ```
@@ -656,7 +656,61 @@ and the and the later antecedents jump straight to ShimCollection.
 Seems to happen when the first term is a CallExpression,
 as though a call expression cannot return undefined.
 
-However this code 
+
+
+
+```
+               const operator = node.operatorToken.kind;
+                if (operator === SyntaxKind.AmpersandAmpersandToken ||
+                    operator === SyntaxKind.BarBarToken ||
+                    operator === SyntaxKind.QuestionQuestionToken ||
+                    isLogicalOrCoalescingAssignmentOperator(operator)) {
+                    if (isTopLevelLogicalExpression(node)) {
+                        const postExpressionLabel = createBranchLabel();
+                        bindLogicalLikeExpression(node, postExpressionLabel, postExpressionLabel);
+                        currentFlow = finishFlowLabel(postExpressionLabel);
+                    }
+                    else {
+                        bindLogicalLikeExpression(node, currentTrueTarget!, currentFalseTarget!);
+                    }
+                    state.skip = true;
+                }
+
 ```
 
 ```
+        function bindCondition(node: Expression | undefined, trueTarget: FlowLabel, falseTarget: FlowLabel) {
+            doWithConditionalBranches(bind, node, trueTarget, falseTarget);
+            if (!node || !isLogicalAssignmentExpression(node) && !isLogicalExpression(node) && !(isOptionalChain(node) && isOutermostOptionalChain(node))) {
+                addAntecedent(trueTarget, createFlowCondition(FlowFlags.TrueCondition, currentFlow, node));
+                addAntecedent(falseTarget, createFlowCondition(FlowFlags.FalseCondition, currentFlow, node));
+            }
+        }
+```
+
+Call stack for `fn()`
+```
+bindCallExpressionFlow (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:1813)
+bindChildren (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:832)
+bind (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:2471)
+doWithConditionalBranches (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:1094)
+bindCondition (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:1100)
+bindLogicalLikeExpression (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:1456)
+onEnter (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:1557)
+enter (/mnt/common/github/TypeScript-cph/src/compiler/factory/utilities.ts:1022)
+trampoline (/mnt/common/github/TypeScript-cph/src/compiler/factory/utilities.ts:1212)
+bindChildren (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:816)
+bind (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:2471)
+visitNode (/mnt/common/github/TypeScript-cph/src/compiler/parser.ts:39)
+forEachChild (/mnt/common/github/TypeScript-cph/src/compiler/parser.ts:170)
+bindEachChild (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:742)
+bindVariableDeclarationFlow (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:1674)
+bindChildren (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:825)
+bind (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:2471)
+forEach (/mnt/common/github/TypeScript-cph/src/compiler/core.ts:38)
+bindEach (/mnt/common/github/TypeScript-cph/src/compiler/binder.ts:738)
+visitNodes (/mnt/common/github/TypeScript-cph/src/compiler/parser.ts:45)
+```
+
+Adding documentation for `createFlowCondition` in `binder.ts`
+

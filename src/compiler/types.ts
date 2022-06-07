@@ -3451,8 +3451,8 @@ namespace ts {
         BranchLabel    = 1 << 2,  // Non-looping junction
         LoopLabel      = 1 << 3,  // Looping junction
         Assignment     = 1 << 4,  // Assignment
-        TrueCondition  = 1 << 5,  // Condition known to be true
-        FalseCondition = 1 << 6,  // Condition known to be false
+        TrueCondition  = 1 << 5,  // Condition known to be true (false branch of condition)
+        FalseCondition = 1 << 6,  // Condition known to be false (true branch of condition)
         SwitchClause   = 1 << 7,  // Switch statement clause
         ArrayMutation  = 1 << 8,  // Potential array mutation
         Call           = 1 << 9,  // Potential assertion call
@@ -3460,6 +3460,9 @@ namespace ts {
         Referenced     = 1 << 11, // Referenced as antecedent once
         Shared         = 1 << 12, // Referenced as antecedent more than once
         Join           = 1 << 13, // Marks the end of an Assignment
+        UnreachableReported = 1 << 14, // a signal that this unreachable has been reported.
+        AlwaysTrue     = 1 << 15, // For conditions: The opposite of unreachable, for a condition
+        WrtNullishCoalescing = 1 << 16, // For conditions: Truthy or Falsy defined with respect to the N'ish Coalescing Op `??`
 
         Label = BranchLabel | LoopLabel,
         Condition = TrueCondition | FalseCondition,
@@ -3514,7 +3517,7 @@ namespace ts {
     // FlowCondition represents a condition that is known to be true or false at the
     // node's location in the control flow.
     export interface FlowCondition extends FlowNodeBase {
-        node: Expression;
+        node: Expression | undefined; // when undefined, either `flags` has either `Unreachable` or `AlwaysTrue` set.
         antecedent: FlowNode;
     }
 
@@ -3536,6 +3539,10 @@ namespace ts {
         target: FlowLabel;
         antecedents: FlowNode[];
         antecedent: FlowNode;
+    }
+
+    export interface FlowUnreachable extends FlowNodeBase {
+        flags: FlowFlags;
     }
 
     export type FlowType = Type | IncompleteType;

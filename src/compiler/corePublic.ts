@@ -161,6 +161,13 @@ namespace ts {
         K2 extends MatchingKeys<typeof ShimCollections, (getIterator?: GetIteratorCallback) => ReturnType<(typeof NativeCollections)[K1]>>
     >(name: string, nativeFactory: K1, shimFactory: K2): NonNullable<ReturnType<(typeof NativeCollections)[K1]>> {
         // NOTE: ts.ShimCollections will be defined for typescriptServices.js but not for tsc.js, so we must test for it.
+        // @ts-ignore
+        const constructora = NativeCollections[nativeFactory]();
+        // @ts-ignore
+        const constructorb = ShimCollections?.[shimFactory](getIterator);
+        // @ts-ignore
+        const construtorab = constructora || constructorb;
+        // @ts-ignore
         const constructor = NativeCollections[nativeFactory]() ?? ShimCollections?.[shimFactory](getIterator);
         if (constructor) return constructor as NonNullable<ReturnType<(typeof NativeCollections)[K1]>>;
         throw new Error(`TypeScript requires an environment that provides a compatible native ${name} implementation.`);

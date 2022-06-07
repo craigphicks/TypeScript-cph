@@ -225,8 +225,9 @@ namespace ts {
         let Symbol: new (flags: SymbolFlags, name: __String) => Symbol;
         let classifiableNames: Set<__String>;
 
-        const unreachableFlow: FlowNode = { flags: FlowFlags.Unreachable };
-        const reportedUnreachableFlow: FlowNode = { flags: FlowFlags.Unreachable };
+        // replaced with dynamic instances because original condition types are needed for aliases [cph]
+        // const unreachableFlow: FlowNode = { flags: FlowFlags.Unreachable };
+        // const reportedUnreachableFlow: FlowNode = { flags: FlowFlags.Unreachable };
         const bindBinaryExpressionFlow = createBindBinaryExpressionFlow();
 
         /**
@@ -249,8 +250,8 @@ namespace ts {
             Symbol = objectAllocator.getSymbolConstructor();
 
             // Attach debugging information if necessary
-            Debug.attachFlowNodeDebugInfo(unreachableFlow);
-            Debug.attachFlowNodeDebugInfo(reportedUnreachableFlow);
+            // Debug.attachFlowNodeDebugInfo(unreachableFlow);
+            // Debug.attachFlowNodeDebugInfo(reportedUnreachableFlow);
 
             if (!file.locals) {
                 tracing?.push(tracing.Phase.Bind, "bindSourceFile", { path: file.path }, /*separateBeginAndEnd*/ true);
@@ -877,7 +878,13 @@ namespace ts {
                 case SyntaxKind.ElementAccessExpression:
                     return containsNarrowableReference(expr);
                 case SyntaxKind.CallExpression:
-                    return hasNarrowableArgument(expr as CallExpression);
+                    /**
+                     * [cph] A CallExpression narrows by the return type, but the return type is not always avalaible in the binder phase,
+                     * so return true and resolve in the flow analysis phase.
+                     * [cph] CallExpression may be narrowing by return type.
+                     */
+                    return true;
+                    // return hasNarrowableArgument(expr as CallExpression);
                 case SyntaxKind.ParenthesizedExpression:
                 case SyntaxKind.NonNullExpression:
                     return isNarrowingExpression((expr as ParenthesizedExpression | NonNullExpression).expression);
@@ -903,6 +910,7 @@ namespace ts {
             return isNarrowableReference(expr) || isOptionalChain(expr) && containsNarrowableReference(expr.expression);
         }
 
+        // @ts-expect-error 6133 - [cph]
         function hasNarrowableArgument(expr: CallExpression) {
             if (expr.arguments) {
                 for (const argument of expr.arguments) {
@@ -984,23 +992,65 @@ namespace ts {
             }
         }
 
-        function createFlowCondition(flags: FlowFlags, antecedent: FlowNode, expression: Expression | undefined): FlowNode {
-            if (antecedent.flags & FlowFlags.Unreachable) {
-                return antecedent;
+        // function createFlowConditionOnly(flags: FlowFlags, antecedent: FlowNode, expression: Expression | undefined): FlowCondition {
+        //     return createFlowCondition(flags, antecedent, expression, /* logicalLikeExpression */ true) as FlowCondition;
+        // }
+
+        /**
+         * createFlowCondition: [complaints about this documentaion -> cph]
+         * @param flags The condition flags to set
+         * @param antecedent The antecedent of the condition to create
+         * @param expression The expression node to set as the condition node, or in special cases a falsy value.
+         * @param logicalLikeExpression Must always return a condition
+         * @returns
+         * If `logicalLikeExpression`is false:
+         * - the newly constructed `FlowCondition` instance (normal case)
+         * - the global `unreachableFlow` or possibly `reportedUnreachableFlow` (not a `FlowCondition`)
+         * - the antecedent argument
+         * There is some overlap in the above cases:
+         * - the antecedent may be `unreachableFlow` or `reportedUnreachableFlow`
+         * Note1: The non-`FlowCondition` returns have the folling meanings:
+         * - `unreachableFlow`/`reportedUnreachableFlow`: The path is NEVER taken
+         * - otherwise, the path is ALWAYS taken.
+         * Note2: By returning `unreachableFlow` the actual flow is lost, even if options.allowUnreachableCode is set to true.
+         * That seems like a contradiction; is it?
+         *
+         * If `logicalLikeExpression`is true:
+         * - Always returns a flow condition.  However, the `node` value of the return may be a `dummy` with an actual value of undefined.
+         * . . (Handled at the top of `getTypeOfFlowCondition`)
+         * - If a dummy, flow condition will have flags with either `FlowFlags.Unreachable` or `FlowFlags.AlwaysTrue` set.
+         * - If wrtNullishCoalescing is true, then the flow condition will have flag `FlowFlags.Defined` set.  It means that it is true/false with respect to
+         * . . being equal to undefined (rather than resolving to true false).  This is set when the expression is the lhs of a logicalLikeExpression
+         * . . with the nullish-coalescing operator `??`.
+         */
+        function createFlowCondition(flags: FlowFlags /* FlowFlags.TrueCondition | FlowFlags.FlaseCondition*/ , antecedent: FlowNode, expression: Expression | undefined, logicalLikeExpression?: boolean, wrtNullishCoalescing?: boolean): FlowNode {
+            Debug.assert(!(antecedent.flags & FlowFlags.UnreachableReported), "!(antecedent.flags & FlowFlags.UnreachableReported)");
+            const initCondition = ({flags, antecedent, expression}: {flags: FlowFlags, antecedent: FlowNode, expression: Expression | undefined}) => {
+
+                setFlowNodeReferenced(antecedent);
+                return initFlowNode({ flags: wrtNullishCoalescing ? flags | FlowFlags.WrtNullishCoalescing : flags, antecedent, node: expression ?? undefined as any as Expression });
+            };
+            if (antecedent.flags & (FlowFlags.Unreachable)) {
+                if (!logicalLikeExpression) return antecedent;
+                else return initCondition({ flags: flags | FlowFlags.Unreachable, antecedent, expression });
             }
             if (!expression) {
-                return flags & FlowFlags.TrueCondition ? antecedent : unreachableFlow;
+                if (!logicalLikeExpression) return flags & FlowFlags.TrueCondition ? antecedent : createFlowUnreachable();
+                else return initCondition({ flags: flags | FlowFlags.AlwaysTrue, antecedent, expression });
             }
             if ((expression.kind === SyntaxKind.TrueKeyword && flags & FlowFlags.FalseCondition ||
                 expression.kind === SyntaxKind.FalseKeyword && flags & FlowFlags.TrueCondition) &&
                 !isExpressionOfOptionalChainRoot(expression) && !isNullishCoalesce(expression.parent)) {
-                return unreachableFlow;
+                if (!logicalLikeExpression) return createFlowUnreachable();
+                else return initCondition({ flags: flags | FlowFlags.Unreachable, antecedent, expression });
             }
             if (!isNarrowingExpression(expression)) {
-                return antecedent;
+                if (!logicalLikeExpression) return antecedent;
+                else return initCondition({ flags: flags | FlowFlags.AlwaysTrue, antecedent, expression });
             }
-            setFlowNodeReferenced(antecedent);
-            return initFlowNode({ flags, antecedent, node: expression });
+            return initCondition({ flags, antecedent, expression });
+            // setFlowNodeReferenced(antecedent);
+            // return initFlowNode({ flags, antecedent, node: expression });
         }
 
         function createFlowSwitchClause(antecedent: FlowNode, switchStatement: SwitchStatement, clauseStart: number, clauseEnd: number): FlowNode {
@@ -1028,10 +1078,14 @@ namespace ts {
             return initFlowNode({ flags:FlowFlags.Join, antecedent, joinNode }) as FlowJoin;
         }
 
+        function createFlowUnreachable(): FlowUnreachable {
+            return initFlowNode({ flags: FlowFlags.Unreachable });
+        }
+
         function finishFlowLabel(flow: FlowLabel): FlowNode {
             const antecedents = flow.antecedents;
             if (!antecedents) {
-                return unreachableFlow;
+                return createFlowUnreachable(); // unreachableFlow;
             }
             if (antecedents.length === 1) {
                 return antecedents[0];
@@ -1095,11 +1149,11 @@ namespace ts {
             currentFalseTarget = savedFalseTarget;
         }
 
-        function bindCondition(node: Expression | undefined, trueTarget: FlowLabel, falseTarget: FlowLabel) {
+        function bindCondition(node: Expression | undefined, trueTarget: FlowLabel, falseTarget: FlowLabel, logicalLikeExpression?: boolean, wrtNullishCoalescing?: boolean) {
             doWithConditionalBranches(bind, node, trueTarget, falseTarget);
             if (!node || !isLogicalAssignmentExpression(node) && !isLogicalExpression(node) && !(isOptionalChain(node) && isOutermostOptionalChain(node))) {
-                addAntecedent(trueTarget, createFlowCondition(FlowFlags.TrueCondition, currentFlow, node));
-                addAntecedent(falseTarget, createFlowCondition(FlowFlags.FalseCondition, currentFlow, node));
+                addAntecedent(trueTarget, createFlowCondition(FlowFlags.TrueCondition, currentFlow, node, logicalLikeExpression, wrtNullishCoalescing));
+                addAntecedent(falseTarget, createFlowCondition(FlowFlags.FalseCondition, currentFlow, node, logicalLikeExpression, wrtNullishCoalescing));
             }
         }
 
@@ -1205,7 +1259,7 @@ namespace ts {
                     addAntecedent(currentReturnTarget, currentFlow);
                 }
             }
-            currentFlow = unreachableFlow;
+            currentFlow = createFlowUnreachable(); // unreachableFlow;
         }
 
         function findActiveLabel(name: __String) {
@@ -1221,7 +1275,7 @@ namespace ts {
             const flowLabel = node.kind === SyntaxKind.BreakStatement ? breakTarget : continueTarget;
             if (flowLabel) {
                 addAntecedent(flowLabel, currentFlow);
-                currentFlow = unreachableFlow;
+                currentFlow = createFlowUnreachable(); // unreachableFlow;
             }
         }
 
@@ -1293,7 +1347,7 @@ namespace ts {
                 bind(node.finallyBlock);
                 if (currentFlow.flags & FlowFlags.Unreachable) {
                     // If the end of the finally block is unreachable, the end of the entire try statement is unreachable.
-                    currentFlow = unreachableFlow;
+                    currentFlow = createFlowUnreachable(); // unreachableFlow;
                 }
                 else {
                     // If we have an IIFE return target and return statements in the try or catch blocks, add a control
@@ -1309,7 +1363,8 @@ namespace ts {
                     // If the end of the finally block is reachable, but the end of the try and catch blocks are not,
                     // convert the current flow to unreachable. For example, 'try { return 1; } finally { ... }' should
                     // result in an unreachable current control flow.
-                    currentFlow = normalExitLabel.antecedents ? createReduceLabel(finallyLabel, normalExitLabel.antecedents, currentFlow) : unreachableFlow;
+                    currentFlow = normalExitLabel.antecedents ? createReduceLabel(finallyLabel, normalExitLabel.antecedents, currentFlow) :
+                        createFlowUnreachable() /* unreachableFlow */ ;
                 }
             }
             else {
@@ -1342,7 +1397,7 @@ namespace ts {
         function bindCaseBlock(node: CaseBlock): void {
             const clauses = node.clauses;
             const isNarrowingSwitch = isNarrowingExpression(node.parent.expression);
-            let fallthroughFlow = unreachableFlow;
+            let fallthroughFlow = createFlowUnreachable(); // unreachableFlow;
             for (let i = 0; i < clauses.length; i++) {
                 const clauseStart = i;
                 while (!clauses[i].statements.length && i + 1 < clauses.length) {
@@ -1448,24 +1503,30 @@ namespace ts {
 
         function bindLogicalLikeExpression(node: BinaryExpression, trueTarget: FlowLabel, falseTarget: FlowLabel) {
             const preRightLabel = createBranchLabel();
+            const wrtNullishCoalescing = node.operatorToken.kind === SyntaxKind.QuestionQuestionToken;
             if (node.operatorToken.kind === SyntaxKind.AmpersandAmpersandToken || node.operatorToken.kind === SyntaxKind.AmpersandAmpersandEqualsToken) {
-                bindCondition(node.left, preRightLabel, falseTarget);
+                bindCondition(node.left, preRightLabel, falseTarget, /* logicalLikeExpression */ true, wrtNullishCoalescing);
             }
             else {
-                bindCondition(node.left, trueTarget, preRightLabel);
+                bindCondition(node.left, trueTarget, preRightLabel, /* logicalLikeExpression */ true, wrtNullishCoalescing);
             }
-            currentFlow = finishFlowLabel(preRightLabel);
+            /**
+             * finishFlowLabel converts flow to unreachable or promites antecedent
+             * We never want to do that for a logicalLikeEpression.
+             */
+            //currentFlow = finishFlowLabel(preRightLabel);
+            currentFlow = preRightLabel;
             bind(node.operatorToken);
 
             if (isLogicalOrCoalescingAssignmentOperator(node.operatorToken.kind)) {
                 doWithConditionalBranches(bind, node.right, trueTarget, falseTarget);
                 bindAssignmentTargetFlow(node.left);
 
-                addAntecedent(trueTarget, createFlowCondition(FlowFlags.TrueCondition, currentFlow, node));
-                addAntecedent(falseTarget, createFlowCondition(FlowFlags.FalseCondition, currentFlow, node));
+                addAntecedent(trueTarget, createFlowCondition(FlowFlags.TrueCondition, currentFlow, node, /* logicalLikeExpression */ true));
+                addAntecedent(falseTarget, createFlowCondition(FlowFlags.FalseCondition, currentFlow, node, /* logicalLikeExpression */ true));
             }
             else {
-                bindCondition(node.right, trueTarget, falseTarget);
+                bindCondition(node.right, trueTarget, falseTarget,  /* logicalLikeExpression */ true);
             }
         }
 
@@ -1552,9 +1613,21 @@ namespace ts {
                     operator === SyntaxKind.QuestionQuestionToken ||
                     isLogicalOrCoalescingAssignmentOperator(operator)) {
                     if (isTopLevelLogicalExpression(node)) {
+                        /**
+                         * In this case an N-ary table is being created.
+                         * Every table entry should be a True or False Condition, because if it is not
+                         * and is simply omitted (True/False skipped over)
+                         * then the intention is presumably to short circuit the logic.
+                         * In that case the rest of the expresion is not evealuated,
+                         * and it should be an error to the user.
+                         */
                         const postExpressionLabel = createBranchLabel();
                         bindLogicalLikeExpression(node, postExpressionLabel, postExpressionLabel);
-                        currentFlow = finishFlowLabel(postExpressionLabel);
+                        /**
+                         * In a logical like expression never throw away condition information. [cph]
+                         */
+                         currentFlow = postExpressionLabel;
+                         //currentFlow = finishFlowLabel(postExpressionLabel);
                     }
                     else {
                         bindLogicalLikeExpression(node, currentTrueTarget!, currentFalseTarget!);
@@ -3453,7 +3526,7 @@ namespace ts {
             if (!(currentFlow.flags & FlowFlags.Unreachable)) {
                 return false;
             }
-            if (currentFlow === unreachableFlow) {
+            if (currentFlow.flags & FlowFlags.Unreachable) {
                 const reportError =
                     // report error on all statements except empty ones
                     (isStatementButNotDeclaration(node) && node.kind !== SyntaxKind.EmptyStatement) ||
@@ -3463,7 +3536,9 @@ namespace ts {
                     (node.kind === SyntaxKind.ModuleDeclaration && shouldReportErrorOnModuleDeclaration(node as ModuleDeclaration));
 
                 if (reportError) {
-                    currentFlow = reportedUnreachableFlow;
+                    currentFlow.flags &= ~(FlowFlags.Unreachable);
+                    currentFlow.flags |= ~(FlowFlags.UnreachableReported);
+                    // currentFlow = reportedUnreachableFlow;
 
                     if (!options.allowUnreachableCode) {
                         // unreachable code is reported if
