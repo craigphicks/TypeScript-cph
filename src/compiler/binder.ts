@@ -1078,8 +1078,8 @@ namespace ts {
             return initFlowNode({ flags:FlowFlags.Join, antecedent, joinNode }) as FlowJoin;
         }
 
-        function createFlowUnreachable(): FlowUnreachable {
-            return initFlowNode({ flags: FlowFlags.Unreachable });
+        function createFlowUnreachable(reported?: boolean): FlowUnreachable {
+            return initFlowNode({ flags: reported? FlowFlags.UnreachableReported : FlowFlags.Unreachable });
         }
 
         function finishFlowLabel(flow: FlowLabel): FlowNode {
@@ -1511,11 +1511,13 @@ namespace ts {
                 bindCondition(node.left, trueTarget, preRightLabel, /* logicalLikeExpression */ true, wrtNullishCoalescing);
             }
             /**
-             * finishFlowLabel converts flow to unreachable or promites antecedent
-             * We never want to do that for a logicalLikeEpression.
+             * Here we don't call finishFlowLabel to avoid promoting the FlowJoin and losing the condition associated with it,
+             * which is not sound logic for the alias processing.
+             * Still need the "unreachable" though.  In alias processing of branch, any unreachable antecedent will simply be skipped.
              */
             //currentFlow = finishFlowLabel(preRightLabel);
-            currentFlow = preRightLabel;
+            if (!preRightLabel.antecedents) currentFlow = createFlowUnreachable();
+            //currentFlow = preRightLabel;
             bind(node.operatorToken);
 
             if (isLogicalOrCoalescingAssignmentOperator(node.operatorToken.kind)) {
@@ -1627,7 +1629,7 @@ namespace ts {
                          * In a logical like expression never throw away condition information. [cph]
                          */
                          currentFlow = postExpressionLabel;
-                         //currentFlow = finishFlowLabel(postExpressionLabel);
+                         currentFlow = finishFlowLabel(postExpressionLabel);
                     }
                     else {
                         bindLogicalLikeExpression(node, currentTrueTarget!, currentFalseTarget!);
@@ -3536,8 +3538,9 @@ namespace ts {
                     (node.kind === SyntaxKind.ModuleDeclaration && shouldReportErrorOnModuleDeclaration(node as ModuleDeclaration));
 
                 if (reportError) {
-                    currentFlow.flags &= ~(FlowFlags.Unreachable);
-                    currentFlow.flags |= ~(FlowFlags.UnreachableReported);
+                    currentFlow = createFlowUnreachable(/* reported */ true);
+                    // currentFlow.flags &= ~(FlowFlags.Unreachable);
+                    // currentFlow.flags |= ~(FlowFlags.UnreachableReported);
                     // currentFlow = reportedUnreachableFlow;
 
                     if (!options.allowUnreachableCode) {
