@@ -24906,39 +24906,6 @@ namespace ts {
                 }
                 return undefined;
             }
-            // // @ts-ignore
-            // function isUnitExpressionForRef(expr: Expression, refSymbol: Symbol): boolean {
-            //     let refcount=0;
-            //     const visitor = (node: Node)=>{
-            //         if ((node as any).flowNode) {
-            //             const flowsym = isIdentifier(expr) ? getResolvedSymbol(expr) : getSymbolAtLocation(expr, /* ignoreErrors */ true);
-            //             if (flowsym) {
-            //                 if (flowsym!==refSymbol) return "fail";
-            //                 refcount++;
-            //             }
-            //         }
-            //         forEachChild(node,visitor);
-            //     };
-            //     if (visitor(expr)) return false;
-            //     return refcount > 0;
-            // }
-            // // @ts-ignore
-            // function isRelatedExpressionForRef(expr: Expression, refSymbol: Symbol): boolean {
-            //     let othercount=0;
-            //     let refcount=0;
-            //     const visitor = (node: Node)=>{
-            //         if ((node as any).flowNode) {
-            //             let flowsym = getResolvedSymbol(expr) || getSymbolAtLocation(expr);
-            //             if (flowsym) {
-            //                 if (flowsym!==refSymbol) return "fail";
-            //                 refcount++;
-            //             }
-            //         }
-            //         forEachChild(node,visitor);
-            //     };
-            //     if (!visitor(expr)) return false;
-            //     return refcount > 0;
-            // }
 
             function getTypeAtFlowCondition(flow: FlowCondition): FlowType | undefined {
                 if (myDebug) {
@@ -24996,32 +24963,22 @@ namespace ts {
                  */
                 const getTypeAtFlowConditionPostProcess = (type: Type, optFlowType?: FlowType): FlowType => {
                     const nonEvolvingType = finalizeEvolvingArrayType(type);
-                    //if (!optFlowType) return createFlowType(nonEvolvingType, /* incomplete */ false);
-                    {
-                        // If we have an antecedent type (meaning we're reachable in some way), we first
-                        // attempt to narrow the antecedent type. If that produces the never type, and if
-                        // the antecedent type is incomplete (i.e. a transient type in a loop), then we
-                        // take the type guard as an indication that control *could* reach here once we
-                        // have the complete type. We proceed by switching to the silent never type which
-                        // doesn't report errors when operators are applied to it. Note that this is the
-                        // *only* place a silent never type is ever generated.
-                        let narrowedType = nonEvolvingType;
-                        if (myNoAliasAction || !assignmentState) {
-                            let matches = false;
-                            if (!myNoAliasAction && !assignmentState) {
-                                matches = isMatchingReference(reference, flow.node!);
-                                if (matches) narrowedType = narrowType(nonEvolvingType, flow.node!, assumeTrue);
-                            }
-                            if (myNoAliasAction) narrowedType = narrowType(nonEvolvingType, flow.node!, assumeTrue);
-                        }
-                        if (myDebug) {
-                            consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
-                        }
-                        if (optFlowType && narrowedType === nonEvolvingType) {
-                            return optFlowType;
-                        }
-                        return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
+                    // If we have an antecedent type (meaning we're reachable in some way), we first
+                    // attempt to narrow the antecedent type. If that produces the never type, and if
+                    // the antecedent type is incomplete (i.e. a transient type in a loop), then we
+                    // take the type guard as an indication that control *could* reach here once we
+                    // have the complete type. We proceed by switching to the silent never type which
+                    // doesn't report errors when operators are applied to it. Note that this is the
+                    // *only* place a silent never type is ever generated.
+                    let  narrowedType = nonEvolvingType;
+                    if (!myNoAliasAction && !assignmentState) narrowedType = narrowType(nonEvolvingType, flow.node!, assumeTrue);
+                    if (myDebug) {
+                        consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
                     }
+                    if (optFlowType && narrowedType === nonEvolvingType) {
+                        return optFlowType;
+                    }
+                    return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
                 };
 
 
@@ -25126,8 +25083,8 @@ namespace ts {
                     if (myDebug){
                         consoleLog(`briter:${++briter}, ante:${dbgFlowToString(antecedent)}`);
                     }
-                    let always = false;
-                    let never = false;
+                    //let always = false;
+                    //let never = false;
                     if (!flowTypeQueryState.disable && joinMap){
                         if (joinMap.aliasFlow.antecedent===flow){
                             if (myDebug) consoleLog("getTypeAtFlowBranchLabel: aliasing action");
@@ -25141,13 +25098,13 @@ namespace ts {
                                 // lets hope that it is a join
                                 //Debug.assert(isFlowJoin(antecedent));
                                 if (antecedent.flags & FlowFlags.Unreachable){
-                                    never = true;
+                                    //never = true;
                                     if (myDebug){
                                         consoleLog(`getTypeAtFlowBranchLabel: unreachable, continue`);
                                     }
                                 }
                                 if (isFlowJoin(antecedent)){
-                                    always = true;
+                                    // always = true;
                                     if (myDebug){
                                         consoleLog(`getTypeAtFlowBranchLabel: found Join, means always accept`);
                                     }
