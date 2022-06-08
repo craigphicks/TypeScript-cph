@@ -24704,6 +24704,7 @@ namespace ts {
                     else if (flags & FlowFlags.Condition) {
                         type = getTypeAtFlowCondition(flow as FlowCondition);
                         if (!type) {
+                            Debug.assert(false);
                             /**
                              * This can happen when binder: createFlowCondition is passed a null expression while binding a
                              * logicalLikeExpression
@@ -24907,7 +24908,7 @@ namespace ts {
                 return undefined;
             }
 
-            function getTypeAtFlowCondition(flow: FlowCondition): FlowType | undefined {
+            function getTypeAtFlowCondition(flow: FlowCondition): FlowType {
                 if (myDebug) {
                     consoleGroup("getTypeAtFlowCondition");
                     //consoleLog((dbgff(flow)));
@@ -24915,30 +24916,40 @@ namespace ts {
                 }
                 const r = getTypeAtFlowCondition_aux(flow);
                 if (myDebug) {
-                    consoleLog(`(fc out) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, ret: ${(r===undefined)? "<undef>": dbgFlowTypeToString(r)}`);
+                    consoleLog(`(fc out) ${dbgFlowToString(flow)}, flowDepth: ${flowDepth}, ret: ${dbgFlowTypeToString(r)}`);
                     consoleGroupEnd();
                 }
                 return r;
             }
-            function getTypeAtFlowCondition_aux(flow: FlowCondition): FlowType | undefined {
-                if (!flow.node){
-                    if (!!(flow.flags & FlowFlags.Unreachable)) {
-                        Debug.assert(!(flow.flags & FlowFlags.AlwaysTrue));
-                        const r = convertAutoToAny(declaredType);
-                        if (myDebug){
-                            consoleLog(`(flow.flags & FlowFlags.Unreachable) -> return via convertAutoToAny -> ${typeToString(r)}`);
-                        }
-                        return r;
-                    }
-                    if (!!(flow.flags & FlowFlags.AlwaysTrue)) {
-                        if (myDebug){
-                            consoleLog(`(flow.flags & FlowFlags.AlwaysTrue) -> return undefined goto antecedent`);
-                        }
-                        return undefined; // go on to the antecedent
-                    }
-                    Debug.assert(false);
-                }
+            function getTypeAtFlowCondition_aux(flow: FlowCondition): FlowType {
                 const assumeTrue = (flow.flags & FlowFlags.TrueCondition) !== 0;
+
+                /**
+                 *
+                 * @param type
+                 * @param optFlowType : If not provided, flowTypeQueryState.aliasableAssignments has been used so narrowing bypassed
+                 * @returns
+                 */
+                const getTypeAtFlowConditionPostProcess = (type: Type, optFlowType?: FlowType): FlowType => {
+                    const nonEvolvingType = finalizeEvolvingArrayType(type);
+                    if (!optFlowType) return createFlowType(nonEvolvingType, /* incomplete */ false);
+
+                    // If we have an antecedent type (meaning we're reachable in some way), we first
+                    // attempt to narrow the antecedent type. If that produces the never type, and if
+                    // the antecedent type is incomplete (i.e. a transient type in a loop), then we
+                    // take the type guard as an indication that control *could* reach here once we
+                    // have the complete type. We proceed by switching to the silent never type which
+                    // doesn't report errors when operators are applied to it. Note that this is the
+                    // *only* place a silent never type is ever generated.
+                    const narrowedType = narrowType(nonEvolvingType, flow.node, assumeTrue);
+                    if (myDebug) {
+                        consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
+                    }
+                    if (optFlowType && narrowedType === nonEvolvingType) {
+                        return optFlowType;
+                    }
+                    return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
+                };
 
                 let assignmentState: AliasAssignableState | undefined;
                 if (!flowTypeQueryState.disable && flow.node.kind===SyntaxKind.Identifier){
@@ -24954,33 +24965,6 @@ namespace ts {
                         if (myDebug) consoleLog(`condition ${dbgFlowToString(flow)} corresponds to assigmentment ${dbgFlowToString(assignmentState.node.flowNode)}`);
                     };
                 }
-
-                /**
-                 *
-                 * @param type
-                 * @param optFlowType : If not provided, flowTypeQueryState.aliasableAssignments has been used so narrowing bypassed
-                 * @returns
-                 */
-                const getTypeAtFlowConditionPostProcess = (type: Type, optFlowType?: FlowType): FlowType => {
-                    const nonEvolvingType = finalizeEvolvingArrayType(type);
-                    // If we have an antecedent type (meaning we're reachable in some way), we first
-                    // attempt to narrow the antecedent type. If that produces the never type, and if
-                    // the antecedent type is incomplete (i.e. a transient type in a loop), then we
-                    // take the type guard as an indication that control *could* reach here once we
-                    // have the complete type. We proceed by switching to the silent never type which
-                    // doesn't report errors when operators are applied to it. Note that this is the
-                    // *only* place a silent never type is ever generated.
-                    let  narrowedType = nonEvolvingType;
-                    if (!myNoAliasAction && !assignmentState) narrowedType = narrowType(nonEvolvingType, flow.node!, assumeTrue);
-                    if (myDebug) {
-                        consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
-                    }
-                    if (optFlowType && narrowedType === nonEvolvingType) {
-                        return optFlowType;
-                    }
-                    return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
-                };
-
 
                 const tempFlowType = getTypeAtFlowNode(flow.antecedent);
                 const tempType = getTypeFromFlowType(tempFlowType);
@@ -25083,8 +25067,7 @@ namespace ts {
                     if (myDebug){
                         consoleLog(`briter:${++briter}, ante:${dbgFlowToString(antecedent)}`);
                     }
-                    //let always = false;
-                    //let never = false;
+
                     if (!flowTypeQueryState.disable && joinMap){
                         if (joinMap.aliasFlow.antecedent===flow){
                             if (myDebug) consoleLog("getTypeAtFlowBranchLabel: aliasing action");
@@ -25999,10 +25982,10 @@ namespace ts {
                         return narrowType(type, (expr as ParenthesizedExpression | NonNullExpression).expression, assumeTrue);
                     case SyntaxKind.BinaryExpression:
                         return narrowTypeByBinaryExpression(type, expr as BinaryExpression, assumeTrue);
-                    case SyntaxKind.TrueKeyword:
-                        return assumeTrue ? trueType : neverType;
-                    case SyntaxKind.FalseKeyword:
-                        return assumeTrue ? neverType : falseType;
+                    // case SyntaxKind.TrueKeyword:
+                    //     return assumeTrue ? trueType : neverType;
+                    // case SyntaxKind.FalseKeyword:
+                    //     return assumeTrue ? neverType : falseType;
                     case SyntaxKind.PrefixUnaryExpression:
                         if ((expr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
                             return narrowType(type, (expr as PrefixUnaryExpression).operand, !assumeTrue);

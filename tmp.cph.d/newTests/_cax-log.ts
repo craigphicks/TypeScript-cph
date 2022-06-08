@@ -1,5 +1,5 @@
 // @strict: true
-// @allowUnreachableCode: true
+// @ allowUnreachableCode: true
 // @declaration: true
 
 const assert: (value: unknown) => asserts value = value => {}

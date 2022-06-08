@@ -3460,9 +3460,6 @@ namespace ts {
         Referenced     = 1 << 11, // Referenced as antecedent once
         Shared         = 1 << 12, // Referenced as antecedent more than once
         Join           = 1 << 13, // Marks the end of an Assignment
-        UnreachableReported = 1 << 14, // a signal that this unreachable has been reported.
-        AlwaysTrue     = 1 << 15, // For conditions: The opposite of unreachable, for a condition
-        WrtNullishCoalescing = 1 << 16, // For conditions: Truthy or Falsy defined with respect to the N'ish Coalescing Op `??`
 
         Label = BranchLabel | LoopLabel,
         Condition = TrueCondition | FalseCondition,
@@ -3517,7 +3514,7 @@ namespace ts {
     // FlowCondition represents a condition that is known to be true or false at the
     // node's location in the control flow.
     export interface FlowCondition extends FlowNodeBase {
-        node: Expression | undefined; // when undefined, either `flags` has either `Unreachable` or `AlwaysTrue` set.
+        node: Expression;
         antecedent: FlowNode;
     }
 
@@ -3539,10 +3536,6 @@ namespace ts {
         target: FlowLabel;
         antecedents: FlowNode[];
         antecedent: FlowNode;
-    }
-
-    export interface FlowUnreachable extends FlowNodeBase {
-        flags: FlowFlags;
     }
 
     export type FlowType = Type | IncompleteType;
