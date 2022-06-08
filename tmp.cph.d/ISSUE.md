@@ -714,3 +714,8 @@ visitNodes (/mnt/common/github/TypeScript-cph/src/compiler/parser.ts:45)
 
 Adding documentation for `createFlowCondition` in `binder.ts`
 
+```
+cat tsserver.errors.txt | sed  -E "s/^(src\/[^\(]*).*/\1/p" | grep "^src\/.*" | sort -u | xargs ls -l
+```
+
+

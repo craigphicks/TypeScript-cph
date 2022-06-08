@@ -405,12 +405,16 @@ namespace ts {
         // @ts-ignore-error
         // eslint-disable-next-line prefer-const
         let dbgFlowFileCnt = 0;
+        const dbgGetNodeText = (node: Node)=>{
+            return ((node as any).getText && node.pos>=0) ? (node as any).getText() : (node as Identifier).escapedText??"";
+        };
         const dbgFlowToString = (flow: FlowNode | undefined): string => {
             if (!flow) return "<undef>";
             let str = "";
-            if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
-            if (isFlowJoin(flow)) str += `[joinNode:${(flow.joinNode as any).getText()}, (${flow.joinNode.pos},${flow.joinNode.end})]`;
-            str += `, ${Debug.formatFlowFlags(flow.flags)}`;
+            //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
+            str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
+            if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
+            if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
             return str;
         };
         const dbgFlowTypeToString = (flowType: FlowType): string => {
@@ -418,7 +422,7 @@ namespace ts {
             return typeToString(flowType as Type);
         };
         const dbgNodeToString = (node: Node | undefined): string => {
-            return !node?"<undef>":`${(node as any).getText()}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
+            return !node?"<undef>":`[n${getNodeId(node)}] ${dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
         };
         const dbgWriteStack = (write: (s: string) => void, flows: FlowNode[]): void => {
             flows.forEach((f,i)=>{
@@ -24791,8 +24795,8 @@ namespace ts {
 
             function getTypeAtFlowAssignment_aux(flow: FlowAssignment) {
                 const node = flow.node;
-                if (!flowTypeQueryState.disable && joinMap && joinMap.aliasFlow===flow && flowDepth!==1){
-                    return initialType; // the actual alias is performed further down at the condition
+                if (!flowTypeQueryState.disable && joinMap && joinMap.aliasFlow===flow && flowDepth===1){
+                    return undefined; // the actual alias is performed further down at the condition
                 }
                 // Assignments only narrow the computed type if the declared type is a union type. Thus, we
                 // only need to evaluate the assigned type if the declared type is a union type.
@@ -24952,6 +24956,7 @@ namespace ts {
                 };
 
                 let assignmentState: AliasAssignableState | undefined;
+                
                 if (!flowTypeQueryState.disable && flow.node.kind===SyntaxKind.Identifier){
                     const symbol = getSymbolAtLocation(flow.node);
                     /**
