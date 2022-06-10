@@ -26035,8 +26035,9 @@ namespace ts {
                         consoleLog(`narrowTypeByCallExpression[dbg]: type [input] ${typeToString(type)}`);
                         if (tmpSymbol) consoleLog(`narrowTypeByCallExpression[dbg]: tmpSymbol.id: ${getSymbolId(tmpSymbol)}`);
                         consoleLog(`narrowTypeByCallExpression[dbg]: declaration: ${dbgNodeToString(declaration)}`);
+                        if (funcType) consoleLog(`narrowTypeByCallExpression[dbg]: funcType: ${typeToString(funcType)}`);
                     }
-                    if (funcType) {
+                    if (funcRtnType) {
                         /**
                          * The recursive calls to narrowType can of course result in result in
                          * recurisive calls here.
@@ -26059,7 +26060,7 @@ namespace ts {
 
 
                         let typeOut: Type | undefined;
-                        forEachType(funcType, (t=>{
+                        forEachType(funcRtnType, (t=>{
                             if (t===nullType || t===undefinedType || t===falseType || (t.flags & TypeFlags.Literal && !(t as LiteralType).value)) {
                                 hasFalsyType = true;
                             }
@@ -26080,7 +26081,6 @@ namespace ts {
                             //if (cachedType) consoleLog(`narrowTypeByCallExpression[dbg]: cachedType***: ${typeToString(cachedType)}`);
                             consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultTrue ${typeToString(antecedentResultTrue)}`);
                             consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultFalse ${typeToString(antecedentResultFalse)}`);
-                            if (funcType) consoleLog(`narrowTypeByCallExpression[dbg]: funcType: ${typeToString(funcType)}`);
                             if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: funcRtnType: ${typeToString(funcRtnType)}`);
                             if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasTruthyType=${hasTruthyType}`);
                             if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasFalsyType=${hasFalsyType}`);
