@@ -418,5 +418,5 @@ const z8 = z && z;
 >z8 : undefined
 >z && z : undefined
 >z : undefined
->z : undefined
+>z : never
 

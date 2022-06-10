@@ -3,13 +3,19 @@
 /* @internal */
 namespace ts {
     let myDebug = false;
-    let myDisable = false;
-    let myNoAliasAction = false;
+    let myDisable = (process.env.myDisable===undefined) ? true : !!Number(process.env.myDisable);
+    let myNoAliasAction = (process.env.myNoAliasAction===undefined) ? true : !!Number(process.env.myNoAliasAction);
+    myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
+    myNoAliasAction = !!Number(process.env.myNoAliasAction);
+
+
     const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):10000;
     let myNumLinesOut=0;
     let myMaxDepth = 0; // introspection data
     // @ts-ignore
     let myCurrentSourceFilename = "";
+    const myNarrowTest = (process.env.myNarrowTest===undefined) ? true : !!Number(process.env.myNarrowTest);
+
     interface SystemWithAppendFile extends System {
         openFileForWriteFd(path: string): number; // returns number which is file description
         writeFileFd(fd: number, data: string): void;
@@ -24862,12 +24868,12 @@ namespace ts {
                 return narrowType(type, node, /*assumeTrue*/ true);
             }
 
-            function getTypeAtFlowCall(flow: FlowCall): FlowType | undefined {
+            function getTypeAtFlowCall(flow: FlowCall, typeIn?: Type): FlowType | undefined {
                 const signature = getEffectsSignature(flow.node);
                 if (signature) {
                     const predicate = getTypePredicateOfSignature(signature);
                     if (predicate && (predicate.kind === TypePredicateKind.AssertsThis || predicate.kind === TypePredicateKind.AssertsIdentifier)) {
-                        const flowType = getTypeAtFlowNode(flow.antecedent);
+                        const flowType = typeIn ?? getTypeAtFlowNode(flow.antecedent);
                         const type = finalizeEvolvingArrayType(getTypeFromFlowType(flowType));
                         const narrowedType = predicate.type ? narrowTypeByTypePredicate(type, predicate, flow.node, /*assumeTrue*/ true) :
                             predicate.kind === TypePredicateKind.AssertsIdentifier && predicate.parameterIndex >= 0 && predicate.parameterIndex < flow.node.arguments.length ? narrowTypeByAssertion(type, flow.node.arguments[predicate.parameterIndex]) :
@@ -24926,18 +24932,14 @@ namespace ts {
                 return r;
             }
             function getTypeAtFlowCondition_aux(flow: FlowCondition): FlowType {
-                const assumeTrue = (flow.flags & FlowFlags.TrueCondition) !== 0;
-
-                /**
-                 *
-                 * @param type
-                 * @param optFlowType : If not provided, flowTypeQueryState.aliasableAssignments has been used so narrowing bypassed
-                 * @returns
-                 */
-                const getTypeAtFlowConditionPostProcess = (type: Type, optFlowType?: FlowType): FlowType => {
-                    const nonEvolvingType = finalizeEvolvingArrayType(type);
-                    if (!optFlowType) return createFlowType(nonEvolvingType, /* incomplete */ false);
-
+                let original = true;
+                original = true;
+                if (original) {
+                    const flowType = getTypeAtFlowNode(flow.antecedent);
+                    const type = getTypeFromFlowType(flowType);
+                    if (type.flags & TypeFlags.Never) {
+                        return flowType;
+                    }
                     // If we have an antecedent type (meaning we're reachable in some way), we first
                     // attempt to narrow the antecedent type. If that produces the never type, and if
                     // the antecedent type is incomplete (i.e. a transient type in a loop), then we
@@ -24945,78 +24947,163 @@ namespace ts {
                     // have the complete type. We proceed by switching to the silent never type which
                     // doesn't report errors when operators are applied to it. Note that this is the
                     // *only* place a silent never type is ever generated.
+                    const assumeTrue = (flow.flags & FlowFlags.TrueCondition) !== 0;
+                    const nonEvolvingType = finalizeEvolvingArrayType(type);
                     const narrowedType = narrowType(nonEvolvingType, flow.node, assumeTrue);
-                    if (myDebug) {
-                        consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
-                    }
-                    if (optFlowType && narrowedType === nonEvolvingType) {
-                        return optFlowType;
-                    }
-                    return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
-                };
-
-                let assignmentState: AliasAssignableState | undefined;
-                
-                if (!flowTypeQueryState.disable && flow.node.kind===SyntaxKind.Identifier){
-                    const symbol = getSymbolAtLocation(flow.node);
-                    /**
-                     * In fact `getSymbolAtLocation` does return falsy at 2 tests in the full run
-                     * - circularOptionalityRemoval
-                     * - jsFileClassPropertyType3
-                     */
-                    //Debug.assert(symbol, "getSymbolAtLocation not false in getTypeAtFlowCondition");
-                    if (symbol && flowTypeQueryState.aliasableAssignments.has(symbol)){
-                        assignmentState = flowTypeQueryState.aliasableAssignments.get(symbol)!;
-                        if (myDebug) consoleLog(`condition ${dbgFlowToString(flow)} corresponds to assigmentment ${dbgFlowToString(assignmentState.node.flowNode)}`);
-                    };
-                }
-
-                const tempFlowType = getTypeAtFlowNode(flow.antecedent);
-                const tempType = getTypeFromFlowType(tempFlowType);
-                if (myDebug){
-                    consoleLog(`tempFlowType: ${dbgFlowTypeToString(tempFlowType)}, tempType:${typeToString(tempType)}, tempType.flags & TypeFlags.Never = ${tempType.flags & TypeFlags.Never}`);
-                }
-                if (tempType.flags & TypeFlags.Never) {
-                    return tempFlowType;
-                }
-                if (assignmentState?.aliasable){
-                    const aliasNode = assignmentState.node;
-                    const aliasFlow = aliasNode.flowNode!;
-                    const inUse = assignmentState.inUse;
-                    Debug.assert(isFlowAssignment(aliasFlow),"isFlowAssignment(aliasFlow)");
-                    if (myDebug){
-                        consoleLog(`getTypeAtFlowCondition: has alias: ${dbgFlowToString(aliasFlow)}, inUse:${inUse}`);
-                    }
-                    if (!myNoAliasAction) {
-                        if (inUse) {
+                    if (narrowedType === nonEvolvingType) {
+                        ///////////////////////////////////////////////////////////////////////////
+                        ///////////////////////////////////////////////////////////////////////////
+                        let assignmentState: AliasAssignableState | undefined;
+                        if (!flowTypeQueryState.disable && flow.node.kind===SyntaxKind.Identifier){
+                            const symbol = getSymbolAtLocation(flow.node);
+                            /**
+                             * In fact `getSymbolAtLocation` does return falsy at 2 tests in the full run
+                             * - circularOptionalityRemoval
+                             * - jsFileClassPropertyType3
+                             */
+                            //Debug.assert(symbol, "getSymbolAtLocation not false in getTypeAtFlowCondition");
+                            if (symbol && flowTypeQueryState.aliasableAssignments.has(symbol)){
+                                assignmentState = flowTypeQueryState.aliasableAssignments.get(symbol)!;
+                                if (myDebug) consoleLog(`condition ${dbgFlowToString(flow)} corresponds to assigmentment ${dbgFlowToString(assignmentState.node.flowNode)}`);
+                            };
+                        }
+                        if (assignmentState?.aliasable){
+                            const aliasNode = assignmentState.node;
+                            const aliasFlow = aliasNode.flowNode!;
+                            const inUse = assignmentState.inUse;
+                            Debug.assert(isFlowAssignment(aliasFlow),"isFlowAssignment(aliasFlow)");
                             if (myDebug){
-                                consoleLog(`getTypeAtFlowCondition: alias already in use, ignore to prevent infinite loop`);
+                                consoleLog(`getTypeAtFlowCondition: has alias: ${dbgFlowToString(aliasFlow)}, inUse:${inUse}`);
+                            }
+                            if (!myNoAliasAction) {
+                                if (inUse) {
+                                    if (myDebug){
+                                        consoleLog(`getTypeAtFlowCondition: alias already in use, ignore to prevent infinite loop`);
+                                    }
+                                }
+                                else if (reference === aliasNode){
+                                    // this may never happen
+                                    if (myDebug){
+                                        consoleLog(`getTypeAtFlowCondition: alias case reference===aliasNode,  should use as alias`);
+                                    }
+                                }
+                                else {
+                                    if (myDebug){
+                                        consoleLog(`getTypeAtFlowCondition: alias processing`);
+                                    }
+                                    assignmentState.inUse = true;
+                                    const dummyStartFlow: FlowStart = { flags: FlowFlags.Start, id:-1 };
+                                    const type = getFlowTypeOfReference(reference, declaredType, narrowedType, flowContainer, aliasFlow,
+                                        { joinNode: aliasNode, mapTo: dummyStartFlow, aliasFlow, conditionAssumeTrue: assumeTrue });
+                                    assignmentState.inUse = false;
+                                    return type;
+                                }
+                            }
+                            else {
+                                if (myDebug) consoleLog(`getTypeAtFlowCondition: alias action disabled`);
                             }
                         }
-                        else if (reference === aliasNode){
-                            // this may never happen
-                            if (myDebug){
-                                consoleLog(`getTypeAtFlowCondition: alias case reference===aliasNode,  should use as alias`);
+                        ///////////////////////////////////////////////////////////////////////////
+                        ///////////////////////////////////////////////////////////////////////////
+
+                        return flowType;
+                    }
+                    return createFlowType(narrowedType, isIncomplete(flowType));
+                }
+                else {
+
+                    const assumeTrue = (flow.flags & FlowFlags.TrueCondition) !== 0;
+                    /**
+                     *
+                     * @param type
+                     * @param optFlowType : If not provided, flowTypeQueryState.aliasableAssignments has been used so narrowing bypassed
+                     * @returns
+                     */
+                    const getTypeAtFlowConditionPostProcess = (type: Type, optFlowType?: FlowType): FlowType => {
+                        const nonEvolvingType = finalizeEvolvingArrayType(type);
+                        if (!optFlowType) return createFlowType(nonEvolvingType, /* incomplete */ false);
+
+                        // If we have an antecedent type (meaning we're reachable in some way), we first
+                        // attempt to narrow the antecedent type. If that produces the never type, and if
+                        // the antecedent type is incomplete (i.e. a transient type in a loop), then we
+                        // take the type guard as an indication that control *could* reach here once we
+                        // have the complete type. We proceed by switching to the silent never type which
+                        // doesn't report errors when operators are applied to it. Note that this is the
+                        // *only* place a silent never type is ever generated.
+                        const narrowedType = narrowType(nonEvolvingType, flow.node, assumeTrue);
+                        if (myDebug) {
+                            consoleLog(`getTypeAtFlowConditionPostProcess: flow.id: ${flow.id}, asumeTrue:${assumeTrue}, nonEvolvingType: ${typeToString(nonEvolvingType)}, narrowedType: ${typeToString(narrowedType)}`);
+                        }
+                        if (optFlowType && narrowedType === nonEvolvingType) {
+                            return optFlowType;
+                        }
+                        return createFlowType(narrowedType, optFlowType?isIncomplete(optFlowType):false);
+                    };
+
+                    let assignmentState: AliasAssignableState | undefined;
+
+                    if (!flowTypeQueryState.disable && flow.node.kind===SyntaxKind.Identifier){
+                        const symbol = getSymbolAtLocation(flow.node);
+                        /**
+                         * In fact `getSymbolAtLocation` does return falsy at 2 tests in the full run
+                         * - circularOptionalityRemoval
+                         * - jsFileClassPropertyType3
+                         */
+                        //Debug.assert(symbol, "getSymbolAtLocation not false in getTypeAtFlowCondition");
+                        if (symbol && flowTypeQueryState.aliasableAssignments.has(symbol)){
+                            assignmentState = flowTypeQueryState.aliasableAssignments.get(symbol)!;
+                            if (myDebug) consoleLog(`condition ${dbgFlowToString(flow)} corresponds to assigmentment ${dbgFlowToString(assignmentState.node.flowNode)}`);
+                        };
+                    }
+
+                    const tempFlowType = getTypeAtFlowNode(flow.antecedent);
+                    const tempType = getTypeFromFlowType(tempFlowType);
+                    if (myDebug){
+                        consoleLog(`tempFlowType: ${dbgFlowTypeToString(tempFlowType)}, tempType:${typeToString(tempType)}, tempType.flags & TypeFlags.Never = ${tempType.flags & TypeFlags.Never}`);
+                    }
+                    if (tempType.flags & TypeFlags.Never) {
+                        return tempFlowType;
+                    }
+                    if (assignmentState?.aliasable){
+                        const aliasNode = assignmentState.node;
+                        const aliasFlow = aliasNode.flowNode!;
+                        const inUse = assignmentState.inUse;
+                        Debug.assert(isFlowAssignment(aliasFlow),"isFlowAssignment(aliasFlow)");
+                        if (myDebug){
+                            consoleLog(`getTypeAtFlowCondition: has alias: ${dbgFlowToString(aliasFlow)}, inUse:${inUse}`);
+                        }
+                        if (!myNoAliasAction) {
+                            if (inUse) {
+                                if (myDebug){
+                                    consoleLog(`getTypeAtFlowCondition: alias already in use, ignore to prevent infinite loop`);
+                                }
+                            }
+                            else if (reference === aliasNode){
+                                // this may never happen
+                                if (myDebug){
+                                    consoleLog(`getTypeAtFlowCondition: alias case reference===aliasNode,  should use as alias`);
+                                }
+                            }
+                            else {
+                                if (myDebug){
+                                    consoleLog(`getTypeAtFlowCondition: alias processing`);
+                                }
+                                assignmentState.inUse = true;
+                                const dummyStartFlow: FlowStart = { flags: FlowFlags.Start, id:-1 };
+                                const type = getFlowTypeOfReference(reference, declaredType, tempType, flowContainer, aliasFlow,
+                                    { joinNode: aliasNode, mapTo: dummyStartFlow, aliasFlow, conditionAssumeTrue: assumeTrue });
+                                assignmentState.inUse = false;
+                                return getTypeAtFlowConditionPostProcess(type);
                             }
                         }
                         else {
-                            if (myDebug){
-                                consoleLog(`getTypeAtFlowCondition: alias processing`);
-                            }
-                            assignmentState.inUse = true;
-                            const dummyStartFlow: FlowStart = { flags: FlowFlags.Start, id:-1 };
-                            const type = getFlowTypeOfReference(reference, declaredType, tempType, flowContainer, aliasFlow,
-                                { joinNode: aliasNode, mapTo: dummyStartFlow, aliasFlow, conditionAssumeTrue: assumeTrue });
-                            assignmentState.inUse = false;
-                            return getTypeAtFlowConditionPostProcess(type);
+                            if (myDebug) consoleLog(`getTypeAtFlowCondition: alias action disabled`);
                         }
                     }
-                    else {
-                        if (myDebug) consoleLog(`getTypeAtFlowCondition: alias action disabled`);
-                    }
+                    return getTypeAtFlowConditionPostProcess(tempType,tempFlowType);
                 }
-                return getTypeAtFlowConditionPostProcess(tempType,tempFlowType);
             }
+
 
             function getTypeAtSwitchClause(flow: FlowSwitchClause): FlowType {
                 const expr = flow.switchStatement.expression;
@@ -25896,40 +25983,148 @@ namespace ts {
             }
 
             function narrowTypeByCallExpression(type: Type, callExpression: CallExpression, assumeTrue: boolean): Type {
+                if (myDebug) consoleLog(`narrowTypeByCallExpression[in]`);
+                const r = narrowTypeByCallExpression_aux(type,callExpression,assumeTrue);
+                if (myDebug) consoleLog(`narrowTypeByCallExpression[out] ret: ${typeToString(r)}`);
+                return r;
+            }
+            function narrowTypeByCallExpression_aux(type: Type, callExpression: CallExpression, assumeTrue: boolean): Type {
                 if (hasMatchingArgument(callExpression, reference)) {
+                    // if (myDebug) consoleLog(`hasMatchingArgument(${dbgNodeToString(callExpression)}, ${dbgNodeToString(reference)})=true`);
                     const signature = assumeTrue || !isCallChain(callExpression) ? getEffectsSignature(callExpression) : undefined;
                     const predicate = signature && getTypePredicateOfSignature(signature);
+                    // if (myDebug) {
+                    //     consoleLog(`signature.declaration=${(signature===undefined)?"<undef>":dbgNodeToString(signature.declaration)}`);
+                    //     consoleLog(`predicate=${predicate===undefined ? "<undef>" : "not undefined"}`);
+                    // }
                     if (predicate && (predicate.kind === TypePredicateKind.This || predicate.kind === TypePredicateKind.Identifier)) {
                         return narrowTypeByTypePredicate(type, predicate, callExpression, assumeTrue);
                     }
                 }
+                // if (myDebug){
+                //     consoleLog(`containsMissingType(type=${typeToString(type)})=${containsMissingType(type)}`);
+                //     consoleLog(`isAccessExpression(reference=${dbgNodeToString(reference)})=${isAccessExpression(reference)}`);
+                //     consoleLog(`isPropertyAccessExpression(callExpression.expression)=${isPropertyAccessExpression(callExpression.expression)}`);
+                // }
                 if (containsMissingType(type) && isAccessExpression(reference) && isPropertyAccessExpression(callExpression.expression)) {
                     const callAccess = callExpression.expression;
                     if (isMatchingReference(reference.expression, getReferenceCandidate(callAccess.expression)) &&
                         isIdentifier(callAccess.name) && callAccess.name.escapedText === "hasOwnProperty" && callExpression.arguments.length === 1) {
                         const argument = callExpression.arguments[0];
                         if (isStringLiteralLike(argument) && getAccessedPropertyName(reference) === escapeLeadingUnderscores(argument.text)) {
+                            // if (myDebug) consoleLog(`calling getTypeWithFacts`);
                             return getTypeWithFacts(type, assumeTrue ? TypeFacts.NEUndefined : TypeFacts.EQUndefined);
                         }
                     }
+                }
+                //const refSymbol = getSymbolAtLocation(refSymbol);
+                if (myNarrowTest && type && type!==anyType && isPropertyAccessExpression(callExpression.expression)){
+                    if (myDebug){
+                        consoleLog(`narrowTypeByCallExpression[dbg,in]: ==== `);
+                    }
+                    const tmpSymbol = getSymbolOfNameOrPropertyAccessExpression(callExpression.expression);
+                    //const tmpSymbol = getSymbolAtLocation(callExpression.expression, true);
+                    const declaration = tmpSymbol ? tmpSymbol.declarations? tmpSymbol.declarations[0] : undefined : undefined;
+                    const funcNode = declaration && (declaration as any).type
+                        && (declaration as any).type.kind === SyntaxKind.FunctionType
+                        ? (declaration as any).type as FunctionDeclaration : undefined;
+                    const funcType = funcNode && getTypeOfNode(funcNode);
+                    const funcRtnType = funcNode?.type ? getTypeOfNode(funcNode.type) : undefined;
+                    if (myDebug){
+                        consoleLog(`narrowTypeByCallExpression[dbg]: assumeTrue ${assumeTrue}`);
+                        consoleLog(`narrowTypeByCallExpression[dbg]: type [input] ${typeToString(type)}`);
+                        if (tmpSymbol) consoleLog(`narrowTypeByCallExpression[dbg]: tmpSymbol.id: ${getSymbolId(tmpSymbol)}`);
+                        consoleLog(`narrowTypeByCallExpression[dbg]: declaration: ${dbgNodeToString(declaration)}`);
+                    }
+                    if (funcType) {
+                        /**
+                         * The recursive calls to narrowType can of course result in result in
+                         * recurisive calls here.
+                         * In the test file `tests/cases/conformance/fixSignatureCaching.ts` this code hung.
+                         * Bypassing when `!(type && type==any)` was enough to solve that problem,
+                         * but in general some safegaurd might be needed ??? - the recursive calls sometimes include calls to "checkExpression"
+                         * which is very heavy load.
+                         * That is why `narrowByCallExpressionFixRecursionLevels` was added.
+                         */
+                        const antecedentResultFalse = narrowType(type, callExpression.expression, /* assumeTrue */ false);
+                        const antecedentResultTrue = narrowType(type, callExpression.expression, /* assumeTrue */ true);
+
+                        let hasFalsyType = false;
+                        let hasTruthyType = false;
+                        let hasDualType = false;
+
+                        // TODO: The meaning of falsy/truthy should change when the the call is the left child of a parent nullish coalescing operator `??`
+                        // let nullishCoalescingOp = false;
+                        // if (callExpression.parent && callExpression.parent )
+
+
+                        let typeOut: Type | undefined;
+                        forEachType(funcType, (t=>{
+                            if (t===nullType || t===undefinedType || t===falseType || (t.flags & TypeFlags.Literal && !(t as LiteralType).value)) {
+                                hasFalsyType = true;
+                            }
+                            else if (t.flags & TypeFlags.Object || t===trueType || (t.flags & TypeFlags.Literal && !!(t as LiteralType).value)) {
+                                hasTruthyType = true;
+                            }
+                            else hasDualType = true;
+                        }));
+                        if (assumeTrue===false){
+                            const union: Type[] = [antecedentResultFalse];
+                            if (hasFalsyType||hasDualType) union.push(antecedentResultTrue);
+                            typeOut = getUnionType(union, UnionReduction.Literal);
+                        }
+                        else {
+                            if (hasTruthyType||hasDualType) typeOut=antecedentResultTrue;
+                        }
+                        if (myDebug){
+                            //if (cachedType) consoleLog(`narrowTypeByCallExpression[dbg]: cachedType***: ${typeToString(cachedType)}`);
+                            consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultTrue ${typeToString(antecedentResultTrue)}`);
+                            consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultFalse ${typeToString(antecedentResultFalse)}`);
+                            if (funcType) consoleLog(`narrowTypeByCallExpression[dbg]: funcType: ${typeToString(funcType)}`);
+                            if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: funcRtnType: ${typeToString(funcRtnType)}`);
+                            if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasTruthyType=${hasTruthyType}`);
+                            if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasFalsyType=${hasFalsyType}`);
+                            if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasDualType=${hasDualType}`);
+                            if (typeOut) consoleLog(`narrowTypeByCallExpression[dbg]: typeOut: ${typeToString(typeOut)}`);
+                            else consoleLog(`narrowTypeByCallExpression[dbg]: no affect on result`);
+                        }
+                        if (typeOut) {
+                            type = typeOut;
+                        }
+                    }
+                    if (myDebug) consoleLog(`narrowTypeByCallExpression[dbg,out]: ====`);
                 }
                 return type;
             }
 
             function narrowTypeByTypePredicate(type: Type, predicate: TypePredicate, callExpression: CallExpression, assumeTrue: boolean): Type {
+                if (myDebug) {
+                    consoleLog(`narrowTypeByTypePredicate[in]: type:${typeToString(type)}, predicate: ???, callExpression: ${dbgNodeToString(callExpression)}, assumeTrue: ${assumeTrue}`);
+                }
+                const r = narrowTypeByTypePredicate_aux(type,predicate,callExpression,assumeTrue);
+                if (myDebug) {
+                    consoleLog(`narrowTypeByTypePredicate[in]: type:${typeToString(type)}, predicate: ???, callExpression: ${dbgNodeToString(callExpression)}, assumeTrue: ${assumeTrue} -> ${typeToString(r)}`);
+                }
+                return r;
+            }
+                function narrowTypeByTypePredicate_aux(type: Type, predicate: TypePredicate, callExpression: CallExpression, assumeTrue: boolean): Type {
                 // Don't narrow from 'any' if the predicate type is exactly 'Object' or 'Function'
                 if (predicate.type && !(isTypeAny(type) && (predicate.type === globalObjectType || predicate.type === globalFunctionType))) {
                     const predicateArgument = getTypePredicateArgument(predicate, callExpression);
                     if (predicateArgument) {
+                        if (myDebug) consoleLog(`predicateArgument: ${dbgNodeToString(predicateArgument)}`);
                         if (isMatchingReference(reference, predicateArgument)) {
+                            if (myDebug) consoleLog(`calling getNarrowedType(type: ${typeToString(type)}, predicate.type: ${typeToString(predicate.type)}, assumeTrue:${assumeTrue}, isTypeSubtypeOf)`);
                             return getNarrowedType(type, predicate.type, assumeTrue, isTypeSubtypeOf);
                         }
                         if (strictNullChecks && assumeTrue && optionalChainContainsReference(predicateArgument, reference) &&
                             !(getTypeFacts(predicate.type) & TypeFacts.EQUndefined)) {
+                            if (myDebug) consoleLog(`calling getTypeWithFacts(type: ${typeToString(type)}, TypeFacts.NEUndefinedOrNull)`);
                             type = getTypeWithFacts(type, TypeFacts.NEUndefinedOrNull);
                         }
                         const access = getDiscriminantPropertyAccess(predicateArgument, type);
                         if (access) {
+                            if (myDebug) consoleLog(`access, calling narrowTypeByDiscriminant(type: ${typeToString(type)}, .... )`);
                             return narrowTypeByDiscriminant(type, access, t => getNarrowedType(t, predicate.type!, assumeTrue, isTypeSubtypeOf));
                         }
                     }
@@ -25956,10 +26151,12 @@ namespace ts {
                 // for `a?.b`, we emulate a synthetic `a !== null && a !== undefined` condition for `a`
                 if (isExpressionOfOptionalChainRoot(expr) ||
                     isBinaryExpression(expr.parent) && expr.parent.operatorToken.kind === SyntaxKind.QuestionQuestionToken && expr.parent.left === expr) {
+                    if (myDebug) consoleLog(`directly calling narrowTypeByOptionality`);
                     return narrowTypeByOptionality(type, expr, assumeTrue);
                 }
                 switch (expr.kind) {
                     case SyntaxKind.Identifier:
+                        if (myDebug) consoleLog(`case SyntaxKind.Identifier`);
                         // When narrowing a reference to a const variable, non-assigned parameter, or readonly property, we inline
                         // up to five levels of aliased conditional expressions that are themselves declared as const variables.
                         if (!isMatchingReference(reference, expr) && inlineLevel < 5) {
@@ -25974,6 +26171,7 @@ namespace ts {
                                 }
                             }
                         }
+                        if (myDebug) consoleLog(`case SyntaxKind.Identifier fall through`);
                         // falls through
                     case SyntaxKind.ThisKeyword:
                     case SyntaxKind.SuperKeyword:
@@ -25981,6 +26179,13 @@ namespace ts {
                     case SyntaxKind.ElementAccessExpression:
                         return narrowTypeByTruthiness(type, expr, assumeTrue);
                     case SyntaxKind.CallExpression:
+                        if (myDebug) consoleLog(`case SyntaxKind.CallExpression -> narrowTypeByCallExpression`);
+                        // for reference, compare to what getTypeAtFlowCall would return (passing in the returned antecedent types)
+                        // if (myDebug){
+                        //     const fakeFlow: FlowCall = { flags:FlowFlags.Call, antecedent: undefined as any as FlowNode, node: expr as CallExpression};
+                        //     const tmpType = getTypeAtFlowCall(fakeFlow, type);
+                        //     consoleLog(`for dbg comparison getTypeAtFlowCall -> ${tmpType?tmpType.flags?typeToString(tmpType as Type):"<incomplete>":"<undef>"}`);
+                        // }
                         return narrowTypeByCallExpression(type, expr as CallExpression, assumeTrue);
                     case SyntaxKind.ParenthesizedExpression:
                     case SyntaxKind.NonNullExpression:
@@ -35360,7 +35565,16 @@ namespace ts {
          * Returns the type of an expression. Unlike checkExpression, this function is simply concerned
          * with computing the type and may not fully check all contained sub-expressions for errors.
          */
-        function getTypeOfExpression(node: Expression) {
+        function getTypeOfExpression(node: Expression): Type {
+            if (myDebug) consoleGroup(`getTypeOfExpression[in] ${dbgNodeToString(node)}`);
+            const r = getTypeOfExpression_aux(node);
+            if (myDebug) {
+                consoleLog(`getTypeOfExpression[out] ${dbgNodeToString(node)} -> ${typeToString(r)}`);
+                consoleGroupEnd();
+            }
+            return r;
+        }
+        function getTypeOfExpression_aux(node: Expression) {
             // Don't bother caching types that require no flow analysis and are quick to compute.
             const quickType = getQuickTypeOfExpression(node);
             if (quickType) {
@@ -35374,6 +35588,7 @@ namespace ts {
             if (/* flowTypeQueryState.disable && */ node.flags & NodeFlags.TypeCached && flowTypeCache) {
                 const cachedType = flowTypeCache[getNodeId(node)];
                 if (cachedType) {
+                    if (myDebug) consoleLog(`getTypeOfExpression: get flowTypeCache ${dbgNodeToString(node)} -> ${typeToString(cachedType)}`);
                     return cachedType;
                 }
             }
@@ -35384,6 +35599,7 @@ namespace ts {
                 const cache = flowTypeCache || (flowTypeCache = []);
                 cache[getNodeId(node)] = type;
                 setNodeFlags(node, node.flags | NodeFlags.TypeCached);
+                if (myDebug) consoleLog(`getTypeOfExpression: set flowTypeCache ${dbgNodeToString(node)} -> ${typeToString(type)}`);
             }
             return type;
         }
@@ -42379,8 +42595,6 @@ namespace ts {
             myCurrentSourceFilename = node.originalFileName;
             let ofilenameRoot="";
             myMaxDepth = 0;
-            myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
-            myNoAliasAction = !!Number(process.env.myNoAliasAction);
             const myTestFilename = process.env.myTestFilename?? "";
             const nameMatched = getBaseFileName(node.originalFileName) === (myTestFilename+".ts") ||
                 (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts");
@@ -42392,8 +42606,8 @@ namespace ts {
             }
             if (nameMatched && dbgFlowFileCnt===0) {
                 myDebug = !!Number(process.env.myDebug);
-                consoleLog(`myDebug=${myDebug}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
-                if (nameMatched){//(myDebug && node.endFlowNode) {
+                consoleLog(`myDebug=${myDebug}, myNarrowTest=${myNarrowTest}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
+                if (nameMatched && myDebug){//(myDebug && node.endFlowNode) {
                     //writingFlowTxt = true;
                     let contents = "";
                     let write = (s: string)=>{

@@ -718,4 +718,241 @@ Adding documentation for `createFlowCondition` in `binder.ts`
 cat tsserver.errors.txt | sed  -E "s/^(src\/[^\(]*).*/\1/p" | grep "^src\/.*" | sort -u | xargs ls -l
 ```
 
+## inference
+
+Consider expressions *E* that map from type-space subsets *T* to *T*, *E: T -> T*.
+
+Each expression in *E* 
+ - may be expressed in terms of component functions, 
+ - may be a leaf function  
+ - may be a reference to another function (cicularity allowed)
+
+*E* = f(*E\[0\] , ... , E\[N-1\])* 
+
+The TypeScript compiler `FlowNode` strutures reflects a constrained 
+format for computing the types relations of such expressions
+
+*E* = E\[0\] | ... | E\[N-1\]*
+
+that is simply the union of the results of the components; here the *|* symbol represents set-union.
+
+An example:
+
+```
+declare type R = {r:true};
+declare type G = {g:true};
+declare type B = {b:true};
+declare const r:undefined|R;
+declare const g:undefined|G;
+declare const b:undefined|B;
+const x = r || g || b;
+```
+The type subset values for `r`, `g`, and `b` are respectively, *{R,undefined}*, *{G,undefined}*, and *{B,undefined}*. 
+
+The computation table, implement with `FlowNodes` looks like the first three columns of the following table:
+
+| r | g |b  | x types 
+|-- |-- |-- |--
+| T |   |   | {R}   
+| F | T |   | {G}
+| F | F | T | {B}
+| F | F | F | {undefined}
+
+The fourth column shows the results per row, and the type of `x` is union of those types.
+
+
+
+Consider boolean assertions from *A* on any expression in *E*,
+that have a special computational form 
+
+*A(E) === true <=>  A(E\[0\]) || ... || A(E\[N-1\])*
+
+or equivalently 
+
+*A(E) === false <=>  !A(E\[0\]) && ... && !A(E\[N-1\])*
+
+where the *||* symbol represents logical-or, and *&&* represents logical-and.
+
+For the assert `!!x`, which is the boolean truthiness of `x`
+
+
+*Table for `x`*
+
+| r | g |b  | x types | x truthiness
+|-- |-- |-- |--       |--
+| T |   |   | {R}     | T
+| F | T |   | {G}     | T
+| F | F | T | {B}     | T
+| F | F | F | {undefined} | F
+
+*Actual*
+
+`r`:T
+`g`:T - `r`:F 
+`b`:T - `g`:F - `r`:F 
+`b`:F - `g`:F - `r`:F 
+
+
+
+
+If we know that *A(E(x,y))->true*, that may tell us something about the values of *x* and *y*,
+i.e. maybe we can *infer* something about the values of *x* and *y* from the boolean sense of *A(E(x,y))*.
+
+- sense = true
+- Initial set = {R,G,B,undefined}
+- for each entty
+ - if sense !== condition continue
+   
+
+
+
+Obviously in this case:
+
+- *!!x <=> types of x: {R,G,B}*
+- *!x <=> types of x: {undefined}* 
+
+
+
+
+
+To make a more complex case, 
+go back to the code example, and extend it:
+
+```
+declare type R = {r:true};
+declare type G = {g:true};
+declare type B = {b:true};
+declare const r:undefined|R;
+declare const g:undefined|G;
+declare const b:undefined|B;
+const x = r || g || b;  // R|G|B|undefined
+const y = g || b; // G|B|undefined
+const z = y && !x // undefined|boolean
+if (z) {
+  x; // ? 
+} else {
+  x; // ? 
+}
+```
+
+For that we make two more tables:
+
+*Table for `y`*
+
+| g |b  | x types | x truthiness
+|-- |-- |--       |--
+| T |   | {G}     | T
+| F | T | {B}     | T
+| F | F | {undefined} | F
+
+
+*Table for `z = y && !x `* 
+
+| y | !x | z types | z truthiness
+|-- |-- |--       |--
+| F |   | undefined  | F
+| T | T | true     | T
+| T | F | false   | F
+
+*Actual*
+
+`z` - branch - `y`:F -  
+             - `!x`:T - `y`:F
+             - `!x`:F - `y`:F
+
+*Table for `z = y || !x ` 
+
+| y | !x | z types | z truthiness
+|-- |-- |--       |--
+| T |   | undefined  | T
+| F | T | true     | T
+| F | F | false   | F
+
+
+- Resolve({sense:true, expression:`z`, target:`x`, types:*{undefined,R,G,B}*}) -> *{undefined}*
+- If expression is Identifier and const/RO
+- lookup table-`z`
+- ResolveAssignment({sense:true, expression:`z`, target:`x`, types:*{undefined,R,G,B}*})
+  - union={}
+  - For each row in table-`z`
+    - If the head condition (the head in *actual table*) is not ==sense, continue;
+    - narrowed = types 
+      - narrowed = Resolve({sense:true, value:`!x`, target:`x`, types:*{undefined,R,G,B}*) -> *{undefined}*
+        - narrowed &&= Resolve({sense:true, value:`y`, target:`x`, types:*{undefined}*) -> *{}*
+  - return union;
+
+- Resolve({sense:true, expression:`!x`, target:`x`, types:*{undefined,R,G,B}*) -> *{undefined}*
+ - expression is not Identifier
+ - expression `!x` -> `x`, sense -> !sense.
+ - expression is Identifier and const/RO
+ - if SymbolsEq(expression, target)
+   - ResolveByBooleanSense(types,sense) -> *{undefined}* 
+
+- Resolve({sense:true, expression:`y`, target:`x`, types:*{undefined}*) -> *{undefined}*
+  - expression is Identifier and const/RO
+  - expression !== target
+  - is target identifier in symbol in parse tree of expression?
+    - No: return types. 
+
+
+So lets apply this method to the bug
+
+
+```
+declare type Foo = { foo: ()=> number[] }; 
+declare const obj: undefined | Foo;
+const is = obj?.foo();
+if (is){
+    obj.foo();
+}
+```
+
+*table is*
+
+`obj`:F
+`obj?.foo()`:T - `obj`:T
+`obj?.foo()`:F - `obj`:T
+
+- Resolve({sense:true, expression:`obj?.foo()`, target:`obj`, types:*{undefined,Foo}*) -> ?
+
+ - expression is not Identifier 
+  - is target identifier in symbol in parse tree of expression?
+    - Yes
+  - union={}
+  - For each row in table-`is`
+    - If the head condition (the head in *actual table*) is not ==sense, continue;
+    - narrowed = types 
+      - if head.expression.kind === SyntaxKind.CallExpression
+      -  narrowed = ResolveByCallExpression({sense:true, expression:`obj?.foo()`, target:`obj`, types:*{undefined,Foo}*) -> *{undefined, Foo}*
+        -  (because obj is not involed in arguments to foo)
+        - narrowed &&= Resolve({sense:true, value:`obj`, target:`obj`, types:*{undefined,Foo}*) -> *{Foo}*
+  
+- Resolve({sense:true, value:`obj`, target:`obj`, types:*{undefined,Foo}*)
+ - expression is Identifier and const/RO
+ - if SymbolsEq(expression, target)
+   - ResolveByBooleanSense(types,sense) -> *{Foo}* 
+
+
+
+Yeah!  Crucial bug detection!
+_cax_wuc1
+```
+    br/antecedentTypes[0]: RP | BP | undefined
+    br/antecedentTypes[1]: (RP | BP | undefined) & readonly any[]
+    brTmpType: RP | BP | undefined
+```
+The intersection with the `readonly any[]` is getting sidelined.
+Actually it is ealier where the intersection gets added.  Very strange.
+
+getReturnTypeOfSignature exists
+
+const result = getUnionOrEvolvingArrayType(antecedentTypes, subtypeReduction ? UnionReduction.Subtype : UnionReduction.Literal);
+const result = getUnionType(sameMap(types, finalizeEvolvingArrayType), subtypeReduction);
+
+
+myNarrowTest=1 myDisable=1 hanging on 
+tests/cases/conformance/fixSignatureCaching.ts
+Now OK
+
+src/compiler/watchUtilities.ts
 
