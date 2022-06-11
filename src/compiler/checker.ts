@@ -26017,13 +26017,11 @@ namespace ts {
                         }
                     }
                 }
-                //const refSymbol = getSymbolAtLocation(refSymbol);
                 if (myNarrowTest && type && type!==anyType && isPropertyAccessExpression(callExpression.expression)){
                     if (myDebug){
                         consoleLog(`narrowTypeByCallExpression[dbg,in]: ==== `);
                     }
                     const tmpSymbol = getSymbolOfNameOrPropertyAccessExpression(callExpression.expression);
-                    //const tmpSymbol = getSymbolAtLocation(callExpression.expression, true);
                     const declaration = tmpSymbol ? tmpSymbol.declarations? tmpSymbol.declarations[0] : undefined : undefined;
                     const funcNode = declaration && (declaration as any).type
                         && (declaration as any).type.kind === SyntaxKind.FunctionType
@@ -26038,15 +26036,6 @@ namespace ts {
                         if (funcType) consoleLog(`narrowTypeByCallExpression[dbg]: funcType: ${typeToString(funcType)}`);
                     }
                     if (funcRtnType) {
-                        /**
-                         * The recursive calls to narrowType can of course result in result in
-                         * recurisive calls here.
-                         * In the test file `tests/cases/conformance/fixSignatureCaching.ts` this code hung.
-                         * Bypassing when `!(type && type==any)` was enough to solve that problem,
-                         * but in general some safegaurd might be needed ??? - the recursive calls sometimes include calls to "checkExpression"
-                         * which is very heavy load.
-                         * That is why `narrowByCallExpressionFixRecursionLevels` was added.
-                         */
                         const antecedentResultFalse = narrowType(type, callExpression.expression, /* assumeTrue */ false);
                         const antecedentResultTrue = narrowType(type, callExpression.expression, /* assumeTrue */ true);
 
@@ -26054,20 +26043,23 @@ namespace ts {
                         let hasTruthyType = false;
                         let hasDualType = false;
 
-                        // TODO: The meaning of falsy/truthy should change when the the call is the left child of a parent nullish coalescing operator `??`
-                        // let nullishCoalescingOp = false;
-                        // if (callExpression.parent && callExpression.parent )
-
-
+                        // The meaning of falsy/truthy should change when the the call is the left child of a parent nullish coalescing operator `??`
+                        const nullishCoalescingOp = isBinaryExpression(callExpression.parent) && callExpression.parent.operatorToken.kind===SyntaxKind.QuestionQuestionToken;
                         let typeOut: Type | undefined;
                         forEachType(funcRtnType, (t=>{
-                            if (t===nullType || t===undefinedType || t===falseType || (t.flags & TypeFlags.Literal && !(t as LiteralType).value)) {
-                                hasFalsyType = true;
+                            if (nullishCoalescingOp){
+                                if (t===nullType || t===undefinedType) hasFalsyType = true;
+                                else hasTruthyType = true;
                             }
-                            else if (t.flags & TypeFlags.Object || t===trueType || (t.flags & TypeFlags.Literal && !!(t as LiteralType).value)) {
-                                hasTruthyType = true;
+                            else {
+                                if (t===nullType || t===undefinedType || t===falseType || (t.flags & TypeFlags.Literal && !(t as LiteralType).value)) {
+                                    hasFalsyType = true;
+                                }
+                                else if (t.flags & TypeFlags.Object || t===trueType || (t.flags & TypeFlags.Literal && !!(t as LiteralType).value)) {
+                                    hasTruthyType = true;
+                                }
+                                else hasDualType = true;
                             }
-                            else hasDualType = true;
                         }));
                         if (assumeTrue===false){
                             const union: Type[] = [antecedentResultFalse];
@@ -26078,7 +26070,6 @@ namespace ts {
                             if (hasTruthyType||hasDualType) typeOut=antecedentResultTrue;
                         }
                         if (myDebug){
-                            //if (cachedType) consoleLog(`narrowTypeByCallExpression[dbg]: cachedType***: ${typeToString(cachedType)}`);
                             consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultTrue ${typeToString(antecedentResultTrue)}`);
                             consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultFalse ${typeToString(antecedentResultFalse)}`);
                             if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: funcRtnType: ${typeToString(funcRtnType)}`);
