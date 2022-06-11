@@ -1,0 +1,20 @@
+=== tests/cases/conformance/controlFlow/controlFlowAliasFunc3.ts ===
+declare function fn():number;
+>fn : Symbol(fn, Decl(controlFlowAliasFunc3.ts, 0, 0))
+
+declare function fb():boolean;
+>fb : Symbol(fb, Decl(controlFlowAliasFunc3.ts, 0, 29))
+
+declare const foo: undefined | { fb: typeof fb };
+>foo : Symbol(foo, Decl(controlFlowAliasFunc3.ts, 2, 13))
+>fb : Symbol(fb, Decl(controlFlowAliasFunc3.ts, 2, 32))
+>fb : Symbol(fb, Decl(controlFlowAliasFunc3.ts, 0, 29))
+
+const z = fn() ?? foo?.fb(); 
+>z : Symbol(z, Decl(controlFlowAliasFunc3.ts, 3, 5))
+>fn : Symbol(fn, Decl(controlFlowAliasFunc3.ts, 0, 0))
+>foo?.fb : Symbol(fb, Decl(controlFlowAliasFunc3.ts, 2, 32))
+>foo : Symbol(foo, Decl(controlFlowAliasFunc3.ts, 2, 13))
+>fb : Symbol(fb, Decl(controlFlowAliasFunc3.ts, 2, 32))
+
+

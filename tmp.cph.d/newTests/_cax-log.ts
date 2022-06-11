@@ -18,10 +18,10 @@ function flog(x: unknown) {
     const c = !!a && !!b;
     if (c){
         const y = b; // IS: y: true
-        const x = a; // IS: x: true, 
+        const x = a; // IS: x: true
     } 
     else {
         const x = a; // IS: x: true
-        const y = b; // IS: y: boolean, WANT: false
+        const y = b; // IS: y: boolean
     }
 }

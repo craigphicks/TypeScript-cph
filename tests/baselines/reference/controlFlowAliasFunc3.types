@@ -1,0 +1,23 @@
+=== tests/cases/conformance/controlFlow/controlFlowAliasFunc3.ts ===
+declare function fn():number;
+>fn : () => number
+
+declare function fb():boolean;
+>fb : () => boolean
+
+declare const foo: undefined | { fb: typeof fb };
+>foo : { fb: typeof fb; } | undefined
+>fb : () => boolean
+>fb : () => boolean
+
+const z = fn() ?? foo?.fb(); 
+>z : number
+>fn() ?? foo?.fb() : number
+>fn() : number
+>fn : () => number
+>foo?.fb() : boolean | undefined
+>foo?.fb : (() => boolean) | undefined
+>foo : { fb: () => boolean; } | undefined
+>fb : (() => boolean) | undefined
+
+
