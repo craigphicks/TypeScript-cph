@@ -2,11 +2,12 @@
 //const NodeFs = require("fs");
 /* @internal */
 namespace ts {
+    let dbgFlowFileCnt = 0;
     let myDebug = false;
-    let myDisable = (process.env.myDisable===undefined) ? true : !!Number(process.env.myDisable);
-    let myNoAliasAction = (process.env.myNoAliasAction===undefined) ? true : !!Number(process.env.myNoAliasAction);
-    myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
-    myNoAliasAction = !!Number(process.env.myNoAliasAction);
+    const myDisable = (process.env.myDisable===undefined) ? true : !!Number(process.env.myDisable);
+    const myNoAliasAction = (process.env.myNoAliasAction===undefined) ? true : !!Number(process.env.myNoAliasAction);
+    //myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
+    //myNoAliasAction = !!Number(process.env.myNoAliasAction);
 
 
     const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):10000;
@@ -410,7 +411,10 @@ namespace ts {
     export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // @ts-ignore-error
         // eslint-disable-next-line prefer-const
-        let dbgFlowFileCnt = 0;
+
+        const checkExpressionCache = new Map<Node,Type>();
+        let flowTypeOfReferenceDepth = 0;
+
         const dbgGetNodeText = (node: Node)=>{
             return ((node as any).getText && node.pos>=0) ? (node as any).getText() : (node as Identifier).escapedText??"";
         };
@@ -24290,10 +24294,10 @@ namespace ts {
             }
         }
 
-        function getEffectsSignature(node: CallExpression) {
+        function getEffectsSignature(node: CallExpression, tryIfUndefined?: boolean) {
             const links = getNodeLinks(node);
             let signature = links.effectsSignature;
-            if (signature === undefined) {
+            if (signature === undefined || (signature===unknownSignature && tryIfUndefined)) {
                 // A call expression parented by an expression statement is a potential assertion. Other call
                 // expressions are potential type predicate function calls. In order to avoid triggering
                 // circularities in control flow analysis, we use getTypeOfDottedName when resolving the call
@@ -24321,6 +24325,8 @@ namespace ts {
             }
             return signature === unknownSignature ? undefined : signature;
         }
+
+
 
         function hasTypePredicateOrNeverReturnType(signature: Signature) {
             return !!(getTypePredicateOfSignature(signature) ||
@@ -24587,6 +24593,7 @@ namespace ts {
                 return declaredType;
             }
             flowInvocationCount++;
+            flowTypeOfReferenceDepth++;
 
             // if (!flowTypeQueryState.disable){
             //     if (reference.kind===SyntaxKind.Identifier){
@@ -24618,6 +24625,7 @@ namespace ts {
             // on empty arrays are possible without implicit any errors and new element types can be inferred without
             // type mismatch errors.
             const resultType = getObjectFlags(evolvedType) & ObjectFlags.EvolvingArray && isEvolvingArrayOperationTarget(reference) ? autoArrayType : finalizeEvolvingArrayType(evolvedType);
+            flowTypeOfReferenceDepth--;
             if (resultType === unreachableNeverType || reference.parent && reference.parent.kind === SyntaxKind.NonNullExpression && !(resultType.flags & TypeFlags.Never) && getTypeWithFacts(resultType, TypeFacts.NEUndefinedOrNull).flags & TypeFlags.Never) {
                 if (myDebug) consoleLog(`return declaredType: ${typeToString(declaredType)}`);
                 return declaredType;
@@ -25445,6 +25453,34 @@ namespace ts {
             }
 
             function narrowTypeByDiscriminant(type: Type, access: AccessExpression | BindingElement | ParameterDeclaration, narrowType: (t: Type) => Type): Type {
+                if (myDebug){
+                    consoleGroup(`narrowTypeByDiscriminant[in]: type: ${typeToString(type)}, access: ${"<>"}`);
+                    consoleLog(`${Debug.formatSyntaxKind(access.kind)}`);
+                    if (access.kind===SyntaxKind.Parameter){
+                        consoleLog(`access.name: ${access.name}`);
+                    }
+                    else if (access.kind===SyntaxKind.BindingElement){
+                        //
+                        consoleLog(`access.name: ${access.name}`);
+                    }
+                    else if (access.kind===SyntaxKind.PropertyAccessExpression){
+                        //
+                        consoleLog(`access.name: ${access.name}`);
+                    }
+                    else if (access.kind===SyntaxKind.ElementAccessExpression){
+                        //
+                        consoleLog(`access.expression: ${dbgNodeToString(access.expression)}, ${dbgNodeToString(access.argumentExpression)}`);
+                    }
+
+                }
+                const r= narrowTypeByDiscriminant_aux(type,access,narrowType);
+                if (myDebug){
+                    consoleLog(`narrowTypeByDiscriminant[out]: type: ${typeToString(type)}, expr: ${"<>"} -> ${typeToString(r)}`);
+                    consoleGroupEnd();
+                }
+                return r;
+            }
+            function narrowTypeByDiscriminant_aux(type: Type, access: AccessExpression | BindingElement | ParameterDeclaration, narrowType: (t: Type) => Type): Type {
                 const propName = getAccessedPropertyName(access);
                 if (propName === undefined) {
                     return type;
@@ -25990,101 +26026,253 @@ namespace ts {
             }
             function narrowTypeByCallExpression_aux(type: Type, callExpression: CallExpression, assumeTrue: boolean): Type {
                 if (hasMatchingArgument(callExpression, reference)) {
-                    // if (myDebug) consoleLog(`hasMatchingArgument(${dbgNodeToString(callExpression)}, ${dbgNodeToString(reference)})=true`);
+                    if (myDebug) consoleLog(`hasMatchingArgument(${dbgNodeToString(callExpression)}, ${dbgNodeToString(reference)})=true`);
                     const signature = assumeTrue || !isCallChain(callExpression) ? getEffectsSignature(callExpression) : undefined;
                     const predicate = signature && getTypePredicateOfSignature(signature);
-                    // if (myDebug) {
-                    //     consoleLog(`signature.declaration=${(signature===undefined)?"<undef>":dbgNodeToString(signature.declaration)}`);
-                    //     consoleLog(`predicate=${predicate===undefined ? "<undef>" : "not undefined"}`);
-                    // }
+                    if (myDebug) {
+                        consoleLog(`signature.declaration=${(signature===undefined)?"<undef>":dbgNodeToString(signature.declaration)}`);
+                        consoleLog(`predicate=${predicate===undefined ? "<undef>" : "not undefined"}`);
+                    }
                     if (predicate && (predicate.kind === TypePredicateKind.This || predicate.kind === TypePredicateKind.Identifier)) {
                         return narrowTypeByTypePredicate(type, predicate, callExpression, assumeTrue);
                     }
                 }
-                // if (myDebug){
-                //     consoleLog(`containsMissingType(type=${typeToString(type)})=${containsMissingType(type)}`);
-                //     consoleLog(`isAccessExpression(reference=${dbgNodeToString(reference)})=${isAccessExpression(reference)}`);
-                //     consoleLog(`isPropertyAccessExpression(callExpression.expression)=${isPropertyAccessExpression(callExpression.expression)}`);
-                // }
+                if (myDebug){
+                    consoleLog(`containsMissingType(type=${typeToString(type)})=${containsMissingType(type)}`);
+                    consoleLog(`isAccessExpression(reference=${dbgNodeToString(reference)})=${isAccessExpression(reference)}`);
+                    consoleLog(`isPropertyAccessExpression(callExpression.expression)=${isPropertyAccessExpression(callExpression.expression)}`);
+                }
                 if (containsMissingType(type) && isAccessExpression(reference) && isPropertyAccessExpression(callExpression.expression)) {
                     const callAccess = callExpression.expression;
                     if (isMatchingReference(reference.expression, getReferenceCandidate(callAccess.expression)) &&
                         isIdentifier(callAccess.name) && callAccess.name.escapedText === "hasOwnProperty" && callExpression.arguments.length === 1) {
                         const argument = callExpression.arguments[0];
                         if (isStringLiteralLike(argument) && getAccessedPropertyName(reference) === escapeLeadingUnderscores(argument.text)) {
-                            // if (myDebug) consoleLog(`calling getTypeWithFacts`);
+                            if (myDebug) consoleLog(`calling getTypeWithFacts`);
                             return getTypeWithFacts(type, assumeTrue ? TypeFacts.NEUndefined : TypeFacts.EQUndefined);
                         }
                     }
                 }
-                if (myNarrowTest && type && type!==anyType && isPropertyAccessExpression(callExpression.expression)){
-                    if (myDebug){
-                        consoleLog(`narrowTypeByCallExpression[dbg,in]: ==== `);
-                    }
-                    const tmpSymbol = getSymbolOfNameOrPropertyAccessExpression(callExpression.expression);
-                    const declaration = tmpSymbol ? tmpSymbol.declarations? tmpSymbol.declarations[0] : undefined : undefined;
-                    const funcNode = declaration && (declaration as any).type
-                        && (declaration as any).type.kind === SyntaxKind.FunctionType
-                        ? (declaration as any).type as FunctionDeclaration : undefined;
-                    const funcType = funcNode && getTypeOfNode(funcNode);
-                    const funcRtnType = funcNode?.type ? getTypeOfNode(funcNode.type) : undefined;
-                    if (myDebug){
-                        consoleLog(`narrowTypeByCallExpression[dbg]: assumeTrue ${assumeTrue}`);
-                        consoleLog(`narrowTypeByCallExpression[dbg]: type [input] ${typeToString(type)}`);
-                        if (tmpSymbol) consoleLog(`narrowTypeByCallExpression[dbg]: tmpSymbol.id: ${getSymbolId(tmpSymbol)}`);
-                        consoleLog(`narrowTypeByCallExpression[dbg]: declaration: ${dbgNodeToString(declaration)}`);
-                        if (funcType) consoleLog(`narrowTypeByCallExpression[dbg]: funcType: ${typeToString(funcType)}`);
-                    }
-                    if (funcRtnType) {
-                        const antecedentResultFalse = narrowType(type, callExpression.expression, /* assumeTrue */ false);
-                        const antecedentResultTrue = narrowType(type, callExpression.expression, /* assumeTrue */ true);
 
-                        let hasFalsyType = false;
-                        let hasTruthyType = false;
-                        let hasDualType = false;
-
-                        // The meaning of falsy/truthy should change when the the call is the left child of a parent nullish coalescing operator `??`
-                        const nullishCoalescingOp = isBinaryExpression(callExpression.parent) && callExpression.parent.operatorToken.kind===SyntaxKind.QuestionQuestionToken;
-                        let typeOut: Type | undefined;
-                        forEachType(funcRtnType, (t=>{
-                            if (nullishCoalescingOp){
-                                if (t===nullType || t===undefinedType) hasFalsyType = true;
-                                else hasTruthyType = true;
-                            }
-                            else {
-                                if (t===nullType || t===undefinedType || t===falseType || (t.flags & TypeFlags.Literal && !(t as LiteralType).value)) {
-                                    hasFalsyType = true;
-                                }
-                                else if (t.flags & TypeFlags.Object || t===trueType || (t.flags & TypeFlags.Literal && !!(t as LiteralType).value)) {
-                                    hasTruthyType = true;
-                                }
-                                else hasDualType = true;
-                            }
-                        }));
-                        if (assumeTrue===false){
-                            const union: Type[] = [antecedentResultFalse];
-                            if (hasFalsyType||hasDualType) union.push(antecedentResultTrue);
-                            typeOut = getUnionType(union, UnionReduction.Literal);
-                        }
-                        else {
-                            if (hasTruthyType||hasDualType) typeOut=antecedentResultTrue;
-                        }
-                        if (myDebug){
-                            consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultTrue ${typeToString(antecedentResultTrue)}`);
-                            consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultFalse ${typeToString(antecedentResultFalse)}`);
-                            if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: funcRtnType: ${typeToString(funcRtnType)}`);
-                            if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasTruthyType=${hasTruthyType}`);
-                            if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasFalsyType=${hasFalsyType}`);
-                            if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasDualType=${hasDualType}`);
-                            if (typeOut) consoleLog(`narrowTypeByCallExpression[dbg]: typeOut: ${typeToString(typeOut)}`);
-                            else consoleLog(`narrowTypeByCallExpression[dbg]: no affect on result`);
-                        }
-                        if (typeOut) {
-                            type = typeOut;
-                        }
-                    }
-                    if (myDebug) consoleLog(`narrowTypeByCallExpression[dbg,out]: ====`);
+                if (myDebug){
+                    consoleLog(`narrowTypeByCallExpression[dbg,in]: ==== `);
                 }
+
+                const result = ((): undefined | Type => {
+                    /* isPropertyAccessExpression(callExpression.expression */
+                    /**
+                     * inlineLevel>0 <=> the folling are true
+                     * - a constant alias is being processed in narrowType
+                     * - the variable on the lhs of the alias assignment is constant
+                     * - the variable and objects involved on the rhs of the alias assignment are const/RO
+                     * - - (or if not, cannot be used for inference connectivity.)
+                     * - the value of reference is constant.
+                     * - The whole alias statement was already subject to `checkSourceElement`/`checkExpression` analysis.
+                     * If the per node type results of that were written to checkExpressionCache,
+                     * then they can be used as a basis for narrowing.
+                     */
+                    if (!(myNarrowTest && type && type!==anyType &&  inlineLevel)) return;
+                    /**
+                     * Even if the function parameters were not constant, the evaluation of the function in the alias statement
+                     * is constant.
+                     * Of primary importance is whether the current reference variable is a parameter of the function.
+                     * The reference is always constant in alias mode, so if reference is a parameter of an overloaded function,
+                     * then it's value should be use in the inference login.
+                     *
+                     * Currently, (before this for #49075) it seems the this inference flow time call `narrowByCallExpression`
+                     * has no influnce on the final displayed value.
+                     * However, `node.links.resolvedSignature` is set with the correct value, calculated here, then that will become the displayed value.
+                     * See `function getResolvedSignature` to see how that works.
+                     *
+                     * The `function resolveCall` can hopefully be used to map candidate types to return values.
+                     *
+                     * NOTE:  If the return node type is SyntaxKind.TypePredicate, that is a type guard.
+                     */
+                    const funcRtnType = checkExpressionCache.get(callExpression);
+                    if (!funcRtnType) return;
+
+                    /**
+                     * CallExpression is defined as follows:
+                     * - interface CallExpression extends LeftHandSideExpression, Declaration {...}
+                     * That means `callExpression.parent.operatorToken` can be accessed without any guard,
+                     * but it won't exist unless `callExpression` is actuall a LeftHandSideExpression, and
+                     * therefore a BinaryExpression.
+                     *
+                     * `callExpresion.expression` always exists.  However, if call expression itself is optional, e.g.
+                     * - declare const func: undefined | ((s:string)=>number[]);
+                     * - const isFunc = func?.("");
+                     * - if (func) {
+                     * -   const x = func("")
+                     * - }
+                     * then `callExpresion.expression` does NOT include the "?" (or "!") information.  I think that's OK
+                     * because that will be handled as a flow analysis post-process.  We can ignore any such token here.
+                     */
+
+                    const antecedentResultFalse = narrowType(type, callExpression.expression, /* assumeTrue */ false);
+                    const antecedentResultTrue = narrowType(type, callExpression.expression, /* assumeTrue */ true);
+
+
+                    // The meaning of falsy/truthy should change when the the call is the left child of a parent nullish coalescing operator `??`
+                    const nullishCoalescingOp = isBinaryExpression(callExpression.parent) && callExpression.parent.operatorToken?.kind===SyntaxKind.QuestionQuestionToken;
+
+                    let rtnTypeFalsy: Type;
+                    let rtnTypeTruthy: Type;
+                    if (nullishCoalescingOp){
+                        rtnTypeFalsy = getTypeWithFacts(funcRtnType, TypeFacts.NEUndefined);
+                        rtnTypeTruthy = getTypeWithFacts(funcRtnType, TypeFacts.EQUndefined);
+                    }
+                    else {
+                        rtnTypeFalsy = getTypeWithFacts(funcRtnType, TypeFacts.Falsy);
+                        rtnTypeTruthy = getTypeWithFacts(funcRtnType, TypeFacts.Truthy);
+                    }
+                    const hasFalsyType = rtnTypeFalsy!==neverType;
+                    const hasTruthyType = rtnTypeTruthy!==neverType;
+
+                    let typeOut: Type | undefined;
+
+                    /**
+                     * If assumeTrue is false
+                     *    The value if antecedentResultFalse is included in the result.
+                     *    If the function return includes falsy values, these mask any inference and so
+                     *    the value of antecedentResultTrue must also be included.
+                     * If assumeTrue is true, antecedentResultFalse is not included.
+                     */
+                    if (assumeTrue===false){
+                        const union: Type[] = [antecedentResultFalse];
+                        if (hasFalsyType) union.push(antecedentResultTrue);
+                        typeOut = getUnionType(union, UnionReduction.Literal);
+                    }
+                    else {
+                        if (hasTruthyType) typeOut=antecedentResultTrue;
+                    }
+
+                })();
+                if (result) type = result;
+
+                if (myDebug) consoleLog(`narrowTypeByCallExpression[dbg,out]: ====`);
+
+                    // inline level means we are in alias mode and all the values in expr are constants
+                    // const tmpSymbol = getSymbolOfNameOrPropertyAccessExpression(callExpression.expression);
+                    // const declaration = tmpSymbol ? tmpSymbol.declarations? tmpSymbol.declarations[0] : undefined : undefined;
+                    // const funcNode = declaration && (declaration as any).type
+                    //     && (declaration as any).type.kind === SyntaxKind.FunctionType
+                    //     ? (declaration as any).type as FunctionDeclaration : undefined;
+                    // const funcType = funcNode && getTypeOfNode(funcNode);
+                    // const funcRtnType = funcNode?.type ? getTypeOfNode(funcNode.type) : undefined;
+                    // if (myDebug){
+                    //     consoleLog(`narrowTypeByCallExpression[dbg]: assumeTrue ${assumeTrue}`);
+                    //     consoleLog(`narrowTypeByCallExpression[dbg]: type [input] ${typeToString(type)}`);
+                    //     if (tmpSymbol) consoleLog(`narrowTypeByCallExpression[dbg]: tmpSymbol.id: ${getSymbolId(tmpSymbol)}`);
+                    //     consoleLog(`narrowTypeByCallExpression[dbg]: declaration: ${dbgNodeToString(declaration)}`);
+                    //     if (funcType) consoleLog(`narrowTypeByCallExpression[dbg]: funcType: ${typeToString(funcType)}`);
+                    // }
+                    // let typeOfSymbol: Type;
+
+                    // if (tmpSymbol){
+                    //     typeOfSymbol = getTypeOfSymbol(tmpSymbol);
+                    //     // @ts-ignore
+                    //     const signatures = getSignaturesOfType(typeOfSymbol, SignatureKind.Call);
+                    //     // @ts-ignore
+                    //     signature;
+
+                    // }
+                    // if (tmpSymbol?.declarations){
+                    //     //tmpSymbol?.declarations.forEach.map()
+                    // }
+                    // getSignaturesOfType()
+
+
+                    // {
+                    //     // A call expression parented by an expression statement is a potential assertion. Other call
+                    //     // expressions are potential type predicate function calls. In order to avoid triggering
+                    //     // circularities in control flow analysis, we use getTypeOfDottedName when resolving the call
+                    //     // target expression of an assertion.
+                    //     let funcType: Type | undefined;
+                    //     if (node.parent.kind === SyntaxKind.ExpressionStatement) {
+                    //         funcType = getTypeOfDottedName(node.expression, /*diagnostic*/ undefined);
+                    //     }
+                    //     else if (node.expression.kind !== SyntaxKind.SuperKeyword) {
+                    //         if (isOptionalChain(node)) {
+                    //             funcType = checkNonNullType(
+                    //                 getOptionalExpressionType(checkExpression(node.expression), node.expression),
+                    //                 node.expression
+                    //             );
+                    //         }
+                    //         else {
+                    //             funcType = checkNonNullExpression(node.expression);
+                    //         }
+                    //     }
+                    //     const signatures = getSignaturesOfType(funcType && getApparentType(funcType) || unknownType, SignatureKind.Call);
+                    // }
+
+                    // if (!targetType) {
+                    //     const constructSignatures = getSignaturesOfType(rightType, SignatureKind.Construct);
+                    //     targetType = constructSignatures.length ?
+                    //         getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) :
+                    //         emptyObjectType;
+                    // }
+
+
+                    // const signature: Signature|undefined = getEffectsSignature(callExpression, /* try */ true);
+
+                    // // @ts-ignore
+                    // const predicate = signature && getTypePredicateOfSignature(signature);
+                    // // @ts-ignore
+                    // const returnType = signature && getReturnTypeOfSignature(signature);
+
+                    // if (myDebug && signature){
+                    //     consoleLog(`narrowTypeByCallExpression[dbg]: signature`);
+                    // }
+
+                    // if (funcRtnType) {
+                        // const antecedentResultFalse = narrowType(type, callExpression.expression, /* assumeTrue */ false);
+                        // const antecedentResultTrue = narrowType(type, callExpression.expression, /* assumeTrue */ true);
+
+                        // let hasFalsyType = false;
+                        // let hasTruthyType = false;
+                        // let hasDualType = false;
+
+                        // // The meaning of falsy/truthy should change when the the call is the left child of a parent nullish coalescing operator `??`
+                        // const nullishCoalescingOp = isBinaryExpression(callExpression.parent) && callExpression.parent.operatorToken.kind===SyntaxKind.QuestionQuestionToken;
+                        // let typeOut: Type | undefined;
+                        // forEachType(funcRtnType, (t=>{
+                        //     if (nullishCoalescingOp){
+                        //         if (t===nullType || t===undefinedType) hasFalsyType = true;
+                        //         else hasTruthyType = true;
+                        //     }
+                        //     else {
+                        //         if (t===nullType || t===undefinedType || t===falseType || (t.flags & TypeFlags.Literal && !(t as LiteralType).value)) {
+                        //             hasFalsyType = true;
+                        //         }
+                        //         else if (t.flags & TypeFlags.Object || t===trueType || (t.flags & TypeFlags.Literal && !!(t as LiteralType).value)) {
+                        //             hasTruthyType = true;
+                        //         }
+                        //         else hasDualType = true;
+                        //     }
+                        // }));
+                        // if (assumeTrue===false){
+                        //     const union: Type[] = [antecedentResultFalse];
+                        //     if (hasFalsyType||hasDualType) union.push(antecedentResultTrue);
+                        //     typeOut = getUnionType(union, UnionReduction.Literal);
+                        // }
+                        // else {
+                        //     if (hasTruthyType||hasDualType) typeOut=antecedentResultTrue;
+                        // }
+                        // if (myDebug){
+                        //     consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultTrue ${typeToString(antecedentResultTrue)}`);
+                        //     consoleLog(`narrowTypeByCallExpression[dbg]: antecedentResultFalse ${typeToString(antecedentResultFalse)}`);
+                        //     if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: funcRtnType: ${typeToString(funcRtnType)}`);
+                        //     if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasTruthyType=${hasTruthyType}`);
+                        //     if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasFalsyType=${hasFalsyType}`);
+                        //     if (funcRtnType) consoleLog(`narrowTypeByCallExpression[dbg]: hasDualType=${hasDualType}`);
+                        //     if (typeOut) consoleLog(`narrowTypeByCallExpression[dbg]: typeOut: ${typeToString(typeOut)}`);
+                        //     else consoleLog(`narrowTypeByCallExpression[dbg]: no affect on result`);
+                        // }
+                        // if (typeOut) {
+                        //     type = typeOut;
+                        // }
+
+
                 return type;
             }
 
@@ -26122,7 +26310,6 @@ namespace ts {
                 }
                 return type;
             }
-
             function narrowType(type: Type, expr: Expression, assumeTrue: boolean): Type {
                 if (myDebug){
                     consoleGroup(`narrowType[in ]: type:${typeToString(type)}, expr=${dbgNodeToString(expr)}, assumeTrue=${assumeTrue}`);
@@ -26155,6 +26342,7 @@ namespace ts {
                             if (isConstVariable(symbol)) {
                                 const declaration = symbol.valueDeclaration;
                                 if (declaration && isVariableDeclaration(declaration) && !declaration.type && declaration.initializer && isConstantReference(reference)) {
+                                    if (myDebug) consoleLog(`narrowType: alias ${dbgNodeToString(declaration)}, inlineLevel: ${inlineLevel}`);
                                     inlineLevel++;
                                     const result = narrowType(type, declaration.initializer, assumeTrue);
                                     inlineLevel--;
@@ -26197,6 +26385,17 @@ namespace ts {
             }
 
             function narrowTypeByOptionality(type: Type, expr: Expression, assumePresent: boolean): Type {
+                if (myDebug){
+                    consoleGroup(`narrowTypeByOptionality[in]: type: ${typeToString(type)}, expr: ${dbgNodeToString(expr)}, assume: ${assumePresent}`);
+                }
+                const r= narrowTypeByOptionality_aux(type,expr,assumePresent);
+                if (myDebug){
+                    consoleLog(`narrowTypeByOptionality[out]: type: ${typeToString(type)}, expr: ${dbgNodeToString(expr)}, assume: ${assumePresent} -> ${typeToString(r)}`);
+                    consoleGroupEnd();
+                }
+                return r;
+            }
+            function narrowTypeByOptionality_aux(type: Type, expr: Expression, assumePresent: boolean): Type {
                 if (isMatchingReference(reference, expr)) {
                     return getTypeWithFacts(type, assumePresent ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull);
                 }
@@ -35671,6 +35870,7 @@ namespace ts {
                 consoleGroupEnd();
                 //consoleLog(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
             }
+            if (flowTypeOfReferenceDepth===0) checkExpressionCache.set(node,type);
             return type;
         }
 
@@ -42595,7 +42795,7 @@ namespace ts {
                 hrstart = process.hrtime.bigint();
                 currentTestFile = getBaseFileName(node.originalFileName);
             }
-            if (nameMatched && dbgFlowFileCnt===0) {
+            if (nameMatched && dbgFlowFileCnt++===0) {
                 myDebug = !!Number(process.env.myDebug);
                 consoleLog(`myDebug=${myDebug}, myNarrowTest=${myNarrowTest}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
                 if (nameMatched && myDebug){//(myDebug && node.endFlowNode) {
@@ -42687,14 +42887,13 @@ namespace ts {
                     //     else break;
                     // }
                     writeFlowNodesUp(write, endFlowNodes);
-                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisable?1:0}.${dbgFlowFileCnt++}.flow`;
+                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisable?1:0}.${dbgFlowFileCnt}.flow`;
                     sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
                 }
             }
             checkSourceFileWorker(node);
             if (myDebug) {
                 myDebug = false;
-                myDisable = false;
             }
             if (nameMatched){
                 const hrtime = process.hrtime.bigint() - hrstart!;
