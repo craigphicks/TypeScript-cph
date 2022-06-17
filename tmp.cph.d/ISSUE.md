@@ -956,3 +956,54 @@ Now OK
 
 src/compiler/watchUtilities.ts
 
+
+New strategy
+
+```
+checkSourceElement: [n51] {
+      checkSourceElement: [n52] const x = obja.foo(arg);, [260,289], VariableStatement
+        checkSourceElement: [n53] x = obja.foo(arg), [270,288], VariableDeclaration
+          checkExpression[in]: [n54] obja.foo, [274,283], PropertyAccessExpression 
+            checkExpression[in]: [n55] obja, [274,279], Identifier 
+                                  checkExpression[in]: [n33] obja?.foo, [173,183], PropertyAccessExpression , insideGetFlowTypeOfReference
+                                    checkExpression[in]: [n34] obja, [173,178], Identifier , insideGetFlowTypeOfReference
+                                    checkExpression[out]: [n34] obja, [173,178], Identifier -> FooA | undefined
+                                  checkExpression[out]: [n33] obja?.foo, [173,183], PropertyAccessExpression -> { (b: string): "1"; (b: number): undefined; } | undefined
+            checkExpression[out]: [n55] obja, [274,279], Identifier -> FooA | undefined
+          checkExpression[out]: [n54] obja.foo, [274,283], PropertyAccessExpression -> { (b: string): "1"; (b: number): undefined; }
+          checkExpression[in]: [n56] obja.foo(arg), [274,288], CallExpression 
+            resolveCallExpression[in]: node: [n56] obja.foo(arg), [274,288], CallExpression
+              checkExpression[in]: [n54] obja.foo, [274,283], PropertyAccessExpression 
+                checkExpression[in]: [n55] obja, [274,279], Identifier 
+                checkExpression[out]: [n55] obja, [274,279], Identifier -> FooA | undefined
+              checkExpression[out]: [n54] obja.foo, [274,283], PropertyAccessExpression -> { (b: string): "1"; (b: number): undefined; }
+              resolveCall[in]: node: [n56] obja.foo(arg), [274,288], CallExpression
+                checkExpression[in]: [n57] arg, [284,287], Identifier 
+                checkExpression[out]: [n57] arg, [284,287], Identifier -> string
+              resolveCall[out]: node: [n56] obja.foo(arg), [274,288], CallExpression
+            resolveCallExpression[out]: node: [n56] obja.foo(arg), [274,288], CallExpression
+          checkExpression[out]: [n56] obja.foo(arg), [274,288], CallExpression -> "1"
+
+```
+
+From the trace we see that `checkExpression` (not counting call from inside `getFlowTypeOfReference`) call are resolved in this order:
+```
+  obja
+obja.foo
+obja.foo(arg)  
+```
+The call for `obja` invokes flow control (`getFlowTypeOfReference`) but flow control simply skip resolution of `CallExpression` - there is no entry iun the look up table for that.
+Therefore the required information to compute `obja`  is not available 
+
+Why is `CallExpression` skipped in flow?
+Presumably because `CallExpession` signatures are being selected during the analysis of `obja.foo(arg)`, and there is no point in duplicating effort.
+However, the assignment of signatures in `CallExpession` treats the flow result type of `obja` as a read only.  
+It does not feedback the result type of `obja.foo(arg)` to further narrow `obja`.
+
+So just add that function and we are done, right?
+Well - suppose there multiple parameters in a `CallExpressions`, and perhaps multiple `CallExpressions` as well, all which must be resolved together.  Then what?
+
+It really makes sense to have a single flow at the highest possible level, so that all values are solved together and are consistent with eavh other.
+Which would be the right hand side of the assignment expression.
+
+
