@@ -31077,6 +31077,13 @@ namespace ts {
             return true;
         }
 
+        /**
+         *
+         * @param signature
+         * @param typeArguments
+         * @returns The result from a purely compiler-oriented perspective (not tsserver perspective),
+         * but doesn't take account of rest parameters - which may expand to provide the correct arity.
+         */
         function hasCorrectTypeArgumentArity(signature: Signature, typeArguments: NodeArray<TypeNode> | undefined) {
             // If the user supplied type arguments, but the number of type arguments does not match
             // the declared number of type parameters, the call has an incorrect arity.
@@ -42716,7 +42723,13 @@ namespace ts {
             }
         }
 
-
+        /**
+         * This should return a shortlist of candidates that are possible given the callExpression parameters.
+         * @param callExpression
+         * @param cachedFuncType
+         * @param checkMode
+         * @returns
+         */
         function getCandidatesOut(callExpression: CallExpression, cachedFuncType: Type, checkMode: CheckMode): undefined|{ readonly resolvedSignature: Signature, candidatesOutArray: readonly Signature[]} {
 
             Debug.assert(cachedFuncType); // training wheels for the compiler.
@@ -42737,13 +42750,14 @@ namespace ts {
              * A dummy error reporter is passed in because we are in alias mode, and the original was already completely checked.
              * If it is an NG, we bail.
              */
-            if (checkNonNullTypeWithReporter(funcType, callExpression.expression, (_node: Node, _kind: TypeFlags)=>{/* dummy */ })===errorType) return;
+            //if (checkNonNullTypeWithReporter(funcType, callExpression.expression, (_node: Node, _kind: TypeFlags)=>{/* dummy */ })===errorType) return;
             /**
              * I believe silent never type occurs only in unreachable (i.e., always false) code branches - not sure though.
              */
-            if (funcType === silentNeverType) return;
+            //if (funcType === silentNeverType) return;
 
             const apparentType = getApparentType(funcType);
+            Debug.assert(!isErrorType(apparentType));
             if (isErrorType(apparentType)) return;
 
             /**
@@ -42756,7 +42770,7 @@ namespace ts {
             const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
             //const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
 
-            // see issue #....
+            //see issue #....
             if (checkMode & CheckMode.SkipGenericFunctions &&  !callExpression.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {
                 return;
             }
@@ -42768,23 +42782,94 @@ namespace ts {
             };
         };
 
-        type InferRefArgs = & {refTypes: RefTypes, condExpr: Readonly<Expression>, assume: boolean};
+        const InferCritKind = {
+            truthy: "truthy",
+            notnullundef: "notnullundef",
+            assignable:"assignable"
+        } as const;
+        type InferCritKind = typeof InferCritKind[ keyof typeof InferCritKind ];
+        type InferCrit = | {
+            kind: typeof InferCritKind.truthy
+            negate: boolean;
+        }
+        | {
+            kind: typeof InferCritKind.notnullundef;
+            negate: boolean;
+        }
+        | {
+            kind: typeof InferCritKind.assignable;
+            negate: boolean;
+            target: Type;
+        };
 
-        function inferRefTypesByCallExpression({refTypes, condExpr:callExpr, assume}: InferRefArgs & {condExpr: CallExpression}): void {
+        type InferRefArgs = & {refTypes: RefTypes, condExpr: Readonly<Expression>, crit: InferCrit};
+
+
+        function applyCritToType(type: Type,crit: InferCrit): Type {
+            if (crit.kind===InferCritKind.truthy) return getTypeWithFacts(type, crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy);
+            else if (crit.kind===InferCritKind.notnullundef) return getTypeWithFacts(type, crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull);
+            Debug.assert(crit.kind===InferCritKind.assignable);
+            // IWOZERE
+            const typeOut = filterType(type, source => isTypeRelatedTo(source, crit.target, assignableRelation));
+            return typeOut;
+        }
+
+
+        function inferRefTypesByCallExpression({refTypes, condExpr:callExpr, crit}: InferRefArgs & {condExpr: CallExpression}): void {
             const cachedFuncType = checkExpressionFromCache(callExpr.expression); // maybe we can get this from node links? No.
             if (cachedFuncType===errorType) return;
-            const co = getCandidatesOut(callExpr, cachedFuncType, CheckMode.Normal);
-            
+
+            /**
+             * In the general case, the arguments to to callExpression can be arbitrary expressions.
+             * Name that an "argument expression".
+             * Probably the best way to approach the overload ~ muti-ref-inference problem is to simply
+             * enumerate the viable signatures, applying the constraints of producing a compatible type to the "argument expression",
+             * rather than simply T/F.  This is going to complicate things a bit, but the overall structure can be preserved.
+             *
+             * We want to keep that as explicit and tranparent as possible, for speed, maintenance, and debugging.
+             *
+             *
+             * Prior to `inferRefTypes` the selection and verification of signature candidates is done with `resolveCall` which ultimately calls
+             * `chooseOverload` and reporting errors if no overload is available.  Nowhere is there a facility for testing with argument subtypes -
+             * instead it refers to each arguments node to get the type (`args`, declared outside of `chooseOverload`).
+             * `chooseOverload` relies on the following to chose and verify candidates -
+             * - `hasCorrectTypeArgumentArity` - checks the type (template) arguments have correct arity.
+             * - `hasCorrectArity` - checks the callExpression.arguments have correct arity.
+             * - `checkTypeArguments` - checks the temple arguments
+             * - `getSignatureApplicabilityError` checks argument types assuming correct arity.
+             * It's more compilcated than that because arity is complicated by rest arguments (both for arguments and type arguments),
+             * which requires dynamically creating signatures:
+             * - `inferTypeArguments` to infer template type arguments, then
+             * - `getSignatureInstantiation` to generate a signature with the rest arguments resolved.
+             *
+             */
+            // const co = getCandidatesOut(callExpr, cachedFuncType, CheckMode.Normal);
+            // callExpr.arguments.map(a=>{
+            //     const asym = getNodeLinks(a).resolvedSymbol;
+            //     Debug.assert(asym);
+            //     const rt = refTypes.bySymbol.get(asym);
+            //     if (!rt) return undefined;
+            //     return rt.
+            // });
+            // if (co?.candidatesOutArray) {
+
+            // }
+            /**
+             *
+             */
+
+
 
         }
+
 
         // @ ts-expect-error 6133
-        function inferRefTypes({refTypes, condExpr, assume}: InferRefArgs): void{
-            if (myDebug) consoleLog(`inferRefTypes[in] condExpr:${dbgNodeToString(condExpr)}`);
-            inferRefTypes_aux({refTypes, condExpr, assume});
-            if (myDebug) consoleLog(`inferRefTypes[out] condExpr:${dbgNodeToString(condExpr)}`);
+        function inferRefTypes({refTypes, condExpr, crit}: InferRefArgs): Type {
+            if (myDebug) consoleLog(`inferRefTypes[in] condExpr:${dbgNodeToString(condExpr)}, crit.kind: ${crit.kind}`);
+            inferRefTypes_aux({refTypes, condExpr, crit});
+            if (myDebug) consoleLog(`inferRefTypes[out] condExpr:${dbgNodeToString(condExpr)}, crit.kind: ${crit.kind}`);
         }
-        function inferRefTypes_aux({refTypes, condExpr, assume}: InferRefArgs): void{
+        function inferRefTypes_aux({refTypes, condExpr, crit}: InferRefArgs): Type {
             const condSymbol = getNodeLinks(condExpr).resolvedSymbol; // may or may not
             switch (condExpr.kind){
                 case SyntaxKind.Identifier:{
@@ -42797,7 +42882,7 @@ namespace ts {
                         if (myDebug) {
                             consoleLog(`narrowType: alias ${dbgNodeToString(aliasCondExpr)}, inlineLevel: ${aliasInferInlineLevel}`);
                         }
-                        inferRefTypes({refTypes, condExpr:aliasCondExpr, assume});
+                        inferRefTypes({refTypes, condExpr:aliasCondExpr, crit});
                         aliasInferInlineLevel--;
                         return;
                     }
@@ -42814,15 +42899,26 @@ namespace ts {
                 case SyntaxKind.PropertyAccessExpression:{
                     if (myDebug) consoleLog(`case SyntaxKind.PropertyAccessExpression`);
                     Debug.assert(isPropertyAccessExpression(condExpr));
+                    /**
+                     * The chain predecssor is always an assertion, compute that first.
+                     */
+                    const preType = inferRefTypes({refTypes, condExpr: condExpr.expression, crit: {kind:InferCritKind.notnullundef, negate: false});
+                    if (preType===neverType) return neverType;
+                    /**
+                     * So, it would actually be helpful if inferRefTypes returns the "actual return type".  Why not?
+                     */
                     if (condExpr.questionDotToken){
                         Debug.assert(condSymbol);
                         const rt = refTypes.bySymbol.get(condSymbol);
                         if (rt) {
-                            const tmpType = getTypeWithFacts(rt.type, assume ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull);
+                            const tmpType = applyCritToType(rt.type, crit);
                             rt.type = tmpType;
+                            return tmpType;
+                        }
+                        else {
+
                         }
                     }
-                    return inferRefTypes({refTypes, condExpr: condExpr.expression, assume});
                 }
                 case SyntaxKind.CallExpression:{
                     if (myDebug) consoleLog(`case SyntaxKind.CallExpression`);
