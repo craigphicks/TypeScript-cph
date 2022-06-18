@@ -425,8 +425,9 @@ namespace ts {
         }
         const temporaryCallExpressionCache = new Set<CallExpression>(); // kill
         const temporaryConditionalExpressionCache = new Set<ConditionalExpression>(); // kill
-        const temporaryIdentifierCache = new Map<Identifier, { type: Type }>();
-        const aliasableAssignmentsCache = new Map<Symbol, { node: Node }>();
+        const temporaryIdentifierCache = new Map<Identifier, {ref: Identifier, symbol: Symbol, type: Type }>();
+        const aliasableAssignmentsCache = new Map<Symbol, { expr: Expression }>();
+        let aliasInferInlineLevel = 0;
         let flowTypeOfReferenceDepth = 0;
 
         const dbgGetNodeText = (node: Node)=>{
@@ -36083,11 +36084,14 @@ namespace ts {
             // }
 
             if (mySpecialInferMode && flowTypeOfReferenceDepth===0 && isIdentifier(node)) {
-                const symbol = getNodeLinks(node).resolvedSymbol;
-                Debug.assert(symbol);
-                if (isConstVariable(symbol)) {
+                // const symbol = getNodeLinks(node).resolvedSymbol;
+                // Debug.assert(symbol);
+                // isConstVariable(symbol);
+                if (isConstantReference(node)) {
                     if (myDebug) consoleLog(`checkExpression[dbg]: ${dbgNodeToString(node)} selected for temporaryIdentifierCache`);
-                    temporaryIdentifierCache.set(node, { type });
+                    const symbol = getNodeLinks(node).resolvedSymbol;
+                    Debug.assert(symbol);
+                    temporaryIdentifierCache.set(node, {ref:node, symbol, type });
                 }
             }
             if (flowTypeOfReferenceDepth===0) checkExpressionCache.set(node,type);
@@ -39205,17 +39209,12 @@ namespace ts {
                 /**
                  * This is the original `narrowType` definition for aliasable, pulled out.
                  */
-                let aliasable = false;
-                //const symbol = isIdentifier(node) && getResolvedSymbol(node as Identifier);
                 if (isConstVariable(symbol)) {
                     const declaration = symbol.valueDeclaration;
                     if (declaration && isVariableDeclaration(declaration) && !declaration.type && declaration.initializer /*&& isConstantReference(reference) */) {
-                        aliasable = true;
+                        if (myDebug) consoleLog(`checkVariableLikeDeclaration: ${dbgNodeToString(node)} is aliasable by "narrowType" logic`);
+                        aliasableAssignmentsCache.set(symbol, {expr: declaration.initializer});
                     }
-                }
-                if (aliasable){
-                    if (myDebug) consoleLog(`checkVariableLikeDeclaration: ${dbgNodeToString(node)} is aliasable by "narrowType" logic`);
-                    aliasableAssignmentsCache.set(symbol, {node});
                 }
             }
             /**
@@ -42697,34 +42696,187 @@ namespace ts {
                 && declarations.every(d => isInJSFile(d) && isAccessExpression(d) && (isExportsIdentifier(d.expression) || isModuleExportsAccessExpression(d.expression)));
         }
 
+
+        type RefType = & {readonly ref: Identifier, readonly symbol: Symbol, readonly initialType: Type, type: Type};
+        type RefTypes = & {
+            byRef: ESMap<Identifier, RefType>;
+            bySymbol: ESMap<Symbol, RefType>
+        }
+        function createRefTypes(): RefTypes {
+            return {
+                byRef: new Map<Identifier, RefType>(),
+                bySymbol: new Map<Symbol, RefType>()
+            }
+        }
+        // @ts-expect-error 6133
+        function copyRefTypes(refTypes: RefTypes): RefTypes {
+            return {
+                byRef: new Map<Identifier, RefType>(refTypes.byRef),
+                bySymbol: new Map<Symbol, RefType>(refTypes.bySymbol)
+            }
+        }
+
+
+        function getCandidatesOut(callExpression: CallExpression, cachedFuncType: Type, checkMode: CheckMode): undefined|{ readonly resolvedSignature: Signature, candidatesOutArray: readonly Signature[]} {
+
+            Debug.assert(cachedFuncType); // training wheels for the compiler.
+            let callChainFlags: SignatureFlags;
+            let funcType = cachedFuncType;
+            if (isCallChain(callExpression)) {
+                const nonOptionalType = getOptionalExpressionType(funcType, callExpression.expression);
+                callChainFlags = nonOptionalType === funcType ? SignatureFlags.None :
+                    isOutermostOptionalChain(callExpression) ? SignatureFlags.IsOuterCallChain :
+                    SignatureFlags.IsInnerCallChain;
+                funcType = nonOptionalType;
+            }
+            else {
+                callChainFlags = SignatureFlags.None;
+            }
+
+            /**
+             * A dummy error reporter is passed in because we are in alias mode, and the original was already completely checked.
+             * If it is an NG, we bail.
+             */
+            if (checkNonNullTypeWithReporter(funcType, callExpression.expression, (_node: Node, _kind: TypeFlags)=>{/* dummy */ })===errorType) return;
+            /**
+             * I believe silent never type occurs only in unreachable (i.e., always false) code branches - not sure though.
+             */
+            if (funcType === silentNeverType) return;
+
+            const apparentType = getApparentType(funcType);
+            if (isErrorType(apparentType)) return;
+
+            /**
+             * Orignal comment from resolveCallExpression:
+             *   // Technically, this signatures list may be incomplete. We are taking the apparent type,
+             *   // but we are not including call signatures that may have been added to the Object or
+             *   // Function interface, since they have none by default. This is a bit of a leap of faith
+             *   // that the user will not add any.
+             */
+            const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
+            //const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
+
+            // see issue #....
+            if (checkMode & CheckMode.SkipGenericFunctions &&  !callExpression.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {
+                return;
+            }
+            const candidatesOutArray: Signature[]=[];
+            const resolvedSignature =  resolveCall(callExpression, callSignatures, candidatesOutArray, checkMode, callChainFlags);
+            return {
+                resolvedSignature,
+                candidatesOutArray
+            };
+        };
+
+        type InferRefArgs = & {refTypes: RefTypes, condExpr: Readonly<Expression>, assume: boolean};
+
+        function inferRefTypesByCallExpression({refTypes, condExpr:callExpr, assume}: InferRefArgs & {condExpr: CallExpression}): void {
+            const cachedFuncType = checkExpressionFromCache(callExpr.expression); // maybe we can get this from node links? No.
+            if (cachedFuncType===errorType) return;
+            const co = getCandidatesOut(callExpr, cachedFuncType, CheckMode.Normal);
+            
+
+        }
+
+        // @ ts-expect-error 6133
+        function inferRefTypes({refTypes, condExpr, assume}: InferRefArgs): void{
+            if (myDebug) consoleLog(`inferRefTypes[in] condExpr:${dbgNodeToString(condExpr)}`);
+            inferRefTypes_aux({refTypes, condExpr, assume});
+            if (myDebug) consoleLog(`inferRefTypes[out] condExpr:${dbgNodeToString(condExpr)}`);
+        }
+        function inferRefTypes_aux({refTypes, condExpr, assume}: InferRefArgs): void{
+            const condSymbol = getNodeLinks(condExpr).resolvedSymbol; // may or may not
+            switch (condExpr.kind){
+                case SyntaxKind.Identifier:{
+                    if (myDebug) consoleLog(`case SyntaxKind.Identifier`);
+                    //const condSymbol = getNodeLinks(condExpr).resolvedSymbol;
+                    Debug.assert(condSymbol);
+                    if (aliasableAssignmentsCache.has(condSymbol)){
+                        aliasInferInlineLevel++;
+                        const aliasCondExpr = aliasableAssignmentsCache.get(condSymbol)!.expr;
+                        if (myDebug) {
+                            consoleLog(`narrowType: alias ${dbgNodeToString(aliasCondExpr)}, inlineLevel: ${aliasInferInlineLevel}`);
+                        }
+                        inferRefTypes({refTypes, condExpr:aliasCondExpr, assume});
+                        aliasInferInlineLevel--;
+                        return;
+                    }
+                    // check if it the condExpr matches any ref, in which case its type will be narrowed
+                    //let anyMatching=false;
+                    const rt = refTypes.bySymbol.get(condSymbol);
+                    if (rt) {
+                        const tmpType = getTypeWithFacts(rt.type, assume ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull);
+                        rt.type = tmpType;
+                    }
+                    return;
+                    //if (anyMatching) return;
+                }
+                case SyntaxKind.PropertyAccessExpression:{
+                    if (myDebug) consoleLog(`case SyntaxKind.PropertyAccessExpression`);
+                    Debug.assert(isPropertyAccessExpression(condExpr));
+                    if (condExpr.questionDotToken){
+                        Debug.assert(condSymbol);
+                        const rt = refTypes.bySymbol.get(condSymbol);
+                        if (rt) {
+                            const tmpType = getTypeWithFacts(rt.type, assume ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull);
+                            rt.type = tmpType;
+                        }
+                    }
+                    return inferRefTypes({refTypes, condExpr: condExpr.expression, assume});
+                }
+                case SyntaxKind.CallExpression:{
+                    if (myDebug) consoleLog(`case SyntaxKind.CallExpression`);
+                    Debug.assert(isCallExpression(condExpr));
+                    return inferRefTypesByCallExpression({refTypes, condExpr, assume});
+
+                }
+
+            }
+        }
+
+
+        // function inferRefTypeByOptionality(refTypes: RefTypes, expr: Expression, assumePresent: boolean): Type {
+        //     if (myDebug){
+        //         consoleGroup(`inferRefTypeByOptionality[in]: , expr: ${dbgNodeToString(expr)}, assume: ${assumePresent}`);
+        //     }
+        //     const r= inferRefTypeByOptionality_aux(refTypes,expr,assumePresent);
+        //     if (myDebug){
+        //         consoleLog(`inferRefTypeByOptionality[out]: , expr: ${dbgNodeToString(expr)}, assume: ${assumePresent}`);
+        //         consoleGroupEnd();
+        //     }
+        //     return r;
+        // }
+        // function inferRefTypeByOptionality_aux(refTypes: RefTypes, expr: Expression, assumePresent: boolean): Type {
+        //     refTypes.forEach(rt=>{
+        //         if (isMatchingReference(rt.ref, expr)) {
+        //             const tmpType = getTypeWithFacts(rt.type, assumePresent ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull);
+
+        //         };
+        //     });
+        //     // const access = getDiscriminantPropertyAccess(expr, type);
+        //     // if (access) {
+        //     //     return narrowTypeByDiscriminant(type, access, t => getTypeWithFacts(t, assumePresent ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull));
+        //     // }
+        //     // return type;
+        // }
+
+
+
+        // @ts-expect-error 6133
+        function inferExprOverCurrentConditionStack(expr: Expression){
+            const refTypes: RefTypes = createRefTypes();
+            temporaryIdentifierCache.forEach((o,i)=>refTypes.set(i,{ref: o.ref, symbol: o.symbol, initialType: o.type, type: o.type}));
+            for (let i = currentConditionStack.length-1; i>=0; i--){
+                inferRefTypes({refTypes, condExpr: currentConditionStack[i].expr, assume: currentConditionStack[i].assume});
+            }
+        }
+
         function myIsSpecialSourceElement(node: Node): boolean|undefined {
             const cr: CommentRange[]|undefined = getLeadingCommentRangesOfNode(node, myCurrentSourceFile!);
             return cr && cr.some(r=> {
                 return myCurrentSourceFile!.text.slice(r.pos,r.end).includes("@special");
             });
 
-        }
-
-        type RefTypes = ESMap<Identifier, {readonly initialType: Type, type: Type}>;
-        function createRefTypes(): RefTypes {
-            return new Map<Identifier, {readonly initialType: Type, type: Type}>();
-        }
-        // @ts-expect-error 6133
-        function copyRefTypes(refTypes: RefTypes): RefTypes {
-            return new Map<Identifier, {readonly initialType: Type, type: Type}>(refTypes);
-        }
-        // @ts-expect-error 6133
-        function inferRefTypes(refTypes: RefTypes, condExpr: Readonly<Expression>, assume: boolean): void{
-
-        }
-
-        // @ts-expect-error 6133
-        function inferExprOverCurrentConditionStack(expr: Expression){
-            const refTypes: RefTypes = createRefTypes();
-            temporaryIdentifierCache.forEach((o,i)=>refTypes.set(i,{initialType: o.type, type: o.type}));
-            for (let i = currentConditionStack.length-1; i>=0; i--){
-                inferRefTypes(refTypes, currentConditionStack[i].expr, currentConditionStack[i].assume);
-            }
         }
 
         function checkSourceElement(node: Node | undefined): void {
