@@ -43027,7 +43027,7 @@ namespace ts {
 
 
             const cachedFuncType = cannotContinue ? undefined : checkExpressionFromCache(callExpr.expression); // maybe we can get this from node links? No.
-            cannotContinue = !!cachedFuncType && cachedFuncType!==errorType;
+            cannotContinue = !cachedFuncType || cachedFuncType===errorType;
 
             if (!cannotContinue) {
                 if (!isTypeRelatedTo(prePassing.rtnType, cachedFuncType!, assignableRelation)){
@@ -43069,10 +43069,15 @@ namespace ts {
 
 
             // /**
-            //  * Could cachedFuncType be a union? We could handle it by taking the union of signatures?  Or is that already done?
-            //  *
+            //  * FYI - multi overloads have the TypeFlags.Union set
             // */
-            Debug.assert(!(cachedFuncType.flags & TypeFlags.Union));
+            if (cachedFuncType.flags & TypeFlags.Union) {
+                if (myDebug){
+                    consoleLog(`cachedFuncType.flags & TypeFlags.Union`);
+                    forEachType(cachedFuncType, t=> consoleLog(typeToString(t)));
+                    consoleLog(`end of union`);
+                }
+            }
 
             const candidates = getSignatureCandidatesNoCheckExpression(callExpr, cachedFuncType, CheckMode.Normal);
             Debug.assert(candidates);
