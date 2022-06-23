@@ -43042,6 +43042,13 @@ namespace ts {
                 return applyCritToRefTypesRtn({aRefTypesRtn, crit, symbolToNarrow:undefined});
             }
             const refTypes = prePassing.refTypes;
+            if (myDebug) {
+                consoleLog("candidates by return of pre");
+                forEachType(prePassing.rtnType, t => consoleLog(typeToString(t)));
+                consoleLog("end of candidates by return of pre");
+            }
+
+
             Debug.assert(cachedFuncType);
 
             // /**
@@ -43224,6 +43231,7 @@ namespace ts {
 
 
             // Check the property is there
+            // TODO: Improve this section by  using the function defined under "interface Type " in types.ts
             const accessedTypes: {baseType: Type, type: Type, lookupFail?: true, optional: boolean}[]=[];
             const keystr = condExpr.name.escapedText as string;
             forEachType(prePassing.rtnType, t => {

@@ -52,12 +52,24 @@ namespace ts {
         refTypes: RefTypes,
         condExpr: Readonly<Expression>,
         crit: InferCrit,
-        context?: InferRefArgsContext,
+        context?: InferRefArgsContext, // This ONLY applies to next call, should not be forward beyond.  TODO: change name to `immedContext` to make that obvious.
         /**
          * If an inferRefTypes caller needs the qdotfallout info, they must place this parameter in the call.
          * If any intermediate has a questionDot token, they must ask for it (crit:alsoFailing) and push the failing result to qdotfallout.
+         * Trying to decide whether this is really necessary or not, and an argument in favor of necessary is as follows:
+         * > When an inferRefTypesBy... function needs to call inferRefType({..... condExpr:self.expression, crit:{kind:InferCritKind.notnullundef, ...., alsoFailing:true},....})
+         * > then it needs to know exactly if the predecessor (and not a prior predecessor to that) has returned a nullish BECAUSE
+         * > it is the 'self' expression that carries the questionDotToken between 'sef' and 'self.expression'.  That is reasonable because it is only if the caller ('self')
+         * > actually performs a lookup that an error might occurs.  So the error decision must be deferred (* at LEAST) until 'self' processing.
+         * > 'self' action pseudocode:
+         * >> if failing is not never
+         * >>     if I don't have a 'questionDot' token, then error (I don't think this decision needs to be deferred but ...)
+         * >>     else push `failing.refTypes` to `qdotfallout` - effectively deferring the decision on how to use that until the level "owning" qdotfallout.
+         * >> if I have failing lookup on ANY candidate
+         * >>     if not `context?nonNullExpression`
+         * >>         add {rtnType:undefined, refTypes: refTypes with bySymbol.get(self symbol) lookup value set to `undefined`} to results to results to be passed finally to crit.
          */
-        //qdotfallout?: RefTypesRtn[],  - a solution in search of a problem?
+        qdotfallout?: RefTypesRtn[]
     };
 
     /**
