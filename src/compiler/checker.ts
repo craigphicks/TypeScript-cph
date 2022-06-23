@@ -413,8 +413,7 @@ namespace ts {
     export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // @ts-ignore-error
         // eslint-disable-next-line prefer-const
-        let mySpecialInferMode = 0;
-        type ConditionStackItem = & {expr: Expression, assume: boolean};
+        let sourceElementSelectedForInfer: Node | undefined;
         const currentConditionStack: ConditionStackItem[]=[];
         const checkExpressionCache = new Map<Node,Type>();
         // @ts-ignore
@@ -423,11 +422,9 @@ namespace ts {
             Debug.assert(result); // ultimately we want to change the return type to Type - a work in progress.
             return result;
         }
-        const temporaryCallExpressionCache = new Set<CallExpression>(); // kill
-        const temporaryConditionalExpressionCache = new Set<ConditionalExpression>(); // kill
-        const temporaryIdentifierCache = new Map<Identifier, {ref: Identifier, symbol: Symbol, type: Type }>();
-        const aliasableAssignmentsCache = new Map<Symbol, { expr: Expression }>();
-        // @ts-expect-error 6133
+        //let temporaryPerSourceElementCheckExpressionCache: undefined | TempCheckExprCache;
+        const aliasableAssignmentsCache = createAliasableAssignmentCache();
+        // @ ts-expect-error 6133
         // eslint-disable-next-line prefer-const
         let aliasInferInlineLevel = 0;
         let flowTypeOfReferenceDepth = 0;
@@ -36081,28 +36078,24 @@ namespace ts {
             currentNode = saveCurrentNode;
             tracing?.pop();
 
-            // if (mySpecialInferMode && !flowTypeOfReferenceDepth){
+            // if (!myDisableInfer && flowTypeOfReferenceDepth===0 && temporaryPerSourceElementCheckExpressionCache){
             //     const symbol = getNodeLinks(node).resolvedSymbol;
             //     Debug.assert(symbol);
-            //     specialInferModeState.refs?.push({
-            //         node,
-            //         initType: type,
-            //         type,
-            //         symbol
-            //     });
+            //     const constantReference = isConstantReference(node);
+            //     if (symbol) {
+            //         const constantReference = isConstantReference(node);
+            //         const constVariable = isConstVariable(symbol);
+            //         if (myDebug) consoleLog(`checkExpression[dbg]: ${dbgNodeToString(node)}, isConstVariable(symbol)=${constVariable}, isConstantReference(node)=${constantReference}`);
+            //         addToTempCheckExprCache(temporaryPerSourceElementCheckExpressionCache, symbol, {
+            //             isConst:isConstVariable(symbol)||isConstantReference(node),
+            //             node,type,symbol
+            //         });
+            //     }
+            //     else {
+            //         if (myDebug) consoleLog(`checkExpression[dbg]: found no symbol - ${dbgNodeToString(node)}, isConstantReference(node)=${constantReference}`);
+            //     }
             // }
 
-            if (mySpecialInferMode && flowTypeOfReferenceDepth===0 && isIdentifier(node)) {
-                // const symbol = getNodeLinks(node).resolvedSymbol;
-                // Debug.assert(symbol);
-                // isConstVariable(symbol);
-                if (isConstantReference(node)) {
-                    if (myDebug) consoleLog(`checkExpression[dbg]: ${dbgNodeToString(node)} selected for temporaryIdentifierCache`);
-                    const symbol = getNodeLinks(node).resolvedSymbol;
-                    Debug.assert(symbol);
-                    temporaryIdentifierCache.set(node, {ref:node, symbol, type });
-                }
-            }
             if (flowTypeOfReferenceDepth===0) checkExpressionCache.set(node,type);
             if (myDebug) {
                 consoleLog(`checkExpression[out]: ${dbgNodeToString(node)} -> ${typeToString(type)}`);
@@ -39065,8 +39058,11 @@ namespace ts {
 
         // Check variable, parameter, or property declaration
         function checkVariableLikeDeclaration(node: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement) {
-            temporaryCallExpressionCache.clear();
-            temporaryConditionalExpressionCache.clear();
+            //temporaryPerSourceElementCheckExpressionCache = createTempCheckExprCache();
+            checkVariableLikeDeclaration_aux(node);
+            //temporaryPerSourceElementCheckExpressionCache = undefined;
+        }
+        function checkVariableLikeDeclaration_aux(node: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement) {
 
             checkDecorators(node);
             if (!isBindingElement(node)) {
@@ -39214,17 +39210,19 @@ namespace ts {
             }
 
 
-            {
+            if (!myDisableInfer){
+                //Debug.assert(temporaryPerSourceElementCheckExpressionCache);
                 /**
-                 * This is the original `narrowType` definition for aliasable, pulled out.
+                 * This is the original `narrowType` definition for aliasable, pulled out of narrowType
                  */
                 if (isConstVariable(symbol)) {
                     const declaration = symbol.valueDeclaration;
                     if (declaration && isVariableDeclaration(declaration) && !declaration.type && declaration.initializer /*&& isConstantReference(reference) */) {
                         if (myDebug) consoleLog(`checkVariableLikeDeclaration: ${dbgNodeToString(node)} is aliasable by "narrowType" logic`);
-                        aliasableAssignmentsCache.set(symbol, {expr: declaration.initializer});
+                        aliasableAssignmentsCache.bySymbol.set(symbol, {expr: declaration.initializer});
                     }
                 }
+                //temporaryPerSourceElementCheckExpressionCache = undefined;
             }
             /**
              * Add any assignment to flowTypeQueryState.aliasableAssignments if and only if it can be
@@ -39443,13 +39441,17 @@ namespace ts {
 
         function checkIfStatement(node: IfStatement) {
             // Grammar checking
+            let conditionStackItem: ConditionStackItem | undefined;
             checkGrammarStatementInAmbientContext(node);
+            //if (!myDisableInfer) temporaryPerSourceElementCheckExpressionCache = createTempCheckExprCache();
             checkTruthinessExpression(node.expression);
+            if (!myDisableInfer) {
+                conditionStackItem = {expr:node.expression, assume:true, /* involved: temporaryPerSourceElementCheckExpressionCache! */};
+                currentConditionStack.push(conditionStackItem);
+                //temporaryPerSourceElementCheckExpressionCache = undefined;
+            }
             checkTestingKnownTruthyCallableOrAwaitableType(node.expression, node.thenStatement);
 
-            if (!myDisableInfer){
-                currentConditionStack.push({expr:node.expression, assume:true});
-            }
             checkSourceElement(node.thenStatement);
             if (!myDisableInfer) {
                 Debug.assert(currentConditionStack.length && currentConditionStack.slice(-1)[0].expr===node.expression);
@@ -39461,7 +39463,9 @@ namespace ts {
             }
 
             if (!myDisableInfer){
-                currentConditionStack.push({expr:node.expression, assume:false});
+                Debug.assert(conditionStackItem);
+                conditionStackItem.assume = false;
+                currentConditionStack.push(conditionStackItem);
             }
             checkSourceElement(node.elseStatement);
             if (!myDisableInfer) {
@@ -42708,6 +42712,28 @@ namespace ts {
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+        // function createTempCheckExprCache(){
+        //     return {
+        //         bySymbol: new Map<Symbol, CheckExprData[]>(),
+        //     };
+        // }
+        // function addToTempCheckExprCache(x: TempCheckExprCache, symbol: Symbol, ced: CheckExprData){
+        //     if (!x.bySymbol.has(symbol)){
+        //         x.bySymbol.set(symbol, [ced]);
+        //     }
+        //     else {
+        //         x.bySymbol.get(symbol)!.push(ced);
+        //     }
+        // }
+
+        function createAliasableAssignmentCache() {
+            return {
+                bySymbol: new Map<Symbol, AliasableAssignmentCacheItem>(),
+            };
+        }
+
+
         /**
          * This should return a shortlist of candidates that are possible given the callExpression parameters.
          * @param callExpression
@@ -42715,7 +42741,7 @@ namespace ts {
          * @param checkMode
          * @returns
          */
-        // @ts-expect-error 6133
+        // @ ts-expect-error 6133
         function getSignatureCandidatesNoCheckExpression(callExpression: CallExpression, cachedFuncType: Type, checkMode: CheckMode): undefined|{ readonly resolvedSignature: Signature, candidatesOutArray: readonly Signature[]} {
             Debug.assert(cachedFuncType);
             let callChainFlags: SignatureFlags;
@@ -42767,32 +42793,52 @@ namespace ts {
             };
         };
 
-
-
-        type RefType = & {readonly ref: Identifier, readonly symbol: Symbol, readonly initialType: Type, type: Type};
-        type RefTypes = & {
-            //byRef: ESMap<Identifier, RefType>;
-            bySymbol: ESMap<Symbol, RefType>;
-            rtnType?: Type;
-        };
-        type RefTypesRtn = RefTypes & {rtnType: Type};
-
-        // @ts-expect-error 6133
+        // @ ts-expect-error 6133
         function createRefTypes(): RefTypes {
             return {
                 //byRef: new Map<Identifier, RefType>(),
-                bySymbol: new Map<Symbol, RefType>()
+                bySymbol: new Map<Symbol,RefType>()
             };
         }
         // @ ts-expect-error 6133
         function copyRefTypes(refTypes: RefTypes): RefTypes {
-            const r: RefTypes = {
-                //byRef: new Map<Identifier, RefType>(refTypes.byRef),
-                bySymbol: new Map<Symbol, RefType>(refTypes.bySymbol)
-            };
-            if (refTypes.rtnType) r.rtnType = refTypes.rtnType;
-            return r;
+            /**
+             * This didn't work because we must deep copy the values.
+             */
+            // const r: RefTypes = {
+            //     bySymbol: new Map<Symbol, RefType>(refTypes.bySymbol)
+            // };
+            const newRefType = createRefTypes();
+            refTypes.bySymbol.forEach((v,s)=>{
+                newRefType.bySymbol.set(s, {...v});
+            });
+            return newRefType;
         }
+        // function uniquify<A extends any[]>(a: A): A{
+        //     // Add the optimization back in after checking the Set code is working despite the warning.
+        //     // if (a.length===1) return a;
+        //     // else if (a.length===2){
+        //     //     if (a[0]===a[1]) return a.slice(0,1);
+        //     //     else return a;
+        //     // }
+        //     // else if (a.length===3){
+        //     //     if (a[0]!==a[1] && a[0]!==a[2]) return a;
+        //     // }
+        //     // else if (!(a.slice(0,-1).some((x,i)=>x!==a[i+1]))){
+        //     //     return a;
+        //     // }
+        //     const set = new Set<any>(a);
+        //     // No overload matches this call.
+        //     // Overload 1 of 4, '(iterable: Iterable<unknown> | ArrayLike<unknown>): unknown[]', gave the following error.
+        //     //   Argument of type 'Iterator<any>' is not assignable to parameter of type 'Iterable<unknown> | ArrayLike<unknown>'.
+        //     //     Property 'length' is missing in type 'Iterator<any>' but required in type 'ArrayLike<unknown>'.
+        //     // Overload 2 of 4, '(arrayLike: ArrayLike<unknown>): unknown[]', gave the following error.
+        //     //   Argument of type 'Iterator<any>' is not assignable to parameter of type 'ArrayLike<unknown>'.ts(2769)
+        //     // -- But the Iterable<unknown> overload doesn't NEED "length" so it shouldn't matter.
+        //     // @ts-expect-error 2769
+        //     return Array.from(set.keys());
+        // }
+
         /**
          * Assumes that target was the source of multiple branches, and that aRefTypes are the narrowed results of those branches.
          * Therefore each branches types, and the union of them, must be a subset of the target.
@@ -42801,68 +42847,50 @@ namespace ts {
          * @param aRefTypes
          * @param target
          */
-        function joinMergeRefTypes(aRefTypes: Readonly<RefTypesRtn[]>, target: RefTypes): RefTypesRtn {
-            const set = new Set<Type>();
-            aRefTypes.forEach(rts=> {
-                if (!set.has(rts.rtnType)) set.add(rts.rtnType);
-            });
-            // @ts-expect-error 2461
-            const at = [...set];
-            const rtnType = getUnionType(at, UnionReduction.Literal);
+        function joinMergeRefTypes(aRefTypes: Readonly<RefTypes[]>): RefTypes {
+            const mapSymToTypes = new Map<Symbol, RefType[]>();
+            //const setRtnType = new Set<Type>();
 
-            target.bySymbol.forEach((ort,s) => {
-                const atype = aRefTypes.map(rts=>{
-                    const x = rts.bySymbol.get(s);
-                    Debug.assert(x);
-                    const {type}=x;
-                    return type;
+            aRefTypes.forEach(rts=>{
+                //setRtnType.add(rts.rtnType);
+                rts.bySymbol.forEach((v,s)=>{
+                    const x = mapSymToTypes.get(s);
+                    if (!x) mapSymToTypes.set(s,[v]);
+                    else x.push(v);
                 });
-                const utype = getUnionType(atype, UnionReduction.Literal);
-                /**
-                 * Sanity check - utype should be a subset of ort.type
-                 */
-                Debug.assert(isTypeRelatedTo(utype,ort.type,assignableRelation));
-                ort.type = utype;
             });
-            target.rtnType = rtnType;
-            return target as RefTypesRtn;
+
+            // No overload matches this call.
+            // Overload 1 of 4, '(iterable: Iterable<Type> | ArrayLike<Type>): Type[]', gave the following error.
+            // Argument of type 'Iterator<Type>' is not assignable to parameter of type 'Iterable<Type> | ArrayLike<Type>'.
+            // Property 'length' is missing in type 'Iterator<Type>' but required in type 'ArrayLike<Type>'.
+            // Overload 2 of 4, '(arrayLike: ArrayLike<Type>): Type[]', gave the following error.
+            // Argument of type 'Iterator<Type>' is not assignable to parameter of type 'ArrayLike<Type>'.ts(2769)
+
+            const newRefTypes = createRefTypes();
+            mapSymToTypes.forEach((av,s)=>{
+                // 'const' values should all be same for the same symbol
+                Debug.assert(av.length);
+                const isconst = av[0].const;
+                Debug.assert(!av.some(v => v.const !== isconst));
+                const sett = new Set<Type>();
+                av.forEach(v=>sett.add(v.type));
+                // @ts-expect-error 2769
+                const type = getUnionType(Array.from(sett.keys()), UnionReduction.Literal);
+                newRefTypes.bySymbol.set(s,{const:isconst,type});
+            });
+            return newRefTypes;
         };
 
 
         /**
          *
          */
-        const InferCritKind = {
-            truthy: "truthy",
-            notnullundef: "notnullundef",
-            assignable:"assignable",
-        } as const;
-        type InferCritKind = typeof InferCritKind[ keyof typeof InferCritKind ];
-        type InferCrit = | {
-            kind: typeof InferCritKind.truthy
-            negate?: boolean;
-        }
-        | {
-            kind: typeof InferCritKind.notnullundef;
-            negate?: boolean;
-        }
-        | {
-            kind: typeof InferCritKind.assignable;
-            negate?: boolean;
-            target: Type;
-        };
+        // for reference:
+        // function getTypeWithFacts(type: Type, include: TypeFacts) {
+        //     return filterType(type, t => (getTypeFacts(t) & include) !== 0);
+        // }
 
-        type InferRefArgs = & {refTypes: RefTypes, condExpr: Readonly<Expression>, crit: InferCrit};
-
-        /**
-         * InferRefRtnType
-         * This is also the result of applyCrit...
-         * Finally multiple branches are projected onto this binary state.
-         */
-        type InferRefRtnType = & {
-            passing: RefTypesRtn;
-            failing: RefTypesRtn;
-        };
 
         /**
          *
@@ -42871,93 +42899,150 @@ namespace ts {
          * @returns type narrowed by criterion crit
          */
         // @ts-ignore-error 6133
-        function applyCritToType(type: Type,crit: InferCrit): { hasPassing: boolean, hasFailing: boolean} {
-            let hasPassing = false;
-            let hasFailing = false;
+        function applyCrit<F extends (t: Type, pass: boolean, fail: boolean) => void>(type: Type,crit: InferCrit, func: F): void {
             if (crit.kind===InferCritKind.truthy) {
+                const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
+                const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
                 forEachType(type, t => {
                     const tf = getTypeFacts(t);
-                    hasPassing ||= !!(tf & TypeFacts.Truthy);
-                    hasFailing ||= !!(tf & TypeFacts.Falsy);
+                    func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
             }
-            // else if (crit.kind===InferCritKind.notundef) {
-            //     forEachType(type, t => {
-            //         const tf = getTypeFacts(t);
-            //         hasPassing ||= !!(tf & TypeFacts.EQUndefined);
-            //         hasFailing ||= !!(tf & TypeFacts.NEUndefined);
-            //     });
-            // }
             else if (crit.kind===InferCritKind.notnullundef) {
+                const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
+                const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
                 forEachType(type, t => {
                     const tf = getTypeFacts(t);
-                    hasPassing ||= !!(tf & TypeFacts.EQUndefinedOrNull);
-                    hasFailing ||= !!(tf & TypeFacts.NEUndefinedOrNull);
+                    func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
             }
-            Debug.assert(crit.kind===InferCritKind.assignable);
-            forEachType(type, source => {
-                const rel = isTypeRelatedTo(source, crit.target, assignableRelation);
-                hasPassing ||= rel;
-                hasFailing ||= !rel;
-            });
-            if (crit.negate) [hasFailing, hasPassing] = [hasPassing,hasFailing];
-            return {hasPassing, hasFailing};
-
+            else if (crit.kind===InferCritKind.assignable) {
+                forEachType(type, source => {
+                    let rel = isTypeRelatedTo(source, crit.target, assignableRelation);
+                    if (crit.negate) rel = !rel;
+                    func(source, rel, !rel);
+                });
+            }
+            else {
+                Debug.assert(false, crit.kind);
+            }
         }
-        // @ts-ignore-error 6133
-        function applyCritToRefTypesRtn(aRefTypesRtn: RefTypesRtn[], crit: InferCrit, target: RefTypes): InferRefRtnType {
-            const passing: RefTypesRtn[]=[];
-            const failing: RefTypesRtn[]=[];
-            aRefTypesRtn.forEach(refTypesRtn=> {
-                if (crit.kind===InferCritKind.truthy) {
-                    forEachType(refTypesRtn.rtnType, t => {
-                        const tf = getTypeFacts(t);
-                        if (tf & TypeFacts.Truthy) passing.push(refTypesRtn);
-                        if (tf & TypeFacts.Falsy) failing.push(refTypesRtn);
-                    });
-                }
-                else if (crit.kind===InferCritKind.notnullundef) {
-                    forEachType(refTypesRtn.rtnType, t => {
-                        const tf = getTypeFacts(t);
-                        if (tf & TypeFacts.NEUndefinedOrNull) passing.push(refTypesRtn);
-                        if (tf & TypeFacts.EQUndefinedOrNull) failing.push(refTypesRtn);
-                    });
-                }
-                else if (crit.kind===InferCritKind.assignable) {
-                    forEachType(refTypesRtn.rtnType, source => {
-                        const rel = isTypeRelatedTo(source, crit.target, assignableRelation);
-                        if (rel) passing.push(refTypesRtn);
-                        else failing.push(refTypesRtn);
-                    });
-                }
-                Debug.assert(false);
+        function applyCritToType(type: Type, crit: InferCrit): {passing: Type, failing: Type} {
+            const pt: Type[]=[];
+            const ft: Type[]=[];
+            applyCrit(type, crit, (t,pass,fail)=>{
+                if (pass) pt.push(t);
+                if (fail) ft.push(t);
             });
-            // merge passing into one RefTypesRtn
-            const p = joinMergeRefTypes(crit.negate ? failing : passing, copyRefTypes(target));
-            const f = joinMergeRefTypes(crit.negate ? passing : failing, copyRefTypes(target));
-            return {passing:p,failing:f};
+            return {
+                passing: getUnionType(pt, UnionReduction.Literal),
+                failing: getUnionType(ft, UnionReduction.Literal)
+            };
         }
 
         // @ts-ignore-error 6133
-        function dbgRefTypeToString(rt: Readonly<RefType>): string{
-            const str = `ref: ${dbgNodeToString(rt.ref)}, type: $${typeToString(rt.type)}, initialType: ${typeToString(rt.initialType)}, symbol.id: ${rt.symbol.id}`;
-            return str;
-        }
-        // @ts-ignore-error 6133
-        function dbgLogRefTypes(refTypes: Readonly<RefTypes>){
-            consoleGroup(`refTypes`);
-            refTypes.bySymbol.forEach((rt)=>{
-                consoleLog(dbgRefTypeToString(rt));
+        function applyCritToRefTypesRtn({aRefTypesRtn, symbolToNarrow, crit}: {aRefTypesRtn: RefTypesRtn[], symbolToNarrow: Symbol|undefined, crit: InferCrit}): InferRefRtnType {
+            if (crit.kind===InferCritKind.none) {
+                Debug.assert(!crit.alsoFailing);
+                const rtnTypeSet = new Set<Type>();
+                aRefTypesRtn.forEach(rt=>forEachType(rt.rtnType, t=>rtnTypeSet.add(t)));
+                // @ts-expect-error 2769
+                const rtnType = getUnionType(Array.from(rtnTypeSet.keys()), UnionReduction.Literal);
+                return {
+                    passing: {rtnType, refTypes: joinMergeRefTypes(aRefTypesRtn.map(rtr=>rtr.refTypes))},
+                };
+            }
+            const passing: RefTypes[]=[];
+            const failing: RefTypes[]=[];
+            const rtnTypePassingSet = new Set<Type>();
+            const rtnTypeFailingSet = new Set<Type>();
+            aRefTypesRtn.forEach(refTypesRtn=>{
+                let pb=false;
+                let fb=false;
+                applyCrit(refTypesRtn.rtnType, crit, (t, pass, fail)=>{
+                    if (pass){
+                        pb = true;
+                        rtnTypePassingSet.add(t);
+                    }
+                    if (crit.alsoFailing && fail){
+                        fb = true;
+                        rtnTypeFailingSet.add(t);
+                    }
+                    // pb ||= pass;
+                    // fb ||= fail;
+                });
+                if (pb) passing.push(refTypesRtn.refTypes);
+                if (crit.alsoFailing && fb) failing.push(refTypesRtn.refTypes);
             });
+            // @ts-expect-error 2769
+            const passRtnType = getUnionType(Array.from(rtnTypePassingSet.keys()), UnionReduction.Literal);
+            // @ts-expect-error 2769
+            const failRtnType = getUnionType(Array.from(rtnTypeFailingSet.keys()), UnionReduction.Literal);
+           // merge passing into one RefTypesRtn
+            const pr = joinMergeRefTypes(passing);
+            const fr = crit.alsoFailing ? joinMergeRefTypes(failing) : undefined;
+            if (symbolToNarrow){
+                const rtp = pr.bySymbol.get(symbolToNarrow);
+                Debug.assert(rtp);
+                //consoleLog(`${symbolToNarrow.escapedName}:before:${typeToString(rtp.type)}`);
+                rtp.type = applyCritToType(rtp.type, crit).passing;
+                //consoleLog(`${symbolToNarrow.escapedName}:after:${typeToString(rtp.type)}`);
+                if (fr){
+                    const rtf = fr.bySymbol.get(symbolToNarrow);
+                    //Debug.assert(rtf);
+                    if (rtf) rtf.type = applyCritToType(rtf.type, crit).failing;
+                }
+            }
+            if (crit.alsoFailing) {
+                return {
+                    passing: { rtnType:passRtnType, refTypes: pr },
+                    failing: { rtnType:failRtnType, refTypes: fr as RefTypes }
+                };
+            }
+            else {
+                return { passing: { rtnType:passRtnType, refTypes: pr }};
+            }
+        }
+
+        // @ts-ignore-error 6133
+        function dbgLogRefTypes(refTypes: Readonly<RefTypes>, title?: string){
+            consoleGroup(title??"refTypes:");
+            refTypes.bySymbol.forEach((v,s)=>{
+                let str = `symbol[${getSymbolId(s)}, ${s.escapedName}]: `;
+                str += `type: ${typeToString(v.type)}, const: ${v.const}`;
+                consoleLog(str);
+            });
+            consoleLog(`end of `+title??"refTypes:");
             consoleGroupEnd();
         }
 
         // @ts-ignore-error 6133
-        function inferRefTypesByCallExpression({refTypes, condExpr:callExpr, crit}: InferRefArgs & {condExpr: CallExpression}): InferRefRtnType {
-            return undefined as any as InferRefRtnType;
-            // const cachedFuncType = checkExpressionFromCache(callExpr.expression); // maybe we can get this from node links? No.
-            // if (cachedFuncType===errorType) return applyCritToRefTypesRtn([{...refTypes, rtnType: neverType}],crit, refTypes);
+        function inferRefTypesByCallExpression({refTypes:refTypesIn, condExpr:callExpr, crit, context}: InferRefArgs & {condExpr: CallExpression}): InferRefRtnType {
+            //return undefined as any as InferRefRtnType;
+
+            // First duty is to call the precursors
+            const {passing:prePassing, failing:preFailing} = inferRefTypes({refTypes: refTypesIn, condExpr: callExpr.expression, crit: {kind: InferCritKind.notnullundef, alsoFailing:true}});
+            Debug.assert(preFailing);
+            let cannotContinue = prePassing.rtnType === neverType;
+
+
+            const cachedFuncType = cannotContinue ? undefined : checkExpressionFromCache(callExpr.expression); // maybe we can get this from node links? No.
+            cannotContinue = !!cachedFuncType && cachedFuncType!==errorType;
+
+            if (!cannotContinue) {
+                if (!isTypeRelatedTo(prePassing.rtnType, cachedFuncType!, assignableRelation)){
+                    cannotContinue = true;
+                    // TODO: Error unless cachedFuncType is errorType (then already done)
+                    if (myDebug) consoleLog(`isTypeRelatedTo(prePassing.rtnType, cachedFuncType!, assignableRelation) failed, requires error`);
+                }
+            }
+            if (cannotContinue){
+                const aRefTypesRtn: RefTypesRtn[] = [{rtnType:neverType, refTypes:prePassing.refTypes}];
+                if (callExpr.questionDotToken) aRefTypesRtn.push(preFailing);
+                return applyCritToRefTypesRtn({aRefTypesRtn, crit, symbolToNarrow:undefined});
+            }
+            const refTypes = prePassing.refTypes;
+            Debug.assert(cachedFuncType);
 
             // /**
             //  * Obtain the possibly applicable signatures, and try each one.
@@ -42967,7 +43052,7 @@ namespace ts {
             //  * If any argument expression's inferRefTypes returns neverType, the signature candidate is invalid, otherwise it must be valid.
             //  *
             //  * Background note:
-            //  * Prior to the development of `inferRefTypes` the selection and verification of signature candidates was done with `resolveCall` which ultimately calls
+            //  * In existing code the selection and verification of signature candidates is done with `resolveCall` which ultimately calls
             //  * `chooseOverload` and reporting errors if no overload is available.  Nowhere is there a facility for testing with argument subtypes -
             //  * instead it refers to each arguments node to get the type (`args`, declared outside of `chooseOverload`).
             //  * `chooseOverload` relies on the following to chose and verify candidates -
@@ -42981,171 +43066,405 @@ namespace ts {
             //  * - `getSignatureInstantiation` to generate a signature with the rest arguments resolved.
             //  *
             //  */
-            // const {passing:prePassing, failing:preFailing} = inferRefTypes({refTypes, condExpr: callExpr.expression, crit: {kind: "assignable", target: cachedFuncType}});
 
-            // if (preType===neverType) return { type: neverType };
 
             // /**
             //  * Could cachedFuncType be a union? We could handle it by taking the union of signatures?  Or is that already done?
             //  *
             // */
-            // Debug.assert(!(cachedFuncType.flags & TypeFlags.Union));
+            Debug.assert(!(cachedFuncType.flags & TypeFlags.Union));
 
-            // const candidates = getSignatureCandidatesNoCheckExpression(callExpr, cachedFuncType, CheckMode.Normal);
-            // Debug.assert(candidates);
-            // type SigCandParamData = & { readonly type: Type, dbgInferredType?: Type };
-            // type SigCandData = & { readonly sig: Readonly<Signature>, readonly paramData: Readonly<SigCandParamData[]>, readonly rtnType: Type,  refTypes: RefTypes, pass?: boolean };
-            // const perSig = candidates.candidatesOutArray.map((sig): SigCandData=> {
-            //     const refTypesCopy = copyRefTypes(refTypes);
-            //     const sigCandParamData: SigCandParamData[] = sig.parameters.map((p): SigCandParamData=> {
-            //         /**
-            //          * It would helpful to modify getSignatureCandidatesNoCheckExpression so that it returns types as well
-            //          * since it must be using them deep inside anyway.
-            //          */
-            //         Debug.assert(p.valueDeclaration);
-            //         Debug.assert(checkExpressionCache.has(p.valueDeclaration));
-            //         const type = checkExpressionCache.get(p.valueDeclaration)!;
-            //         return {type};
-            //     });
-            //     Debug.assert(sig.resolvedReturnType);
-            //     const rtnType = sig.resolvedReturnType;
-            //     return {sig, rtnType, refTypes: refTypesCopy, paramData: sigCandParamData};
-            // });
-            // perSig.forEach((sd)=>{
-            //     let hadNever = false;
-            //     sd.paramData.forEach((pd, ipd)=>{
-            //         const irt = inferRefTypes({refTypes: sd.refTypes, condExpr: callExpr.arguments[ipd], crit: {kind: InferCritKind.assignable, negate:false, target: pd.type }});
-            //         if (irt.type===neverType) hadNever=true;
-            //         pd.dbgInferredType = irt.type;
-            //     });
-            //     sd.pass = !hadNever;
-            // });
+            const candidates = getSignatureCandidatesNoCheckExpression(callExpr, cachedFuncType, CheckMode.Normal);
+            Debug.assert(candidates);
+            if (myDebug){
+                consoleLog(`getSignatureCandidatesNoCheckExpression(${dbgNodeToString(callExpr)}) return signatures:`);
+                consoleLog(`resolvedSignature: ${dbgSignatureToString(candidates.resolvedSignature)}`);
+                candidates.candidatesOutArray.forEach((co,i)=>{
+                    consoleLog(`candidateSig[${i}]: ${dbgSignatureToString(co)}`);
+                });
+            }
 
-            // if (myDebug) {
-            //     perSig.forEach((sd,isd)=>{
-            //         consoleGroup(`sig[${isd}], pass:${sd.pass}, rtnType: ${sd.rtnType}}`);
-            //         consoleLog(dbgSignatureToString(sd.sig));
-            //         sd.paramData.forEach((pd,ipd)=>{
-            //             consoleLog(`paramData[${ipd}], type: ${pd.type}, dbgInferredType: ${typeToString(pd.dbgInferredType!)}`);
-            //         });
-            //         dbgLogRefTypes(sd.refTypes);
-            //     });
-            // }
+            Debug.assert(candidates);
+            type SigCandParamData = & { readonly symbol: Symbol, readonly type: Type, dbgInferredType?: Type };
+            type SigCandData = & { readonly sig: Readonly<Signature>, readonly paramData: Readonly<SigCandParamData[]>, readonly rtnType: Type,  refTypes?: RefTypes, pass?: boolean };
+            const perSig = candidates.candidatesOutArray.map((sig): SigCandData => {
+                const sigCandParamData: SigCandParamData[] = sig.parameters.map((p): SigCandParamData => {
+                    /**
+                     * It would helpful to modify getSignatureCandidatesNoCheckExpression so that it returns types as well
+                     * since it must be using them deep inside anyway.
+                     */
+                    Debug.assert(p.valueDeclaration);
+                    Debug.assert(checkExpressionCache.has(p.valueDeclaration));
+                    const type = checkExpressionCache.get(p.valueDeclaration)!;
+                    return {symbol: p, type};
+                });
+                Debug.assert(sig.resolvedReturnType);
+                Debug.assert(sig.resolvedReturnType!==errorType);
+                const rtnType = sig.resolvedReturnType;
+                return {sig, rtnType, paramData: sigCandParamData};
+            });
+            perSig.forEach((sd)=>{
+                /**
+                 * Each signature gets its own copy of refTypes, but that is shared between all parameters of the signature because the params are on the same infer branch.
+                 */
+                sd.refTypes = copyRefTypes(refTypes);
+                sd.pass = true;
+                for (let ipd=0; ipd<sd.paramData.length; ipd++){
+                    const pd = sd.paramData[ipd];
+                    const refTypesRtn: InferRefRtnType["passing"] = inferRefTypes({
+                        refTypes: sd.refTypes, condExpr: callExpr.arguments[ipd], crit: {kind: InferCritKind.assignable, negate:false, target: pd.type }}).passing;
+                    sd.refTypes = refTypesRtn.refTypes;
+                    pd.dbgInferredType = refTypesRtn.rtnType;
+                    if (refTypesRtn.rtnType===neverType) {
+                        sd.pass = false;
+                        break;
+                    }
+                }
+            });
+            if (myDebug) {
+                perSig.forEach((sd,isd)=>{
+                    consoleGroup(`sig[${isd}], pass:${sd.pass}, rtnType: ${sd.rtnType}}`);
+                    consoleLog(dbgSignatureToString(sd.sig));
+                    sd.paramData.forEach((pd,ipd)=>{
+                        consoleLog(`paramData[${ipd}], type: ${pd.type}, dbgInferredType: ${typeToString(pd.dbgInferredType!)}`);
+                    });
+                    if (sd.refTypes) dbgLogRefTypes(sd.refTypes);
+                    consoleGroupEnd();
+                });
+            }
+            const passingSigs: Required<SigCandData>[] = perSig.filter(sd=>sd.pass) as Required<SigCandData>[];
+            const aRefTypesRtn = passingSigs.map((sd): RefTypesRtn =>({rtnType:sd.rtnType, refTypes: sd.refTypes}));
+
+            //if (callExpr.questionDotToken){
+            aRefTypesRtn.push(preFailing);
+            //}
             // /**
             //  * TODO:
             //  * Do something so the queries on CallExpression yield only the passed signatures as valid candidates.
             //  * In no signatures are valid it is an error.
             //  */
-
-            // /**
-            //  *  For each passed candidate sig, its refTypes and rtnType get unionized to obtain the final result for downstream usage.
-            //  */
-            // const passed = perSig.filter(sd=>sd.pass);
-            // joinMergeRefTypes(passed.map(sd=>sd.refTypes), refTypes); // overwrites refTypes
-            // const unionRtnType = getUnionType(passed.map(sd=>sd.rtnType));
-            // return { type: unionRtnType };
+            return applyCritToRefTypesRtn({aRefTypesRtn, crit, symbolToNarrow:undefined});
         }
-
-
-        // @ts-expect-error 6133
-        function inferRefTypes({refTypes, condExpr, crit}: InferRefArgs): InferRefRtnType {
-            if (myDebug) consoleLog(`inferRefTypes[in] condExpr:${dbgNodeToString(condExpr)}, crit.kind: ${crit.kind}`);
-            const r = inferRefTypes_aux({refTypes, condExpr, crit});
+        function inferRefTypesByPropertyAccessExpression({refTypes, condExpr, crit, context}: InferRefArgs): InferRefRtnType {
+            if (myDebug) consoleGroup(`inferRefTypesByPropertyAccessExpression[in]`);
+            const r = inferRefTypesByPropertyAccessExpression_aux({refTypes, condExpr, crit, context});
             if (myDebug) {
-                consoleLog(`inferRefTypes[out] condExpr:${dbgNodeToString(condExpr)}, crit.kind: ${crit.kind} -> { passing: ${typeToString(r.passing.rtnType)}, failing: ${typeToString(r.failing.rtnType)}}`);
+                consoleLog(`inferRefTypesByPropertyAccessExpression[out]`);
+                consoleGroupEnd();
             }
             return r;
         }
-        // @ts-expect-error 6133
-        function inferRefTypes_aux({refTypes, condExpr, crit}: InferRefArgs): InferRefRtnType {
-            return undefined as any as InferRefRtnType;
-            // const condSymbol = getNodeLinks(condExpr).resolvedSymbol; // may or may not exist
-            // switch (condExpr.kind){
-            //     /**
-            //      * Identifier
-            //      */
-            //     case SyntaxKind.Identifier:{
-            //         if (myDebug) consoleLog(`case SyntaxKind.Identifier`);
-            //         Debug.assert(condSymbol);
-            //         if (aliasableAssignmentsCache.has(condSymbol)){
-            //             aliasInferInlineLevel++;
-            //             const aliasCondExpr = aliasableAssignmentsCache.get(condSymbol)!.expr;
-            //             if (myDebug) {
-            //                 consoleLog(`inferRefTypes[dbg]: alias ${dbgNodeToString(aliasCondExpr)}, inlineLevel: ${aliasInferInlineLevel}`);
-            //             }
-            //             const irt = inferRefTypes({refTypes, condExpr:aliasCondExpr, crit});
-            //             aliasInferInlineLevel--;
-            //             return irt;
-            //         }
-            //         // check if it the condExpr matches any ref, in which case its type will be narrowed
-            //         const rt = refTypes.bySymbol.get(condSymbol);
-            //         if (rt) {
-            //             rt.type = applyCritToType(rt.type, crit);
-            //             return { type: rt.type};
-            //         }
-            //         Debug.assert(checkExpressionCache.has(condExpr));
-            //         return { type: checkExpressionCache.get(condExpr)!};
-            //     }
-            //     /**
-            //      * PropertyAccessExpression
-            //      */
-            //      case SyntaxKind.PropertyAccessExpression:{
-            //         if (myDebug) consoleLog(`inferRefTypes[dbg]: case SyntaxKind.PropertyAccessExpression`);
-            //         Debug.assert(isPropertyAccessExpression(condExpr));
-            //         Debug.assert(condExpr.expression);
-            //         /**
-            //          * In JS runtime
-            //          * {}.foo, [].foo, 1n.foo, "".foo, (1).foo (()=>1)().foo return undefined
-            //          * 1.foo, undefined.foo, null.foo, (undefined).foo, (null).foo -> TypeError runtime exception
-            //          * Presumably Typescript handles the runtime error cases
-            //          */
-            //          const preType = inferRefTypes({refTypes, condExpr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false }}).type;
-            //         /**
-            //          * preType can be
-            //          * - undefined: gets mapped to neverType
-            //          * - neverType: forward
-            //          * - the type which holds the property being accessed: we don't need it's value , except that it is not undefined
-            //          */
-            //         const forwardNever = (preType === undefined || preType === neverType);
-            //         Debug.assert(condSymbol);
-            //         if (condSymbol.flags & SymbolFlags.Optional){
-            //             const rt = refTypes.bySymbol.get(condSymbol);
-            //             if (rt) {
-            //                 rt.type = forwardNever ? neverType : applyCritToType(rt.type, crit);
-            //                 return { type: rt.type };
-            //             }
-            //         }
-            //         const type = forwardNever ? neverType :checkExpressionCache.get(condExpr);
-            //         Debug.assert(type);
-            //         return { type: applyCritToType(type, crit) };
-            //     }
-            //     case SyntaxKind.CallExpression:{
-            //         if (myDebug) consoleLog(`inferRefTypes[dbg]: case SyntaxKind.CallExpression`);
-            //         Debug.assert(isCallExpression(condExpr));
-            //         return inferRefTypesByCallExpression({refTypes, condExpr, crit});
+        function inferRefTypesByPropertyAccessExpression_aux({refTypes:refTypesIn, condExpr, crit, context}: InferRefArgs): InferRefRtnType {
+            const condExprSymbol = getNodeLinks(condExpr).resolvedSymbol; // may or may not exist
+            if (myDebug && !condExprSymbol) consoleLog(`inferRefTypesByPropertyAccessExpression[dbg]: condExpr: ${dbgNodeToString(condExpr)},  getNodeLinks(condExpr).resolvedSymbol is undefined`);
+            Debug.assert(isPropertyAccessExpression(condExpr));
+            Debug.assert(condExpr.expression);
 
-            //     }
 
-            // }
+            /**
+             * In JS runtime
+             * {}.foo, [].foo, 1n.foo, "".foo, (1).foo (()=>1)().foo return undefined
+             * 1.foo, undefined.foo, null.foo, (undefined).foo, (null).foo -> TypeError runtime exception
+             * Presumably Typescript lexical checking handles the runtime error cases
+             */
+             const {passing: prePassing, failing: preFailing} = inferRefTypes(
+                {refTypes: refTypesIn, condExpr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }});
+            Debug.assert(preFailing);
+
+            /** sanity check */
+            {
+                refTypesIn.bySymbol.forEach((v,s)=>{
+                    const pv = prePassing.refTypes.bySymbol.get(s);
+                    Debug.assert(pv);
+                    Debug.assert(isTypeRelatedTo(pv.type, v.type, subtypeRelation));
+                    Debug.assert(isTypeRelatedTo(pv.type, v.type, assignableRelation));
+                    const fv = preFailing.refTypes.bySymbol.get(s);
+                    Debug.assert(fv);
+                    Debug.assert(isTypeRelatedTo(fv.type, v.type, subtypeRelation));
+                    Debug.assert(isTypeRelatedTo(fv.type, v.type, assignableRelation));
+                });
+                // if (myDebug){
+                //     consoleLog(`prePassing.rtnType: ${typeToString(prePassing.rtnType)}, preFailing.rtnType ${typeToString(preFailing.rtnType)}, condExprRefType: ${typeToString(condExprRefType)}`)
+                // }
+            }
+            //Debug.assert(isTypeRelatedTo(prePassing.rtnType, condExprRefType, subtypeRelation));
+
+
+            /** The questionDotToken applies to the predecessor */
+            if (!condExpr.questionDotToken && preFailing.rtnType !== neverType){
+                // TDO: Error Output
+            }
+
+            // if the symbol is not with the expression it was probably simply not reached in flow processing, due to a flow compile error
+            // Otherwise, all property access expression must have a symbol.
+            /**
+             * prePassing.rtnType can be never, or condExprSymbol can be undefined due to earlier compile error
+             */
+             if (prePassing.rtnType===neverType || !condExprSymbol){
+                if (!condExpr.questionDotToken) {
+                    // TODO: report error
+                }
+                const aRefTypesRtn: RefTypesRtn[] = [{rtnType:neverType, refTypes:prePassing.refTypes}];
+                /* if (condExpr.questionDotToken) */ aRefTypesRtn.push(preFailing);
+                return applyCritToRefTypesRtn({aRefTypesRtn,crit,symbolToNarrow:condExprSymbol});
+            }
+
+            /**
+             * If refTypes was narrowed in prePassing, we want to use that.
+             */
+            const refTypes = prePassing.refTypes;
+            Debug.assert(condExprSymbol);
+            Debug.assert(refTypes.bySymbol.has(condExprSymbol));
+            const condExprRefType = refTypes.bySymbol.get(condExprSymbol)!.type;
+
+
+            // Check the property is there
+            const accessedTypes: {baseType: Type, type: Type, lookupFail?: true, optional: boolean}[]=[];
+            const keystr = condExpr.name.escapedText as string;
+            forEachType(prePassing.rtnType, t => {
+
+                if (t===undefinedType||t===nullType) {
+                    Debug.assert(false);
+                }
+                if (!(t.flags & TypeFlags.Object)) {
+                    accessedTypes.push({baseType: t, type:undefinedType, lookupFail: true, optional:false});
+                    return;
+                }
+                if (isArrayOrTupleType(t)) {
+                    if (keystr==="length") {
+                        accessedTypes.push({baseType: t, type:numberType, optional:false});
+                    }
+                    else {
+                        accessedTypes.push({baseType: t, type:undefinedType, lookupFail: true, optional:false});
+                    };
+                    return;
+                }
+                const propSymbol = checker.getPropertyOfType(t, keystr);
+                if (propSymbol) {
+                    accessedTypes.push({baseType: t, type:getTypeOfSymbol(propSymbol), optional: !!(propSymbol.flags & SymbolFlags.Optional)});
+                    return;
+                }
+                const indexInfos = checker.getIndexInfosOfType(t);
+                if (indexInfos){
+                    indexInfos.forEach(ii=>{
+                        if (ii.keyType === stringType){
+                            accessedTypes.push({baseType: t, type:ii.type, optional:false});
+                        }
+                        else if (ii.keyType === numberType){
+                            if (!isNaN(Number(keystr))){
+                                accessedTypes.push({baseType: t, type:ii.type, optional:false});
+                            }
+                            else {
+                                // TODO: Error
+                                accessedTypes.push({baseType: t, type:undefinedType, lookupFail: true, optional:false});
+                            };
+                        }
+                        else {
+                            // TODO: string template keys checking
+                            accessedTypes.push({baseType: t, type:ii.type, optional:false});
+                        }
+                    });
+                    return;
+                }
+                accessedTypes.push({baseType: t, type: undefinedType, lookupFail: true, optional:false});
+            });
+            //const hasUndefinedOrNullType = accessedTypes.some(x=>(x.type===undefinedType||x.type===nullType));
+            const hasFailedLookup = accessedTypes.some(x=>x.lookupFail);
+            const hasSuccessLookup = accessedTypes.some(x=>!x.lookupFail);
+            //const hasOptional = accessedTypes.some(x=>x.optional);
+
+            let requirePropertyDefinedForEachSubtype = false;
+            requirePropertyDefinedForEachSubtype = false;
+            if (requirePropertyDefinedForEachSubtype && hasFailedLookup){
+                // TODO: output error
+            }
+            else if (!hasSuccessLookup){
+                // TODO: output error
+                if (myDebug) consoleLog(`inferTypesByPropertyAccessExpression[dbg]: Error: no lookups were successful`);
+            }
+            let rtnType = condExprRefType;
+            if (context?.nonNullExpression){
+                rtnType = filterType(rtnType, t => (!(t===undefinedType||t===nullType)));
+            }
+            const aRefTypesRtn: RefTypesRtn[] = [{rtnType, refTypes}];
+            /** Carrying the assertion failure infornation is mandatory, regardless of quetionDotToken presence. */
+            /* if (condExpr.questionDotToken) */ aRefTypesRtn.push(preFailing);
+            return applyCritToRefTypesRtn({aRefTypesRtn, crit, symbolToNarrow:condExprSymbol});
         }
+
+        // @ ts-expect-error 6133
+        function inferRefTypes({refTypes, condExpr, crit}: InferRefArgs): InferRefRtnType {
+            if (myDebug) {
+                consoleGroup(`inferRefTypes[in] condExpr:${dbgNodeToString(condExpr)}, crit.kind: ${crit.kind}, crit.negate: ${crit.negate}, crit.alsoFailing ${crit.alsoFailing}`);
+            }
+            const r = inferRefTypes_aux({refTypes, condExpr, crit});
+            if (myDebug) {
+                consoleLog(`inferRefTypes[out] condExpr:${dbgNodeToString(condExpr)}, crit.kind: ${crit.kind} -> { passing: ${typeToString(r.passing.rtnType)}, failing: ${
+                    r.failing ? typeToString(r.failing.rtnType) : ""}}`);
+                dbgLogRefTypes(r.passing.refTypes, "passing.refTypes");
+                if (r.failing) {
+                    dbgLogRefTypes(r.failing.refTypes, "failing.refTypes");
+                }
+                consoleGroupEnd();
+            }
+            return r;
+        }
+        // @ ts-expect-error 6133
+        function inferRefTypes_aux({refTypes, condExpr, crit, context}: InferRefArgs): InferRefRtnType {
+            //return undefined as any as InferRefRtnType;
+            const condSymbol = getNodeLinks(condExpr).resolvedSymbol; // may or may not exist
+            const condExprConst = isConstantReference(condExpr);
+            if (myDebug && !condSymbol){
+                consoleLog(`inferRefTypes[dbg]: node with no symbol, {node: ${dbgNodeToString(condExpr)}, const:${condExprConst}`);
+            }
+            let condRefType = condSymbol && refTypes.bySymbol.get(condSymbol);
+            /**
+             * If the refType isn't there but could have been, add it.
+             * For the purpose of evaluating a sourceElement level expression, non-const references should also be included,
+             * because the non-const are const within the expression and that can be leveraged.
+             * Exception is when a non-const is assigned within the expression - then it is more complicated.
+             * TODO: At least check for such assignments.
+             * Between source levels expressions, the non-consts should be removed (unless they provably do not change between them).
+             *
+             */
+            if (condRefType) Debug.assert(condExprConst===condRefType.const); // hopefully yes!
+            Debug.assert(condExprConst ? condSymbol : true);
+
+            if (condSymbol && !condRefType){
+                const type = checkExpressionCache.get(condExpr);
+                Debug.assert(type);
+                condRefType = {type, const:condExprConst};
+                if (myDebug){
+                    consoleLog(`inferRefTypes[dbg]: adding new symbol to ref types, {symbol:<${condSymbol.escapedName},${getSymbolId(condSymbol)}>, type ${typeToString(type)}, const:${condExprConst}`);
+                }
+                refTypes.bySymbol.set(condSymbol, condRefType);
+            }
+            switch (condExpr.kind){
+                /**
+                 * Identifier
+                 */
+                case SyntaxKind.Identifier:{
+                    if (myDebug) consoleLog(`case SyntaxKind.Identifier`);
+                    Debug.assert(condSymbol);
+                    if (aliasableAssignmentsCache.bySymbol.has(condSymbol)){
+                        aliasInferInlineLevel++;
+                        const aliasCondExpr = aliasableAssignmentsCache.bySymbol.get(condSymbol)!.expr;
+                        if (myDebug) {
+                            consoleLog(`inferRefTypes[dbg]: alias ${dbgNodeToString(aliasCondExpr)}, inlineLevel: ${aliasInferInlineLevel}`);
+                        }
+                        const irt = inferRefTypes({refTypes, condExpr:aliasCondExpr, crit});
+                        aliasInferInlineLevel--;
+                        return irt;
+                    }
+                    // /**
+                    //  * Identifier is a special case where the return value and ref type coincide.
+                    //  * If the identifier has a symbol, then it can potentially be narrowed.
+                    //  * Otherwise, or if crit is the no-op (when only the expression result is being calculated), just calcluate the return value.
+                    //  * */
+                    // if (crit.kind!==InferCritKind.none) {
+                    //     if (condRefType) {
+                    //         const { passing, failing } = applyCritToType(condRefType.type, crit);
+                    //         const retval = {
+                    //             passing: {
+                    //                 rtnType: passing,
+                    //                 refTypes: copyRefTypes(refTypes)
+                    //             },
+                    //             failing: {
+                    //                 rtnType: failing,
+                    //                 refTypes: copyRefTypes(refTypes)
+                    //             }
+                    //         };
+                    //         retval.passing.refTypes.bySymbol.get(condSymbol)!.type=passing;
+                    //         retval.failing.refTypes.bySymbol.get(condSymbol)!.type=failing;
+                    //         return retval;
+                    //     }
+                    // }
+                    const tmpRtnType = condRefType?.type ?? checkExpressionCache.get(condExpr);
+                    Debug.assert(tmpRtnType);
+                    return applyCritToRefTypesRtn({aRefTypesRtn:[{
+                        rtnType: tmpRtnType,
+                        refTypes
+                    }], crit, symbolToNarrow: condSymbol});
+                }
+                /**
+                 * NonNullExpression
+                 */
+                case SyntaxKind.NonNullExpression:
+                    Debug.assert(isNonNullExpression(condExpr));
+                    return inferRefTypes({refTypes, condExpr: condExpr.expression, crit, context:{nonNullExpression:true}});
+                /**
+                 * PropertyAccessExpression
+                 */
+                case SyntaxKind.PropertyAccessExpression:
+                    if (myDebug) consoleLog(`inferRefTypes[dbg]: case SyntaxKind.PropertyAccessExpression`);
+                    return inferRefTypesByPropertyAccessExpression({refTypes, condExpr, crit, context});
+                /**
+                 * CallExpression
+                 */
+                case SyntaxKind.CallExpression:{
+                    if (myDebug) consoleLog(`inferRefTypes[dbg]: case SyntaxKind.CallExpression`);
+                    Debug.assert(isCallExpression(condExpr));
+                    return inferRefTypesByCallExpression({refTypes, condExpr, crit});
+                }
+                case SyntaxKind.PrefixUnaryExpression:
+                    if ((condExpr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
+                        const negCrit: InferCrit = {...crit, negate:!crit.negate} as InferCrit;
+                        return inferRefTypes({refTypes, condExpr:(condExpr as PrefixUnaryExpression).operand, crit:negCrit, context});
+                    }
+                    Debug.assert(false);
+                    break;
+            default: Debug.assert(false, Debug.formatSyntaxKind(condExpr.kind));
+            }
+        }
+
+
 
         /**
-         *
-         * @param expr
-         * First, collenct all dependency symbols, and involved condtions, by walking backards the depedency luts condition in the stack.
-         * - Has O(stack size * dependecy count) complexity, because lookups are O(1). The constant factor is low.
-         * Second, walk forwards through the involved conditions, building up constrained refTypes as we go along.
-         * - Has O(# involved conditions) complexity, but the constant factor is as high as evaluating the most compex condtition, which is high.
-         * To what extent can this be optimized by caching?
+         * @param node
          */
-        // @ts-expect-error 6133
-        function inferExprOverCurrentConditionStack(expr: Expression){
-            // const refTypes: RefTypes = createRefTypes();
-            // temporaryIdentifierCache.forEach((o,i)=>refTypes.set(i,{ref: o.ref, symbol: o.symbol, initialType: o.type, type: o.type}));
-            // for (let i = currentConditionStack.length-1; i>=0; i--){
-            //     inferRefTypes({refTypes, condExpr: currentConditionStack[i].expr, assume: currentConditionStack[i].assume});
-            // }
+        // @ ts-expect-error 6133
+        function inferExprOverCurrentConditionStack(node: ExpressionStatement, /* exprSymbols: ESMap<Symbol,CheckExprData> */){
+            if (myDebug) consoleGroup(`inferExprOverCurrentConditionStack[in], expr:${dbgNodeToString(node)}`);
+
+            // Step 1: Forward infer the condition stack.  These results can be cached (TODO).
+            let refTypesRtn: RefTypesRtn = {rtnType:voidType, refTypes:createRefTypes()};
+            currentConditionStack.forEach((cse,i)=>{
+                if (myDebug){
+                    consoleLog(`conditionStack[${i}/${currentConditionStack.length},before]: condition: ${dbgNodeToString(cse.expr)}, assume: ${cse.assume}}`);
+                }
+                refTypesRtn = inferRefTypes({refTypes: refTypesRtn.refTypes, condExpr: cse.expr, crit:{kind: InferCritKind.truthy, negate:!cse.assume}}).passing;
+                if (myDebug){
+                    consoleGroup(`conditionStack[${i}/${currentConditionStack.length},after]: ${typeToString(refTypesRtn.rtnType)}`);
+                    dbgLogRefTypes(refTypesRtn.refTypes);
+                    consoleGroupEnd();
+                }
+                /**
+                 * Remove the non-consts before the next round
+                 */
+                 refTypesRtn.refTypes.bySymbol.forEach((rt,s)=>{
+                    if (!rt.const) refTypesRtn.refTypes.bySymbol.delete(s);
+                });
+                if (myDebug){
+                    consoleLog(`conditionStack[${i}/${currentConditionStack.length},after]: condition: ${dbgNodeToString(cse.expr)}, assume: ${cse.assume}}`);
+                }
+            });
+            if (myDebug){
+                consoleLog(`final [before]:`);
+            }
+            refTypesRtn = inferRefTypes({refTypes:refTypesRtn.refTypes, condExpr: node.expression, crit: {kind: InferCritKind.none}}).passing;
+
+            if (myDebug){
+                consoleGroup(`final [after]: -> rtnType: ${typeToString(refTypesRtn.rtnType)}`);
+                dbgLogRefTypes(refTypesRtn.refTypes);
+                consoleGroupEnd();
+            }
+
+            if (myDebug) {
+                consoleLog(`inferExprOverCurrentConditionStack[out], expr:${dbgNodeToString(node)}`);
+                consoleGroupEnd();
+            }
         }
+
 
         function myIsSpecialSourceElement(node: Node): boolean|undefined {
             const cr: CommentRange[]|undefined = getLeadingCommentRangesOfNode(node, myCurrentSourceFile!);
@@ -43161,25 +43480,34 @@ namespace ts {
                 currentNode = node;
                 instantiationCount = 0;
 
-                if (mySpecialInferMode) mySpecialInferMode++;
-                else {
-                    Debug.assert(isExpression(node), "isExpression(node)");
-                    mySpecialInferMode = myIsSpecialSourceElement(node)?1:0;
+                /**
+                 * Not expecting checkSourceElement to be called recursively inside a selected source element.
+                 */
+                if (!myDisableInfer){
+                    Debug.assert(!sourceElementSelectedForInfer);
+                    //Debug.assert(isExpression(node), "isExpression(node)");
+                    sourceElementSelectedForInfer = myIsSpecialSourceElement(node)?node:undefined;
+                    if (sourceElementSelectedForInfer) {
+                        Debug.assert(isExpressionStatement(node), "isExpression(node)");
+                        //temporaryPerSourceElementCheckExpressionCache = new Map<Symbol,CheckExprData>();
+                    }
                 }
 
                 if (myDebug) {
-                    consoleGroup(`checkSourceElement[in]${mySpecialInferMode?`<${mySpecialInferMode}>`:""}: ${dbgNodeToString(node)}`);
+                    consoleGroup(`checkSourceElement[in]${sourceElementSelectedForInfer?`<${sourceElementSelectedForInfer}>`:""}: ${dbgNodeToString(node)}`);
                 }
                 checkSourceElementWorker(node);
                 if (myDebug) {
                     consoleLog(`checkSourceElement[out]: nodeid: ${node.id}`);
                     consoleGroupEnd();
                 }
-                if (mySpecialInferMode===1){
-                    Debug.assert(isExpression(node), "isExpression(node)"); // in case mySpecialInferMode was incorrect
-                    inferExprOverCurrentConditionStack(node);
+                if (sourceElementSelectedForInfer){
+                    Debug.assert(isExpressionStatement(node), "isExpression(node)");
+                    //Debug.assert(temporaryPerSourceElementCheckExpressionCache);
+                    inferExprOverCurrentConditionStack(node /*, temporaryPerSourceElementCheckExpressionCache */);
+                    //temporaryPerSourceElementCheckExpressionCache = undefined;
+                    sourceElementSelectedForInfer = undefined;
                 }
-                if (mySpecialInferMode) mySpecialInferMode--;
                 currentNode = saveCurrentNode;
             }
         }
@@ -43369,7 +43697,7 @@ namespace ts {
                     return checkMissingDeclaration(node);
             }
 
-            if (mySpecialInferMode){
+            if (sourceElementSelectedForInfer){
                 //
             }
 

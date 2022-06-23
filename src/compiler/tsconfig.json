@@ -20,6 +20,7 @@
         "tracing.ts",
 
         "types.ts",
+        "types-infer.ts",
         "sys.ts",
         "path.ts",
         "diagnosticInformationMap.generated.ts",
