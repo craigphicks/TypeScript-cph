@@ -5,12 +5,31 @@ namespace ts {
         // if for some node, isConstantReference(node) && node symbol is s, then any nodex with the same symbol is also constant, right?
         const: boolean
     };
+    // export interface EType {
+    //     getUnionType(): Type;
+    //     setFromUnionType(type: Type): void;
+    //     forEachType(f: (t: Type) => void): void;
+    // };
+    // export interface RefType extends EType{
+    //     getUnionType(): Type;
+    //     setFromUnionType(type: Type): void;
+    //     forEachType(f: (t: Type) => void): void
+    //     getIsConst(): boolean;
+    // };
     export type RefTypes = & {
-        //byRef: Set<Node>;
         bySymbol: ESMap<Symbol, RefType>;
+        // addRefType(symbol: Symbol, type: Type): void;
+        // getRefType(symbol: Symbol): RefType
+        // has(symbol: Symbol): boolean;
     };
+    // export interface RefTypes {
+    //     add(symbol:Symbol,refType:RefType);
+    //     has(symbol: Symbol): boolean;
+    //     get(symbol: Symbol): boolean ;
+    // }
     export type RefTypesRtn = & {
         rtnType: Type;
+        symbolOfRtnType: Symbol|undefined
         refTypes: RefTypes;
     };
 
@@ -48,12 +67,12 @@ namespace ts {
     }) & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
     export type InferTypeArgsQDotFallout = RefTypesRtn[];
-    export type InferRefArgsContext = & { nonNullExpression?: true};
+    //export type InferRefArgsContext = & { nonNullExpression?: true};
     export type InferRefArgs = & {
         refTypes: RefTypes,
         condExpr: Readonly<Expression>,
         crit: InferCrit,
-        context?: InferRefArgsContext, // This ONLY applies to next call, should not be forward beyond.  TODO: change name to `immedContext` to make that obvious.
+        //context?: InferRefArgsContext, // This ONLY applies to next call, should not be forward beyond.  TODO: change name to `immedContext` to make that obvious.
         /**
          * If an inferRefTypes caller needs the qdotfallout info, they must place this parameter in the call.
          * If any intermediate has a questionDot token, they must ask for it (crit:alsoFailing) and push the failing result to qdotfallout.
