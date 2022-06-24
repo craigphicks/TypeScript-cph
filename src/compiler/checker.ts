@@ -43037,30 +43037,32 @@ namespace ts {
             //return undefined as any as InferRefRtnType;
             Debug.assert(qdotfallout);
             // First duty is to call the precursors
-            let prePassing: RefTypesRtn;
-            {
-                // scope because don't want to leak preFailing beyond.
-                const {passing, failing:preFailing} = inferRefTypes({
-                    refTypes: refTypesIn, condExpr: callExpr.expression, crit: {kind: InferCritKind.notnullundef, alsoFailing:true}, qdotfallout});
-                prePassing = passing;
-                Debug.assert(preFailing);
-                /**
-                 * See the documentation for `InferRefArgs["qdotfallout"]` about how predecessor failed lookups are handled.
-                 * But note that a CallExpression exprCond NEVER has an associated symbol (doesn't need it) and therefore no refTypes.
-                 */
-                if (preFailing.rtnType!==neverType){
-                    if (callExpr.questionDotToken){
-                        qdotfallout.push(preFailing); // therefore should  not be added at the end.
-                    }
-                    else {
-                        if (myDebug) consoleLog(`Error: callExpression ${dbgNodeToString(callExpr)} cannot be applied to undefined or null.  Add '?' or '!' if appropriate.`);
-                    }
-                }
-                if (prePassing.rtnType === neverType){
-                    const aRefTypesRtn: RefTypesRtn[] = [{rtnType:neverType, refTypes:prePassing.refTypes, symbolOfRtnType:undefined}];
-                    return applyCritToRefTypesRtnArray({aRefTypesRtn, crit, symbolOfRtnType:undefined});
-                }
-            }
+            const pre = InferRefTypesPreAccess({refTypes:refTypesIn, condExpr:callExpr, crit, qdotfallout}, /* symbolOfRtnType */ undefined);
+            if (pre.kind==="immediateReturn") return pre.retval;
+            const prePassing = pre.passing;
+            // {
+            //     // scope because don't want to leak preFailing beyond.
+            //     const {passing, failing:preFailing} = inferRefTypes({
+            //         refTypes: refTypesIn, condExpr: callExpr.expression, crit: {kind: InferCritKind.notnullundef, alsoFailing:true}, qdotfallout});
+            //     prePassing = passing;
+            //     Debug.assert(preFailing);
+            //     /**
+            //      * See the documentation for `InferRefArgs["qdotfallout"]` about how predecessor failed lookups are handled.
+            //      * But note that a CallExpression exprCond NEVER has an associated symbol (doesn't need it) and therefore no refTypes.
+            //      */
+            //     if (preFailing.rtnType!==neverType){
+            //         if (callExpr.questionDotToken){
+            //             qdotfallout.push(preFailing); // therefore should  not be added at the end.
+            //         }
+            //         else {
+            //             if (myDebug) consoleLog(`Error: callExpression ${dbgNodeToString(callExpr)} cannot be applied to undefined or null.  Add '?' or '!' if appropriate.`);
+            //         }
+            //     }
+            //     if (prePassing.rtnType === neverType){
+            //         const aRefTypesRtn: RefTypesRtn[] = [{rtnType:neverType, refTypes:prePassing.refTypes, symbolOfRtnType:undefined}];
+            //         return applyCritToRefTypesRtnArray({aRefTypesRtn, crit, symbolOfRtnType:undefined});
+            //     }
+            // }
             const refTypes = prePassing.refTypes;
             if (myDebug) {
                 consoleLog("candidates by return of pre");
@@ -43227,14 +43229,25 @@ namespace ts {
             kind: "normal",
             passing: RefTypesRtn
         };
-        function InferRefTypesPreAccess({refTypes, condExpr, crit, qdotfallout}: InferRefArgs, symbolOfRtnType: Symbol|undefined): InferRefTypesPreAccessRtnType{
-            Debug.assert(isPropertyAccessExpression(condExpr));
+        /**
+         * In JS runtime
+         *   {}.foo, [].foo, 1n.foo, "".foo, (1).foo (()=>1)().foo return undefined
+         *   1.foo, undefined.foo, null.foo, (undefined).foo, (null).foo -> TypeError runtime exception
+         * InferRefTypesPreAccess assists in handling the predecessor `return undefined` branch, if present,  by pushing that `undefined` branch
+         * to `qdotfallout` if `questionDotToken` is defined, othwise producing an an Error. By default that branch processing is then finsihed for the caller.
+         * If undefined is the only branch then {kind:"immediateReturn", retval} is returned, with an appropriate crit filtered value for retval.
+         * Otherwise {kind:"immediateReturn", passing} is returned, where `passing` is the predecessor passing branch.
+         * @param param0
+         * @param symbolOfRtnType
+         * @returns
+         */
+        function InferRefTypesPreAccess({refTypes, condExpr, crit, qdotfallout}: InferRefArgs & {condExpr: {expression: Expression}}, symbolOfRtnType: Symbol|undefined): InferRefTypesPreAccessRtnType{
             const {passing, failing } = inferRefTypes(
                 {refTypes, condExpr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout});
             Debug.assert(failing);
             if (failing.rtnType!==neverType){
-                if (condExpr.questionDotToken){
-                    qdotfallout.push(failing); // therefore should  not be added at the end.
+                if (isPropertyAccessExpression(condExpr) && condExpr.questionDotToken){
+                    qdotfallout.push(failing); // The caller of InferRefTypesPreAccess need deal with this no further.
                 }
                 else {
                     if (myDebug) consoleLog(`Error: expression ${dbgNodeToString(condExpr)} cannot be applied to undefined or null.  Add '?' or '!' if appropriate.`);
@@ -43264,11 +43277,6 @@ namespace ts {
             Debug.assert(condExpr.expression);
 
 
-            /**
-             * In JS runtime
-             * {}.foo, [].foo, 1n.foo, "".foo, (1).foo (()=>1)().foo return undefined
-             * 1.foo, undefined.foo, null.foo, (undefined).foo, (null).foo -> TypeError runtime exception
-             */
              const pre = InferRefTypesPreAccess({refTypes:refTypesIn, condExpr, crit, qdotfallout}, condExprSymbol);
              if (pre.kind==="immediateReturn") return pre.retval;
              const prePassing = pre.passing;
@@ -43451,10 +43459,10 @@ namespace ts {
                      * In that case `qdotfallout` are not filtered here.
                      *
                      * However, it could be defined to apply to all preceding elements in a chain.
-                     * But that would require defining the limits of the chain -
+                     * That would require defining the limits of the chain -
                      * Does that cross getters, elements access, parentheses, call expressions, etc.
-                     * In that case `qdotfallout` are not filtered.
-                     * It would be easy enough to filter `qdotfallout` if required for, e.g., back compat.
+                     * In that case `qdotfallout` would filtered here, and the chain limits are where `qdotfallout` are terminated.
+                     * It would be easy enough to filter `qdotfallout` here if required for, e.g., back compat.
                      */
                     return {passing,failing};
                 }
