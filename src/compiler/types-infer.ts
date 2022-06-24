@@ -47,6 +47,7 @@ namespace ts {
         target: Type;
     }) & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
+    export type InferTypeArgsQDotFallout = RefTypesRtn[];
     export type InferRefArgsContext = & { nonNullExpression?: true};
     export type InferRefArgs = & {
         refTypes: RefTypes,
@@ -62,14 +63,14 @@ namespace ts {
          * > it is the 'self' expression that carries the questionDotToken between 'sef' and 'self.expression'.  That is reasonable because it is only if the caller ('self')
          * > actually performs a lookup that an error might occurs.  So the error decision must be deferred (* at LEAST) until 'self' processing.
          * > 'self' action pseudocode:
-         * >> if failing is not never
-         * >>     if I don't have a 'questionDot' token, then error (I don't think this decision needs to be deferred but ...)
+         * >> if preFailing.rtnType is not never
+         * >>     if I don't have a 'questionDot' token, then Error (I don't think this decision needs to be deferred but ...)
          * >>     else push `failing.refTypes` to `qdotfallout` - effectively deferring the decision on how to use that until the level "owning" qdotfallout.
          * >> if I have failing lookup on ANY candidate
          * >>     if not `context?nonNullExpression`
          * >>         add {rtnType:undefined, refTypes: refTypes with bySymbol.get(self symbol) lookup value set to `undefined`} to results to results to be passed finally to crit.
          */
-        qdotfallout?: RefTypesRtn[]
+        qdotfallout: InferTypeArgsQDotFallout // TODO: should be mandatory
     };
 
     /**
