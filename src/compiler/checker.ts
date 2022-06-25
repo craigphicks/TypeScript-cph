@@ -42804,7 +42804,7 @@ namespace ts {
                 bySymbol: new Map<Symbol,RefType>()
             };
         }
-        // @ts-expect-error 6133
+        // @ ts-expect-error 6133
         function copyRefTypes(refTypes: RefTypes): RefTypes {
             /**
              * This didn't work because we must deep copy the values.
@@ -42896,7 +42896,7 @@ namespace ts {
             });
             return {
                 rtnType: getUnionType(aRtnTypes,UnionReduction.Literal),
-                symbolsOfRtnType,
+                symbolOfRtnType: symbolsOfRtnType,
                 refTypes: joinMergeRefTypes(aRefTypes)
             };
         }
@@ -42959,23 +42959,149 @@ namespace ts {
             };
         }
 
+        function setOfTypeToUnionType(s: Set<Type>): Type{
+            // @ts-expect-error 2769
+            return getUnionType(Array.from(s.keys()),UnionReduction.Literal);
+        }
+
+        type ApplyCritMapRtn = &{passing?: RefTypesRtn, failing?: RefTypesRtn};
+        function applyCritToRefTypesRtnMap({refTypesRtn, crit}: {refTypesRtn: RefTypesRtn, crit: InferCrit}): ApplyCritMapRtn {
+            let pb=false;
+            let fb=false;
+            const rtnTypeSet_pass = new Set<Type>();
+            const rtnTypeSet_fail = new Set<Type>();
+            applyCrit(refTypesRtn.rtnType, crit, (t, pass, fail)=>{
+                if (pass){
+                    pb = true;
+                    rtnTypeSet_pass.add(t);
+                    // totalRtnTypePassingSet.add(t);
+                }
+                if (crit.alsoFailing && fail){
+                    fb = true;
+                    rtnTypeSet_fail.add(t);
+                    // totalRtnTypeFailingSet.add(t);
+                }
+            });
+            let passing: RefTypesRtn|undefined;
+            let failing: RefTypesRtn|undefined;
+            let refTypes_pass: RefTypes|undefined;
+            let refTypes_fail: RefTypes|undefined;
+            let rtnType_pass: Type|undefined;
+            let rtnType_fail: Type|undefined;
+            if (pb){
+                rtnType_pass = setOfTypeToUnionType(rtnTypeSet_pass);
+                refTypes_pass = copyRefTypes(refTypesRtn.refTypes);
+                if (refTypesRtn.symbolOfRtnType) {
+                    Debug.assert(refTypes_pass.bySymbol.get(refTypesRtn.symbolOfRtnType)!.type===refTypesRtn.rtnType);
+                    refTypes_pass.bySymbol.get(refTypesRtn.symbolOfRtnType)!.type = rtnType_pass;
+                }
+                passing = {rtnType: rtnType_pass, refTypes: refTypes_pass, symbolOfRtnType: refTypesRtn.symbolOfRtnType};
+            }
+            if (fb && crit.alsoFailing){
+                rtnType_fail = setOfTypeToUnionType(rtnTypeSet_fail);
+                refTypes_fail = copyRefTypes(refTypesRtn.refTypes);
+                if (refTypesRtn.symbolOfRtnType) {
+                    Debug.assert(refTypes_fail.bySymbol.get(refTypesRtn.symbolOfRtnType)!.type===refTypesRtn.rtnType);
+                    refTypes_fail.bySymbol.get(refTypesRtn.symbolOfRtnType)!.type = rtnType_fail;
+                }
+                failing = {rtnType: rtnType_fail, refTypes: refTypes_fail, symbolOfRtnType: refTypesRtn.symbolOfRtnType};
+            }
+            const retval: ApplyCritMapRtn = {};
+            if (passing) retval.passing = passing;
+            if (failing) retval.failing = failing;
+            return retval;
+        }
+
         // @ts-ignore-error 6133
-        function applyCritToRefTypesRtnArray({aRefTypesRtn, symbolsOfRtnType, crit}: {aRefTypesRtn: RefTypesRtn[], symbolsOfRtnType: Symbol[]|undefined, crit: InferCrit}): InferRefRtnType {
+        function applyCritToRefTypesRtnArray({aRefTypesRtn, /* symbolsOfRtnType, */ crit}: {aRefTypesRtn: RefTypesRtn[], /*symbolsOfRtnType: Symbol[]|undefined, */ crit: InferCrit}): InferRefRtnType {
             if (crit.kind===InferCritKind.none) {
                 Debug.assert(!crit.alsoFailing);
                 const rtnTypeSet = new Set<Type>();
                 aRefTypesRtn.forEach(rt=>forEachType(rt.rtnType, t=>rtnTypeSet.add(t)));
-                // @ts-expect-error 2769
-                const rtnType = getUnionType(Array.from(rtnTypeSet.keys()), UnionReduction.Literal);
+                const rtnType = setOfTypeToUnionType(rtnTypeSet);
                 return {
-                    passing: {rtnType, refTypes: joinMergeRefTypes(aRefTypesRtn.map(rtr=>rtr.refTypes)), symbolsOfRtnType},
+                    passing: {rtnType, refTypes: joinMergeRefTypes(aRefTypesRtn.map(rtr=>rtr.refTypes)), symbolOfRtnType:undefined},
                 };
             }
-            const passing: RefTypes[]=[];
-            const failing: RefTypes[]=[];
+
+            aRefTypesRtn.map(refTypesRtn=> applyCritToRefTypesRtnMap({refTypesRtn, crit}))
+
+            // aRefTypesRtn.forEach(refTypesRtn=>{
+            //     apply
+            // });
+
+            // const symbolsOfRtnTypes:Symbols[]=[];
+
+            // const totalRtnTypePassingSet = new Set<Type>();
+            // const totalRtnTypeFailingSet = new Set<Type>();
+            // type ApplyCritMapRtn = &{passing:RefTypesRtn, failing?:RefTypesRtn};
+            // aRefTypesRtn.map((refTypesRtn): ApplyCritMapRtn => {
+            //     let pb=false;
+            //     let fb=false;
+            //     const rtnTypeSet_pass = new Set<Type>();
+            //     const rtnTypeSet_fail = new Set<Type>();
+            //     applyCrit(refTypesRtn.rtnType, crit, (t, pass, fail)=>{
+            //         if (pass){
+            //             pb = true;
+            //             rtnTypeSet_pass.add(t);
+            //             totalRtnTypePassingSet.add(t);
+            //         }
+            //         if (crit.alsoFailing && fail){
+            //             fb = true;
+            //             rtnTypeSet_fail.add(t);
+            //             totalRtnTypeFailingSet.add(t);
+            //         }
+            //     });
+            //     const rtnType_pass = setOfTypeToUnionType(rtnTypeSet_pass);
+            //     const rtnType_fail = crit.alsoFailing ? setOfTypeToUnionType(rtnTypeSet_fail) : undefined;
+            //     if (refTypesRtn.symbolOfRtnType){
+            //         const symbolToRtnType = refTypesRtn.refTypes.bySymbol.get(refTypesRtn.symbolOfRtnType)!.type;
+            //         const {passing:symbolToRtnType_pass, failing:symbolToRtnType_fail} = applyCritToType(symbolToRtnType,crit);
+            //         const copyRefTypes_pass = copyRefTypes(refTypesRtn.refTypes);
+            //         copyRefTypes_pass.bySymbol.get(refTypesRtn.symbolOfRtnType)!.type = symbolToRtnType_pass;
+            //         let copyRefTypes_fail: RefTypes|undefined;
+            //         let ret: ApplyCritMapRtn = {
+            //             passing: {
+            //                 rtnType: rtnType_pass,
+            //                 refTypes: copyRefTypes_pass,
+            //                 symbolOfRtnType: refTypesRtn.symbolOfRtnType
+            //             }
+            //         };
+            //         if (crit.alsoFailing){
+            //             copyRefTypes_fail = copyRefTypes(refTypesRtn.refTypes);
+            //             copyRefTypes_fail.bySymbol.get(refTypesRtn.symbolOfRtnType)!.type = symbolToRtnType_fail;
+            //             ret.failing = {
+            //                 rtnType: rtnType_fail!,
+            //                 refTypes: copyRefTypes_fail,
+            //                 symbolOfRtnType: refTypesRtn.symbolOfRtnType
+            //             };
+            //         }
+            //         return ret;
+            //     } else {
+            //         const ret: ApplyCritMapRtn = {
+            //             passing: {
+            //                 retType: rtnType_pass,
+            //                 refTypes: refTypesRtn.refTypes,
+            //                 symbolOfRtnType: refTypesRtn.symbolOfRtnType
+            //             }
+            //         }
+            //         if (crit.alsoFailing){
+            //             ret.failing = {
+            //                 retType: rtnType_fail,
+            //                 refTypes: refTypesRtn.refTypes,
+            //                 symbolOfRtnType: refTypesRtn.symbolOfRtnType
+            //             }
+            //         }
+            //         return ret;
+            //     }
+            // });
+
             const rtnTypePassingSet = new Set<Type>();
             const rtnTypeFailingSet = new Set<Type>();
+            const passing: RefTypes[]=[];
+            const failing: RefTypes[]=[];
             aRefTypesRtn.forEach(refTypesRtn=>{
+                if (refTypesRtn.symbolOfRtnType) symbolsOfRtnTypes.push(refTypesRtn.symbolOfRtnType);
                 let pb=false;
                 let fb=false;
                 applyCrit(refTypesRtn.rtnType, crit, (t, pass, fail)=>{
@@ -43000,8 +43126,8 @@ namespace ts {
            // merge passing into one RefTypesRtn
             const pr = joinMergeRefTypes(passing);
             const fr = crit.alsoFailing ? joinMergeRefTypes(failing) : undefined;
-            if (symbolsOfRtnType){
-                symbolsOfRtnType.forEach(symbolOfRtnType =>{
+            if (symbolsOfRtnTypes){
+                symbolsOfRtnTypes.forEach(symbolOfRtnType =>{
                     const rtp = pr.bySymbol.get(symbolOfRtnType);
                     Debug.assert(rtp);
                     //consoleLog(`${symbolToNarrow.escapedName}:before:${typeToString(rtp.type)}`);
@@ -43015,12 +43141,12 @@ namespace ts {
             }
             if (crit.alsoFailing) {
                 return {
-                    passing: { rtnType:passRtnType, refTypes: pr, symbolsOfRtnType},
-                    failing: { rtnType:failRtnType, refTypes: fr as RefTypes, symbolsOfRtnType}
+                    passing: { rtnType:passRtnType, refTypes: pr, symbolOfRtnType: undefined},
+                    failing: { rtnType:failRtnType, refTypes: fr as RefTypes, symbolOfRtnType: undefined}
                 };
             }
             else {
-                return { passing: { rtnType:passRtnType, refTypes: pr, symbolsOfRtnType}};
+                return { passing: { rtnType:passRtnType, refTypes: pr, symbolOfRtnType: undefined}};
             }
         }
 
@@ -43104,7 +43230,7 @@ namespace ts {
                 let sargidx = -1;
                 let sargRestElemType: Type|undefined;
                 let sargRestSymbol: Symbol|undefined;
-                let rtsrtn: RefTypesRtn = {rtnType:neverType, refTypes, symbolsOfRtnType:undefined};
+                let rtsrtn: RefTypesRtn = {rtnType:neverType, refTypes, symbolOfRtnType:undefined};
                 /**
                  * Matching the arguments should ideally be a forward only matching,
                  * or at worst require a single "lookahead" that can be undone.
@@ -43258,7 +43384,7 @@ namespace ts {
                 }
             }
             if (passing.rtnType === neverType){
-                const aRefTypesRtn: RefTypesRtn[] = [{rtnType:neverType, refTypes:passing.refTypes,symbolsOfRtnType: symbolOfRtnType ? [symbolOfRtnType] : undefined}];
+                const aRefTypesRtn: RefTypesRtn[] = [{rtnType:neverType, refTypes:passing.refTypes,symbolOfRtnType: symbolOfRtnType ? [symbolOfRtnType] : undefined}];
                 return {kind:"immediateReturn", retval: applyCritToRefTypesRtnArray({aRefTypesRtn, crit, symbolsOfRtnType: symbolOfRtnType ? [symbolOfRtnType] : undefined})};
             }
             return {kind:"normal", passing};
@@ -43325,17 +43451,17 @@ namespace ts {
                 }
                 if (!(t.flags & TypeFlags.Object)){
                     accessedTypes.push({baseType: t, type:undefinedType, lookupFail: true, optional:false});
-                    aRefTypesRtn.push({rtnType:undefinedType,refTypes:copyRefTypes(refTypes), symbolsOfRtnType: undefined});
+                    aRefTypesRtn.push({rtnType:undefinedType,refTypes:copyRefTypes(refTypes), symbolOfRtnType: undefined});
                     return;
                 }
                 if (isArrayOrTupleType(t)) {
                     if (keystr==="length") {
                         accessedTypes.push({baseType: t, type:numberType, optional:false});
-                        aRefTypesRtn.push({rtnType:numberType,refTypes:copyRefTypes(refTypes), symbolsOfRtnType: undefined});
+                        aRefTypesRtn.push({rtnType:numberType,refTypes:copyRefTypes(refTypes), symbolOfRtnType: undefined});
                     }
                     else {
                         accessedTypes.push({baseType: t, type:undefinedType, lookupFail: true, optional:false});
-                        aRefTypesRtn.push({rtnType:undefinedType,refTypes:copyRefTypes(refTypes), symbolsOfRtnType: undefined});
+                        aRefTypesRtn.push({rtnType:undefinedType,refTypes:copyRefTypes(refTypes), symbolOfRtnType: undefined});
                     };
                     return;
                 }
@@ -43376,7 +43502,7 @@ namespace ts {
                             refTypes.bySymbol.set(propSymbol, {const:readonlyProp,  type:declaredType});
                         }
                     }
-                    aRefTypesRtn.push({rtnType:resolvedType, refTypes:copyRefTypes(refTypes), symbolsOfRtnType: narrowable?[propSymbol]:undefined});
+                    aRefTypesRtn.push({rtnType:resolvedType, refTypes:copyRefTypes(refTypes), symbolOfRtnType: narrowable?[propSymbol]:undefined});
                     accessedTypes.push({baseType: t, type:resolvedType, declaredType, optional: optionalProp, readonlyProp});
                     return;
                 }
@@ -43548,7 +43674,7 @@ namespace ts {
                     Debug.assert(tmpRtnType);
                     return applyCritToRefTypesRtnArray({aRefTypesRtn:[{
                         rtnType: tmpRtnType,
-                        symbolsOfRtnType: [condSymbol],
+                        symbolOfRtnType: [condSymbol],
                         refTypes
                     }], crit, symbolsOfRtnType: [condSymbol]});
                 }
@@ -43561,9 +43687,9 @@ namespace ts {
                      */
                     Debug.assert(isNonNullExpression(condExpr));
                     let {passing,failing} = inferRefTypes({refTypes, condExpr: condExpr.expression, crit, qdotfallout});
-                    passing = applyCritToRefTypesRtnArray({aRefTypesRtn:[passing], crit:{kind:InferCritKind.notnullundef}, symbolsOfRtnType:passing.symbolsOfRtnType}).passing;
+                    passing = applyCritToRefTypesRtnArray({aRefTypesRtn:[passing], crit:{kind:InferCritKind.notnullundef}, symbolsOfRtnType:passing.symbolOfRtnType}).passing;
                     if (failing) {
-                        failing = applyCritToRefTypesRtnArray({aRefTypesRtn:[failing], crit:{kind:InferCritKind.notnullundef}, symbolsOfRtnType:failing.symbolsOfRtnType}).passing;
+                        failing = applyCritToRefTypesRtnArray({aRefTypesRtn:[failing], crit:{kind:InferCritKind.notnullundef}, symbolsOfRtnType:failing.symbolOfRtnType}).passing;
                     }
                     /**
                      * Typescript documentation on "Non-null assertion operator":
@@ -43621,7 +43747,7 @@ namespace ts {
             if (myDebug) consoleGroup(`inferExprOverCurrentConditionStack[in], expr:${dbgNodeToString(node)}`);
 
             // Step 1: Forward infer the condition stack.  These results can be cached (TODO).
-            let refTypesRtn: RefTypesRtn = {rtnType:voidType, refTypes:createRefTypes(), symbolsOfRtnType:undefined};
+            let refTypesRtn: RefTypesRtn = {rtnType:voidType, refTypes:createRefTypes(), symbolOfRtnType:undefined};
             currentConditionStack.forEach((cse,i)=>{
                 if (myDebug){
                     consoleLog(`conditionStack[${i}/${currentConditionStack.length},before]: condition: ${dbgNodeToString(cse.expr)}, assume: ${cse.assume}}`);
@@ -43630,7 +43756,7 @@ namespace ts {
                 refTypesRtn = inferRefTypes({refTypes: refTypesRtn.refTypes, condExpr: cse.expr, crit:{kind: InferCritKind.truthy, negate:!cse.assume}, qdotfallout}).passing;
                 if (cse.assume===false){
                     qdotfallout.push(refTypesRtn);
-                    refTypesRtn = joinMergeRefTypesRtn(qdotfallout, refTypesRtn.symbolsOfRtnType);
+                    refTypesRtn = joinMergeRefTypesRtn(qdotfallout, refTypesRtn.symbolOfRtnType);
                 }
 
                 if (myDebug){
@@ -43653,7 +43779,7 @@ namespace ts {
             }
             const qdotfallout: InferTypeArgsQDotFallout=[];
             refTypesRtn = inferRefTypes({refTypes:refTypesRtn.refTypes, condExpr: node.expression, crit: {kind: InferCritKind.none}, qdotfallout}).passing;
-            refTypesRtn = joinMergeRefTypesRtn(qdotfallout, refTypesRtn.symbolsOfRtnType);
+            refTypesRtn = joinMergeRefTypesRtn(qdotfallout, refTypesRtn.symbolOfRtnType);
 
             if (myDebug){
                 consoleGroup(`final [after]: -> rtnType: ${typeToString(refTypesRtn.rtnType)}`);
