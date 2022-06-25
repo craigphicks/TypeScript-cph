@@ -19,3 +19,7 @@ if (isFoo) {
 //     // @ special
 //     obj.foo;
 // }
+
+type X = {
+    bar: (()=>void)|(()=>number);
+}

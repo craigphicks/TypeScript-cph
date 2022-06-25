@@ -29,7 +29,7 @@ namespace ts {
     // }
     export type RefTypesRtn = & {
         rtnType: Type;
-        symbolOfRtnType: Symbol|undefined
+        symbolsOfRtnType: Symbol[]|undefined
         refTypes: RefTypes;
     };
 
