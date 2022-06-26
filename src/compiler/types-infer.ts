@@ -38,6 +38,7 @@ namespace ts {
         truthy= "truthy",
         notnullundef= "notnullundef",
         assignable= "assignable",
+        twocrit= "twocrit"
     };
     // const InferCritKind = {
     //     none: "none",
@@ -47,7 +48,11 @@ namespace ts {
     // } as const;
     //type InferCritKind = typeof InferCritKind[ keyof typeof InferCritKind ];
     export type InferCrit =
-    (
+    (| {
+        kind: typeof InferCritKind.twocrit // this is just to get the resulting type without any criteria
+        negate?: false;
+        crits: [InferCrit & {alsoFailing?: false}, InferCrit]
+    }
     | {
         kind: typeof InferCritKind.none // this is just to get the resulting type without any criteria
         negate?: false;
