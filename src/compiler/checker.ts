@@ -43967,6 +43967,16 @@ namespace ts {
             myDebug = !!Number(process.env.myDebug);
             if (nameMatched && dbgFlowFileCnt++===0) {
                 consoleLog(`myDebug=${myDebug}, myNarrowTest=${myNarrowTest}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
+                if (nameMatched && myDebug){
+                    let contents = "";
+                    const writeLine = (s: string)=>{
+                        contents+=(s+sys.newLine);
+                    };
+                    const groupedFlowNodes = groupFlowNodesFromSourceFile(node, getFlowNodeId);
+                    dbgWriteGroupedFlowNode(groupedFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
+                    const ofilename = `tmp.${getBaseFileName(node.originalFileName)}.gfn.txt`;
+                    sys.writeFile(ofilename, contents);
+                }
                 if (nameMatched && myDebug){//(myDebug && node.endFlowNode) {
                     //writingFlowTxt = true;
                     let contents = "";
@@ -47914,47 +47924,6 @@ namespace ts {
         return !!(s.flags & SignatureFlags.HasLiteralTypes);
     }
 
-    export function isFlowStart(fn: FlowNode | undefined): fn is FlowStart {
-        return !!fn && !!(fn.flags & FlowFlags.Start);
-    }
-    export function isFlowLabel(fn: FlowNode | undefined): fn is FlowLabel {
-        return !!fn &&  !!(fn.flags & FlowFlags.Label);
-    }
-    export function isFlowBranch(fn: FlowNode | undefined): fn is FlowLabel {
-        return !!fn && !!(fn.flags & FlowFlags.BranchLabel);
-    }
-    export function isFlowAssignment(fn: FlowNode | undefined): fn is FlowAssignment {
-        return !!fn &&  !!(fn.flags & FlowFlags.Assignment);
-    }
-    export function isFlowCall(fn: FlowNode | undefined): fn is FlowCall {
-        return !!fn &&  !!(fn.flags & FlowFlags.Call);
-    }
-    export function isFlowCondition(fn: FlowNode | undefined): fn is FlowCondition {
-        return !!fn &&  !!(fn.flags & FlowFlags.Condition);
-    }
-    export function isFlowSwitchClause(fn: FlowNode | undefined): fn is FlowSwitchClause{
-        return !!fn &&  !!(fn.flags & FlowFlags.SwitchClause);
-    }
-    export function isFlowArrayMutation(fn: FlowNode | undefined): fn is FlowArrayMutation {
-        return !!fn &&  !!(fn.flags & FlowFlags.ArrayMutation);
-    }
-    export function isFlowReduceLabel(fn: FlowNode | undefined): fn is FlowReduceLabel {
-        return !!fn &&  !!(fn.flags & FlowFlags.ReduceLabel);
-    }
-    export function isFlowJoin(fn: FlowNode): fn is FlowJoin {
-        return !!fn &&  !!(fn.flags & FlowFlags.Join);
-    }
-    export function isFlowWithNode(fn: FlowNode | undefined): fn is FlowNode & {node: Node} {
-        return !!fn &&  !!(fn as any).node;
-    }
-    export function isFlowConditionBoolean(fn: FlowCondition): boolean {
-        return !!(fn.flags & (FlowFlags.TrueCondition | FlowFlags.FalseCondition));
-    }
-    export function getFlowConditionBoolean(fn: FlowCondition): boolean {
-        return !!(fn.flags & FlowFlags.TrueCondition) ? true : !!(fn.flags & FlowFlags.FalseCondition) ? false : (()=> {
-            Debug.assert(false, "getFlowConditionBoolean neither true nor false, qualify with isFlowConditionBoolean");
-            return true;
-        })();
-    }
+
 
 }
