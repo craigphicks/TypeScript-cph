@@ -24750,6 +24750,10 @@ namespace ts {
                             continue;
                         }
                     }
+                    else if (flags & FlowFlags.ExpressionStatement) {
+                        flow = (flow as FlowExpressionStatement).antecedent;
+                        continue;
+                    }
                     else if (flags & FlowFlags.Assignment) {
                         type = getTypeAtFlowAssignment(flow as FlowAssignment);
                         if (!type) {
@@ -43593,7 +43597,7 @@ namespace ts {
                 }
 
                 if (myDebug) {
-                    let str = `checkSourceElement[in]${sourceElementSelectedForInfer?`<${sourceElementSelectedForInfer}>`:""}: ${dbgNodeToString(node)}`;
+                    let str = `checkSourceElement[in]${sourceElementSelectedForInfer?`<${dbgNodeToString(sourceElementSelectedForInfer)}>`:""}: ${dbgNodeToString(node)}`;
                     if (node.flowNode) str += `, flowNode: ${dbgFlowToString(node.flowNode)}`;
                     consoleGroup(str);
                 }
@@ -43972,8 +43976,8 @@ namespace ts {
                     const writeLine = (s: string)=>{
                         contents+=(s+sys.newLine);
                     };
-                    const groupedFlowNodes = groupFlowNodesFromSourceFile(node, getFlowNodeId);
-                    dbgWriteGroupedFlowNode(groupedFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
+                    const {groupedFlowNodes,allFlowNodes} = groupFlowNodesFromSourceFile(node, getFlowNodeId);
+                    dbgWriteGroupedFlowNode(groupedFlowNodes, allFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
                     const ofilename = `tmp.${getBaseFileName(node.originalFileName)}.gfn.txt`;
                     sys.writeFile(ofilename, contents);
                 }

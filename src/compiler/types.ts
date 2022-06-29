@@ -3459,7 +3459,8 @@ namespace ts {
         ReduceLabel    = 1 << 10, // Temporarily reduce antecedents of label
         Referenced     = 1 << 11, // Referenced as antecedent once
         Shared         = 1 << 12, // Referenced as antecedent more than once
-        Join           = 1 << 13, // Marks the end of an Assignment
+        ExpressionStatement = 1<<13, // Plain expression statement
+        Join           = 1 << 14, // Marks the end of an Assignment
 
         Label = BranchLabel | LoopLabel,
         Condition = TrueCondition | FalseCondition,
@@ -3474,6 +3475,7 @@ namespace ts {
         | FlowArrayMutation
         | FlowCall
         | FlowReduceLabel
+        | FlowExpressionStatement
         | FlowJoin;
 
     export interface FlowNodeBase {
@@ -3497,6 +3499,11 @@ namespace ts {
     // i.e. an identifier or a dotted name that starts with an identifier or 'this'.
     export interface FlowAssignment extends FlowNodeBase {
         node: Expression | VariableDeclaration | BindingElement;
+        antecedent: FlowNode;
+    }
+
+    export interface FlowExpressionStatement extends FlowNodeBase {
+        node: ExpressionStatement;
         antecedent: FlowNode;
     }
 

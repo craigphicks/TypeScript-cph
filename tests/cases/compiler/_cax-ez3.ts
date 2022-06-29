@@ -13,7 +13,7 @@ declare const obj: Readonly<Foo> | Readonly<Boo> | undefined;
 const isFoo = obj?.foo();
 if (isFoo) {
     // @special
-    obj.foo();
+    obj.foo;
 } 
 // else {
 //     // @ special

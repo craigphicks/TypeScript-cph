@@ -1378,12 +1378,21 @@ namespace ts {
         function maybeBindExpressionFlowIfCall(node: Expression) {
             // A top level or comma expression call expression with a dotted function name and at least one argument
             // is potentially an assertion and is therefore included in the control flow.
+            let done = false;
             if (node.kind === SyntaxKind.CallExpression) {
                 const call = node as CallExpression;
                 if (call.expression.kind !== SyntaxKind.SuperKeyword && isDottedName(call.expression)) {
                     currentFlow = createFlowCall(currentFlow, call);
+                    done = true;
                 }
             }
+            if (!done && isNarrowableReference(node)){
+                currentFlow = createFlowExpressionStatement(currentFlow, node);
+            }
+        }
+        function createFlowExpressionStatement(antecedent: FlowNode, node: Expression){
+            setFlowNodeReferenced(antecedent);
+            return initFlowNode({ flags: FlowFlags.ExpressionStatement, antecedent, node });
         }
 
         function bindLabeledStatement(node: LabeledStatement): void {
@@ -1416,9 +1425,6 @@ namespace ts {
 
         function bindAssignmentTargetFlow(node: Expression) {
             if (isNarrowableReference(node)) {
-
-                // const joinFlow = createFlowJoin(currentFlow, node);
-                // currentFlow = createFlowMutation(FlowFlags.Assignment, joinFlow, node);
                 currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
             }
             else if (node.kind === SyntaxKind.ArrayLiteralExpression) {
