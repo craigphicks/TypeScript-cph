@@ -317,6 +317,13 @@ namespace Harness {
                 return;
             }
 
+            /**
+             * Set the currentSourceFile used by glow node group processing
+             */
+            const sourceFile = this.result.program!.getSourceFile(this.fileName);
+            if (!sourceFile) throw new Error(`this.result.program!.getSourceFile(${this.fileName}) failed`);
+            //Debug.assert(sourceFile);
+            this.result.program!.getTypeChecker().setCurrentSourceFile(sourceFile);
             Compiler.doTypeAndSymbolBaseline(
                 this.configuredName,
                 this.result.program!,
@@ -327,6 +334,10 @@ namespace Harness {
                 /*skipSymbolBaselines*/ undefined,
                 !!ts.length(this.result.diagnostics)
             );
+            /**
+             * Unset the currentSourceFile used by glow node group processing
+             */
+             this.result.program!.getTypeChecker().setCurrentSourceFile();
         }
 
         private makeUnitName(name: string, root: string) {

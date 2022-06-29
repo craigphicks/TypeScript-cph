@@ -19,6 +19,7 @@ namespace ts {
     let myCurrentSourceFile: SourceFile|undefined;
     const myNarrowTest = (process.env.myNarrowTest===undefined) ? false : !!Number(process.env.myNarrowTest);
 
+
     interface SystemWithAppendFile extends System {
         openFileForWriteFd(path: string): number; // returns number which is file description
         writeFileFd(fd: number, data: string): void;
@@ -417,8 +418,13 @@ namespace ts {
     }
 
     export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
-        // @ts-ignore-error
-        // eslint-disable-next-line prefer-const
+        /**
+         * required by infer
+         */
+        const mapSourceFileToGroupedFlowNodes = new Map<SourceFile, GroupedFlowNodes>();
+        let currentSourceFile: undefined|SourceFile;
+
+
         let sourceElementSelectedForInfer: Node | undefined;
         const currentConditionStack: ConditionStackItem[]=[];
         const checkExpressionCache = new Map<Node,Type>();
@@ -724,6 +730,11 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
+            getCurrentSourceFile(){
+                Debug.assert(currentSourceFile);
+                return currentSourceFile;
+            },
+            setCurrentSourceFile(sourceFile?: SourceFile){ currentSourceFile = sourceFile; },
             getNodeCount: () => sum(host.getSourceFiles(), "nodeCount"),
             getIdentifierCount: () => sum(host.getSourceFiles(), "identifierCount"),
             getSymbolCount: () => sum(host.getSourceFiles(), "symbolCount") + symbolCount,
@@ -35905,6 +35916,25 @@ namespace ts {
             const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
             if (myDebug) {
                 consoleGroup(`checkExpression[in]: ${dbgNodeToString(node)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
+                if (!insideGetFlowTypeOfReference && node.flowNode){
+                    Debug.assert(currentSourceFile);
+                    const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile);
+                    Debug.assert(grouped);
+                    const flows = grouped.nodeToFlowNodesMap.get(node);
+                    if (flows){
+                        const groups = flows.map(flow => {
+                            const group = grouped.flowNodeToGroupMap.get(flow);
+                            Debug.assert(group);
+                            return group;
+                        });
+                        let str = `checkExpression[dbg groups]: node: ${dbgNodeToString(node)},  groups:`;
+                        groups.forEach(g=> str+= (dbgFlowNodeGroupToString(g, getFlowNodeId, dbgFlowToString, dbgNodeToString)+ ", "));
+                        consoleLog(str);
+                    }
+                    // Need a reliable map from nodes to (flow node groups)/(if groups)/...
+                    // because not all relavant nodes will have flow nodes.
+                    //grouped.flowNodeToGroupMap()
+                }
                 //consoleLog(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
             }
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
@@ -43954,6 +43984,20 @@ namespace ts {
             performance.enable();
             performance.mark("beforeCheck");
 
+            if (!myDisableInfer){
+                currentSourceFile = node;
+                if (!mapSourceFileToGroupedFlowNodes.has(node)){
+                    const t0 = process.hrtime.bigint();
+                    const groupedFlowNodes = groupFlowNodesFromSourceFile(node, getFlowNodeId);
+                    const t1 = process.hrtime.bigint() - t0;
+                    groupedFlowNodes.dbgCreationTimeMs = t1/BigInt(1000000);
+                    mapSourceFileToGroupedFlowNodes.set(node, groupedFlowNodes);
+                }
+            }
+            // const hrtime = process.hrtime.bigint() - hrstart!;
+            // consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
+
+
             const re = /^tests\/cases\/compiler\/_cax/;
             myCurrentSourceFilename = node.originalFileName;
             myCurrentSourceFile = node;
@@ -43971,13 +44015,15 @@ namespace ts {
             myDebug = !!Number(process.env.myDebug);
             if (nameMatched && dbgFlowFileCnt++===0) {
                 consoleLog(`myDebug=${myDebug}, myNarrowTest=${myNarrowTest}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
-                if (nameMatched && myDebug){
+                if (!myDisableInfer && nameMatched && myDebug){
                     let contents = "";
                     const writeLine = (s: string)=>{
                         contents+=(s+sys.newLine);
                     };
-                    const {groupedFlowNodes,allFlowNodes} = groupFlowNodesFromSourceFile(node, getFlowNodeId);
-                    dbgWriteGroupedFlowNode(groupedFlowNodes, allFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
+                    //const {groupedFlowNodes,allFlowNodes} = groupFlowNodesFromSourceFile(node, getFlowNodeId);
+                    const groupedFlowNodes = mapSourceFileToGroupedFlowNodes.get(node);
+                    Debug.assert(groupedFlowNodes);
+                    dbgWriteGroupedFlowNode(groupedFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
                     const ofilename = `tmp.${getBaseFileName(node.originalFileName)}.gfn.txt`;
                     sys.writeFile(ofilename, contents);
                 }
@@ -44084,6 +44130,9 @@ namespace ts {
             if (nameMatched){
                 const hrtime = process.hrtime.bigint() - hrstart!;
                 consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
+            }
+            if (!myDisableInfer){
+                currentSourceFile = undefined;
             }
             performance.mark("afterCheck");
             tracing?.pop();

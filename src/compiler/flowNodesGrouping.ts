@@ -5,43 +5,61 @@ namespace ts {
         endFlowNodes: FlowNode[];
     };
 
-    enum FlowNodeGroupKind {
+    export enum FlowNodeGroupKind {
         Nodeless="Nodeless",
-        Nodeful="Nodeful"
+        PlainNodeful="PlainNodeful",
+        IfBranch="IfBranch",
+        IfPair="IfPair"
     };
     /**
      * All FlowNode with NodeFlags.Start become a NodelessFlowNodeGroup even if they have a node.
      */
-    interface NodelessFlowNodeGroup {
+    export interface NodelessFlowNodeGroup {
         kind: FlowNodeGroupKind.Nodeless;
         flow: FlowNode;
         antecedentGroups: Set<FlowNodeGroup>;
     };
-    interface NodefulFlowNodeGroup {
-        kind: FlowNodeGroupKind.Nodeful;
+    export interface PlainNodefulFlowNodeGroup {
+        kind: FlowNodeGroupKind.PlainNodeful;
         maximal: FlowNode;
         maximalIdx: number,
         //group?: Set<FlowNode>;
         // indices into flowNodeWithNodesSorted
         idxb: number,
         idxe: number,
-        disclude: number[],
-        ifPair?: IfPairOfGroups;
+        //disclude: number[],
+        ifPair?: IfPairFlowNodeGoup;
         antecedentGroups: Set<FlowNodeGroup>;
     };
 
-    type FlowNodeGroup = NodelessFlowNodeGroup | NodefulFlowNodeGroup;
-
-    interface IfPairOfGroups {
-        true: NodefulFlowNodeGroup,
-        false: NodefulFlowNodeGroup,
+    export interface IfBranchFlowNodeGroup {
+        kind: FlowNodeGroupKind.IfBranch;
+        true: boolean;
+        flow: FlowNode; // flow.node is a maximal node of all the nodes in IfPairOfGroups
+        ifPair: IfPairFlowNodeGoup;
     };
-    interface GroupedFlowNodes {
+    export interface IfPairFlowNodeGoup {
+        kind: FlowNodeGroupKind.IfPair;
+        true: IfBranchFlowNodeGroup;
+        false: IfBranchFlowNodeGroup;
+        maximalNode: Node; // the node shared by both true and false flows
+        idxb: number;
+        idxe: number; // doesn't include the maximals
+        antecedentGroups: Set<FlowNodeGroup>;
+    };
+
+    export type NodefulFlowNodeGroup = PlainNodefulFlowNodeGroup | IfPairFlowNodeGoup | IfBranchFlowNodeGroup;
+    export type FlowNodeGroup = NodelessFlowNodeGroup | NodefulFlowNodeGroup;
+
+    export interface GroupedFlowNodes {
         flowNodeWithNodesSorted: FlowNode[];
         groups: NodefulFlowNodeGroup[];
         nodelessGroups: NodelessFlowNodeGroup[];
-        arrIfPairOfGroups: IfPairOfGroups[];
+        arrIfPairOfGroups: IfPairFlowNodeGoup[];
         flowNodeToGroupMap: ESMap<FlowNode, FlowNodeGroup>;
+        nodeToFlowNodesMap: ESMap<Node, FlowNode[]>; // only when node does not already reference the flow node that references it.
+        sourceFile: SourceFile;
+        dbgCreationTimeMs?: bigint;
     };
     interface FlowWithNA extends FlowNodeBase {
         node: Node;
@@ -49,6 +67,18 @@ namespace ts {
         antecedents?: FlowNode[];
     };
 
+    export function isNodelessFlowNodeGroup(x: FlowNodeGroup): x is NodelessFlowNodeGroup {
+        return x.kind===FlowNodeGroupKind.Nodeless;
+    }
+    export function isPlainNodefulFlowNodeGroup(x: FlowNodeGroup): x is PlainNodefulFlowNodeGroup {
+        return x.kind===FlowNodeGroupKind.PlainNodeful;
+    }
+    export function isIfBranchFlowNodeGroup(x: FlowNodeGroup): x is IfBranchFlowNodeGroup {
+        return x.kind===FlowNodeGroupKind.IfBranch;
+    }
+    export function isIfPairFlowNodeGroup(x: FlowNodeGroup): x is IfPairFlowNodeGoup {
+        return x.kind===FlowNodeGroupKind.IfPair;
+    }
 
     /**
      * Collect all flow nodes in a sourceFile.
@@ -144,19 +174,36 @@ namespace ts {
     function calculateGroupAntecedents(
         grouped: GroupedFlowNodes
     ): void{
-        const mapFlowToGroup = new Map<FlowNode|FlowWithNA, FlowNodeGroup>();
+        const mapFlowToGroup = grouped.flowNodeToGroupMap;// new Map<FlowNode|FlowWithNA, FlowNodeGroup>();
 
         // The nodefuls
         function perGroup(group: NodefulFlowNodeGroup){
             const setAnte= new Set<FlowNode>();
-            grouped.flowNodeWithNodesSorted.slice(group.idxb,group.idxe).forEach((fn: FlowNode&FlowWithNA,i: number)=>{
-                mapFlowToGroup.set(fn,group);
-                const idx = group.idxb+i;
-                // I believe this guard is unnecessary
-                if (group.disclude.length && group.disclude.includes(idx)) return;
-                if (fn.antecedent) setAnte.add(fn.antecedent);
-                else if (fn.antecedents) fn.antecedents.forEach(a=>setAnte.add(a));
-            });
+            if (isPlainNodefulFlowNodeGroup(group) || isIfPairFlowNodeGroup(group)) {
+                const sliced = grouped.flowNodeWithNodesSorted.slice(group.idxb,group.idxe);
+                const memberSet = new Set<FlowNode>(sliced);
+                if (isPlainNodefulFlowNodeGroup(group)) memberSet.add(group.maximal);
+                else if (isIfPairFlowNodeGroup(group)){
+                    memberSet.add(group.true.flow);
+                    memberSet.add(group.false.flow);
+                }
+                sliced.forEach((fn: FlowNode&FlowWithNA)=>{
+                    mapFlowToGroup.set(fn,group);
+                    if (fn.antecedent) {
+                        if (!memberSet.has(fn.antecedent)) setAnte.add(fn.antecedent);
+                    }
+                    else if (fn.antecedents) {
+                        fn.antecedents.forEach(a=>{
+                            if (!memberSet.has(a)) setAnte.add(a);
+                        });
+                    }
+                });
+            }
+            else if (isIfBranchFlowNodeGroup(group)){
+                mapFlowToGroup.set(group.flow, group);
+                // no antecedents
+            }
+            else Debug.assert(false);
             return setAnte;
         }
         const tmp = grouped.groups.map(g=>{
@@ -173,9 +220,11 @@ namespace ts {
 
         // The nodefuls
         tmp.forEach(t=>{
+            if (isIfBranchFlowNodeGroup(t.group)) return;
             t.setAnte.forEach(af=>{
                 const ga = mapFlowToGroup.get(af);
                 Debug.assert(ga);
+                Debug.assert(!isIfBranchFlowNodeGroup(t.group));
                 t.group.antecedentGroups.add(ga);
             });
         });
@@ -197,7 +246,7 @@ namespace ts {
         });
     }
 
-    export function groupFlowNodes(allFlowNodes: AllFlowNodes): GroupedFlowNodes {
+    export function groupFlowNodes(allFlowNodes: AllFlowNodes, sourceFile: SourceFile): GroupedFlowNodes {
         const flowNodeWithNodes: (FlowWithNA & FlowNode)[]=[];
         const flowNodeWithoutNodes: FlowNode[]=[];
         allFlowNodes.flowNodes.forEach(fn=>{
@@ -221,62 +270,42 @@ namespace ts {
         };
         aref.sort(compare);
         const flowNodeWithNodesSorted = aref.map(idx=>flowNodeWithNodes[idx]);
-        const arrIfPairOfGroups: IfPairOfGroups[]=[];
-        const createIfGroups = (idxb: number,idxe: number): IfPairOfGroups => {
+        const arrIfPairOfGroups: IfPairFlowNodeGoup[]=[];
+        const createIfGroups = (idxb: number,idxe: number): IfPairFlowNodeGoup => {
             const idxTrue = idxe-1;
             const idxFalse = idxe-2;
-            const groupTrue: NodefulFlowNodeGroup = {
-                kind: FlowNodeGroupKind.Nodeful,
-                idxb, idxe, // doesn't include the maximal itself.
-                maximalIdx: idxTrue,
-                maximal: flowNodeWithNodesSorted[idxTrue],
-                disclude:[idxFalse],
-                antecedentGroups: new Set<NodefulFlowNodeGroup>()
+            const groupTrue: Partial<IfBranchFlowNodeGroup> = {
+                kind: FlowNodeGroupKind.IfBranch,
+                true: true,
+                flow: flowNodeWithNodesSorted[idxTrue],
             };
-            const groupFalse: NodefulFlowNodeGroup = {
-                kind: FlowNodeGroupKind.Nodeful,
-                idxb, idxe, // doesn't include the maximal itself.
-                maximalIdx: idxFalse,
-                maximal: flowNodeWithNodesSorted[idxFalse],
-                disclude:[idxTrue],
-                antecedentGroups: new Set<NodefulFlowNodeGroup>()
+            const groupFalse: Partial<IfBranchFlowNodeGroup> = {
+                kind: FlowNodeGroupKind.IfBranch,
+                true: false,
+                flow: flowNodeWithNodesSorted[idxFalse],
             };
-            const ifPair: IfPairOfGroups = {
-                true:groupTrue,
-                false:groupFalse
+            const ifPair: IfPairFlowNodeGoup = {
+                kind: FlowNodeGroupKind.IfPair,
+                true:groupTrue as IfBranchFlowNodeGroup,
+                false:groupFalse as IfBranchFlowNodeGroup,
+                maximalNode: flowNodeWithNodesSorted[idxFalse].node,
+                idxb,
+                idxe,
+                antecedentGroups: new Set<FlowNodeGroup>()
             };
+            groupTrue.ifPair = ifPair;
+            groupFalse.ifPair = ifPair;
             return ifPair;
         };
 
-
+        /**
+         * iterate flowNodeWithNodesSorted, making FlowNodeGroups
+         */
         const groups: NodefulFlowNodeGroup[] = [];
         let idxb = 0;
         let {pos:curpos,end:curend} = flowNodeWithNodesSorted.length ? flowNodeWithNodesSorted[0].node : {pos:-1,end:-1};
         let maximalIdx = 0;
         let maximalLength = curend-curpos;
-        // const ifGroupHandling = (group: FlowNodeGroup, maximal: FlowWithNA, fi: number): void=>{
-        //     Debug.assert(maximalIdx-1>=0);
-        //     const falseMaximal = flowNodeWithNodesSorted[maximalIdx-1];
-        //     if (falseMaximal.node!==maximal.node){
-        //         Debug.assert(falseMaximal.node===maximal.node);
-        //     }
-        //     const falseGroup: FlowNodeGroup = {
-        //         idxb, idxe:fi,
-        //         maximal: falseMaximal as FlowNode,
-        //         maximalIdx: maximalIdx-1,
-        //         disclude:[maximalIdx],
-        //         antecedentGroups: new Set<FlowNodeGroup>()
-        //     };
-        //     const ifPairOfGroups: IfPairOfGroups = {
-        //         true: group,
-        //         false: falseGroup
-        //     };
-        //     group.disclude.push(maximalIdx-1);
-        //     group.ifPairParent = ifPairOfGroups;
-        //     falseGroup.ifPairParent = ifPairOfGroups;
-        //     arrIfPairOfGroups.push(ifPairOfGroups);
-        //     groups.push(falseGroup);
-        // };
         for (let fi=1;fi<flowNodeWithNodesSorted.length;fi++){
             const {pos,end} = flowNodeWithNodesSorted[fi].node;
             if (pos> curpos && pos>=curend) {
@@ -284,15 +313,16 @@ namespace ts {
                 if (maximal.node.parent && isIfStatement(maximal.node.parent) && maximal.node.parent.expression===maximal.node){
                     const ifPair = createIfGroups(idxb,fi);
                     arrIfPairOfGroups.push(ifPair);
+                    groups.push(ifPair);
                     groups.push(ifPair.false);
                     groups.push(ifPair.true);
                 }
                 else {
-                    const group: NodefulFlowNodeGroup = {
-                        kind: FlowNodeGroupKind.Nodeful,
-                        idxb, idxe:fi, // doesn't include the maximal itself.
+                    const group: PlainNodefulFlowNodeGroup = {
+                        kind: FlowNodeGroupKind.PlainNodeful,
+                        idxb, idxe:fi,
                         maximalIdx,
-                        disclude:[],
+                        //disclude:[],
                         maximal: maximal as FlowNode,
                         antecedentGroups: new Set<FlowNodeGroup>()
                     };
@@ -319,22 +349,37 @@ namespace ts {
             if (maximal.node.parent && isIfStatement(maximal.node.parent) && maximal.node.parent.expression===maximal.node){
                 const ifPair = createIfGroups(idxb,flowNodeWithNodesSorted.length);
                 arrIfPairOfGroups.push(ifPair);
+                groups.push(ifPair);
                 groups.push(ifPair.false);
                 groups.push(ifPair.true);
             }
             else {
-                const group: NodefulFlowNodeGroup = {
-                    kind: FlowNodeGroupKind.Nodeful,
-                    idxb, idxe:flowNodeWithNodesSorted.length, // doesn't include the maximal itself.
+                const group: PlainNodefulFlowNodeGroup = {
+                    kind: FlowNodeGroupKind.PlainNodeful,
+                    idxb, idxe:flowNodeWithNodesSorted.length,
                     maximalIdx,
-                    disclude:[],
                     maximal: maximal as FlowNode,
-                    antecedentGroups: new Set<NodefulFlowNodeGroup>()
+                    antecedentGroups: new Set<FlowNodeGroup>()
                 };
                 groups.push(group);
             }
         }
 
+        // const nodeToFlowGroupMap: ESMap<Node, FlowGroup[]> = new Map<Node, FlowNode[]>();
+        // groups.forEach(fg=>{
+        //     if (isPlainNodefulFlowNodeGroup(fg)){
+        //         flowNodeWithNodesSorted.slice(fg.idxb, fg.idxe).forEach(fn=>nodeToFlowNodesMap.set(fn.node,[fn]));
+        //     }
+        //     else if (isIfPairFlowNodeGroup(fg)){
+        //         flowNodeWithNodesSorted.slice(fg.idxb, fg.idxe).forEach(fn=>nodeToFlowNodesMap.set(fn.node,[fn]));
+        //     }
+        // });
+
+        flowNodeWithNodesSorted.forEach(fn=>{
+            const got = nodeToFlowNodesMap.get(fn.node);
+            if (!got) nodeToFlowNodesMap.set(fn.node, [fn]);
+            else got.push(fn);
+        });
 
         const nodelessGroups = flowNodeWithoutNodes.map((fn: FlowNode): NodelessFlowNodeGroup => {
             return {
@@ -348,113 +393,20 @@ namespace ts {
             flowNodeWithNodesSorted: flowNodeWithNodesSorted as FlowNode[],
             groups,
             nodelessGroups,
-            flowNodeToGroupMap: new Map<FlowNode, NodefulFlowNodeGroup>(),
-            arrIfPairOfGroups
+            flowNodeToGroupMap: new Map<FlowNode, PlainNodefulFlowNodeGroup>(),
+            nodeToFlowNodesMap,
+            arrIfPairOfGroups,
+            sourceFile
         };
         calculateGroupAntecedents(grouped);
 
         return grouped;
     }
 
-    // function groupFlowNodes(allflowNodes: AllFlowNodes): GroupedFlowNodes {
-    //     type TempGroup = & {group: FlowNodeGroup; fnAntesOuter: Set<FlowNode> };
-    //     type FlowNodeA = FlowNode & {
-    //         antecedent?: FlowNodeA;
-    //         antecedents?: FlowNodeA[];
-    //     };
-    //     //type FlowNodeWithNode = FlowNode & { node: Node};
-
-    //     const flowNodeToTempGroupMap = new Map<FlowNode,TempGroup>();
-    //     const pendingOuter = new Set<FlowNode>();
-    //     //const endFlowNodesSet = new Set<FlowNode>();
-    //     allflowNodes.endFlowNodes.forEach((efn)=>{
-    //         pendingOuter.add(efn);
-    //     });
-    //     const createTempGroup = (fnm: FlowNodeA): TempGroup => {
-    //         if (!isFlowWithNode(fnm)){
-    //             const tg: TempGroup =  {
-    //                 group: {
-    //                     maximal: fnm,
-    //                     nodeless: true,
-    //                     antecedentGroups: new Set<FlowNodeGroup>()
-    //                 },
-    //                 fnAntesOuter: new Set<FlowNode>(fnm.antecedent? [fnm.antecedent] : fnm.antecedents? fnm.antecedents : [])
-    //             };
-    //             tg.fnAntesOuter.forEach(fn=>{
-    //                 pendingOuter.add(fn);
-    //             });
-    //             flowNodeToTempGroupMap.set(fnm,tg);
-    //             return tg;
-    //         }
-    //         // assume the first visited flowNode in a group is always the maximal
-    //         if (!isFlowWithNode(fnm)){
-    //             Debug.assert(false);
-    //         }
-
-    //         const pendingInner= new Set<FlowNode>([fnm]);
-    //         const fnAntesOuter= new Set<FlowNode>();
-    //         const innerGroup = new Set<FlowNode>();
-    //         const tmpGroup: TempGroup = {
-    //             group: {
-    //                 maximal: fnm,
-    //                 antecedentGroups: new Set<FlowNodeGroup>(),
-    //                 group: innerGroup
-    //             },
-    //             fnAntesOuter
-    //         };
-    //         const doFlowAntes = (flowNodes: FlowNode[]) => {
-    //             flowNodes.forEach(fn=>{
-    //                 if (!isFlowWithNode(fn)) pendingOuter.add(fn);
-    //                 else if (fn.node.pos>=fnm.node.pos && fn.node.end <= fnm.node.end){
-    //                     pendingInner.add(fn);
-    //                 }
-    //                 else {
-    //                     fnAntesOuter.add(fn);
-    //                     pendingOuter.add(fn);
-    //                 }
-    //             });
-    //         };
-    //         while(pendingInner.size){
-    //             const fn = pendingInner.keys().next().value as FlowNodeA;
-    //             pendingInner.delete(fn);
-    //             innerGroup.add(fn);
-    //             flowNodeToTempGroupMap.set(fn, tmpGroup);
-    //             if (fn.antecedent) doFlowAntes([fn.antecedent]);
-    //             else if (fn.antecedents) doFlowAntes(fn.antecedents);
-    //         }
-
-    //         return tmpGroup;
-    //     };
-    //     const tempGroups: TempGroup[]=[];
-    //     while(pendingOuter.size){
-    //         const fnm = pendingOuter.keys().next().value as FlowNodeA;
-    //         pendingOuter.delete(fnm);
-    //         tempGroups.push(createTempGroup(fnm));
-    //     }
-    //     /**
-    //      * TempGroup -> FlowNodeGroup by converting fnAnterOuter to antecedentGroups using flowNodeToGroupMap
-    //      */
-    //     const groups = tempGroups.map(tg=>{
-    //         const ags = tg.group.antecedentGroups;
-    //         tg.fnAntesOuter.forEach(antecedentFlowNode=>{
-    //             const antecedentFlowGroup = flowNodeToTempGroupMap.get(antecedentFlowNode);
-    //             if (!antecedentFlowGroup){
-    //                 Debug.assert(antecedentFlowGroup);
-    //             }
-    //             ags.add(antecedentFlowGroup.group);
-    //         });
-    //         return tg.group;
-    //     });
-    //     const flowNodeToGroupMap = new Map<FlowNode, FlowNodeGroup>();
-    //     flowNodeToTempGroupMap.forEach((val,fn)=>flowNodeToGroupMap.set(fn,val.group));
-    //     //const endGroupsSet = new Set<>
-    //     const endGroups = allflowNodes.endFlowNodes.map(fn=>flowNodeToGroupMap.get(fn)!);
-    //     return {groups,endGroups,flowNodeToGroupMap};
-    // }
-    export function groupFlowNodesFromSourceFile(sourceFile: SourceFile, getFlowNodeId: ((n: FlowNode) => number)): {groupedFlowNodes: GroupedFlowNodes,allFlowNodes: AllFlowNodes} {
+    export function groupFlowNodesFromSourceFile(sourceFile: SourceFile, getFlowNodeId: ((n: FlowNode) => number)): GroupedFlowNodes {
         const allFlowNodes = findFlowNodes(sourceFile, getFlowNodeId);
-        const groupedFlowNodes = groupFlowNodes(allFlowNodes);
-        return {groupedFlowNodes,allFlowNodes};
+        const groupedFlowNodes = groupFlowNodes(allFlowNodes, sourceFile);
+        return groupedFlowNodes;
     }
 
     export function isFlowStart(fn: FlowNode | undefined): fn is FlowStart {
@@ -504,82 +456,130 @@ namespace ts {
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
+    export function dbgFlowNodeGroupToString(
+        flowNodeGroup: FlowNodeGroup,
+        getFlowNodeId: (fn: FlowNode) => number,
+        dbgFlowToString: (flowNode: FlowNode) => string,
+        dbgNodeToString: (node: Node) => string
+    ): string {
+        let str = "";
+        if (isPlainNodefulFlowNodeGroup(flowNodeGroup)){
+            str += `[Plain] maximal[fg:${getFlowNodeId(flowNodeGroup.maximal)}]: ${dbgFlowToString(flowNodeGroup.maximal)}`;
+        }
+        else if (isIfPairFlowNodeGroup(flowNodeGroup)){
+            str += `[IfPair] maximalNode[fg:${dbgNodeToString(flowNodeGroup.maximalNode)}], true:${getFlowNodeId(flowNodeGroup.true.flow)}, false:${getFlowNodeId(flowNodeGroup.false.flow)}`;
+        }
+        else if (isIfBranchFlowNodeGroup(flowNodeGroup)){
+            str += `[IfBranch] flow[true: ${flowNodeGroup.true}, fg:${dbgFlowToString(flowNodeGroup.flow)}]`;
+        }
+        else if (isNodelessFlowNodeGroup(flowNodeGroup)) {
+            str += `[Nodeless] flow[fg:${getFlowNodeId(flowNodeGroup.flow)}]: ${dbgFlowToString(flowNodeGroup.flow)}`;
+        }
+        return str;
+    };
+
     export function dbgWriteGroupedFlowNode(
         groupedFlowNodes: GroupedFlowNodes,
-        allFlowNodes: AllFlowNodes,
         writeLine: (s: string) => void,
         getFlowNodeId: (fn: FlowNode) => number,
         dbgFlowToString: (flowNode: FlowNode) => string,
         dbgNodeToString: (node: Node) => string,
     ){
+        // const flowNodeGroupToShortString = (flowNodeGroup: FlowNodeGroup): string => {
+        //     let str = "";
+        //     if (flowNodeGroup.kind===FlowNodeGroupKind.Nodeful){
+        //         str += `maximal[fg:${getFlowNodeId(flowNodeGroup.maximal)}]: ${dbgFlowToString(flowNodeGroup.maximal)}`;
+        //     }
+        //     else {
+        //         str += `flow[fg:${getFlowNodeId(flowNodeGroup.flow)}]: ${dbgFlowToString(flowNodeGroup.flow)}`;
+        //     }
+        //     return str;
+        // };
         const flowNodeGroupToShortString = (flowNodeGroup: FlowNodeGroup): string => {
-        }
+            return dbgFlowNodeGroupToString(flowNodeGroup, getFlowNodeId, dbgFlowToString, dbgNodeToString);
+        };
 
-        const flowNodeGroupToString = (flowNodeGroup: FlowNodeGroup): string => {
-            if (flowNodeGroup.kind===FlowNodeGroupKind.Nodeful){
-                let str = `[idxb=${flowNodeGroup.idxb},idxe=${flowNodeGroup.idxe}] `;
-                str += `maximal[fg:${getFlowNodeId(flowNodeGroup.maximal)}]: ${dbgFlowToString(flowNodeGroup.maximal)}`;
-                {
-                    Debug.assert(isFlowWithNode(flowNodeGroup.maximal));
-                    str += `, node: ${dbgNodeToString(flowNodeGroup.maximal.node)}`;
-                }
-                {
-                    str += `, antecedentGroups: `;
-                    flowNodeGroup.antecedentGroups.forEach(group=>{
-                        str += `, [fg:${getFlowNodeId(group.maximal)}]`;
-                    });
-                }
-                return str;
+        const flowNodeGroupToStrings = (flowNodeGroup: FlowNodeGroup): string[] => {
+            const stringsout: string[]=[];
+            const str = dbgFlowNodeGroupToString(flowNodeGroup, getFlowNodeId, dbgFlowToString, dbgNodeToString);
+            // if (isPlainNodefulFlowNodeGroup(flowNodeGroup)){
+            //     str = `[Plain] [idxb=${flowNodeGroup.idxb},idxe=${flowNodeGroup.idxe}] `;
+            //     str += `, maximal[fg:${getFlowNodeId(flowNodeGroup.maximal)}]: ${dbgFlowToString(flowNodeGroup.maximal)}`;
+            //     {
+            //         Debug.assert(isFlowWithNode(flowNodeGroup.maximal));
+            //         str += `, node: ${dbgNodeToString(flowNodeGroup.maximal.node)}`;
+            //     }
+            // }
+            // else if (isNodelessFlowNodeGroup(flowNodeGroup)){
+            //     str += `[Nodeless] `+flowNodeGroupToShortString(flowNodeGroup);
+            // }
+            // else if (isIfPairFlowNodeGroup(flowNodeGroup)){
+            //     str = `[Plain] [idxb=${flowNodeGroup.idxb},idxe=${flowNodeGroup.idxe}], maximalNode: ${dbgNodeToString(flowNodeGroup.maximalNode)} `;
+            //     str += `, true:[fg:${getFlowNodeId(flowNodeGroup.true.flow)}], false:[fg:${getFlowNodeId(flowNodeGroup.false.flow)}]`;
+            // }
+            // else if (isIfPairFlowNodeGroup(flowNodeGroup)){
+            //     str = `[Plain] [idxb=${flowNodeGroup.idxb},idxe=${flowNodeGroup.idxe}], maximalNode: ${dbgNodeToString(flowNodeGroup.maximalNode)} `;
+            //     str += `, true:[fg:${getFlowNodeId(flowNodeGroup.true.flow)}], false:[fg:${getFlowNodeId(flowNodeGroup.false.flow)}]`;
+            // }
+            stringsout.push(str);
+            if (!isIfBranchFlowNodeGroup(flowNodeGroup)){
+                stringsout.push(`  antecedentGroups:`);
+                flowNodeGroup.antecedentGroups.forEach(group=>{
+                    stringsout.push("    "+flowNodeGroupToShortString(group));
+                });
             }
-            else {
-
-            }
+            return stringsout;
+        };
+        if (groupedFlowNodes.dbgCreationTimeMs!==undefined){
+            writeLine(`dbgCreationTimeMs: ${groupedFlowNodes.dbgCreationTimeMs}`);
         }
-
-        const setVisited = new Set<NodefulFlowNodeGroup>();
-        // writeLine("endGroups:");
-        // groupedFlowNodes.endGroups.forEach(fng=>{
-        //     setVisited.add(fng);
-        //     writeLine("  "+flowNodeGroupToString(fng));
-        // });
         writeLine("groups:");
         groupedFlowNodes.groups.forEach(fng=>{
-            if (setVisited.has(fng)) return;
-            writeLine("  "+flowNodeGroupToString(fng));
-            for (let idx = fng.idxb; idx < fng.idxe; idx++){
-                const fn = groupedFlowNodes.flowNodeWithNodesSorted[idx];
-                if (fn === fng.maximal) continue;
-                Debug.assert(isFlowWithNode(fn));
-                writeLine(`    [${idx}]: flow: ${dbgFlowToString(fn)}, node: ${dbgNodeToString(fn.node)}`);
-            }
-        });
+            flowNodeGroupToStrings(fng).forEach(s=>writeLine("  "+s));
+                if (isPlainNodefulFlowNodeGroup(fng) || isIfPairFlowNodeGroup(fng)){
+                    writeLine("    "+"internal flowNodes:");
+                    for (let idx = fng.idxb; idx < fng.idxe; idx++){
+                        const fn = groupedFlowNodes.flowNodeWithNodesSorted[idx];
+                        if (isPlainNodefulFlowNodeGroup(fng) && fn === fng.maximal) continue;
+                        if (isIfPairFlowNodeGroup(fng) && (fn === fng.true.flow || fn === fng.false.flow)) continue;
+                        Debug.assert(isFlowWithNode(fn));
+                        writeLine(`      [${idx}]: flow: ${dbgFlowToString(fn)}, node: ${dbgNodeToString(fn.node)}`);
+                    }
+                }
+                });
         writeLine("arrIfPairOfGroups:");
         groupedFlowNodes.arrIfPairOfGroups.forEach(p=>{
-            writeLine(`  node: ${dbgNodeToString((p.true.maximal as FlowWithNA).node)}`);
-            writeLine(`    true: ${dbgFlowToString(p.true.maximal)}`);
-            writeLine(`    false: ${dbgFlowToString(p.false.maximal)}`);
+            writeLine(`  node: ${dbgNodeToString(p.maximalNode)}`);
+            writeLine(`    true: ${dbgFlowToString(p.true.flow)}`);
+            writeLine(`    false: ${dbgFlowToString(p.false.flow)}`);
         });
+
+        writeLine("nodelessGroups:");
+        groupedFlowNodes.nodelessGroups.forEach(fng=>{
+            flowNodeGroupToStrings(fng).forEach(s=>writeLine("  "+s));
+        });
+
         writeLine("flowNodeWithNodesSorted:");
         groupedFlowNodes.flowNodeWithNodesSorted.forEach((fn,idx)=>{
             Debug.assert(isFlowWithNode(fn));
             writeLine(`[${idx}]: flow: ${dbgFlowToString(fn)}, node: ${dbgNodeToString(fn.node)}`);
         });
-        writeLine("allFlowNodes.flowNode:");
-        allFlowNodes.flowNodes.forEach(fn=>{
-            const hasNode = isFlowWithNode(fn);
-            let str = hasNode ? "* " : "  ";
-            str += `flow: ${dbgFlowToString(fn)}`;
-            if (hasNode) str += `, node: ${dbgNodeToString(fn.node)}`;
-            writeLine(str);
-        });
-        writeLine("allFlowNodes.endFlowNode:");
-        allFlowNodes.endFlowNodes.forEach(fn=>{
-            const hasNode = isFlowWithNode(fn);
-            let str = hasNode ? "* " : "  ";
-            str += `flow: ${dbgFlowToString(fn)}`;
-            if (hasNode) str += `, node: ${dbgNodeToString(fn.node)}`;
-            writeLine(str);
-        });
+        // writeLine("allFlowNodes.flowNode:");
+        // allFlowNodes.flowNodes.forEach(fn=>{
+        //     const hasNode = isFlowWithNode(fn);
+        //     let str = hasNode ? "* " : "  ";
+        //     str += `flow: ${dbgFlowToString(fn)}`;
+        //     if (hasNode) str += `, node: ${dbgNodeToString(fn.node)}`;
+        //     writeLine(str);
+        // });
+        // writeLine("allFlowNodes.endFlowNode:");
+        // allFlowNodes.endFlowNodes.forEach(fn=>{
+        //     const hasNode = isFlowWithNode(fn);
+        //     let str = hasNode ? "* " : "  ";
+        //     str += `flow: ${dbgFlowToString(fn)}`;
+        //     if (hasNode) str += `, node: ${dbgNodeToString(fn.node)}`;
+        //     writeLine(str);
+        // });
     }
 
 }

@@ -4206,6 +4206,8 @@ namespace ts {
     }
 
     export interface TypeChecker {
+        /* @internal */ getCurrentSourceFile(): SourceFile;
+        /* @internal */ setCurrentSourceFile(sourceFile?: SourceFile): void;
         getTypeOfSymbolAtLocation(symbol: Symbol, node: Node): Type;
         /* @internal */ getTypeOfSymbol(symbol: Symbol): Type;
         getDeclaredTypeOfSymbol(symbol: Symbol): Type;
