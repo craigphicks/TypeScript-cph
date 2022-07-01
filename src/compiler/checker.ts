@@ -35939,7 +35939,6 @@ namespace ts {
                 if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
                 consoleGroup(str);
             }
-            if (currentFlowNodeGroup?.maxNode===node) currentFlowNodeGroup = undefined;
 
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
             const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
@@ -35968,6 +35967,15 @@ namespace ts {
             // }
 
             if (flowTypeOfReferenceDepth===0) checkExpressionCache.set(node,type);
+            if (currentFlowNodeGroup?.maxNode===node) {
+                /**
+                 * At this point checkExpression will have been called to do what can be done without flow work (i.e., not calling getFlowTypeOfReference
+                 * or narrow), so the flow work can be done here.
+                 */
+                //currentFlowNodeGroup.group;
+
+                currentFlowNodeGroup = undefined;
+            }
             if (myDebug) {
                 consoleLog(`checkExpression[out]: ${dbgNodeToString(node)} -> ${typeToString(type)}`);
                 consoleGroupEnd();

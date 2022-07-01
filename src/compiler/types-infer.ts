@@ -72,7 +72,6 @@ namespace ts {
     }) & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
     export type InferTypeArgsQDotFallout = RefTypesRtn[];
-    //export type InferRefArgsContext = & { nonNullExpression?: true};
     export type InferRefArgs = & {
         refTypes: RefTypes,
         condExpr: Readonly<Expression>,
@@ -118,9 +117,6 @@ namespace ts {
         assume: boolean;
         //involved: ESMap<Symbol, CheckExprData[]>;
     };
-    // export interface TempCheckExprCache {
-    //     bySymbol: ESMap<Symbol, CheckExprData[]>;
-    // }
     export type AliasableAssignmentCacheItem = & {
         expr: Expression;
     };

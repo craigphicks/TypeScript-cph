@@ -44,6 +44,7 @@
         "symbolWalker.ts",
         "checker.ts",
         "flowNodesGrouping.ts",
+        "flowGroupSmack.ts",
         "visitorPublic.ts",
         "sourcemap.ts",
         "transformers/utilities.ts",

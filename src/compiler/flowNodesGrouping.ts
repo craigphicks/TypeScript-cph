@@ -1,4 +1,3 @@
-
 namespace ts {
     interface AllFlowNodes  {
         flowNodes: FlowNode[];
@@ -11,16 +10,24 @@ namespace ts {
         IfBranch="IfBranch",
         IfPair="IfPair"
     };
+
+    export interface FlowNodeGroupBase {
+        kind: FlowNodeGroupKind,
+        //ordinal: number;
+    }
+
     /**
-     * All FlowNode with NodeFlags.Start become a NodelessFlowNodeGroup even if they have a node.
+     * Note: All FlowNode with NodeFlags.Start become a NodelessFlowNodeGroup even if they have a node.
      */
-    export interface NodelessFlowNodeGroup {
+    export interface NodelessFlowNodeGroup extends FlowNodeGroupBase {
         kind: FlowNodeGroupKind.Nodeless;
+        ordinal: number;
         flow: FlowNode;
         antecedentGroups: Set<FlowNodeGroup>;
     };
-    export interface PlainNodefulFlowNodeGroup {
+    export interface PlainNodefulFlowNodeGroup extends FlowNodeGroupBase {
         kind: FlowNodeGroupKind.PlainNodeful;
+        ordinal: number;
         maximal: FlowNode & {node: Node};
         maximalIdx: number,
         //group?: Set<FlowNode>;
@@ -32,14 +39,19 @@ namespace ts {
         antecedentGroups: Set<FlowNodeGroup>;
     };
 
-    export interface IfBranchFlowNodeGroup {
+    /**
+     * The true and false IfBranchFlowNodeGroup-s are seperate from IfPairFlowNodeGoup because
+     * the precedents of true and false differ from each other, yet they share the same antecedents.
+     */
+    export interface IfBranchFlowNodeGroup extends FlowNodeGroupBase {
         kind: FlowNodeGroupKind.IfBranch;
         true: boolean;
         flow: FlowNode & {node: Node}; // flow.node is a maximal node of all the nodes in IfPairOfGroups
         ifPair: IfPairFlowNodeGoup;
     };
-    export interface IfPairFlowNodeGoup {
+    export interface IfPairFlowNodeGoup extends FlowNodeGroupBase {
         kind: FlowNodeGroupKind.IfPair;
+        ordinal: number;
         true: IfBranchFlowNodeGroup;
         false: IfBranchFlowNodeGroup;
         maximalNode: Node; // the node shared by both true and false flows
@@ -48,9 +60,14 @@ namespace ts {
         antecedentGroups: Set<FlowNodeGroup>;
     };
 
+    // export interface FlowNodeGroupWithAntecedentGroups {
+    //     kind: FlowNodeGroupKind.IfPair | FlowNodeGroupKind.PlainNodeful | FlowNodeGroupKind.Nodeless
+    //     antecedentGroups: Set<FlowNodeGroup>;
+    // }
+
     export type NodefulFlowNodeGroup = PlainNodefulFlowNodeGroup | IfPairFlowNodeGoup | IfBranchFlowNodeGroup;
     export type FlowNodeGroup = NodelessFlowNodeGroup | NodefulFlowNodeGroup;
-
+    export type FlowNodeGroupWithAntecedentGroups = IfPairFlowNodeGoup | PlainNodefulFlowNodeGroup | NodelessFlowNodeGroup;
     export interface GroupedFlowNodes {
         flowNodeWithNodesSorted: FlowNode[];
         groups: NodefulFlowNodeGroup[];
@@ -68,6 +85,7 @@ namespace ts {
         antecedents?: FlowNode[];
     };
 
+
     export function isNodelessFlowNodeGroup(x: FlowNodeGroup): x is NodelessFlowNodeGroup {
         return x.kind===FlowNodeGroupKind.Nodeless;
     }
@@ -80,6 +98,9 @@ namespace ts {
     export function isIfPairFlowNodeGroup(x: FlowNodeGroup): x is IfPairFlowNodeGoup {
         return x.kind===FlowNodeGroupKind.IfPair;
     }
+    export function isNodefulFlowNodeGroup(x: FlowNodeGroup): x is NodefulFlowNodeGroup {
+        return !isNodelessFlowNodeGroup(x);
+    }
 
     export function getFlowGroupMaximalNode(group: NodefulFlowNodeGroup): Node {
         if (isPlainNodefulFlowNodeGroup(group)) return group.maximal.node;
@@ -88,8 +109,27 @@ namespace ts {
         Debug.assert(!isNodelessFlowNodeGroup(group));
         Debug.fail();
     }
+    function hasOwnAntecedents(x: FlowNodeGroup): x is FlowNodeGroupWithAntecedentGroups {
+        return !!(x as FlowNodeGroupWithAntecedentGroups).antecedentGroups;
+    }
+
+    export function getAntecedentGroups(group: FlowNodeGroup): Readonly<Set<FlowNodeGroup>>{
+        if (hasOwnAntecedents(group)) return group.antecedentGroups;
+        else if (isIfBranchFlowNodeGroup(group)){
+            return group.ifPair.antecedentGroups;
+        }
+        Debug.fail();
+    }
+    export function getOrdinal(group: FlowNodeGroup): number{
+        if (hasOwnAntecedents(group)) return group.ordinal;
+        else if (isIfBranchFlowNodeGroup(group)){
+            return group.ifPair.ordinal;
+        }
+        Debug.fail();
+    }
 
     /**
+     * OBSOLETE - all FlowNodes are pushed into allFlowNodes array during bind, much easier.
      * Collect all flow nodes in a sourceFile.
      * "flowNodes" is all the flow nodes.
      * "endFlowNodes" are all the flow node which are the antecedent of no other flow node
@@ -100,85 +140,85 @@ namespace ts {
      *  endFlowNodes
      * }
      */
-    export function findFlowNodes(
-        sourceFile: SourceFile,
-        getFlowNodeId: ((n: FlowNode) => number)
-        ): AllFlowNodes {
-        const endFlowNodes: FlowNode[]=[];
-        const flowNodes: FlowNode[]=[];
-        // endFlowNodes is at least not always easy to find, might not even exist in any container?
-        const setv = new Set<FlowNode>();
-        const visitorEfn = (n: Node) => {
-            //if ((n as any).endFlowNode) endFlowNodes.push((n as any).endFlowNode);
-            if ((n as any).flowNode){
-                const fn = (n as any).flowNode as FlowNode;
-                if (!setv.has(fn) /*&& !isFlowStart(fn)*/){
-                    flowNodes.push(fn);
-                    setv.add(fn);
-                }
-            }
-            if ((n as any).endFlowNode){
-                const fn = (n as any).endFlowNode as FlowNode;
-                if (!setv.has(fn) /*&& !isFlowStart(fn)*/){
-                    flowNodes.push(fn);
-                    setv.add(fn);
-                }
-            }
-            forEachChild(n, visitorEfn);
-        };
-        /**
-         * Collect all the flow nodes accessible via some node.
-         */
-        visitorEfn(sourceFile);
-        /**
-         * Collect all the flow nodes accessible via antecedents
-         */
-        const setAnte = new Set<FlowNode>();
-        const addAntesToSet = (f: FlowNode & {antecedent?: FlowNode, antecedents?: FlowNode[]}) => {
-            if (f.antecedent) {
-                if (!setv.has(f.antecedent) && !setAnte.has(f.antecedent)) setAnte.add(f.antecedent);
-            }
-            if (f.antecedents) {
-                f.antecedents.forEach((a: FlowNode)=>{
-                    if (!setv.has(a) && !setAnte.has(a)) setAnte.add(a);
-                });
-            }
-        };
-        flowNodes.forEach(f=>addAntesToSet(f));
-        let change = true;
-        while (change) {
-            const size = setAnte.size;
-            setAnte.forEach(a=>addAntesToSet(a));
-            change = setAnte.size!==size;
-        }
-        // @ts-expect-error 2769
-        flowNodes.push(...Array.from(setAnte.keys()));
-        setv.clear();
-        const visitMark=(f: FlowNode) => {
-            if (setv.has(f)) return;
-            setv.add(f);
-            if ((f as any).antecedent) {
-                const a: FlowNode = (f as any).antecedent;
-                getFlowNodeId(a);
-                visitMark(a);
-            }
-            else if ((f as any).antecedents) {
-                (f as any).antecedents.forEach((a: FlowNode)=>{
-                    getFlowNodeId(a);
-                    visitMark(a);
-                });
-            }
-        };
-        flowNodes.forEach(f=>{
-            if (!setAnte.has(f)) {
-                (f as any).isEndFlowNode = true; // NG!!
-                getFlowNodeId(f);
-                endFlowNodes.push(f);
-                visitMark(f);
-            }
-        });
-        return {flowNodes,endFlowNodes};
-    }
+    // export function findFlowNodes(
+    //     sourceFile: SourceFile,
+    //     getFlowNodeId: ((n: FlowNode) => number)
+    //     ): AllFlowNodes {
+    //     const endFlowNodes: FlowNode[]=[];
+    //     const flowNodes: FlowNode[]=[];
+    //     // endFlowNodes is at least not always easy to find, might not even exist in any container?
+    //     const setv = new Set<FlowNode>();
+    //     const visitorEfn = (n: Node) => {
+    //         //if ((n as any).endFlowNode) endFlowNodes.push((n as any).endFlowNode);
+    //         if ((n as any).flowNode){
+    //             const fn = (n as any).flowNode as FlowNode;
+    //             if (!setv.has(fn) /*&& !isFlowStart(fn)*/){
+    //                 flowNodes.push(fn);
+    //                 setv.add(fn);
+    //             }
+    //         }
+    //         if ((n as any).endFlowNode){
+    //             const fn = (n as any).endFlowNode as FlowNode;
+    //             if (!setv.has(fn) /*&& !isFlowStart(fn)*/){
+    //                 flowNodes.push(fn);
+    //                 setv.add(fn);
+    //             }
+    //         }
+    //         forEachChild(n, visitorEfn);
+    //     };
+    //     /**
+    //      * Collect all the flow nodes accessible via some node.
+    //      */
+    //     visitorEfn(sourceFile);
+    //     /**
+    //      * Collect all the flow nodes accessible via antecedents
+    //      */
+    //     const setAnte = new Set<FlowNode>();
+    //     const addAntesToSet = (f: FlowNode & {antecedent?: FlowNode, antecedents?: FlowNode[]}) => {
+    //         if (f.antecedent) {
+    //             if (!setv.has(f.antecedent) && !setAnte.has(f.antecedent)) setAnte.add(f.antecedent);
+    //         }
+    //         if (f.antecedents) {
+    //             f.antecedents.forEach((a: FlowNode)=>{
+    //                 if (!setv.has(a) && !setAnte.has(a)) setAnte.add(a);
+    //             });
+    //         }
+    //     };
+    //     flowNodes.forEach(f=>addAntesToSet(f));
+    //     let change = true;
+    //     while (change) {
+    //         const size = setAnte.size;
+    //         setAnte.forEach(a=>addAntesToSet(a));
+    //         change = setAnte.size!==size;
+    //     }
+    //     // @ts-expect-error 2769
+    //     flowNodes.push(...Array.from(setAnte.keys()));
+    //     setv.clear();
+    //     const visitMark=(f: FlowNode) => {
+    //         if (setv.has(f)) return;
+    //         setv.add(f);
+    //         if ((f as any).antecedent) {
+    //             const a: FlowNode = (f as any).antecedent;
+    //             getFlowNodeId(a);
+    //             visitMark(a);
+    //         }
+    //         else if ((f as any).antecedents) {
+    //             (f as any).antecedents.forEach((a: FlowNode)=>{
+    //                 getFlowNodeId(a);
+    //                 visitMark(a);
+    //             });
+    //         }
+    //     };
+    //     flowNodes.forEach(f=>{
+    //         if (!setAnte.has(f)) {
+    //             (f as any).isEndFlowNode = true; // NG!!
+    //             getFlowNodeId(f);
+    //             endFlowNodes.push(f);
+    //             visitMark(f);
+    //         }
+    //     });
+    //     return {flowNodes,endFlowNodes};
+    // }
 
     function calculateGroupAntecedents(
         grouped: GroupedFlowNodes
@@ -255,6 +295,27 @@ namespace ts {
         });
     }
 
+    function ensureOrdinality(grouped: GroupedFlowNodes): void {
+        let change = true;
+        while (change){
+            grouped.groups.forEach(g=>{
+                const gto = getOrdinal(g);
+                let gt = gto;
+                getAntecedentGroups(g).forEach(ag=>{
+                    const lt = getOrdinal(ag);
+                    if (gt<=lt){
+                        gt = lt+1;
+                    }
+                });
+                if (gt!==gto){
+                    change = true;
+                    if (hasOwnAntecedents(g)) g.ordinal = gt;
+                    else g.ifPair.ordinal = gt;
+                }
+            });
+        }
+    }
+
     export function groupFlowNodes(allFlowNodes: AllFlowNodes, sourceFile: SourceFile): GroupedFlowNodes {
         const flowNodeWithNodes: (FlowWithNA & FlowNode)[]=[];
         const flowNodeWithoutNodes: FlowNode[]=[];
@@ -283,6 +344,8 @@ namespace ts {
         const createIfGroups = (idxb: number,idxe: number): IfPairFlowNodeGoup => {
             const idxTrue = idxe-1;
             const idxFalse = idxe-2;
+            const maximalNode = flowNodeWithNodesSorted[idxFalse].node;
+            const ordinal = maximalNode.pos;
             const groupTrue: Partial<IfBranchFlowNodeGroup> = {
                 kind: FlowNodeGroupKind.IfBranch,
                 true: true,
@@ -295,9 +358,10 @@ namespace ts {
             };
             const ifPair: IfPairFlowNodeGoup = {
                 kind: FlowNodeGroupKind.IfPair,
+                ordinal,
                 true:groupTrue as IfBranchFlowNodeGroup,
                 false:groupFalse as IfBranchFlowNodeGroup,
-                maximalNode: flowNodeWithNodesSorted[idxFalse].node,
+                maximalNode,
                 idxb,
                 idxe,
                 antecedentGroups: new Set<FlowNodeGroup>()
@@ -329,6 +393,7 @@ namespace ts {
                 else {
                     const group: PlainNodefulFlowNodeGroup = {
                         kind: FlowNodeGroupKind.PlainNodeful,
+                        ordinal: maximal.node.pos,
                         idxb, idxe:fi,
                         maximalIdx,
                         //disclude:[],
@@ -365,6 +430,7 @@ namespace ts {
             else {
                 const group: PlainNodefulFlowNodeGroup = {
                     kind: FlowNodeGroupKind.PlainNodeful,
+                    ordinal: maximal.node.pos,
                     idxb, idxe:flowNodeWithNodesSorted.length,
                     maximalIdx,
                     maximal,
@@ -390,6 +456,7 @@ namespace ts {
         const nodelessGroups = flowNodeWithoutNodes.map((fn: FlowNode): NodelessFlowNodeGroup => {
             return {
                 kind:FlowNodeGroupKind.Nodeless,
+                ordinal: -1,
                 flow:fn,
                 antecedentGroups: new Set<FlowNodeGroup>()
             };
@@ -406,7 +473,7 @@ namespace ts {
             allFlowNodes
         };
         calculateGroupAntecedents(grouped);
-
+        ensureOrdinality(grouped);
         return grouped;
     }
 
