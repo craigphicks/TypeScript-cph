@@ -19,6 +19,13 @@ namespace ts {
     let myCurrentSourceFile: SourceFile|undefined;
     const myNarrowTest = (process.env.myNarrowTest===undefined) ? false : !!Number(process.env.myNarrowTest);
 
+    // @ts-ignore-error
+    let currentFlowNodeGroup: {
+        group: NodefulFlowNodeGroup,
+        pos: number,
+        end: number,
+        maxNode: Node
+    } | undefined;
 
     interface SystemWithAppendFile extends System {
         openFileForWriteFd(path: string): number; // returns number which is file description
@@ -35914,29 +35921,26 @@ namespace ts {
             currentNode = node;
             instantiationCount = 0;
             const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
-            if (myDebug) {
-                consoleGroup(`checkExpression[in]: ${dbgNodeToString(node)} ${insideGetFlowTypeOfReference?", insideGetFlowTypeOfReference":""}`);
-                if (!insideGetFlowTypeOfReference && node.flowNode){
-                    Debug.assert(currentSourceFile);
-                    const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile);
-                    Debug.assert(grouped);
-                    const flows = grouped.nodeToFlowNodesMap.get(node);
-                    if (flows){
-                        const groups = flows.map(flow => {
-                            const group = grouped.flowNodeToGroupMap.get(flow);
-                            Debug.assert(group);
-                            return group;
-                        });
-                        let str = `checkExpression[dbg groups]: node: ${dbgNodeToString(node)},  groups:`;
-                        groups.forEach(g=> str+= (dbgFlowNodeGroupToString(g, getFlowNodeId, dbgFlowToString, dbgNodeToString)+ ", "));
-                        consoleLog(str);
-                    }
-                    // Need a reliable map from nodes to (flow node groups)/(if groups)/...
-                    // because not all relavant nodes will have flow nodes.
-                    //grouped.flowNodeToGroupMap()
+
+            let inFlowGroup = false;
+            if (!insideGetFlowTypeOfReference){
+                if (!currentFlowNodeGroup) {
+                    if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
                 }
-                //consoleLog(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
+                else {
+                    if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
+                        inFlowGroup = true;
+                    }
+                    else currentFlowNodeGroup = undefined;
+                }
             }
+            if (myDebug) {
+                let str = `checkExpression[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
+                if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+                consoleGroup(str);
+            }
+            if (currentFlowNodeGroup?.maxNode===node) currentFlowNodeGroup = undefined;
+
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
             const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
             if (isConstEnumObjectType(type)) {
@@ -43598,13 +43602,31 @@ namespace ts {
             }
         }
 
-
+        // @ts-ignore-error
         function myIsSpecialSourceElement(node: Node): boolean|undefined {
             const cr: CommentRange[]|undefined = getLeadingCommentRangesOfNode(node, myCurrentSourceFile!);
             return cr && cr.some(r=> {
                 return myCurrentSourceFile!.text.slice(r.pos,r.end).includes("@special");
             });
 
+        }
+
+        function testSetCurrentFlowGroupNode(node: Node){
+            Debug.assert(!currentFlowNodeGroup);
+            Debug.assert(currentSourceFile);
+            const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile);
+            Debug.assert(grouped);
+            let group = grouped.nodeToFlowGroupMap.get(node);
+            if (!group){
+                let parent = node.parent;
+                while (parent && parent.kind !== SyntaxKind.SourceFile && !(group=grouped.nodeToFlowGroupMap.get(node))) parent = parent.parent;
+            }
+            if (group){
+                const maxNode = getFlowGroupMaximalNode(group);
+                const {pos,end}=maxNode;
+                currentFlowNodeGroup = {group, pos, end, maxNode};
+                return currentFlowNodeGroup;
+            }
         }
 
         function checkSourceElement(node: Node | undefined): void {
@@ -43616,19 +43638,31 @@ namespace ts {
                 /**
                  * Not expecting checkSourceElement to be called recursively inside a selected source element.
                  */
-                if (!myDisableInfer){
-                    Debug.assert(!sourceElementSelectedForInfer);
-                    //Debug.assert(isExpression(node), "isExpression(node)");
-                    sourceElementSelectedForInfer = myIsSpecialSourceElement(node)?node:undefined;
-                    if (sourceElementSelectedForInfer) {
-                        Debug.assert(isExpressionStatement(node), "isExpression(node)");
-                        //temporaryPerSourceElementCheckExpressionCache = new Map<Symbol,CheckExprData>();
+                // if (!myDisableInfer){
+                //     Debug.assert(!sourceElementSelectedForInfer);
+                //     //Debug.assert(isExpression(node), "isExpression(node)");
+                //     sourceElementSelectedForInfer = myIsSpecialSourceElement(node)?node:undefined;
+                //     if (sourceElementSelectedForInfer) {
+                //         Debug.assert(isExpressionStatement(node), "isExpression(node)");
+                //         //temporaryPerSourceElementCheckExpressionCache = new Map<Symbol,CheckExprData>();
+                //     }
+                // }
+                const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
+                let inFlowGroup = false;
+                if (!insideGetFlowTypeOfReference){
+                    if (!currentFlowNodeGroup) {
+                        if (testSetCurrentFlowGroupNode(node)) {
+                            inFlowGroup = true;
+                        }
+                    }
+                    else {
+                        Debug.assert(node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end);
+                        inFlowGroup = true;
                     }
                 }
-
                 if (myDebug) {
-                    let str = `checkSourceElement[in]${sourceElementSelectedForInfer?`<${dbgNodeToString(sourceElementSelectedForInfer)}>`:""}: ${dbgNodeToString(node)}`;
-                    if (node.flowNode) str += `, flowNode: ${dbgFlowToString(node.flowNode)}`;
+                    let str = `checkSourceElement[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
+                    if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
                     consoleGroup(str);
                 }
                 checkSourceElementWorker(node);
@@ -43636,6 +43670,8 @@ namespace ts {
                     consoleLog(`checkSourceElement[out]: nodeid: ${node.id}`);
                     consoleGroupEnd();
                 }
+                if (currentFlowNodeGroup?.maxNode===node) currentFlowNodeGroup = undefined;
+
                 if (sourceElementSelectedForInfer){
                     Debug.assert(isExpressionStatement(node), "isExpression(node)");
                     //Debug.assert(temporaryPerSourceElementCheckExpressionCache);

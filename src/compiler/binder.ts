@@ -166,19 +166,24 @@ namespace ts {
         IsObjectLiteralOrClassExpressionMethodOrAccessor = 1 << 7,
     }
 
+    let allFlowNodesOneSourceFile: FlowNode[]|undefined;
     function initFlowNode<T extends FlowNode>(node: T) {
         Debug.attachFlowNodeDebugInfo(node);
+        allFlowNodesOneSourceFile?.push(node);
         return node;
     }
 
     const binder = createBinder();
 
-    const myDisable = !!Number(process.env.myDisable); // Disable inserting FlowJoin, etc.
+    const myDisableFlow = true; //!!Number(process.env.myDisable); // Disable inserting FlowJoin, etc.
 
     export function bindSourceFile(file: SourceFile, options: CompilerOptions) {
         performance.mark("beforeBind");
         perfLogger.logStartBindFile("" + file.fileName);
+        allFlowNodesOneSourceFile=[];
         binder(file, options);
+        file.allFlowNodes = allFlowNodesOneSourceFile;
+        allFlowNodesOneSourceFile = undefined;
         perfLogger.logStopBindFile();
         performance.mark("afterBind");
         performance.measure("Bind", "beforeBind", "afterBind");
@@ -896,7 +901,8 @@ namespace ts {
                 || (isPropertyAccessExpression(expr) || isNonNullExpression(expr) || isParenthesizedExpression(expr)) && isNarrowableReference(expr.expression)
                 || isBinaryExpression(expr) && expr.operatorToken.kind === SyntaxKind.CommaToken && isNarrowableReference(expr.right)
                 || isElementAccessExpression(expr) && (isStringOrNumericLiteralLike(expr.argumentExpression) || isEntityNameExpression(expr.argumentExpression)) && isNarrowableReference(expr.expression)
-                || isAssignmentExpression(expr) && isNarrowableReference(expr.left);
+                || isAssignmentExpression(expr) && isNarrowableReference(expr.left)
+                /* || isIdentifier(expr) */;
         }
 
         function containsNarrowableReference(expr: Expression): boolean {
@@ -1388,6 +1394,7 @@ namespace ts {
             }
             if (!done && isNarrowableReference(node)){
                 currentFlow = createFlowExpressionStatement(currentFlow, node);
+                currentFlow.node = node;
             }
         }
         function createFlowExpressionStatement(antecedent: FlowNode, node: Expression){
@@ -1663,7 +1670,7 @@ namespace ts {
                 currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
                 if (setNodeFlowNode){
                     // node.flowNode is not getting set but we need it now for alias assignments.
-                    node.flowNode = currentFlow;
+                    // node.flowNode = currentFlow;
                 }
                 // currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
             }
@@ -1672,7 +1679,7 @@ namespace ts {
         function bindVariableDeclarationFlow(node: VariableDeclaration) {
             //let join: FlowJoin | undefined;
             let setNodeFlowNode = false;
-            if (!myDisable && node.initializer) {
+            if (!myDisableFlow && node.initializer) {
                 setNodeFlowNode = true;
                 currentFlow = createFlowJoin({ antecedent: currentFlow, joinNode: node });
             }
@@ -1796,7 +1803,16 @@ namespace ts {
                 bindOptionalChainFlow(node);
             }
             else {
+                // IWOZERE
+                // setFlowNodeReferenced(currentFlow);
+                // currentFlow = initFlowNode({ flags:FlowFlags.Other1, antecedent: currentFlow});
                 bindEachChild(node);
+                // const dotLhsFlow = currentFlow;
+                // (dotLhsFlow as FlowOther1).node = node.expression;
+                // const dotRhsFlow = initFlowNode({ flags:FlowFlags.Other2, antecedent: dotLhsFlow}) as FlowOther2;
+                // setFlowNodeReferenced(dotLhsFlow);
+                // dotRhsFlow.node = node;
+                // node.flowNode = dotRhsFlow;
             }
         }
 
@@ -2544,6 +2560,9 @@ namespace ts {
                         bindBlockScopedDeclaration(parentNode as Declaration, SymbolFlags.TypeAlias, SymbolFlags.TypeAliasExcludes);
                         break;
                     }
+                    // for infer we need the identifiers as group internal members
+                    //(initFlowNode({flags: FlowFlags.Other2, antecedent:currentFlow}) as FlowOther2).node=node as Identifier;
+
                     // falls through
                 case SyntaxKind.ThisKeyword:
                     if (currentFlow && (isExpression(node) || parent.kind === SyntaxKind.ShorthandPropertyAssignment)) {
@@ -2770,6 +2789,8 @@ namespace ts {
                 case SyntaxKind.JSDocCallbackTag:
                 case SyntaxKind.JSDocEnumTag:
                     return (delayedTypeAliases || (delayedTypeAliases = [])).push(node as JSDocTypedefTag | JSDocCallbackTag | JSDocEnumTag);
+                // case SyntaxKind.ParenthesizedExpression:
+
             }
         }
 

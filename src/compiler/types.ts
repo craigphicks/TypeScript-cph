@@ -3461,6 +3461,8 @@ namespace ts {
         Shared         = 1 << 12, // Referenced as antecedent more than once
         ExpressionStatement = 1<<13, // Plain expression statement
         Join           = 1 << 14, // Marks the end of an Assignment
+        Other1           = 1 << 15, //
+        Other2           = 1 << 16, //
 
         Label = BranchLabel | LoopLabel,
         Condition = TrueCondition | FalseCondition,
@@ -3476,7 +3478,10 @@ namespace ts {
         | FlowCall
         | FlowReduceLabel
         | FlowExpressionStatement
-        | FlowJoin;
+        | FlowJoin
+        | FlowOther1
+        | FlowOther2
+        ;
 
     export interface FlowNodeBase {
         flags: FlowFlags;
@@ -3511,7 +3516,14 @@ namespace ts {
         joinNode: Expression | VariableDeclaration | BindingElement; // same as the node of the Flow being joined.
         antecedent: FlowNode;
     }
-
+    export interface FlowOther1 extends FlowNodeBase {
+        node: Expression | VariableDeclaration | BindingElement;
+        antecedent: FlowNode;
+    }
+    export interface FlowOther2 extends FlowNodeBase {
+        node: Expression | VariableDeclaration | BindingElement;
+        antecedent: FlowNode;
+    }
 
     export interface FlowCall extends FlowNodeBase {
         node: CallExpression;
@@ -3588,7 +3600,7 @@ namespace ts {
         readonly kind: SyntaxKind.SourceFile;
         readonly statements: NodeArray<Statement>;
         readonly endOfFileToken: Token<SyntaxKind.EndOfFileToken>;
-
+        allFlowNodes?: FlowNode[];
         fileName: string;
         /* @internal */ path: Path;
         text: string;
