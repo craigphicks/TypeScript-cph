@@ -10,7 +10,7 @@ namespace ts {
 
     }
 
-    function resolveNodefulGroupUsingStates(_group: NodefulFlowNodeGroup, _groupStates: GroupStates){
+    function resolveNodefulGroupUsingStates(_group: NodefulFlowNodeGroup, _groupStates: FlowGroupStates){
         // resolve and update groupStates
     }
 
@@ -28,6 +28,7 @@ namespace ts {
         });
         let change = true;
         while (change) {
+            change = false;
             acc.forEach(g=>{
                 getAntecedentGroups(g).forEach(a=>{
                     if (!isGroupCached(groupStates, a) && !acc.has(a)){

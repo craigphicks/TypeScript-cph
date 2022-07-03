@@ -24603,6 +24603,10 @@ namespace ts {
             return flow.antecedent;
         }
 
+        function dbgFlowGroupToString(group: FlowNodeGroup|undefined): string {
+            if (!group) return "<undef>";
+            else return dbgFlowNodeGroupToString(group, getFlowNodeId, dbgFlowToString, dbgNodeToString);
+        }
 
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode,
             joinMap: JoinMap | undefined=undefined): Type {
@@ -24631,8 +24635,37 @@ namespace ts {
                 + `[gftor call depth:${flowTypeQueryState.getFlowTypeOfReferenceStack.length}`;
             }
             if (myDebug) {
-                consoleGroup(`(in ) getFlowTypeOfReference: ` + dbgstr);
+                consoleGroup(`getFlowTypeOfReference[in]: ` + dbgstr);
             }
+            if (!myDisableInfer){
+                if (myDebug){
+                    if (!currentFlowNodeGroup){
+                        //
+                    }
+                    else {
+                        const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile!);
+                        Debug.assert(grouped);
+                        const str00 = `currentFlowNodeGroup:<${currentFlowNodeGroup.pos},${currentFlowNodeGroup.end}>`;
+                        const str0 = `reference.flowNode: ${dbgFlowToString(reference.flowNode)}`;
+                        const nToFG1 = grouped.nodeToFlowGroupMap.get(reference);
+                        const inCurrentFlowNodeGroup = reference.pos >= currentFlowNodeGroup.pos && reference.end <= currentFlowNodeGroup.end;
+                        const fToFG = reference.flowNode ? grouped.flowNodeToGroupMap.get(reference.flowNode) : undefined;
+                        const nToFG2 = (reference.flowNode as any)?.node ? grouped.nodeToFlowGroupMap.get((reference.flowNode as any).node) : undefined;
+                        const str1 = `grouped.nodeToFlowGroupMap.get(reference): ${dbgFlowGroupToString(nToFG1)}`;
+                        const str11 = `inCurrentFlowNodeGroup: ${inCurrentFlowNodeGroup}`;
+                        const str2 = `grouped.flowToFlowGroupMap.get(reference.flowNode): ${dbgFlowGroupToString(fToFG)}`;
+                        const str3 = `grouped.nodeToFlowGroupMap.get(reference.flowNode.node): ${dbgFlowGroupToString(nToFG2)}`;
+                        //consoleLog(`${str0}, ${str1}, ${str3}`);
+                        consoleLog("dbgInfer: "+str00);
+                        consoleLog("dbgInfer: "+str0);
+                        consoleLog("dbgInfer: "+str1);
+                        consoleLog("dbgInfer: "+str11);
+                        consoleLog("dbgInfer: "+str2);
+                        consoleLog("dbgInfer: "+str3);
+                    }
+                }
+            }
+
             flowTypeQueryState.getFlowTypeOfReferenceStack.push({
                 reference, declaredType, initialType, flowContainer, flowNode, joinMap,
                 other: { isConstReadonly: false, flowStackIndex: flowTypeQueryState.flowStack.length }
@@ -24640,7 +24673,7 @@ namespace ts {
             const type = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode!, joinMap);
             flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
             if (myDebug) {
-                consoleLog(`(out) getFlowTypeOfReference: ${dbgstr}, return: ${typeToString(type)}`);
+                consoleLog(`getFlowTypeOfReference[out]: ${dbgstr}, return: ${typeToString(type)}`);
             }
             if (myDebug) consoleGroupEnd();
             return type;
@@ -26342,7 +26375,7 @@ namespace ts {
             }
             function narrowType(type: Type, expr: Expression, assumeTrue: boolean): Type {
                 if (myDebug){
-                    consoleGroup(`narrowType[in ]: type:${typeToString(type)}, expr=${dbgNodeToString(expr)}, assumeTrue=${assumeTrue}`);
+                    consoleGroup(`narrowType[in ]: type:${typeToString(type)}, expr=${dbgNodeToString(expr)}, assumeTrue=${assumeTrue}, ref=${dbgNodeToString(reference)}`);
                 }
                 const r = narrowType_aux(type,expr,assumeTrue);
                 if (myDebug){
@@ -35923,21 +35956,30 @@ namespace ts {
             const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
 
             let inFlowGroup = false;
-            if (!insideGetFlowTypeOfReference){
-                if (!currentFlowNodeGroup) {
-                    if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
-                }
-                else {
-                    if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
-                        inFlowGroup = true;
+            if (!myDisableInfer){
+                if (!insideGetFlowTypeOfReference){
+                    if (!currentFlowNodeGroup) {
+                        if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
                     }
-                    else currentFlowNodeGroup = undefined;
+                    else {
+                        if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
+                            inFlowGroup = true;
+                        }
+                        else currentFlowNodeGroup = undefined;
+                    }
+                }
+                if (myDebug) {
+                    let str = `checkExpression[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
+                    if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+                    consoleGroup(str);
                 }
             }
-            if (myDebug) {
-                let str = `checkExpression[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
-                if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-                consoleGroup(str);
+            else {
+                if (myDebug) {
+                    let str = `checkExpression[in] node: ${dbgNodeToString(node)}`;
+                    if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+                    consoleGroup(str);
+                }
             }
 
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
@@ -43657,21 +43699,30 @@ namespace ts {
                 // }
                 const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
                 let inFlowGroup = false;
-                if (!insideGetFlowTypeOfReference){
-                    if (!currentFlowNodeGroup) {
-                        if (testSetCurrentFlowGroupNode(node)) {
-                            inFlowGroup = true;
+                if (!myDisableInfer){
+                    if (!insideGetFlowTypeOfReference){
+                        if (!currentFlowNodeGroup) {
+                            if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
+                        }
+                        else {
+                            if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
+                                inFlowGroup = true;
+                            }
+                            else currentFlowNodeGroup = undefined;
                         }
                     }
-                    else {
-                        Debug.assert(node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end);
-                        inFlowGroup = true;
+                    if (myDebug) {
+                        let str = `checkSourceElement[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
+                        if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+                        consoleGroup(str);
                     }
                 }
-                if (myDebug) {
-                    let str = `checkSourceElement[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
-                    if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-                    consoleGroup(str);
+                else {
+                    if (myDebug) {
+                        let str = `checkSourceElement[in] node: ${dbgNodeToString(node)}`;
+                        if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+                        consoleGroup(str);
+                    }
                 }
                 checkSourceElementWorker(node);
                 if (myDebug) {

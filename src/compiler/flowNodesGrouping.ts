@@ -298,6 +298,7 @@ namespace ts {
     function ensureOrdinality(grouped: GroupedFlowNodes): void {
         let change = true;
         while (change){
+            change = false;
             grouped.groups.forEach(g=>{
                 const gto = getOrdinal(g);
                 let gt = gto;
