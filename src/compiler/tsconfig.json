@@ -40,11 +40,14 @@
         "commandLineParser.ts",
         "moduleNameResolver.ts",
 
+        "myConsole.ts",
+
         "binder.ts",
         "symbolWalker.ts",
         "checker.ts",
         "flowNodesGrouping.ts",
-        "flowGroupSmack.ts",
+        "flowGroupInfer.ts",
+        "foobar.ts",
         "visitorPublic.ts",
         "sourcemap.ts",
         "transformers/utilities.ts",

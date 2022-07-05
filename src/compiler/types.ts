@@ -3601,6 +3601,7 @@ namespace ts {
         readonly statements: NodeArray<Statement>;
         readonly endOfFileToken: Token<SyntaxKind.EndOfFileToken>;
         allFlowNodes?: FlowNode[];
+        allNodesWithFlowOneSourceFile?: Node[];
         fileName: string;
         /* @internal */ path: Path;
         text: string;
@@ -4218,8 +4219,10 @@ namespace ts {
     }
 
     export interface TypeChecker {
-        /* @internal */ getCurrentSourceFile(): SourceFile;
-        /* @internal */ setCurrentSourceFile(sourceFile?: SourceFile): void;
+        /* @internal */ getSourceFileInferState(): SourceFileInferState;
+        /* @internal */ createAndSetSourceFileInferState(sourceFile?: SourceFile): void;
+        /* @internal */ unsetSourceFileInferState(): void;
+        /* @internal */ getFlowNodeId(flow: FlowNode): number;
         getTypeOfSymbolAtLocation(symbol: Symbol, node: Node): Type;
         /* @internal */ getTypeOfSymbol(symbol: Symbol): Type;
         getDeclaredTypeOfSymbol(symbol: Symbol): Type;

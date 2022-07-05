@@ -1,5 +1,3 @@
-
-//const NodeFs = require("fs");
 /* @internal */
 namespace ts {
     let dbgFlowFileCnt = 0;
@@ -9,14 +7,6 @@ namespace ts {
     //myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
     //myNoAliasAction = !!Number(process.env.myNoAliasAction);
     const myDisableInfer = (process.env.myDisableInfer===undefined) ? false : !!Number(process.env.myDisableInfer);
-
-
-    const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):10000;
-    let myNumLinesOut=0;
-    let myMaxDepth = 0; // introspection data
-    // @ts-ignore
-    let myCurrentSourceFilename = "";
-    let myCurrentSourceFile: SourceFile | undefined;
     const myNarrowTest = (process.env.myNarrowTest===undefined) ? false : !!Number(process.env.myNarrowTest);
 
     // @ts-ignore-error
@@ -27,91 +17,33 @@ namespace ts {
         maxNode: Node
     } | undefined;
 
-    interface SystemWithAppendFile extends System {
-        openFileForWriteFd(path: string): number; // returns number which is file description
-        writeFileFd(fd: number, data: string): void;
-    }
-    const mySys: SystemWithAppendFile = (()=>{
-        const nodeFs = require("fs");
-        return {
-            ...sys,
-            openFileForWriteFd: (path: string) => {
-                return nodeFs.openSync(path,"w+");
-            },
-            writeFileFd: (fd: number, data: string) => {
-                nodeFs.writeFileSync(fd, data);
-            }
-        };
-    })();
-    //mySys.enableCPUProfiler("tmp.prof",()=>{});
-    type MyConsole = & {
-        fd: number;
-        currentIndent: number;
-        oneIndent: string;
-        numOutLines: number;
-        dbgFileCount: number;
-        indent(): string;
-        log(s: string): void;
-        group(s: string): void;
-        groupEnd(): void;
-    };
-    const myConsole: MyConsole = {
-        fd:0,
-        currentIndent: 0,
-        oneIndent: "  ",
-        numOutLines: 0,
-        dbgFileCount: 0,
-        indent(){ return myConsole.oneIndent.repeat(myConsole.currentIndent); },
-        log(s: string){
-            if (myConsole.dbgFileCount!==dbgFlowFileCnt) {
-               myConsole.fd=0;
-               myConsole.dbgFileCount = dbgFlowFileCnt;
-            }
-            if (!myConsole.fd) {
-                let filename = "";
-                if (process.env.myDbgOutFilename) {
-                    filename = `${process.env.myDbgOutFilename}.dfc${myConsole.dbgFileCount}`;
-                }
-                else {
-                    filename = "tmp.";
-                    if (process.env.myTestFilename) filename += process.env.myTestFilename + ".";
-                    filename += `de${myDebug?1:0}.di${myDisableInfer?1:0}.naa${myNoAliasAction?1:0}.dfc${myConsole.dbgFileCount}.txt`;
-                }
-                myConsole.fd = mySys.openFileForWriteFd(filename);
-            }
-            if (this.numOutLines>=myMaxLinesOut) {
-                if (this.numOutLines===myMaxLinesOut) {
-                    mySys.writeFileFd(myConsole.fd, "REACHED MAX LINE LIMIT = "+myMaxLinesOut+sys.newLine);
-                    myDebug = false;
-                    throw new Error("REACHED MAX DEBUG LINE LIMIT");
-                }
-                myNumLinesOut = ++myConsole.numOutLines;
-                return;
-            }
-            mySys.writeFileFd(myConsole.fd, myConsole.indent()+s+mySys.newLine);
-            myNumLinesOut = ++myConsole.numOutLines;
-        },
-        group(s: string){
-            myConsole.currentIndent++;
-            myConsole.log(s);
-        },
-        groupEnd(){
-            myConsole.currentIndent--;
-            Debug.assert(myConsole.currentIndent>=0,"myConsole.currentIndent>=0");
-        }
 
-    };
-    function consoleGroup(sIn: string){
+    const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):10000;
+    //let myNumLinesOut=0;
+    let myMaxDepth = 0; // introspection data
+    // @ts-ignore
+    let myCurrentSourceFilename = "";
+    let myCurrentSourceFile: SourceFile | undefined;
+
+    createMyConsole({
+        myMaxLinesOut,
+        getDbgFileCount: ()=>dbgFlowFileCnt,
+        getMyDebug: ()=>myDebug,
+        setMyDebug: (b: false)=> myDebug=b,
+        getMyDisableInfer: ()=>myDisableInfer
+    });
+
+    export function consoleGroup(sIn: string){
         //const s = sIn.slice(0,Math.min(80,sIn.length));
         //const s = upToNewLine(sIn);
-        myConsole.group(`${sIn}`);
+        getMyConsole().group(`${sIn}`);
         //lastGroup = s;
     }
-    function consoleGroupEnd(){
-        myConsole.groupEnd();
+    export function consoleGroupEnd(){
+        getMyConsole().groupEnd();
     }
-    function consoleLog(s: string): void {
-        myConsole.log(s);
+    export function consoleLog(s: string): void {
+        getMyConsole().log(s);
         //console.log(upToNewLine(s));
         // console.log(s.slice(0,Math.min(80,s.length)));
     }
@@ -428,8 +360,10 @@ namespace ts {
         /**
          * required by infer
          */
-        const mapSourceFileToGroupedFlowNodes = new Map<SourceFile, GroupedFlowNodes>();
-        let currentSourceFile: undefined | SourceFile;
+
+        let sourceFileInferState: SourceFileInferState | undefined;
+        // const mapSourceFileToGroupedFlowNodes = new Map<SourceFile, GroupedFlowNodes>();
+        // let currentSourceFile: undefined | SourceFile;
 
 
         let sourceElementSelectedForInfer: Node | undefined;
@@ -737,11 +671,14 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
-            getCurrentSourceFile(){
-                Debug.assert(currentSourceFile);
-                return currentSourceFile;
+            getSourceFileInferState(){
+                return sourceFileInferState!;
             },
-            setCurrentSourceFile(sourceFile?: SourceFile){ currentSourceFile = sourceFile; },
+            createAndSetSourceFileInferState(sourceFile: SourceFile){
+                sourceFileInferState = createSourceFileInferState(sourceFile, checker);
+            },
+            unsetSourceFileInferState(){ sourceFileInferState=undefined; },
+            getFlowNodeId,
             getNodeCount: () => sum(host.getSourceFiles(), "nodeCount"),
             getIdentifierCount: () => sum(host.getSourceFiles(), "identifierCount"),
             getSymbolCount: () => sum(host.getSourceFiles(), "symbolCount") + symbolCount,
@@ -24603,10 +24540,47 @@ namespace ts {
             return flow.antecedent;
         }
 
+        // @ts-ignore-error
         function dbgFlowGroupToString(group: FlowNodeGroup | undefined): string {
             if (!group) return "<undef>";
             else return dbgFlowNodeGroupToString(group, getFlowNodeId, dbgFlowToString, dbgNodeToString);
         }
+
+
+        // @ ts-ignore-error
+        // function testSetCurrentFlowGroupNode(node: Node){
+        //     Debug.assert(!currentFlowNodeGroup);
+        //     Debug.assert(currentSourceFile);
+        //     const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile);
+        //     Debug.assert(grouped);
+        //     let group = grouped.nodeToFlowGroupMap.get(node);
+        //     if (!group){
+        //         let parent = node.parent;
+        //         while (parent && parent.kind !== SyntaxKind.SourceFile && !(group=grouped.nodeToFlowGroupMap.get(node))) parent = parent.parent;
+        //     }
+        //     if (group){
+        //         const maxNode = getFlowGroupMaximalNode(group);
+        //         const {pos,end}=maxNode;
+        //         currentFlowNodeGroup = { group, pos, end, maxNode };
+        //         return currentFlowNodeGroup;
+        //     }
+        // }
+
+        // function testSetCurrentNodeGroup(node: Node){
+        //     Debug.assert(!currentNodeGroup);
+        //     Debug.assert(currentSourceFile);
+        //     const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile);
+        //     Debug.assert(grouped);
+        //     let nodeGroup = grouped.groupedNodes.nodeToOwnNodeGroupMap.get(node);
+        //     Debug.assert(nodeGroup);
+        //     if (nodeGroup){
+        //         const maxNode = nodeGroup.maximal;
+        //         const {pos,end}=maxNode;
+        //         currentNodeGroup = { group, pos, end, maxNode };
+        //         return currentFlowNodeGroup;
+        //     }
+        // }
+
 
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode,
             joinMap: JoinMap | undefined=undefined): Type {
@@ -24638,32 +24612,88 @@ namespace ts {
                 consoleGroup(`getFlowTypeOfReference[in]: ` + dbgstr);
             }
             if (!myDisableInfer){
-                if (myDebug){
-                    if (!currentFlowNodeGroup){
-                        //
+                const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
+                //let inFlowGroup = false;
+                if (!insideGetFlowTypeOfReference){
+                        /**
+                         * All flow enters through getFlowTypeOfReference.
+                         * Only here because a FlowNode was present, so this is a logical place to set up currentFlowNodeGroup
+                         * and call infer once for the group.
+                         */
+                    Debug.assert(checker.getSourceFileInferState());
+                    const sourceFileInferState = checker.getSourceFileInferState();
+                    const grouped = sourceFileInferState.groupedFlowNodes;
+                    Debug.assert(grouped);
+                    //const nodeGroup = grouped.groupedNodes.nodeToOwnNodeGroupMap.get(reference);
+                    const flowGroup = (()=>{
+                        let parent = reference;
+                        let fg = grouped.nodeToFlowGroupMap.get(reference);
+                        if (fg) return fg;
+                        while (!fg && parent && parent.kind!==SyntaxKind.SourceFile && !(fg=grouped.nodeToFlowGroupMap.get(parent))) parent = parent.parent;
+                        return fg;
+                    })();
+
+                    if (!flowGroup){
+                        if (myDebug){
+                            consoleLog(`dbgInfer: reference: ${dbgNodeToString(reference)}, does not have flowGroup`);
+                            //Debug.fail();
+                        }
                     }
                     else {
-                        const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile!);
-                        Debug.assert(grouped);
-                        const str00 = `currentFlowNodeGroup:<${currentFlowNodeGroup.pos},${currentFlowNodeGroup.end}>`;
-                        const str0 = `reference.flowNode: ${dbgFlowToString(reference.flowNode)}`;
-                        const nToFG1 = grouped.nodeToFlowGroupMap.get(reference);
-                        const inCurrentFlowNodeGroup = reference.pos >= currentFlowNodeGroup.pos && reference.end <= currentFlowNodeGroup.end;
-                        const fToFG = reference.flowNode ? grouped.flowNodeToGroupMap.get(reference.flowNode) : undefined;
-                        const nToFG2 = (reference.flowNode as any)?.node ? grouped.nodeToFlowGroupMap.get((reference.flowNode as any).node) : undefined;
-                        const str1 = `grouped.nodeToFlowGroupMap.get(reference): ${dbgFlowGroupToString(nToFG1)}`;
-                        const str11 = `inCurrentFlowNodeGroup: ${inCurrentFlowNodeGroup}`;
-                        const str2 = `grouped.flowToFlowGroupMap.get(reference.flowNode): ${dbgFlowGroupToString(fToFG)}`;
-                        const str3 = `grouped.nodeToFlowGroupMap.get(reference.flowNode.node): ${dbgFlowGroupToString(nToFG2)}`;
-                        //consoleLog(`${str0}, ${str1}, ${str3}`);
-                        consoleLog("dbgInfer: "+str00);
-                        consoleLog("dbgInfer: "+str0);
-                        consoleLog("dbgInfer: "+str1);
-                        consoleLog("dbgInfer: "+str11);
-                        consoleLog("dbgInfer: "+str2);
-                        consoleLog("dbgInfer: "+str3);
+                        if (myDebug){
+                            consoleLog(`dbgInfer: reference: ${dbgNodeToString(reference)}, flowGroup: ${dbgFlowGroupToString(flowGroup)}`);
+                            const fToFG2 = grouped.flowNodeToGroupMap.get(reference.flowNode!);
+                            const str2 = `grouped.flowNodeToGroupMap.get(reference.flowNode): ${dbgFlowGroupToString(fToFG2)}`;
+                            consoleLog("dbgInfer: "+str2);
+                            const nToFG2 = (reference.flowNode as any)?.node ? grouped.nodeToFlowGroupMap.get((reference.flowNode as any).node) : undefined;
+                            const str3 = `grouped.nodeToFlowGroupMap.get(reference.flowNode.node): ${dbgFlowGroupToString(nToFG2)}`;
+                            consoleLog("dbgInfer: "+str3);
+                        }
+                        createDependencyStack(flowGroup, sourceFileInferState.inferState);
+
                     }
+
+                    // if (!currentFlowNodeGroup) {
+                    //     if (testSetCurrentFlowGroupNode(reference)) inFlowGroup = true;
+                    // }
+                    // else {
+                    //     if (reference.pos>= currentFlowNodeGroup.pos && reference.end <= currentFlowNodeGroup.end) {
+                    //         inFlowGroup = true;
+                    //     }
+                    //     else currentFlowNodeGroup = undefined; // should never happen?
+                    // }
+                    // if (!currentFlowNodeGroup){
+                    //     consoleLog("dbgInfer: currentFlowNodeGroup is not set");
+                    // }
+                    // else {
+                    //     const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile!);
+                    //     Debug.assert(grouped);
+                    //     const str00 = `currentFlowNodeGroup:<${currentFlowNodeGroup.pos},${currentFlowNodeGroup.end}>, ${dbgFlowGroupToString(currentFlowNodeGroup.group)}`;
+                    //     const str0 = `reference.flowNode: ${dbgFlowToString(reference.flowNode)}`;
+                    //     const nToFG1 = grouped.nodeToFlowGroupMap.get(reference);
+                    //     const inCurrentFlowNodeGroup = reference.pos >= currentFlowNodeGroup.pos && reference.end <= currentFlowNodeGroup.end;
+                    //     const fToFG = reference.flowNode ? grouped.flowNodeToGroupMap.get(reference.flowNode) : undefined;
+                    //     const nToFG2 = (reference.flowNode as any)?.node ? grouped.nodeToFlowGroupMap.get((reference.flowNode as any).node) : undefined;
+                    //     const str1 = `grouped.nodeToFlowGroupMap.get(reference): ${dbgFlowGroupToString(nToFG1)}`;
+                    //     const str11 = `inCurrentFlowNodeGroup: ${inCurrentFlowNodeGroup}`;
+                    //     const str2 = `grouped.flowToFlowGroupMap.get(reference.flowNode): ${dbgFlowGroupToString(fToFG)}`;
+                    //     const str3 = `grouped.nodeToFlowGroupMap.get(reference.flowNode.node): ${dbgFlowGroupToString(nToFG2)}`;
+                    //     //consoleLog(`${str0}, ${str1}, ${str3}`);
+                    //     consoleLog("dbgInfer: "+str00);
+                    //     consoleLog("dbgInfer: "+str0);
+                    //     consoleLog("dbgInfer: "+str1);
+                    //     consoleLog("dbgInfer: "+str11);
+                    //     consoleLog("dbgInfer: "+str2);
+                    //     consoleLog("dbgInfer: "+str3);
+                    // }
                 }
+                // if (myDebug) {
+                //     let str = `getFlowTypeOfReference[dbg]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(reference)}`;
+                //     if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+                //     consoleGroup(str);
+                // }
+
+
             }
 
             flowTypeQueryState.getFlowTypeOfReferenceStack.push({
@@ -26349,7 +26379,7 @@ namespace ts {
                 }
                 return r;
             }
-                function narrowTypeByTypePredicate_aux(type: Type, predicate: TypePredicate, callExpression: CallExpression, assumeTrue: boolean): Type {
+            function narrowTypeByTypePredicate_aux(type: Type, predicate: TypePredicate, callExpression: CallExpression, assumeTrue: boolean): Type {
                 // Don't narrow from 'any' if the predicate type is exactly 'Object' or 'Function'
                 if (predicate.type && !(isTypeAny(type) && (predicate.type === globalObjectType || predicate.type === globalFunctionType))) {
                     const predicateArgument = getTypePredicateArgument(predicate, callExpression);
@@ -35955,26 +35985,27 @@ namespace ts {
             instantiationCount = 0;
             const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
 
-            let inFlowGroup = false;
-            if (!myDisableInfer){
-                if (!insideGetFlowTypeOfReference){
-                    if (!currentFlowNodeGroup) {
-                        if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
-                    }
-                    else {
-                        if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
-                            inFlowGroup = true;
-                        }
-                        else currentFlowNodeGroup = undefined;
-                    }
-                }
-                if (myDebug) {
-                    let str = `checkExpression[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
-                    if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-                    consoleGroup(str);
-                }
-            }
-            else {
+            // let inFlowGroup = false;
+            // if (!myDisableInfer){
+            //     if (!insideGetFlowTypeOfReference){
+            //         if (!currentFlowNodeGroup) {
+            //             if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
+            //         }
+            //         else {
+            //             if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
+            //                 inFlowGroup = true;
+            //             }
+            //             else currentFlowNodeGroup = undefined;
+            //         }
+            //     }
+            //     if (myDebug) {
+            //         let str = `checkExpression[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
+            //         if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+            //         consoleGroup(str);
+            //     }
+            // }
+            // else
+            {
                 if (myDebug) {
                     let str = `checkExpression[in] node: ${dbgNodeToString(node)}`;
                     if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
@@ -36009,15 +36040,15 @@ namespace ts {
             // }
 
             if (flowTypeOfReferenceDepth===0) checkExpressionCache.set(node,type);
-            if (currentFlowNodeGroup?.maxNode===node) {
-                /**
-                 * At this point checkExpression will have been called to do what can be done without flow work (i.e., not calling getFlowTypeOfReference
-                 * or narrow), so the flow work can be done here.
-                 */
-                //currentFlowNodeGroup.group;
+            // if (currentFlowNodeGroup?.maxNode===node) {
+            //     /**
+            //      * At this point checkExpression will have been called to do what can be done without flow work (i.e., not calling getFlowTypeOfReference
+            //      * or narrow), so the flow work can be done here.
+            //      */
+            //     //currentFlowNodeGroup.group;
 
-                currentFlowNodeGroup = undefined;
-            }
+            //     currentFlowNodeGroup = undefined;
+            // }
             if (myDebug) {
                 consoleLog(`checkExpression[out]: ${dbgNodeToString(node)} -> ${typeToString(type)}`);
                 consoleGroupEnd();
@@ -43661,23 +43692,6 @@ namespace ts {
 
         }
 
-        function testSetCurrentFlowGroupNode(node: Node){
-            Debug.assert(!currentFlowNodeGroup);
-            Debug.assert(currentSourceFile);
-            const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile);
-            Debug.assert(grouped);
-            let group = grouped.nodeToFlowGroupMap.get(node);
-            if (!group){
-                let parent = node.parent;
-                while (parent && parent.kind !== SyntaxKind.SourceFile && !(group=grouped.nodeToFlowGroupMap.get(node))) parent = parent.parent;
-            }
-            if (group){
-                const maxNode = getFlowGroupMaximalNode(group);
-                const {pos,end}=maxNode;
-                currentFlowNodeGroup = { group, pos, end, maxNode };
-                return currentFlowNodeGroup;
-            }
-        }
 
         function checkSourceElement(node: Node | undefined): void {
             if (node) {
@@ -43698,26 +43712,27 @@ namespace ts {
                 //     }
                 // }
                 const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
-                let inFlowGroup = false;
-                if (!myDisableInfer){
-                    if (!insideGetFlowTypeOfReference){
-                        if (!currentFlowNodeGroup) {
-                            if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
-                        }
-                        else {
-                            if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
-                                inFlowGroup = true;
-                            }
-                            else currentFlowNodeGroup = undefined;
-                        }
-                    }
-                    if (myDebug) {
-                        let str = `checkSourceElement[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
-                        if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-                        consoleGroup(str);
-                    }
-                }
-                else {
+                // let inFlowGroup = false;
+                // if (!myDisableInfer){
+                //     if (!insideGetFlowTypeOfReference){
+                //         if (!currentFlowNodeGroup) {
+                //             if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
+                //         }
+                //         else {
+                //             if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
+                //                 inFlowGroup = true;
+                //             }
+                //             else currentFlowNodeGroup = undefined;
+                //         }
+                //     }
+                //     if (myDebug) {
+                //         let str = `checkSourceElement[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
+                //         if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+                //         consoleGroup(str);
+                //     }
+                // }
+                // else
+                {
                     if (myDebug) {
                         let str = `checkSourceElement[in] node: ${dbgNodeToString(node)}`;
                         if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
@@ -43729,7 +43744,7 @@ namespace ts {
                     consoleLog(`checkSourceElement[out]: nodeid: ${node.id}`);
                     consoleGroupEnd();
                 }
-                if (currentFlowNodeGroup?.maxNode===node) currentFlowNodeGroup = undefined;
+                //if (currentFlowNodeGroup?.maxNode===node) currentFlowNodeGroup = undefined;
 
                 if (sourceElementSelectedForInfer){
                     Debug.assert(isExpressionStatement(node), "isExpression(node)");
@@ -44080,14 +44095,7 @@ namespace ts {
             performance.mark("beforeCheck");
 
             if (!myDisableInfer){
-                currentSourceFile = node;
-                if (!mapSourceFileToGroupedFlowNodes.has(node)){
-                    const t0 = process.hrtime.bigint();
-                    const groupedFlowNodes = groupFlowNodesFromSourceFile(node, getFlowNodeId);
-                    const t1 = process.hrtime.bigint() - t0;
-                    groupedFlowNodes.dbgCreationTimeMs = t1/BigInt(1000000);
-                    mapSourceFileToGroupedFlowNodes.set(node, groupedFlowNodes);
-                }
+                checker.createAndSetSourceFileInferState(node);
             }
             // const hrtime = process.hrtime.bigint() - hrstart!;
             // consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
@@ -44116,7 +44124,7 @@ namespace ts {
                         contents+=(s+sys.newLine);
                     };
                     //const {groupedFlowNodes,allFlowNodes} = groupFlowNodesFromSourceFile(node, getFlowNodeId);
-                    const groupedFlowNodes = mapSourceFileToGroupedFlowNodes.get(node);
+                    const groupedFlowNodes = checker.getSourceFileInferState().groupedFlowNodes;
                     Debug.assert(groupedFlowNodes);
                     dbgWriteGroupedFlowNode(groupedFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
                     const ofilename = `tmp.${getBaseFileName(node.originalFileName)}.gfn.txt`;
@@ -44224,10 +44232,11 @@ namespace ts {
             // }
             if (nameMatched){
                 const hrtime = process.hrtime.bigint() - hrstart!;
-                consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
+                //consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
+                consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}`);
             }
             if (!myDisableInfer){
-                currentSourceFile = undefined;
+                checker.unsetSourceFileInferState();
             }
             performance.mark("afterCheck");
             tracing?.pop();
