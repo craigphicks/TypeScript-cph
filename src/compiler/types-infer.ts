@@ -1,5 +1,17 @@
 namespace ts {
 
+    export interface AliasAssignableState {
+        readonly node: Node;
+        readonly valueReadonly: boolean;
+        readonly constVariable: boolean;
+        readonly aliasable: boolean; // constVariable && valueReadonly && !antecedentIsJoin
+        readonly lhsType: Type;
+        readonly declarationType: Type | undefined;
+        readonly initializerType: Type | undefined;
+        readonly preferredType: Type;
+        inUse: boolean; // to prevent recursion of aliases
+    };
+
     export type RefType = & {
         type: Type,
         // if for some node, isConstantReference(node) && node symbol is s, then any nodex with the same symbol is also constant, right?

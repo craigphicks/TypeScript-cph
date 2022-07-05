@@ -47,6 +47,7 @@
         "checker.ts",
         "flowNodesGrouping.ts",
         "flowGroupInfer.ts",
+        "flowGroupInfer2.ts",
         "foobar.ts",
         "visitorPublic.ts",
         "sourcemap.ts",
