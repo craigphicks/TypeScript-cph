@@ -96,7 +96,7 @@ namespace ts {
         dbgNodeToString: (node: Node | undefined) => string;
         dbgSignatureToString: (c: Signature) => string;
         dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
-        dbgFlowNodeGroupToString: (flowNodeGroup: FlowNodeGroup) => string;
+        dbgFlowNodeGroupToString: (flowNodeGroup: FlowNodeGroup | undefined) => string;
     }
     export function createDbgs(checker: TypeChecker): Dbgs{
         const dbgGetNodeText = (node: Node)=>{
@@ -129,8 +129,9 @@ namespace ts {
             sa.forEach(s=> write(dbgSignatureToString(s)));
         };
         const dbgFlowNodeGroupToString = (
-            flowNodeGroup: FlowNodeGroup,
+            flowNodeGroup: FlowNodeGroup | undefined,
         ): string => {
+            if (!flowNodeGroup) return "<undef>";
             let str = "";
             if (isPlainNodefulFlowNodeGroup(flowNodeGroup)){
                 str += `[Plain] maximal[fg:${checker.getFlowNodeId(flowNodeGroup.maximal)}]: ${dbgFlowToString(flowNodeGroup.maximal)}`;

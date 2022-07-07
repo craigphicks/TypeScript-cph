@@ -24671,7 +24671,8 @@ namespace ts {
                             const str3 = `grouped.nodeToFlowGroupMap.get(reference.flowNode.node): ${dbgFlowGroupToString(nToFG2)}`;
                             consoleLog("dbgInfer: "+str3);
                         }
-                        createDependencyStack(flowGroup, sourceFileInferState.mrState);
+                        // getTypeByMrNarrow(reference, sourceFileInferState)
+                        createDependencyStack(flowGroup, sourceFileInferState);
 
                     }
 
