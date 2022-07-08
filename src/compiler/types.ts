@@ -4318,6 +4318,9 @@ namespace ts {
         /* @internal */  isReadonlyProperty(symbol: Symbol): boolean;
         /* @internal */  isConstantReference(node: Node): boolean;
         /* @internal */  getNodeLinks(node: Node): NodeLinks;
+        ///* @internal */  getUnionType(types: readonly Type[], unionReduction?: UnionReduction /* = UnionReduction.Literal*/ , aliasSymbol?: Symbol, aliasTypeArguments?: readonly Type[], origin?: Type): Type;
+        /* @internal */ getResolvedSymbol(node: Identifier): Symbol;
+
 
         getTypeOfSymbolAtLocation(symbol: Symbol, node: Node): Type;
         /* @internal */ getTypeOfSymbol(symbol: Symbol): Type;

@@ -87,7 +87,7 @@ namespace ts {
     export type InferTypeArgsQDotFallout = RefTypesRtn[];
     export type InferRefArgs = & {
         refTypes: RefTypes,
-        condExpr: Readonly<Expression>,
+        condExpr: Readonly<Node>,
         crit: InferCrit,
         //context?: InferRefArgsContext, // This ONLY applies to next call, should not be forward beyond.  TODO: change name to `immedContext` to make that obvious.
         /**
@@ -114,6 +114,11 @@ namespace ts {
      * This is also the result of applyCrit...
      * Finally multiple branches are projected onto this binary state.
      */
+    export type NodeToTypeMap = ESMap<Node, Type>;
+    export type MrNarrowTypesReturn = & {
+        byNode: NodeToTypeMap;
+        inferRefRtnType: InferRefRtnType;
+    };
     export type InferRefRtnType = & {
         passing: RefTypesRtn;
         failing?: RefTypesRtn;

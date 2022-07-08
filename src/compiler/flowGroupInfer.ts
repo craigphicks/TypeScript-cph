@@ -27,6 +27,7 @@ namespace ts {
         stack?: StackItem[];
         checker: TypeChecker;
         currentBranchesMap: ESMap<FlowNodeGroup, CurrentBranchesItem >;
+        groupToNodeToType?: ESMap< FlowNodeGroup, NodeToTypeMap>;
         // aliasableAssignmentsCache: ESMap<Symbol, AliasAssignableState>; // not sure it makes sense anymore
         // aliasInlineLevel: number;
     }
@@ -55,6 +56,12 @@ namespace ts {
     }
 
     export function isGroupCached(mrState: MrState, group: FlowNodeGroup){
+        if (isIfPairFlowNodeGroup(group)){
+            const tc = mrState.currentBranchesMap.get(group.true);
+            const fc = mrState.currentBranchesMap.get(group.false);
+            Debug.assert((!!tc)===(!!fc));
+            return !!tc;
+        }
         return !!mrState.currentBranchesMap.get(group);
         // const stackIdx = mrState.groupToStackIdx.get(group);
         // return (stackIdx!==undefined && mrState.stack && stackIdx < mrState.stack.length && mrState.stack[stackIdx].refTypes);
@@ -62,14 +69,16 @@ namespace ts {
 
 
     function resolveNodefulGroupUsingState(item: StackItem, _stackIdx: number, sourceFileMrState: SourceFileMrState){
-        Debug.assert(isNodefulFlowNodeGroup(item.group));
-        Debug.assert(item.depStackItems.length<=1); // for a nodeful group;
         const group = item.group;
+        consoleGroup(`resolveNodefulGroupUsingState[in] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
+        Debug.assert(isNodefulFlowNodeGroup(group));
+        Debug.assert(item.depStackItems.length<=1); // for a nodeful group;
         const antecedents = getAntecedentGroups(group);
         const currentBranchesItems: CurrentBranchesItem[]=[];
         antecedents.forEach(a=>{
             const cbi = sourceFileMrState.mrState.currentBranchesMap.get(a);
             Debug.assert(!cbi?.done);
+            //if (cbi?.done) consoleLog(`cbi.done=true, ${dbgs?.dbgFlowNodeGroupToString(a)}`);
             if (cbi) currentBranchesItems.push(cbi);
         });
         Debug.assert(currentBranchesItems.length<=1);
@@ -81,15 +90,19 @@ namespace ts {
         const condExpr: Expression = getFlowGroupMaximalNode(group) as Expression;
         const crit: InferCrit = !ifPair ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         const qdotfallout: RefTypesRtn[]=[];
-        const retval: InferRefRtnType = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypes, condExpr, crit, qdotfallout });
+        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypes, condExpr, crit, qdotfallout });
         if (ifPair){
-            sourceFileMrState.mrState.currentBranchesMap.set(ifPair.true, { refTypesRtn: retval.passing });
-            sourceFileMrState.mrState.currentBranchesMap.set(ifPair.false, { refTypesRtn: retval.failing! });
+            sourceFileMrState.mrState.currentBranchesMap.set(ifPair.true, { refTypesRtn: retval.inferRefRtnType.passing });
+            sourceFileMrState.mrState.currentBranchesMap.set(ifPair.false, { refTypesRtn: retval.inferRefRtnType.failing! });
         }
         else {
-            sourceFileMrState.mrState.currentBranchesMap.set(group, { refTypesRtn: retval.passing });
+            sourceFileMrState.mrState.currentBranchesMap.set(group, { refTypesRtn: retval.inferRefRtnType.passing });
         }
         if (currentBranchesItems.length) currentBranchesItems[0].done=true;
+        if (!sourceFileMrState.mrState.groupToNodeToType) sourceFileMrState.mrState.groupToNodeToType = new Map<FlowNodeGroup, NodeToTypeMap>();
+        sourceFileMrState.mrState.groupToNodeToType.set(group, retval.byNode);
+        consoleGroup(`resolveNodefulGroupUsingState[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
+        consoleGroupEnd();
     }
 
 
@@ -102,14 +115,17 @@ namespace ts {
     export function createDependencyStack(group: Readonly<FlowNodeGroup>, _sourceFileMrState: SourceFileMrState): void {
         const mrState = _sourceFileMrState.mrState;
         consoleGroup(`createDependencyStack[in] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
-        const acc = new Set<FlowNodeGroup>([group]);
-        getAntecedentGroups(group).forEach(a=>{
-            if (!isGroupCached(mrState, a) && !acc.has(a)){
-                change = true;
-                acc.add(a);
-            }
-        });
+        const acc = new Set<FlowNodeGroup>();
         let change = true;
+        if (!isGroupCached(mrState, group)) {
+            acc.add(group);
+            getAntecedentGroups(group).forEach(a=>{
+                if (!isGroupCached(mrState, a) && !acc.has(a)){
+                    change = true;
+                    acc.add(a);
+                }
+            });
+        }
         while (change) {
             change = false;
             acc.forEach(g=>{
@@ -144,9 +160,8 @@ namespace ts {
         stack.forEach(si=>{
             getAntecedentGroups(si.group).forEach(a=>{
                 const idx = groupToStackIdx.get(a);
-                Debug.assert(idx!==undefined);
-                /* if (idx!==undefined) */
-                si.depStackItems.push(stack[idx]);
+                // Debug.assert(idx!==undefined);
+                if (idx!==undefined) si.depStackItems.push(stack[idx]);
             });
         });
         mrState.stack = stack;
@@ -155,7 +170,13 @@ namespace ts {
         consoleGroupEnd();
     }
 
-    export function resolveDependencyStack(_sourceFileMrState: SourceFileMrState){
+    export function resolveDependencyStack(_sourceFileMrState: SourceFileMrState): void{
+        consoleGroup("resolveDependencyStack[in]");
+        resolveDependencyStack_aux(_sourceFileMrState);
+        consoleLog("resolveDependencyStack[out]");
+        consoleGroupEnd();
+    }
+    export function resolveDependencyStack_aux(_sourceFileMrState: SourceFileMrState): void{
         const stack = _sourceFileMrState.mrState.stack;
         Debug.assert(stack);
         while (stack.length){
@@ -165,27 +186,47 @@ namespace ts {
                 if (item.group.flow.flags & FlowFlags.BranchLabel){
                     // @ts-ignore-error 2769
                     const antecedentGroups: FlowNodeGroup[] = Array.from(item.group.antecedentGroups.keys());
-                    const refTypesRtn: RefTypesRtn = _sourceFileMrState.mrNarrow.joinMergeRefTypesRtn(antecedentGroups.map(a => {
-
-                    }));
-                    _sourceFileMrState.mrState.currentBranchesMap.set(item.group, refTypeRtn);
+                    const arrRtr = antecedentGroups.filter(a => {
+                        if (isNodelessFlowNodeGroup(a)){
+                            if (isFlowStart(a.flow)) return;
+                            Debug.fail();
+                        }
+                        else {
+                            return a;
+                        }
+                    }).map(a=>{
+                        const cbi = _sourceFileMrState.mrState.currentBranchesMap.get(a);
+                        Debug.assert(cbi);
+                        Debug.assert(!cbi.done);
+                        Debug.assert(cbi.refTypesRtn);
+                        return cbi.refTypesRtn;
+                    });
+                    _sourceFileMrState.mrState.currentBranchesMap.set(item.group, { refTypesRtn: _sourceFileMrState.mrNarrow.joinMergeRefTypesRtn(arrRtr) });
+                    continue;
                 }
-
                 // branches, loops, functions, switch, etc, go here.
-                Debug.fail();
+                Debug.fail(Debug.formatFlowFlags(item.group.flow.flags));
             }
-            else if (isNodefulFlowNodeGroup(item.group)){
+            else if (isNodefulFlowNodeGroup(item.group)) {
                 resolveNodefulGroupUsingState(item, stack.length, _sourceFileMrState);
             }
         }
     }
 
-    export function getTypeByMrNarrow(expr: Expression, sourceFileMrState: SourceFileMrState){
+    export function getTypeByMrNarrow(reference: Node, sourceFileMrState: SourceFileMrState): Type {
+        consoleGroup(`getTypeByMrNarrow[in] expr: ${dbgs?.dbgNodeToString(reference)}`);
+        const type = getTypeByMrNarrow_aux(reference, sourceFileMrState);
+        consoleLog(`getTypeByMrNarrow[out] expr: ${dbgs?.dbgNodeToString(reference)} -> ${dbgs?.dbgFlowTypeToString(type)}`);
+        consoleGroupEnd();
+        return type;
+    }
+    export function getTypeByMrNarrow_aux(expr: Node, sourceFileMrState: SourceFileMrState): Type {
+
         const grouped = sourceFileMrState.groupedFlowNodes;
         Debug.assert(grouped);
         //const nodeGroup = grouped.groupedNodes.nodeToOwnNodeGroupMap.get(reference);
         const flowGroup = (()=>{
-            let parent = expr as Node;
+            let parent = expr;
             let fg = grouped.nodeToFlowGroupMap.get(expr);
             if (fg) return fg;
             while (!fg && parent && parent.kind!==SyntaxKind.SourceFile && !(fg=grouped.nodeToFlowGroupMap.get(parent))) parent = parent.parent;
@@ -195,6 +236,7 @@ namespace ts {
         if (!flowGroup){
             if (myDebug){
                 consoleLog(`dbgInfer: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
+                return sourceFileMrState.mrState.checker.getErrorType();
                 Debug.fail();
             }
         }
@@ -211,9 +253,8 @@ namespace ts {
             // getTypeByMrNarrow(reference, sourceFileInferState)
             createDependencyStack(flowGroup, sourceFileMrState);
             resolveDependencyStack(sourceFileMrState);
-
         }
-
+        return sourceFileMrState.mrState.groupToNodeToType?.get(flowGroup!)?.get(expr) ?? sourceFileMrState.mrState.checker.getErrorType();
     }
 
 
