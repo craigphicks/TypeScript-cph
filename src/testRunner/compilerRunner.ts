@@ -318,7 +318,7 @@ namespace Harness {
             }
 
             /**
-             * Set the currentSourceFile used by glow node group processing
+             * Set the currentSourceFile used by flow node group processing
              */
             const sourceFile = this.result.program!.getSourceFile(this.fileName);
             if (!sourceFile) throw new Error(`this.result.program!.getSourceFile(${this.fileName}) failed`);

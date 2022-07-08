@@ -236,7 +236,7 @@ namespace ts {
         if (!flowGroup){
             if (myDebug){
                 consoleLog(`dbgInfer: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
-                return sourceFileMrState.mrState.checker.getErrorType();
+                //return sourceFileMrState.mrState.checker.getErrorType();
                 Debug.fail();
             }
         }

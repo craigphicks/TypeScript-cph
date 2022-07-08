@@ -188,13 +188,26 @@ namespace ts {
     export function bindSourceFile(file: SourceFile, options: CompilerOptions) {
         performance.mark("beforeBind");
         perfLogger.logStartBindFile("" + file.fileName);
-        allFlowNodesOneSourceFile=[];
-        allNodesWithFlowOneSourceFile=[];
+        /**
+         * In src/harness/compilerImpl.ts ...
+         *  const preProgram = !skipErrorComparison ? ts.createProgram(rootFiles || [], { ...compilerOptions, configFile: compilerOptions.configFile, traceResolution: false }, host) : undefined;
+         *  const preErrors = preProgram && ts.getPreEmitDiagnostics(preProgram);
+         *  const program = ts.createProgram(rootFiles || [], compilerOptions, host);
+         *  const emitResult = program.emit();
+         * createProgram is called twice but in binder (below) is file.locals already exists, then the binding is not performed again.
+         * So without the guard `!file.allFlowNodes` the existing info will be erased and not recreated.
+         */
+        if (!file.allFlowNodes){
+            allFlowNodesOneSourceFile=[];
+            allNodesWithFlowOneSourceFile=[];
+        }
         binder(file, options);
-        file.allFlowNodes = allFlowNodesOneSourceFile;
-        allFlowNodesOneSourceFile = undefined;
-        file.allNodesWithFlowOneSourceFile= allNodesWithFlowOneSourceFile;
-        allNodesWithFlowOneSourceFile = undefined;
+        if (!file.allFlowNodes){
+            file.allFlowNodes = allFlowNodesOneSourceFile;
+            allFlowNodesOneSourceFile = undefined;
+            file.allNodesWithFlowOneSourceFile= allNodesWithFlowOneSourceFile;
+            allNodesWithFlowOneSourceFile = undefined;
+        }
         perfLogger.logStopBindFile();
         performance.mark("afterBind");
         performance.measure("Bind", "beforeBind", "afterBind");
