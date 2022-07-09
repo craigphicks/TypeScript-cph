@@ -53,6 +53,7 @@ namespace ts {
         const getNodeLinks = checker.getNodeLinks;
         const getUnionType = checker.getUnionType;
         const getResolvedSymbol = checker.getResolvedSymbol; // for Identifiers only
+        const getSymbolOfNode = checker.getSymbolOfNode;
 
         const {
             //dbgGetNodeText,
@@ -64,6 +65,16 @@ namespace ts {
             //dbgFlowNodeGroupToString
         } = createDbgs(checker);
 
+
+        function typeToSet(type: Type): Set<Type> {
+            const set = new Set<Type>();
+            forEachTypeIfUnion(type, t=>set.add(t));
+            return set;
+        }
+        function setToType(set: Set<Type>): Type {
+            // @ts-expect-error 2769
+            return getUnionType(Array.from(set.keys()), UnionReduction.Literal);
+        }
 
         function createNodeToTypeMap(): NodeToTypeMap {
             return new Map<Node,Type>();
@@ -1020,11 +1031,21 @@ namespace ts {
                     Debug.assert(isVariableDeclaration(condExpr));
                     const rhs = mrNarrowTypes({ refTypes, condExpr:condExpr.initializer!, crit:{ kind: InferCritKind.none }, qdotfallout });
                     if (isIdentifier(condExpr.name)){
-                        const lhsSymbol = getResolvedSymbol(condExpr.name);
+                        /**
+                         * Official processing of the lhs is taking place above in checkVariableLikeDeclaration.
+                         */
+                        // The lhs type includes the undefined in qdotfallout, if any but needs nothing but the rtnType from that.
+                        const setRtnType = typeToSet(rhs.inferRefRtnType.passing.rtnType);
+                        qdotfallout.forEach(x=>{
+                            if (x.rtnType!==neverType) forEachTypeIfUnion(x.rtnType, t=>setRtnType.add(t));
+                        });
+                        const lhsRtnType = setToType(setRtnType);
+
+                        const lhsSymbol = getSymbolOfNode(condExpr); // not condExpr.name
                         const isconst = isConstVariable(lhsSymbol);
-                        rhs.inferRefRtnType.passing.refTypes.bySymbol.set(lhsSymbol, { type: rhs.inferRefRtnType.passing.rtnType, const: isconst });
+                        rhs.inferRefRtnType.passing.refTypes.bySymbol.set(lhsSymbol, { type: lhsRtnType, const: isconst });
                         rhs.inferRefRtnType.passing.symbolOfRtnType = lhsSymbol;
-                        rhs.byNode.set(condExpr, rhs.inferRefRtnType.passing.rtnType);
+                        rhs.byNode.set(condExpr, lhsRtnType);
                         return rhs;
                     }
                     else {

@@ -703,6 +703,7 @@ namespace ts {
             //     return getUnionType(types, unionReduction, aliasSymbol, aliasTypeArguments, origin);
             // },
             getResolvedSymbol,
+            getSymbolOfNode,
 
             getNodeCount: () => sum(host.getSourceFiles(), "nodeCount"),
             getIdentifierCount: () => sum(host.getSourceFiles(), "identifierCount"),
@@ -24648,80 +24649,16 @@ namespace ts {
                          */
                     Debug.assert(checker.getSourceFileInferState());
                     const sourceFileInferState = checker.getSourceFileInferState();
-                    getTypeByMrNarrow(reference, sourceFileInferState);
-                    // const grouped = sourceFileInferState.groupedFlowNodes;
-                    // Debug.assert(grouped);
-                    // //const nodeGroup = grouped.groupedNodes.nodeToOwnNodeGroupMap.get(reference);
-                    // const flowGroup = (()=>{
-                    //     let parent = reference;
-                    //     let fg = grouped.nodeToFlowGroupMap.get(reference);
-                    //     if (fg) return fg;
-                    //     while (!fg && parent && parent.kind!==SyntaxKind.SourceFile && !(fg=grouped.nodeToFlowGroupMap.get(parent))) parent = parent.parent;
-                    //     return fg;
-                    // })();
-
-                    // if (!flowGroup){
-                    //     if (myDebug){
-                    //         consoleLog(`dbgInfer: reference: ${dbgNodeToString(reference)}, does not have flowGroup`);
-                    //         //Debug.fail();
-                    //     }
-                    // }
-                    // else {
-                    //     if (myDebug){
-                    //         consoleLog(`dbgInfer: reference: ${dbgNodeToString(reference)}, flowGroup: ${dbgFlowGroupToString(flowGroup)}`);
-                    //         const fToFG2 = grouped.flowNodeToGroupMap.get(reference.flowNode!);
-                    //         const str2 = `grouped.flowNodeToGroupMap.get(reference.flowNode): ${dbgFlowGroupToString(fToFG2)}`;
-                    //         consoleLog("dbgInfer: "+str2);
-                    //         const nToFG2 = (reference.flowNode as any)?.node ? grouped.nodeToFlowGroupMap.get((reference.flowNode as any).node) : undefined;
-                    //         const str3 = `grouped.nodeToFlowGroupMap.get(reference.flowNode.node): ${dbgFlowGroupToString(nToFG2)}`;
-                    //         consoleLog("dbgInfer: "+str3);
-                    //     }
-                    //     // getTypeByMrNarrow(reference, sourceFileInferState)
-                    //     createDependencyStack(flowGroup, sourceFileInferState);
-
-                    // }
-
-                    // if (!currentFlowNodeGroup) {
-                    //     if (testSetCurrentFlowGroupNode(reference)) inFlowGroup = true;
-                    // }
-                    // else {
-                    //     if (reference.pos>= currentFlowNodeGroup.pos && reference.end <= currentFlowNodeGroup.end) {
-                    //         inFlowGroup = true;
-                    //     }
-                    //     else currentFlowNodeGroup = undefined; // should never happen?
-                    // }
-                    // if (!currentFlowNodeGroup){
-                    //     consoleLog("dbgInfer: currentFlowNodeGroup is not set");
-                    // }
-                    // else {
-                    //     const grouped = mapSourceFileToGroupedFlowNodes.get(currentSourceFile!);
-                    //     Debug.assert(grouped);
-                    //     const str00 = `currentFlowNodeGroup:<${currentFlowNodeGroup.pos},${currentFlowNodeGroup.end}>, ${dbgFlowGroupToString(currentFlowNodeGroup.group)}`;
-                    //     const str0 = `reference.flowNode: ${dbgFlowToString(reference.flowNode)}`;
-                    //     const nToFG1 = grouped.nodeToFlowGroupMap.get(reference);
-                    //     const inCurrentFlowNodeGroup = reference.pos >= currentFlowNodeGroup.pos && reference.end <= currentFlowNodeGroup.end;
-                    //     const fToFG = reference.flowNode ? grouped.flowNodeToGroupMap.get(reference.flowNode) : undefined;
-                    //     const nToFG2 = (reference.flowNode as any)?.node ? grouped.nodeToFlowGroupMap.get((reference.flowNode as any).node) : undefined;
-                    //     const str1 = `grouped.nodeToFlowGroupMap.get(reference): ${dbgFlowGroupToString(nToFG1)}`;
-                    //     const str11 = `inCurrentFlowNodeGroup: ${inCurrentFlowNodeGroup}`;
-                    //     const str2 = `grouped.flowToFlowGroupMap.get(reference.flowNode): ${dbgFlowGroupToString(fToFG)}`;
-                    //     const str3 = `grouped.nodeToFlowGroupMap.get(reference.flowNode.node): ${dbgFlowGroupToString(nToFG2)}`;
-                    //     //consoleLog(`${str0}, ${str1}, ${str3}`);
-                    //     consoleLog("dbgInfer: "+str00);
-                    //     consoleLog("dbgInfer: "+str0);
-                    //     consoleLog("dbgInfer: "+str1);
-                    //     consoleLog("dbgInfer: "+str11);
-                    //     consoleLog("dbgInfer: "+str2);
-                    //     consoleLog("dbgInfer: "+str3);
-                    // }
+                    const typeByMrNarrow = getTypeByMrNarrow(reference, sourceFileInferState);
+                    if (typeByMrNarrow && typeByMrNarrow!==errorType){
+                        if (myDebug) {
+                            consoleLog(`getFlowTypeOfReference[out]: ${dbgstr}, return: ${typeToString(typeByMrNarrow)}`);
+                            consoleGroupEnd();
+                        }
+                        return typeByMrNarrow;
+                    }
+                    // else drop through to getFlowTypeOfReference_aux
                 }
-                // if (myDebug) {
-                //     let str = `getFlowTypeOfReference[dbg]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(reference)}`;
-                //     if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-                //     consoleGroup(str);
-                // }
-
-
             }
 
             flowTypeQueryState.getFlowTypeOfReferenceStack.push({

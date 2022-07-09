@@ -4320,6 +4320,7 @@ namespace ts {
         /* @internal */  getNodeLinks(node: Node): NodeLinks;
         ///* @internal */  getUnionType(types: readonly Type[], unionReduction?: UnionReduction /* = UnionReduction.Literal*/ , aliasSymbol?: Symbol, aliasTypeArguments?: readonly Type[], origin?: Type): Type;
         /* @internal */ getResolvedSymbol(node: Identifier): Symbol;
+        /* @internal */ getSymbolOfNode(node: Declaration): Symbol;
 
 
         getTypeOfSymbolAtLocation(symbol: Symbol, node: Node): Type;
