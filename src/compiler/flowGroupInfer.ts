@@ -1,7 +1,7 @@
 namespace ts {
 
     let dbgs: Dbgs | undefined;
-    let myDebug: boolean | undefined;
+    //let myDebug: boolean | undefined;
 
     export interface SourceFileMrState {
         sourceFile: SourceFile;
@@ -38,7 +38,7 @@ namespace ts {
         groupedFlowNodes.dbgCreationTimeMs = t1/BigInt(1000000);
 
         dbgs = createDbgs(checker);
-        myDebug = getMyDebug();
+        //myDebug = getMyDebug();
 
         const mrState: MrState = {
             //flowNodeGroupToStateMap: new Map <FlowNodeGroup, AccState>(),
@@ -75,12 +75,26 @@ namespace ts {
         Debug.assert(item.depStackItems.length<=1); // for a nodeful group;
         const antecedents = getAntecedentGroups(group);
         const currentBranchesItems: CurrentBranchesItem[]=[];
+        consoleGroup(`resolveNodefulGroupUsingState[dbg]: antecedents:`);
         antecedents.forEach(a=>{
+            consoleLog(`resolveNodefulGroupUsingState[dbg]: ${dbgs?.dbgFlowNodeGroupToString(a)}`);
             const cbi = sourceFileMrState.mrState.currentBranchesMap.get(a);
             Debug.assert(!cbi?.done);
             //if (cbi?.done) consoleLog(`cbi.done=true, ${dbgs?.dbgFlowNodeGroupToString(a)}`);
             if (cbi) currentBranchesItems.push(cbi);
+            if (getMyDebug()) {
+                if (!cbi) consoleLog(`!cbi`);
+                else {
+                    consoleLog(`resolveNodefulGroupUsingState[dbg]: cbi.done: ${cbi?.done}, cbi.refTypesRtn:`);
+                    const astr = dbgs?.dbgRefTypesRtnToStrings(cbi.refTypesRtn);
+                    astr?.forEach(s=>{
+                        consoleLog(`resolveNodefulGroupUsingState[dbg]:  ${s}`);
+                    });
+                }
+            }
         });
+        consoleLog(`resolveNodefulGroupUsingState[dbg]: antecedents end:`);
+        consoleGroupEnd();
         Debug.assert(currentBranchesItems.length<=1);
         let refTypes: RefTypes;
         if (currentBranchesItems.length) refTypes = currentBranchesItems[0].refTypesRtn.refTypes;
@@ -234,14 +248,14 @@ namespace ts {
         })();
 
         if (!flowGroup){
-            if (myDebug){
+            if (getMyDebug()){
                 consoleLog(`dbgInfer: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
                 //return sourceFileMrState.mrState.checker.getErrorType();
                 Debug.fail();
             }
         }
         else {
-            if (myDebug){
+            if (getMyDebug()){
                 consoleLog(`dbgInfer: reference: ${dbgs!.dbgNodeToString(expr)}, flowGroup: ${dbgs!.dbgFlowNodeGroupToString(flowGroup)}`);
                 const fToFG2 = grouped.flowNodeToGroupMap.get(expr.flowNode!);
                 const str2 = `grouped.flowNodeToGroupMap.get(reference.flowNode): ${dbgs!.dbgFlowNodeGroupToString(fToFG2)}`;

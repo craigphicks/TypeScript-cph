@@ -63,18 +63,200 @@ namespace ts {
             dbgSignatureToString,
             //dbgWriteSignatureArray,
             //dbgFlowNodeGroupToString
+            //dbgRefTypesRtnToStrings
         } = createDbgs(checker);
 
+        // class RefTypesType implements RefTypesTypeI {
+        //     set: Set<Type>;
+        //     constructor (t: Type) {
+        //         this.set = typeToSet(t);
+        //     }
+        //     readonly getType(): Type {
+        //         return
+        //     }
+        //     addType(): Type;
+        // }
 
-        function typeToSet(type: Type): Set<Type> {
+    // declare function createRefTypesType(t?: Type): RefTypesType;
+    // declare function addTypeToRefTypesType(rt: RefTypesType, t: Type): void;
+    // declare function getTypeFromRefTypesType(rt: Readonly<RefTypesType>): Type;
+
+        interface RefTypesType {
+            _set: Set<Type>;
+        };
+
+        function typeToSet(type: Readonly<Type>): Set<Type> {
             const set = new Set<Type>();
             forEachTypeIfUnion(type, t=>set.add(t));
             return set;
         }
-        function setToType(set: Set<Type>): Type {
+
+        function setToType(set: Readonly<Set<Type>>): Type {
             // @ts-expect-error 2769
             return getUnionType(Array.from(set.keys()), UnionReduction.Literal);
         }
+
+        function createRefTypesType(t: Readonly<Type> = checker.getNeverType()): RefTypesType {
+            return {
+                _set: typeToSet(t)
+            };
+        }
+        function addTypeToRefTypesType(rt: RefTypesType, t: Readonly<Type>): void {
+            if (!(t.flags & TypeFlags.Union)) rt._set.add(t);
+            else {
+                forEachTypeIfUnion(t, tt=> rt._set.add(tt));
+            }
+        }
+        function mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void {
+            source._set.forEach(t=>target._set.add(t));
+        }
+        function getTypeFromRefTypesType(rt: Readonly<RefTypesType>): Type {
+            return setToType(rt._set);
+        }
+
+
+
+        // function typeToRefTypesType(t: Type): RefTypesType {
+        //     return { type: t };
+        // }
+        // function refTypesTypeToType(rt: RefTypesType): Type {
+        //     return rt.type;
+        // }
+        // function addTypeToRefTypesType(rt: RefTypesType, t: Type){
+        //     const set = typeToSet(rt.type);
+        //     set.add(t);
+        //     rt.type = setToType(set);
+        // }
+
+        function createRefTypesTableLeaf(symbol: Symbol , isconst: boolean | undefined, type?: RefTypesType): RefTypesTableLeaf {
+            return {
+                kind:RefTypesTableKind.leaf,
+                symbol, isconst, type: type ?? createRefTypesType()
+            };
+        }
+        //preReqByType: ESMap<Type, RefTypesTable>
+        function createRefTypesTableNonLeaf(symbol: Symbol , isconst: boolean | undefined, preReqByTypeIn: [RefTypesType, RefTypesTable][] | ESMap<RefTypesType, RefTypesTable>): RefTypesTableNonLeaf {
+            const preReqByType = isArray(preReqByTypeIn) ? new Map<RefTypesType, RefTypesTable>(preReqByTypeIn) : (preReqByTypeIn instanceof Map) ? preReqByTypeIn : Debug.fail("preReqByTypeIn illegal type");
+            return {
+                kind: RefTypesTableKind.nonLeaf,
+                symbol, isconst, preReqByType
+            };
+        }
+
+        // function applyCritToRefTypesType(type: RefTypesType, crit: InferCrit): { passing: RefTypesType, failing?: RefTypesType } {
+        //     if (crit.kind===InferCritKind.none){
+        //         Debug.assert(!crit.negate);
+        //         Debug.assert(!crit.alsoFailing);
+        //         return { passing: type };
+        //     }
+
+        // }
+
+        function applyCritToRefTypesTable({refTypesTable, crit}: {refTypesTable: RefTypesTable, crit: InferCrit}): { passing: RefTypesTable, failing?: RefsTypeTable | undefined } {
+            if (crit.kind===InferCritKind.none){
+                Debug.assert(!crit.negate);
+                Debug.assert(!crit.alsoFailing);
+                return { passing: refTypesTable };
+            }
+            if (refTypesTable.kind === RefTypesTableKind.leaf){
+                const passingType = createRefTypesType();
+                const failingType = createRefTypesType();
+                applyCritToRefTypesType(refTypesTable.type, crit, (t: RefTypesType, bpass: boolean, bfail: boolean)=>{
+                    if (bpass) mergeToRefTypesType({ target:passingType,source:t });
+                    if (crit.alsoFailing && bfail) mergeToRefTypesType({ target: failingType, source: t });
+                });
+                const passing: RefTypesTableLeaf = {
+                        kind: RefTypesTableKind.leaf,
+                        symbol: refTypesTable.symbol,
+                        isconst: refTypesTable.isconst,
+                        // @ts
+                        type: passingType
+                    };
+
+                let failing: RefTypesTableLeaf | undefined;
+                if (crit.alsoFailing){
+                    // @ts-expect-error 2679
+                    const typeFailing = getUnionType(Array.from(failingType.keys()));
+                    failing = {
+                        kind: RefTypesTableKind.leaf,
+                        symbol: refTypesTable.symbol,
+                        isconst: refTypesTable.isconst,
+                        type: failingType
+                    };
+                }
+                return { passing, failing };
+            }
+            else if (refTypesTable.kind === RefTypesTableKind.nonLeaf) {
+                const passingType = createRefTypesType();
+                const setPassingMaps = new Set< ESMap<Symbol, RefTypesTable>>();
+                const failingType = createRefTypesType();
+                const setFailingMaps = new Set< ESMap<Symbol, RefTypesTable>>();
+                refTypesTable.preReqByType.forEach((refTypesMap,refTypesType)=>{
+                    applyCritToRefTypesType(refTypesType, crit, (t: RefTypesType, bpass: boolean, bfail: boolean)=>{
+                        if (bpass) {
+                            mergeToRefTypesType({ target: passingType, source: t });
+                            setPassingMaps.add(refTypesMap);
+                        }
+                        if (crit.alsoFailing && bfail) {
+                            mergeToRefTypesType({ target: failingType, source: t });
+                            setFailingMaps.add(refTypesMap);
+                        }
+                    });
+                });
+                const mergeTables = (st: Set< ESMap<Symbol, RefTypesTable>>) => {
+                    const mapSymbolToConst = new Map<Symbol, boolean>();
+                    const addToSymbolToConst = (symbol: Symbol, isconst = false) => {
+                        const got = mapSymbolToConst.get(symbol);
+                        if (got===undefined) mapSymbolToConst.set(symbol, isconst);
+                        else Debug.assert(mapSymbolToConst.get(symbol)===isconst);
+                    };
+                    const mapSymbolToType = new Map<Symbol, RefTypesType>();
+                    const addToSymbolToType = (symbol: Symbol, type: RefTypesType) => {
+                        const got = mapSymbolToType.get(symbol);
+                        if (!got) mapSymbolToType.set(symbol,type);
+                        else mergeToRefTypesType({ source: type, target: got });
+                    };
+                    st.forEach((x: ESMap<Symbol,RefTypesTable>)=>{
+                        if (t.kind===RefTypesTableKind.leaf) {
+                            addToSymbolToConst(t.symbol,t.isconst);
+                            addToSymbolToType(t.symbol,t.type);
+                        }
+                        else if (t.kind===RefTypesTableKind.nonLeaf) {
+                            addToSymbolToConst(t.symbol,t.isconst);
+
+                            t.preReqByType.forEach((subRefTypesTable,subRefTypesType)=>{
+                                addToSymbolToType(t.symbol, subRefTypesType);
+                                // pull up the sub
+                                subRefTypesTable.forEach((subRefTypesTable,_subSymbol)=>{
+                                    Debug.assert(subRefTypesTable.kind===RefTypesTableKind.leaf);
+                                    addToSymbolToConst(subRefTypesTable.symbol,subRefTypesTable.isconst);
+                                    addToSymbolToType(subRefTypesTable.symbol, subRefTypesTable.type);
+                                });
+                            });
+                        }
+                    });
+                    const retmap = new Map<Symbol, RefTypesTableLeaf>();
+                    mapSymbolToConst.forEach((isconst,symbol)=>{
+                        retmap.set(symbol, {
+                            symbol,
+                            isconst,
+                            kind: RefTypesTableKind.leaf,
+                            type: mapSymbolToType.get(symbol)!
+                        });
+                    });
+                    return retmap;
+                };
+                const passingPreReqByTypeRhs: Map<Symbol, RefTypesTableLeaf> = mergeTables(setPassingMaps);
+                const passing: RefTypesTableNonLeaf = {
+                    kind: RefTypesTableKind.nonLeaf,
+                    symbol: refTypesTable.symbol,
+                    isconst: refTypesTable.isconst,
+                    preReqByType: new Map<RefTypesType, RefTypesTableLeaf>([passingType, passingPreReqByTypeRhs])
+                };
+            }
+            else Debug.fail("unreachable");
+        }
+
 
         function createNodeToTypeMap(): NodeToTypeMap {
             return new Map<Node,Type>();
@@ -206,6 +388,49 @@ namespace ts {
                 refTypes: joinMergeRefTypes(aRefTypes),
             };
         }
+
+
+        /**
+         *
+         * @param type
+         * @param crit
+         * @returns type narrowed by criterion crit
+         */
+        // @ts-ignore-error 6133
+        function applyCritToRefTypesType<F extends (t: RefTypesType, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void {
+            if (crit.kind===InferCritKind.none) {
+                checker.forEachType(rt.type, t => {
+                    func({ type:t }, /* pass */ true, /* fail */ false);
+                });
+            }
+            else if (crit.kind===InferCritKind.truthy) {
+                const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
+                const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
+                checker.forEachType(rt.type, t => {
+                    const tf = checker.getTypeFacts(t);
+                    func({ type:t }, !!(tf&pfacts), !!(tf & ffacts));
+                });
+            }
+            else if (crit.kind===InferCritKind.notnullundef) {
+                const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
+                const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
+                checker.forEachType(rt.type, t => {
+                    const tf = checker.getTypeFacts(t);
+                    func({ type:t }, !!(tf&pfacts), !!(tf & ffacts));
+                });
+            }
+            else if (crit.kind===InferCritKind.assignable) {
+                checker.forEachType(rt.type, source => {
+                    let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
+                    if (crit.negate) rel = !rel;
+                    func({ type: source }, rel, !rel);
+                });
+            }
+            else {
+                Debug.assert(false, "", ()=>crit.kind);
+            }
+        }
+
 
 
         /**
@@ -958,13 +1183,13 @@ namespace ts {
                     byNode.set(condExpr, rtnType);
                     //const tmpRtnType = anyType; // condRefType?.type ?? checkExpressionCache.get(condExpr);
                     //Debug.assert(tmpRtnType);
-                    consoleLog(`xxx: rtnType: ${typeToString(rtnType)}`);
+                    //consoleLog(`xxx: rtnType: ${typeToString(rtnType)}`);
                     const inferRefRtnType = applyCritToRefTypesRtnArray({aRefTypesRtn:[{
                         rtnType,
                         symbolOfRtnType: condSymbol,
                         refTypes
                     }], crit});
-                    consoleLog(`yyy: rtnType: ${typeToString(inferRefRtnType.passing.rtnType)}`);
+                    //consoleLog(`yyy: rtnType: ${typeToString(inferRefRtnType.passing.rtnType)}`);
 
                     return {
                         inferRefRtnType,
@@ -1032,21 +1257,46 @@ namespace ts {
                     const rhs = mrNarrowTypes({ refTypes, condExpr:condExpr.initializer!, crit:{ kind: InferCritKind.none }, qdotfallout });
                     if (isIdentifier(condExpr.name)){
                         /**
-                         * Official processing of the lhs is taking place above in checkVariableLikeDeclaration.
+                         * More processing and error checking of the lhs is taking place higher up in checkVariableLikeDeclaration.
                          */
-                        // The lhs type includes the undefined in qdotfallout, if any but needs nothing but the rtnType from that.
-                        const setRtnType = typeToSet(rhs.inferRefRtnType.passing.rtnType);
-                        qdotfallout.forEach(x=>{
-                            if (x.rtnType!==neverType) forEachTypeIfUnion(x.rtnType, t=>setRtnType.add(t));
-                        });
-                        const lhsRtnType = setToType(setRtnType);
+                        /**
+                         * qdotfallout content, if it exists, needs to be added back in now
+                         */
+                        const lhsRefTypesRtn = joinMergeRefTypesRtn([...qdotfallout, rhs.inferRefRtnType.passing]);
 
+                        // //const lhsRefTypesRtn =
+                        // // The lhs type includes the undefined in qdotfallout,
+                        // const setRtnType = typeToSet(rhs.inferRefRtnType.passing.rtnType);
+                        // //const aqdotRefTypes:
+                        // qdotfallout.forEach(x=>{
+                        //     if (x.rtnType!==neverType) {
+                        //         forEachTypeIfUnion(x.rtnType, t=>setRtnType.add(t));
+                        //         // The refTypes must also be added back in:
+                        //         // x.refTypes.bySymbol.forEach((rt,s)=>{
+                        //         //     //rhs.inferRefRtnType.passing.refTypes.bySymbol.
+                        //         // });
+                        //     }
+                        // });
+                        // joinMergeRefTypes([]);
+                        // joinMergeRefTypesRtn([]);
+
+                        //const lhsRtnType = setToType(setRtnType);
                         const lhsSymbol = getSymbolOfNode(condExpr); // not condExpr.name
                         const isconst = isConstVariable(lhsSymbol);
-                        rhs.inferRefRtnType.passing.refTypes.bySymbol.set(lhsSymbol, { type: lhsRtnType, const: isconst });
-                        rhs.inferRefRtnType.passing.symbolOfRtnType = lhsSymbol;
-                        rhs.byNode.set(condExpr, lhsRtnType);
-                        return rhs;
+                        const byNode = rhs.byNode.set(condExpr, lhsRefTypesRtn.rtnType);
+                        lhsRefTypesRtn.symbolOfRtnType = lhsSymbol;
+                        lhsRefTypesRtn.refTypes.bySymbol.set(lhsSymbol, { type: lhsRefTypesRtn.rtnType, const: isconst });
+                        const lhs: MrNarrowTypesReturn = {
+                            byNode,
+                            inferRefRtnType: {
+                                passing: lhsRefTypesRtn
+                            }
+                        };
+                        // rhs.inferRefRtnType.passing.rtnType = lhsRtnType;
+                        // rhs.inferRefRtnType.passing.refTypes.bySymbol.set(lhsSymbol, { type: lhsRtnType, const: isconst });
+                        // rhs.inferRefRtnType.passing.symbolOfRtnType = lhsSymbol;
+                        // rhs.byNode.set(condExpr, lhsRtnType);
+                        return lhs;
                     }
                     else {
                         // could be binding, or could a proeprty access on the lhs
@@ -1066,6 +1316,7 @@ namespace ts {
         };
 
     } // createMrNarrow
+
 
 
 }

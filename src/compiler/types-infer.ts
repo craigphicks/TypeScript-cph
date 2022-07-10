@@ -30,20 +30,37 @@ namespace ts {
     // };
     export type RefTypes = & {
         bySymbol: ESMap<Symbol, RefType>;
-        // addRefType(symbol: Symbol, type: Type): void;
-        // getRefType(symbol: Symbol): RefType
-        // has(symbol: Symbol): boolean;
     };
-    // export interface RefTypes {
-    //     add(symbol:Symbol,refType:RefType);
-    //     has(symbol: Symbol): boolean;
-    //     get(symbol: Symbol): boolean ;
-    // }
     export type RefTypesRtn = & {
         rtnType: Type;
         symbolOfRtnType: Symbol | undefined
         refTypes: RefTypes;
     };
+    export enum RefTypesTableKind {
+        leaf = "leaf",
+        nonLeaf = "nonLeaf"
+    };
+    //export type RefTypesType = & { type: Type }; // keep it abstact for now - may want to opimize later
+    export interface RefTypesType {
+        _set: Set<Type>;
+    };
+    // declare function createRefTypesType(t?: Type): RefTypesType;
+    // declare function addTypeToRefTypesType(rt: RefTypesType, t: Type): void;
+    // declare function getTypeFromRefTypesType(rt: Readonly<RefTypesType>): Type;
+
+    export type RefTypesTableNonLeaf = & {
+        kind: RefTypesTableKind.nonLeaf;
+        symbol: Symbol;
+        isconst?: boolean;
+        preReqByType: ESMap<RefTypesType, ESMap<Symbol, RefTypesTable>>;
+    };
+    export type RefTypesTableLeaf = & {
+        kind: RefTypesTableKind.leaf;
+        symbol: Symbol;
+        isconst?: boolean;
+        type: RefTypesType;
+    };
+    export type RefTypesTable = RefTypesTableLeaf | RefTypesTableNonLeaf;
 
     export enum InferCritKind {
         none= "none",

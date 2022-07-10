@@ -1,18 +1,23 @@
 // @strict: true
 // @declaration: true
+// @exactOptionalPropertyTypes: true
 
-declare interface Foo { 
-    foo(x:Foo):Foo;
-    foo(x:undefined):undefined; 
+declare type Foo = { 
+    foo(x?:number):number[] 
+    foo(x?:string,y?:string):string[] 
 };
-
-declare const obj: Readonly<Foo> | undefined;
-const isFoo = obj?.foo(obj);
+declare type Boo = { 
+    foo(x?:bigint):bigint[]  
+};
+declare const obj: Readonly<Foo> | Readonly<Boo> | undefined;
+declare const okobj: Readonly<Foo> | Readonly<Boo>;
+const isFoo = obj?.foo();
 if (isFoo) {
-    // @special
-    obj; //.foo(obj);
+    let x = obj;
+    // let y = x.foo;
+    // let z = y();
+    // console.log(z);
 } 
-// else {
-//     // @ special
-//     obj.foo(obj);
-// }
+else {
+    obj;
+}
