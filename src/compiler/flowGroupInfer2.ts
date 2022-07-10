@@ -111,9 +111,11 @@ namespace ts {
             source._set.forEach(t=>target._set.add(t));
         }
         function getTypeFromRefTypesType(rt: Readonly<RefTypesType>): Type {
-            return setToType(rt._set);
+            return setToType(rt._set) ;
         }
-
+        function copyRefTypesType(rt: Readonly<RefTypesType>): RefTypesType {
+            return { _set: new Set(rt._set) };
+        }
 
 
         // function typeToRefTypesType(t: Type): RefTypesType {
@@ -134,9 +136,14 @@ namespace ts {
                 symbol, isconst, type: type ?? createRefTypesType()
             };
         }
-        //preReqByType: ESMap<Type, RefTypesTable>
-        function createRefTypesTableNonLeaf(symbol: Symbol , isconst: boolean | undefined, preReqByTypeIn: [RefTypesType, RefTypesTable][] | ESMap<RefTypesType, RefTypesTable>): RefTypesTableNonLeaf {
-            const preReqByType = isArray(preReqByTypeIn) ? new Map<RefTypesType, RefTypesTable>(preReqByTypeIn) : (preReqByTypeIn instanceof Map) ? preReqByTypeIn : Debug.fail("preReqByTypeIn illegal type");
+        function copyRefTypesTableLeaf(rtt: RefTypesTableLeaf): RefTypesTableLeaf {
+            return {
+                ...rtt,
+                type: copyRefTypesType(rtt.type)
+            };
+        }
+        function createRefTypesTableNonLeaf(symbol: Symbol , isconst: boolean | undefined, preReqByTypeIn: [RefTypesType, RefTypesSymtab][] | ESMap<RefTypesType, RefTypesSymtab>): RefTypesTableNonLeaf {
+            const preReqByType = isArray(preReqByTypeIn) ? new Map<RefTypesType, RefTypesSymtab>(preReqByTypeIn) : (preReqByTypeIn instanceof Map) ? preReqByTypeIn : Debug.fail("preReqByTypeIn illegal type");
             return {
                 kind: RefTypesTableKind.nonLeaf,
                 symbol, isconst, preReqByType
@@ -152,7 +159,7 @@ namespace ts {
 
         // }
 
-        function applyCritToRefTypesTable({refTypesTable, crit}: {refTypesTable: RefTypesTable, crit: InferCrit}): { passing: RefTypesTable, failing?: RefsTypeTable | undefined } {
+        function applyCritToRefTypesTable({refTypesTable, crit}: {refTypesTable: RefTypesTable, crit: InferCrit}): { passing: RefTypesTable, failing?: RefTypesTable | undefined } {
             if (crit.kind===InferCritKind.none){
                 Debug.assert(!crit.negate);
                 Debug.assert(!crit.alsoFailing);
@@ -203,56 +210,60 @@ namespace ts {
                         }
                     });
                 });
-                const mergeTables = (st: Set< ESMap<Symbol, RefTypesTable>>) => {
-                    const mapSymbolToConst = new Map<Symbol, boolean>();
-                    const addToSymbolToConst = (symbol: Symbol, isconst = false) => {
-                        const got = mapSymbolToConst.get(symbol);
-                        if (got===undefined) mapSymbolToConst.set(symbol, isconst);
-                        else Debug.assert(mapSymbolToConst.get(symbol)===isconst);
-                    };
-                    const mapSymbolToType = new Map<Symbol, RefTypesType>();
-                    const addToSymbolToType = (symbol: Symbol, type: RefTypesType) => {
-                        const got = mapSymbolToType.get(symbol);
-                        if (!got) mapSymbolToType.set(symbol,type);
-                        else mergeToRefTypesType({ source: type, target: got });
-                    };
-                    st.forEach((x: ESMap<Symbol,RefTypesTable>)=>{
-                        if (t.kind===RefTypesTableKind.leaf) {
-                            addToSymbolToConst(t.symbol,t.isconst);
-                            addToSymbolToType(t.symbol,t.type);
-                        }
-                        else if (t.kind===RefTypesTableKind.nonLeaf) {
-                            addToSymbolToConst(t.symbol,t.isconst);
-
-                            t.preReqByType.forEach((subRefTypesTable,subRefTypesType)=>{
-                                addToSymbolToType(t.symbol, subRefTypesType);
-                                // pull up the sub
-                                subRefTypesTable.forEach((subRefTypesTable,_subSymbol)=>{
-                                    Debug.assert(subRefTypesTable.kind===RefTypesTableKind.leaf);
-                                    addToSymbolToConst(subRefTypesTable.symbol,subRefTypesTable.isconst);
-                                    addToSymbolToType(subRefTypesTable.symbol, subRefTypesTable.type);
-                                });
-                            });
-                        }
-                    });
+                const mergeTables = (st: Set<RefTypesSymtab>) => {
                     const retmap = new Map<Symbol, RefTypesTableLeaf>();
-                    mapSymbolToConst.forEach((isconst,symbol)=>{
-                        retmap.set(symbol, {
-                            symbol,
-                            isconst,
-                            kind: RefTypesTableKind.leaf,
-                            type: mapSymbolToType.get(symbol)!
+                    const addToRetmap = ({symbol,isconst,type}: { symbol: Symbol, isconst: boolean | undefined, type: RefTypesType }) => {
+                        const got = retmap.get(symbol);
+                        if (got) {
+                            Debug.assert(!!got.isconst === !!isconst);
+                            mergeToRefTypesType({ source: type, target: got.type });
+                        }
+                        else retmap.set(symbol, { symbol,isconst,type, kind: RefTypesTableKind.leaf });
+                    };
+                    st.forEach((x: RefTypesSymtab)=>{
+                        x.forEach((refTypesTable, symbol)=>{
+                            if (refTypesTable.kind===RefTypesTableKind.leaf) {
+                                retmap.set(symbol, refTypesTable);
+                            }
+                            else if (refTypesTable.kind===RefTypesTableKind.nonLeaf) {
+                                /**
+                                 * We have a choice to collapse the state or not.
+                                 * For time being collapse, to keep processing O(1).
+                                 * Even with collapsing, the individual symbol values are correct,
+                                 * just their correlation (inference) is compromised.
+                                 * Alternatives: (1) maintain a fixed depth > 1, (2) aliasing.
+                                 */
+                                 refTypesTable.preReqByType.forEach((subRefTypesSymtab,subReTypesType)=>{
+                                    addToRetmap({ symbol, isconst: refTypesTable.isconst, type: subReTypesType });
+                                    subRefTypesSymtab.forEach((subRefTypesTable, subSymbol)=>{
+                                        Debug.assert(subRefTypesTable.kind===RefTypesTableKind.leaf);
+                                        retmap.set(subSymbol,subRefTypesTable);
+                                    });
+                                 });
+                            }
                         });
                     });
                     return retmap;
                 };
-                const passingPreReqByTypeRhs: Map<Symbol, RefTypesTableLeaf> = mergeTables(setPassingMaps);
+                const passingPreReqByTypeRhs: RefTypesSymtab = mergeTables(setPassingMaps);
                 const passing: RefTypesTableNonLeaf = {
                     kind: RefTypesTableKind.nonLeaf,
                     symbol: refTypesTable.symbol,
                     isconst: refTypesTable.isconst,
-                    preReqByType: new Map<RefTypesType, RefTypesTableLeaf>([passingType, passingPreReqByTypeRhs])
+                    preReqByType: new Map<RefTypesType, RefTypesSymtab>([[passingType, passingPreReqByTypeRhs]])
                 };
+                if (!crit.alsoFailing) return { passing };
+                else {
+                    return {
+                        passing,
+                        failing: {
+                            kind: RefTypesTableKind.nonLeaf,
+                            symbol: refTypesTable.symbol,
+                            isconst: refTypesTable.isconst,
+                            preReqByType: new Map<RefTypesType, RefTypesSymtab>([[failingType, mergeTables(setFailingMaps)]])
+                        }
+                    };
+                }
             }
             else Debug.fail("unreachable");
         }

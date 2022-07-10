@@ -47,12 +47,12 @@ namespace ts {
     // declare function createRefTypesType(t?: Type): RefTypesType;
     // declare function addTypeToRefTypesType(rt: RefTypesType, t: Type): void;
     // declare function getTypeFromRefTypesType(rt: Readonly<RefTypesType>): Type;
-
+    export type RefTypesSymtab = ESMap<Symbol, RefTypesTable>;
     export type RefTypesTableNonLeaf = & {
         kind: RefTypesTableKind.nonLeaf;
         symbol: Symbol;
         isconst?: boolean;
-        preReqByType: ESMap<RefTypesType, ESMap<Symbol, RefTypesTable>>;
+        preReqByType: ESMap<RefTypesType, RefTypesSymtab>;
     };
     export type RefTypesTableLeaf = & {
         kind: RefTypesTableKind.leaf;
