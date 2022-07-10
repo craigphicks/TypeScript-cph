@@ -101,7 +101,7 @@ namespace ts {
                 _set: typeToSet(t)
             };
         }
-        function addTypeToRefTypesType(rt: RefTypesType, t: Readonly<Type>): void {
+        function addTypeToRefTypesType({source:t,target:rt}: { source: Readonly<Type>, target: RefTypesType}): void {
             if (!(t.flags & TypeFlags.Union)) rt._set.add(t);
             else {
                 forEachTypeIfUnion(t, tt=> rt._set.add(tt));
@@ -168,9 +168,9 @@ namespace ts {
             if (refTypesTable.kind === RefTypesTableKind.leaf){
                 const passingType = createRefTypesType();
                 const failingType = createRefTypesType();
-                applyCritToRefTypesType(refTypesTable.type, crit, (t: RefTypesType, bpass: boolean, bfail: boolean)=>{
-                    if (bpass) mergeToRefTypesType({ target:passingType,source:t });
-                    if (crit.alsoFailing && bfail) mergeToRefTypesType({ target: failingType, source: t });
+                applyCritToRefTypesType(refTypesTable.type, crit, (t: Type, bpass: boolean, bfail: boolean)=>{
+                    if (bpass) addTypeToRefTypesType({ target:passingType,source:t });
+                    if (crit.alsoFailing && bfail) addTypeToRefTypesType({ target: failingType, source: t });
                 });
                 const passing: RefTypesTableLeaf = {
                         kind: RefTypesTableKind.leaf,
@@ -199,13 +199,13 @@ namespace ts {
                 const failingType = createRefTypesType();
                 const setFailingMaps = new Set< ESMap<Symbol, RefTypesTable>>();
                 refTypesTable.preReqByType.forEach((refTypesMap,refTypesType)=>{
-                    applyCritToRefTypesType(refTypesType, crit, (t: RefTypesType, bpass: boolean, bfail: boolean)=>{
+                    applyCritToRefTypesType(refTypesType, crit, (t: Type, bpass: boolean, bfail: boolean)=>{
                         if (bpass) {
-                            mergeToRefTypesType({ target: passingType, source: t });
+                            addTypeToRefTypesType({ target: passingType, source: t });
                             setPassingMaps.add(refTypesMap);
                         }
                         if (crit.alsoFailing && bfail) {
-                            mergeToRefTypesType({ target: failingType, source: t });
+                            addTypeToRefTypesType({ target: failingType, source: t });
                             setFailingMaps.add(refTypesMap);
                         }
                     });
@@ -228,7 +228,8 @@ namespace ts {
                             else if (refTypesTable.kind===RefTypesTableKind.nonLeaf) {
                                 /**
                                  * We have a choice to collapse the state or not.
-                                 * For time being collapse, to keep processing O(1).
+                                 * For time being collapse, to keep processing O(1) -
+                                 * i.e., a single lookup.
                                  * Even with collapsing, the individual symbol values are correct,
                                  * just their correlation (inference) is compromised.
                                  * Alternatives: (1) maintain a fixed depth > 1, (2) aliasing.
@@ -401,6 +402,47 @@ namespace ts {
         }
 
 
+        // /**
+        //  *
+        //  * @param type
+        //  * @param crit
+        //  * @returns type narrowed by criterion crit
+        //  */
+        // // @ts-ignore-error 6133
+        // function applyCritToRefTypesType_<F extends (t: RefTypesType, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void {
+        //     if (crit.kind===InferCritKind.none) {
+        //         checker.forEachType(rt.type, t => {
+        //             func({ type:t }, /* pass */ true, /* fail */ false);
+        //         });
+        //     }
+        //     else if (crit.kind===InferCritKind.truthy) {
+        //         const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
+        //         const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
+        //         checker.forEachType(rt.type, t => {
+        //             const tf = checker.getTypeFacts(t);
+        //             func({ type:t }, !!(tf&pfacts), !!(tf & ffacts));
+        //         });
+        //     }
+        //     else if (crit.kind===InferCritKind.notnullundef) {
+        //         const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
+        //         const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
+        //         checker.forEachType(rt.type, t => {
+        //             const tf = checker.getTypeFacts(t);
+        //             func({ type:t }, !!(tf&pfacts), !!(tf & ffacts));
+        //         });
+        //     }
+        //     else if (crit.kind===InferCritKind.assignable) {
+        //         checker.forEachType(rt.type, source => {
+        //             let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
+        //             if (crit.negate) rel = !rel;
+        //             func({ type: source }, rel, !rel);
+        //         });
+        //     }
+        //     else {
+        //         Debug.assert(false, "", ()=>crit.kind);
+        //     }
+        // }
+
         /**
          *
          * @param type
@@ -408,40 +450,39 @@ namespace ts {
          * @returns type narrowed by criterion crit
          */
         // @ts-ignore-error 6133
-        function applyCritToRefTypesType<F extends (t: RefTypesType, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void {
+        function applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void {
             if (crit.kind===InferCritKind.none) {
-                checker.forEachType(rt.type, t => {
-                    func({ type:t }, /* pass */ true, /* fail */ false);
+                rt._set.forEach(t => {
+                    func(t, /* pass */ true, /* fail */ false);
                 });
             }
             else if (crit.kind===InferCritKind.truthy) {
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
                 const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
-                checker.forEachType(rt.type, t => {
+                rt._set.forEach(t => {
                     const tf = checker.getTypeFacts(t);
-                    func({ type:t }, !!(tf&pfacts), !!(tf & ffacts));
+                    func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
             }
             else if (crit.kind===InferCritKind.notnullundef) {
                 const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
                 const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
-                checker.forEachType(rt.type, t => {
+                rt._set.forEach(t => {
                     const tf = checker.getTypeFacts(t);
-                    func({ type:t }, !!(tf&pfacts), !!(tf & ffacts));
+                    func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
             }
             else if (crit.kind===InferCritKind.assignable) {
-                checker.forEachType(rt.type, source => {
+                rt._set.forEach(source => {
                     let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
                     if (crit.negate) rel = !rel;
-                    func({ type: source }, rel, !rel);
+                    func(source, rel, !rel);
                 });
             }
             else {
                 Debug.assert(false, "", ()=>crit.kind);
             }
         }
-
 
 
         /**
