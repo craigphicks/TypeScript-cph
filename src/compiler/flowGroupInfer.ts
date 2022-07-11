@@ -15,10 +15,15 @@ namespace ts {
     // }
     export interface StackItem {
         group: FlowNodeGroup;
-        refTypes?: RefTypes;
-        depStackItems: StackItem[];  // the referenced items are "safe" from garbage collection even stack is popped.
+        //refTypes?: RefTypes;
+        depStackItems: StackItem[];  // the referenced items are "safe" from garbage collection even if stack is popped.
     }
-    interface CurrentBranchesItem { refTypesRtn: RefTypesRtn, done?: boolean };
+    interface CurrentBranchesItem {
+        /* refTypesRtn: RefTypesRtn, */
+        refTypesTableReturn: RefTypesTableReturn;
+        byNode: NodeToTypeMap;
+        done?: boolean
+    };
 
     export interface MrState {
         //flowNodeGroupToStateMap: ESMap <FlowNodeGroup, AccState>;
@@ -86,7 +91,7 @@ namespace ts {
                 if (!cbi) consoleLog(`!cbi`);
                 else {
                     consoleLog(`resolveNodefulGroupUsingState[dbg]: cbi.done: ${cbi?.done}, cbi.refTypesRtn:`);
-                    const astr = dbgs?.dbgRefTypesRtnToStrings(cbi.refTypesRtn);
+                    const astr = sourceFileMrState.mrNarrow.dbgRefTypesTableToStrings(cbi.refTypesTableReturn);
                     astr?.forEach(s=>{
                         consoleLog(`resolveNodefulGroupUsingState[dbg]:  ${s}`);
                     });
@@ -96,21 +101,21 @@ namespace ts {
         consoleLog(`resolveNodefulGroupUsingState[dbg]: antecedents end:`);
         consoleGroupEnd();
         Debug.assert(currentBranchesItems.length<=1);
-        let refTypes: RefTypes;
-        if (currentBranchesItems.length) refTypes = currentBranchesItems[0].refTypesRtn.refTypes;
-        else refTypes = sourceFileMrState.mrNarrow.createRefTypes();
+        let refTypesSymtab: RefTypesSymtab;
+        if (currentBranchesItems.length) refTypesSymtab = currentBranchesItems[0].refTypesTableReturn.symtab;
+        else refTypesSymtab = sourceFileMrState.mrNarrow.createRefTypesSymtab();
 
         const ifPair = isIfPairFlowNodeGroup(group) ? group : undefined;
         const condExpr: Expression = getFlowGroupMaximalNode(group) as Expression;
         const crit: InferCrit = !ifPair ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
-        const qdotfallout: RefTypesRtn[]=[];
-        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypes, condExpr, crit, qdotfallout });
+        const qdotfallout: RefTypesTableReturn[]=[];
+        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr, crit, qdotfallout });
         if (ifPair){
-            sourceFileMrState.mrState.currentBranchesMap.set(ifPair.true, { refTypesRtn: retval.inferRefRtnType.passing });
-            sourceFileMrState.mrState.currentBranchesMap.set(ifPair.false, { refTypesRtn: retval.inferRefRtnType.failing! });
+            sourceFileMrState.mrState.currentBranchesMap.set(ifPair.true, { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode });
+            sourceFileMrState.mrState.currentBranchesMap.set(ifPair.false, { refTypesTableReturn: retval.inferRefRtnType.failing!, byNode: retval.byNode });
         }
         else {
-            sourceFileMrState.mrState.currentBranchesMap.set(group, { refTypesRtn: retval.inferRefRtnType.passing });
+            sourceFileMrState.mrState.currentBranchesMap.set(group, { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode });
         }
         if (currentBranchesItems.length) currentBranchesItems[0].done=true;
         if (!sourceFileMrState.mrState.groupToNodeToType) sourceFileMrState.mrState.groupToNodeToType = new Map<FlowNodeGroup, NodeToTypeMap>();
@@ -212,10 +217,13 @@ namespace ts {
                         const cbi = _sourceFileMrState.mrState.currentBranchesMap.get(a);
                         Debug.assert(cbi);
                         Debug.assert(!cbi.done);
-                        Debug.assert(cbi.refTypesRtn);
-                        return cbi.refTypesRtn;
+                        Debug.assert(cbi.refTypesTableReturn);
+                        return cbi.refTypesTableReturn;
                     });
-                    _sourceFileMrState.mrState.currentBranchesMap.set(item.group, { refTypesRtn: _sourceFileMrState.mrNarrow.joinMergeRefTypesRtn(arrRtr) });
+                    _sourceFileMrState.mrState.currentBranchesMap.set(item.group, {
+                        refTypesTableReturn: _sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(/*symbol*/ undefined, /* isconst */ undefined, arrRtr),
+                        byNode: new Map<Node,Type>() // no need?
+                    });
                     continue;
                 }
                 // branches, loops, functions, switch, etc, go here.

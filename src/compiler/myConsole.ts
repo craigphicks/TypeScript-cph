@@ -99,8 +99,8 @@ namespace ts {
         dbgFlowNodeGroupToString: (flowNodeGroup: FlowNodeGroup | undefined) => string;
         dbgSymbolToStringSimple(s: Readonly<Symbol | undefined>): string;
         dbgSymbolToStringSimple(s: Readonly<Symbol | undefined>): string;
-        dbgRefTypeToString(rt: Readonly<RefType>): string;
-        dbgRefTypesRtnToStrings(rtr: Readonly<RefTypesRtn>): string[];
+        //dbgRefTypeToString(rt: Readonly<RefType>): string;
+        //dbgRefTypesRtnToStrings(rtr: Readonly<RefTypesRtn>): string[];
     }
     export function createDbgs(checker: TypeChecker): Dbgs{
         const dbgGetNodeText = (node: Node)=>{
@@ -155,24 +155,28 @@ namespace ts {
         function dbgSymbolToStringSimple(s: Readonly<Symbol | undefined>): string {
             return s ? `{ id:${getSymbolId(s)}, ename: ${s.escapedName} }` : "<undef>";
         }
-        function dbgRefTypeToString(rt: Readonly<RefType>): string {
-            return `{ type: ${checker.typeToString(rt.type)}, const: ${rt.const} }`;
-        }
-        function dbgRefTypesRtnToStrings(rtr: Readonly<RefTypesRtn>): string[] {
-            const astr: string[] = ["{"];
-            const rtnTypeStr = checker.typeToString(rtr.rtnType);
-            astr.push(`  rtnType:${rtnTypeStr},`);
-            const symbolOfRtnTypeStr = dbgSymbolToStringSimple(rtr.symbolOfRtnType);
-            astr.push(`  symbolOfRtnType:${symbolOfRtnTypeStr},`);
-            astr.push(`  refTypes:[`);
-            rtr.refTypes.bySymbol.forEach((rt,s)=>{
-                const str = `    {symbol:${dbgSymbolToStringSimple(s)}, refType:${dbgRefTypeToString(rt)} }`;
-                astr.push(str);
-            });
-            astr.push(`  ]`);
-            astr.push(`}`);
-            return astr;
-        }
+        // function dbgRefTypeToString(rt: Readonly<RefType>): string {
+        //     return `{ type: ${checker.typeToString(rt.type)}, const: ${rt.const} }`;
+        // }
+        // function dbgRefTypesRtnToStrings(rtr: Readonly<RefTypesRtn>): string[] {
+        //     const astr: string[] = ["{"];
+        //     const rtnTypeStr = checker.typeToString(rtr.rtnType);
+        // eslint-disable-next-line no-double-space
+        //     astr.push(`  rtnType:${rtnTypeStr},`);
+        //     const symbolOfRtnTypeStr = dbgSymbolToStringSimple(rtr.symbolOfRtnType);
+        // eslint-disable-next-line no-double-space
+        //     astr.push(`  symbolOfRtnType:${symbolOfRtnTypeStr},`);
+        // eslint-disable-next-line no-double-space
+        //     astr.push(`  refTypes:[`);
+        //     rtr.refTypes.bySymbol.forEach((rt,s)=>{
+        //         const str = `    {symbol:${dbgSymbolToStringSimple(s)}, refType:${dbgRefTypeToString(rt)} }`;
+        //         astr.push(str);
+        //     });
+        // eslint-disable-next-line no-double-space
+        //     astr.push(`  ]`);
+        //     astr.push(`}`);
+        //     return astr;
+        // }
 
 
 
@@ -185,8 +189,8 @@ namespace ts {
             dbgWriteSignatureArray,
             dbgFlowNodeGroupToString,
             dbgSymbolToStringSimple,
-            dbgRefTypeToString,
-            dbgRefTypesRtnToStrings
+            // dbgRefTypeToString,
+            // dbgRefTypesRtnToStrings
         };
     }
 }

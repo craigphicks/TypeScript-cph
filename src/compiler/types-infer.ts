@@ -12,55 +12,85 @@ namespace ts {
         inUse: boolean; // to prevent recursion of aliases
     };
 
-    export type RefType = & {
-        type: Type,
-        // if for some node, isConstantReference(node) && node symbol is s, then any nodex with the same symbol is also constant, right?
-        const: boolean
-    };
-    // export interface EType {
-    //     getUnionType(): Type;
-    //     setFromUnionType(type: Type): void;
-    //     forEachType(f: (t: Type) => void): void;
+    /**
+     * Old obsolete stuff
+     */
+
+    // export type RefType = & {
+    //     type: Type,
+    //     // if for some node, isConstantReference(node) && node symbol is s, then any nodex with the same symbol is also constant, right?
+    //     const: boolean
     // };
-    // export interface RefType extends EType{
-    //     getUnionType(): Type;
-    //     setFromUnionType(type: Type): void;
-    //     forEachType(f: (t: Type) => void): void
-    //     getIsConst(): boolean;
+    // export type RefTypes = & {
+    //     bySymbol: ESMap<Symbol, RefType>;
     // };
-    export type RefTypes = & {
-        bySymbol: ESMap<Symbol, RefType>;
-    };
-    export type RefTypesRtn = & {
-        rtnType: Type;
-        symbolOfRtnType: Symbol | undefined
-        refTypes: RefTypes;
-    };
+    // export type RefTypesRtn = & {
+    //     rtnType: Type;
+    //     symbolOfRtnType: Symbol | undefined
+    //     refTypes: RefTypes;
+    // };
+
+
+    /**
+     * New or keep stuff
+     */
     export enum RefTypesTableKind {
         leaf = "leaf",
-        nonLeaf = "nonLeaf"
+        nonLeaf = "nonLeaf",
+        return = "return"
     };
+    declare function isRefTypesTableLeaf(x: RefTypesTable): x is RefTypesTableLeaf;
+    declare function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn;
+    declare function isRefTypesTableReturn(x: RefTypesTableNonLeaf): x is RefTypesTableNonLeaf;
     //export type RefTypesType = & { type: Type }; // keep it abstact for now - may want to opimize later
     export interface RefTypesType {
         _set: Set<Type>;
     };
-    // declare function createRefTypesType(t?: Type): RefTypesType;
-    // declare function addTypeToRefTypesType(rt: RefTypesType, t: Type): void;
-    // declare function getTypeFromRefTypesType(rt: Readonly<RefTypesType>): Type;
-    export type RefTypesSymtab = ESMap<Symbol, RefTypesTable>;
+    export type MakeRequired<Type, Key extends keyof Type> = Omit<Type, Key> & Required<Pick<Type, Key>>;
+    // export type RefTypesSymtabValue = MakeRequired<RefTypesTableLeaf, "symbol">;
+    export type RefTypesSymtabValue = & {
+        leaf: MakeRequired<RefTypesTableLeaf, "symbol">;
+        //nonLeaf?: MakeRequired<RefTypesTableNonLeaf, "symbol">;
+        //byNode?: NodeToTypeMap;
+    };
+    /**
+     * Eventually want to extend RefTypesSymtabValue to
+     * ```
+     * { leaf: MakeRequired<RefTypesTableLeaf, "symbol">, nonLeaf?: MakeRequired<RefTypesTableNonLeaf, "symbol">} }
+     * ```
+     * where nonLeaf contains more detailed info and can be the operand of any criteria.
+     */
+    export type RefTypesSymtab = ESMap<Symbol, RefTypesSymtabValue>;
     export type RefTypesTableNonLeaf = & {
         kind: RefTypesTableKind.nonLeaf;
-        symbol: Symbol;
+        symbol: Symbol | undefined; // undefined because some expressions have no symbol - will never be included in RefTypesSymTab
         isconst?: boolean;
-        preReqByType: ESMap<RefTypesType, RefTypesSymtab>;
+        preReqByType?: ESMap<RefTypesType, RefTypesSymtab>;
     };
     export type RefTypesTableLeaf = & {
         kind: RefTypesTableKind.leaf;
-        symbol: Symbol;
+        symbol: Symbol | undefined;
         isconst?: boolean;
         type: RefTypesType;
     };
-    export type RefTypesTable = RefTypesTableLeaf | RefTypesTableNonLeaf;
+    export type RefTypesTable = RefTypesTableReturn | RefTypesTableLeaf | RefTypesTableNonLeaf;
+
+    export type RefTypesTableReturn = & {
+        kind: RefTypesTableKind.return;
+        symbol: Symbol | undefined;
+        isconst?: boolean;
+        type: RefTypesType;
+        symtab: RefTypesSymtab;
+    };
+
+    /**
+     * In the special case of RefTypesTable being returned from a narrow operation on an expression with no symbol,
+     * symbol is undefined.  It still has narrowing affect, but the result will never be merged into a RefTypesSymtab.
+     */
+
+    // export type RefTypesTableRtn = MakeOptional<RefTypesTable, "symbol">;
+    // export type RefTypesTableLeafRtn = MakeOptional<RefTypesTableLeaf, "symbol">;
+    // export type RefTypesTableNonLeafRtn = MakeOptional<RefTypesTableNonLeaf, "symbol">;
 
     export enum InferCritKind {
         none= "none",
@@ -101,9 +131,10 @@ namespace ts {
         target: Type;
     }) & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
-    export type InferTypeArgsQDotFallout = RefTypesRtn[];
+    //export type InferTypeArgsQDotFallout = RefTypesTableReturn[];
     export type InferRefArgs = & {
-        refTypes: RefTypes,
+        refTypesSymtab: RefTypesSymtab,
+        //byNode: NodeToTypeMap,
         condExpr: Readonly<Node>,
         crit: InferCrit,
         //context?: InferRefArgsContext, // This ONLY applies to next call, should not be forward beyond.  TODO: change name to `immedContext` to make that obvious.
@@ -123,7 +154,7 @@ namespace ts {
          * >>     if not `context?nonNullExpression`
          * >>         add {rtnType:undefined, refTypes: refTypes with bySymbol.get(self symbol) lookup value set to `undefined`} to results to results to be passed finally to crit.
          */
-        qdotfallout: InferTypeArgsQDotFallout // TODO: should be mandatory
+        qdotfallout: RefTypesTableReturn[] // TODO: should be mandatory
     };
 
     /**
@@ -137,8 +168,8 @@ namespace ts {
         inferRefRtnType: InferRefRtnType;
     };
     export type InferRefRtnType = & {
-        passing: RefTypesRtn;
-        failing?: RefTypesRtn;
+        passing: RefTypesTableReturn;
+        failing?: RefTypesTableReturn;
     };
 
     export type CheckExprData = & {
