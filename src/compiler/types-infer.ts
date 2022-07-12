@@ -36,7 +36,7 @@ namespace ts {
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and symbol dosen't have isconst set,
          * then the type will be taken from replayMode.byNode instead.
          */
-        byNode?: NodeToTypeMap;
+        //byNode?: NodeToTypeMap;
     };
     /**
      * Eventually want to extend RefTypesSymtabValue to
@@ -117,6 +117,9 @@ namespace ts {
     }) & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
     //export type InferTypeArgsQDotFallout = RefTypesTableReturn[];
+    export type ReplayData = & {
+        byNode: NodeToTypeMap;
+    };
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
         //byNode: NodeToTypeMap,
@@ -144,10 +147,7 @@ namespace ts {
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.
          */
-        readonly doReplayMode: boolean;
-        replayMode?: {
-            byNode: NodeToTypeMap;
-        }
+        readonly replayData: ReplayData | false;
     };
 
     /**
@@ -158,6 +158,7 @@ namespace ts {
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type MrNarrowTypesReturn = & {
         byNode: NodeToTypeMap;
+        saveByNodeForReplay?: boolean;
         inferRefRtnType: InferRefRtnType;
     };
     export type InferRefRtnType = & {
@@ -176,11 +177,11 @@ namespace ts {
         assume: boolean;
         //involved: ESMap<Symbol, CheckExprData[]>;
     };
-    export type AliasableAssignmentCacheItem = & {
-        expr: Expression;
-    };
-    export type AliasableAssignmentCache = & {
-        bySymbol: ESMap<Symbol, AliasableAssignmentCacheItem>;
-    };
+    // export type AliasableAssignmentCacheItem = & {
+    //     expr: Expression;
+    // };
+    // export type AliasableAssignmentCache = & {
+    //     bySymbol: ESMap<Symbol, AliasableAssignmentCacheItem>;
+    // };
 
 }
