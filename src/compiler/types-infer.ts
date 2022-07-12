@@ -12,28 +12,6 @@ namespace ts {
         inUse: boolean; // to prevent recursion of aliases
     };
 
-    /**
-     * Old obsolete stuff
-     */
-
-    // export type RefType = & {
-    //     type: Type,
-    //     // if for some node, isConstantReference(node) && node symbol is s, then any nodex with the same symbol is also constant, right?
-    //     const: boolean
-    // };
-    // export type RefTypes = & {
-    //     bySymbol: ESMap<Symbol, RefType>;
-    // };
-    // export type RefTypesRtn = & {
-    //     rtnType: Type;
-    //     symbolOfRtnType: Symbol | undefined
-    //     refTypes: RefTypes;
-    // };
-
-
-    /**
-     * New or keep stuff
-     */
     export enum RefTypesTableKind {
         leaf = "leaf",
         nonLeaf = "nonLeaf",
@@ -51,7 +29,14 @@ namespace ts {
     export type RefTypesSymtabValue = & {
         leaf: MakeRequired<RefTypesTableLeaf, "symbol">;
         //nonLeaf?: MakeRequired<RefTypesTableNonLeaf, "symbol">;
-        //byNode?: NodeToTypeMap;
+        /**
+         * 'byNode' added for any const variable declaration with initializer, just the nodes in the initializer.
+         * The requirement for const isn't necessary if 'byNodes' is refreshed for every new assignment, but that would incur more memory usage.
+         * This 'byNode' is passed when calling mrNarrowTypes with `replayMode` argument.
+         * In replay mode, if a symbol is looked-up from a refTypesSymtab and symbol dosen't have isconst set,
+         * then the type will be taken from replayMode.byNode instead.
+         */
+        byNode?: NodeToTypeMap;
     };
     /**
      * Eventually want to extend RefTypesSymtabValue to
@@ -154,7 +139,15 @@ namespace ts {
          * >>     if not `context?nonNullExpression`
          * >>         add {rtnType:undefined, refTypes: refTypes with bySymbol.get(self symbol) lookup value set to `undefined`} to results to results to be passed finally to crit.
          */
-        qdotfallout: RefTypesTableReturn[] // TODO: should be mandatory
+        qdotfallout: RefTypesTableReturn[], // TODO: should be mandatory
+        /**
+         * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
+         * then the type will be taken from replayMode.byNode instead.
+         */
+        readonly doReplayMode: boolean;
+        replayMode?: {
+            byNode: NodeToTypeMap;
+        }
     };
 
     /**
