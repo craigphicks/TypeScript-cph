@@ -704,6 +704,7 @@ namespace ts {
             // },
             getResolvedSymbol,
             getSymbolOfNode,
+            getUnknownType(){ return unknownType; },
 
             getNodeCount: () => sum(host.getSourceFiles(), "nodeCount"),
             getIdentifierCount: () => sum(host.getSourceFiles(), "identifierCount"),

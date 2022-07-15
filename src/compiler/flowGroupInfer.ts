@@ -109,26 +109,32 @@ namespace ts {
         const ifPair = isIfPairFlowNodeGroup(group) ? group : undefined;
         const condExpr: Expression = getFlowGroupMaximalNode(group) as Expression;
         let replayData: ReplayData | false = false;
-        let replayExpr: Expression | undefined;
         if (ifPair && isIdentifier(condExpr)) {
-            const identSymbol = sourceFileMrState.mrState.checker.getResolvedSymbol(condExpr);
-            const byNode = identSymbol && sourceFileMrState.mrState.symbolToNodeToTypeMap.get(identSymbol);
+            let replayExpr: Expression | undefined;
+                const replaySymbol = sourceFileMrState.mrState.checker.getResolvedSymbol(condExpr);
+            const byNode = replaySymbol && sourceFileMrState.mrState.symbolToNodeToTypeMap.get(replaySymbol);
             if (byNode) {
                 replayExpr = (()=>{
-                    if (identSymbol.valueDeclaration && isVariableDeclaration(identSymbol.valueDeclaration)) return identSymbol.valueDeclaration.initializer;
+                    if (replaySymbol.valueDeclaration && isVariableDeclaration(replaySymbol.valueDeclaration)) return replaySymbol.valueDeclaration.initializer;
                     Debug.assert(false);
                 })();
-                if (replayExpr) replayData = { byNode };
+                if (replayExpr) {
+                        replayData = {
+                        byNode,
+                        symbol: replaySymbol,
+                        expr: replayExpr
+                    };
+                }
             }
             if (getMyDebug()){
-                Debug.assert(identSymbol);
+                Debug.assert(replaySymbol);
                 if (replayData && replayExpr) consoleLog(`resolveNodefulGroupUsingState[dbg]: replayData available ${dbgs?.dbgNodeToString(condExpr)} -> ${dbgs?.dbgNodeToString(replayExpr)}`);
                 else consoleLog(`resolveNodefulGroupUsingState[dbg]: replayData not available`);
             }
         }
         const crit: InferCrit = !ifPair ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         const qdotfallout: RefTypesTableReturn[]=[];
-        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr: replayExpr??condExpr, crit, qdotfallout, replayData });
+        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr , crit, qdotfallout, replayData });
         if (ifPair){
             sourceFileMrState.mrState.currentBranchesMap.set(ifPair.true, { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode });
             sourceFileMrState.mrState.currentBranchesMap.set(ifPair.false, { refTypesTableReturn: retval.inferRefRtnType.failing!, byNode: retval.byNode });

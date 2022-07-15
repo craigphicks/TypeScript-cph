@@ -21,9 +21,27 @@ namespace ts {
     declare function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn;
     declare function isRefTypesTableReturn(x: RefTypesTableNonLeaf): x is RefTypesTableNonLeaf;
     //export type RefTypesType = & { type: Type }; // keep it abstact for now - may want to opimize later
-    export interface RefTypesType {
+    export enum RefTypesTypeFlags {
+        none=0,
+        any=1,
+        unknown=2,
+        never=4,
+        anyOrUnknown=3
+    }
+    export interface RefTypesTypeNormal {
+        _flags: RefTypesTypeFlags.none;
         _set: Set<Type>;
     };
+    export interface RefTypesTypeAny {
+        _flags: RefTypesTypeFlags.any;
+        _set: undefined;
+    };
+    export interface RefTypesTypeUnknown {
+        _flags: RefTypesTypeFlags.unknown;
+        _set: undefined;
+    };
+    export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
+
     export type MakeRequired<Type, Key extends keyof Type> = Omit<Type, Key> & Required<Pick<Type, Key>>;
     // export type RefTypesSymtabValue = MakeRequired<RefTypesTableLeaf, "symbol">;
     export type RefTypesSymtabValue = & {
@@ -116,33 +134,43 @@ namespace ts {
         target: Type;
     }) & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
-    //export type InferTypeArgsQDotFallout = RefTypesTableReturn[];
+    /**
+     * `byNode` and `expr` are always set togather, before calling mrNarrowTypes.
+     * mrNarrowTypes will immed substitue expr for condExpr and set expr to undefined,
+     * however byNode will remain and be passed to mrNarrowTypes for sub-expressions.
+     * Replay can be called resursively, and when that happens, `byNode` and `expr`
+     * will again be set together for that recursive call.
+     */
     export type ReplayData = & {
-        byNode: NodeToTypeMap;
+        byNode: NodeToTypeMap; // corresponds to the expr, even after expression is set to undefined
+        symbol?: Symbol; // in tandem with expr
+        expr?: Expression; // immed used as a substitue for condExpr and set to undefined inside mrNarrowTypes
     };
+
+    /**
+     * If an inferRefTypes caller needs the qdotfallout info, they must place this parameter in the call.
+     * If any intermediate has a questionDot token, they must ask for it (crit:alsoFailing) and push the failing result to qdotfallout.
+     * Trying to decide whether this is really necessary or not, and an argument in favor of necessary is as follows:
+     * > When an inferRefTypesBy... function needs to call inferRefType({..... condExpr:self.expression, crit:{kind:InferCritKind.notnullundef, ...., alsoFailing:true},....})
+     * > then it needs to know exactly if the predecessor (and not a prior predecessor to that) has returned a nullish BECAUSE
+     * > it is the 'self' expression that carries the questionDotToken between 'sef' and 'self.expression'.  That is reasonable because it is only if the caller ('self')
+     * > actually performs a lookup that an error might occurs.  So the error decision must be deferred (* at LEAST) until 'self' processing.
+     * > 'self' action pseudocode:
+     * >> if preFailing.rtnType is not never
+     * >>     if I don't have a 'questionDot' token, then Error (I don't think this decision needs to be deferred but ...)
+     * >>     else push `failing.refTypes` to `qdotfallout` - effectively deferring the decision on how to use that until the level "owning" qdotfallout.
+     * >> if I have failing lookup on ANY candidate
+     * >>     if not `context?nonNullExpression`
+     * >>         add {rtnType:undefined, refTypes: refTypes with bySymbol.get(self symbol) lookup value set to `undefined`} to results to results to be passed finally to crit.
+     */
+
+
+
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
-        //byNode: NodeToTypeMap,
         condExpr: Readonly<Node>,
         crit: InferCrit,
-        //context?: InferRefArgsContext, // This ONLY applies to next call, should not be forward beyond.  TODO: change name to `immedContext` to make that obvious.
-        /**
-         * If an inferRefTypes caller needs the qdotfallout info, they must place this parameter in the call.
-         * If any intermediate has a questionDot token, they must ask for it (crit:alsoFailing) and push the failing result to qdotfallout.
-         * Trying to decide whether this is really necessary or not, and an argument in favor of necessary is as follows:
-         * > When an inferRefTypesBy... function needs to call inferRefType({..... condExpr:self.expression, crit:{kind:InferCritKind.notnullundef, ...., alsoFailing:true},....})
-         * > then it needs to know exactly if the predecessor (and not a prior predecessor to that) has returned a nullish BECAUSE
-         * > it is the 'self' expression that carries the questionDotToken between 'sef' and 'self.expression'.  That is reasonable because it is only if the caller ('self')
-         * > actually performs a lookup that an error might occurs.  So the error decision must be deferred (* at LEAST) until 'self' processing.
-         * > 'self' action pseudocode:
-         * >> if preFailing.rtnType is not never
-         * >>     if I don't have a 'questionDot' token, then Error (I don't think this decision needs to be deferred but ...)
-         * >>     else push `failing.refTypes` to `qdotfallout` - effectively deferring the decision on how to use that until the level "owning" qdotfallout.
-         * >> if I have failing lookup on ANY candidate
-         * >>     if not `context?nonNullExpression`
-         * >>         add {rtnType:undefined, refTypes: refTypes with bySymbol.get(self symbol) lookup value set to `undefined`} to results to results to be passed finally to crit.
-         */
-        qdotfallout: RefTypesTableReturn[], // TODO: should be mandatory
+        qdotfallout?: RefTypesTableReturn[],
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.
@@ -165,6 +193,30 @@ namespace ts {
         passing: RefTypesTableReturn;
         failing?: RefTypesTableReturn;
     };
+
+
+    export type InferRefInnerArgs = & {
+        refTypesSymtab: RefTypesSymtab,
+        condExpr: Readonly<Node>,
+        qdotfallout: RefTypesTableReturn[],
+        /**
+         * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
+         * then the type will be taken from replayMode.byNode instead.
+         */
+        readonly replayData: Omit<ReplayData, "symbol" | "expr"> | false;
+    };
+    export type MrNarrowTypesInnerReturn = & {
+        byNode: NodeToTypeMap;
+        assignmentData?: { // set when Delcaration or assignment, and replayData was false
+            saveByNodeForReplay?: boolean;
+            symbol: Symbol,
+            isconst: boolean;
+        }
+        arrRefTypesTableReturn: RefTypesTableReturn[];
+        negateCrit?: boolean; // set when kind === SyntaxKind.UnaryPrefix && operator === SyntaxKind.ExclamationToken
+    };
+
+
 
     export type CheckExprData = & {
         node: Node;
