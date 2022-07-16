@@ -14,7 +14,7 @@ declare const okobj: Readonly<Foo> | Readonly<Boo>;
 const isFoo = obj?.foo();
 //let x: Readonly<Foo> | Readonly<Boo> | undefined;
 if (isFoo) {
-    // @ special
+    isFoo;
     let x = obj;
     let y = x.foo;
     let z = y();

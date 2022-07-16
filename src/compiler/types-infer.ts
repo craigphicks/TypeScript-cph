@@ -144,6 +144,7 @@ namespace ts {
     export type ReplayData = & {
         byNode: NodeToTypeMap; // corresponds to the expr, even after expression is set to undefined
         symbol?: Symbol; // in tandem with expr
+        //isconst: boolean;
         expr?: Expression; // immed used as a substitue for condExpr and set to undefined inside mrNarrowTypes
     };
 
@@ -171,6 +172,7 @@ namespace ts {
         condExpr: Readonly<Node>,
         crit: InferCrit,
         qdotfallout?: RefTypesTableReturn[],
+        //symbolToNodeToType:
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.
