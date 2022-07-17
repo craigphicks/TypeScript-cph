@@ -1052,13 +1052,18 @@ namespace ts {
 
         /**
          *
+         * (1) Replay functionality
+         *   If !!inferStatus.on, then perform replay iff expr is replayable - which is true when both following
+         *     (a) expr is an identifier. property access, or a declaration, and therefore has a symbol
+         *     (b) the symbol is in inferStatus.replayables, which is a map from symbols to node-to-type maps.
+         *
          * @param param0
          * @returns
          */
-        function mrNarrowTypes({refTypesSymtab: refTypesSymtab, condExpr, crit: critIn, qdotfallout: qdotfalloutIn, replayData}: InferRefArgs): MrNarrowTypesReturn {
+        function mrNarrowTypes({refTypesSymtab: refTypesSymtab, condExpr:expr, inferStatus, crit: critIn, qdotfallout: qdotfalloutIn, replayData}: InferRefArgs): MrNarrowTypesReturn {
             myDebug = getMyDebug();
             if (myDebug) {
-                consoleGroup(`mrNarrowTypes[in] condExpr:${dbgNodeToString(condExpr)}, crit.kind: ${critIn.kind}, crit.negate: ${critIn.negate}, crit.alsoFailing ${
+                consoleGroup(`mrNarrowTypes[in] condExpr:${dbgNodeToString(expr)}, crit.kind: ${critIn.kind}, crit.negate: ${critIn.negate}, crit.alsoFailing ${
                     critIn.alsoFailing
                 } replayData: ${!replayData ? replayData : `{expr: ${dbgNodeToString(replayData.expr)}, byNode: ...}`}`);
                 if (replayData) {
@@ -1082,7 +1087,7 @@ namespace ts {
             if (myDebug){
                 consoleGroup("mrNarrowTypes_inner[in]");
             }
-            const innerret = mrNarrowTypes_inner({ refTypesSymtab: emptySymtab??refTypesSymtab, condExpr: replayExpr??condExpr, qdotfallout, replayData });
+            const innerret = mrNarrowTypes_inner({ refTypesSymtab: emptySymtab??refTypesSymtab, condExpr: replayExpr??expr, qdotfallout, replayData });
             if (myDebug){
                 innerret.arrRefTypesTableReturn.forEach((rttr,i)=>{
                     dbgRefTypesTableToStrings(rttr).forEach(str=>{
@@ -1159,7 +1164,7 @@ namespace ts {
                 let failingType: RefTypesType | undefined;
                 {
                     // (1)
-                    returnByNode = new Map<Node, Type>([[ condExpr, getTypeFromRefTypesType(nodeleaf.type) ]]);
+                    returnByNode = new Map<Node, Type>([[ expr, getTypeFromRefTypesType(nodeleaf.type) ]]);
                 }
                 {
                     // (2)
@@ -1238,7 +1243,7 @@ namespace ts {
 
             const {inferRefRtnType:r, byNode} = finalRetval;
             if (myDebug) {
-                consoleLog(`mrNarrowTypes[out] condExpr:${dbgNodeToString(condExpr)}, crit.kind: ${crit.kind} } -> { passing: ${
+                consoleLog(`mrNarrowTypes[out] condExpr:${dbgNodeToString(expr)}, crit.kind: ${crit.kind} } -> { passing: ${
                     dbgRefTypesTypeToString(r.passing.type)
                 }, failing: ${
                     r.failing ? dbgRefTypesTypeToString(r.failing.type) : ""

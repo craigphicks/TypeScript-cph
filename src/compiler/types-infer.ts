@@ -165,13 +165,29 @@ namespace ts {
      * >>         add {rtnType:undefined, refTypes: refTypes with bySymbol.get(self symbol) lookup value set to `undefined`} to results to results to be passed finally to crit.
      */
 
+    /**
+     * InferStatus
+     * The "on" member is true when the current node is within a discriminating expression (e.g. "if (node){...}else{...}", or "(node)? x : y").
+     * When "on" is true, then the full complexity of expression branching should be preserved to allow for inference, otherwise the complexity should be squashed.
+     * Of course, there are limits on the width of branching allowed ("maxBranches", not yet implemented).
+     *
+     * The "replayData" member is non-false when a variables rhs assigned value is being "replayed" as an alias for the variable, and the sub-member
+     * "byNode" is the Node->Type map which will be used for that purpose.
+     * The "replayData" member will only ever be non-false when the "on" member is true.
+     */
+    export type InferStatus = & {
+        on: boolean;
+        // maxBranches: number
+        replayData: ReplayData | false;
+    };
 
 
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
         condExpr: Readonly<Node>,
-        crit: InferCrit,
         qdotfallout?: RefTypesTableReturn[],
+        inferStatus?: InferStatus,
+        crit: InferCrit,
         //symbolToNodeToType:
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
@@ -201,6 +217,7 @@ namespace ts {
         refTypesSymtab: RefTypesSymtab,
         condExpr: Readonly<Node>,
         qdotfallout: RefTypesTableReturn[],
+        inferStatus?: InferStatus,
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.
