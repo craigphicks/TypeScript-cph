@@ -134,6 +134,13 @@ namespace ts {
         target: Type;
     }) & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
+    export interface ReplayableItem {
+        symbol: Symbol;
+        isconst: boolean;
+        expr: Expression;
+        nodeToTypeMap: NodeToTypeMap
+    };
+
     /**
      * `byNode` and `expr` are always set togather, before calling mrNarrowTypes.
      * mrNarrowTypes will immed substitue expr for condExpr and set expr to undefined,
@@ -141,12 +148,12 @@ namespace ts {
      * Replay can be called resursively, and when that happens, `byNode` and `expr`
      * will again be set together for that recursive call.
      */
-    export type ReplayData = & {
-        byNode: NodeToTypeMap; // corresponds to the expr, even after expression is set to undefined
-        symbol?: Symbol; // in tandem with expr
-        //isconst: boolean;
-        expr?: Expression; // immed used as a substitue for condExpr and set to undefined inside mrNarrowTypes
-    };
+    // export type ReplayData = & {
+    //     //byNode: NodeToTypeMap; // corresponds to the expr, even after expression is set to undefined
+    //     //symbol?: Symbol; // in tandem with expr
+    //     //isconst: boolean;
+    //     //expr?: Expression; // immed used as a substitue for condExpr and set to undefined inside mrNarrowTypes
+    // };
 
     /**
      * If an inferRefTypes caller needs the qdotfallout info, they must place this parameter in the call.
@@ -176,9 +183,11 @@ namespace ts {
      * The "replayData" member will only ever be non-false when the "on" member is true.
      */
     export type InferStatus = & {
-        on: boolean;
+        inCondition: boolean;
         // maxBranches: number
-        replayData: ReplayData | false;
+        //replayData: ReplayData | false;
+        replayables: ESMap< Symbol, ReplayableItem >;
+        replayItemStack: ReplayableItem[];
     };
 
 
@@ -186,14 +195,14 @@ namespace ts {
         refTypesSymtab: RefTypesSymtab,
         condExpr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
-        inferStatus?: InferStatus,
+        inferStatus: InferStatus,
         crit: InferCrit,
         //symbolToNodeToType:
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.
          */
-        readonly replayData: ReplayData | false;
+        //readonly replayData: ReplayData | false;
     };
 
     /**
@@ -217,17 +226,17 @@ namespace ts {
         refTypesSymtab: RefTypesSymtab,
         condExpr: Readonly<Node>,
         qdotfallout: RefTypesTableReturn[],
-        inferStatus?: InferStatus,
+        inferStatus: InferStatus,
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.
          */
-        readonly replayData: Omit<ReplayData, "symbol" | "expr"> | false;
+        //readonly replayData: Omit<ReplayData, "symbol" | "expr"> | false;
     };
     export type MrNarrowTypesInnerReturn = & {
         byNode: NodeToTypeMap;
         assignmentData?: { // set when Delcaration or assignment, and replayData was false
-            saveByNodeForReplay?: boolean;
+            //saveByNodeForReplay?: boolean;
             symbol: Symbol,
             isconst: boolean;
         }

@@ -25,6 +25,7 @@ namespace ts {
         done?: boolean
     };
 
+
     export interface MrState {
         //flowNodeGroupToStateMap: ESMap <FlowNodeGroup, AccState>;
         //stack?: FlowNodeGroup[];
@@ -33,7 +34,8 @@ namespace ts {
         checker: TypeChecker;
         currentBranchesMap: ESMap<FlowNodeGroup, CurrentBranchesItem >;
         groupToNodeToType?: ESMap< FlowNodeGroup, NodeToTypeMap>;
-        symbolToNodeToTypeMap: ESMap< Symbol, NodeToTypeMap>;
+        //symbolToNodeToTypeMap: ESMap< Symbol, NodeToTypeMap>;
+        replayableItems: ESMap< Symbol, ReplayableItem >;
         // aliasableAssignmentsCache: ESMap<Symbol, AliasAssignableState>; // not sure it makes sense anymore
         // aliasInlineLevel: number;
     };
@@ -51,7 +53,8 @@ namespace ts {
             checker,
             groupToStackIdx: new Map <FlowNodeGroup, number>(),
             currentBranchesMap: new Map<FlowNodeGroup, CurrentBranchesItem>(),
-            symbolToNodeToTypeMap: new Map<Symbol,NodeToTypeMap>()
+            //symbolToNodeToTypeMap: new Map<Symbol,NodeToTypeMap>(),
+            replayableItems: new Map<Symbol, ReplayableItem>(),
         };
 
         return {
@@ -133,17 +136,17 @@ namespace ts {
         //     }
         // }
         const crit: InferCrit = !ifPair ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
-        //const qdotfallout: RefTypesTableReturn[]=[];
-        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr , crit, qdotfallout: undefined, replayData:false });
+        const inferStatus: InferStatus = {
+            inCondition: !!ifPair,
+            replayItemStack: [],
+            replayables: sourceFileMrState.mrState.replayableItems
+        };
+        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr , crit, qdotfallout: undefined, inferStatus });
         if (ifPair){
             sourceFileMrState.mrState.currentBranchesMap.set(ifPair.true, { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode });
             sourceFileMrState.mrState.currentBranchesMap.set(ifPair.false, { refTypesTableReturn: retval.inferRefRtnType.failing!, byNode: retval.byNode });
         }
         else {
-            if (retval.saveByNodeForReplay) {
-                Debug.assert(retval.inferRefRtnType.passing.symbol);
-                sourceFileMrState.mrState.symbolToNodeToTypeMap.set(retval.inferRefRtnType.passing.symbol, retval.byNode);
-            }
             sourceFileMrState.mrState.currentBranchesMap.set(group, { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode });
         }
         if (currentBranchesItems.length) currentBranchesItems[0].done=true;
