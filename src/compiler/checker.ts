@@ -43076,6 +43076,17 @@ namespace ts {
                     dbgWriteGroupedFlowNode(groupedFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
                     const ofilename = `tmp.${getBaseFileName(node.originalFileName)}.gfn.txt`;
                     sys.writeFile(ofilename, contents);
+
+                    const str2 = dbgNodeWithFlowNodeGroups(groupedFlowNodes.nodeWithFlowNodeGroups, dbgNodeToString);
+                    const ofilename2 = `tmp.${getBaseFileName(node.originalFileName)}.nwfng.txt`;
+                    sys.writeFile(ofilename2, str2);
+
+
+                    const groupsForFlow = checker.getSourceFileInferState().groupsForFlow;
+                    const astr3 = dbgGroupsForFlowToStrings(groupsForFlow,dbgNodeToString, dbgFlowToString);
+                    const ofilename3 = `tmp.${getBaseFileName(node.originalFileName)}.gff.txt`;
+                    sys.writeFile(ofilename3, astr3.join(sys.newLine));
+
                 }
                 if (nameMatched && myDebug){//(myDebug && node.endFlowNode) {
                     //writingFlowTxt = true;

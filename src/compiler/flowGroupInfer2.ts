@@ -907,8 +907,10 @@ namespace ts {
                         Debug.assert(value.leaf.isconst===readonlyProp);
                     }
                     else {
-                        consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg]: adding new symbol to ref types, {symbol:<${
-                            propSymbol.escapedName},${getSymbolId(propSymbol)}>, type ${typeToString(declaredType)}, const:${readonlyProp}`);
+                        if (myDebug) {
+                            consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg]: adding new symbol to ref types, {symbol:<${
+                                propSymbol.escapedName},${getSymbolId(propSymbol)}>, type ${typeToString(declaredType)}, const:${readonlyProp}`);
+                        }
                         value = { leaf: { kind: RefTypesTableKind.leaf, symbol: propSymbol, isconst:readonlyProp, type: resolvedType } };
                         //symtab = copyRefTypesSymtab(refTypesSymtab);
                         //refTypesSymtab.set(propSymbol, value);
@@ -1107,7 +1109,7 @@ namespace ts {
                         }
                 }
                 else {
-                    consoleLog("new replayable NOT detected");
+                    if (myDebug) consoleLog("new replayable NOT detected");
                 }
             }
 

@@ -2,10 +2,18 @@ namespace ts {
 
     let dbgs: Dbgs | undefined;
     //let myDebug: boolean | undefined;
+    export interface ContainerItem { node: Node, precOrderIdx: number };
+    export interface GroupsForFlow {
+        orderedGroups: Group2[],
+        precOrderContainerItems: ContainerItem[];
+        posOrderedNodes: Node[];
+        groupToSetOfFlowMap: ESMap< Group2, Set<FlowNode> >;
+    }
 
     export interface SourceFileMrState {
         sourceFile: SourceFile;
         groupedFlowNodes: GroupedFlowNodes;
+        groupsForFlow: GroupsForFlow,
         mrState: MrState;
         mrNarrow: MrNarrow;
     };
@@ -45,6 +53,8 @@ namespace ts {
         const t1 = process.hrtime.bigint() - t0;
         groupedFlowNodes.dbgCreationTimeMs = t1/BigInt(1000000);
 
+        const groupsForFlow = makeGroupsForFlow(sourceFile);
+
         dbgs = createDbgs(checker);
         //myDebug = getMyDebug();
 
@@ -60,6 +70,7 @@ namespace ts {
         return {
             sourceFile,
             groupedFlowNodes,
+            groupsForFlow,
             mrState,
             mrNarrow: createMrNarrow(checker, mrState)
         };
@@ -80,31 +91,37 @@ namespace ts {
 
     function resolveNodefulGroupUsingState(item: StackItem, _stackIdx: number, sourceFileMrState: SourceFileMrState){
         const group = item.group;
-        consoleGroup(`resolveNodefulGroupUsingState[in] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
+        if (getMyDebug()) consoleGroup(`resolveNodefulGroupUsingState[in] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
         Debug.assert(isNodefulFlowNodeGroup(group));
         Debug.assert(item.depStackItems.length<=1); // for a nodeful group;
         const antecedents = getAntecedentGroups(group);
         const currentBranchesItems: CurrentBranchesItem[]=[];
-        consoleGroup(`resolveNodefulGroupUsingState[dbg]: antecedents:`);
+        if (getMyDebug())consoleGroup(`resolveNodefulGroupUsingState[dbg]: antecedents:`);
         antecedents.forEach(a=>{
-            consoleLog(`resolveNodefulGroupUsingState[dbg]: ${dbgs?.dbgFlowNodeGroupToString(a)}`);
+            if (getMyDebug()) consoleLog(`resolveNodefulGroupUsingState[dbg]: ${dbgs?.dbgFlowNodeGroupToString(a)}`);
             const cbi = sourceFileMrState.mrState.currentBranchesMap.get(a);
             Debug.assert(!cbi?.done);
             //if (cbi?.done) consoleLog(`cbi.done=true, ${dbgs?.dbgFlowNodeGroupToString(a)}`);
             if (cbi) currentBranchesItems.push(cbi);
             if (getMyDebug()) {
-                if (!cbi) consoleLog(`!cbi`);
+                if (!cbi) {
+                    if (getMyDebug()) consoleLog(`!cbi`);
+                }
                 else {
-                    consoleLog(`resolveNodefulGroupUsingState[dbg]: cbi.done: ${cbi?.done}, cbi.refTypesTableReturn:`);
+                    if (getMyDebug()) consoleLog(`resolveNodefulGroupUsingState[dbg]: cbi.done: ${cbi?.done}, cbi.refTypesTableReturn:`);
                     const astr = sourceFileMrState.mrNarrow.dbgRefTypesTableToStrings(cbi.refTypesTableReturn);
-                    astr?.forEach(s=>{
-                        consoleLog(`resolveNodefulGroupUsingState[dbg]:  ${s}`);
-                    });
+                    if (getMyDebug()) {
+                        astr?.forEach(s=>{
+                            consoleLog(`resolveNodefulGroupUsingState[dbg]:  ${s}`);
+                        });
+                    }
                 }
             }
         });
-        consoleLog(`resolveNodefulGroupUsingState[dbg]: antecedents end:`);
-        consoleGroupEnd();
+        if (getMyDebug()) {
+            consoleLog(`resolveNodefulGroupUsingState[dbg]: antecedents end:`);
+            consoleGroupEnd();
+        }
         Debug.assert(currentBranchesItems.length<=1);
         let refTypesSymtab: RefTypesSymtab;
         if (currentBranchesItems.length) refTypesSymtab = currentBranchesItems[0].refTypesTableReturn.symtab;
@@ -152,8 +169,10 @@ namespace ts {
         if (currentBranchesItems.length) currentBranchesItems[0].done=true;
         if (!sourceFileMrState.mrState.groupToNodeToType) sourceFileMrState.mrState.groupToNodeToType = new Map<FlowNodeGroup, NodeToTypeMap>();
         sourceFileMrState.mrState.groupToNodeToType.set(group, retval.byNode);
-        consoleLog(`resolveNodefulGroupUsingState[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
-        consoleGroupEnd();
+        if (getMyDebug()) {
+            consoleLog(`resolveNodefulGroupUsingState[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
+            consoleGroupEnd();
+        }
     }
 
 
@@ -165,7 +184,7 @@ namespace ts {
      */
     export function createDependencyStack(group: Readonly<FlowNodeGroup>, _sourceFileMrState: SourceFileMrState): void {
         const mrState = _sourceFileMrState.mrState;
-        consoleGroup(`createDependencyStack[in] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
+        if (getMyDebug()) consoleGroup(`createDependencyStack[in] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
         const acc = new Set<FlowNodeGroup>();
         let change = true;
         if (!isGroupCached(mrState, group)) {
@@ -217,16 +236,20 @@ namespace ts {
         });
         mrState.stack = stack;
         mrState.groupToStackIdx = groupToStackIdx;
-        consoleLogStack(mrState);
-        consoleLog(`createDependencyStack[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
-        consoleGroupEnd();
+        if (getMyDebug()){
+            consoleLogStack(mrState);
+            consoleLog(`createDependencyStack[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
+            consoleGroupEnd();
+        }
     }
 
     export function resolveDependencyStack(_sourceFileMrState: SourceFileMrState): void{
-        consoleGroup("resolveDependencyStack[in]");
+        if (getMyDebug()) consoleGroup("resolveDependencyStack[in]");
         resolveDependencyStack_aux(_sourceFileMrState);
-        consoleLog("resolveDependencyStack[out]");
-        consoleGroupEnd();
+        if (getMyDebug()) {
+            consoleLog("resolveDependencyStack[out]");
+            consoleGroupEnd();
+        }
     }
     export function resolveDependencyStack_aux(_sourceFileMrState: SourceFileMrState): void{
         const stack = _sourceFileMrState.mrState.stack;
@@ -269,10 +292,12 @@ namespace ts {
     }
 
     export function getTypeByMrNarrow(reference: Node, sourceFileMrState: SourceFileMrState): Type {
-        consoleGroup(`getTypeByMrNarrow[in] expr: ${dbgs?.dbgNodeToString(reference)}`);
+        if (getMyDebug()) consoleGroup(`getTypeByMrNarrow[in] expr: ${dbgs?.dbgNodeToString(reference)}`);
         const type = getTypeByMrNarrow_aux(reference, sourceFileMrState);
-        consoleLog(`getTypeByMrNarrow[out] expr: ${dbgs?.dbgNodeToString(reference)} -> ${dbgs?.dbgFlowTypeToString(type)}`);
-        consoleGroupEnd();
+        if (getMyDebug()){
+            consoleLog(`getTypeByMrNarrow[out] expr: ${dbgs?.dbgNodeToString(reference)} -> ${dbgs?.dbgFlowTypeToString(type)}`);
+            consoleGroupEnd();
+        }
         return type;
     }
     export function getTypeByMrNarrow_aux(expr: Node, sourceFileMrState: SourceFileMrState): Type {
@@ -316,18 +341,16 @@ namespace ts {
 
     // @ts-ignore-error
     function consoleLogStack(mrState: MrState){
-        consoleGroup("mrState.stack:");
+        if (getMyDebug()) consoleGroup("mrState.stack:");
         if (!mrState.stack) {
-            consoleLog("stack empty");
+            if (getMyDebug()) consoleLog("stack empty");
             return;
         }
         for (let i = mrState.stack.length-1; i>= 0; i--){
-            consoleLog(`[#${i}]: ${dbgs!.dbgFlowNodeGroupToString(mrState.stack[i].group)}`);
+            if (getMyDebug()) consoleLog(`[#${i}]: ${dbgs!.dbgFlowNodeGroupToString(mrState.stack[i].group)}`);
             const str = `  deps: ` + mrState.stack[i].depStackItems.map(si=>mrState.groupToStackIdx.get(si.group)!).map(i=>`${i}, `).join();
-            consoleLog(str);
+            if (getMyDebug()) consoleLog(str);
         }
-        consoleGroupEnd();
+        if (getMyDebug()) consoleGroupEnd();
     }
-
-
 }

@@ -1,6 +1,7 @@
 namespace ts {
     interface AllFlowNodes {
         flowNodes: FlowNode[];
+        //nodesWithFlow: Node[];
         endFlowNodes?: FlowNode[];
     };
 
@@ -78,7 +79,8 @@ namespace ts {
         sourceFile: SourceFile;
         dbgCreationTimeMs?: bigint;
         allFlowNodes?: AllFlowNodes;
-        groupedNodes: GroupedNodes
+        groupedNodes: GroupedNodes;
+        nodeWithFlowNodeGroups: NodeWithFlowNodeGroups;
     };
 
     interface NodeGroup {
@@ -473,8 +475,297 @@ namespace ts {
         }
     }
 
+    export interface GroupX { maximalIdx: number, idxb: number, idxe: number };
+    export enum Group2Kind {
+        none=0,
+        plain=1,
+        ifexpr=2
+    };
+    export interface Group2 { kind: Group2Kind, maximalIdx: number, idxb: number, idxe: number, precOrdContainerIdx: number };
+    export interface NodeWithFlowNodeGroups {
+        groups: GroupX[];
+        orderedNodes: Node[];
+        nodeToFlowNodeMap: ESMap< Node, FlowNode >;
+    };
+    export function groupNodesWithFlowNodes(
+        sourceFile: SourceFile,
+    ): NodeWithFlowNodeGroups {
+        const nToFn = new Map<Node,FlowNode>();
+        // const endFlowNodes: FlowNode[]=[];
+        // const flowNodes: FlowNode[]=[];
+        // endFlowNodes is at least not always easy to find, might not even exist in any container?
+        //const setFn = new Set<FlowNode>();
+        const setNode = new Set<Node>();
+        const setFlowNode = new Set<FlowNode>();
+        const visitorEfn = (n: Node) => {
+            //if ((n as any).endFlowNode) endFlowNodes.push((n as any).endFlowNode);
+            if ((n as any).flowNode){
+                const fn = (n as any).flowNode as FlowNode;
+                    //setFn.add(fn);
+                    nToFn.set(n,fn);
+                    setNode.add(n);
+                    setFlowNode.add(fn);
+            }
+            forEachChild(n, visitorEfn);
+        };
+        /**
+         * Collect all the flow nodes accessible via some node.
+         */
+        visitorEfn(sourceFile);
+        /**
+         * Follow the flow
+         */
+        // const setFlowNodeDelta = new Set<FlowNode>();
+        // const nextFlowNodeSet = setFlowNode;
+        // const nextNodeSet = setNode;
+        // let change = true;
+        // while (change){
+        //     const iter = nextFlowNodeSet.keys();
+        //     for (let item = iter.next(); !item.done; item=iter.next()){
+        //         const fn = item.value;
+        //         if (isFlowWithNode(fn)) {
+        //             if (!setNode.has(fn.node)) {
+        //                 const node = fn.node;
+        //                 setNode.add(fn.node);
+        //             }
+        //             if (isFlowWithAntecedent(fn)) setFlowNodeDelta.add(fn.antecedent);
+        //             else if (isFlowWithAntecedents(fn)) fn.antecedents.
+        //         }
+        //     }
+        // }
 
-    export function groupFlowNodes(allFlowNodes: AllFlowNodes, sourceFile: SourceFile): GroupedFlowNodes {
+        // @ts-expect-error
+        const unorderedNodes: Node[]= Array.from(setNode.keys());
+        const aref = unorderedNodes.map((_v,i)=>i);
+        const compare = (ai: number,bi: number) => {
+            if (unorderedNodes[ai].pos < unorderedNodes[bi].pos) return -1;
+            else if (unorderedNodes[ai].pos === unorderedNodes[bi].pos){
+                if (unorderedNodes[ai].end < unorderedNodes[bi].end) return -1;
+                else if (unorderedNodes[ai].end === unorderedNodes[bi].end) {
+                    if ((unorderedNodes[ai].flags & FlowFlags.FalseCondition) && (unorderedNodes[bi].flags & FlowFlags.TrueCondition)) return -1;
+                    else if ((unorderedNodes[ai].flags & FlowFlags.TrueCondition) && (unorderedNodes[bi].flags & FlowFlags.FalseCondition)) return 1;
+                    return 0;
+                }
+                else return 1;
+            }
+            else return 1;
+        };
+        aref.sort(compare);
+        const orderedNodes = aref.map(idx=>unorderedNodes[idx]);
+
+
+        const groups: GroupX[] = [];
+        let idxb = 0;
+        let {pos:curpos,end:curend} = orderedNodes.length ? orderedNodes[0] : { pos:-1,end:-1 };
+        let maximalIdx = 0;
+        let maximalLength = curend-curpos;
+        for (let fi=1;fi<orderedNodes.length;fi++){
+            const {pos,end} = orderedNodes[fi];
+            if (pos> curpos && pos>=curend) {
+                const group: GroupX = {
+                    idxb, idxe:fi,
+                    maximalIdx,
+                };
+                groups.push(group);
+                idxb=fi;
+                curpos=pos;
+                curend=end;
+                maximalIdx = fi;
+                maximalLength = curend-curpos;
+            }
+            else {
+                if (end-pos >= maximalLength){
+                    maximalIdx = fi;
+                    maximalLength = end-pos;
+                }
+                if (end>curend) {
+                    curend = end;
+                }
+            }
+        }
+        if (orderedNodes.length){
+            const group: GroupX = {
+                idxb, idxe:orderedNodes.length,
+                maximalIdx,
+            };
+            groups.push(group);
+        }
+
+        return {
+            groups,
+            orderedNodes,
+            nodeToFlowNodeMap: nToFn
+        };
+    }
+
+    //interface NodeWithFlow extends Node { flowNode: FlowNode };
+    export function makeGroupsForFlow(sourceFile: SourceFile): GroupsForFlow {
+
+        const flowNodes: FlowNode[] = sourceFile.allFlowNodes ?? [];
+        const nodesWithFlow: Node[] = sourceFile.allNodesWithFlowOneSourceFile ?? [];
+
+        interface Container extends Node { nextContainer: Node | undefined };
+        const mapContainerToIndex = new Map< Container, number>();
+        //const container: Container | undefined = sourceFile as Container;
+        for (let container: Container | undefined = sourceFile as Container, i=0; container; container = container.nextContainer as Container | undefined) {
+            mapContainerToIndex.set(container, i++);
+        }
+
+        const precOrderCI: ContainerItem[] = [];
+        for (let container: Container | undefined = sourceFile as Container; container; container = container.nextContainer as Container | undefined) {
+            precOrderCI.push({ node: container, precOrderIdx: precOrderCI.length });
+        }
+        const arefCI = precOrderCI.map((_v,i)=>i);
+        const compareCIpos = (a: number,b: number) => {
+            return precOrderCI[a].node.pos-precOrderCI[b].node.pos;
+        };
+        arefCI.sort(compareCIpos);
+        const posOrderCI = arefCI.map(idx=>precOrderCI[idx]);
+
+        const findPrecOrdCIIdx = (n: Node) => {
+            /**
+             * TODO: Optimize with binary search
+             */
+            let i = 0;
+            for (; i<posOrderCI.length && posOrderCI[i].node.pos<=n.pos; i++);
+            i--;
+            while (i>0 && !(n.end <= posOrderCI[i].node.end)) i--;
+            return posOrderCI[i].precOrderIdx;
+        };
+
+        const setOfNodes = new Set<Node>();
+        nodesWithFlow.forEach((n: Node)=>{
+            if (!isStatement(n)) setOfNodes.add(n);
+            else if (isReturnStatement(n) && n.expression) setOfNodes.add(n.expression);
+            //else if (isFlowWithNode(n.flowNode)) setOfNodes.add(n.flowNode.node);
+        });
+        flowNodes.forEach(f=>{
+            if (isFlowWithNode(f)) setOfNodes.add(f.node);
+        });
+        // @ts-expect-error 2679
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const unorderedNodes = Array.from(setOfNodes.keys()) as Node[];
+        const aref = unorderedNodes.map((_v,i)=>i);
+
+        const compare0 = (ai: number,bi: number) => {
+            if (unorderedNodes[ai].pos < unorderedNodes[bi].pos) return -1;
+            else if (unorderedNodes[ai].pos === unorderedNodes[bi].pos){
+                if (unorderedNodes[ai].end < unorderedNodes[bi].end) return -1;
+                else if (unorderedNodes[ai].end === unorderedNodes[bi].end) {
+                    return 0;
+                }
+                else return 1;
+            }
+            else return 1;
+        };
+        aref.sort(compare0);
+        const orderedNodes = aref.map(idx=>unorderedNodes[idx]);
+
+        const groups: Group2[] = [];
+        let idxb = 0;
+        let {pos:curpos,end:curend} = orderedNodes.length ? orderedNodes[0] : { pos:-1,end:-1 };
+        let maximalIdx = 0;
+        let maximalLength = curend-curpos;
+        for (let fi=1;fi<orderedNodes.length;fi++){
+            const on = orderedNodes[fi];
+            const {pos,end} = on;
+            if (pos> curpos && pos>=curend) {
+                const maximal = orderedNodes[maximalIdx];
+                let ifExpr = false;
+                if (maximal.parent && isIfStatement(maximal.parent) && maximal.parent.expression===maximal){
+                    ifExpr = true;
+                }
+                const group: Group2 = {
+                    kind: ifExpr ? Group2Kind.ifexpr : Group2Kind.plain,
+                    idxb, idxe:fi,
+                    maximalIdx,
+                    precOrdContainerIdx: findPrecOrdCIIdx(orderedNodes[maximalIdx])
+                };
+                groups.push(group);
+                idxb=fi;
+                curpos=pos;
+                curend=end;
+                maximalIdx = fi;
+                maximalLength = curend-curpos;
+            }
+            else {
+                if (end-pos >= maximalLength){
+                    maximalIdx = fi;
+                    maximalLength = end-pos;
+                }
+                if (end>curend) {
+                    curend = end;
+                }
+            }
+        }
+        if (orderedNodes.length){
+            const precOrdCIIdx = findPrecOrdCIIdx(orderedNodes[maximalIdx]);
+            let ifExpr = false;
+            const maximal = orderedNodes[maximalIdx];
+            if (maximal.parent && isIfStatement(maximal.parent) && maximal.parent.expression===maximal){
+                ifExpr = true;
+            }
+            const group: Group2 = {
+                kind: ifExpr ? Group2Kind.ifexpr : Group2Kind.plain,
+                idxb, idxe:orderedNodes.length,
+                maximalIdx,
+                precOrdContainerIdx: precOrdCIIdx
+            };
+            groups.push(group);
+        }
+        const arefGroups = groups.map((_v,i)=>i);
+        const compareGroups = (a: number, b: number) => {
+            return groups[b].precOrdContainerIdx - groups[a].precOrdContainerIdx;
+        };
+        arefGroups.sort(compareGroups);
+        const orderedGroups = arefGroups.map(idx=>groups[idx]);
+
+        /**
+         * Find the antecedent groups for each group.
+         */
+        const groupToSetOfFlowMap = new Map< Group2, Set<FlowNode> >();
+        orderedGroups.forEach(g=>{
+            const set = new Set<FlowNode>();
+            const {pos: gpos, end: gend} = orderedNodes[g.maximalIdx];
+            for (let idx = g.idxb; idx!==g.idxe; idx++){
+                const node = orderedNodes[idx];
+                if (isNodeWithFlow(node)){
+                    const fn = node.flowNode;
+                    if (isFlowWithNode(fn)){
+                        const nodeOfFlow = fn.node;
+                        if (nodeOfFlow.pos >= gpos && nodeOfFlow.pos < gend) return;  // filter in-group references
+                        set.add(fn); // includes non-nodeful flow
+                    }
+                }
+            }
+            if (set.size) groupToSetOfFlowMap.set(g, set);
+        });
+
+        return {
+            orderedGroups,
+            posOrderedNodes: orderedNodes,
+            precOrderContainerItems: precOrderCI,
+            groupToSetOfFlowMap
+        };
+
+
+        // Groups have to be reordered by container - that requires assigning order-indices to the containers and
+        // calculating group to container mappings.
+
+
+        // groups.forEach(g=>{
+        //     const n = orderedNodes[g.maximalIdx];
+        //     for (let next = n.parent; next!==sourceFile; next = next.parent){
+
+        //     }
+        // });
+
+    }
+
+
+
+
+    export function groupFlowNodes(allFlowNodes: { flowNodes: FlowNode[] }, sourceFile: SourceFile): GroupedFlowNodes {
         const flowNodeWithNodes: (FlowWithNA & FlowNode)[]=[];
         const flowNodeWithoutNodes: FlowNode[]=[];
         allFlowNodes.flowNodes.forEach(fn=>{
@@ -630,6 +921,7 @@ namespace ts {
             sourceFile,
             allFlowNodes,
             groupedNodes: groupNodes(sourceFile.allNodesWithFlowOneSourceFile!),
+            nodeWithFlowNodeGroups : groupNodesWithFlowNodes(sourceFile)
         };
         calculateGroupAntecedents(grouped);
         ensureOrdinality(grouped);
@@ -642,6 +934,10 @@ namespace ts {
         Debug.assert(sourceFile.allFlowNodes);
         const groupedFlowNodes = groupFlowNodes({ flowNodes:sourceFile.allFlowNodes }, sourceFile);
         return groupedFlowNodes;
+    }
+    interface NodeWithFlow extends Node { flowNode: FlowNode };
+    export function isNodeWithFlow(n: Node): n is NodeWithFlow {
+        return !!n.flowNode;
     }
 
     export function isFlowStart(fn: FlowNode | undefined): fn is FlowStart {
@@ -689,8 +985,38 @@ namespace ts {
             return true;
         })();
     }
+    interface FlowWithAntecedent extends FlowNodeBase { antecedent: FlowNode };
+    /* @ts-expect-error */
+    function isFlowWithAntecedent(fn: FlowNodeBase): fn is FlowWithAntecedent {
+        return !!(fn as any).antecedent;
+    }
+    interface FlowWithAntecedents extends FlowNodeBase { antecedents: FlowNode[] };
+    /* @ts-expect-error */
+    function isFlowWithAntecedents(fn: FlowNodeBase): fn is FlowWithAntecedents {
+        return !!(fn as any).antecedents;
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
+    export function dbgNodeWithFlowNodeGroups(
+        nodeWithFlowNodeGroups: NodeWithFlowNodeGroups,
+        // getFlowNodeId: (fn: FlowNode) => number,
+        // dbgFlowToString: (flowNode: FlowNode) => string,
+        dbgNodeToString: (node: Node) => string
+    ): string {
+        const gs = nodeWithFlowNodeGroups;
+        const astr: string[]=[];
+        gs.groups.forEach((g,gi)=>{
+            const mnode = gs.orderedNodes[g.maximalIdx];
+            astr.push(`[${gi}][${g.maximalIdx}]: ${dbgNodeToString(mnode)}`);
+            for (let i = g.idxb; i<g.idxe; i++){
+                if (i===g.maximalIdx) continue;
+                astr.push(`  [${gi}][${i}}]: ${dbgNodeToString(gs.orderedNodes[i])}`);
+            }
+        });
+        return astr.join(sys.newLine);
+    }
+
+
     export function dbgFlowNodeGroupToString(
         flowNodeGroup: FlowNodeGroup,
         getFlowNodeId: (fn: FlowNode) => number,
@@ -766,6 +1092,7 @@ namespace ts {
             }
             return stringsout;
         };
+
         if (groupedFlowNodes.dbgCreationTimeMs!==undefined){
             writeLine(`dbgCreationTimeMs: ${groupedFlowNodes.dbgCreationTimeMs}`);
         }
@@ -819,6 +1146,14 @@ namespace ts {
             //     writeLine(str);
             // });
         }
+        writeLine("groupedFlowNodes.groupedNodes.sortedStructuralNodes (not sorted):");
+        groupedFlowNodes.groupedNodes.sortedStructuralNodes.forEach(n=>{
+            writeLine(`  ${dbgNodeToString(n)}`);
+        });
+        writeLine("groupedFlowNodes.groupedNodes.sortedNodes (not sorted):");
+        groupedFlowNodes.groupedNodes.sortedNodes.forEach(n=>{
+            writeLine(`  ${dbgNodeToString(n)}`);
+        });
         // writeLine("groupedNodes.nodeGroups");
         // groupedFlowNodes.groupedNodes.nodeGroups.forEach((ng,i)=>{
         //     writeLine(`[#${i}] ${dbgNodeToString(ng.maximal)}`);
@@ -837,6 +1172,41 @@ namespace ts {
         //         writeLine(`    flow: ${dbgFlowToString(f)}`);
         //     });
         // });
+    }
+
+    export function dbgGroupsForFlowToStrings(
+        gff: GroupsForFlow,
+        dbgNodeToString: (node: Node) => string,
+        dbgFlowToString: (flowNode: FlowNode) => string,
+    ): string[] {
+        const astr: string[] = [];
+        gff.orderedGroups.forEach((g,i)=>{
+            const maxnode = gff.posOrderedNodes[g.maximalIdx];
+            //const maxnodecont = gff.precOrderContainerItems[g.precOrdContainerIdx];
+            astr.push(`groups[${i}]: {maxnode: ${dbgNodeToString(maxnode)}}, contidx: ${
+                g.precOrdContainerIdx
+            }`);
+            for (let idx = g.idxb; idx!==g.idxe; idx++){
+                const node = gff.posOrderedNodes[idx];
+                let str = `groups[${i}]:  [${idx}]: ${dbgNodeToString(node)}`;
+                if (isNodeWithFlow(node)) str += `, flow: ${dbgFlowToString(node.flowNode)}`;
+                astr.push(str);
+            }
+            const set = gff.groupToSetOfFlowMap.get(g);
+            astr.push(`groups[${i}]:  setOfFlow.size===${set?.size??0}`);
+            if (set) {
+                set.forEach(fn=>{
+                    astr.push(`groups[${i}]:    flow: ${dbgFlowToString(fn)}`);
+                });
+            }
+        });
+        gff.precOrderContainerItems.forEach((ci,i)=>{
+            astr.push(`containerItems[${i}]: node:${dbgNodeToString(ci.node)}`);
+        });
+        gff.posOrderedNodes.forEach((node,i)=>{
+            astr.push(`[${i}]: node:${dbgNodeToString(node)}`);
+        });
+        return astr;
     }
 
 }

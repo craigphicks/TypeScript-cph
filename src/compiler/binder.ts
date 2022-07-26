@@ -717,10 +717,12 @@ namespace ts {
                     node.flags |= NodeFlags.HasImplicitReturn;
                     if (hasExplicitReturn) node.flags |= NodeFlags.HasExplicitReturn;
                     (node as FunctionLikeDeclaration | ClassStaticBlockDeclaration).endFlowNode = currentFlow;
+                    allFlowNodesOneSourceFile?.push(currentFlow);
                 }
                 if (node.kind === SyntaxKind.SourceFile) {
                     node.flags |= emitFlags;
                     (node as SourceFile).endFlowNode = currentFlow;
+                    allFlowNodesOneSourceFile?.push(currentFlow);
                 }
 
                 if (currentReturnTarget) {
@@ -728,6 +730,7 @@ namespace ts {
                     currentFlow = finishFlowLabel(currentReturnTarget);
                     if (node.kind === SyntaxKind.Constructor || node.kind === SyntaxKind.ClassStaticBlockDeclaration || (isInJSFile(node) && (node.kind === SyntaxKind.FunctionDeclaration || node.kind === SyntaxKind.FunctionExpression))) {
                         (node as FunctionLikeDeclaration | ClassStaticBlockDeclaration).returnFlowNode = currentFlow;
+                        allFlowNodesOneSourceFile?.push(currentFlow);
                     }
                 }
                 if (!isImmediatelyInvoked) {
@@ -1389,6 +1392,7 @@ namespace ts {
                 fallthroughFlow = currentFlow;
                 if (!(currentFlow.flags & FlowFlags.Unreachable) && i !== clauses.length - 1 && options.noFallthroughCasesInSwitch) {
                     clause.fallthroughFlowNode = currentFlow;
+                    allFlowNodesOneSourceFile?.push(currentFlow);
                 }
             }
         }
