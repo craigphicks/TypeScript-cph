@@ -45,6 +45,7 @@
         "binder.ts",
         "symbolWalker.ts",
         "checker.ts",
+        "heaper.ts",
         "flowNodesGrouping.ts",
         "flowGroupInfer.ts",
         "flowGroupInfer2.ts",

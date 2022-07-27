@@ -48,6 +48,14 @@ namespace ts {
         done?: boolean
     };
 
+    export interface Heaper<T = number> {
+        heapSortInPlace: (h: T[], size: number) => void;
+        createEmptyHeap(): T[];
+        heapInsert: (h: T[], s: T) => void;
+        heapRemove: (h: T[]) => T;
+        heapSize: (h: T[]) => number;
+        heapIsEmpty: (h: T[]) => boolean;
+    };
 
     export interface MrState {
         //flowNodeGroupToStateMap: ESMap <FlowNodeGroup, AccState>;
@@ -62,9 +70,11 @@ namespace ts {
         // aliasableAssignmentsCache: ESMap<Symbol, AliasAssignableState>; // not sure it makes sense anymore
         // aliasInlineLevel: number;
         forFlow: {
+            heap: number[]; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
+            heaper: Heaper<number>;
             currentBranchesMap: ESMap<GroupForFlow, CurrentBranchesItem[] >;
             groupToNodeToType?: ESMap< GroupForFlow, NodeToTypeMap[] >;
-        }
+        };
     };
     export function createSourceFileInferState(sourceFile: SourceFile, checker: TypeChecker): SourceFileMrState {
         const t0 = process.hrtime.bigint();
@@ -77,6 +87,12 @@ namespace ts {
         dbgs = createDbgs(checker);
         //myDebug = getMyDebug();
 
+        const heap: number[]=[];
+        const heaper = defineOneIndexingHeaper(
+            0,
+            (i: number,o: number) => groupsForFlow.orderedGroups[heap[i]].groupIdx < groupsForFlow.orderedGroups[heap[o]].groupIdx,
+            (i: number,o: number) => groupsForFlow.orderedGroups[heap[i]].groupIdx > groupsForFlow.orderedGroups[heap[o]].groupIdx,
+        );
         const mrState: MrState = {
             //flowNodeGroupToStateMap: new Map <FlowNodeGroup, AccState>(),
             checker,
@@ -85,8 +101,10 @@ namespace ts {
             //symbolToNodeToTypeMap: new Map<Symbol,NodeToTypeMap>(),
             replayableItems: new Map<Symbol, ReplayableItem>(),
             forFlow: {
+                heap,
+                heaper,
                 currentBranchesMap: new Map< GroupForFlow, CurrentBranchesItem[] >(),
-                groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap[] >()
+                groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap[] >(),
             }
         };
 
