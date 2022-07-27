@@ -2,12 +2,28 @@ namespace ts {
 
     let dbgs: Dbgs | undefined;
     //let myDebug: boolean | undefined;
+
+    export enum GroupForFlowKind {
+        none=0,
+        plain=1,
+        ifexpr=2
+    };
+    export interface GroupForFlow {
+        kind: GroupForFlowKind,
+        maximalIdx: number,
+        idxb: number,
+        idxe: number,
+        precOrdContainerIdx: number,
+        groupIdx: number
+    };
+
     export interface ContainerItem { node: Node, precOrderIdx: number };
     export interface GroupsForFlow {
-        orderedGroups: Group2[],
+        orderedGroups: GroupForFlow[],
         precOrderContainerItems: ContainerItem[];
         posOrderedNodes: Node[];
-        groupToSetOfFlowMap: ESMap< Group2, Set<FlowNode> >;
+        groupToSetOfFlowMap: ESMap< GroupForFlow, Set<FlowNode> >;
+        groupToAnteGroupMap: ESMap< GroupForFlow, Set<GroupForFlow> >;
     }
 
     export interface SourceFileMrState {
@@ -27,7 +43,6 @@ namespace ts {
         depStackItems: StackItem[];  // the referenced items are "safe" from garbage collection even if stack is popped.
     }
     interface CurrentBranchesItem {
-        /* refTypesRtn: RefTypesRtn, */
         refTypesTableReturn: RefTypesTableReturn;
         byNode: NodeToTypeMap;
         done?: boolean
@@ -46,6 +61,10 @@ namespace ts {
         replayableItems: ESMap< Symbol, ReplayableItem >;
         // aliasableAssignmentsCache: ESMap<Symbol, AliasAssignableState>; // not sure it makes sense anymore
         // aliasInlineLevel: number;
+        forFlow: {
+            currentBranchesMap: ESMap<GroupForFlow, CurrentBranchesItem[] >;
+            groupToNodeToType?: ESMap< GroupForFlow, NodeToTypeMap[] >;
+        }
     };
     export function createSourceFileInferState(sourceFile: SourceFile, checker: TypeChecker): SourceFileMrState {
         const t0 = process.hrtime.bigint();
@@ -65,6 +84,10 @@ namespace ts {
             currentBranchesMap: new Map<FlowNodeGroup, CurrentBranchesItem>(),
             //symbolToNodeToTypeMap: new Map<Symbol,NodeToTypeMap>(),
             replayableItems: new Map<Symbol, ReplayableItem>(),
+            forFlow: {
+                currentBranchesMap: new Map< GroupForFlow, CurrentBranchesItem[] >(),
+                groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap[] >()
+            }
         };
 
         return {
@@ -173,6 +196,71 @@ namespace ts {
             consoleLog(`resolveNodefulGroupUsingState[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
             consoleGroupEnd();
         }
+    }
+
+    // @ ts-expect-error
+    export function createDependencyStackGroupsForFlow(group: Readonly<GroupForFlow>, _sourceFileMrState: SourceFileMrState): void {
+        // @ ts-expect-error
+        const mrState = _sourceFileMrState.mrState;
+        // @ts-expect-error
+        const groupsForFlow = _sourceFileMrState.groupsForFlow;
+        if (getMyDebug()) consoleGroup(`createDependencyStackGroupsForFlow[in]`);
+        // @ ts-expect-error
+        const acc = new Set<GroupForFlow>();
+        let change = true;
+        if (!mrState.forFlow.currentBranchesMap.get(group)){
+            acc.add(group);
+        }
+        while (change){
+            change = false;
+            acc.forEach(g=>{
+                if (!mrState.forFlow.currentBranchesMap.get(g)){
+                    change = true;
+                    acc.add(g);
+                }
+            });
+        }
+        // @ts-expect-error 2679
+        const depGroups: GroupForFlow[]= Array.from(acc.keys());
+        depGroups.sort((a: GroupForFlow, b: GroupForFlow)=>{
+            return b.groupIdx - a.groupIdx;
+        });
+
+
+        // /**
+        //  * acc will tend to be in descending order, so sorting in descending order is probably less work.
+        //  */
+        // // @ts-expect-error 2679
+        // const depGroups: FlowNodeGroup[]= Array.from(acc.keys());
+        // //const idxrefs: number[]=Array(depGroups.length).map((_,i)=>i);
+        // const compare = (xr: FlowNodeGroup, yr: FlowNodeGroup) => {
+        //     const ix = getOrdinal(xr);
+        //     const iy = getOrdinal(yr);
+        //     return iy-ix;
+        // };
+        // depGroups.sort(compare);
+        // /**
+        //  * Working the stack with pop, descending order is preferred.
+        //  */
+        // //const stack = idxrefs.map(i=>depGroups[i]);
+        // const groupToStackIdx = new Map<FlowNodeGroup, number>(depGroups.map((g,i)=>[g,i]));
+        // const stack: StackItem[] = depGroups.map((group)=>({
+        //     depStackItems: [], group
+        // }));
+        // stack.forEach(si=>{
+        //     getAntecedentGroups(si.group).forEach(a=>{
+        //         const idx = groupToStackIdx.get(a);
+        //         // Debug.assert(idx!==undefined);
+        //         if (idx!==undefined) si.depStackItems.push(stack[idx]);
+        //     });
+        // });
+        // mrState.stack = stack;
+        // mrState.groupToStackIdx = groupToStackIdx;
+        // if (getMyDebug()){
+        //     consoleLogStack(mrState);
+        //     //consoleLog(`createDependencyStack[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
+        //     consoleGroupEnd();
+        // }
     }
 
 
