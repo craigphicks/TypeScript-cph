@@ -56,6 +56,10 @@ export function defineOneIndexingHeaper<T>(dummy: T, lessThan: (i: T, o: T) => b
             return ret;
         }
     }
+    function heapPeek(h: T[]): T {
+        if (heapSize(h) === 0) Debug.fail(`heapPeek called on empty heap`);
+        return h[1];
+    }
 
     function heapMoveUp(h: T[], index: number): void {
         while (index !== 1) {
@@ -119,7 +123,8 @@ export function defineOneIndexingHeaper<T>(dummy: T, lessThan: (i: T, o: T) => b
       heapInsert,
       heapRemove,
       heapSize,
-      heapIsEmpty
+      heapIsEmpty,
+      heapPeek
     };
 
 }

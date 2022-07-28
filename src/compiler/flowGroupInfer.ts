@@ -14,7 +14,8 @@ namespace ts {
         idxb: number,
         idxe: number,
         precOrdContainerIdx: number,
-        groupIdx: number
+        groupIdx: number,
+        branchMerger?: boolean;
     };
 
     export interface ContainerItem { node: Node, precOrderIdx: number };
@@ -24,6 +25,7 @@ namespace ts {
         posOrderedNodes: Node[];
         groupToSetOfFlowMap: ESMap< GroupForFlow, Set<FlowNode> >;
         groupToAnteGroupMap: ESMap< GroupForFlow, Set<GroupForFlow> >;
+        nodeToGroupMap: ESMap< Node, GroupForFlow >;
     }
 
     export interface SourceFileMrState {
@@ -48,13 +50,39 @@ namespace ts {
         done?: boolean
     };
 
-    export interface Heaper<T = number> {
-        heapSortInPlace: (h: T[], size: number) => void;
-        createEmptyHeap(): T[];
-        heapInsert: (h: T[], s: T) => void;
-        heapRemove: (h: T[]) => T;
-        heapSize: (h: T[]) => number;
-        heapIsEmpty: (h: T[]) => boolean;
+
+    enum CurrentBranchesElementKind {
+        none=0,
+        plain=1,
+        ifexpr=2
+    };
+    interface CurrentBranchElementPlain {
+        kind: CurrentBranchesElementKind.plain;
+        item: CurrentBranchesItem;
+    };
+    interface CurrentBranchElementIfExpr {
+        kind: CurrentBranchesElementKind.ifexpr;
+        true: CurrentBranchesItem;
+        false: CurrentBranchesItem;
+    };
+    type CurrentBranchElement = CurrentBranchElementPlain | CurrentBranchElementIfExpr;
+
+    // export interface Heaper<T = number> {
+    //     heapSortInPlace(h: T[], size: number): void;
+    //     heapInsert(h: T[], s: T): void;
+    //     heapRemove(h: T[]): T;
+    //     heapSize(h: T[]): number;
+    //     heapIsEmpty(h: T[]): boolean;
+    //     heapPeek(h: T[]): T;
+    // };
+    export interface Heap {
+        _heap: number[];
+        _heapset: Set<number>;
+        has(n: number): boolean;
+        peek(): number;
+        isEmpty(): boolean;
+        insert(n: number): void;
+        remove(): number;
     };
 
     export interface MrState {
@@ -70,12 +98,52 @@ namespace ts {
         // aliasableAssignmentsCache: ESMap<Symbol, AliasAssignableState>; // not sure it makes sense anymore
         // aliasInlineLevel: number;
         forFlow: {
-            heap: number[]; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
-            heaper: Heaper<number>;
-            currentBranchesMap: ESMap<GroupForFlow, CurrentBranchesItem[] >;
-            groupToNodeToType?: ESMap< GroupForFlow, NodeToTypeMap[] >;
+            heap: Heap; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
+            currentBranchesMap: ESMap< Readonly<GroupForFlow>, CurrentBranchElement >;
+            groupToNodeToType?: ESMap< Readonly<GroupForFlow>, NodeToTypeMap >;
         };
     };
+
+    function createHeap(groupsForFlow: GroupsForFlow): Heap {
+        const _heap: number[] = [NaN];
+        const _heapset = new Set<number>();
+        function has(n: number){
+            return !!_heapset.has(n);
+        }
+        function peek(){
+            Debug.assert(_heap.length>1);
+            return _heap[1];
+        }
+        function isEmpty(){
+            Debug.assert(_heap.length);
+            return _heap.length===1;
+        }
+        const heaper = defineOneIndexingHeaper(
+            NaN,
+            (i: number,o: number) => groupsForFlow.orderedGroups[_heap[i]].groupIdx < groupsForFlow.orderedGroups[_heap[o]].groupIdx,
+            (i: number,o: number) => groupsForFlow.orderedGroups[_heap[i]].groupIdx > groupsForFlow.orderedGroups[_heap[o]].groupIdx,
+        );
+        function insert(n: number){
+            Debug.assert(!_heapset.has(n));
+            _heapset.add(n);
+            heaper.heapInsert(_heap, n);
+        }
+        function remove(){
+            Debug.assert(_heap.length>1);
+            _heapset.delete(peek());
+            return heaper.heapRemove(_heap);
+        }
+        return {
+            _heap,
+            _heapset,
+            has,
+            peek,
+            isEmpty,
+            insert,
+            remove
+        };
+    }
+
     export function createSourceFileInferState(sourceFile: SourceFile, checker: TypeChecker): SourceFileMrState {
         const t0 = process.hrtime.bigint();
         const groupedFlowNodes = groupFlowNodesFromSourceFile(sourceFile);
@@ -87,12 +155,13 @@ namespace ts {
         dbgs = createDbgs(checker);
         //myDebug = getMyDebug();
 
-        const heap: number[]=[];
-        const heaper = defineOneIndexingHeaper(
-            0,
-            (i: number,o: number) => groupsForFlow.orderedGroups[heap[i]].groupIdx < groupsForFlow.orderedGroups[heap[o]].groupIdx,
-            (i: number,o: number) => groupsForFlow.orderedGroups[heap[i]].groupIdx > groupsForFlow.orderedGroups[heap[o]].groupIdx,
-        );
+        const heap = createHeap(groupsForFlow);
+        // const heaper = defineOneIndexingHeaper(
+        //     0,
+        //     (i: number,o: number) => groupsForFlow.orderedGroups[heap[i]].groupIdx < groupsForFlow.orderedGroups[heap[o]].groupIdx,
+        //     (i: number,o: number) => groupsForFlow.orderedGroups[heap[i]].groupIdx > groupsForFlow.orderedGroups[heap[o]].groupIdx,
+        // );
+        // const heapset = new Set<number>();
         const mrState: MrState = {
             //flowNodeGroupToStateMap: new Map <FlowNodeGroup, AccState>(),
             checker,
@@ -102,9 +171,8 @@ namespace ts {
             replayableItems: new Map<Symbol, ReplayableItem>(),
             forFlow: {
                 heap,
-                heaper,
-                currentBranchesMap: new Map< GroupForFlow, CurrentBranchesItem[] >(),
-                groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap[] >(),
+                currentBranchesMap: new Map< GroupForFlow, CurrentBranchElement >(),
+                groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap >(),
             }
         };
 
@@ -216,70 +284,188 @@ namespace ts {
         }
     }
 
-    // @ ts-expect-error
-    export function createDependencyStackGroupsForFlow(group: Readonly<GroupForFlow>, _sourceFileMrState: SourceFileMrState): void {
+    /**
+     *
+     * @param group
+     * @param _sourceFileMrState
+     */
+    export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, _sourceFileMrState: SourceFileMrState): void {
+        /**
+         * Currently requiring heap to be empty - so a simple sort could be used instead.
+         * However, if heap were were to be added to on the fly, while resolving, heap will be useful.
+         */
+        Debug.assert(_sourceFileMrState.mrState.forFlow.heap.isEmpty());
         // @ ts-expect-error
         const mrState = _sourceFileMrState.mrState;
-        // @ts-expect-error
+        // @ ts-expect-error
         const groupsForFlow = _sourceFileMrState.groupsForFlow;
         if (getMyDebug()) consoleGroup(`createDependencyStackGroupsForFlow[in]`);
         // @ ts-expect-error
-        const acc = new Set<GroupForFlow>();
+        let acc = new Set<GroupForFlow>();
         let change = true;
         if (!mrState.forFlow.currentBranchesMap.get(group)){
             acc.add(group);
         }
         while (change){
             change = false;
+            const tmpacc = new Set<GroupForFlow>();
             acc.forEach(g=>{
-                if (!mrState.forFlow.currentBranchesMap.get(g)){
-                    change = true;
-                    acc.add(g);
+                const setAnteg = groupsForFlow.groupToAnteGroupMap.get(g);
+                if (!setAnteg) return;
+                setAnteg.forEach(anteg=>{
+                    if (!mrState.forFlow.currentBranchesMap.get(anteg)){
+                        tmpacc.add(anteg);
+                        change = true;
+                    }
+                });
+            });
+            acc = tmpacc;
+        }
+        acc.forEach(g=>{
+            mrState.forFlow.heap.insert(g.groupIdx);
+        });
+    }
+
+    /**
+     *
+     * @param sourceFileMrState
+     */
+    function resolveHeap(sourceFileMrState: SourceFileMrState): void {
+        const mrState = sourceFileMrState.mrState;
+        const groupsForFlow = sourceFileMrState.groupsForFlow;
+        const heap = mrState.forFlow.heap;
+        while (!heap.isEmpty()){
+            const groupIdx = heap.remove();
+            // @ ts-expect-error
+            const groupForFlow = groupsForFlow.orderedGroups[groupIdx];
+            let debugCheck = true;
+            debugCheck = true;
+            if (debugCheck) {
+                const setOfAnteGroups =groupsForFlow.groupToAnteGroupMap.get(groupForFlow);
+                if (groupForFlow.branchMerger) Debug.assert(setOfAnteGroups);
+                if (setOfAnteGroups){
+                    setOfAnteGroups.forEach(ag=>{
+                        Debug.assert(!heap.has(ag.groupIdx));
+                        //const cbe = mrState.forFlow.currentBranchesMap.get(ag);
+                    });
+                }
+            }
+            resolveGroupForFlow(groupForFlow, sourceFileMrState);
+        }
+    }
+
+    function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, sourceFileMrState: SourceFileMrState): void {
+        const groupsForFlow = sourceFileMrState.groupsForFlow;
+        const mrState = sourceFileMrState.mrState;
+        //const setOfAnteGroups =groupsForFlow.groupToAnteGroupMap.get(groupForFlow)!;
+        const setOfFlow =groupsForFlow.groupToSetOfFlowMap.get(groupForFlow);
+        const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+
+        //let rttr: RefTypesTableReturn;
+        //let byNode: NodeToTypeMap;
+        let refTypesSymtab: RefTypesSymtab | undefined;
+
+        if (setOfFlow){
+            //let setOfAnteGroups = new Set<GroupForFlow>();
+            let hadBranch = false;
+            const arrRttrBranch: RefTypesTableReturn[] = [];
+            setOfFlow.forEach(fn=>{
+                Debug.assert(!hadBranch);
+                if (isFlowStart(fn)) return;
+                if (isFlowBranch(fn)){
+                    hadBranch = true;
+                    fn.antecedents?.forEach(antefn=>{
+                        if (isFlowStart(antefn)) return;
+                        if (isFlowBranch(antefn)) Debug.fail();
+                        if (!isFlowWithNode(antefn)) Debug.fail();
+                        const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node);
+                        Debug.assert(anteg);
+                        // if (setOfAnteGroups.has(anteg)) return;
+                        // setOfAnteGroups.add(anteg);
+                        const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
+                        Debug.assert(cbe);
+                        if (isFlowCondition(antefn)){
+                            Debug.assert(cbe.kind===CurrentBranchesElementKind.ifexpr);
+                            if (antefn.flags & FlowFlags.TrueCondition){
+                                arrRttrBranch.push(cbe.true.refTypesTableReturn);
+                            }
+                            else if (antefn.flags & FlowFlags.FalseCondition){
+                                arrRttrBranch.push(cbe.false.refTypesTableReturn);
+                            }
+                            else Debug.fail();
+                        }
+                        else {
+                            Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
+                            arrRttrBranch.push(cbe.item.refTypesTableReturn);
+                        }
+                    });
+                }
+                else {
+                    if (!isFlowWithNode(fn)) Debug.fail();
+                    const anteg = groupsForFlow.nodeToGroupMap.get(fn.node);
+                    Debug.assert(anteg);
+                    Debug.assert(anteg.kind!==GroupForFlowKind.ifexpr);
+                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
+                    Debug.assert(cbe);
+                    if (isFlowCondition(fn)){
+                        Debug.assert(cbe.kind===CurrentBranchesElementKind.ifexpr);
+                        if (fn.flags & FlowFlags.TrueCondition){
+                            refTypesSymtab = cbe.true.refTypesTableReturn.symtab;
+                            //arrRttrBranch.push(cbe.true.refTypesTableReturn);
+                        }
+                        else if (fn.flags & FlowFlags.FalseCondition){
+                            refTypesSymtab = cbe.false.refTypesTableReturn.symtab;
+                            //arrRttrBranch.push(cbe.false.refTypesTableReturn);
+                        }
+                        else Debug.fail();
+                    }
+                    else {
+                        Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
+                        refTypesSymtab = cbe.item.refTypesTableReturn.symtab;
+                        //arrRttrBranch.push(cbe.item.refTypesTableReturn);
+                    }
                 }
             });
+            if (hadBranch) {
+                refTypesSymtab = sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(/*symbol*/ undefined, /* isconst */ undefined, arrRttrBranch).symtab;
+            }
         }
-        // @ts-expect-error 2679
-        const depGroups: GroupForFlow[]= Array.from(acc.keys());
-        depGroups.sort((a: GroupForFlow, b: GroupForFlow)=>{
-            return b.groupIdx - a.groupIdx;
-        });
+        if (!refTypesSymtab) refTypesSymtab = sourceFileMrState.mrNarrow.createRefTypesSymtab();
 
+        const ifExpr = (groupForFlow.kind!==GroupForFlowKind.ifexpr);
+        const crit: InferCrit = !ifExpr ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
+        const inferStatus: InferStatus = {
+            inCondition: !!ifExpr,
+            replayItemStack: [],
+            replayables: sourceFileMrState.mrState.replayableItems
+        };
+        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus });
 
-        // /**
-        //  * acc will tend to be in descending order, so sorting in descending order is probably less work.
-        //  */
-        // // @ts-expect-error 2679
-        // const depGroups: FlowNodeGroup[]= Array.from(acc.keys());
-        // //const idxrefs: number[]=Array(depGroups.length).map((_,i)=>i);
-        // const compare = (xr: FlowNodeGroup, yr: FlowNodeGroup) => {
-        //     const ix = getOrdinal(xr);
-        //     const iy = getOrdinal(yr);
-        //     return iy-ix;
-        // };
-        // depGroups.sort(compare);
-        // /**
-        //  * Working the stack with pop, descending order is preferred.
-        //  */
-        // //const stack = idxrefs.map(i=>depGroups[i]);
-        // const groupToStackIdx = new Map<FlowNodeGroup, number>(depGroups.map((g,i)=>[g,i]));
-        // const stack: StackItem[] = depGroups.map((group)=>({
-        //     depStackItems: [], group
-        // }));
-        // stack.forEach(si=>{
-        //     getAntecedentGroups(si.group).forEach(a=>{
-        //         const idx = groupToStackIdx.get(a);
-        //         // Debug.assert(idx!==undefined);
-        //         if (idx!==undefined) si.depStackItems.push(stack[idx]);
-        //     });
-        // });
-        // mrState.stack = stack;
-        // mrState.groupToStackIdx = groupToStackIdx;
-        // if (getMyDebug()){
-        //     consoleLogStack(mrState);
-        //     //consoleLog(`createDependencyStack[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
+        if (ifExpr){
+            const cbe: CurrentBranchElementIfExpr = {
+                kind: CurrentBranchesElementKind.ifexpr,
+                false: { refTypesTableReturn: retval.inferRefRtnType.failing!, byNode: retval.byNode },
+                true: { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode }
+            };
+            sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
+        }
+        else {
+            const cbe: CurrentBranchElementPlain = {
+                kind: CurrentBranchesElementKind.plain,
+                item: { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode }
+            };
+            sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
+        }
+        //if (currentBranchesItems.length) currentBranchesItems[0].done=true;
+        if (!sourceFileMrState.mrState.forFlow.groupToNodeToType) sourceFileMrState.mrState.groupToNodeToType = new Map<FlowNodeGroup, NodeToTypeMap>();
+        sourceFileMrState.mrState.forFlow.groupToNodeToType!.set(groupForFlow, retval.byNode);
+        // if (getMyDebug()) {
+        //     consoleLog(`resolveNodefulGroupUsingState[out] group: ${dbgs?.dbgFlowNodeGroupToString(group)}`);
         //     consoleGroupEnd();
         // }
+
     }
+
 
 
     /**
@@ -357,6 +543,8 @@ namespace ts {
             consoleGroupEnd();
         }
     }
+
+
     export function resolveDependencyStack_aux(_sourceFileMrState: SourceFileMrState): void{
         const stack = _sourceFileMrState.mrState.stack;
         Debug.assert(stack);
@@ -399,7 +587,11 @@ namespace ts {
 
     export function getTypeByMrNarrow(reference: Node, sourceFileMrState: SourceFileMrState): Type {
         if (getMyDebug()) consoleGroup(`getTypeByMrNarrow[in] expr: ${dbgs?.dbgNodeToString(reference)}`);
-        const type = getTypeByMrNarrow_aux(reference, sourceFileMrState);
+        let type: Type;
+        let useGroupForFlow = true;
+        useGroupForFlow = true;
+        if (useGroupForFlow) type = getTypeByMrNarrowAux(reference, sourceFileMrState);
+        else type = getTypeByMrNarrow_aux(reference, sourceFileMrState);
         if (getMyDebug()){
             consoleLog(`getTypeByMrNarrow[out] expr: ${dbgs?.dbgNodeToString(reference)} -> ${dbgs?.dbgFlowTypeToString(type)}`);
             consoleGroupEnd();
@@ -443,6 +635,32 @@ namespace ts {
         return sourceFileMrState.mrState.groupToNodeToType?.get(flowGroup!)?.get(expr) ?? sourceFileMrState.mrState.checker.getErrorType();
     }
 
+    export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileMrState): Type {
+
+        const groupsForFlow = sourceFileMrState.groupsForFlow;
+        const groupForFlow = (()=>{
+            let parent = expr;
+            let fg = groupsForFlow.nodeToGroupMap.get(expr);
+            if (fg) return fg;
+            while (!fg && parent && parent.kind!==SyntaxKind.SourceFile && !(fg=groupsForFlow.nodeToGroupMap.get(parent))) parent = parent.parent;
+            return fg;
+        })();
+        if (!groupForFlow){
+            if (getMyDebug()){
+                consoleLog(`getTypeByMrNarrow[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
+                //return sourceFileMrState.mrState.checker.getErrorType();
+            }
+            Debug.fail();
+        }
+        if (getMyDebug()){
+            const maxnode = sourceFileMrState.groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+            consoleLog(`getTypeByMrNarrow[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, maximalNode: ${dbgs!.dbgNodeToString(maxnode)}`);
+        }
+        updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState);
+        resolveHeap(sourceFileMrState);
+        return sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getErrorType();
+
+    }
 
 
     // @ts-ignore-error

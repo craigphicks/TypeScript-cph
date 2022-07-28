@@ -538,6 +538,9 @@ namespace ts {
 
         const setOfNodes = new Set<Node>();
         nodesWithFlow.forEach((n: Node)=>{
+            Debug.assert(isNodeWithFlow(n));
+            const fn = n.flowNode;
+            if (isFlowStart(fn)) return;
             if (!isStatement(n)) setOfNodes.add(n);
             else if (isReturnStatement(n) && n.expression) setOfNodes.add(n.expression);
             //else if (isFlowWithNode(n.flowNode)) setOfNodes.add(n.flowNode.node);
@@ -619,8 +622,14 @@ namespace ts {
             groups.push(group);
         }
         const arefGroups = groups.map((_v,i)=>i);
+        /**
+         * TODO: This order doesn't capture the need to do some inners first.
+         * @param a
+         * @param b
+         * @returns
+         */
         const compareGroups = (a: number, b: number) => {
-            return groups[b].precOrdContainerIdx - groups[a].precOrdContainerIdx;
+            return groups[a].precOrdContainerIdx - groups[b].precOrdContainerIdx;
         };
         arefGroups.sort(compareGroups);
         const orderedGroups = arefGroups.map(idx=>groups[idx]);
@@ -651,7 +660,10 @@ namespace ts {
                     if (isFlowWithNode(fn)){
                         const nodeOfFlow = fn.node;
                         if (nodeOfFlow.pos >= gpos && nodeOfFlow.pos < gend) return;  // filter in-group references
-                        set.add(fn); // includes non-nodeful flow
+                        set.add(fn); // nodeful flow
+                    }
+                    else {
+                        set.add(fn); // non-nodeful flow
                     }
                 }
             }
@@ -664,16 +676,42 @@ namespace ts {
             const setOfFlow = groupToSetOfFlowMap.get(g);
             if (!setOfFlow) return;
             setOfFlow.forEach(fn=>{
-                if (!isFlowWithNode(fn)) return;
-                const groupToAdd = nodeToGroupMap.get(fn.node);
-                if (!groupToAdd){
-                    Debug.fail();
+                if (isFlowStart(fn)) return;
+                if (isFlowWithNode(fn)){
+                    const groupToAdd = nodeToGroupMap.get(fn.node);
+                    if (!groupToAdd){
+                        Debug.fail();
+                    }
+                    if (groupToAdd===g) {
+                        Debug.fail();
+                    }
+                    setOfGroup.add(groupToAdd);
                 }
-                if (groupToAdd===g) {
-                    Debug.fail();
+                else {
+                    // flow without node
+                    if (isFlowBranch(fn)){
+                        fn.antecedents?.forEach(antefn=>{
+                            if (isFlowStart(antefn)) return;
+                            if (isFlowWithNode(antefn)){
+                                g.branchMerger = true;
+                                const groupToAdd = nodeToGroupMap.get(antefn.node);
+                                if (!groupToAdd){
+                                    Debug.fail();
+                                }
+                                if (groupToAdd===g) {
+                                    Debug.fail();
+                                }
+                                setOfGroup.add(groupToAdd);
+                            }
+                            else Debug.fail();
+                        });
+                    }
+                    else Debug.fail();
                 }
-                setOfGroup.add(groupToAdd);
             });
+            if (g.branchMerger){
+                Debug.assert(setOfFlow.size===1);
+            }
             if (setOfGroup.size) groupToAnteGroupMap.set(g,setOfGroup);
         });
 
@@ -682,7 +720,8 @@ namespace ts {
             posOrderedNodes: orderedNodes,
             precOrderContainerItems: precOrderCI,
             groupToSetOfFlowMap,
-            groupToAnteGroupMap
+            groupToAnteGroupMap,
+            nodeToGroupMap
         };
 
 
