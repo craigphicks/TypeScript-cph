@@ -93,6 +93,7 @@ namespace ts {
         dbgGetNodeText: (node: Node) => any;
         dbgFlowToString: (flow: FlowNode | undefined) => string;
         dbgFlowTypeToString: (flowType: FlowType) => string;
+        dbgTypeToString: (type: Type) => string;
         dbgNodeToString: (node: Node | undefined) => string;
         dbgSignatureToString: (c: Signature) => string;
         dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
@@ -114,6 +115,9 @@ namespace ts {
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
             if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
             return str;
+        };
+        const dbgTypeToString = (type: Type): string => {
+            return checker.typeToString(type);
         };
         const dbgFlowTypeToString = (flowType: FlowType): string => {
             if (!flowType.flags) return "IncompleteType";
@@ -184,6 +188,7 @@ namespace ts {
             dbgGetNodeText,
             dbgFlowToString,
             dbgFlowTypeToString,
+            dbgTypeToString,
             dbgNodeToString,
             dbgSignatureToString,
             dbgWriteSignatureArray,

@@ -499,29 +499,245 @@ namespace ts {
                     func(source, rel, !rel);
                 });
             }
+            else if (crit.kind===InferCritKind.typeof) {
+                forEachRefTypesTypeType(rt, type => {
+                    if (type===anyType || type===unknownType){
+                        func(type, /* pass */ true, /* fail */ true);
+                        return;
+                    }
+                    else if (type===neverType){
+                        func(type, /* pass */ false, /* fail */ false);
+                        return;
+                    }
+                    let rel: boolean;
+                    if (crit.typeofString===InferCritTypeofStrings.undefined) rel = (type===undefinedType);
+                    else if (crit.typeofString===InferCritTypeofStrings.boolean) rel = !!(type.flags & TypeFlags.BooleanLike);
+                    else if (crit.typeofString===InferCritTypeofStrings.number) rel = !!(type.flags & TypeFlags.NumberLike);
+                    else if (crit.typeofString===InferCritTypeofStrings.bigint) rel = !!(type.flags & TypeFlags.BigIntLike);
+                    else if (crit.typeofString===InferCritTypeofStrings.string) rel = !!(type.flags & TypeFlags.StringLike);
+                    else if (crit.typeofString===InferCritTypeofStrings.symbol) rel = !!(type.flags & TypeFlags.ESSymbolLike);
+                    else if (crit.typeofString===InferCritTypeofStrings.function || crit.typeofString===InferCritTypeofStrings.object) {
+                        const isFunc = !!(checker.getSignaturesOfType(type, SignatureKind.Call).length || checker.getSignaturesOfType(type, SignatureKind.Construct).length);
+                        const isObj = !!(type.flags & TypeFlags.Object);
+                        if (crit.typeofString===InferCritTypeofStrings.function) rel = isFunc;
+                        else rel = isObj && !isFunc;
+                    }
+                    else Debug.fail();
+                    if (crit.negate) rel = !rel;
+                    func(type, rel, !rel);
+                });
+            }
             else {
                 Debug.assert(false, "", ()=>crit.kind);
             }
         }
 
+        /**
+         *
+         * If the value is omitted or is 0, -0, null, false, NaN, undefined, or the empty string (""),
+         * return false type. All other values, return true type
+         * @param uType
+         */
+        // @ts-ignore-error
+        function convertNonUnionNonIntersectionTypeToBoolean(uType: Type): boolean {
+            Debug.assert(!(uType.flags & TypeFlags.UnionOrIntersection));
+            if (uType===undefinedType || uType===nullType) return false;
+            // There is some ambiguity about boolean literal false
+            if (uType.flags & TypeFlags.BooleanLiteral && (uType as IntrinsicType).intrinsicName==="false") return false;
+            if (uType===checker.getFalseType()) return false;
+            if (uType.flags & TypeFlags.StringLiteral && (uType as StringLiteralType).value==="") return false;
+            if (uType.flags & TypeFlags.NumberLiteral && (
+                (uType as NumberLiteralType).value===0 ||
+                (uType as NumberLiteralType).value===-0 ||
+                isNaN((uType as NumberLiteralType).value)
+            )){
+                return false;
+            }
+            return true;
+        }
+
 
         /**
          *
+         * @param param0
          */
-        // for reference:
-        // function getTypeWithFacts(type: Type, include: TypeFacts) {
-        //     return filterType(type, t => (getTypeFacts(t) & include) !== 0);
-        // }
+        function mrNarrowTypesByTypeof({
+            refTypesSymtab:refTypesSymtabIn, condExpr: typeofArgExpr, inferStatus: inferStatusIn
+        }: Omit<InferRefInnerArgs, "qdotfallout">, negateCrit: boolean, typeString: string): MrNarrowTypesInnerReturn {
+            const critTypeofString: InferCritTypeofStrings | undefined = (()=>{
+                switch (typeString){
+                    case InferCritTypeofStrings.undefined: return InferCritTypeofStrings.undefined;
+                    case InferCritTypeofStrings.boolean: return InferCritTypeofStrings.boolean;
+                    case InferCritTypeofStrings.number: return InferCritTypeofStrings.number;
+                    case InferCritTypeofStrings.bigint: return InferCritTypeofStrings.bigint;
+                    case InferCritTypeofStrings.string: return InferCritTypeofStrings.string;
+                    case InferCritTypeofStrings.symbol: return InferCritTypeofStrings.symbol;
+                    case InferCritTypeofStrings.function: return InferCritTypeofStrings.function;
+                    case InferCritTypeofStrings.object: return InferCritTypeofStrings.object;
+                }
+            })();
+            if (!critTypeofString) {
+                return {
+                    byNode: createNodeToTypeMap().set(typeofArgExpr, errorType),
+                    arrRefTypesTableReturn: []
+                };
+            };
+            const {/* inCondition, */ replayItemStack, replayables} = inferStatusIn;
+            const { inferRefRtnType: {passing,failing}, byNode } = mrNarrowTypes({
+                refTypesSymtab: refTypesSymtabIn,
+                condExpr: typeofArgExpr,
+                crit: {
+                    kind: InferCritKind.typeof,
+                    typeofString: critTypeofString,
+                    negate: negateCrit,
+                    alsoFailing: true
+                },
+                qdotfallout: undefined,
+                inferStatus: { inCondition:true, replayItemStack, replayables }
+            });
+            return {
+                byNode,
+                arrRefTypesTableReturn: [passing,failing!]
+            };
+        }
 
 
-        // @ ts-expect-error
-        // function setOfTypeToUnionType(s: Set<Type>): Type{
-        //     // @ts-expect-error 2769
-        //     return getUnionType(Array.from(s.keys()),UnionReduction.Literal);
-        // }
+        function mrNarrowTypesByBinaryExpression({
+            refTypesSymtab:refTypesSymtabIn, condExpr:binaryExpression, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus
+        }: InferRefInnerArgs & {condExpr: BinaryExpression}): MrNarrowTypesInnerReturn {
+            const {left:leftExpr,operatorToken,right:rightExpr} = binaryExpression;
+            switch (operatorToken.kind) {
+                case SyntaxKind.EqualsToken:
+                case SyntaxKind.BarBarEqualsToken:
+                case SyntaxKind.AmpersandAmpersandEqualsToken:
+                case SyntaxKind.QuestionQuestionEqualsToken:
+                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    break;
+                    //return narrowTypeByTruthiness(narrowType(type, expr.right, assumeTrue), expr.left, assumeTrue);
+                case SyntaxKind.EqualsEqualsToken:
+                case SyntaxKind.ExclamationEqualsToken:
+                case SyntaxKind.EqualsEqualsEqualsToken:
+                case SyntaxKind.ExclamationEqualsEqualsToken:
+                    if (leftExpr.kind === SyntaxKind.TypeOfExpression || rightExpr.kind === SyntaxKind.TypeOfExpression){
+                        let typeofArgExpr: Expression | undefined;
+                        let typeofString: string | undefined;
+                        if (isTypeOfExpression(leftExpr) && isStringLiteral(rightExpr)){
+                            typeofArgExpr = leftExpr.expression;
+                            typeofString = rightExpr.text;
+                        }
+                        else if (isTypeOfExpression(rightExpr) && isStringLiteral(leftExpr)){
+                            typeofArgExpr = rightExpr.expression;
+                            typeofString = leftExpr.text;
+                        }
+                        if (typeofArgExpr && typeofString){
+                            const negateCrit = operatorToken.kind===SyntaxKind.ExclamationEqualsEqualsToken || operatorToken.kind===SyntaxKind.ExclamationEqualsToken;
+                            return mrNarrowTypesByTypeof({ refTypesSymtab:refTypesSymtabIn, condExpr:typeofArgExpr, inferStatus }, negateCrit, typeofString);
+                        }
+                        else {
+                            // still required to process for side effects
+                            const arrRttr: RefTypesTableReturn[]=[];
+                            const byNode = createNodeToTypeMap();
+                            const rl = mrNarrowTypes_inner({ refTypesSymtab:refTypesSymtabIn, condExpr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
+                            const rr = mrNarrowTypes_inner({ refTypesSymtab:refTypesSymtabIn, condExpr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
+                            mergeIntoNodeToTypeMaps(rl.byNode, byNode);
+                            mergeIntoNodeToTypeMaps(rr.byNode, byNode);
+                            arrRttr.push(...rl.arrRefTypesTableReturn);
+                            arrRttr.push(...rr.arrRefTypesTableReturn);
+                            return {
+                                byNode, arrRefTypesTableReturn: arrRttr
+                            };
+                        }
 
+                    }
+                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    // const operator = expr.operatorToken.kind;
+                    // const left = getReferenceCandidate(expr.left);
+                    // const right = getReferenceCandidate(expr.right);
+                    // if (left.kind === SyntaxKind.TypeOfExpression && isStringLiteralLike(right)) {
+                    //     return narrowTypeByTypeof(type, left as TypeOfExpression, operator, right, assumeTrue);
+                    // }
+                    // if (right.kind === SyntaxKind.TypeOfExpression && isStringLiteralLike(left)) {
+                    //     return narrowTypeByTypeof(type, right as TypeOfExpression, operator, left, assumeTrue);
+                    // }
+                    // if (isMatchingReference(reference, left)) {
+                    //     return narrowTypeByEquality(type, operator, right, assumeTrue);
+                    // }
+                    // if (isMatchingReference(reference, right)) {
+                    //     return narrowTypeByEquality(type, operator, left, assumeTrue);
+                    // }
+                    // if (strictNullChecks) {
+                    //     if (optionalChainContainsReference(left, reference)) {
+                    //         type = narrowTypeByOptionalChainContainment(type, operator, right, assumeTrue);
+                    //     }
+                    //     else if (optionalChainContainsReference(right, reference)) {
+                    //         type = narrowTypeByOptionalChainContainment(type, operator, left, assumeTrue);
+                    //     }
+                    // }
+                    // const leftAccess = getDiscriminantPropertyAccess(left, type);
+                    // if (leftAccess) {
+                    //     return narrowTypeByDiscriminantProperty(type, leftAccess, operator, right, assumeTrue);
+                    // }
+                    // const rightAccess = getDiscriminantPropertyAccess(right, type);
+                    // if (rightAccess) {
+                    //     return narrowTypeByDiscriminantProperty(type, rightAccess, operator, left, assumeTrue);
+                    // }
+                    // if (isMatchingConstructorReference(left)) {
+                    //     return narrowTypeByConstructor(type, operator, right, assumeTrue);
+                    // }
+                    // if (isMatchingConstructorReference(right)) {
+                    //     return narrowTypeByConstructor(type, operator, left, assumeTrue);
+                    // }
+                    break;
+                case SyntaxKind.InstanceOfKeyword:
+                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    //return narrowTypeByInstanceof(type, expr, assumeTrue);
+                    break;
+                case SyntaxKind.InKeyword:
+                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    // if (isPrivateIdentifier(expr.left)) {
+                    //     return narrowTypeByPrivateIdentifierInInExpression(type, expr, assumeTrue);
+                    // }
+                    // const target = getReferenceCandidate(expr.right);
+                    // const leftType = getTypeOfNode(expr.left);
+                    // if (leftType.flags & TypeFlags.StringLiteral) {
+                    //     const name = escapeLeadingUnderscores((leftType as StringLiteralType).value);
+                    //     if (containsMissingType(type) && isAccessExpression(reference) && isMatchingReference(reference.expression, target) &&
+                    //         getAccessedPropertyName(reference) === name) {
+                    //         return getTypeWithFacts(type, assumeTrue ? TypeFacts.NEUndefined : TypeFacts.EQUndefined);
+                    //     }
+                    //     if (isMatchingReference(reference, target)) {
+                    //         return narrowByInKeyword(type, name, assumeTrue);
+                    //     }
+                    // }
+                    break;
+                case SyntaxKind.CommaToken:
+                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    //return narrowType(type, expr.right, assumeTrue);
+                    break;
+                /**
+                 * The following //'d comment is from 'narrowTypeByBinaryExpression'. Perhaps should now ALWAYS not break them down.
+                 */
+                // Ordinarily we won't see && and || expressions in control flow analysis because the Binder breaks those
+                // expressions down to individual conditional control flows. However, we may encounter them when analyzing
+                // aliased conditional expressions.
+                case SyntaxKind.AmpersandAmpersandToken:
+                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    break;
+                    // return assumeTrue ?
+                    //     narrowType(narrowType(type, expr.left, /*assumeTrue*/ true), expr.right, /*assumeTrue*/ true) :
+                    //     getUnionType([narrowType(type, expr.left, /*assumeTrue*/ false), narrowType(type, expr.right, /*assumeTrue*/ false)]);
+                case SyntaxKind.BarBarToken:
+                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    break;
+                    // return assumeTrue ?
+                    //     getUnionType([narrowType(type, expr.left, /*assumeTrue*/ true), narrowType(type, expr.right, /*assumeTrue*/ true)]) :
+                    //     narrowType(narrowType(type, expr.left, /*assumeTrue*/ false), expr.right, /*assumeTrue*/ false);
+                default:
+                    Debug.fail("hit default, not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
 
-        // @ ts-ignore-error 6133
+            }
+    }
+
         function mrNarrowTypesByCallExpression({refTypesSymtab:refTypesIn, condExpr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {condExpr: CallExpression}): MrNarrowTypesInnerReturn {
             //return undefined as any as InferRefRtnType;
             Debug.assert(qdotfallout);
@@ -1142,6 +1358,11 @@ namespace ts {
                         innerret.assignmentData?.isconst
                     }`);
                 }
+                if (innerret.unaryModifiers){
+                    let str = "";
+                    innerret.unaryModifiers.forEach(um=>str+=`${um},`);
+                    consoleLog(`  innerret.unaryModifers: ${str}`);
+                }
                 consoleLog("mrNarrowTypes_inner[out]");
                 consoleGroupEnd();
             }
@@ -1173,9 +1394,9 @@ namespace ts {
              * Apply the crit before handling the replayResult (if any)
              */
             const crit = { ...critIn };
-            if (innerret.negateCrit){
-                crit.negate = !critIn.negate; // corresponds to preceding unary !
-            }
+            // if (innerret.negateCrit){
+            //     crit.negate = !critIn.negate; // corresponds to preceding unary !
+            // }
             const critret = applyCritToArrRefTypesTableReturn(finalArrRefTypesTableReturn, crit);
             if (myDebug){
                 consoleLog("mrNarrowTypes[dbg], applyCritToArrRefTypesTableReturn return passing:");
@@ -1340,6 +1561,10 @@ namespace ts {
             return finalRetval;
         }
 
+        function mrNarrowTypesInnerEmptyReturn(): MrNarrowTypesInnerReturn {
+            return { arrRefTypesTableReturn:[], byNode: createNodeToTypeMap() };
+        }
+
         /**
          *
          * @param param0
@@ -1468,10 +1693,30 @@ namespace ts {
                 case SyntaxKind.PrefixUnaryExpression:
                     if ((condExpr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
                         //const negCrit: InferCrit = { ...crit, negate:!crit.negate } as InferCrit;
-                        const innerret = mrNarrowTypes_inner({ refTypesSymtab: refTypesSymtabIn, condExpr:(condExpr as PrefixUnaryExpression).operand, /* crit:negCrit, */ qdotfallout, inferStatus });
+                        const ret = mrNarrowTypes({
+                            refTypesSymtab: refTypesSymtabIn, condExpr:(condExpr as PrefixUnaryExpression).operand,
+                            crit:{ kind: InferCritKind.truthy, alsoFailing: true },
+                            qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true }
+                        });
+                        // //mergeArrRefTypesTableReturnToRefTypesTableReturn
+                        // innerret.arrRefTypesTableReturn.forEach(rttr=>{
+                        //     let hadFalse = false;
+                        //     let hadTrue = false;
+                        //     forEachRefTypesTypeType(rttr.type, t0=>{
+                        //         if (convertNonUnionNonIntersectionTypeToBoolean(t0)) hadTrue = true;
+                        //         else hadFalse = true;
+                        //      });
+                        //      const newRType = createRefTypesType();
+                        //      if (hadTrue) addTypeToRefTypesType({ source: checker.getTrueType(), target: newRType });
+                        //      if (hadFalse) addTypeToRefTypesType({ source: checker.getFalseType(), target: newRType });
+                        //      rttr.type = newRType;
+                        // });
+                        // if (!innerret.unaryModifiers) innerret.unaryModifiers = [MrNarrowTypesInnerUnaryModifierKind.prefixExclamation];
+                        // else innerret.unaryModifiers.push(MrNarrowTypesInnerUnaryModifierKind.prefixExclamation);
+                        // return innerret;
                         return {
-                            ...innerret,
-                            negateCrit: true
+                            byNode: ret.byNode,
+                            arrRefTypesTableReturn: [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!]
                         };
                     }
                     Debug.assert(false);
@@ -1519,6 +1764,20 @@ namespace ts {
                     }
                 }
                 break;
+                case SyntaxKind.BinaryExpression:{
+                    return mrNarrowTypesByBinaryExpression({ refTypesSymtab: refTypesSymtabIn, condExpr: condExpr as BinaryExpression, /*crit, */ qdotfallout, inferStatus });
+                }
+                break;
+                case SyntaxKind.TypeOfExpression:{
+                    /**
+                     * For a TypeOfExpression not as the child of a binary expressionwith ops  ===,!==,==,!=
+                     */
+                    return mrNarrowTypes_inner({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as TypeOfExpression).expression, qdotfallout, inferStatus });
+                }
+                break;
+                case SyntaxKind.NumericLiteral:
+                case SyntaxKind.StringLiteral:
+                    return mrNarrowTypesInnerEmptyReturn();
                 default: Debug.assert(false, "", ()=>`${Debug.formatSyntaxKind(condExpr.kind)}, ${dbgNodeToString(condExpr)}`);
             }
         }

@@ -634,6 +634,7 @@ namespace ts {
         arefGroups.sort(compareGroups);
         const orderedGroups = arefGroups.map(idx=>groups[idx]);
 
+
         /**
          * Create Node to GroupForFlow map
          */
@@ -641,6 +642,17 @@ namespace ts {
         orderedGroups.forEach(g=>{
             for (let idx=g.idxb; idx!==g.idxe; idx++){
                 nodeToGroupMap.set(orderedNodes[idx], g);
+            }
+        });
+
+        /**
+         * Mark which groups are referenced by true/false conditions
+         */
+         flowNodes.forEach(fn=>{
+            if (isFlowCondition(fn)) {
+                const g = nodeToGroupMap.get(fn.node)!;
+                if (fn.flags & FlowFlags.FalseCondition) g.falseref=true;
+                if (fn.flags & FlowFlags.TrueCondition) g.trueref=true;
             }
         });
 
@@ -1161,7 +1173,7 @@ namespace ts {
             //const maxnodecont = gff.precOrderContainerItems[g.precOrdContainerIdx];
             astr.push(`groups[${i}]: {maxnode: ${dbgNodeToString(maxnode)}}, contidx: ${
                 g.precOrdContainerIdx
-            }`);
+            }, trueref: ${g.trueref??false}, falseref: ${g.falseref??false}`);
             for (let idx = g.idxb; idx!==g.idxe; idx++){
                 const node = gff.posOrderedNodes[idx];
                 let str = `groups[${i}]:  [${idx}]: ${dbgNodeToString(node)}`;

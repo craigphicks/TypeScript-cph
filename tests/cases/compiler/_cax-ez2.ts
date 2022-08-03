@@ -5,10 +5,5 @@ declare type Foo = { readonly foo: (x?:number)=>number[] };
 declare const obj: Foo | undefined;
 const isFoo = obj?.foo();
 if (isFoo) {
-    // @special
     obj.foo();
 } 
-// else {
-//     // @ special
-//     obj.foo;
-// }

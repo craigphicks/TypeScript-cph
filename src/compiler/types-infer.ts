@@ -100,8 +100,22 @@ namespace ts {
         truthy= "truthy",
         notnullundef= "notnullundef",
         assignable= "assignable",
+        typeof= "typeof",
         twocrit= "twocrit"
     };
+
+    export enum InferCritTypeofStrings {
+        undefined = "undefined",
+        boolean = "boolean",
+        number = "number",
+        bigint = "bigint",
+        string = "string",
+        symbol = "symbol",
+        function = "function",
+        object = "object"
+    };
+
+
     // const InferCritKind = {
     //     none: "none",
     //     truthy: "truthy",
@@ -111,28 +125,35 @@ namespace ts {
     //type InferCritKind = typeof InferCritKind[ keyof typeof InferCritKind ];
     export type InferCrit =
     (
-    | {
-        kind: typeof InferCritKind.twocrit // this is just to get the resulting type without any criteria
-        negate?: false;
-        crits: [InferCrit & {alsoFailing?: false}, InferCrit]
-    }
-    | {
-        kind: typeof InferCritKind.none // this is just to get the resulting type without any criteria
-        negate?: false;
-    }
-    | {
-        kind: typeof InferCritKind.truthy
-        negate?: boolean;
-    }
-    | {
-        kind: typeof InferCritKind.notnullundef;
-        negate?: boolean;
-    }
-    | {
-        kind: typeof InferCritKind.assignable;
-        negate?: boolean;
-        target: Type;
-    }) & {alsoFailing?: boolean}; // also output failing, in addition to passing
+        | {
+            kind: typeof InferCritKind.twocrit // this is just to get the resulting type without any criteria
+            negate?: false;
+            crits: [InferCrit & {alsoFailing?: false}, InferCrit]
+        }
+        | {
+            kind: typeof InferCritKind.none // this is just to get the resulting type without any criteria
+            negate?: false;
+        }
+        | {
+            kind: typeof InferCritKind.truthy
+            negate?: boolean;
+        }
+        | {
+            kind: typeof InferCritKind.notnullundef;
+            negate?: boolean;
+        }
+        | {
+            kind: typeof InferCritKind.assignable;
+            negate?: boolean;
+            target: Type;
+        }
+        | {
+            kind: typeof InferCritKind.typeof;
+            negate?: boolean;
+            typeofString: InferCritTypeofStrings;
+        }
+    )
+    & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
     export interface ReplayableItem {
         symbol: Symbol;
@@ -233,6 +254,10 @@ namespace ts {
          */
         //readonly replayData: Omit<ReplayData, "symbol" | "expr"> | false;
     };
+
+    export enum MrNarrowTypesInnerUnaryModifierKind {
+        prefixExclamation = 1
+    };
     export type MrNarrowTypesInnerReturn = & {
         byNode: NodeToTypeMap;
         assignmentData?: { // set when Delcaration or assignment, and replayData was false
@@ -241,7 +266,8 @@ namespace ts {
             isconst: boolean;
         }
         arrRefTypesTableReturn: RefTypesTableReturn[];
-        negateCrit?: boolean; // set when kind === SyntaxKind.UnaryPrefix && operator === SyntaxKind.ExclamationToken
+        unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
+        //negateCrit?: boolean; // set when kind === SyntaxKind.UnaryPrefix && operator === SyntaxKind.ExclamationToken
     };
 
 

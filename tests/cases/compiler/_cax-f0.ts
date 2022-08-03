@@ -14,7 +14,7 @@ declare const arg: string | number;
 if (obja?.foo("") && typeof arg === "string"){
     const x = obja.foo(arg);
 }
-if (!(obja?.foo(""))){
+else {
     const x = obja.foo(arg);
 }
 

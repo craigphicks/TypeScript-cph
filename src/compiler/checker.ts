@@ -25776,6 +25776,20 @@ namespace ts {
             }
 
             function narrowTypeByEquality(type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean): Type {
+                if (myDebug) {
+                    consoleGroup(`narrowTypeByEquality[in](type:${typeToString(type)}, operator:${
+                        Debug.formatSyntaxKind(operator)
+                    }, value:${dbgNodeToString(value)}, assumeTrue:${assumeTrue})`);
+                }
+                const retType = narrowTypeByEquality_aux(type, operator, value, assumeTrue);
+                if (myDebug) {
+                    consoleGroup(`narrowTypeByEquality[in](type:${typeToString(type)}, operator:${
+                        Debug.formatSyntaxKind(operator)
+                    }, value:${dbgNodeToString(value)}, assumeTrue:${assumeTrue}) -> ${typeToString(retType)}`);
+                }
+                return retType;
+            }
+            function narrowTypeByEquality_aux(type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean): Type {
                 if (type.flags & TypeFlags.Any) {
                     return type;
                 }
@@ -43048,7 +43062,8 @@ namespace ts {
             // consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
 
 
-            const re = /^tests\/cases\/compiler\/_cax/;
+            //const re = /^tests\/cases\/compiler\/_cax/;
+            const re = /^tests\/cases\/.*\/_cax/;
             myCurrentSourceFilename = node.originalFileName;
             myCurrentSourceFile = node;
             let ofilenameRoot="";

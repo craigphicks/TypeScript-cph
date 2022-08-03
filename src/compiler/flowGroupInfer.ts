@@ -15,7 +15,9 @@ namespace ts {
         idxe: number,
         precOrdContainerIdx: number,
         groupIdx: number,
-        branchMerger?: boolean;
+        branchMerger?: boolean; // kill?
+        trueref?: boolean;
+        falseref?: boolean;
     };
 
     export interface ContainerItem { node: Node, precOrderIdx: number };
@@ -62,8 +64,8 @@ namespace ts {
     };
     interface CurrentBranchElementIfExpr {
         kind: CurrentBranchesElementKind.ifexpr;
-        true: CurrentBranchesItem;
-        false: CurrentBranchesItem;
+        true?: CurrentBranchesItem;
+        false?: CurrentBranchesItem;
     };
     type CurrentBranchElement = CurrentBranchElementPlain | CurrentBranchElementIfExpr;
 
@@ -121,8 +123,8 @@ namespace ts {
         }
         const heaper = defineOneIndexingHeaper(
             NaN,
-            (i: number,o: number) => groupsForFlow.orderedGroups[_heap[i]].groupIdx < groupsForFlow.orderedGroups[_heap[o]].groupIdx,
-            (i: number,o: number) => groupsForFlow.orderedGroups[_heap[i]].groupIdx > groupsForFlow.orderedGroups[_heap[o]].groupIdx,
+            (i: number,o: number) => groupsForFlow.orderedGroups[i].groupIdx < groupsForFlow.orderedGroups[o].groupIdx,
+            (i: number,o: number) => groupsForFlow.orderedGroups[i].groupIdx > groupsForFlow.orderedGroups[o].groupIdx,
         );
         function insert(n: number){
             Debug.assert(!_heapset.has(n));
@@ -269,14 +271,14 @@ namespace ts {
     /**
      *
      * @param group
-     * @param _sourceFileMrState
+     * @param sourceFileMrState
      */
-    export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, _sourceFileMrState: SourceFileMrState): void {
-        Debug.assert(_sourceFileMrState.mrState.forFlow.heap.isEmpty());
+    export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileMrState): void {
+        Debug.assert(sourceFileMrState.mrState.forFlow.heap.isEmpty());
         // @ ts-expect-error
-        const mrState = _sourceFileMrState.mrState;
+        const mrState = sourceFileMrState.mrState;
         // @ ts-expect-error
-        const groupsForFlow = _sourceFileMrState.groupsForFlow;
+        const groupsForFlow = sourceFileMrState.groupsForFlow;
         if (getMyDebug()) {
             const maximalNode = groupsForFlow.posOrderedNodes[group.maximalIdx];
             consoleGroup(`updateHeapWithGroupForFlow[in]: group: {maximalNode: ${dbgs?.dbgNodeToString(maximalNode)}}`);
@@ -323,7 +325,8 @@ namespace ts {
                 consoleLog("  "+str);
             }
             const maximalNode = groupsForFlow.posOrderedNodes[group.maximalIdx];
-            consoleGroup(`updateHeapWithGroupForFlow[out]: group: {maximalNode: ${dbgs?.dbgNodeToString(maximalNode)}}`);
+            consoleLog(`updateHeapWithGroupForFlow[out]: group: {maximalNode: ${dbgs?.dbgNodeToString(maximalNode)}}`);
+            consoleGroupEnd();
         }
     }
 
@@ -362,7 +365,10 @@ namespace ts {
         const setOfFlow =groupsForFlow.groupToSetOfFlowMap.get(groupForFlow);
         const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
         if (getMyDebug()){
-            consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}`);
+            consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, trueref: ${groupForFlow.trueref}, falseref: ${groupForFlow.trueref}`);
+            consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
+            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`  ${s}`));
+            consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
         }
 
         //let rttr: RefTypesTableReturn;
@@ -394,9 +400,11 @@ namespace ts {
                         if (isFlowCondition(antefn)){
                             Debug.assert(cbe.kind===CurrentBranchesElementKind.ifexpr);
                             if (antefn.flags & FlowFlags.TrueCondition){
+                                Debug.assert(cbe.true);
                                 arrRttrBranch.push(cbe.true.refTypesTableReturn);
                             }
                             else if (antefn.flags & FlowFlags.FalseCondition){
+                                Debug.assert(cbe.false);
                                 arrRttrBranch.push(cbe.false.refTypesTableReturn);
                             }
                             else Debug.fail();
@@ -415,12 +423,16 @@ namespace ts {
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                     Debug.assert(cbe);
                     if (isFlowCondition(fn)){
-                        Debug.assert(cbe.kind===CurrentBranchesElementKind.ifexpr);
+                        if (cbe.kind!==CurrentBranchesElementKind.ifexpr) {
+                            Debug.fail();
+                        }
                         if (fn.flags & FlowFlags.TrueCondition){
+                            Debug.assert(cbe.true);
                             refTypesSymtab = cbe.true.refTypesTableReturn.symtab;
                             //arrRttrBranch.push(cbe.true.refTypesTableReturn);
                         }
                         else if (fn.flags & FlowFlags.FalseCondition){
+                            Debug.assert(cbe.false);
                             refTypesSymtab = cbe.false.refTypesTableReturn.symtab;
                             //arrRttrBranch.push(cbe.false.refTypesTableReturn);
                         }
@@ -439,7 +451,7 @@ namespace ts {
         }
         if (!refTypesSymtab) refTypesSymtab = sourceFileMrState.mrNarrow.createRefTypesSymtab();
 
-        const ifExpr = (groupForFlow.kind===GroupForFlowKind.ifexpr);
+        const ifExpr = (groupForFlow.falseref || groupForFlow.trueref);
         const crit: InferCrit = !ifExpr ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         const inferStatus: InferStatus = {
             inCondition: !!ifExpr,
@@ -467,10 +479,25 @@ namespace ts {
         if (!sourceFileMrState.mrState.forFlow.groupToNodeToType) sourceFileMrState.mrState.forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
         sourceFileMrState.mrState.forFlow.groupToNodeToType.set(groupForFlow, retval.byNode);
         if (getMyDebug()){
-            consoleGroup(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}`);
+            consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
+            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`  ${s}`));
+            consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
+            consoleLog(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}`);
+            consoleGroupEnd();
         }
     }
 
+
+    // consoleLog(`currentBranchesMap:`);
+    // mrState.forFlow.currentBranchesMap.forEach((cbe,g)=>{
+    //     const maximalNode = groupsForFlow.posOrderedNodes[g.maximalIdx];
+    //     consoleLog(`[${dbgs?.dbgNodeToString(maximalNode)}]:`);
+    //     if (cbe.kind===CurrentBranchesElementKind.plain){
+    //         cbe.item.byNode;
+    //         cbe.item.refTypesTableReturn;
+    //     }
+
+    // });
 
 
     // function createDependencyStack(group: Readonly<FlowNodeGroup>, _sourceFileMrState: SourceFileMrState): void {
@@ -593,7 +620,7 @@ namespace ts {
         const type = getTypeByMrNarrowAux(reference, sourceFileMrState);
         //else type = getTypeByMrNarrow_aux(reference, sourceFileMrState);
         if (getMyDebug()){
-            consoleLog(`getTypeByMrNarrow[out] expr: ${dbgs?.dbgNodeToString(reference)} -> ${dbgs?.dbgFlowTypeToString(type)}`);
+            consoleLog(`getTypeByMrNarrow[out] expr: ${dbgs?.dbgNodeToString(reference)} -> ${dbgs?.dbgTypeToString(type)}`);
             consoleGroupEnd();
         }
         return type;
@@ -648,14 +675,14 @@ namespace ts {
         })();
         if (!groupForFlow){
             if (getMyDebug()){
-                consoleLog(`getTypeByMrNarrow[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
+                consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
                 //return sourceFileMrState.mrState.checker.getErrorType();
             }
             Debug.fail();
         }
         if (getMyDebug()){
             const maxnode = sourceFileMrState.groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
-            consoleLog(`getTypeByMrNarrow[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, maximalNode: ${dbgs!.dbgNodeToString(maxnode)}`);
+            consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, maximalNode: ${dbgs!.dbgNodeToString(maxnode)}`);
         }
         updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState);
         resolveHeap(sourceFileMrState);
@@ -677,4 +704,46 @@ namespace ts {
     //     }
     //     if (getMyDebug()) consoleGroupEnd();
     // }
+
+
+    function dbgCurrentBranchesMap(sourceFileMrState: SourceFileMrState): string[]{
+        const groupsForFlow = sourceFileMrState.groupsForFlow;
+        const mrState = sourceFileMrState.mrState;
+        const cbm = mrState.forFlow.currentBranchesMap;
+        const astr: string[] = [];
+        const doNodeToTypeMap = (m: Readonly<NodeToTypeMap>): string[]=>{
+            const astr: string[] = [];
+            m.forEach((t,n)=>{
+                astr.push(`[node:${dbgs?.dbgNodeToString(n)}] -> type:${dbgs?.dbgTypeToString(t)}`);
+            });
+            return astr;
+        };
+        const doItem = (cbi: CurrentBranchesItem): string[]=>{
+            const astr: string[] = [];
+            astr.push(`nodeToTypeMap:`);
+            astr.push(...doNodeToTypeMap(cbi.byNode).map(s => "  "+s));
+            astr.push(`refTypesTableReturn:`);
+            astr.push(...sourceFileMrState.mrNarrow.dbgRefTypesTableToStrings(cbi.refTypesTableReturn).map(s => "  "+s));
+            return astr;
+        };
+        cbm.forEach((cbe,g)=>{
+            const maximalNode = groupsForFlow.posOrderedNodes[g.maximalIdx];
+            astr.push(`[${dbgs?.dbgNodeToString(maximalNode)}]:`);
+            astr.push(`  cbe.kind:${cbe.kind}`);
+            if (cbe.kind===CurrentBranchesElementKind.plain){
+                astr.push(...doItem(cbe.item).map(s => "    "+s));
+            }
+            else if (cbe.kind===CurrentBranchesElementKind.ifexpr){
+                if (cbe.true){
+                    astr.push("    true:");
+                    astr.push(...doItem(cbe.true).map(s => "      "+s));
+                }
+                if (cbe.false){
+                    astr.push("    false:");
+                    astr.push(...doItem(cbe.false).map(s => "      "+s));
+                }
+            }
+        });
+        return astr;
+    }
 }
