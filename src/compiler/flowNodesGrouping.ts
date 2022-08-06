@@ -98,6 +98,7 @@ namespace ts {
         nodeFlowToOwnNodeGroupMap: ESMap<FlowNode,NodeGroup>;
         nodeGroupToFlowOutMap: ESMap<NodeGroup, Set<FlowNode>>;
         nodeGroupToFlowInMap: ESMap<NodeGroup, Set<FlowNode>>;
+        dbgFlowToOriginatingGroupIdx?: ESMap<FlowNode, number>;
     };
 
 
@@ -646,21 +647,12 @@ namespace ts {
         });
 
         /**
-         * Mark which groups are referenced by true/false conditions
-         */
-         flowNodes.forEach(fn=>{
-            if (isFlowCondition(fn)) {
-                const g = nodeToGroupMap.get(fn.node)!;
-                if (fn.flags & FlowFlags.FalseCondition) g.falseref=true;
-                if (fn.flags & FlowFlags.TrueCondition) g.trueref=true;
-            }
-        });
-
-        /**
          * Set group index and
          * Find the flow linked groups for each group.
          */
         const groupToSetOfFlowMap = new Map< GroupForFlow, Set<FlowNode> >();
+        //const ignorableFlowSetTemp = new Set<FlowNode>();
+        const flowToOriginatingGroupIdx = new Map<FlowNode, number>();
         orderedGroups.forEach((g,groupIdx)=>{
             g.groupIdx=groupIdx;
             const set = new Set<FlowNode>();
@@ -669,9 +661,13 @@ namespace ts {
                 const node = orderedNodes[idx];
                 if (isNodeWithFlow(node)){
                     const fn = node.flowNode;
+                    flowToOriginatingGroupIdx.set(fn, groupIdx);
                     if (isFlowWithNode(fn)){
                         const nodeOfFlow = fn.node;
-                        if (nodeOfFlow.pos >= gpos && nodeOfFlow.pos < gend) return;  // filter in-group references
+                        if (nodeOfFlow.pos >= gpos && nodeOfFlow.pos < gend) {
+                            //ignorableFlowSetTemp.add(fn);
+                            return;  // filter in-group references
+                        }
                         set.add(fn); // nodeful flow
                     }
                     else {
@@ -681,6 +677,32 @@ namespace ts {
             }
             if (set.size) groupToSetOfFlowMap.set(g, set);
         });
+
+        /**
+         * Mark which groups are referenced by true/false conditions
+         */
+         flowNodes.forEach(fn=>{
+            /**
+             * TODO: Not sure this is correct.
+             */
+            // if (isFlowWithAntecedent(fn) && isFlowStart(fn.antecedent)) return;
+            if (!flowToOriginatingGroupIdx.has(fn)) return;
+            //if (ignorableFlowSetTemp.has(fn)) return;
+            if (isFlowCondition(fn)) {
+                const g = nodeToGroupMap.get(fn.node)!;
+                if (flowToOriginatingGroupIdx.get(fn)===g.groupIdx) return;
+                //const maximalNode = orderedNodes[g.maximalIdx];
+                //if (fn.node.pos >= maximalNode.pos && fn.node.end <= maximalNode.end) return;
+                if (fn.flags & FlowFlags.FalseCondition) g.falseref=true;
+                if (fn.flags & FlowFlags.TrueCondition) g.trueref=true;
+            }
+            // else if (isFlowWithNode(fn)) {
+            //     const g = nodeToGroupMap.get(fn.node)!;
+            //     if (flowToOriginatingGroupIdx.get(fn)===g.groupIdx) return;
+            //     g.noncondref = true;
+            // }
+        });
+
 
         const groupToAnteGroupMap = new Map< GroupForFlow, Set<GroupForFlow> >();
         orderedGroups.forEach(g=>{
@@ -733,7 +755,8 @@ namespace ts {
             precOrderContainerItems: precOrderCI,
             groupToSetOfFlowMap,
             groupToAnteGroupMap,
-            nodeToGroupMap
+            nodeToGroupMap,
+            dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx
         };
 
 

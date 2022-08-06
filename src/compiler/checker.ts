@@ -38990,9 +38990,14 @@ namespace ts {
 
         // Check variable, parameter, or property declaration
         function checkVariableLikeDeclaration(node: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement) {
+            if (myDebug) consoleGroup(`checkVariableLikeDeclaration[in]: node: ${dbgNodeToString(node)}`);
             //temporaryPerSourceElementCheckExpressionCache = createTempCheckExprCache();
             checkVariableLikeDeclaration_aux(node);
             //temporaryPerSourceElementCheckExpressionCache = undefined;
+            if (myDebug) {
+                consoleLog(`checkVariableLikeDeclaration[in]: node: ${dbgNodeToString(node)}`);
+                consoleGroupEnd();
+            }
         }
         function checkVariableLikeDeclaration_aux(node: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement) {
 
@@ -43101,6 +43106,18 @@ namespace ts {
                     const astr3 = dbgGroupsForFlowToStrings(groupsForFlow,dbgNodeToString, dbgFlowToString);
                     const ofilename3 = `tmp.${getBaseFileName(node.originalFileName)}.gff.txt`;
                     sys.writeFile(ofilename3, astr3.join(sys.newLine));
+
+                    if (node.allFlowNodes){
+                        const astr4: string[]=[];
+                        node.allFlowNodes.forEach(fn=>{
+                            let str = dbgFlowToString(fn);
+                            const originatingGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(fn) ?? -1;
+                            str += `, originatingGroupIdx: ${originatingGroupIdx}`;
+                            astr4.push(str);
+                        });
+                        const ofilename4 = `tmp.${getBaseFileName(node.originalFileName)}.afn.txt`;
+                        sys.writeFile(ofilename4, astr4.join(sys.newLine));
+                    }
 
                 }
                 if (nameMatched && myDebug){//(myDebug && node.endFlowNode) {

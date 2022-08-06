@@ -637,8 +637,8 @@ namespace ts {
                             // still required to process for side effects
                             const arrRttr: RefTypesTableReturn[]=[];
                             const byNode = createNodeToTypeMap();
-                            const rl = mrNarrowTypes_inner({ refTypesSymtab:refTypesSymtabIn, condExpr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
-                            const rr = mrNarrowTypes_inner({ refTypesSymtab:refTypesSymtabIn, condExpr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
+                            const rl = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, condExpr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
+                            const rr = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, condExpr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
                             mergeIntoNodeToTypeMaps(rl.byNode, byNode);
                             mergeIntoNodeToTypeMaps(rr.byNode, byNode);
                             arrRttr.push(...rl.arrRefTypesTableReturn);
@@ -1285,7 +1285,7 @@ namespace ts {
                 const replayItem = inferStatus.replayItemStack.length ? inferStatus.replayItemStack.slice(-1)[0] : undefined;
                     consoleGroup(`mrNarrowTypes[in] condExpr:${dbgNodeToString(expr)}, crit.kind: ${critIn.kind}, crit.negate: ${critIn.negate}, crit.alsoFailing ${
                     critIn.alsoFailing
-                }, inferStatus.replayItemStack.length: ${!inferStatus.replayItemStack.length}, inferStatus.inCondition: ${inferStatus.inCondition}`);
+                }, inferStatus.replayItemStack.length: ${inferStatus.replayItemStack.length}, inferStatus.inCondition: ${inferStatus.inCondition}`);
                 if (inReplay) {
                     consoleGroup(`mrNarrowTypes[in] replayData: {symbol: ${replayItem?.symbol}, isconst: ${replayItem?.isconst}, expr: ${replayItem?.expr}}`);
                     consoleLog("mrNarrowTypes[in] replayData.byNode:");
@@ -1315,7 +1315,7 @@ namespace ts {
                     newReplayItem = got;
                     inferStatus.replayItemStack.push(got);
                     if (myDebug){
-                        consoleLog("new replayable detected");
+                        consoleLog("mrNarrowTypes[dbg] new replayable detected");
                         consoleGroup(`mrNarrowTypes[dbg] newReplayItem: {symbol: ${newReplayItem?.symbol}, isconst: ${newReplayItem?.isconst}, expr: ${newReplayItem?.expr}}`);
                         consoleLog("mrNarrowTypes[dbg] newReplayItem.byNode:");
                         newReplayItem?.nodeToTypeMap.forEach((t,n)=>{
@@ -1325,54 +1325,26 @@ namespace ts {
                         }
                 }
                 else {
-                    if (myDebug) consoleLog("new replayable NOT detected");
+                    if (myDebug) consoleLog("mrNarrowTypes[dbg] new replayable NOT detected");
                 }
             }
 
             const qdotfallout = qdotfalloutIn??([] as RefTypesTableReturn[]);
             const replaySymtab = newReplayItem ? createRefTypesSymtab() : undefined;
             // const replayQotfallout = newReplayItem ? [] : qdotfallout;
-            if (myDebug){
-                consoleGroup("mrNarrowTypes_inner[in]");
-            }
 
-            const innerret = mrNarrowTypes_inner({ refTypesSymtab: replaySymtab??refTypesSymtab, condExpr: newReplayItem?.expr?? expr, qdotfallout,
+            const innerret = mrNarrowTypesInner({ refTypesSymtab: replaySymtab??refTypesSymtab, condExpr: newReplayItem?.expr?? expr, qdotfallout,
                 inferStatus });
 
             if (newReplayItem) inferStatus.replayItemStack.pop();
             inferStatus.inCondition = savedInCondition;
 
-            if (myDebug){
-                innerret.arrRefTypesTableReturn.forEach((rttr,i)=>{
-                    dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                        consoleLog(`  innerret.arttr[${i}]: ${str}`);
-                    });
-                });
-                innerret.byNode.forEach((type,node)=>{
-                    consoleLog(`  innerret.byNode: { node: ${dbgNodeToString(node)}, type: ${typeToString(type)}`);
-                });
-                if (innerret.assignmentData){
-                    consoleLog(` innerret.assignmentData, { symbol: ${
-                        dbgSymbolToStringSimple(innerret.assignmentData?.symbol)
-                    }, isconst: ${
-                        innerret.assignmentData?.isconst
-                    }`);
-                }
-                if (innerret.unaryModifiers){
-                    let str = "";
-                    innerret.unaryModifiers.forEach(um=>str+=`${um},`);
-                    consoleLog(`  innerret.unaryModifers: ${str}`);
-                }
-                consoleLog("mrNarrowTypes_inner[out]");
-                consoleGroupEnd();
-            }
-
             let finalArrRefTypesTableReturn = innerret.arrRefTypesTableReturn;
             if (myDebug){
-                consoleLog(`qdotfallout.length: ${qdotfallout.length}`);
+                consoleLog(`mrNarrowTypes[dbg]: qdotfallout.length: ${qdotfallout.length}`);
                 qdotfallout.forEach((rttr,i)=>{
                     dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                        consoleLog(`  qdotfallout[${i}]: ${str}`);
+                        consoleLog(`mrNarrowTypes[dbg]:  qdotfallout[${i}]: ${str}`);
                     });
                 });
            }
@@ -1381,10 +1353,10 @@ namespace ts {
                  * !qdotfallout so merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit
                  */
                 if (myDebug){
-                    consoleLog("Merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit");
+                    consoleLog("mrNarrowTypes[dbg]: Merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit");
                     qdotfallout.forEach((rttr,i)=>{
                         dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                            consoleLog(`  qdotfallout[${i}]: ${str}`);
+                            consoleLog(`mrNarrowTypes[dbg]:  qdotfallout[${i}]: ${str}`);
                         });
                     });
                 }
@@ -1540,22 +1512,29 @@ namespace ts {
 
             const {inferRefRtnType:r, byNode} = finalRetval;
             if (myDebug) {
+                consoleLog(`mrNarrowTypes[dbg] condExpr:${dbgNodeToString(expr)}, crit.kind: ${crit.kind} } -> { passing: ${
+                    dbgRefTypesTypeToString(r.passing.type)
+                }, failing: ${
+                    r.failing ? dbgRefTypesTypeToString(r.failing.type) : ""
+                }}`);
+                consoleLog("mrNarrowTypes[dbg]: passing:");
+                dbgRefTypesTableToStrings(r.passing).forEach(s=>consoleLog("mrNarrowTypes[dbg]: passing:  "+s));
+                if (r.failing) {
+                    consoleLog("mrNarrowTypes[dbg]: failing:");
+                    dbgRefTypesTableToStrings(r.failing).forEach(s=>consoleLog("mrNarrowTypes[dbg]: failing:  "+s));
+                }
+
+                consoleGroup("mrNarrowTypes[dbg] byNode:");
+                byNode.forEach((t,n)=>{
+                    consoleLog(`mrNarrowTypes[dbg] byNode: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
+                });
+                consoleGroupEnd();
+
                 consoleLog(`mrNarrowTypes[out] condExpr:${dbgNodeToString(expr)}, crit.kind: ${crit.kind} } -> { passing: ${
                     dbgRefTypesTypeToString(r.passing.type)
                 }, failing: ${
                     r.failing ? dbgRefTypesTypeToString(r.failing.type) : ""
                 }}`);
-                consoleLog("passing:");
-                dbgRefTypesTableToStrings(r.passing).forEach(s=>consoleLog("  "+s));
-                if (r.failing) {
-                    consoleLog("failing:");
-                    dbgRefTypesTableToStrings(r.failing).forEach(s=>consoleLog("  "+s));
-                    }
-                consoleGroup("mrNarrowTypes[out] byNode:");
-                byNode.forEach((t,n)=>{
-                    consoleLog(`mrNarrowTypes[out]    node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
-                });
-                consoleGroupEnd();
                 consoleGroupEnd();
             }
             return finalRetval;
@@ -1565,12 +1544,45 @@ namespace ts {
             return { arrRefTypesTableReturn:[], byNode: createNodeToTypeMap() };
         }
 
+        function mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+            if (myDebug){
+                consoleGroup(`mrNarrowTypes_inner[in] condExpr:${dbgNodeToString(condExpr)}, inferStatus.replayItemStack.length: ${
+                    inferStatus.replayItemStack.length
+                }, inferStatus.inCondition: ${inferStatus.inCondition}`);
+            }
+            const innerret = mrNarrowTypesInnerAux({ refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus });
+            if (myDebug){
+                innerret.arrRefTypesTableReturn.forEach((rttr,i)=>{
+                    dbgRefTypesTableToStrings(rttr).forEach(str=>{
+                        consoleLog(`mrNarrowTypes_inner[dbg]:  innerret.arttr[${i}]: ${str}`);
+                    });
+                });
+                innerret.byNode.forEach((type,node)=>{
+                    consoleLog(`mrNarrowTypes_inner[dbg]:  innerret.byNode: { node: ${dbgNodeToString(node)}, type: ${typeToString(type)}`);
+                });
+                if (innerret.assignmentData){
+                    consoleLog(`mrNarrowTypes_inner[dbg]: innerret.assignmentData: { symbol: ${
+                        dbgSymbolToStringSimple(innerret.assignmentData?.symbol)
+                    }, isconst: ${
+                        innerret.assignmentData?.isconst
+                    }`);
+                }
+                else {
+                    consoleLog(`mrNarrowTypes_inner[dbg]: innerret.assignmentData: <undef>`);
+                }
+                consoleLog(`mrNarrowTypes_inner[out] condExpr:${dbgNodeToString(condExpr)}, inferStatus.replayItemStack.length: ${
+                    inferStatus.replayItemStack.length
+                }, inferStatus.inCondition: ${inferStatus.inCondition}`);
+                consoleGroupEnd();
+            }
+            return innerret;
+        }
         /**
          *
          * @param param0
          * @returns
          */
-        function mrNarrowTypes_inner({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             switch (condExpr.kind){
                 /**
                  * Identifier
@@ -1645,7 +1657,7 @@ namespace ts {
                      *
                      *
                      */
-                     const innerret = mrNarrowTypes_inner({refTypesSymtab: refTypesSymtabIn, condExpr: condExpr.expression,
+                     const innerret = mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr: condExpr.expression,
                         //crit: {kind: InferCritKind.twocrit, crits:[{ kind:InferCritKind.notnullundef }, crit]},
                         qdotfallout, inferStatus });
 
@@ -1714,6 +1726,29 @@ namespace ts {
                         // if (!innerret.unaryModifiers) innerret.unaryModifiers = [MrNarrowTypesInnerUnaryModifierKind.prefixExclamation];
                         // else innerret.unaryModifiers.push(MrNarrowTypesInnerUnaryModifierKind.prefixExclamation);
                         // return innerret;
+
+
+                        /**
+                         * overwrite ret.inferRefRtnType.[passing,failing].type to booleans.
+                         */
+                        [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!].forEach(rttr=>{
+                            let hadFalse = false;
+                            let hadTrue = false;
+                            forEachRefTypesTypeType(rttr.type, t=>{
+                                if (convertNonUnionNonIntersectionTypeToBoolean(t)) hadTrue = true;
+                                else hadFalse = true;
+                            });
+                            // TODO: merge tables is they have same types?
+                            if (hadFalse && hadTrue) rttr.type = createRefTypesType(checker.getBooleanType());
+                            // notice truthy is being negated as well as cast to boolean
+                            else if (hadFalse) rttr.type = createRefTypesType(checker.getTrueType());
+                            else if (hadTrue) rttr.type = createRefTypesType(checker.getFalseType());
+                            else Debug.fail("At least one of hadTrue or hadFalse should have been true");
+                            // symbol is removed
+                            rttr.symbol = undefined;
+                            rttr.isconst = undefined;
+                        });
+
                         return {
                             byNode: ret.byNode,
                             arrRefTypesTableReturn: [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!]
@@ -1725,7 +1760,7 @@ namespace ts {
                     Debug.assert(isVariableDeclaration(condExpr));
                     Debug.assert(condExpr.initializer);
                     const initializer = condExpr.initializer;
-                    const rhs = mrNarrowTypes_inner({ refTypesSymtab: refTypesSymtabIn, condExpr:initializer, /* crit:{ kind: InferCritKind.none }, */ qdotfallout, inferStatus });
+                    const rhs = mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, condExpr:initializer, /* crit:{ kind: InferCritKind.none }, */ qdotfallout, inferStatus });
                     if (isIdentifier(condExpr.name)){
                         /**
                          * More processing and error checking of the lhs is taking place higher up in checkVariableLikeDeclaration.
@@ -1772,7 +1807,11 @@ namespace ts {
                     /**
                      * For a TypeOfExpression not as the child of a binary expressionwith ops  ===,!==,==,!=
                      */
-                    return mrNarrowTypes_inner({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as TypeOfExpression).expression, qdotfallout, inferStatus });
+                    return mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as TypeOfExpression).expression, qdotfallout, inferStatus });
+                }
+                break;
+                case SyntaxKind.ConditionalExpression: {
+                    
                 }
                 break;
                 case SyntaxKind.NumericLiteral:

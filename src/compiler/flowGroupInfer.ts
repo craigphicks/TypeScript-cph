@@ -18,6 +18,7 @@ namespace ts {
         branchMerger?: boolean; // kill?
         trueref?: boolean;
         falseref?: boolean;
+        //noncondref?: boolean;
     };
 
     export interface ContainerItem { node: Node, precOrderIdx: number };
@@ -28,6 +29,7 @@ namespace ts {
         groupToSetOfFlowMap: ESMap< GroupForFlow, Set<FlowNode> >;
         groupToAnteGroupMap: ESMap< GroupForFlow, Set<GroupForFlow> >; // used in updateHeap... but could use flow instead.
         nodeToGroupMap: ESMap< Node, GroupForFlow >;
+        dbgFlowToOriginatingGroupIdx: ESMap<FlowNode, number>;
     }
 
     export interface SourceFileMrState {
@@ -439,6 +441,8 @@ namespace ts {
                         else Debug.fail();
                     }
                     else {
+                        // sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
+                        //     undefined, undefined,
                         Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
                         refTypesSymtab = cbe.item.refTypesTableReturn.symtab;
                         //arrRttrBranch.push(cbe.item.refTypesTableReturn);

@@ -255,9 +255,9 @@ namespace ts {
         //readonly replayData: Omit<ReplayData, "symbol" | "expr"> | false;
     };
 
-    export enum MrNarrowTypesInnerUnaryModifierKind {
-        prefixExclamation = 1
-    };
+    // export enum MrNarrowTypesInnerUnaryModifierKind {
+    //     prefixExclamation = 1
+    // };
     export type MrNarrowTypesInnerReturn = & {
         byNode: NodeToTypeMap;
         assignmentData?: { // set when Delcaration or assignment, and replayData was false
@@ -266,7 +266,7 @@ namespace ts {
             isconst: boolean;
         }
         arrRefTypesTableReturn: RefTypesTableReturn[];
-        unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
+        //unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
         //negateCrit?: boolean; // set when kind === SyntaxKind.UnaryPrefix && operator === SyntaxKind.ExclamationToken
     };
 
