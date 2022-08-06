@@ -8,23 +8,9 @@ declare interface FooA {
 }; 
 declare const obja: undefined | FooA;
 declare const arg: string | number;
-
-// const isFoo = obja?.foo("");
-// const argIsString = typeof arg === "string";
 if (obja?.foo("") && typeof arg === "string"){
     const x = obja.foo(arg);
 }
 else {
     const x = obja.foo(arg);
 }
-
-
-// declare interface FooA { 
-//     foo(b:FooA): FooA,
-//     foo(b:undefined): undefined; 
-// };
-// declare const obja: undefined | FooA;
-// const isFoo = obja?.foo(obja);
-// if (isFoo){
-//     const x = obja.foo(obja);
-// }

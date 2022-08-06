@@ -395,14 +395,9 @@ namespace ts {
         sourceFile: SourceFile,
     ): NodeWithFlowNodeGroups {
         const nToFn = new Map<Node,FlowNode>();
-        // const endFlowNodes: FlowNode[]=[];
-        // const flowNodes: FlowNode[]=[];
-        // endFlowNodes is at least not always easy to find, might not even exist in any container?
-        //const setFn = new Set<FlowNode>();
         const setNode = new Set<Node>();
         const setFlowNode = new Set<FlowNode>();
         const visitorEfn = (n: Node) => {
-            //if ((n as any).endFlowNode) endFlowNodes.push((n as any).endFlowNode);
             if ((n as any).flowNode){
                 const fn = (n as any).flowNode as FlowNode;
                     //setFn.add(fn);
@@ -416,27 +411,6 @@ namespace ts {
          * Collect all the flow nodes accessible via some node.
          */
         visitorEfn(sourceFile);
-        /**
-         * Follow the flow
-         */
-        // const setFlowNodeDelta = new Set<FlowNode>();
-        // const nextFlowNodeSet = setFlowNode;
-        // const nextNodeSet = setNode;
-        // let change = true;
-        // while (change){
-        //     const iter = nextFlowNodeSet.keys();
-        //     for (let item = iter.next(); !item.done; item=iter.next()){
-        //         const fn = item.value;
-        //         if (isFlowWithNode(fn)) {
-        //             if (!setNode.has(fn.node)) {
-        //                 const node = fn.node;
-        //                 setNode.add(fn.node);
-        //             }
-        //             if (isFlowWithAntecedent(fn)) setFlowNodeDelta.add(fn.antecedent);
-        //             else if (isFlowWithAntecedents(fn)) fn.antecedents.
-        //         }
-        //     }
-        // }
 
         // @ts-expect-error
         const unorderedNodes: Node[]= Array.from(setNode.keys());
@@ -542,12 +516,24 @@ namespace ts {
             Debug.assert(isNodeWithFlow(n));
             const fn = n.flowNode;
             if (isFlowStart(fn)) return;
-            if (!isStatement(n)) setOfNodes.add(n);
+            if (!isStatement(n)) {
+                setOfNodes.add(n);
+            }
             else if (isReturnStatement(n) && n.expression) setOfNodes.add(n.expression);
-            //else if (isFlowWithNode(n.flowNode)) setOfNodes.add(n.flowNode.node);
         });
         flowNodes.forEach(f=>{
             if (isFlowWithNode(f)) setOfNodes.add(f.node);
+        });
+        setOfNodes.forEach(n=>{
+            if (n.parent.kind===SyntaxKind.BinaryExpression){
+                const pk = (n.parent as BinaryExpression).operatorToken.kind;
+                if (pk===SyntaxKind.AmpersandAmpersandToken
+                || pk===SyntaxKind.AmpersandAmpersandEqualsToken
+                || pk===SyntaxKind.BarBarToken
+                || pk===SyntaxKind.BarBarEqualsToken){
+                    setOfNodes.add(n.parent);
+                }
+            }
         });
         // @ts-expect-error 2679
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
@@ -758,18 +744,6 @@ namespace ts {
             nodeToGroupMap,
             dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx
         };
-
-
-        // Groups have to be reordered by container - that requires assigning order-indices to the containers and
-        // calculating group to container mappings.
-
-
-        // groups.forEach(g=>{
-        //     const n = orderedNodes[g.maximalIdx];
-        //     for (let next = n.parent; next!==sourceFile; next = next.parent){
-
-        //     }
-        // });
 
     }
 

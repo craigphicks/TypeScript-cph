@@ -720,7 +720,13 @@ namespace ts {
                 // Ordinarily we won't see && and || expressions in control flow analysis because the Binder breaks those
                 // expressions down to individual conditional control flows. However, we may encounter them when analyzing
                 // aliased conditional expressions.
-                case SyntaxKind.AmpersandAmpersandToken:
+                case SyntaxKind.AmpersandAmpersandToken:{
+                    // const {left:leftExpr,right:rightExpr}=binaryExpression;
+                    // const leftRet = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, crit: { kind:InferCritKind.truthy, alsoFailing:true }, condExpr: leftExpr, inferStatus });
+                    //if (leftRet.inferRefRtnType.failing.type )
+
+
+                }
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;
                     // return assumeTrue ?
@@ -1810,10 +1816,36 @@ namespace ts {
                     return mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as TypeOfExpression).expression, qdotfallout, inferStatus });
                 }
                 break;
-                case SyntaxKind.ConditionalExpression: {
-                    
-                }
-                break;
+                // case SyntaxKind.ConditionalExpression: {
+                //     const {condition, whenTrue, whenFalse} = condExpr as ConditionalExpression;
+                //     const condResult = mrNarrowTypes({
+                //         refTypesSymtab: refTypesSymtabIn, condExpr:(condition as PrefixUnaryExpression).operand,
+                //         crit:{ kind: InferCritKind.truthy, alsoFailing: true },
+                //         qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true }
+                //     });
+                //     /**
+                //      * overwrite ret.inferRefRtnType.[passing,failing].type to booleans.
+                //      */
+                //         [condResult.inferRefRtnType.passing, condResult.inferRefRtnType.failing!].forEach(rttr=>{
+                //         let hadFalse = false;
+                //         let hadTrue = false;
+                //         forEachRefTypesTypeType(rttr.type, t=>{
+                //             if (convertNonUnionNonIntersectionTypeToBoolean(t)) hadTrue = true;
+                //             else hadFalse = true;
+                //         });
+                //         // TODO: merge tables is they have same types?
+                //         if (hadFalse && hadTrue) rttr.type = createRefTypesType(checker.getBooleanType());
+                //         // notice truthy is being negated as well as cast to boolean
+                //         else if (hadFalse) rttr.type = createRefTypesType(checker.getTrueType());
+                //         else if (hadTrue) rttr.type = createRefTypesType(checker.getFalseType());
+                //         else Debug.fail("At least one of hadTrue or hadFalse should have been true");
+                //         // symbol is removed
+                //         rttr.symbol = undefined;
+                //         rttr.isconst = undefined;
+                //     });
+
+                // }
+                // break;
                 case SyntaxKind.NumericLiteral:
                 case SyntaxKind.StringLiteral:
                     return mrNarrowTypesInnerEmptyReturn();
