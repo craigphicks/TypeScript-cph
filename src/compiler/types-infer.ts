@@ -234,12 +234,12 @@ namespace ts {
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type MrNarrowTypesReturn = & {
         byNode: NodeToTypeMap;
-        saveByNodeForReplay?: boolean;
+        //saveByNodeForReplay?: boolean;
         inferRefRtnType: InferRefRtnType;
     };
     export type InferRefRtnType = & {
-        passing: RefTypesTableReturn;
-        failing?: RefTypesTableReturn;
+        passing: RefTypesTableReturn[];
+        failing?: RefTypesTableReturn[];
     };
 
 
