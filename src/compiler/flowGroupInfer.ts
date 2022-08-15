@@ -30,11 +30,12 @@ namespace ts {
         groupToAnteGroupMap: ESMap< GroupForFlow, Set<GroupForFlow> >; // used in updateHeap... but could use flow instead.
         nodeToGroupMap: ESMap< Node, GroupForFlow >;
         dbgFlowToOriginatingGroupIdx: ESMap<FlowNode, number>;
+        dbgCreationTimeMs?: bigint;
     }
 
     export interface SourceFileMrState {
         sourceFile: SourceFile;
-        groupedFlowNodes: GroupedFlowNodes;
+        //groupedFlowNodes: GroupedFlowNodes;
         groupsForFlow: GroupsForFlow,
         mrState: MrState;
         mrNarrow: MrNarrow;
@@ -49,7 +50,7 @@ namespace ts {
     //     depStackItems: StackItem[];  // the referenced items are "safe" from garbage collection even if stack is popped.
     // }
     interface CurrentBranchesItem {
-        refTypesTableReturn: RefTypesTableReturn;
+        arrRefTypesTableReturn: RefTypesTableReturn[];
         byNode: NodeToTypeMap;
         done?: boolean
     };
@@ -58,18 +59,18 @@ namespace ts {
     enum CurrentBranchesElementKind {
         none=0,
         plain=1,
-        ifexpr=2
+        tf=2
     };
     interface CurrentBranchElementPlain {
         kind: CurrentBranchesElementKind.plain;
         item: CurrentBranchesItem;
     };
-    interface CurrentBranchElementIfExpr {
-        kind: CurrentBranchesElementKind.ifexpr;
-        true?: CurrentBranchesItem;
-        false?: CurrentBranchesItem;
+    interface CurrentBranchElementTF {
+        kind: CurrentBranchesElementKind.tf;
+        truthy?: CurrentBranchesItem;
+        falsy?: CurrentBranchesItem;
     };
-    type CurrentBranchElement = CurrentBranchElementPlain | CurrentBranchElementIfExpr;
+    type CurrentBranchElement = CurrentBranchElementPlain | CurrentBranchElementTF;
 
     // export interface Heaper<T = number> {
     //     heapSortInPlace(h: T[], size: number): void;
@@ -157,14 +158,22 @@ namespace ts {
     }
 
     export function createSourceFileInferState(sourceFile: SourceFile, checker: TypeChecker): SourceFileMrState {
-        const t0 = process.hrtime.bigint();
-        const groupedFlowNodes = groupFlowNodesFromSourceFile(sourceFile);
-        const t1 = process.hrtime.bigint() - t0;
-        groupedFlowNodes.dbgCreationTimeMs = t1/BigInt(1000000);
+        //const t0 = process.hrtime.bigint();
+        //const groupedFlowNodes = groupFlowNodesFromSourceFile(sourceFile);
+        //const t1 = process.hrtime.bigint() - t0;
+        //groupedFlowNodes.dbgCreationTimeMs = t1/BigInt(1000000);
 
-        const groupsForFlow = makeGroupsForFlow(sourceFile);
+        const t0 = process.hrtime.bigint();
+        const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
+        if (getMyDebug()){
+            // just to set up the ids for debugging
+            sourceFile.allFlowNodes?.forEach(fn=>checker.getFlowNodeId(fn));
+        }
+        const t1 = process.hrtime.bigint() - t0;
+        groupsForFlow.dbgCreationTimeMs = t1/BigInt(1000000);
 
         dbgs = createDbgs(checker);
+        //groupedFlowNodes.dbgCreationTimeMs = t1/BigInt(1000000);
         //myDebug = getMyDebug();
 
         const heap = createHeap(groupsForFlow);
@@ -190,7 +199,7 @@ namespace ts {
 
         return {
             sourceFile,
-            groupedFlowNodes,
+            //groupedFlowNodes,
             groupsForFlow,
             mrState,
             mrNarrow: createMrNarrow(checker, mrState)
@@ -375,8 +384,10 @@ namespace ts {
 
         //let rttr: RefTypesTableReturn;
         //let byNode: NodeToTypeMap;
-        let refTypesSymtab: RefTypesSymtab | undefined;
+        //const arefTypesSymtab: RefTypesSymtab[] = [];
+        //const byNode = sourceFileMrState.mrNarrow.createNodeToTypeMap();
 
+        const setCbi = new Set<CurrentBranchesItem>();
         if (setOfFlow){
             //let setOfAnteGroups = new Set<GroupForFlow>();
             let hadBranch = false;
@@ -400,20 +411,23 @@ namespace ts {
                         const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                         Debug.assert(cbe);
                         if (isFlowCondition(antefn)){
-                            Debug.assert(cbe.kind===CurrentBranchesElementKind.ifexpr);
+                            Debug.assert(cbe.kind===CurrentBranchesElementKind.tf);
                             if (antefn.flags & FlowFlags.TrueCondition){
-                                Debug.assert(cbe.true);
-                                arrRttrBranch.push(cbe.true.refTypesTableReturn);
+                                Debug.assert(cbe.truthy);
+                                setCbi.add(cbe.truthy);
+                                arrRttrBranch.push(...cbe.truthy.arrRefTypesTableReturn);
                             }
                             else if (antefn.flags & FlowFlags.FalseCondition){
-                                Debug.assert(cbe.false);
-                                arrRttrBranch.push(cbe.false.refTypesTableReturn);
+                                Debug.assert(cbe.falsy);
+                                setCbi.add(cbe.falsy);
+                                arrRttrBranch.push(...cbe.falsy.arrRefTypesTableReturn);
                             }
                             else Debug.fail();
                         }
                         else {
                             Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
-                            arrRttrBranch.push(cbe.item.refTypesTableReturn);
+                            setCbi.add(cbe.item);
+                            arrRttrBranch.push(...cbe.item.arrRefTypesTableReturn);
                         }
                     });
                 }
@@ -425,17 +439,21 @@ namespace ts {
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                     Debug.assert(cbe);
                     if (isFlowCondition(fn)){
-                        if (cbe.kind!==CurrentBranchesElementKind.ifexpr) {
+                        if (cbe.kind!==CurrentBranchesElementKind.tf) {
                             Debug.fail();
                         }
                         if (fn.flags & FlowFlags.TrueCondition){
-                            Debug.assert(cbe.true);
-                            refTypesSymtab = cbe.true.refTypesTableReturn.symtab;
+                            Debug.assert(cbe.truthy);
+                            Debug.assert(cbe.truthy.arrRefTypesTableReturn.length===1);
+                            setCbi.add(cbe.truthy);
+                            //arefTypesSymtab.push(cbe.truthy.arrRefTypesTableReturn[0].symtab);
                             //arrRttrBranch.push(cbe.true.refTypesTableReturn);
                         }
                         else if (fn.flags & FlowFlags.FalseCondition){
-                            Debug.assert(cbe.false);
-                            refTypesSymtab = cbe.false.refTypesTableReturn.symtab;
+                            Debug.assert(cbe.falsy);
+                            Debug.assert(cbe.falsy.arrRefTypesTableReturn.length===1);
+                            setCbi.add(cbe.falsy);
+                            //arefTypesSymtab.push(...cbe.falsy.arrRefTypesTableReturn.map(rttr=>rttr.symtab));
                             //arrRttrBranch.push(cbe.false.refTypesTableReturn);
                         }
                         else Debug.fail();
@@ -444,38 +462,80 @@ namespace ts {
                         // sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
                         //     undefined, undefined,
                         Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
-                        refTypesSymtab = cbe.item.refTypesTableReturn.symtab;
+                        Debug.assert(cbe.item.arrRefTypesTableReturn.length===1);
+                        setCbi.add(cbe.item);
+                        //arefTypesSymtab.push(cbe.item.arrRefTypesTableReturn[0].symtab);
                         //arrRttrBranch.push(cbe.item.refTypesTableReturn);
                     }
                 }
             });
-            if (hadBranch) {
-                refTypesSymtab = sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(/*symbol*/ undefined, /* isconst */ undefined, arrRttrBranch).symtab;
-            }
+            // if (hadBranch) {
+            //     arefTypesSymtab.push(sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(/*symbol*/ undefined, /* isconst */ undefined, arrRttrBranch).symtab);
+            // }
         }
-        if (!refTypesSymtab) refTypesSymtab = sourceFileMrState.mrNarrow.createRefTypesSymtab();
 
-        const ifExpr = (groupForFlow.falseref || groupForFlow.trueref);
-        const crit: InferCrit = !ifExpr ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
+
+        const boolsplit = (groupForFlow.falseref || groupForFlow.trueref);
+        const crit: InferCrit = !boolsplit ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         const inferStatus: InferStatus = {
-            inCondition: !!ifExpr,
+            inCondition: !!boolsplit,
             replayItemStack: [],
             replayables: sourceFileMrState.mrState.replayableItems
         };
-        const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus });
 
-        if (ifExpr){
-            const cbe: CurrentBranchElementIfExpr = {
-                kind: CurrentBranchesElementKind.ifexpr,
-                false: { refTypesTableReturn: retval.inferRefRtnType.failing!, byNode: retval.byNode },
-                true: { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode }
+        let retval: MrNarrowTypesReturn;
+        const dontSquash = false;
+        if (!dontSquash){
+            // = sourceFileMrState.mrNarrow.createRefTypesSymtab();
+            const arefTypesSymtab: RefTypesSymtab[] = []; //.length=0; // clear
+            setCbi.forEach(cbi=>{
+                arefTypesSymtab.push(...cbi.arrRefTypesTableReturn.map(rttr=>rttr.symtab));
+            });
+            if (!arefTypesSymtab.length) arefTypesSymtab.push(sourceFileMrState.mrNarrow.createRefTypesSymtab());
+
+            const refTypesSymtab = sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(arefTypesSymtab);
+            retval = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus });
+        }
+        else {
+            Debug.fail();
+            // arefTypesSymtab.forEach(refTypesSymtab=>{
+            //     const r: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({
+            //         refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus
+            //     });
+            //     sourceFileMrState.mrNarrow.mergeIntoNodeToTypeMaps(r.byNode,retval.byNode);
+            //     retval.inferRefRtnType.passing.push(...r.inferRefRtnType.passing);
+            //     if (r.inferRefRtnType.failing){
+            //         if (!retval.inferRefRtnType.failing) retval.inferRefRtnType.failing=[];
+            //         retval.inferRefRtnType.failing.push(...r.inferRefRtnType.failing);
+            //     }
+            // });
+        }
+        //const retval: MrNarrowTypesReturn = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab: arefTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus });
+
+        if (boolsplit){
+            const cbe: CurrentBranchElementTF = {
+                kind: CurrentBranchesElementKind.tf,
+                falsy: {
+                    arrRefTypesTableReturn: [sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
+                        /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.failing??[] as RefTypesTableReturn[])],
+                    byNode: retval.byNode
+                },
+                truthy: {
+                    arrRefTypesTableReturn: [sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
+                        /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.passing)],
+                    byNode: retval.byNode
+                }
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
         else {
             const cbe: CurrentBranchElementPlain = {
                 kind: CurrentBranchesElementKind.plain,
-                item: { refTypesTableReturn: retval.inferRefRtnType.passing, byNode: retval.byNode }
+                item: {
+                    arrRefTypesTableReturn: [sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
+                        /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.passing)],
+                    byNode: retval.byNode
+                }
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
@@ -727,7 +787,9 @@ namespace ts {
             astr.push(`nodeToTypeMap:`);
             astr.push(...doNodeToTypeMap(cbi.byNode).map(s => "  "+s));
             astr.push(`refTypesTableReturn:`);
-            astr.push(...sourceFileMrState.mrNarrow.dbgRefTypesTableToStrings(cbi.refTypesTableReturn).map(s => "  "+s));
+            cbi.arrRefTypesTableReturn.forEach((rttr,idx)=>{
+                astr.push(...sourceFileMrState.mrNarrow.dbgRefTypesTableToStrings(rttr).map(s => `  [${idx}]: ${s}`));
+            });
             return astr;
         };
         cbm.forEach((cbe,g)=>{
@@ -737,14 +799,14 @@ namespace ts {
             if (cbe.kind===CurrentBranchesElementKind.plain){
                 astr.push(...doItem(cbe.item).map(s => "    "+s));
             }
-            else if (cbe.kind===CurrentBranchesElementKind.ifexpr){
-                if (cbe.true){
+            else if (cbe.kind===CurrentBranchesElementKind.tf){
+                if (cbe.truthy){
                     astr.push("    true:");
-                    astr.push(...doItem(cbe.true).map(s => "      "+s));
+                    astr.push(...doItem(cbe.truthy).map(s => "      "+s));
                 }
-                if (cbe.false){
+                if (cbe.falsy){
                     astr.push("    false:");
-                    astr.push(...doItem(cbe.false).map(s => "      "+s));
+                    astr.push(...doItem(cbe.falsy).map(s => "      "+s));
                 }
             }
         });

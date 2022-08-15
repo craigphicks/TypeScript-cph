@@ -477,7 +477,7 @@ namespace ts {
     }
 
     //interface NodeWithFlow extends Node { flowNode: FlowNode };
-    export function makeGroupsForFlow(sourceFile: SourceFile): GroupsForFlow {
+    export function makeGroupsForFlow(sourceFile: SourceFile, checker: TypeChecker): GroupsForFlow {
 
         const flowNodes: FlowNode[] = sourceFile.allFlowNodes ?? [];
         const nodesWithFlow: Node[] = sourceFile.allNodesWithFlowOneSourceFile ?? [];
@@ -667,11 +667,30 @@ namespace ts {
         /**
          * Mark which groups are referenced by true/false conditions
          */
-         flowNodes.forEach(fn=>{
+        {
+            flowNodes.forEach(fn=>{
+                checker.getFlowNodeId(fn);
+            });
+        }
+        flowNodes.forEach(fn=>{
             /**
              * TODO: Not sure this is correct.
              */
             // if (isFlowWithAntecedent(fn) && isFlowStart(fn.antecedent)) return;
+            if (isFlowBranch(fn)){
+                const gidxOrig = flowToOriginatingGroupIdx.get(fn) ?? -1;
+                getFlowAntecedents(fn).forEach(antefn=>{
+                    if (isFlowCondition(antefn)) {
+                        const gidxAnte = flowToOriginatingGroupIdx.get(antefn) ?? -1;
+                        if (gidxOrig===-1) return;
+                        if (gidxOrig>=0 && gidxOrig===gidxAnte) return;
+                        const g = nodeToGroupMap.get(antefn.node)!;
+                        if (antefn.flags & FlowFlags.FalseCondition) g.falseref=true;
+                        if (antefn.flags & FlowFlags.TrueCondition) g.trueref=true;
+                    }
+                });
+                return;
+            }
             if (!flowToOriginatingGroupIdx.has(fn)) return;
             //if (ignorableFlowSetTemp.has(fn)) return;
             if (isFlowCondition(fn)) {
@@ -971,14 +990,19 @@ namespace ts {
         })();
     }
     interface FlowWithAntecedent extends FlowNodeBase { antecedent: FlowNode };
-    /* @ts-expect-error */
+    /* @ ts-expect-error */
     function isFlowWithAntecedent(fn: FlowNodeBase): fn is FlowWithAntecedent {
         return !!(fn as any).antecedent;
     }
     interface FlowWithAntecedents extends FlowNodeBase { antecedents: FlowNode[] };
-    /* @ts-expect-error */
+    /* @ ts-expect-error */
     function isFlowWithAntecedents(fn: FlowNodeBase): fn is FlowWithAntecedents {
         return !!(fn as any).antecedents;
+    }
+    export function getFlowAntecedents(fn: FlowNodeBase): FlowNode[] {
+        if (isFlowWithAntecedent(fn)) return [fn.antecedent];
+        else if (isFlowWithAntecedents(fn)) return fn.antecedents;
+        else return [];
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

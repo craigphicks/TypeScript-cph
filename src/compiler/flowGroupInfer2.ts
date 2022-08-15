@@ -18,6 +18,9 @@ namespace ts {
         dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[],
         mergeArrRefTypesTableReturnToRefTypesTableReturn(
             symbol: Symbol | undefined, isconst: boolean | undefined, arr: Readonly<RefTypesTableReturn[]>): RefTypesTableReturn,
+        createNodeToTypeMap(): NodeToTypeMap,
+        mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
+        mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab
     };
 
     export function createMrNarrow(checker: TypeChecker, _mrState: MrState): MrNarrow {
@@ -273,6 +276,13 @@ namespace ts {
                 mergeLeafIntoRefTypesSymtab({ source: next.value.leaf, target });
             }
         }
+        function mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
+            const target = createRefTypesSymtab();
+            arr.forEach(source=>{
+                mergeIntoRefTypesSymtab({ source,target });
+            });
+            return target;
+        }
         function mergeLeafIntoRefTypesSymtab({source,target}: { source: Readonly<RefTypesTableLeaf>, target: RefTypesSymtab }): void {
             if (!source.symbol) return;
             //const sourceSymbol = source.symbol!;
@@ -454,7 +464,7 @@ namespace ts {
         function createNodeToTypeMap(): NodeToTypeMap {
             return new Map<Node,Type>();
         }
-        function mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap){
+        function mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void{
             source.forEach((t,n)=>{
                 const gott = target.get(n);
                 if (!gott) target.set(n,t);
@@ -598,9 +608,22 @@ namespace ts {
                 qdotfallout: undefined,
                 inferStatus: { inCondition:true, replayItemStack, replayables }
             });
+            const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
+            arrRefTypesTableReturn.push(...passing.map(rttr=>({
+                ...rttr,
+                type: createRefTypesType(checker.getTrueType()),
+                symbol:undefined,
+                isconst:undefined
+            })));
+            arrRefTypesTableReturn.push(...failing!.map(rttr=>({
+                ...rttr,
+                type: createRefTypesType(checker.getFalseType()),
+                symbol:undefined,
+                isconst:undefined
+            })));
             return {
                 byNode,
-                arrRefTypesTableReturn: [...passing,...failing!]
+                arrRefTypesTableReturn
             };
         }
 
@@ -724,13 +747,59 @@ namespace ts {
                 // expressions down to individual conditional control flows. However, we may encounter them when analyzing
                 // aliased conditional expressions.
                 case SyntaxKind.AmpersandAmpersandToken:{
-                    // const {left:leftExpr,right:rightExpr}=binaryExpression;
-                    // const leftRet = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, crit: { kind:InferCritKind.truthy, alsoFailing:true }, condExpr: leftExpr, inferStatus });
-                    //if (leftRet.inferRefRtnType.failing.type )
-
-
+                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken START`);
+                    //const inferStatus1: InferStatus = { ...inferStatus };
+                    const {left:leftExpr,right:rightExpr}=binaryExpression;
+                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken leftRet 1`);
+                    const leftRet = mrNarrowTypes({
+                        refTypesSymtab: refTypesSymtabIn,
+                        crit: { kind:InferCritKind.truthy, alsoFailing:true },
+                        condExpr: leftExpr,
+                        inferStatus
+                    });
+                    // Why is this necessary?
+                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken rightRetUnevaled 1`);
+                    const rightRetUnevaled = mrNarrowTypes({
+                        refTypesSymtab: refTypesSymtabIn,
+                        crit: { kind:InferCritKind.truthy, alsoFailing:true },
+                        condExpr: rightExpr,
+                        inferStatus
+                    });
+                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken leftRet 2`);
+                    const arrRttr: RefTypesTableReturn[]=[];
+                    leftRet.inferRefRtnType.failing?.forEach(rttr=>{
+                        rightRetUnevaled.inferRefRtnType.passing.forEach(rightRttrUnevaled=>{
+                            const symtab = copyRefTypesSymtab(rttr.symtab);
+                            mergeIntoRefTypesSymtab({ source: rightRttrUnevaled.symtab, target: symtab });
+                            arrRttr.push({ ...rttr, symtab });
+                        });
+                        rightRetUnevaled.inferRefRtnType.failing!.forEach(rightRttrUnevaled=>{
+                            const symtab = copyRefTypesSymtab(rttr.symtab);
+                            mergeIntoRefTypesSymtab({ source: rightRttrUnevaled.symtab, target: symtab });
+                            arrRttr.push({ ...rttr, symtab });
+                        });
+                        //arrRttr.push(rttr);
+                    });
+                    const byNode = leftRet.byNode;
+                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken rightRet 2`);
+                    leftRet.inferRefRtnType.passing?.forEach(rttr=>{
+                        const rightRet = mrNarrowTypes({
+                            refTypesSymtab: rttr.symtab,
+                            crit: inferStatus.inCondition ? { kind:InferCritKind.truthy, alsoFailing:true } : { kind:InferCritKind.none },
+                            condExpr: rightExpr,
+                            inferStatus
+                        });
+                        arrRttr.push(...rightRet.inferRefRtnType.passing);
+                        arrRttr.push(...rightRet.inferRefRtnType.failing!);
+                        mergeIntoNodeToTypeMaps(rightRet.byNode, byNode);
+                    });
+                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken END`);
+                    return {
+                        arrRefTypesTableReturn: arrRttr,
+                        byNode
+                    };
                 }
-                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    //Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;
                     // return assumeTrue ?
                     //     narrowType(narrowType(type, expr.left, /*assumeTrue*/ true), expr.right, /*assumeTrue*/ true) :
@@ -770,6 +839,7 @@ namespace ts {
                 preRttr: RefTypesTableReturn,
                 //byNode: ESMap<Node, Type>
             }[] = [];
+
             prePassing.forEach(rttr=>{
                 const prePassingRefTypesType = rttr.type;
                 forEachRefTypesTypeType(prePassingRefTypesType, (t: Type) => {
@@ -780,10 +850,16 @@ namespace ts {
                         // TODO: add error?
                         return;
                     }
-                    sigs.forEach(s=>allSigAndContext.push({
-                        sig: s,
-                        preRttr: rttr
-                    }));
+                    /**
+                     * If the number of sigs is 1 there are no overloads, but if it is more than one than there are overloads.
+                     * In case of overloads skip the last one, because it is just union of all the others.
+                     */
+                    sigs.slice(0,Math.max(1, sigs.length-1)).forEach(s=>{
+                        allSigAndContext.push({
+                            sig: s,
+                            preRttr: rttr
+                        });
+                    });
                 });
             });
 
@@ -816,6 +892,15 @@ namespace ts {
                 symtab?: RefTypesSymtab; // only when pass is true
                 byNode?: ESMap<Node,Type>; // only when pass is true
             };
+            if (myDebug){
+                consoleGroup("allSigAndContext:");
+                allSigAndContext.map((x,idx)=>{
+                    consoleLog(`[${idx}] type: ${dbgRefTypesTypeToString(x.preRttr.type)}`);
+                    consoleLog(`[${idx}] sig: ${dbgSignatureToString(x.sig)}`);
+                });
+                consoleGroupEnd();
+            }
+
             const matchedSigs = allSigAndContext.map((sigWithContext: Readonly<{
                 sig: Signature,
                 preRttr: RefTypesTableReturn,
@@ -1242,6 +1327,7 @@ namespace ts {
          * @param crit
          * @returns
          */
+        /* @ts-expect-error */
         const applyCritToArrRefTypesTableReturn_OLD = (arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>): {
             passing: RefTypesTableReturnCritOut, failing?: RefTypesTableReturnCritOut
         } =>{
@@ -1346,7 +1432,7 @@ namespace ts {
                         });
                     }
                     return { kind,symtab,type };
-                }).filter(ro=>!ro) as RefTypesTableReturnCritOut[];
+                }).filter(ro=>!!ro) as RefTypesTableReturnCritOut[];
                 return { passing };
             }
 
@@ -1480,7 +1566,7 @@ namespace ts {
                 }
                 consoleLog(`mrNarrowTypes[in] qdotfalloutIn: ${!qdotfalloutIn ? "<undef>" : `length: ${qdotfalloutIn.length}`}`);
                 consoleLog(`mrNarrowTypes[in] refTypesSymtab:`);
-                dbgRefTypesSymtabToStrings(refTypesSymtabIn).forEach(str=> `  ${str}`);
+                dbgRefTypesSymtabToStrings(refTypesSymtabIn).forEach(str=> consoleLog(`  ${str}`));
             }
             const savedInCondition = inferStatus.inCondition ;
             const inCondition = inferStatus.inCondition || critIn.kind!==InferCritKind.none;
@@ -1604,7 +1690,7 @@ namespace ts {
                         consoleLog(`refTypesSymtab.get(newReplayItem.symbol)?.leaf.type : ${typeToString(getTypeFromRefTypesType(nodeleaf.type))}`);
                     }
                 }
-                let returnByNode: NodeToTypeMap;
+                //let returnByNode: NodeToTypeMap;
                 //let passingSymtab: RefTypesSymtab;
                 //let failingSymtab: RefTypesSymtab | undefined;
                 //let passingType: RefTypesType;
@@ -1779,9 +1865,9 @@ namespace ts {
             return finalRetval as MrNarrowTypesReturn;
         }
 
-        function mrNarrowTypesInnerEmptyReturn(): MrNarrowTypesInnerReturn {
-            return { arrRefTypesTableReturn:[], byNode: createNodeToTypeMap() };
-        }
+        // function mrNarrowTypesInnerEmptyReturn(): MrNarrowTypesInnerReturn {
+        //     return { arrRefTypesTableReturn:[], byNode: createNodeToTypeMap() };
+        // }
 
         function mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             if (myDebug){
@@ -1927,6 +2013,58 @@ namespace ts {
                         arrRefTypesTableReturn: applyNotNullUndefCritToRefTypesTableReturn(innerret.arrRefTypesTableReturn)
                     };
                 }
+                case SyntaxKind.ParenthesizedExpression:{
+                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression`);
+                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as ParenthesizedExpression).expression, crit: { kind: InferCritKind.none }, inferStatus });
+                    return {
+                        byNode: ret.byNode,
+                        arrRefTypesTableReturn: ret.inferRefRtnType.passing
+                    };
+                }
+                break;
+                /**
+                 * ConditionalExpression
+                 */
+                case SyntaxKind.ConditionalExpression:{
+                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression`);
+                    const {condition, whenTrue, whenFalse} = (condExpr as ConditionalExpression);
+                    const byNode = createNodeToTypeMap();
+                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; condition`);
+                    const rcond = mrNarrowTypes({
+                        refTypesSymtab: refTypesSymtabIn,
+                        condExpr: condition,
+                        crit: { kind: InferCritKind.truthy, alsoFailing: true },
+                        inferStatus: { ...inferStatus, inCondition: true }
+                    });
+                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenTrue`);
+                    rcond.inferRefRtnType.passing.forEach(rttr=>{
+                        const rtrue = mrNarrowTypes({
+                            refTypesSymtab: rttr.symtab,
+                            condExpr: whenTrue,
+                            crit: { kind: InferCritKind.none },
+                            inferStatus //: { ...inferStatus, inCondition: true }
+                        });
+                        arrRefTypesTableReturn.push(...rtrue.inferRefRtnType.passing);
+                        mergeIntoNodeToTypeMaps(rtrue.byNode, byNode);
+                    });
+                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenFalse`);
+                    rcond.inferRefRtnType.failing!.forEach(rttr=>{
+                        const rtrue = mrNarrowTypes({
+                            refTypesSymtab: rttr.symtab,
+                            condExpr: whenFalse,
+                            crit: { kind: InferCritKind.none },
+                            inferStatus //: { ...inferStatus, inCondition: true }
+                        });
+                        arrRefTypesTableReturn.push(...rtrue.inferRefRtnType.passing);
+                        mergeIntoNodeToTypeMaps(rtrue.byNode, byNode);
+                    });
+                    return {
+                        byNode,
+                        arrRefTypesTableReturn
+                    };
+                }
+                break;
                 /**
                  * PropertyAccessExpression
                  */
@@ -1952,7 +2090,8 @@ namespace ts {
                         /**
                          * overwrite ret.inferRefRtnType.[passing,failing].type to booleans.
                          */
-                        [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!].forEach(rttr=>{
+                        const arrRttr = ret.inferRefRtnType.failing ? ret.inferRefRtnType.passing.concat(ret.inferRefRtnType.failing) : ret.inferRefRtnType.passing;
+                        arrRttr.forEach(rttr=>{
                             let hadFalse = false;
                             let hadTrue = false;
                             forEachRefTypesTypeType(rttr.type, t=>{
@@ -1969,11 +2108,31 @@ namespace ts {
                             rttr.symbol = undefined;
                             rttr.isconst = undefined;
                         });
-
                         return {
                             byNode: ret.byNode,
-                            arrRefTypesTableReturn: [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!]
+                            arrRefTypesTableReturn: arrRttr
                         };
+                        // [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!].forEach(rttr=>{
+                        //     let hadFalse = false;
+                        //     let hadTrue = false;
+                        //     forEachRefTypesTypeType(rttr.type, t=>{
+                        //         if (convertNonUnionNonIntersectionTypeToBoolean(t)) hadTrue = true;
+                        //         else hadFalse = true;
+                        //     });
+                        //     // TODO: merge tables is they have same types?
+                        //     if (hadFalse && hadTrue) rttr.type = createRefTypesType(checker.getBooleanType());
+                        //     // notice truthy is being negated as well as cast to boolean
+                        //     else if (hadFalse) rttr.type = createRefTypesType(checker.getTrueType());
+                        //     else if (hadTrue) rttr.type = createRefTypesType(checker.getFalseType());
+                        //     else Debug.fail("At least one of hadTrue or hadFalse should have been true");
+                        //     // symbol is removed
+                        //     rttr.symbol = undefined;
+                        //     rttr.isconst = undefined;
+                        // });
+                        // return {
+                        //     byNode: ret.byNode,
+                        //     arrRefTypesTableReturn: [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!]
+                        // };
                     }
                     Debug.assert(false);
                     break;
@@ -2061,9 +2220,21 @@ namespace ts {
 
                 // }
                 // break;
+                case SyntaxKind.TrueKeyword:
+                case SyntaxKind.FalseKeyword:
                 case SyntaxKind.NumericLiteral:
-                case SyntaxKind.StringLiteral:
-                    return mrNarrowTypesInnerEmptyReturn();
+                case SyntaxKind.StringLiteral:{
+                    const type: Type = checker.getTypeAtLocation(condExpr);
+                    return {
+                        byNode: createNodeToTypeMap().set(condExpr, type),
+                        arrRefTypesTableReturn: [{
+                            kind: RefTypesTableKind.return,
+                            symbol: undefined,
+                            type: createRefTypesType(type),
+                            symtab: refTypesSymtabIn
+                        }]
+                    };
+                }
                 default: Debug.assert(false, "", ()=>`${Debug.formatSyntaxKind(condExpr.kind)}, ${dbgNodeToString(condExpr)}`);
             }
         }
@@ -2074,6 +2245,9 @@ namespace ts {
             dbgRefTypesTableToStrings,
             dbgRefTypesSymtabToStrings,
             mergeArrRefTypesTableReturnToRefTypesTableReturn,
+            createNodeToTypeMap,
+            mergeIntoNodeToTypeMaps,
+            mergeArrRefTypesSymtab
         };
 
     } // createMrNarrow

@@ -43086,20 +43086,20 @@ namespace ts {
             if (nameMatched && dbgFlowFileCnt++===0) {
                 consoleLog(`myDebug=${myDebug}, myNarrowTest=${myNarrowTest}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
                 if (!myDisableInfer && nameMatched && myDebug){
-                    let contents = "";
-                    const writeLine = (s: string)=>{
-                        contents+=(s+sys.newLine);
-                    };
+                    //let contents = "";
+                    // const writeLine = (s: string)=>{
+                    //     contents+=(s+sys.newLine);
+                    // };
                     //const {groupedFlowNodes,allFlowNodes} = groupFlowNodesFromSourceFile(node, getFlowNodeId);
-                    const groupedFlowNodes = checker.getSourceFileInferState().groupedFlowNodes;
-                    Debug.assert(groupedFlowNodes);
-                    dbgWriteGroupedFlowNode(groupedFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
-                    const ofilename = `tmp.${getBaseFileName(node.originalFileName)}.gfn.txt`;
-                    sys.writeFile(ofilename, contents);
+                    // const groupedFlowNodes = checker.getSourceFileInferState().groupedFlowNodes;
+                    // Debug.assert(groupedFlowNodes);
+                    // dbgWriteGroupedFlowNode(groupedFlowNodes, writeLine, getFlowNodeId, dbgFlowToString, dbgNodeToString);
+                    // const ofilename = `tmp.${getBaseFileName(node.originalFileName)}.gfn.txt`;
+                    // sys.writeFile(ofilename, contents);
 
-                    const str2 = dbgNodeWithFlowNodeGroups(groupedFlowNodes.nodeWithFlowNodeGroups, dbgNodeToString);
-                    const ofilename2 = `tmp.${getBaseFileName(node.originalFileName)}.nwfng.txt`;
-                    sys.writeFile(ofilename2, str2);
+                    // const str2 = dbgNodeWithFlowNodeGroups(groupedFlowNodes.nodeWithFlowNodeGroups, dbgNodeToString);
+                    // const ofilename2 = `tmp.${getBaseFileName(node.originalFileName)}.nwfng.txt`;
+                    // sys.writeFile(ofilename2, str2);
 
 
                     const groupsForFlow = checker.getSourceFileInferState().groupsForFlow;
@@ -43113,6 +43113,17 @@ namespace ts {
                             let str = dbgFlowToString(fn);
                             const originatingGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(fn) ?? -1;
                             str += `, originatingGroupIdx: ${originatingGroupIdx}`;
+                            str += `, anteFlow:[`;
+                            const tmpas: string[]=[];
+                            getFlowAntecedents(fn).forEach(antefn=>{
+                                str += `${dbgFlowToString(antefn)}; `;
+                                const anteGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(antefn) ?? -1;
+                                tmpas.push(anteGroupIdx.toString());
+                            });
+                            str += "]";
+                            if (tmpas.length){
+                                str += `, anteGroups:[${tmpas.join(",")}]`;
+                            }
                             astr4.push(str);
                         });
                         const ofilename4 = `tmp.${getBaseFileName(node.originalFileName)}.afn.txt`;
