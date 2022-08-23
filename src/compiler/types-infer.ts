@@ -195,8 +195,8 @@ namespace ts {
 
     /**
      * InferStatus
-     * The "on" member is true when the current node is within a discriminating expression (e.g. "if (node){...}else{...}", or "(node)? x : y").
-     * When "on" is true, then the full complexity of expression branching should be preserved to allow for inference, otherwise the complexity should be squashed.
+     * The "inCondition" member is true when the current node is within a discriminating expression (e.g. "if (node){...}else{...}", or "(node)? x : y").
+     * When "inCondition" is true, then the full complexity of expression branching should be preserved to allow for inference, otherwise the complexity should be squashed.
      * Of course, there are limits on the width of branching allowed ("maxBranches", not yet implemented).
      *
      * The "replayData" member is non-false when a variables rhs assigned value is being "replayed" as an alias for the variable, and the sub-member
@@ -211,6 +211,13 @@ namespace ts {
         replayItemStack: ReplayableItem[];
     };
 
+    export type ConditionItem = & {
+        //groupIdx: number;
+        arrRttr: RefTypesTableReturn[];
+        expr: Expression,
+        negate?: boolean;
+        prev?: ConditionItem | undefined;
+    };
 
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
@@ -218,6 +225,8 @@ namespace ts {
         qdotfallout?: RefTypesTableReturn[],
         inferStatus: InferStatus,
         crit: InferCrit,
+        prevConditionItem?: ConditionItem | undefined
+        //prevConditionItem: ConditionItem | undefined
         //symbolToNodeToType:
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
@@ -248,6 +257,7 @@ namespace ts {
         condExpr: Readonly<Node>,
         qdotfallout: RefTypesTableReturn[],
         inferStatus: InferStatus,
+        prevConditionItem?: ConditionItem | undefined
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.

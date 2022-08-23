@@ -1869,13 +1869,13 @@ namespace ts {
         //     return { arrRefTypesTableReturn:[], byNode: createNodeToTypeMap() };
         // }
 
-        function mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, prevConditionItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             if (myDebug){
                 consoleGroup(`mrNarrowTypes_inner[in] condExpr:${dbgNodeToString(condExpr)}, inferStatus.replayItemStack.length: ${
                     inferStatus.replayItemStack.length
                 }, inferStatus.inCondition: ${inferStatus.inCondition}`);
             }
-            const innerret = mrNarrowTypesInnerAux({ refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus });
+            const innerret = mrNarrowTypesInnerAux({ refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, prevConditionItem });
             if (myDebug){
                 innerret.arrRefTypesTableReturn.forEach((rttr,i)=>{
                     dbgRefTypesTableToStrings(rttr).forEach(str=>{
@@ -1902,12 +1902,27 @@ namespace ts {
             }
             return innerret;
         }
+
+        function mrNarrowWithConstConstraints({arrRtsIn, prevConditionItemIn}: {arrRtsIn: RefTypesSymtab[], prevConditionItemIn: ConditionItem}){
+            let arrRts = arrRtsIn;
+            let prevConditionItem: ConditionItem | undefined = prevConditionItemIn;
+            do {
+                const arrTmp: RefTypesSymtab[] = [];
+                arrRts.forEach(rts=>{
+                    rts.forEach(s=>{
+                        
+                    });
+                });
+            } while (prevConditionItem=prevConditionItem.prev);
+
+        }
+
         /**
          *
          * @param param0
          * @returns
          */
-        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, prevConditionItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             switch (condExpr.kind){
                 /**
                  * Identifier
@@ -1927,7 +1942,12 @@ namespace ts {
                         }
                         type = createRefTypesType(tstype);
                     }
-                    else type = refTypesSymtabIn.get(condSymbol)?.leaf.type;
+                    else {
+                        type = refTypesSymtabIn.get(condSymbol)?.leaf.type;
+                        // use prevConditionItem to narrow further with const constraints. IWOZERE
+                        // type should always be defined is it exists in prevConditionItem heirarchy
+
+                    }
                     if (!type){
                         const tstype = getTypeOfSymbol(condSymbol);
                         if (tstype===errorType){
