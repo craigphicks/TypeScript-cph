@@ -1903,19 +1903,19 @@ namespace ts {
             return innerret;
         }
 
-        function mrNarrowWithConstConstraints({arrRtsIn, prevConditionItemIn}: {arrRtsIn: RefTypesSymtab[], prevConditionItemIn: ConditionItem}){
-            let arrRts = arrRtsIn;
-            let prevConditionItem: ConditionItem | undefined = prevConditionItemIn;
-            do {
-                const arrTmp: RefTypesSymtab[] = [];
-                arrRts.forEach(rts=>{
-                    rts.forEach(s=>{
-                        
-                    });
-                });
-            } while (prevConditionItem=prevConditionItem.prev);
+        // function mrNarrowWithConstConstraints({arrRtsIn, prevConditionItemIn}: {arrRtsIn: RefTypesSymtab[], prevConditionItemIn: ConditionItem}){
+        //     let arrRts = arrRtsIn;
+        //     let prevConditionItem: ConditionItem | undefined = prevConditionItemIn;
+        //     do {
+        //         const arrTmp: RefTypesSymtab[] = [];
+        //         arrRts.forEach(rts=>{
+        //             rts.forEach(s=>{
 
-        }
+        //             });
+        //         });
+        //     } while (prevConditionItem=prevConditionItem.prev);
+
+        // }
 
         /**
          *
