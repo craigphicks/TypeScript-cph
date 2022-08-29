@@ -1538,6 +1538,18 @@ namespace ts {
         };
 
 
+        type ApplitCritToArrTypeAndConstraintResult = & {
+            passing: TypeAndConstraint[],
+            failing?: TypeAndConstraint[],
+        };
+        // constraintTODO:
+        // @ts-ignore-error
+        function applyCritToArrTypeAndConstraint(finalArrTypeAndConstraint: TypeAndConstraint[], crit: InferCrit): ApplitCritToArrTypeAndConstraintResult{
+            return undefined as any as ApplitCritToArrTypeAndConstraintResult;
+        }
+
+
+
         /**
          *
          * (1) Replay functionality
@@ -1548,7 +1560,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypes({refTypesSymtab: refTypesSymtabIn, condExpr:expr, inferStatus, crit: critIn, qdotfallout: qdotfalloutIn}: InferRefArgs): MrNarrowTypesReturn {
+        function mrNarrowTypes({refTypesSymtab: refTypesSymtabIn, condExpr:expr, inferStatus, crit: critIn, qdotfallout: qdotfalloutIn, qdotbypass: qdotbypassIn}: InferRefArgs): MrNarrowTypesReturn {
             myDebug = getMyDebug();
             if (myDebug) {
                 const inReplay = inferStatus.replayItemStack.length;
@@ -1603,11 +1615,14 @@ namespace ts {
             const replaySymtab = newReplayItem ? createRefTypesSymtab() : undefined;
             // const replayQotfallout = newReplayItem ? [] : qdotfallout;
 
-            const innerret = mrNarrowTypesInner({ refTypesSymtab: replaySymtab??refTypesSymtabIn, condExpr: newReplayItem?.expr?? expr, qdotfallout,
+            const qdotbypass = qdotbypassIn??[] as TypeAndConstraint[];
+
+            const innerret = mrNarrowTypesInner({ refTypesSymtab: replaySymtab??refTypesSymtabIn, condExpr: newReplayItem?.expr?? expr, qdotfallout, qdotbypass,
                 inferStatus });
 
             if (newReplayItem) inferStatus.replayItemStack.pop();
             inferStatus.inCondition = savedInCondition;
+
 
             let finalArrRefTypesTableReturn = innerret.arrRefTypesTableReturn;
             if (myDebug){
@@ -1631,6 +1646,14 @@ namespace ts {
                     });
                 }
                 finalArrRefTypesTableReturn = [...qdotfallout, ...innerret.arrRefTypesTableReturn];
+            }
+            // constraintTODO:
+            // @ ts-expect-error
+            // eslint-disable-next-line prefer-const
+            let finalArrTypeAndConstraint: TypeAndConstraint[] = [];
+            if (!qdotbypassIn){
+                // constraintTODO:
+                finalArrTypeAndConstraint = [...qdotbypass, ...(innerret.arrTypeAndConstraint??[] as TypeAndConstraint[])];
             }
             /**
              * Apply the crit before handling the replayResult (if any)
@@ -1656,6 +1679,7 @@ namespace ts {
                     });
                 }
             }
+            const postcritArrTypeAndContraint = applyCritToArrTypeAndConstraint(finalArrTypeAndConstraint, crit);
 
             const finalRetval: Partial<MrNarrowTypesReturn> = {
                 byNode: undefined,
@@ -1922,7 +1946,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, prevConditionItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, constraintNode}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             switch (condExpr.kind){
                 /**
                  * Identifier
@@ -1944,18 +1968,18 @@ namespace ts {
                     }
                     else {
                         type = refTypesSymtabIn.get(condSymbol)?.leaf.type;
-                        // use prevConditionItem to narrow further with const constraints. IWOZERE
-                        // type should always be defined is it exists in prevConditionItem heirarchy
-
-                    }
-                    if (!type){
-                        const tstype = getTypeOfSymbol(condSymbol);
-                        if (tstype===errorType){
-                            Debug.assert(false);
+                        if (!type){
+                            const tstype = getTypeOfSymbol(condSymbol);
+                            if (tstype===errorType){
+                                Debug.assert(false);
+                            }
+                            type = createRefTypesType(tstype);
                         }
-                        type = createRefTypesType(tstype);
+                        if (constraintNode){
+                            type = mrNarrowTypeByConstraint({ symbol:condSymbol, type, constraintNode });
+                        }
+                        tstype = getTypeFromRefTypesType(type);
                     }
-                    if (!tstype) tstype = getTypeFromRefTypesType(type);
                     const byNode = createNodeToTypeMap();
                     byNode.set(condExpr, tstype);
                     const rttr: RefTypesTableReturn = {
@@ -2004,7 +2028,7 @@ namespace ts {
                      */
                      const innerret = mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr: condExpr.expression,
                         //crit: {kind: InferCritKind.twocrit, crits:[{ kind:InferCritKind.notnullundef }, crit]},
-                        qdotfallout, inferStatus });
+                        qdotfallout, inferStatus, constraintNode });
 
                     /**
                      * Apply notnullundef criteria without squashing the result into passing/failing
@@ -2023,7 +2047,30 @@ namespace ts {
                                     type
                                 });
                             }
+
                         });
+                        /**
+                         * If rttr.symbol and rttr.isconst then add constraint
+                         */
+                        // if (arrRttr.length){
+                        //     if (arrRttr.length>1) {
+                        //         arrRttr.slice(1).some((rttr,i)=>{
+                        //             Debug.assert(rttr.symbol===arrRttr[i-1].symbol);
+                        //         });
+                        //     };
+                        //     const rttr = arrRttr[0];
+                        //     if (rttr.symbol && rttr.isconst){
+                        //         if (constraintNode){
+                        //             if (constraintNode.op===ConstraintItemNodeOp.and){
+                        //                 constraintNode.constraints.push(createFlowConstraintLeaf(rttr.symbol, rttr.type));
+                        //             }
+                        //             else if (constraintNode.op===ConstraintItemNodeOp.or){
+                        //                 createFlowConstraintNodeAnd
+                        //             }
+                        //         }
+                        //     }
+                        // }
+
                         return arrOut;
                     };
 

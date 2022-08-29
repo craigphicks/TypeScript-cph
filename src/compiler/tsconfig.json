@@ -49,6 +49,7 @@
         "flowNodesGrouping.ts",
         "flowGroupInfer.ts",
         "flowGroupInfer2.ts",
+        "flowContraints.ts",
         "foobar.ts",
         "visitorPublic.ts",
         "sourcemap.ts",

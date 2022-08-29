@@ -54,6 +54,7 @@ namespace ts {
         byNode: NodeToTypeMap;
         done?: boolean
         prevConditionItem: ConditionItem | undefined;
+        constraintNode?: ConstraintItemNode | undefined;
     };
 
 
@@ -469,10 +470,10 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems
         };
 
-        let prevConditionItem: ConditionItem | undefined;
+        let prevConditionItem: ConditionItem | undefined; // obsolete
+        //let constraintItemNode: ConstraintItemNode | undefined;
         let retval: MrNarrowTypesReturn;
         {
-
 
             const arrCondItems: ConditionItem[] = [];
             setCbi.forEach(cbi=>{
@@ -541,6 +542,7 @@ namespace ts {
                     expr: maximalNode as Expression,
                     prev: prevConditionItem
                 } : prevConditionItem;
+
 
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,

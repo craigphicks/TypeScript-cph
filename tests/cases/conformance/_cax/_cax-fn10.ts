@@ -8,9 +8,9 @@ declare interface FooA {
 }; 
 declare const obja: undefined | FooA;
 declare const arg: string | number;
-if (obja?.foo("") && typeof arg === "string"){
-    const x = obja.foo(arg);
+if (obja?.foo("") /* && typeof arg === "string" */){
+    const x = obja.foo(arg); // x should be "1"
 }
-else {
-    const x = obja.foo(arg);
+else if (obja) {
+    const x = obja.foo(arg); // x should be undefined
 }

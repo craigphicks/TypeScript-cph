@@ -223,6 +223,7 @@ namespace ts {
         refTypesSymtab: RefTypesSymtab,
         condExpr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
+        qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         crit: InferCrit,
         prevConditionItem?: ConditionItem | undefined
@@ -256,8 +257,10 @@ namespace ts {
         refTypesSymtab: RefTypesSymtab,
         condExpr: Readonly<Node>,
         qdotfallout: RefTypesTableReturn[],
+        qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         prevConditionItem?: ConditionItem | undefined
+        constraintNode?: ConstraintItemNode | undefined;
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.
@@ -268,6 +271,7 @@ namespace ts {
     // export enum MrNarrowTypesInnerUnaryModifierKind {
     //     prefixExclamation = 1
     // };
+    export type TypeAndConstraint = & {type: RefTypesType, constraintNode: ConstraintItemNode};
     export type MrNarrowTypesInnerReturn = & {
         byNode: NodeToTypeMap;
         assignmentData?: { // set when Delcaration or assignment, and replayData was false
@@ -276,6 +280,7 @@ namespace ts {
             isconst: boolean;
         }
         arrRefTypesTableReturn: RefTypesTableReturn[];
+        arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: make required
         //unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
         //negateCrit?: boolean; // set when kind === SyntaxKind.UnaryPrefix && operator === SyntaxKind.ExclamationToken
     };
@@ -299,5 +304,25 @@ namespace ts {
     // export type AliasableAssignmentCache = & {
     //     bySymbol: ESMap<Symbol, AliasableAssignmentCacheItem>;
     // };
-
+    export enum ConstraintItemKind {
+        node = 1,
+        leaf = 2
+    };
+    export enum ConstraintItemNodeOp {
+        or = 1,
+        and = 2
+    };
+    export type ConstraintItemNode = & {
+        kind: ConstraintItemKind.node;
+        negate?: boolean;
+        op: ConstraintItemNodeOp;
+        constraints: ConstraintItem[],
+    };
+    export type ConstraintItemLeaf = & {
+        kind: ConstraintItemKind.leaf;
+        negate?: boolean;
+        symbol: Symbol;
+        type: RefTypesType;
+    };
+    export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode;
 }
