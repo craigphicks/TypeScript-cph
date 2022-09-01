@@ -211,13 +211,13 @@ namespace ts {
         replayItemStack: ReplayableItem[];
     };
 
-    export type ConditionItem = & {
-        //groupIdx: number;
-        arrRttr: RefTypesTableReturn[];
-        expr: Expression,
-        negate?: boolean;
-        prev?: ConditionItem | undefined;
-    };
+    // export type ConditionItem = & {
+    //     //groupIdx: number;
+    //     arrRttr: RefTypesTableReturn[];
+    //     expr: Expression,
+    //     negate?: boolean;
+    //     prev?: ConditionItem | undefined;
+    // };
 
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
@@ -226,14 +226,7 @@ namespace ts {
         qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         crit: InferCrit,
-        prevConditionItem?: ConditionItem | undefined
-        //prevConditionItem: ConditionItem | undefined
-        //symbolToNodeToType:
-        /**
-         * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
-         * then the type will be taken from replayMode.byNode instead.
-         */
-        //readonly replayData: ReplayData | false;
+        constraintItemNode?: ConstraintItemNode // constraintTODO: make required
     };
 
     /**
@@ -242,10 +235,15 @@ namespace ts {
      * Finally multiple branches are projected onto this binary state.
      */
     export type NodeToTypeMap = ESMap<Node, Type>;
+    export type MrNarrowTypesReturnConstraints = & {
+        passing: TypeAndConstraint,
+        failing?: TypeAndConstraint,
+    };
     export type MrNarrowTypesReturn = & {
         byNode: NodeToTypeMap;
         //saveByNodeForReplay?: boolean;
         inferRefRtnType: InferRefRtnType;
+        constraints: MrNarrowTypesReturnConstraints;
     };
     export type InferRefRtnType = & {
         passing: RefTypesTableReturn[];
@@ -259,8 +257,8 @@ namespace ts {
         qdotfallout: RefTypesTableReturn[],
         qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
-        prevConditionItem?: ConditionItem | undefined
-        constraintNode?: ConstraintItemNode | undefined;
+        // prevConditionItem?: ConditionItem | undefined
+        constraintItemNode?: ConstraintItemNode | undefined;
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.

@@ -53,7 +53,7 @@ namespace ts {
         refTypesTableReturn: RefTypesTableReturn;
         byNode: NodeToTypeMap;
         done?: boolean
-        prevConditionItem: ConditionItem | undefined;
+        // prevConditionItem: ConditionItem | undefined;
         constraintNode?: ConstraintItemNode | undefined;
     };
 
@@ -470,51 +470,18 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems
         };
 
-        let prevConditionItem: ConditionItem | undefined; // obsolete
+        // let prevConditionItem: ConditionItem | undefined; // obsolete
         //let constraintItemNode: ConstraintItemNode | undefined;
         let retval: MrNarrowTypesReturn;
         {
-
-            const arrCondItems: ConditionItem[] = [];
-            setCbi.forEach(cbi=>{
-                if (cbi.prevConditionItem) arrCondItems.push(cbi.prevConditionItem);
-            });
-            if (arrCondItems.length===1) prevConditionItem = arrCondItems[0];
-            else {
-
-                // arrCondItems.forEach(pin=>{
-                //     pin;
-                // }
-
-                /**
-                 * find the common ancestor of all members of arrCondItems
-                 *
-                 */
-                // IWOZERE
-                // const map = new Map<ConditionItem, number>();
-                // let maxp: ConditionItem | undefined = arrCondItems[0];
-                // let maxi = 0;
-                // {
-                //     let p: ConditionItem | undefined = arrCondItems[0];
-                //     let i = 0;
-                //     do {
-                //         map.set(p,i++);
-                //     } while (p=p.prev);
-                // }
-                // arrCondItems.slice(1).forEach(pin=>{
-                //     let p: ConditionItem | undefined = pin;
-                //     do {
-                //         const got = map.get(p);
-                //         if (got!==undefined){
-                //             if (got>maxi){
-                //                 maxi = got;
-                //                 maxp = p;
-                //                 break;
-                //             }
-                //         }
-                //     } while (p=p.prev);
-                // });
-                // prevConditionItem = maxp;
+            let constraintItemNode: ConstraintItemNode | undefined;
+            if (setCbi.size===1) constraintItemNode = (setCbi.keys().next().value as CurrentBranchesItem).constraintNode;
+            else if (setCbi.size) {
+                const constraints: ConstraintItemNode[]=[];
+                setCbi.forEach(cbi=>{
+                    if (cbi.constraintNode) constraints.push(cbi.constraintNode);
+                });
+                if (constraints.length) constraintItemNode = createFlowConstraintNodeOr({ constraints });
             }
 
             const arefTypesSymtab: RefTypesSymtab[] = [];
@@ -524,24 +491,24 @@ namespace ts {
             if (!arefTypesSymtab.length) arefTypesSymtab.push(sourceFileMrState.mrNarrow.createRefTypesSymtab());
 
             const refTypesSymtab = arefTypesSymtab.length>1 ? sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(arefTypesSymtab) : arefTypesSymtab[0];
-            retval = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, prevConditionItem });
+            retval = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItemNode });
         }
 
         if (boolsplit){
             //const andWithPrevCondFalse;
-            const prevConditionItemFalse: ConditionItem | undefined = (retval.inferRefRtnType.failing && retval.inferRefRtnType.failing.length>1) ?
-                {
-                    arrRttr: retval.inferRefRtnType.failing,
-                    expr: maximalNode as Expression,
-                    negate: true,
-                    prev: prevConditionItem
-                } : prevConditionItem;
-            const prevConditionItemTrue: ConditionItem | undefined = (retval.inferRefRtnType.passing.length>1) ?
-                {
-                    arrRttr: retval.inferRefRtnType.passing,
-                    expr: maximalNode as Expression,
-                    prev: prevConditionItem
-                } : prevConditionItem;
+            // const prevConditionItemFalse: ConditionItem | undefined = (retval.inferRefRtnType.failing && retval.inferRefRtnType.failing.length>1) ?
+            //     {
+            //         arrRttr: retval.inferRefRtnType.failing,
+            //         expr: maximalNode as Expression,
+            //         negate: true,
+            //         prev: prevConditionItem
+            //     } : prevConditionItem;
+            // const prevConditionItemTrue: ConditionItem | undefined = (retval.inferRefRtnType.passing.length>1) ?
+            //     {
+            //         arrRttr: retval.inferRefRtnType.passing,
+            //         expr: maximalNode as Expression,
+            //         prev: prevConditionItem
+            //     } : prevConditionItem;
 
 
             const cbe: CurrentBranchElementTF = {
@@ -550,31 +517,34 @@ namespace ts {
                     refTypesTableReturn: sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
                         /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.failing??[] as RefTypesTableReturn[]),
                     byNode: retval.byNode,
-                    prevConditionItem: prevConditionItemFalse,
+                    // prevConditionItem: prevConditionItemFalse,
+                    constraintNode: retval.constraints.failing?.constraintNode
                 },
                 truthy: {
                     refTypesTableReturn: sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
                         /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.passing),
                     byNode: retval.byNode,
-                    prevConditionItem: prevConditionItemTrue,
+                    // prevConditionItem: prevConditionItemTrue,
+                    constraintNode: retval.constraints.passing.constraintNode
                 }
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
         else {
-            const prevConditionItemNext: ConditionItem | undefined = (retval.inferRefRtnType.passing.length>1) ?
-            {
-                arrRttr: retval.inferRefRtnType.passing,
-                expr: maximalNode as Expression,
-                prev: prevConditionItem
-            } : prevConditionItem;
+            // const prevConditionItemNext: ConditionItem | undefined = (retval.inferRefRtnType.passing.length>1) ?
+            // {
+            //     arrRttr: retval.inferRefRtnType.passing,
+            //     expr: maximalNode as Expression,
+            //     prev: prevConditionItem
+            // } : prevConditionItem;
             const cbe: CurrentBranchElementPlain = {
                 kind: CurrentBranchesElementKind.plain,
                 item: {
                     refTypesTableReturn: sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
                         /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.passing),
                     byNode: retval.byNode,
-                    prevConditionItem: prevConditionItemNext
+                    // prevConditionItem: prevConditionItemNext
+                    constraintNode: retval.constraints.passing.constraintNode
                 }
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);

@@ -23,7 +23,19 @@ namespace ts {
         };
     }
     // @ts-expect-error
-    export function mrNarrowTypeByConstraint({symbol, type, constraintNode}: {symbol: Symbol, type: RefTypesType, constraintNode: ConstraintItemNode}): RefTypesType {
+    export function mrNarrowTypeByConstraint({symbol, type, constraintItemNode}: {symbol: Symbol, type: RefTypesType, constraintItemNode: ConstraintItemNode}): RefTypesType {
         return type;
+    }
+
+    export function trySimplifyConstraintBySubstitution(
+        // @ts-expect-error
+        constraintItemNode: ConstraintItemNode, symbol: Symbol, type: RefTypesType
+        // @ts-expect-error
+    ): {success: boolean, constraintItemNode?: ConstraintItemNode}{
+
+    }
+    // @ts-expect-error
+    export function andIntoConstrainTrySimplify({symbol, type, constraintItemNode}: {symbol: Symbol, type: RefTypesType, constraintItemNode: ConstraintItemNode}): ConstraintItemNode {
+
     }
 }
