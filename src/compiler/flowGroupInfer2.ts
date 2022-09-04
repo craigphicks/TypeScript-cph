@@ -1078,7 +1078,8 @@ namespace ts {
         } | {
             kind: "normal",
             passing: RefTypesTableReturn[],
-            byNode: ESMap<Node, Type>
+            byNode: ESMap<Node, Type>,
+            arrTypeAndConstraint: TypeAndConstraint[]
         };
         /**
          * In JS runtime
@@ -1092,11 +1093,17 @@ namespace ts {
          * @param symbolOfRtnType
          * @returns
          */
-        function InferRefTypesPreAccess({refTypesSymtab: refTypes, condExpr, /*crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {condExpr: {expression: Expression}}): InferRefTypesPreAccessRtnType{
-            const { inferRefRtnType:{ passing, failing }, byNode:byNodePre /*, saveByNodeForReplay: _saveByNodeForReplayPre */ } = mrNarrowTypes(
-                { refTypesSymtab: refTypes, condExpr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout , inferStatus });
+        function InferRefTypesPreAccess({refTypesSymtab: refTypes, condExpr, /*crit,*/ qdotfallout, qdotbypass, inferStatus, constraintItemNode}: InferRefInnerArgs & {condExpr: {expression: Expression}}): InferRefTypesPreAccessRtnType{
+            const { inferRefRtnType:{ passing, failing }, byNode:byNodePre, constraints /*, saveByNodeForReplay: _saveByNodeForReplayPre */ } = mrNarrowTypes(
+                { refTypesSymtab: refTypes, condExpr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout , qdotbypass, inferStatus,constraintItemNode });
             //Debug.assert(!_saveByNodeForReplayPre);
             Debug.assert(failing);
+
+            if (qdotbypass && !isNeverType(constraints.failing!.type)){
+                if (isPropertyAccessExpression(condExpr) && condExpr.questionDotToken){
+                    qdotbypass.push(constraints.failing!); // The caller of InferRefTypesPreAccess need deal with this no further.
+                }
+            }
 
             failing.forEach(rttr=>{
                 if (!isNeverType(rttr.type)){
@@ -1113,10 +1120,11 @@ namespace ts {
                 }
             });
             const passingOut = passing.filter(rttr=>!isNeverType(rttr.type));
+
             if (!passingOut.length){
                 return { kind:"immediateReturn", retval: { arrRefTypesTableReturn:[], byNode: byNodePre } };
             }
-            return { kind:"normal", passing:passingOut, byNode: byNodePre };
+            return { kind:"normal", passing:passingOut, byNode: byNodePre, arrTypeAndConstraint:[constraints.passing] };
         }
 
         function mrNarrowTypesByPropertyAccessExpression({refTypesSymtab: refTypes, condExpr, /*crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
@@ -1129,7 +1137,7 @@ namespace ts {
             return r;
         }
 
-        function mrNarrowTypesByPropertyAccessExpression_aux({refTypesSymtab:refTypesSymtabIn, condExpr, /*crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesByPropertyAccessExpression_aux({refTypesSymtab:refTypesSymtabIn, condExpr, /*crit,*/ qdotfallout, qdotbypass, inferStatus, constraintItemNode}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             /**
              * It doesn't really make much sense for the PropertyAccessExpression to have a symbol because the property name is simply a key
              * that may be used to lookup across totally unrelated objects that are present only ambiently in the code - unless the precursor is a constant.
@@ -1152,9 +1160,10 @@ namespace ts {
             Debug.assert(condExpr.expression);
 
 
-            const pre = InferRefTypesPreAccess({ refTypesSymtab:refTypesSymtabIn, condExpr, /* crit,*/ qdotfallout, inferStatus });
+            const pre = InferRefTypesPreAccess({ refTypesSymtab:refTypesSymtabIn, condExpr, /* crit,*/ qdotfallout, qdotbypass, inferStatus });
             if (pre.kind==="immediateReturn") return pre.retval;
-            //const prePassing = pre.passing;
+
+
 
             /**
              * Use refTypes from pre.
@@ -1180,6 +1189,9 @@ namespace ts {
             const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = []; //
             const arrRttr: RefTypesTableReturn[]=[];
             pre.passing.forEach(prePassing=>{
+                // const matchingTc = pre.arrTypeAndConstraint.find(tc=>tc.type===prePassing.type);
+                // Debug.assert(matchingTc);
+
                 const preRefTypesSymtab = prePassing.symtab;
                 forEachRefTypesTypeType(prePassing.type, t => {
                     if (t===undefinedType||t===nullType) {
@@ -1280,6 +1292,7 @@ namespace ts {
                     Debug.assert(false);
                 });
             });
+
             if (myDebug){
                 consoleLog(`propertyTypes:`);
                 accessedTypes.forEach(t=> {
@@ -1317,7 +1330,16 @@ namespace ts {
             const totalType = createRefTypesType();
             arrRttr.forEach(rttr=>mergeToRefTypesType({ source: rttr.type, target: totalType }));
             pre.byNode.set(condExpr, getTypeFromRefTypesType(totalType));
-            return { arrRefTypesTableReturn: arrRttr, byNode: pre.byNode };
+
+            const typesAndConstraints: TypesAndContraints = {
+                arrTypeAndConstraint:[],
+                sharedConstraint: constraintItemNode
+            };
+            arrRttr.forEach(rttr=>{
+                typesAndConstraints.arrTypeAndConstraint.push({ type:rttr.type, symbol:rttr.symbol, isconst: rttr.isconst });
+            });
+
+            return { arrRefTypesTableReturn: arrRttr, byNode: pre.byNode, typesAndConstraints };
         }
 
         type RefTypesTableReturnCritOut = Omit<RefTypesTableReturn,"symbol">;
@@ -2075,50 +2097,87 @@ namespace ts {
                 /**
                  * ConditionalExpression
                  */
-                // IWOZERE
                 case SyntaxKind.ConditionalExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression`);
                     const {condition, whenTrue, whenFalse} = (condExpr as ConditionalExpression);
-                    const byNode = createNodeToTypeMap();
-                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                    const byNodeMultipath = createNodeToTypeMap(); // hopefully obsolete
+                    const byNodeSinglepath = createNodeToTypeMap(); // hopefully obsolete
+                    //const arrRefTypesTableReturnMultipath: RefTypesTableReturn[] = [];
+                    const arrRefTypesTableReturnSinglePath: RefTypesTableReturn[] = [];
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; condition`);
                     const rcond = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
                         condExpr: condition,
                         crit: { kind: InferCritKind.truthy, alsoFailing: true },
-                        inferStatus: { ...inferStatus, inCondition: true }
+                        inferStatus: { ...inferStatus, inCondition: true },
+                        constraintItemNode
                     });
+                    //andIntoConstrainTrySimplify({})
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenTrue`);
-                    rcond.inferRefRtnType.passing.forEach(rttr=>{
-                        const rtrue = mrNarrowTypes({
-                            refTypesSymtab: rttr.symtab,
-                            condExpr: whenTrue,
-                            crit: { kind: InferCritKind.none },
-                            inferStatus //: { ...inferStatus, inCondition: true }
-                        });
-                        arrRefTypesTableReturn.push(...rtrue.inferRefRtnType.passing);
-                        mergeIntoNodeToTypeMaps(rtrue.byNode, byNode);
+                    const rttrTrue = mergeArrRefTypesTableReturnToRefTypesTableReturn(/* symbol */ undefined, /* isconst*/ undefined, rcond.inferRefRtnType.passing);
+                    const retTrue = mrNarrowTypes({
+                        refTypesSymtab: rttrTrue.symtab,
+                        condExpr: whenTrue,
+                        crit: { kind: InferCritKind.none },
+                        inferStatus, //: { ...inferStatus, inCondition: true }
+                        constraintItemNode: rcond.constraints.passing.constraintNode
                     });
+                    mergeIntoNodeToTypeMaps(retTrue.byNode, byNodeMultipath);
+                    arrRefTypesTableReturnSinglePath.push(...retTrue.inferRefRtnType.passing);
+                    // rcond.inferRefRtnType.passing.forEach(rttr=>{
+                    //     const rettmp = mrNarrowTypes({
+                    //         refTypesSymtab: rttr.symtab,
+                    //         condExpr: whenTrue,
+                    //         crit: { kind: InferCritKind.none },
+                    //         inferStatus, //: { ...inferStatus, inCondition: true }
+                    //         constraintItemNode: rcond.constraints.passing.constraintNode
+                    //     });
+                    //     arrRefTypesTableReturnMultipath.push(...rettmp.inferRefRtnType.passing);
+                    //     mergeIntoNodeToTypeMaps(rettmp.byNode, byNodeMultipath);
+                    // });
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenFalse`);
-                    rcond.inferRefRtnType.failing!.forEach(rttr=>{
-                        const rtrue = mrNarrowTypes({
-                            refTypesSymtab: rttr.symtab,
-                            condExpr: whenFalse,
-                            crit: { kind: InferCritKind.none },
-                            inferStatus //: { ...inferStatus, inCondition: true }
-                        });
-                        arrRefTypesTableReturn.push(...rtrue.inferRefRtnType.passing);
-                        mergeIntoNodeToTypeMaps(rtrue.byNode, byNode);
+                    const rttrFalse = mergeArrRefTypesTableReturnToRefTypesTableReturn(/* symbol */ undefined, /* isconst*/ undefined, rcond.inferRefRtnType.failing!);
+                    const retFalse = mrNarrowTypes({
+                        refTypesSymtab: rttrFalse.symtab,
+                        condExpr: whenFalse,
+                        crit: { kind: InferCritKind.none },
+                        inferStatus, //: { ...inferStatus, inCondition: true }
+                        constraintItemNode: rcond.constraints.failing!.constraintNode
                     });
-                    return {
-                        byNode,
-                        arrRefTypesTableReturn
+                    mergeIntoNodeToTypeMaps(retFalse.byNode, byNodeMultipath);
+                    arrRefTypesTableReturnSinglePath.push(...retFalse.inferRefRtnType.passing);
+                    // rcond.inferRefRtnType.failing!.forEach(rttr=>{
+                    //     const rettmp = mrNarrowTypes({
+                    //         refTypesSymtab: rttr.symtab,
+                    //         condExpr: whenFalse,
+                    //         crit: { kind: InferCritKind.none },
+                    //         inferStatus, //: { ...inferStatus, inCondition: true }
+                    //         constraintItemNode: rcond.constraints.failing!.constraintNode
+                    //     });
+                    //     arrRefTypesTableReturnMultipath.push(...rettmp.inferRefRtnType.passing);
+                    //     mergeIntoNodeToTypeMaps(rettmp.byNode, byNodeMultipath);
+                    // });
+                    // const finalRetvalMultipath = {
+                    //     byNode: byNodeMultipath,
+                    //     arrRefTypesTableReturn: arrRefTypesTableReturnMultipath,
+                    // };
+                    const finalRetvalSinglepath: MrNarrowTypesInnerReturn = {
+                        byNode: byNodeSinglepath,
+                        arrRefTypesTableReturn: [
+                            mergeArrRefTypesTableReturnToRefTypesTableReturn(/* symbol */ undefined, /* isconst*/ undefined, rcond.inferRefRtnType.passing),
+                            mergeArrRefTypesTableReturnToRefTypesTableReturn(/* symbol */ undefined, /* isconst*/ undefined, rcond.inferRefRtnType.failing!)
+                        ],
+                        arrTypeAndConstraint: [
+                            retTrue.constraints.passing, retFalse.constraints.passing
+                        ]
                     };
+                    return finalRetvalSinglepath;
                 }
                 break;
                 /**
                  * PropertyAccessExpression
                  */
+                // IWOZERE
                 case SyntaxKind.PropertyAccessExpression:
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.PropertyAccessExpression`);
                     return mrNarrowTypesByPropertyAccessExpression({ refTypesSymtab: refTypesSymtabIn, condExpr, /* crit, */ qdotfallout, inferStatus });

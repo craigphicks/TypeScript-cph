@@ -270,6 +270,15 @@ namespace ts {
     //     prefixExclamation = 1
     // };
     export type TypeAndConstraint = & {type: RefTypesType, constraintNode: ConstraintItemNode};
+    export type TypesAndContraints = & {
+        arrTypeAndConstraint: {
+            type: RefTypesType;
+            symbol?: Symbol;
+            isconst?: boolean;
+            constraintNode?: ConstraintItemNode;
+        }[];
+        sharedConstraint?: ConstraintItemNode;
+    };
     export type MrNarrowTypesInnerReturn = & {
         byNode: NodeToTypeMap;
         assignmentData?: { // set when Delcaration or assignment, and replayData was false
@@ -278,7 +287,8 @@ namespace ts {
             isconst: boolean;
         }
         arrRefTypesTableReturn: RefTypesTableReturn[];
-        arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: make required
+        typesAndConstraints?: TypesAndContraints; // constraintTODO: make required
+        arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: kill
         //unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
         //negateCrit?: boolean; // set when kind === SyntaxKind.UnaryPrefix && operator === SyntaxKind.ExclamationToken
     };
