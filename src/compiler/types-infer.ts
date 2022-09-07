@@ -84,6 +84,7 @@ namespace ts {
         isconst?: boolean;
         type: RefTypesType;
         symtab: RefTypesSymtab;
+        constraintItemNode?: ConstraintItemNode;
     };
 
     /**
@@ -223,7 +224,7 @@ namespace ts {
         refTypesSymtab: RefTypesSymtab,
         condExpr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
-        qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
+       //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         crit: InferCrit,
         constraintItemNode?: ConstraintItemNode // constraintTODO: make required
@@ -235,19 +236,19 @@ namespace ts {
      * Finally multiple branches are projected onto this binary state.
      */
     export type NodeToTypeMap = ESMap<Node, Type>;
-    export type MrNarrowTypesReturnConstraints = & {
-        passing: TypeAndConstraint,
-        failing?: TypeAndConstraint,
-    };
+    // export type MrNarrowTypesReturnConstraints = & {
+    //     passing: TypeAndConstraint,
+    //     failing?: TypeAndConstraint,
+    // };
     export type MrNarrowTypesReturn = & {
         byNode: NodeToTypeMap;
         //saveByNodeForReplay?: boolean;
         inferRefRtnType: InferRefRtnType;
-        constraints: MrNarrowTypesReturnConstraints;
+        //constraints: MrNarrowTypesReturnConstraints;
     };
     export type InferRefRtnType = & {
-        passing: RefTypesTableReturn[];
-        failing?: RefTypesTableReturn[];
+        passing: RefTypesTableReturn;
+        failing?: RefTypesTableReturn;
     };
 
 
@@ -255,7 +256,7 @@ namespace ts {
         refTypesSymtab: RefTypesSymtab,
         condExpr: Readonly<Node>,
         qdotfallout: RefTypesTableReturn[],
-        qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
+        //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         // prevConditionItem?: ConditionItem | undefined
         constraintItemNode?: ConstraintItemNode | undefined;
@@ -269,16 +270,20 @@ namespace ts {
     // export enum MrNarrowTypesInnerUnaryModifierKind {
     //     prefixExclamation = 1
     // };
-    export type TypeAndConstraint = & {type: RefTypesType, constraintNode: ConstraintItemNode};
-    export type TypesAndContraints = & {
-        arrTypeAndConstraint: {
-            type: RefTypesType;
-            symbol?: Symbol;
-            isconst?: boolean;
-            constraintNode?: ConstraintItemNode;
-        }[];
-        sharedConstraint?: ConstraintItemNode;
-    };
+    // export type TypeAndConstraint = & {
+    //     type: RefTypesType, symbol?: Symbol, isconst?: boolean,
+    //     constraintNode: ConstraintItemNode,
+
+    // };
+    // export type TypesAndContraints = & {
+    //     arrTypeAndConstraint: {
+    //         type: RefTypesType;
+    //         symbol?: Symbol;
+    //         isconst?: boolean;
+    //         constraintNode?: ConstraintItemNode;
+    //     }[];
+    //     sharedConstraint?: ConstraintItemNode;
+    // };
     export type MrNarrowTypesInnerReturn = & {
         byNode: NodeToTypeMap;
         assignmentData?: { // set when Delcaration or assignment, and replayData was false
@@ -287,8 +292,8 @@ namespace ts {
             isconst: boolean;
         }
         arrRefTypesTableReturn: RefTypesTableReturn[];
-        typesAndConstraints?: TypesAndContraints; // constraintTODO: make required
-        arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: kill
+        //typesAndConstraints?: TypesAndContraints; // constraintTODO: make required
+        //arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: kill
         //unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
         //negateCrit?: boolean; // set when kind === SyntaxKind.UnaryPrefix && operator === SyntaxKind.ExclamationToken
     };
