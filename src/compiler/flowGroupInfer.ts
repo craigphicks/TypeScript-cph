@@ -514,18 +514,12 @@ namespace ts {
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
                 falsy: {
-                    refTypesTableReturn: sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
-                        /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.failing??[] as RefTypesTableReturn[]),
+                    refTypesTableReturn: retval.inferRefRtnType.failing!,
                     byNode: retval.byNode,
-                    // prevConditionItem: prevConditionItemFalse,
-                    constraintNode: retval.constraints.failing?.constraintNode
                 },
                 truthy: {
-                    refTypesTableReturn: sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
-                        /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.passing),
+                    refTypesTableReturn: retval.inferRefRtnType.passing,
                     byNode: retval.byNode,
-                    // prevConditionItem: prevConditionItemTrue,
-                    constraintNode: retval.constraints.passing.constraintNode
                 }
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
@@ -540,11 +534,8 @@ namespace ts {
             const cbe: CurrentBranchElementPlain = {
                 kind: CurrentBranchesElementKind.plain,
                 item: {
-                    refTypesTableReturn: sourceFileMrState.mrNarrow.mergeArrRefTypesTableReturnToRefTypesTableReturn(
-                        /*symbol*/ undefined, /* isconst */ undefined,retval.inferRefRtnType.passing),
+                    refTypesTableReturn: retval.inferRefRtnType.passing,
                     byNode: retval.byNode,
-                    // prevConditionItem: prevConditionItemNext
-                    constraintNode: retval.constraints.passing.constraintNode
                 }
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);

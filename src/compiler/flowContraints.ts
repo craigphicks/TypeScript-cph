@@ -35,7 +35,7 @@ namespace ts {
 
     }
     // @ts-expect-error
-    export function andIntoConstrainTrySimplify({symbol, type, constraintItemNode}: {symbol: Symbol, type: RefTypesType, constraintItemNode: ConstraintItemNode}): ConstraintItemNode {
+    export function andIntoConstrainTrySimplify({symbol, type, constraintItemNode}: {symbol: Symbol, type: RefTypesType, constraintItemNode: ConstraintItemNode | undefined}): [ConstraintItemNode, RefTypesType] {
 
     }
 }
