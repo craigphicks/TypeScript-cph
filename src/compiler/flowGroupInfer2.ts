@@ -20,10 +20,25 @@ namespace ts {
             symbol: Symbol | undefined, isconst: boolean | undefined, arr: Readonly<RefTypesTableReturn[]>): RefTypesTableReturn,
         createNodeToTypeMap(): NodeToTypeMap,
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
-        mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab
+        mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab,
+        intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType,
+        isNeverType(t: Readonly<RefTypesType>): boolean
     };
 
     export function createMrNarrow(checker: TypeChecker, _mrState: MrState): MrNarrow {
+
+        const mrNarrow: MrNarrow = {
+            mrNarrowTypes,
+            createRefTypesSymtab,
+            dbgRefTypesTableToStrings,
+            dbgRefTypesSymtabToStrings,
+            mergeArrRefTypesTableReturnToRefTypesTableReturn,
+            createNodeToTypeMap,
+            mergeIntoNodeToTypeMaps,
+            mergeArrRefTypesSymtab,
+            intersectRefTypesTypes,
+            isNeverType,
+        };
 
 
         let myDebug = getMyDebug();
@@ -197,13 +212,13 @@ namespace ts {
             if (rt._set.size===0) return neverType;
             return getUnionType(arrayFromSet(rt._set),UnionReduction.Literal);
         }
-        function isNeverType(type: RefTypesType): boolean {
+        function isNeverType(type: Readonly<RefTypesType>): boolean {
             return type._flags===RefTypesTypeFlags.none && type._set.size===0;
         }
-        function isAnyType(type: RefTypesType): boolean {
+        function isAnyType(type: Readonly<RefTypesType>): boolean {
             return type._flags===RefTypesTypeFlags.any;
         }
-        function isUnknownType(type: RefTypesType): boolean {
+        function isUnknownType(type: Readonly<RefTypesType>): boolean {
             return type._flags===RefTypesTypeFlags.unknown;
         }
         function forEachRefTypesTypeType<F extends (t: Type) => any>(r: Readonly<RefTypesType>, f: F): void {
@@ -2330,16 +2345,18 @@ namespace ts {
             }
         }
 
-        return {
-            mrNarrowTypes,
-            createRefTypesSymtab,
-            dbgRefTypesTableToStrings,
-            dbgRefTypesSymtabToStrings,
-            mergeArrRefTypesTableReturnToRefTypesTableReturn,
-            createNodeToTypeMap,
-            mergeIntoNodeToTypeMaps,
-            mergeArrRefTypesSymtab
-        };
+        return mrNarrow;
+        // return {
+        //     mrNarrowTypes,
+        //     createRefTypesSymtab,
+        //     dbgRefTypesTableToStrings,
+        //     dbgRefTypesSymtabToStrings,
+        //     mergeArrRefTypesTableReturnToRefTypesTableReturn,
+        //     createNodeToTypeMap,
+        //     mergeIntoNodeToTypeMaps,
+        //     mergeArrRefTypesSymtab,
+        //     intersectRefTypesTypes
+        // };
 
     } // createMrNarrow
 
