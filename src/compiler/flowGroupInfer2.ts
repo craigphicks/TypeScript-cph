@@ -14,15 +14,20 @@ namespace ts {
     export interface MrNarrow {
         mrNarrowTypes({ refTypesSymtab: refTypes, condExpr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
         createRefTypesSymtab(): RefTypesSymtab;
+        createRefTypesType(type?: Readonly<Type>): RefTypesType;
         dbgRefTypesTableToStrings(t: RefTypesTable): string[],
         dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[],
+        mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void,
         mergeArrRefTypesTableReturnToRefTypesTableReturn(
             symbol: Symbol | undefined, isconst: boolean | undefined, arr: Readonly<RefTypesTableReturn[]>): RefTypesTableReturn,
         createNodeToTypeMap(): NodeToTypeMap,
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
         mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab,
         intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType,
-        isNeverType(t: Readonly<RefTypesType>): boolean
+        intersectRefTypesTypesIfNotAImpliesB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType | null;
+        inverseType(part: Readonly<RefTypesType>, whole: Readonly<RefTypesType>): RefTypesType;
+        isNeverType(t: Readonly<RefTypesType>): boolean,
+        checker: TypeChecker
     };
 
     export function createMrNarrow(checker: TypeChecker, _mrState: MrState): MrNarrow {
@@ -30,14 +35,19 @@ namespace ts {
         const mrNarrow: MrNarrow = {
             mrNarrowTypes,
             createRefTypesSymtab,
+            createRefTypesType,
             dbgRefTypesTableToStrings,
             dbgRefTypesSymtabToStrings,
+            mergeToRefTypesType,
             mergeArrRefTypesTableReturnToRefTypesTableReturn,
             createNodeToTypeMap,
             mergeIntoNodeToTypeMaps,
             mergeArrRefTypesSymtab,
             intersectRefTypesTypes,
+            intersectRefTypesTypesIfNotAImpliesB,
+            inverseType,
             isNeverType,
+            checker,
         };
 
 
@@ -191,13 +201,65 @@ namespace ts {
                (target as RefTypesTypeNormal)._set.add(t);
             });
         }
+        /**
+         * How to deal with unknown type?
+         * If either is never then return never.
+         * Else if both are unknown return unknown.
+         * Else if either is unknown, and the other is not any, then the answer is a specific non-any type that need to be confirmed before use, but such a category doesn't exist in Typescript.
+         * - solutions? (1) return unknown, (2) return the type of other, (3) Debug fail. Start with Debug fail and see what happens.
+         * @param a
+         * @param b
+         * @returns
+         */
         function intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType {
+            if (isNeverType(a)) return a;
+            if (isNeverType(b)) return b;
+            //if (isNeverType(a)||isNeverType(b)) return c;
+            if (isUnknownType(a) && isUnknownType(b)) return a;
+            if (isUnknownType(a) || isUnknownType(b)) Debug.fail("intersectRefTypesTypes: cannot intersection with unknown and non-any non-unknowhn type");
+            if (isAnyType(a)) return b;
+            if (isAnyType(b)) return a;
             const c = createRefTypesType() as RefTypesTypeNormal;
-            if (isNeverType(a)||isNeverType(b)) return c;
-            if (isAnyType(a)||isUnknownType(a)) return b;
-            if (isAnyType(b)||isUnknownType(b)) return a;
             (a as RefTypesTypeNormal)._set.forEach(t=>{
                 if ((b as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
+            });
+            return c;
+        }
+        /**
+         * Similar to intersectRefTypesTypes, however
+         * If a is a subset of b then a implies b so return null.
+         * Otherwise return intersectRefTypesTypes(a,b)
+         * @param a
+         * @param b
+         * @returns
+         */
+        function intersectRefTypesTypesIfNotAImpliesB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType | null {
+            // eslint-disable-next-line no-null/no-null
+            if (isNeverType(a)) return null;
+            if (isNeverType(b)) return b;
+            // eslint-disable-next-line no-null/no-null
+            if (isUnknownType(a) && isUnknownType(b)) return a;
+            if (isUnknownType(a) || isUnknownType(b)) Debug.fail("intersectRefTypesTypesIfNotAImpliesB: cannot intersection with unknown and non-any non-unknowhn type");
+            if (isAnyType(a)) return b;
+            // eslint-disable-next-line no-null/no-null
+            if (isAnyType(b)) return null;
+            let aIsNotSubsetOfB = false;
+            const c = createRefTypesType() as RefTypesTypeNormal;
+            (a as RefTypesTypeNormal)._set.forEach(t=>{
+                if ((b as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
+                else aIsNotSubsetOfB = true;
+            });
+            if (aIsNotSubsetOfB) return c;
+            // eslint-disable-next-line no-null/no-null
+            return null;
+        }
+        function inverseType(part: Readonly<RefTypesType>, whole: Readonly<RefTypesType>): RefTypesType {
+            if (isNeverType(part)) return whole;
+            if (isAnyType(part)) return createRefTypesType(neverType);
+            if (isUnknownType(part)) Debug.fail("inverseType: input is unknownType");
+            const c = createRefTypesType() as RefTypesTypeNormal;
+            (whole as RefTypesTypeNormal)._set.forEach(t=>{
+                if (!(part as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
             });
             return c;
         }
@@ -254,14 +316,14 @@ namespace ts {
         //         symbol, isconst, type, symtab
         //     };
         // }
-        function createRefTypesTableNonLeaf(symbol: Symbol | undefined , isconst: boolean | undefined, preReqByTypeIn: [RefTypesType, RefTypesSymtab][] | ESMap<RefTypesType, RefTypesSymtab>
-            ): MakeRequired<RefTypesTableNonLeaf, "preReqByType"> {
-            const preReqByType = isArray(preReqByTypeIn) ? new Map<RefTypesType, RefTypesSymtab>(preReqByTypeIn) : (preReqByTypeIn instanceof Map) ? preReqByTypeIn : Debug.fail("preReqByTypeIn illegal type");
-            return {
-                kind: RefTypesTableKind.nonLeaf,
-                symbol, isconst, preReqByType
-            };
-        }
+        // function createRefTypesTableNonLeaf(symbol: Symbol | undefined , isconst: boolean | undefined, preReqByTypeIn: [RefTypesType, RefTypesSymtab][] | ESMap<RefTypesType, RefTypesSymtab>
+        //     ): MakeRequired<RefTypesTableNonLeaf, "preReqByType"> {
+        //     const preReqByType = isArray(preReqByTypeIn) ? new Map<RefTypesType, RefTypesSymtab>(preReqByTypeIn) : (preReqByTypeIn instanceof Map) ? preReqByTypeIn : Debug.fail("preReqByTypeIn illegal type");
+        //     return {
+        //         kind: RefTypesTableKind.nonLeaf,
+        //         symbol, isconst, preReqByType
+        //     };
+        // }
         // function getRefTypesTypeFromRefTypesTable(t: Readonly<RefTypesTable>): RefTypesType {
         //     if (isRefTypesTableNonLeaf(t)){
         //         const type = createRefTypesType();
@@ -302,7 +364,7 @@ namespace ts {
             if (!source.symbol) return;
             //const sourceSymbol = source.symbol!;
             const got = target.get(source.symbol);
-            if (!got) target.set(source.symbol, { leaf: source });
+            if (!got) target.set(source.symbol, { leaf: { ... source, type: copyRefTypesType(source.type) } });
             else {
                 if (!(!got.leaf.symbol || !!got.leaf.isconst===!!source.isconst)){
                     Debug.assert(!got.leaf.symbol || !!got.leaf.isconst===!!source.isconst);
@@ -311,19 +373,49 @@ namespace ts {
             }
         }
 
-        function mergeArrRefTypesTableReturnToRefTypesTableNonLeaf(symbol: Symbol | undefined, isconst: boolean | undefined, arr: Readonly<RefTypesTableReturn[]>): RefTypesTableNonLeaf {
-            const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = arr.map(t=>{
-                return [t.type,t.symtab];
-            });
-            return createRefTypesTableNonLeaf(symbol, isconst, arrTypeSymtab);
-        };
+        // function mergeArrRefTypesTableReturnToRefTypesTableNonLeaf(symbol: Symbol | undefined, isconst: boolean | undefined, arr: Readonly<RefTypesTableReturn[]>): RefTypesTableNonLeaf {
+        //     const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = arr.map(t=>{
+        //         return [t.type,t.symtab];
+        //     });
+        //     return createRefTypesTableNonLeaf(symbol, isconst, arrTypeSymtab);
+        // };
+        /**
+         * Requires: that every RefTypesTableReturn in "arr" have undefined values for symbol and isconst.
+         * arr[i].type, for all i, will be merged (union).
+         * arr[i].symtab, for all i, will be merged (union).
+         * arr[i].constraintItem, for all i, will be merged (union) by joining under a single "or"-kind constraintItem
+         *
+         * @param symbol
+         * @param isconst
+         * @param arr
+         * @returns
+         */
         function mergeArrRefTypesTableReturnToRefTypesTableReturn(symbol: Symbol | undefined, isconst: boolean | undefined, arr: Readonly<RefTypesTableReturn[]>): RefTypesTableReturn {
-            const x = mergeArrRefTypesTableReturnToRefTypesTableNonLeaf(symbol, isconst, arr);
-            const { passing } = applyCritToRefTypesTable({
-                refTypesTable: x,
-                crit: { kind: InferCritKind.none }
+            if (arr.length===0) Debug.fail("arr.length unexpectedly 0");
+            arr.forEach(rttr=>{
+                Debug.assert(rttr.symbol===undefined || rttr.symbol===symbol, "rttr.symbol!==undefined");
+                Debug.assert(rttr.isconst!==true || rttr.isconst===isconst, "rttr.isconst===true");
             });
-            return passing;
+            if (arr.length===1){
+                return arr[0];
+            }
+            const type = createRefTypesType();
+            const symtab = createRefTypesSymtab();
+            const arrConstr: ConstraintItem[]=[];
+            arr.forEach(rttr=>{
+                mergeToRefTypesType({ source:rttr.type, target:type });
+                mergeIntoRefTypesSymtab({ source: rttr.symtab, target: symtab });
+                if (rttr.constraintItem) arrConstr.push(rttr.constraintItem);
+            });
+            const constraintItem = (arrConstr.length === 0) ? undefined : (arrConstr.length === 1) ? arrConstr[0]: createFlowConstraintNodeOr({ constraints: arrConstr });
+            return {
+                kind: RefTypesTableKind.return,
+                symbol,
+                isconst,
+                type,
+                symtab,
+                constraintItem
+            };
         };
 
         function dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string {
@@ -345,12 +437,18 @@ namespace ts {
                 rtt.preReqByType?.forEach((symtab,type)=>{
                     as.push("    {");
                     as.push(`      type: ${dbgRefTypesTypeToString(type)}`);
-                    dbgRefTypesSymtabToStrings(symtab).forEach((str,i)=>as.push((i===0)?"      symtab: ":"        "+str));
+                    dbgRefTypesSymtabToStrings(symtab).forEach((str,i)=>as.push(((i===0)?"      symtab: ":"        ")+str));
                     as.push("    },");
                 });
             }
             if (isRefTypesTableReturn(rtt)){
-                dbgRefTypesSymtabToStrings(rtt.symtab).forEach((str,i)=>as.push((i===0)?"  symtab: ":"  "+str));
+                dbgRefTypesSymtabToStrings(rtt.symtab).forEach((str,i)=>as.push(((i===0)?"  symtab: ":"  ")+str));
+                if (!rtt.constraintItem){
+                    as.push(" constraintItem: undefined");
+                }
+                else {
+                    as.push(" constraintItem: ...");
+                }
             }
             as.push("}");
             return as;
@@ -365,121 +463,121 @@ namespace ts {
         }
 
 
-        function applyCritToRefTypesTable({refTypesTable, crit}: {refTypesTable: RefTypesTableReturn | RefTypesTableNonLeaf, crit: InferCrit}): { passing: RefTypesTableReturn, failing?: RefTypesTableReturn | undefined } {
-            if (refTypesTable.kind === RefTypesTableKind.return){
-                const passingType = createRefTypesType();
-                const failingType = createRefTypesType();
-                applyCritToRefTypesType(refTypesTable.type, crit, (t: Type, bpass: boolean, bfail: boolean)=>{
-                    if (bpass) addTypeToRefTypesType({ target:passingType,source:t });
-                    if (crit.alsoFailing && bfail) addTypeToRefTypesType({ target: failingType, source: t });
-                });
-                let passingSymtab = refTypesTable.symtab;
-                if (refTypesTable.symbol) {
-                    /**
-                     * could do some sanity checking here
-                     */
-                    // if (passingSymtab.has(refTypesTable.symbol)){
-                    //     // sanity check that new value is a subset of old
-                    // }
-                    passingSymtab = copyRefTypesSymtab(refTypesTable.symtab);
-                    passingSymtab.set(refTypesTable.symbol, { leaf:createRefTypesTableLeaf(refTypesTable.symbol, refTypesTable.isconst, passingType) });
-                }
-                const passing: RefTypesTableReturn = {
-                        kind: RefTypesTableKind.return,
-                        symbol: refTypesTable.symbol,
-                        isconst: refTypesTable.isconst,
-                        // @ts
-                        type: passingType,
-                        symtab: passingSymtab
-                    };
+        // function applyCritToRefTypesTable({refTypesTable, crit}: {refTypesTable: RefTypesTableReturn | RefTypesTableNonLeaf, crit: InferCrit}): { passing: RefTypesTableReturn, failing?: RefTypesTableReturn | undefined } {
+        //     if (refTypesTable.kind === RefTypesTableKind.return){
+        //         const passingType = createRefTypesType();
+        //         const failingType = createRefTypesType();
+        //         applyCritToRefTypesType(refTypesTable.type, crit, (t: Type, bpass: boolean, bfail: boolean)=>{
+        //             if (bpass) addTypeToRefTypesType({ target:passingType,source:t });
+        //             if (crit.alsoFailing && bfail) addTypeToRefTypesType({ target: failingType, source: t });
+        //         });
+        //         let passingSymtab = refTypesTable.symtab;
+        //         if (refTypesTable.symbol) {
+        //             /**
+        //              * could do some sanity checking here
+        //              */
+        //             // if (passingSymtab.has(refTypesTable.symbol)){
+        //             //     // sanity check that new value is a subset of old
+        //             // }
+        //             passingSymtab = copyRefTypesSymtab(refTypesTable.symtab);
+        //             passingSymtab.set(refTypesTable.symbol, { leaf:createRefTypesTableLeaf(refTypesTable.symbol, refTypesTable.isconst, passingType) });
+        //         }
+        //         const passing: RefTypesTableReturn = {
+        //                 kind: RefTypesTableKind.return,
+        //                 symbol: refTypesTable.symbol,
+        //                 isconst: refTypesTable.isconst,
+        //                 // @ts
+        //                 type: passingType,
+        //                 symtab: passingSymtab
+        //             };
 
-                let failing: RefTypesTableReturn | undefined;
-                if (crit.alsoFailing){
-                    // @ ts-expect-error 2679
-                    //const typeFailing = getUnionType(Array.from(failingType.keys()));
-                    let failingSymtab = refTypesTable.symtab;
-                    if (refTypesTable.symbol) {
-                        /**
-                         * could do some sanity checking here
-                         */
-                        // if (passingSymtab.has(refTypesTable.symbol)){
-                        //     // sanity check that new value is a subset of old
-                        // }
-                        failingSymtab = copyRefTypesSymtab(refTypesTable.symtab);
-                        failingSymtab.set(refTypesTable.symbol, { leaf:createRefTypesTableLeaf(refTypesTable.symbol, refTypesTable.isconst, failingType) });
-                    }
-                    failing = {
-                        kind: RefTypesTableKind.return,
-                        symbol: refTypesTable.symbol,
-                        isconst: refTypesTable.isconst,
-                        type: failingType,
-                        symtab: failingSymtab
-                    };
-                }
-                return { passing, failing };
-            }
-            else if (refTypesTable.kind === RefTypesTableKind.nonLeaf) {
-                const mergeSymtabs = ({source,target}: { source: RefTypesSymtab, target: RefTypesSymtab }) => {
-                    source.forEach((value,symbol)=>{
-                        Debug.assert(symbol);
-                        const got = target.get(symbol);
-                        if (!got) target.set(symbol, value);
-                        else {
-                            Debug.assert(got.leaf.kind===RefTypesTableKind.leaf && value.leaf.kind===RefTypesTableKind.leaf);
-                            Debug.assert(!!got.leaf.isconst===!!value.leaf.isconst);
-                            mergeToRefTypesType({ source: (value.leaf as RefTypesTableLeaf).type, target: (got.leaf as RefTypesTableLeaf).type });
-                        }
-                    });
-                };
-                const passingType = createRefTypesType();
-                const passingSymtab = createRefTypesSymtab();
-                const failingType = createRefTypesType();
-                const failingSymtab = createRefTypesSymtab();
-                refTypesTable.preReqByType!.forEach((refTypesSymtab, refTypesType)=>{
-                    applyCritToRefTypesType(refTypesType, crit, (t: Type, bpass: boolean, bfail: boolean)=>{
-                        if (bpass) {
-                            addTypeToRefTypesType({ target: passingType, source: t });
-                            mergeSymtabs({ target: passingSymtab, source: refTypesSymtab });
-                        }
-                        if (crit.alsoFailing && bfail) {
-                            addTypeToRefTypesType({ target: failingType, source: t });
-                            mergeSymtabs({ target: failingSymtab, source: refTypesSymtab });
-                        }
-                    });
-                });
-                if (refTypesTable.symbol){
-                    passingSymtab.set(refTypesTable.symbol, { leaf: createRefTypesTableLeaf(refTypesTable.symbol, refTypesTable.isconst, passingType) });
-                    failingSymtab.set(refTypesTable.symbol, { leaf: createRefTypesTableLeaf(refTypesTable.symbol, refTypesTable.isconst, failingType) });
-                }
-                const passing: RefTypesTableReturn = {
-                    kind: RefTypesTableKind.return,
-                    symbol: refTypesTable.symbol,
-                    isconst: refTypesTable.isconst,
-                    type: passingType,
-                    symtab: passingSymtab
-                };
-                if (!crit.alsoFailing) return { passing };
-                else {
-                    return {
-                        passing,
-                        failing: {
-                            kind: RefTypesTableKind.return,
-                            symbol: refTypesTable.symbol,
-                            isconst: refTypesTable.isconst,
-                            type: failingType,
-                            symtab:failingSymtab
-                        }
-                    };
-                }
-            }
-            else Debug.fail("unreachable");
-        }
+        //         let failing: RefTypesTableReturn | undefined;
+        //         if (crit.alsoFailing){
+        //             // @ ts-expect-error 2679
+        //             //const typeFailing = getUnionType(Array.from(failingType.keys()));
+        //             let failingSymtab = refTypesTable.symtab;
+        //             if (refTypesTable.symbol) {
+        //                 /**
+        //                  * could do some sanity checking here
+        //                  */
+        //                 // if (passingSymtab.has(refTypesTable.symbol)){
+        //                 //     // sanity check that new value is a subset of old
+        //                 // }
+        //                 failingSymtab = copyRefTypesSymtab(refTypesTable.symtab);
+        //                 failingSymtab.set(refTypesTable.symbol, { leaf:createRefTypesTableLeaf(refTypesTable.symbol, refTypesTable.isconst, failingType) });
+        //             }
+        //             failing = {
+        //                 kind: RefTypesTableKind.return,
+        //                 symbol: refTypesTable.symbol,
+        //                 isconst: refTypesTable.isconst,
+        //                 type: failingType,
+        //                 symtab: failingSymtab
+        //             };
+        //         }
+        //         return { passing, failing };
+        //     }
+        //     else if (refTypesTable.kind === RefTypesTableKind.nonLeaf) {
+        //         const mergeSymtabs = ({source,target}: { source: RefTypesSymtab, target: RefTypesSymtab }) => {
+        //             source.forEach((value,symbol)=>{
+        //                 Debug.assert(symbol);
+        //                 const got = target.get(symbol);
+        //                 if (!got) target.set(symbol, value);
+        //                 else {
+        //                     Debug.assert(got.leaf.kind===RefTypesTableKind.leaf && value.leaf.kind===RefTypesTableKind.leaf);
+        //                     Debug.assert(!!got.leaf.isconst===!!value.leaf.isconst);
+        //                     mergeToRefTypesType({ source: (value.leaf as RefTypesTableLeaf).type, target: (got.leaf as RefTypesTableLeaf).type });
+        //                 }
+        //             });
+        //         };
+        //         const passingType = createRefTypesType();
+        //         const passingSymtab = createRefTypesSymtab();
+        //         const failingType = createRefTypesType();
+        //         const failingSymtab = createRefTypesSymtab();
+        //         refTypesTable.preReqByType!.forEach((refTypesSymtab, refTypesType)=>{
+        //             applyCritToRefTypesType(refTypesType, crit, (t: Type, bpass: boolean, bfail: boolean)=>{
+        //                 if (bpass) {
+        //                     addTypeToRefTypesType({ target: passingType, source: t });
+        //                     mergeSymtabs({ target: passingSymtab, source: refTypesSymtab });
+        //                 }
+        //                 if (crit.alsoFailing && bfail) {
+        //                     addTypeToRefTypesType({ target: failingType, source: t });
+        //                     mergeSymtabs({ target: failingSymtab, source: refTypesSymtab });
+        //                 }
+        //             });
+        //         });
+        //         if (refTypesTable.symbol){
+        //             passingSymtab.set(refTypesTable.symbol, { leaf: createRefTypesTableLeaf(refTypesTable.symbol, refTypesTable.isconst, passingType) });
+        //             failingSymtab.set(refTypesTable.symbol, { leaf: createRefTypesTableLeaf(refTypesTable.symbol, refTypesTable.isconst, failingType) });
+        //         }
+        //         const passing: RefTypesTableReturn = {
+        //             kind: RefTypesTableKind.return,
+        //             symbol: refTypesTable.symbol,
+        //             isconst: refTypesTable.isconst,
+        //             type: passingType,
+        //             symtab: passingSymtab
+        //         };
+        //         if (!crit.alsoFailing) return { passing };
+        //         else {
+        //             return {
+        //                 passing,
+        //                 failing: {
+        //                     kind: RefTypesTableKind.return,
+        //                     symbol: refTypesTable.symbol,
+        //                     isconst: refTypesTable.isconst,
+        //                     type: failingType,
+        //                     symtab:failingSymtab
+        //                 }
+        //             };
+        //         }
+        //     }
+        //     else Debug.fail("unreachable");
+        // }
 
 
         function createNodeToTypeMap(): NodeToTypeMap {
             return new Map<Node,Type>();
         }
-        function mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void{
+        function mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void {
             source.forEach((t,n)=>{
                 const gott = target.get(n);
                 if (!gott) target.set(n,t);
@@ -489,6 +587,11 @@ namespace ts {
                 }
             });
         }
+        // function mergeArrIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>[], target?: NodeToTypeMap): NodeToTypeMap{
+        //     if (!target) target = createNodeToTypeMap();
+        //     for (const s of source) mergeIntoNodeToTypeMaps(s,target);
+        //     return target;
+        // }
 
 
         /**
@@ -763,37 +866,56 @@ namespace ts {
                 // expressions down to individual conditional control flows. However, we may encounter them when analyzing
                 // aliased conditional expressions.
                 case SyntaxKind.AmpersandAmpersandToken:{
-                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken START`);
+                    if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken START`);
                     //const inferStatus1: InferStatus = { ...inferStatus };
                     const {left:leftExpr,right:rightExpr}=binaryExpression;
-                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken left`);
+                    if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken left`);
                     const leftRet = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
                         condExpr: leftExpr,
                         inferStatus,
-                        constraintItemNode
+                        constraintItem: constraintItemNode
                     });
                     if (isNeverType(leftRet.inferRefRtnType.failing!.type)){
-                        consoleLog(`case SyntaxKind.AmpersandAmpersandToken left never failing `);
+                        if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken left never failing `);
                         leftRet.byNode.set(rightExpr, neverType);
                         return {
                             byNode: leftRet.byNode,
                             arrRefTypesTableReturn:[leftRet.inferRefRtnType.passing]
                         };
                     }
-                    consoleLog(`case SyntaxKind.AmpersandAmpersandToken right`);
-                    const rightRet = mrNarrowTypes({
-                        refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.passing.symtab),
+                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                    const byNode = leftRet.byNode;
+                    if (!isNeverType(leftRet.inferRefRtnType.passing.type)){
+                        if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
+                        const rightRetT = mrNarrowTypes({
+                            refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.passing.symtab),
+                            crit: { kind:InferCritKind.truthy, alsoFailing:true },
+                            condExpr: rightExpr,
+                            inferStatus,
+                            constraintItem: leftRet.inferRefRtnType.passing.constraintItem
+                        });
+                        mergeIntoNodeToTypeMaps(rightRetT.byNode, byNode);
+                        arrRefTypesTableReturn.push(rightRetT.inferRefRtnType.passing);
+                        arrRefTypesTableReturn.push(rightRetT.inferRefRtnType.failing!);
+                    }
+                    if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
+                    const rightRetF = mrNarrowTypes({
+                        refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
                         condExpr: rightExpr,
                         inferStatus,
-                        constraintItemNode: leftRet.inferRefRtnType.passing.constraintItemNode
+                        constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
                     });
-                    mergeIntoNodeToTypeMaps(leftRet.byNode, rightRet.byNode);
+                    mergeIntoNodeToTypeMaps(rightRetF.byNode, byNode);
+                    rightRetF.inferRefRtnType.passing.type = createRefTypesType(checker.getFalseType());
+                    arrRefTypesTableReturn.push(rightRetF.inferRefRtnType.passing);
+                    arrRefTypesTableReturn.push(rightRetF.inferRefRtnType.failing!);
+                    for (const t of arrRefTypesTableReturn) t.symbol = undefined;
                     return {
-                        byNode: rightRet.byNode,
-                        arrRefTypesTableReturn: [rightRet.inferRefRtnType.passing, rightRet.inferRefRtnType.failing!]
+                        byNode,
+                        arrRefTypesTableReturn
                     };
                 }
                     break;
@@ -844,7 +966,7 @@ namespace ts {
                      * If the number of sigs is 1 there are no overloads, but if it is more than one than there are overloads.
                      * In case of overloads skip the last one, because it is just union of all the others.
                      */
-                    sigs.slice(0,Math.max(1, sigs.length-1)).forEach(s=>{
+                    sigs.slice(0,/*Math.max(1, sigs.length-1)*/ sigs.length).forEach(s=>{
                         allSigAndContext.push({
                             sig: s,
                             preRttr: rttr
@@ -1078,7 +1200,7 @@ namespace ts {
          */
         function InferRefTypesPreAccess({refTypesSymtab: refTypes, condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItemNode}: InferRefInnerArgs & {condExpr: {expression: Expression}}): InferRefTypesPreAccessRtnType{
             const { inferRefRtnType:{ passing, failing }, byNode:byNodePre } = mrNarrowTypes(
-                { refTypesSymtab: refTypes, condExpr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus,constraintItemNode });
+                { refTypesSymtab: refTypes, condExpr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus,constraintItem: constraintItemNode });
             //Debug.assert(!_saveByNodeForReplayPre);
             Debug.assert(failing);
 
@@ -1180,7 +1302,7 @@ namespace ts {
                  */
 
                 const preRefTypesSymtab = prePassing.symtab;
-                const preConstraintItemNode = prePassing.constraintItemNode;
+                const preConstraintItemNode = prePassing.constraintItem;
                 forEachRefTypesTypeType(prePassing.type, t => {
                     if (t===undefinedType||t===nullType) {
                         Debug.assert(false);
@@ -1197,7 +1319,7 @@ namespace ts {
                             symbol: undefined,
                             type,
                             symtab: preRefTypesSymtab,
-                            constraintItemNode: preConstraintItemNode
+                            constraintItem: preConstraintItemNode
                         });
                         return;
                     }
@@ -1210,7 +1332,7 @@ namespace ts {
                                 symbol: undefined,
                                 type: createRefTypesType(numberType),
                                 symtab: preRefTypesSymtab,
-                                constraintItemNode: preConstraintItemNode
+                                constraintItem: preConstraintItemNode
                             });
                         }
                         else {
@@ -1221,7 +1343,7 @@ namespace ts {
                                 symbol: undefined,
                                 type: createRefTypesType(undefinedType),
                                 symtab: preRefTypesSymtab,
-                                constraintItemNode: preConstraintItemNode
+                                constraintItem: preConstraintItemNode
                             });
                         };
                         return;
@@ -1277,7 +1399,7 @@ namespace ts {
                             isconst: readonlyProp,
                             type: value.leaf.type,
                             symtab: preRefTypesSymtab,
-                            constraintItemNode: preConstraintItemNode
+                            constraintItem: preConstraintItemNode
                         });
                     return;
                     }
@@ -1410,32 +1532,63 @@ namespace ts {
         //     };
         // };
 
-        const mergeSymbolIfPresent = (rttr: RefTypesTableReturn): RefTypesTableReturnCritOut => {
-            const { kind, symtab, type, symbol, isconst, constraintItemNode } = rttr;
-            let tmpConstraintItemNode = constraintItemNode ?? createFlowConstraintNodeAnd({ constraints:[] });
-            if (symbol){
-                let setTypeTmp = type;
-                if (isconst) {
-                    const got = symtab.get(symbol);
-                    if (got) setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
-                    const r = andIntoConstrainTrySimplify({ symbol, type: setTypeTmp, constraintItemNode });
-                    tmpConstraintItemNode = r[0];
-                    setTypeTmp = r[1];
-                }
-                symtab.set(
-                    symbol,
-                    {leaf: {
-                        kind: RefTypesTableKind.leaf,
-                        symbol,
-                        isconst,
-                        type: setTypeTmp,
-                    },
-                });
+        // const mergeSymbolIfPresent = (rttr: RefTypesTableReturn): RefTypesTableReturnCritOut => {
+        //     const { kind, type, symbol, isconst, constraintItemNode } = rttr;
+        //     let symtab = rttr.symtab;
+        //     let tmpConstraintItemNode = constraintItemNode ?? createFlowConstraintNodeAnd({ constraints:[] });
+        //     if (symbol){
+        //         let setTypeTmp = type;
+        //         if (isconst) {
+        //             const got = symtab.get(symbol);
+        //             if (got) setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
+        //             const r = andIntoConstrainTrySimplify({ symbol, type: setTypeTmp, constraintItemNode, mrNarrow });
+        //             tmpConstraintItemNode = r[0];
+        //             setTypeTmp = r[1];
+        //         }
+        //         symtab = symtab.size ? copyRefTypesSymtab(symtab) : createRefTypesSymtab();
+        //         symtab.set(
+        //             symbol,
+        //             {leaf: {
+        //                 kind: RefTypesTableKind.leaf,
+        //                 symbol,
+        //                 isconst,
+        //                 type: setTypeTmp,
+        //             },
+        //         });
+        //     }
+        //     return { kind, symtab, type, constraintItemNode: tmpConstraintItemNode };
+        // };
+
+        const mergeTypeIntoNewSymtabAndNewConstraint = (rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >): RefTypesTableReturnCritOut => {
+            Debug.assert(rttr.symbol);
+            const { type, symbol, isconst } = rttr;
+            //let { symtab, constraintItemNode } = rttr;
+            let symtab = copyRefTypesSymtab(rttr.symtab);
+            let tmpConstraintItemNode = rttr.constraintItem;
+            let setTypeTmp = type;
+            if (isconst) {
+                const got = symtab.get(symbol);
+                if (got) setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
+                const r = andIntoConstrainTrySimplify({ symbol, type: setTypeTmp, constraintItem: rttr.constraintItem, mrNarrow });
+                tmpConstraintItemNode = r[0];
+                setTypeTmp = r[1];
             }
-            return { kind, symtab, type, constraintItemNode: tmpConstraintItemNode };
+            symtab = symtab.size ? copyRefTypesSymtab(symtab) : createRefTypesSymtab();
+            symtab.set(
+                symbol,
+                {leaf: {
+                    kind: RefTypesTableKind.leaf,
+                    symbol,
+                    isconst,
+                    type: setTypeTmp,
+                },
+            });
+            return { kind:RefTypesTableKind.return, symtab, type: setTypeTmp, constraintItem: tmpConstraintItemNode };
         };
 
-        /* IWOZERE */
+        /**  IWOZERE
+         *
+         */
         const applyCritToArrRefTypesTableReturn = (arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, _inferStatus: InferStatus): {
             passing: RefTypesTableReturnCritOut[], failing?: RefTypesTableReturnCritOut[]
         } =>{
@@ -1444,21 +1597,30 @@ namespace ts {
                 return crit.alsoFailing ? { passing:[], failing:[] } : { passing: [] };
             }
             if (/*!inferStatus.inCondition && */ crit.kind===InferCritKind.none && arrRttr.length===1){
-                return { passing: [mergeSymbolIfPresent(arrRttr[0])] };
+                if (!arrRttr[0].symbol) return { passing: [...arrRttr] };
+                return { passing: [mergeTypeIntoNewSymtabAndNewConstraint(arrRttr[0])] };
             }
 
             if (/* inferStatus.inCondition && */ crit.kind===InferCritKind.none){
-                const arrRttrco: RefTypesTableReturnCritOut[] = arrRttr.map(rttr=> mergeSymbolIfPresent(rttr));
+                const arrRttrco: RefTypesTableReturnCritOut[] = arrRttr.map(rttr=> {
+                    if (!rttr.symbol) return rttr;
+                    return mergeTypeIntoNewSymtabAndNewConstraint(rttr);
+                });
                 const rttrco: RefTypesTableReturnCritOut = {
                     kind: RefTypesTableKind.return,
                     symtab: createRefTypesSymtab(),
                     type: createRefTypesType(), // never
-                    constraintItemNode: createFlowConstraintNodeOr({ constraints:[] }),
+                    constraintItem: createFlowConstraintNodeOr({ constraints:[] }),
                 };
                 arrRttrco.forEach(rttr2=>{
                     mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrco.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrco.type });
-                    if (rttr2.constraintItemNode) rttrco.constraintItemNode!.constraints.push(rttr2.constraintItemNode);
+                    /** IWOZERE TODO */
+                    if (rttr2.constraintItem) {
+                        if (rttrco.constraintItem?.kind===ConstraintItemKind.node) {
+                            rttrco.constraintItem.constraints.push(rttr2.constraintItem);
+                        }
+                    }
                 });
                 return { passing: [rttrco] };
             }
@@ -1481,54 +1643,72 @@ namespace ts {
                             localSymtabFailing = rttr.symtab;
                         }
                     });
-                    // const rttrPassing: RefTypesTableReturn = {
-                    //     kind: RefTypesTableKind.return,
-                    //     symbol: rttr.symbol,
-                    //     type: localTypePassing,
-                    //     symtab: localSymtabPassing ?? createRefTypesSymtab(),
-                    //     isconst: rttr.isconst,
-                    //     constraintItemNode:
-                    // };
-                    arrRttrcoPassing.push(mergeSymbolIfPresent({
-                        kind: RefTypesTableKind.return,
-                        symbol: rttr.symbol,
-                        type: localTypePassing,
-                        symtab: localSymtabPassing ?? createRefTypesSymtab(),
-                        isconst: rttr.isconst,
-                        constraintItemNode: rttr.constraintItemNode
-                    }));
-                    arrRttrcoFailing.push(mergeSymbolIfPresent({
-                        kind: RefTypesTableKind.return,
-                        symbol: rttr.symbol,
-                        type: localTypeFailing,
-                        symtab: localSymtabFailing ?? createRefTypesSymtab(),
-                        isconst: rttr.isconst,
-                        constraintItemNode: rttr.constraintItemNode
-                    }));
+                    if (!rttr.symbol){
+                        if (!isNeverType(localTypePassing)){
+                            arrRttrcoPassing.push({
+                                kind: RefTypesTableKind.return,
+                                type: localTypePassing,
+                                symtab: localSymtabPassing ?? createRefTypesSymtab(),
+                                isconst: rttr.isconst,
+                                constraintItem: rttr.constraintItem
+                            });
+                        }
+                        if (!isNeverType(localTypeFailing)){
+                            arrRttrcoFailing.push({
+                            kind: RefTypesTableKind.return,
+                            type: localTypeFailing,
+                            symtab: localSymtabFailing ?? createRefTypesSymtab(),
+                            isconst: rttr.isconst,
+                            constraintItem: rttr.constraintItem
+                            });
+                        }
+                    }
+                    else {
+                        arrRttrcoPassing.push(mergeTypeIntoNewSymtabAndNewConstraint({
+                            kind: RefTypesTableKind.return,
+                            symbol: rttr.symbol,
+                            type: localTypePassing,
+                            symtab: localSymtabPassing ?? createRefTypesSymtab(),
+                            isconst: rttr.isconst,
+                            constraintItem: rttr.constraintItem
+                        }));
+                        arrRttrcoFailing.push(mergeTypeIntoNewSymtabAndNewConstraint({
+                            kind: RefTypesTableKind.return,
+                            symbol: rttr.symbol,
+                            type: localTypeFailing,
+                            symtab: localSymtabFailing ?? createRefTypesSymtab(),
+                            isconst: rttr.isconst,
+                            constraintItem: rttr.constraintItem
+                        }));
 
+                    }
                 });
                 const rttrcoPassing: RefTypesTableReturnCritOut = {
                     kind: RefTypesTableKind.return,
                     symtab: createRefTypesSymtab(),
                     type: createRefTypesType(), // never
-                    constraintItemNode: createFlowConstraintNodeOr({ constraints:[] }),
+                    constraintItem: undefined // createFlowConstraintNodeOr({ constraints:[] }),
                 };
+                const passingOredConstraints: ConstraintItem[] = [];
                 arrRttrcoPassing.forEach(rttr2=>{
                     mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoPassing.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoPassing.type });
-                    if (rttr2.constraintItemNode) rttrcoPassing.constraintItemNode!.constraints.push(rttr2.constraintItemNode);
+                    if (rttr2.constraintItem) passingOredConstraints.push(rttr2.constraintItem);
                 });
+                rttrcoPassing.constraintItem = createFlowConstraintNodeOr({ constraints:passingOredConstraints });
                 const rttrcoFailing: RefTypesTableReturnCritOut = {
                     kind: RefTypesTableKind.return,
                     symtab: createRefTypesSymtab(),
                     type: createRefTypesType(), // never
-                    constraintItemNode: createFlowConstraintNodeOr({ constraints:[] }),
+                    constraintItem: undefined // createFlowConstraintNodeOr({ constraints:[] }),
                 };
-                arrRttrcoPassing.forEach(rttr2=>{
+                const failingOredConstraints: ConstraintItem[] = [];
+                arrRttrcoFailing.forEach(rttr2=>{
                     mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoFailing.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoFailing.type });
-                    if (rttr2.constraintItemNode) rttrcoFailing.constraintItemNode!.constraints.push(rttr2.constraintItemNode);
+                    if (rttr2.constraintItem) failingOredConstraints.push(rttr2.constraintItem);
                 });
+                rttrcoFailing.constraintItem = createFlowConstraintNodeOr({ constraints:failingOredConstraints });
                 const rtn: {
                     passing: RefTypesTableReturnCritOut[], failing?: RefTypesTableReturnCritOut[]
                 } = { passing:[rttrcoPassing] };
@@ -1537,87 +1717,6 @@ namespace ts {
                 }
                 return rtn;
             }
-
-            // const passing: RefTypesTableReturnCritOut[]=[];
-            // const failing: RefTypesTableReturnCritOut[]=[];
-
-            // const totalSymtabPassing = createRefTypesSymtab();
-            // const totalTypePassing = createRefTypesType();
-            // const totalSymtabFailing = createRefTypesSymtab();
-            // const totalTypeFailing = createRefTypesType();
-            // arrRttr.forEach(rttr=>{
-            //     let localSymtabPassing: RefTypesSymtab | undefined;
-            //     const localTypePassing = createRefTypesType();
-            //     let localSymtabFailing: RefTypesSymtab | undefined;
-            //     const localTypeFailing = createRefTypesType();
-            //     applyCritToRefTypesType(rttr.type, crit, (tstype, bpass, bfail)=>{
-            //         if (bpass) {
-            //             addTypeToRefTypesType({ source: tstype, target: localTypePassing });
-            //             localSymtabPassing = rttr.symtab;
-            //         }
-            //         if (crit.alsoFailing && bfail) {
-            //             addTypeToRefTypesType({ source: tstype, target: localTypeFailing });
-            //             localSymtabFailing = rttr.symtab;
-            //         }
-            //     });
-            //     if (!isNeverType(localTypePassing)){
-            //         localSymtabPassing = localSymtabPassing ? copyRefTypesSymtab(localSymtabPassing) : createRefTypesSymtab();
-            //         if (rttr.symbol){
-            //             mergeLeafIntoRefTypesSymtab({
-            //                 source: {
-            //                     kind: RefTypesTableKind.leaf,
-            //                     symbol: rttr.symbol,
-            //                     isconst: rttr.isconst,
-            //                     type: localTypePassing,
-            //                 },
-            //                 target: localSymtabPassing
-            //             });
-            //         }
-            //         if (inferStatus.inCondition){
-            //             if (!isNeverType(localTypePassing)){
-            //                 passing.push({ kind: RefTypesTableKind.return, symtab: localSymtabPassing, type: localTypePassing });
-            //             }
-            //         }
-            //         else {
-            //             mergeToRefTypesType({ source: localTypePassing, target: totalTypePassing });
-            //             mergeIntoRefTypesSymtab({ source: localSymtabPassing, target: totalSymtabPassing });
-            //         }
-            //     }
-            //     if (!isNeverType(localTypeFailing)){
-            //         localSymtabFailing = localSymtabFailing ? copyRefTypesSymtab(localSymtabFailing) : createRefTypesSymtab();
-            //         if (rttr.symbol){
-            //             mergeLeafIntoRefTypesSymtab({
-            //                 source: {
-            //                     kind: RefTypesTableKind.leaf,
-            //                     symbol: rttr.symbol,
-            //                     isconst: rttr.isconst,
-            //                     type: localTypeFailing,
-            //                 },
-            //                 target: localSymtabFailing
-            //             });
-            //         }
-            //         if (inferStatus.inCondition){
-            //             if (!isNeverType(localTypeFailing)) {
-            //                 failing.push({ kind: RefTypesTableKind.return, symtab: localSymtabFailing, type: localTypeFailing });
-            //             }
-            //         }
-            //         else {
-            //             mergeToRefTypesType({ source: localTypeFailing, target: totalTypeFailing });
-            //             mergeIntoRefTypesSymtab({ source: localSymtabFailing, target: totalSymtabFailing });
-            //         }
-            //     }
-            // });
-            // if (!inferStatus.inCondition) {
-            //     if (!isNeverType(totalTypePassing)){
-            //         passing.push({ kind: RefTypesTableKind.return, symtab: totalSymtabPassing, type: totalTypePassing });
-            //     }
-            //     if (!isNeverType(totalTypeFailing)){
-            //         failing.push({ kind: RefTypesTableKind.return, symtab: totalSymtabFailing, type: totalTypeFailing });
-            //     }
-            // }
-            // if (!crit.alsoFailing) return { passing };
-            // else return { passing,failing };
-
         };
 
         /**
@@ -1741,51 +1840,9 @@ namespace ts {
                     });
                 }
             }
-
-            // const constraintsRetval: Partial<{
-            //     passing: ConstraintItemNode,
-            //     failing?: ConstraintItemNode,
-            // }> = {};
-            // const doOne = (typeAndConstraints: TypeAndConstraint[]): TypeAndConstraint => {
-            //     if (!innerret.assignmentData?.symbol || !innerret.assignmentData?.isconst){
-            //         const constraintNode = createFlowConstraintNodeOr({
-            //           constraints: typeAndConstraints.map(x=>x.constraintNode)
-            //         });
-            //         const type = createRefTypesType();
-            //         typeAndConstraints.forEach(x=>mergeToRefTypesType({ source: x.type, target: type }));
-            //         return { type, constraintNode };
-            //     }
-            //     else {
-            //         const constraints: ConstraintItemNode[]=[];
-            //         const type = createRefTypesType();
-            //         typeAndConstraints.forEach(x=>{
-            //             /**
-            //              * Attempt to substitute the symbol/type constraint into the existing constraint.
-            //              */
-            //             const constraint = andIntoConstrainTrySimplify({ constraintItemNode: x.constraintNode, symbol: innerret.assignmentData?.symbol!, type: x.type });
-            //             constraints.push(constraint);
-            //             mergeToRefTypesType({ source: x.type, target: type });
-            //         });
-            //         return {
-            //             type,
-            //             constraintNode: createFlowConstraintNodeOr({ constraints })
-            //         };
-            //     }
-            // };
             let finalByNode: NodeToTypeMap | undefined;
             const unmergedPassing: RefTypesTableReturn[]=[];
             const unmergedFailing: RefTypesTableReturn[]=[];
-            // const finalRetval: Partial<MrNarrowTypesReturn> = {
-            //     byNode: undefined,
-            //     //saveByNodeForReplay: undefined,
-            //     inferRefRtnType:{
-            //         passing: [] as RefTypesTableReturn[],
-            //         failing: crit.alsoFailing ? [] as RefTypesTableReturn[] : undefined
-            //     },
-            // };
-            // if (postcritArrTypeAndContraint.failing){
-            //     finalRetval.constraints!.failing = doOne(postcritArrTypeAndContraint.failing);
-            // }
             let mrNarrowTypesReturn: MrNarrowTypesReturn;
             if (newReplayItem) {
                 //Debug.assert(innerret.assignmentData && innerret.assignmentData.symbol===replaySymbol);
@@ -1845,7 +1902,7 @@ namespace ts {
                             const failingSymtab = copyRefTypesSymtab(rttr.symtab);
                             rttr.symtab.forEach((rttl,_symbol)=>{
                                 if (!rttl.leaf.isconst) return;
-                                const got = failingSymtab.get(_symbol);//?.leaf.type;
+                                const got = failingSymtab.get(_symbol);
                                 Debug.assert(got);
                                 got.leaf.type = intersectRefTypesTypes(rttl.leaf.type, got.leaf.type);
                             });
@@ -1912,10 +1969,6 @@ namespace ts {
                     });
                 }
                 finalByNode = innerret.byNode;
-                // finalRetval = {
-                //     byNode: innerret.byNode,
-                //     inferRefRtnType,
-                // };
                 mrNarrowTypesReturn = {
                     byNode: finalByNode,
                     inferRefRtnType: {
@@ -1973,10 +2026,6 @@ namespace ts {
             return mrNarrowTypesReturn;
         }
 
-        // function mrNarrowTypesInnerEmptyReturn(): MrNarrowTypesInnerReturn {
-        //     return { arrRefTypesTableReturn:[], byNode: createNodeToTypeMap() };
-        // }
-
         function mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, constraintItemNode }: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             if (myDebug){
                 consoleGroup(`mrNarrowTypes_inner[in] condExpr:${dbgNodeToString(condExpr)}, inferStatus.replayItemStack.length: ${
@@ -2010,20 +2059,6 @@ namespace ts {
             }
             return innerret;
         }
-
-        // function mrNarrowWithConstConstraints({arrRtsIn, prevConditionItemIn}: {arrRtsIn: RefTypesSymtab[], prevConditionItemIn: ConditionItem}){
-        //     let arrRts = arrRtsIn;
-        //     let prevConditionItem: ConditionItem | undefined = prevConditionItemIn;
-        //     do {
-        //         const arrTmp: RefTypesSymtab[] = [];
-        //         arrRts.forEach(rts=>{
-        //             rts.forEach(s=>{
-
-        //             });
-        //         });
-        //     } while (prevConditionItem=prevConditionItem.prev);
-
-        // }
 
         /**
          *
@@ -2060,7 +2095,7 @@ namespace ts {
                             type = createRefTypesType(tstype);
                         }
                         if (constraintItemNode){
-                            type = mrNarrowTypeByConstraint({ symbol:condSymbol, type, constraintItemNode });
+                            type = mrNarrowTypeByConstraint({ symbol:condSymbol, type, constraintItem: constraintItemNode }, mrNarrow);
                         }
                         tstype = getTypeFromRefTypesType(type);
                     }
@@ -2143,7 +2178,7 @@ namespace ts {
                 }
                 case SyntaxKind.ParenthesizedExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression`);
-                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as ParenthesizedExpression).expression, crit: { kind: InferCritKind.none }, inferStatus, constraintItemNode });
+                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as ParenthesizedExpression).expression, crit: { kind: InferCritKind.none }, inferStatus, constraintItem: constraintItemNode });
                     return {
                         byNode: ret.byNode,
                         arrRefTypesTableReturn: [ret.inferRefRtnType.passing],
@@ -2167,7 +2202,7 @@ namespace ts {
                         condExpr: condition,
                         crit: { kind: InferCritKind.truthy, alsoFailing: true },
                         inferStatus: { ...inferStatus, inCondition: true },
-                        constraintItemNode
+                        constraintItem: constraintItemNode
                     });
                     mergeIntoNodeToTypeMaps(rcond.byNode, byNodeSinglepath);
                     //andIntoConstrainTrySimplify({})
@@ -2183,7 +2218,7 @@ namespace ts {
                             condExpr: whenTrue,
                             crit: { kind: InferCritKind.none },
                             inferStatus, //: { ...inferStatus, inCondition: true }
-                            constraintItemNode: rcond.inferRefRtnType.passing.constraintItemNode
+                            constraintItem: rcond.inferRefRtnType.passing.constraintItem
                         });
                         mergeIntoNodeToTypeMaps(retTrue.byNode, byNodeSinglepath);
                     }
@@ -2199,7 +2234,7 @@ namespace ts {
                             condExpr: whenTrue,
                             crit: { kind: InferCritKind.none },
                             inferStatus, //: { ...inferStatus, inCondition: true }
-                            constraintItemNode: rcond.inferRefRtnType.failing!.constraintItemNode
+                            constraintItem: rcond.inferRefRtnType.failing!.constraintItem
                         });
                         mergeIntoNodeToTypeMaps(retFalse.byNode, byNodeSinglepath);
                     }
@@ -2235,6 +2270,24 @@ namespace ts {
                             crit:{ negate: true, kind: InferCritKind.truthy, alsoFailing: true },
                             qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true }
                         });
+                        /**
+                         * The crit was already set with negate: true to reverse the passing and failing.
+                         * Below, the symbols are set to undefined, and the types converted to booleans.
+                         */
+                        const nodeTypes: Type[] = [];
+                        ret.inferRefRtnType.passing.symbol = undefined;
+                        if (!isNeverType(ret.inferRefRtnType.passing.type)){
+                            const ttype = checker.getTrueType();
+                            nodeTypes.push(ttype);
+                            ret.inferRefRtnType.passing.type = createRefTypesType(ttype);
+                        }
+                        ret.inferRefRtnType.failing!.symbol = undefined;
+                        if (!isNeverType(ret.inferRefRtnType.failing!.type)){
+                            const ftype = checker.getFalseType();
+                            nodeTypes.push(ftype);
+                            ret.inferRefRtnType.failing!.type = createRefTypesType(ftype);
+                        }
+                        ret.byNode.set(condExpr, getUnionType(nodeTypes));
                         return {
                             byNode: ret.byNode,
                             arrRefTypesTableReturn: [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!]

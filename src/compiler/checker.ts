@@ -24658,6 +24658,12 @@ namespace ts {
                         }
                         return typeByMrNarrow;
                     }
+                    if (!typeByMrNarrow){
+                        Debug.fail("typeByMrNarrow is undefined");
+                    }
+                    else if (typeByMrNarrow===errorType){
+                        Debug.fail("typeByMrNarrow is errorType");
+                    }
                     // else drop through to getFlowTypeOfReference_aux
                 }
             }
@@ -43220,7 +43226,7 @@ namespace ts {
                     //     else break;
                     // }
                     writeFlowNodesUp(write, endFlowNodes);
-                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisable?1:0}.${dbgFlowFileCnt}.flow`;
+                    ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisableInfer?1:0}.${dbgFlowFileCnt}.flow`;
                     sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
                 }
             }

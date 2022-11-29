@@ -8,8 +8,9 @@ else
 fi
 if [ -z $BN ] 
 then 
-  echo "must provide test filename"
-  return 99
+  BN="_cax"
+  # echo "must provide test filename"
+  # return 99
 fi
 L0=tests/baselines/local-${BN}.de${myDebug}.di0.txt
 L1=tests/baselines/local-${BN}.de${myDebug}.di1.txt

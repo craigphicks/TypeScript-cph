@@ -470,10 +470,11 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems
         };
 
-        // let prevConditionItem: ConditionItem | undefined; // obsolete
-        //let constraintItemNode: ConstraintItemNode | undefined;
         let retval: MrNarrowTypesReturn;
         {
+            /**
+             * Merge branches - each of ConstraintItem(s), RefTypeSymtab(s)
+             */
             let constraintItemNode: ConstraintItemNode | undefined;
             if (setCbi.size===1) constraintItemNode = (setCbi.keys().next().value as CurrentBranchesItem).constraintNode;
             else if (setCbi.size) {
@@ -491,26 +492,9 @@ namespace ts {
             if (!arefTypesSymtab.length) arefTypesSymtab.push(sourceFileMrState.mrNarrow.createRefTypesSymtab());
 
             const refTypesSymtab = arefTypesSymtab.length>1 ? sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(arefTypesSymtab) : arefTypesSymtab[0];
-            retval = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItemNode });
+            retval = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemNode });
         }
-
         if (boolsplit){
-            //const andWithPrevCondFalse;
-            // const prevConditionItemFalse: ConditionItem | undefined = (retval.inferRefRtnType.failing && retval.inferRefRtnType.failing.length>1) ?
-            //     {
-            //         arrRttr: retval.inferRefRtnType.failing,
-            //         expr: maximalNode as Expression,
-            //         negate: true,
-            //         prev: prevConditionItem
-            //     } : prevConditionItem;
-            // const prevConditionItemTrue: ConditionItem | undefined = (retval.inferRefRtnType.passing.length>1) ?
-            //     {
-            //         arrRttr: retval.inferRefRtnType.passing,
-            //         expr: maximalNode as Expression,
-            //         prev: prevConditionItem
-            //     } : prevConditionItem;
-
-
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
                 falsy: {
@@ -525,12 +509,6 @@ namespace ts {
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
         else {
-            // const prevConditionItemNext: ConditionItem | undefined = (retval.inferRefRtnType.passing.length>1) ?
-            // {
-            //     arrRttr: retval.inferRefRtnType.passing,
-            //     expr: maximalNode as Expression,
-            //     prev: prevConditionItem
-            // } : prevConditionItem;
             const cbe: CurrentBranchElementPlain = {
                 kind: CurrentBranchesElementKind.plain,
                 item: {
@@ -540,7 +518,6 @@ namespace ts {
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
-        //if (currentBranchesItems.length) currentBranchesItems[0].done=true;
         if (!sourceFileMrState.mrState.forFlow.groupToNodeToType) sourceFileMrState.mrState.forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
         sourceFileMrState.mrState.forFlow.groupToNodeToType.set(groupForFlow, retval.byNode);
         if (getMyDebug()){
@@ -584,6 +561,16 @@ namespace ts {
             if (getMyDebug()){
                 consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
                 //return sourceFileMrState.mrState.checker.getErrorType();
+            }
+            // try to get symbol and defeault type
+            switch (expr.kind){
+                case SyntaxKind.Identifier:{
+                    const getResolvedSymbol = sourceFileMrState.mrState.checker.getResolvedSymbol;
+                    const getTypeOfSymbol = sourceFileMrState.mrState.checker.getTypeOfSymbol;
+                    const symbol = getResolvedSymbol(expr as Identifier);
+                    const tstype = getTypeOfSymbol(symbol);
+                    return tstype;
+                }
             }
             Debug.fail();
         }

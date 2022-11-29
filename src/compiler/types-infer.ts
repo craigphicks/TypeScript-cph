@@ -84,7 +84,7 @@ namespace ts {
         isconst?: boolean;
         type: RefTypesType;
         symtab: RefTypesSymtab;
-        constraintItemNode?: ConstraintItemNode;
+        constraintItem?: ConstraintItem | undefined;
     };
 
     /**
@@ -227,7 +227,7 @@ namespace ts {
        //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         crit: InferCrit,
-        constraintItemNode?: ConstraintItemNode // constraintTODO: make required
+        constraintItem?: ConstraintItem // constraintTODO: make required
     };
 
     /**
