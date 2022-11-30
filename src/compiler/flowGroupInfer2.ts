@@ -920,10 +920,10 @@ namespace ts {
                 }
                     break;
                 case SyntaxKind.BarBarToken:
-                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    Debug.fail("mrNarrowTypesByBinaryExpression, BarBarToken not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;
                 default:
-                    Debug.fail("hit default, not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    Debug.fail("mrNarrowTypesByBinaryExpression, token kind not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
 
             }
     }
@@ -2177,12 +2177,16 @@ namespace ts {
                     };
                 }
                 case SyntaxKind.ParenthesizedExpression:{
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression`);
-                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as ParenthesizedExpression).expression, crit: { kind: InferCritKind.none }, inferStatus, constraintItem: constraintItemNode });
+                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [start]`);
+                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as ParenthesizedExpression).expression,
+                        crit: inferStatus.inCondition ? { kind: InferCritKind.truthy, alsoFailing: true } : { kind: InferCritKind.none },
+                        inferStatus, constraintItem: constraintItemNode });
+                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [end]`);
+                    const arrRefTypesTableReturn = [ret.inferRefRtnType.passing];
+                    if (ret.inferRefRtnType.failing) arrRefTypesTableReturn.push(ret.inferRefRtnType.failing);
                     return {
                         byNode: ret.byNode,
-                        arrRefTypesTableReturn: [ret.inferRefRtnType.passing],
-                        //arrTypeAndConstraint: [ret.constraints.passing]
+                        arrRefTypesTableReturn,
                     };
                 }
                 break;
@@ -2208,12 +2212,12 @@ namespace ts {
                     //andIntoConstrainTrySimplify({})
 
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenTrue`);
-                    let retTrue: MrNarrowTypesReturn | undefined;
-                    if (isNeverType(rcond.inferRefRtnType.passing.type)){
-                        mergeIntoNodeToTypeMaps(createNodeToTypeMap().set(whenTrue, neverType), byNodeSinglepath);
-                    }
-                    else {
-                        retTrue = mrNarrowTypes({
+                    // let retTrue: MrNarrowTypesReturn | undefined;
+                    // if (isNeverType(rcond.inferRefRtnType.passing.type)){
+                    //     mergeIntoNodeToTypeMaps(createNodeToTypeMap().set(whenTrue, neverType), byNodeSinglepath);
+                    // }
+                    // else {
+                        const retTrue = mrNarrowTypes({
                             refTypesSymtab: rcond.inferRefRtnType.passing.symtab,
                             condExpr: whenTrue,
                             crit: { kind: InferCritKind.none },
@@ -2221,23 +2225,23 @@ namespace ts {
                             constraintItem: rcond.inferRefRtnType.passing.constraintItem
                         });
                         mergeIntoNodeToTypeMaps(retTrue.byNode, byNodeSinglepath);
-                    }
+                    // }
 
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenFalse`);
-                    let retFalse: MrNarrowTypesReturn | undefined;
-                    if (isNeverType(rcond.inferRefRtnType.failing!.type)){
-                        mergeIntoNodeToTypeMaps(createNodeToTypeMap().set(whenFalse, neverType), byNodeSinglepath);
-                    }
-                    else {
-                        retFalse = mrNarrowTypes({
+                    // let retFalse: MrNarrowTypesReturn | undefined;
+                    // if (isNeverType(rcond.inferRefRtnType.failing!.type)){
+                    //     mergeIntoNodeToTypeMaps(createNodeToTypeMap().set(whenFalse, neverType), byNodeSinglepath);
+                    // }
+                    // else {
+                        const retFalse = mrNarrowTypes({
                             refTypesSymtab: rcond.inferRefRtnType.failing!.symtab,
-                            condExpr: whenTrue,
+                            condExpr: whenFalse,
                             crit: { kind: InferCritKind.none },
                             inferStatus, //: { ...inferStatus, inCondition: true }
                             constraintItem: rcond.inferRefRtnType.failing!.constraintItem
                         });
                         mergeIntoNodeToTypeMaps(retFalse.byNode, byNodeSinglepath);
-                    }
+                    // }
 
                     const retval: MrNarrowTypesInnerReturn = {
                         byNode: byNodeSinglepath,
