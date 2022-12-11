@@ -267,7 +267,7 @@ namespace ts {
         Debug.fail("unexpected");
     }
 
-    export function andIntoConstrainTrySimplify({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined, mrNarrow: MrNarrow}): [ConstraintItem, RefTypesType] {
+    export function andIntoConstrainTrySimplify_aux({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined, mrNarrow: MrNarrow}): [ConstraintItem, RefTypesType] {
         if (!constraintItem){
             return [{ kind: ConstraintItemKind.leaf, symbol, type }, type];
         }
@@ -297,6 +297,18 @@ namespace ts {
         }
         Debug.fail("unexpected");
     }
+    export function andIntoConstrainTrySimplify({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined, mrNarrow: MrNarrow}): [ConstraintItem, RefTypesType] {
+        const [c,r] = andIntoConstrainTrySimplify_aux({ symbol, type, constraintItem, mrNarrow });
+        //testCompareBeforeAfter({ symbol, type, c:constraintItem }, { c }, mrNarrow);
+        return [c,r];
+
+
+    }
+
+    ////////////////////////////////////////////////
+    /**
+     * For testing only, remove for production
+     */
 
     /**
      * - Testing: Want to ensure "before" and after of logical transformation retain the same results.
@@ -326,9 +338,39 @@ namespace ts {
             getSymbols1(ci0);
             return set;
         }
-        function evalConstraintWithExplicitTypes(_c: Readonly<ConstraintItem>, _map: ESMap<Symbol, Type>): boolean {
-            // TODO
-            return false;
+        function evalConstraintWithExplicitTypes(ctop: Readonly<ConstraintItem>, map: ESMap<Symbol, Type>): boolean {
+            function evalSub(c: Readonly<ConstraintItem>): boolean{
+                if (c.kind===ConstraintItemKind.leaf){
+                    //const rtt = !negate ? c.type : mrNarrow.inverseType(c.type, getDefaultType(c.symbol, mrNarrow));
+                    const rtt = c.type;
+                    const mapt = map.get(c.symbol);
+                    Debug.assert(mapt);
+                    const x = mrNarrow.intersectRefTypesTypes(mrNarrow.createRefTypesType(mapt), rtt);
+                    let [ pass, fail ] = [false,false];
+                    mrNarrow.applyCritToRefTypesType(x, { kind:InferCritKind.truthy }, (_xt,p,f)=>{
+                        pass||=p;
+                        fail||=f;
+                    });
+                    Debug.assert(!(pass&&fail));
+                    Debug.assert(pass||fail);
+                    return pass;
+                }
+                else {
+                    if (c.op===ConstraintItemNodeOp.not){
+                        return !evalSub(c.constraint);
+                    }
+                    else if (c.op===ConstraintItemNodeOp.and){
+                        const b: boolean = c.constraints.every(cs=>evalSub(cs));
+                        return b;
+                    }
+                    else if (c.op===ConstraintItemNodeOp.or){
+                        const b: boolean = c.constraints.some(cs=>evalSub(cs));
+                        return b;
+                    }
+                    Debug.fail();
+                }
+            }
+            return evalSub(ctop);
         }
         function compareOverSymbolsAndTypes(ci0: Readonly<ConstraintItem>, ci1: Readonly<ConstraintItem>, arrsym: Readonly<Symbol[]>){
             const map = new Map<Symbol, Type>();
@@ -373,6 +415,7 @@ namespace ts {
         set.forEach(s=>arrsym.push(s));
         compareOverSymbolsAndTypes(c0,c1,arrsym);
     }
+
 }
 
 

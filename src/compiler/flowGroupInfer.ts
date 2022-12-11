@@ -482,8 +482,13 @@ namespace ts {
                 setCbi.forEach(cbi=>{
                     if (cbi.constraintNode) constraints.push(cbi.constraintNode);
                 });
+                // Because constraints are comprised of constants only, they can't be affected by overwrites at a lower level,
+                // therefore there should not ever be more than one constraint here.
                 if (constraints.length===1) constraintItemNode = constraints[0];
-                else if (constraints.length) constraintItemNode = createFlowConstraintNodeOr({ constraints });
+                else if (constraints.length) {
+                    Debug.fail("expecting 0 or 1 constraints only");
+                    constraintItemNode = createFlowConstraintNodeOr({ constraints });
+                }
             }
 
             const arefTypesSymtab: RefTypesSymtab[] = [];

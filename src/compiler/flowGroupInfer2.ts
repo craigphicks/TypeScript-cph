@@ -32,7 +32,8 @@ namespace ts {
         isNeverType(t: Readonly<RefTypesType>): boolean,
         isAnyType(t: Readonly<RefTypesType>): boolean,
         isUnknownType(t: Readonly<RefTypesType>): boolean,
-    checker: TypeChecker
+        applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void,
+            checker: TypeChecker
     };
 
     export function createMrNarrow(checker: TypeChecker, _mrState: MrState): MrNarrow {
@@ -57,6 +58,7 @@ namespace ts {
             isNeverType,
             isAnyType,
             isUnknownType,
+            applyCritToRefTypesType,
             checker,
         };
 
@@ -507,7 +509,7 @@ namespace ts {
                 }
                 else {
                     const ciss = dbgConstraintItem(rtt.constraintItem);
-                    as.push("  constraintItem: ..." + ciss[0]);
+                    as.push("  constraintItem: " + ciss[0]);
                     ciss.slice(1).forEach(s=>as.push("    "+s));
                 }
             }
@@ -2049,8 +2051,10 @@ namespace ts {
                         symbol: innerret.assignmentData?.symbol,
                         isconst: innerret.assignmentData?.isconst,
                         type: rttr.type,
-                        symtab: rttr.symtab
+                        symtab: rttr.symtab,
+                        //constraintItem: rttr.constraintItem
                     };
+                    if (inferStatus.inCondition) passing.constraintItem = rttr.constraintItem;
                     unmergedPassing.push(passing);
                 });
                 if (critret.failing){
@@ -2068,8 +2072,10 @@ namespace ts {
                             symbol: innerret.assignmentData?.symbol,
                             isconst: innerret.assignmentData?.isconst,
                             type: rttr.type,
-                            symtab: rttr.symtab
+                            symtab: rttr.symtab,
+                            // constraintItem: rttr.constraintItem
                         };
+                        if (inferStatus.inCondition) failing.constraintItem = rttr.constraintItem;
                         unmergedFailing.push(failing);
                     });
                 }
