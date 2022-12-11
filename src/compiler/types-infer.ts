@@ -25,8 +25,8 @@ namespace ts {
         none=0,
         any=1,
         unknown=2,
-        never=4,
-        anyOrUnknown=3
+        never=4,  // TODO: kill
+        anyOrUnknown=3 // TODO: kill
     }
     export interface RefTypesTypeNormal {
         _flags: RefTypesTypeFlags.none;
@@ -292,6 +292,7 @@ namespace ts {
             isconst: boolean;
         }
         arrRefTypesTableReturn: RefTypesTableReturn[];
+        //constraintItem: ConstraintItem | undefined;
         //typesAndConstraints?: TypesAndContraints; // constraintTODO: make required
         //arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: kill
         //unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
@@ -318,22 +319,33 @@ namespace ts {
     //     bySymbol: ESMap<Symbol, AliasableAssignmentCacheItem>;
     // };
     export enum ConstraintItemKind {
-        node = 1,
-        leaf = 2
+        node = "node",
+        leaf = "leaf"
     };
     export enum ConstraintItemNodeOp {
-        or = 1,
-        and = 2
+        or = "or",
+        and = "and",
+        not = "not"
     };
-    export type ConstraintItemNode = & {
+    export type ConstraintItemNodeAnd = & {
         kind: ConstraintItemKind.node;
-        negate?: boolean;
-        op: ConstraintItemNodeOp;
+        op: ConstraintItemNodeOp.and;
         constraints: ConstraintItem[],
     };
+    export type ConstraintItemNodeOr = & {
+        kind: ConstraintItemKind.node;
+        op: ConstraintItemNodeOp.or;
+        constraints: ConstraintItem[],
+    };
+    export type ConstraintItemNodeNot = & {
+        kind: ConstraintItemKind.node;
+        op: ConstraintItemNodeOp.not;
+        constraint: ConstraintItem,
+    };
+    export type ConstraintItemNode = ConstraintItemNodeAnd | ConstraintItemNodeOr | ConstraintItemNodeNot;
     export type ConstraintItemLeaf = & {
         kind: ConstraintItemKind.leaf;
-        negate?: boolean;
+        //negate?: boolean;
         symbol: Symbol;
         type: RefTypesType;
     };

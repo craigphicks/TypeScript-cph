@@ -482,7 +482,8 @@ namespace ts {
                 setCbi.forEach(cbi=>{
                     if (cbi.constraintNode) constraints.push(cbi.constraintNode);
                 });
-                if (constraints.length) constraintItemNode = createFlowConstraintNodeOr({ constraints });
+                if (constraints.length===1) constraintItemNode = constraints[0];
+                else if (constraints.length) constraintItemNode = createFlowConstraintNodeOr({ constraints });
             }
 
             const arefTypesSymtab: RefTypesSymtab[] = [];
@@ -580,7 +581,8 @@ namespace ts {
         }
         updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState);
         resolveHeap(sourceFileMrState);
-        return sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getErrorType();
+        return sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
+            // sourceFileMrState.mrState.checker.getErrorType();
 
     }
 
