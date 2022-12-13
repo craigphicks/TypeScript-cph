@@ -994,8 +994,9 @@ namespace ts {
             return containsNarrowableReference(expr);
         }
 
-        function createBranchLabel(): FlowLabel {
-            return initFlowNode({ flags: FlowFlags.BranchLabel, antecedents: undefined });
+        function createBranchLabel(branchKind: BranchKind = BranchKind.none): FlowLabel {
+            return initFlowNode({ flags: FlowFlags.BranchLabel, antecedents: undefined, branchKind });
+
         }
 
         function createLoopLabel(): FlowLabel {
@@ -1218,9 +1219,9 @@ namespace ts {
         }
 
         function bindIfStatement(node: IfStatement): void {
-            const thenLabel = createBranchLabel();
-            const elseLabel = createBranchLabel();
-            const postIfLabel = createBranchLabel();
+            const thenLabel = createBranchLabel(BranchKind.then);
+            const elseLabel = createBranchLabel(BranchKind.else);
+            const postIfLabel = createBranchLabel(BranchKind.postIf);
             bindCondition(node.expression, thenLabel, elseLabel);
             currentFlow = finishFlowLabel(thenLabel);
             bind(node.thenStatement);

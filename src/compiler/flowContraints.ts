@@ -152,7 +152,8 @@ namespace ts {
             // eslint-disable-next-line no-null/no-null
             // nbif (!tmpType) return [null, type];
             return [
-                { kind: ConstraintItemKind.leaf, symbol, type: tmpType },
+                // eslint-disable-next-line no-null/no-null
+                null, //{ kind: ConstraintItemKind.leaf, symbol, type: tmpType },
                 tmpType,
                 implies
             ];
@@ -172,6 +173,7 @@ namespace ts {
             let tsub = type;
             let constraints = cin.constraints;
             let implies = true;
+            let dbgCount = 0;
             while (changed) {
                 implies = true;
                 changed = false;
@@ -186,17 +188,20 @@ namespace ts {
                         removedIdxSet.add(idx);
                         if (c1) changedConstraints.push(c1);
                     }
-                    if (tsub1!==tsub) {
+                    if (!mrNarrow.equalRefTypesTypes(tsub1,tsub)) { //if (tsub1!==tsub)
                         tsub = tsub1;
                         changed = true;
                     }
                 });
                 if (removedIdxSet.size){
                     changed = true;
-                    constraints = constraints.filter((_c,idx)=>removedIdxSet.has(idx));
+                    constraints = constraints.filter((_c,idx)=>!removedIdxSet.has(idx));
                     constraints.push(...changedConstraints);
                 }
-
+                dbgCount++;
+                if (dbgCount===3){
+                    consoleLog("mybad");
+                }
             } // while changed
             // eslint-disable-next-line no-null/no-null
             if (constraints.length===0) return [null, tsub, implies];

@@ -222,12 +222,12 @@ namespace ts {
 
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
+        constraintItem?: ConstraintItem // constraintTODO: make required
         condExpr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
        //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         crit: InferCrit,
-        constraintItem?: ConstraintItem // constraintTODO: make required
     };
 
     /**
@@ -259,7 +259,7 @@ namespace ts {
         //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         // prevConditionItem?: ConditionItem | undefined
-        constraintItemNode?: ConstraintItemNode | undefined;
+        constraintItem?: ConstraintItem | undefined;
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.

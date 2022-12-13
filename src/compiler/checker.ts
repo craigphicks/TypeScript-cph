@@ -392,6 +392,7 @@ namespace ts {
             let str = "";
             //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
             str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
+            if ((flow as FlowLabel).branchKind) str += `branchKind:${((flow as FlowLabel).branchKind)}, `;
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
             if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
             return str;
@@ -46976,7 +46977,9 @@ namespace ts {
                     if (mapPeType?.has(pekey)) utype = mapPeType?.get(pekey); // should be by Node, not text position
                 }
                 // Flows with nodes that have same text range should have same ID. (edit: => TID)
-                let idstr = `id: ${fn.id}, FID: ${map_fID.get(fn)!}`;
+                let idstr = `id: ${fn.id}, `;
+                if ((fn as FlowLabel).branchKind) idstr += ` branchKind: ${(fn as FlowLabel).branchKind}, `;
+                idstr += `FID: ${map_fID.get(fn)!}`;
                 if (node && map_nID.has(node)) idstr += `, NID: ${map_nID.get(node)}`;
                 if (pekey && map_peID.has(pekey)) idstr += `, TID: ${map_peID.get(pekey)}`;
                 idstr += `, flags: ${Debug.formatFlowFlags(fn.flags)}`;

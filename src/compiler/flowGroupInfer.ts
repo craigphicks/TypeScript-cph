@@ -53,8 +53,6 @@ namespace ts {
         refTypesTableReturn: RefTypesTableReturn;
         byNode: NodeToTypeMap;
         done?: boolean
-        // prevConditionItem: ConditionItem | undefined;
-        constraintNode?: ConstraintItemNode | undefined;
     };
 
 
@@ -383,7 +381,7 @@ namespace ts {
             dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`  ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
         }
-        const setCbi = new Set<CurrentBranchesItem>();
+        const setCbi = new Set<{cbi: CurrentBranchesItem, gff: GroupForFlow}>();
         if (setOfFlow){
             let hadBranch = false;
             let hadNonBranch = false;
@@ -408,17 +406,17 @@ namespace ts {
                             Debug.assert(cbe.kind===CurrentBranchesElementKind.tf);
                             if (antefn.flags & FlowFlags.TrueCondition){
                                 Debug.assert(cbe.truthy);
-                                setCbi.add(cbe.truthy);
+                                setCbi.add({ cbi:cbe.truthy, gff:anteg });
                             }
                             else if (antefn.flags & FlowFlags.FalseCondition){
                                 Debug.assert(cbe.falsy);
-                                setCbi.add(cbe.falsy);
+                                setCbi.add({ cbi:cbe.falsy, gff:anteg });
                             }
                             else Debug.fail();
                         }
                         else {
                             Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
-                            setCbi.add(cbe.item);
+                            setCbi.add({ cbi:cbe.item,gff:anteg });
                         }
                     });
                 }
@@ -436,14 +434,16 @@ namespace ts {
                         if (fn.flags & FlowFlags.TrueCondition){
                             Debug.assert(cbe.truthy);
                             //Debug.assert(cbe.truthy.arrRefTypesTableReturn.length===1);
-                            setCbi.add(cbe.truthy);
+                            setCbi.add({ cbi:cbe.truthy, gff:anteg });
+                            //setCbi.add(cbe.truthy);
                             //arefTypesSymtab.push(cbe.truthy.arrRefTypesTableReturn[0].symtab);
                             //arrRttrBranch.push(cbe.true.refTypesTableReturn);
                         }
                         else if (fn.flags & FlowFlags.FalseCondition){
                             Debug.assert(cbe.falsy);
                             //Debug.assert(cbe.falsy.arrRefTypesTableReturn.length===1);
-                            setCbi.add(cbe.falsy);
+                            setCbi.add({ cbi:cbe.falsy, gff:anteg });
+                            //setCbi.add(cbe.falsy);
                             //arefTypesSymtab.push(...cbe.falsy.arrRefTypesTableReturn.map(rttr=>rttr.symtab));
                             //arrRttrBranch.push(cbe.false.refTypesTableReturn);
                         }
@@ -454,7 +454,7 @@ namespace ts {
                         //     undefined, undefined,
                         Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
                         //Debug.assert(cbe.item.arrRefTypesTableReturn.length===1);
-                        setCbi.add(cbe.item);
+                        setCbi.add({ cbi:cbe.item, gff: anteg });
                         //arefTypesSymtab.push(cbe.item.arrRefTypesTableReturn[0].symtab);
                         //arrRttrBranch.push(cbe.item.refTypesTableReturn);
                     }
@@ -470,35 +470,52 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems
         };
 
+        if (getMyDebug()){
+            // setCbi;
+            // mrState.forFlow.currentBranchesMap;
+            const as: string[]=["resolveGroupForFlow: ante groups:["];
+            setCbi.forEach(x=>{
+                // if (x.gff) {
+                as.push(`resolveGroupForFlow:   anteg.groupIdx: ${x.gff.groupIdx}`);
+                // }
+                // else {
+                //     as.push(`resolveGroupForFlow:   no anteg`);
+                // }
+            });
+            as.push("resolveGroupForFlow:]");
+            as.forEach(s=>consoleLog(s));
+        }
+
         let retval: MrNarrowTypesReturn;
         {
             /**
              * Merge branches - each of ConstraintItem(s), RefTypeSymtab(s)
              */
-            let constraintItemNode: ConstraintItemNode | undefined;
-            if (setCbi.size===1) constraintItemNode = (setCbi.keys().next().value as CurrentBranchesItem).constraintNode;
+            let constraintItem: ConstraintItem | undefined;
+            //if (setCbi.size===1) constraintItemNode = (setCbi.keys().next().value as CurrentBranchesItem).constraintNode;
+            if (setCbi.size===1) constraintItem = (setCbi.keys().next().value as {cbi: CurrentBranchesItem}).cbi.refTypesTableReturn.constraintItem;
             else if (setCbi.size) {
-                const constraints: ConstraintItemNode[]=[];
-                setCbi.forEach(cbi=>{
-                    if (cbi.constraintNode) constraints.push(cbi.constraintNode);
+                const constraints: ConstraintItem[]=[];
+                setCbi.forEach(x=>{
+                    if (x.cbi.refTypesTableReturn.constraintItem) constraints.push(x.cbi.refTypesTableReturn.constraintItem);
                 });
                 // Because constraints are comprised of constants only, they can't be affected by overwrites at a lower level,
                 // therefore there should not ever be more than one constraint here.
-                if (constraints.length===1) constraintItemNode = constraints[0];
+                if (constraints.length===1) constraintItem = constraints[0];
                 else if (constraints.length) {
                     Debug.fail("expecting 0 or 1 constraints only");
-                    constraintItemNode = createFlowConstraintNodeOr({ constraints });
+                    // constraintItem = createFlowConstraintNodeOr({ constraints });
                 }
             }
 
             const arefTypesSymtab: RefTypesSymtab[] = [];
-            setCbi.forEach(cbi=>{
-                arefTypesSymtab.push(cbi.refTypesTableReturn.symtab);
+            setCbi.forEach(x=>{
+                if (x.cbi.refTypesTableReturn.symtab.size) arefTypesSymtab.push(x.cbi.refTypesTableReturn.symtab);
             });
             if (!arefTypesSymtab.length) arefTypesSymtab.push(sourceFileMrState.mrNarrow.createRefTypesSymtab());
 
             const refTypesSymtab = arefTypesSymtab.length>1 ? sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(arefTypesSymtab) : arefTypesSymtab[0];
-            retval = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemNode });
+            retval = sourceFileMrState.mrNarrow.mrNarrowTypes({ refTypesSymtab, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem });
         }
         if (boolsplit){
             const cbe: CurrentBranchElementTF = {
@@ -615,6 +632,7 @@ namespace ts {
         cbm.forEach((cbe,g)=>{
             const maximalNode = groupsForFlow.posOrderedNodes[g.maximalIdx];
             astr.push(`[${dbgs?.dbgNodeToString(maximalNode)}]:`);
+            astr.push(`  groupIdx:${g.groupIdx}`);
             astr.push(`  cbe.kind:${cbe.kind}`);
             if (cbe.kind===CurrentBranchesElementKind.plain){
                 astr.push(...doItem(cbe.item).map(s => "    "+s));

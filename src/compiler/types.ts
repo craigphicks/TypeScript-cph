@@ -3496,8 +3496,15 @@ namespace ts {
     }
 
     // FlowLabel represents a junction with multiple possible preceding control flows.
+    export const enum BranchKind {
+        none = "none",
+        then = "then",
+        else = "else",
+        postIf = "postIf"
+    }
     export interface FlowLabel extends FlowNodeBase {
         antecedents: FlowNode[] | undefined;
+        branchKind?: BranchKind;
     }
 
     // FlowAssignment represents a node that assigns a value to a narrowable reference,
