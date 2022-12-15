@@ -33,7 +33,10 @@ namespace ts {
         isAnyType(t: Readonly<RefTypesType>): boolean,
         isUnknownType(t: Readonly<RefTypesType>): boolean,
         applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void,
-            checker: TypeChecker
+        // dbgGetNodeText(node: Node): string,
+        // dbgFlowToString(flow: FlowNode | undefined): string,
+        // dbgFlowTypeToString(flowType: FlowType): string,
+        checker: TypeChecker
     };
 
     export function createMrNarrow(checker: TypeChecker, _mrState: MrState): MrNarrow {
@@ -52,18 +55,46 @@ namespace ts {
             mergeIntoNodeToTypeMaps,
             mergeArrRefTypesSymtab,
             intersectRefTypesTypes,
-            //intersectRefTypesTypesIfNotAImpliesB,
             intersectRefTypesTypesImplies,
             inverseType,
             isNeverType,
             isAnyType,
             isUnknownType,
             applyCritToRefTypesType,
+            // dbgGetNodeText,
+            // dbgFlowToString,
+            // dbgFlowTypeToString,
             checker,
         };
 
 
         let myDebug = getMyDebug();
+
+        // function getFlowNodeId(flow: FlowNode): number {
+        //     if (!flow.id || flow.id < 0) {
+        //         flow.id = getAndIncrNextFlowId();
+        //     }
+        //     return flow.id;
+        // }
+        // function dbgGetNodeText(node: Node): string {
+        //     return ((node as any).getText && node.pos>=0) ? (node as any).getText() : (node as Identifier).escapedText??"";
+        // };
+        // function dbgFlowToString(flow: FlowNode | undefined): string {
+        //     if (!flow) return "<undef>";
+        //     let str = "";
+        //     //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
+        //     str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
+        //     if ((flow as FlowLabel).branchKind) str += `branchKind:${((flow as FlowLabel).branchKind)}, `;
+        //     if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
+        //     if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
+        //     return str;
+        // };
+        // function dbgFlowTypeToString(flowType: FlowType): string {
+        //     if (!flowType.flags) return "IncompleteType";
+        //     return checker.typeToString(flowType as Type);
+        // };
+
+
 
         const {
             // @ts-ignore-error
@@ -2570,6 +2601,12 @@ namespace ts {
         //     intersectRefTypesTypes
         // };
 
+
+
+
     } // createMrNarrow
+
+
+
 
 }

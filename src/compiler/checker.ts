@@ -18,7 +18,7 @@ namespace ts {
     } | undefined;
 
 
-    const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):10000;
+    const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):20000;
     //let myNumLinesOut=0;
     let myMaxDepth = 0; // introspection data
     // @ts-ignore
@@ -58,6 +58,9 @@ namespace ts {
     let nextNodeId = 1;
     let nextMergeId = 1;
     let nextFlowId = 1;
+    export function getAndIncrNextFlowId(){
+        return nextFlowId++;
+    }
 
     const enum IterationUse {
         AllowsSyncIterablesFlag = 1 << 0,
@@ -43110,7 +43113,7 @@ namespace ts {
 
 
                     const groupsForFlow = checker.getSourceFileInferState().groupsForFlow;
-                    const astr3 = dbgGroupsForFlowToStrings(groupsForFlow,dbgNodeToString, dbgFlowToString);
+                    const astr3 = dbgGroupsForFlowToStrings(groupsForFlow,checker); //dbgNodeToString, dbgFlowToString);
                     const ofilename3 = `tmp.${getBaseFileName(node.originalFileName)}.gff.txt`;
                     sys.writeFile(ofilename3, astr3.join(sys.newLine));
 

@@ -91,7 +91,7 @@ namespace ts {
 
     export interface Dbgs {
         dbgGetNodeText: (node: Node) => any;
-        dbgFlowToString: (flow: FlowNode | undefined) => string;
+        dbgFlowToString: (flow: FlowNode | undefined, withAntedendants?: boolean) => string;
         dbgFlowTypeToString: (flowType: FlowType) => string;
         dbgTypeToString: (type: Type) => string;
         dbgNodeToString: (node: Node | undefined) => string;
@@ -107,13 +107,27 @@ namespace ts {
         const dbgGetNodeText = (node: Node)=>{
             return ((node as any).getText && node.pos>=0) ? (node as any).getText() : (node as Identifier).escapedText??"";
         };
-        const dbgFlowToString = (flow: FlowNode | undefined): string => {
+        const dbgFlowToString = (flow: FlowNode | undefined, withAntedendants?: boolean): string => {
             if (!flow) return "<undef>";
             let str = "";
             //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
             str += `[f${checker.getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
+            if (isFlowBranch(flow)){
+                str += `branchKind: ${flow.branchKind}, `;
+            }
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
             if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
+            if (!withAntedendants) return str;
+            const antefn = getFlowAntecedents(flow);
+            if (antefn.length) {
+                str += "[";
+                antefn.forEach(fn=>{
+                    str += "[";
+                    str += dbgFlowToString(fn);
+                    str += "]";
+                });
+                str += "]";
+            }
             return str;
         };
         const dbgTypeToString = (type: Type): string => {

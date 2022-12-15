@@ -710,8 +710,10 @@ namespace ts {
 
 
         const groupToAnteGroupMap = new Map< GroupForFlow, Set<GroupForFlow> >();
+        const groupToFlowLabels = new Map< GroupForFlow, Set<FlowLabel> >();
         orderedGroups.forEach(g=>{
             const setOfGroup = new Set<GroupForFlow>();
+            const setOfFlowLabels = new Set<FlowLabel>();
             const setOfFlow = groupToSetOfFlowMap.get(g);
             if (!setOfFlow) return;
             setOfFlow.forEach(fn=>{
@@ -728,22 +730,29 @@ namespace ts {
                 }
                 else {
                     // flow without node
+                    // branches can lead to branches
                     if (isFlowBranch(fn)){
-                        fn.antecedents?.forEach(antefn=>{
-                            if (isFlowStart(antefn)) return;
-                            if (isFlowWithNode(antefn)){
-                                g.branchMerger = true;
-                                const groupToAdd = nodeToGroupMap.get(antefn.node);
-                                if (!groupToAdd){
-                                    Debug.fail();
+                        const flowLabels: FlowLabel[] = [fn];
+                        while (flowLabels.length){
+                            const fnlab = flowLabels.pop()!;
+                            setOfFlowLabels.add(fnlab);
+                            fnlab.antecedents?.forEach(antefn=>{
+                                if (isFlowStart(antefn)) return;
+                                if (isFlowWithNode(antefn)){
+                                    g.branchMerger = true;
+                                    const groupToAdd = nodeToGroupMap.get(antefn.node);
+                                    if (!groupToAdd){
+                                        Debug.fail();
+                                    }
+                                    if (groupToAdd===g) {
+                                        Debug.fail();
+                                    }
+                                    setOfGroup.add(groupToAdd);
                                 }
-                                if (groupToAdd===g) {
-                                    Debug.fail();
-                                }
-                                setOfGroup.add(groupToAdd);
-                            }
-                            else Debug.fail();
-                        });
+                                else if (isFlowBranch(antefn)) flowLabels.push(antefn);
+                                else Debug.fail();
+                            });
+                        }
                     }
                     else Debug.fail();
                 }
@@ -752,6 +761,7 @@ namespace ts {
                 Debug.assert(setOfFlow.size===1);
             }
             if (setOfGroup.size) groupToAnteGroupMap.set(g,setOfGroup);
+            if (setOfFlowLabels.size) groupToFlowLabels.set(g,setOfFlowLabels);
         });
 
         return {
@@ -760,6 +770,7 @@ namespace ts {
             precOrderContainerItems: precOrderCI,
             groupToSetOfFlowMap,
             groupToAnteGroupMap,
+            groupToFlowLabels,
             nodeToGroupMap,
             dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx
         };
@@ -1185,9 +1196,13 @@ namespace ts {
 
     export function dbgGroupsForFlowToStrings(
         gff: GroupsForFlow,
-        dbgNodeToString: (node: Node) => string,
-        dbgFlowToString: (flowNode: FlowNode) => string,
+        checker: TypeChecker,
+        // dbgNodeToString: (node: Node) => string,
+        // dbgFlowToString: (flowNode: FlowNode) => string,
     ): string[] {
+        const dbgs = createDbgs(checker);
+        const dbgNodeToString = dbgs.dbgNodeToString;
+        const dbgFlowToString = dbgs.dbgFlowToString;
         const astr: string[] = [];
         gff.orderedGroups.forEach((g,i)=>{
             const maxnode = gff.posOrderedNodes[g.maximalIdx];
@@ -1213,6 +1228,13 @@ namespace ts {
             if (setOfAnteGroups) {
                 setOfAnteGroups.forEach(anteg=>{
                     astr.push(`groups[${i}]:    anteGroupIdx: ${anteg.groupIdx}`);
+                });
+            }
+            const setOfFlowLabels = gff.groupToFlowLabels.get(g);
+            astr.push(`groups[${i}]:  setOfFlowLabels.size===${setOfFlowLabels?.size??0}`);
+            if (setOfFlowLabels) {
+                setOfFlowLabels.forEach((fn,i)=>{
+                    astr.push(`  flowLabel[${i}]: ${dbgFlowToString(fn)}`);
                 });
             }
         });

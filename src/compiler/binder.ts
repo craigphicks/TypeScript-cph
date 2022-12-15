@@ -1068,9 +1068,9 @@ namespace ts {
             if (!antecedents) {
                 return unreachableFlow;
             }
-            if (antecedents.length === 1) {
-                return antecedents[0];
-            }
+            // if (antecedents.length === 1) {
+            //     return antecedents[0];
+            // }
             return flow;
         }
 
