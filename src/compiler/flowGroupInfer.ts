@@ -408,9 +408,18 @@ namespace ts {
                     if (getMyDebug()){
                         consoleLog(`resolveGroupForFlow[dbg:] FlowLabel: {branchKind:${fn.branchKind}}`);
                     }
-                    fn.antecedents?.forEach(antefn=>{
+                    const postIfFlowLabels: FlowLabel[] = [];
+
+                    const doOneAntefn = (antefn: Readonly<FlowNode>) => {
                         if (isFlowStart(antefn)) return;
-                        if (isFlowBranch(antefn)) return; //Debug.fail();
+                        if (isFlowBranch(antefn)) {
+                            if (antefn.branchKind===BranchKind.postIf){
+                                Debug.assert(fn.branchKind===BranchKind.postIf);
+                                antefn.antecedents?.forEach(antefn2=>doOneAntefn(antefn2));
+                                return;
+                            }
+                            Debug.fail();
+                        }
                         if (!isFlowWithNode(antefn)) Debug.fail();
                         const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node);
                         Debug.assert(anteg);
@@ -421,7 +430,14 @@ namespace ts {
                             const bk = mapCbe.get(cbe);
                             Debug.assert(bk===fn.branchKind);
                         }
+                    };
+
+                    fn.antecedents?.forEach(antefn=>{
+                        doOneAntefn(antefn);
                     });
+                    while(postIfFlowLabels.length){
+                        doOneAntefn(postIfFlowLabels.pop()!);
+                    }
                     return;
 
                     // const setOfAnteg = new Set<GroupForFlow>();
@@ -532,28 +548,35 @@ namespace ts {
              */
             let constraintItemMerged: ConstraintItem | undefined;
             let refTypesSymtabMerged: RefTypesSymtab | undefined;
-            if (mapCbe.size===1) {
-                const [cbe,bk] = mapCbe.entries().next().value as [CurrentBranchElement, BranchKind | undefined];
-                if (cbe.kind===CurrentBranchesElementKind.tf){
-                    if (bk===BranchKind.then) {
-                        ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.truthy!.refTypesTableReturn);
-                    }
-                    else if (bk===BranchKind.else) {
-                        ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.falsy!.refTypesTableReturn);
-                    }
-                    else Debug.fail();
-                }
-                else if (cbe.kind===CurrentBranchesElementKind.plain){
-                    Debug.assert(bk!==BranchKind.then && bk!==BranchKind.else);
-                    ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.item.refTypesTableReturn);
-                    if (bk===BranchKind.postIf) Debug.fail("TODO");
-                }
-                else Debug.fail();
-            }
-            else if (mapCbe.size) {
-                const constraints: ConstraintItem[]=[];
+            // if (mapCbe.size===1) {
+            //     const [cbe,bk] = mapCbe.entries().next().value as [CurrentBranchElement, BranchKind | undefined];
+            //     if (cbe.kind===CurrentBranchesElementKind.tf){
+            //         if (bk===BranchKind.then) {
+            //             ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.truthy!.refTypesTableReturn);
+            //         }
+            //         else if (bk===BranchKind.else) {
+            //             ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.falsy!.refTypesTableReturn);
+            //         }
+            //         else Debug.fail();
+            //     }
+            //     else if (cbe.kind===CurrentBranchesElementKind.plain){
+            //         Debug.assert(bk!==BranchKind.then && bk!==BranchKind.else);
+            //         ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.item.refTypesTableReturn);
+            //         if (bk===BranchKind.postIf) {
+            //             constraintItemMerged = undefined;
+            //             // TODO free up unnecessary cbe's
+            //             // Debug.fail("TODO");
+            //         }
+            //     }
+            //     else Debug.fail();
+            // }
+            // else
+            if (mapCbe.size) {
+                let constraints: ConstraintItem[]=[];
                 const symtabs: RefTypesSymtab[] = [];
+                let hadPostIf = false;
                 mapCbe.forEach((bk,cbe)=>{
+                    if (bk===BranchKind.postIf) hadPostIf = true;
                     if (cbe.kind===CurrentBranchesElementKind.tf){
                         if (bk===BranchKind.then) {
                             const { constraintItem, symtab } = cbe.truthy!.refTypesTableReturn;
@@ -570,9 +593,14 @@ namespace ts {
                     else if (cbe.kind===CurrentBranchesElementKind.plain){
                         Debug.assert(bk!==BranchKind.then && bk!==BranchKind.else);
                         const { constraintItem, symtab } = cbe.item.refTypesTableReturn;
-                        if (constraintItem) constraints.push(constraintItem);
                         if (symtab) symtabs.push(symtab);
-                        if (bk===BranchKind.postIf) Debug.fail("TODO");
+                        if (constraintItem) constraints.push(constraintItem);
+                        // if (bk!==BranchKind.postIf) {
+                        //     hadPostIf = true;
+                        //     if (constraintItem) constraints.push(constraintItem);
+                        //     // TODO free up unnecessary cbe's
+                        //     // Debug.fail("TODO");
+                        // }
                     }
                     else Debug.fail();
                 });
@@ -580,11 +608,15 @@ namespace ts {
                 else if (symtabs.length){
                     refTypesSymtabMerged = sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(symtabs);
                 }
+                if (hadPostIf) {
+                    mapCbe.forEach((bk,_cbe)=>Debug.assert(bk===BranchKind.postIf));
+                }
                 if (constraints.length===1) constraintItemMerged = constraints[0];
                 else if (constraints.length) {
+                    Debug.assert(hadPostIf);
                     // Because constraints are comprised of constants only, they can't be affected by overwrites at a lower level,
                     // therefore there should not ever be more than one constraint here.
-                    Debug.fail("expecting 0 or 1 constraints only");
+                    constraintItemMerged = createFlowConstraintNodeOr({ constraints });
                 }
             }
             if (!refTypesSymtabMerged) refTypesSymtabMerged = sourceFileMrState.mrNarrow.createRefTypesSymtab();
@@ -611,7 +643,7 @@ namespace ts {
             // const refTypesSymtab = arefTypesSymtab.length>1 ? sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(arefTypesSymtab) : arefTypesSymtab[0];
 
             retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
-                refTypesSymtab: refTypesSymtabMerged!, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemMerged });
+                refTypesSymtab: refTypesSymtabMerged, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemMerged });
         }
         if (boolsplit){
             const cbe: CurrentBranchElementTF = {

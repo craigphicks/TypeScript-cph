@@ -91,7 +91,7 @@ namespace ts {
 
     export interface Dbgs {
         dbgGetNodeText: (node: Node) => any;
-        dbgFlowToString: (flow: FlowNode | undefined, withAntedendants?: boolean) => string;
+        dbgFlowToString: (flow: FlowNode | undefined, withAntecedants?: boolean) => string;
         dbgFlowTypeToString: (flowType: FlowType) => string;
         dbgTypeToString: (type: Type) => string;
         dbgNodeToString: (node: Node | undefined) => string;
@@ -107,7 +107,7 @@ namespace ts {
         const dbgGetNodeText = (node: Node)=>{
             return ((node as any).getText && node.pos>=0) ? (node as any).getText() : (node as Identifier).escapedText??"";
         };
-        const dbgFlowToString = (flow: FlowNode | undefined, withAntedendants?: boolean): string => {
+        const dbgFlowToString = (flow: FlowNode | undefined, withAntecedants?: boolean): string => {
             if (!flow) return "<undef>";
             let str = "";
             //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
@@ -117,13 +117,14 @@ namespace ts {
             }
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
             if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
-            if (!withAntedendants) return str;
+            if (!withAntecedants) return str;
             const antefn = getFlowAntecedents(flow);
             if (antefn.length) {
-                str += "[";
+                str += "antecedents:[";
                 antefn.forEach(fn=>{
                     str += "[";
-                    str += dbgFlowToString(fn);
+                    const withAntecedants2 = isFlowBranch(fn) && fn.branchKind===BranchKind.postIf;
+                    str += dbgFlowToString(fn, withAntecedants2);
                     str += "]";
                 });
                 str += "]";
