@@ -1,0 +1,2 @@
+// @strict: true 
+// @declaration: true

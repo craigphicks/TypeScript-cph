@@ -1,3 +1,4 @@
+/* eslint-disable no-null/no-null */
 namespace ts {
 
     export function createFlowConstraintNodeAnd({negate, constraints}: {negate?: boolean, constraints: ConstraintItem[]}): ConstraintItemNode {
@@ -234,10 +235,10 @@ namespace ts {
                 }
             }
             // (A) TODO: Uncomment this after the testing (B) below is remove
-            // if (anySubImplies){
-            //     // eslint-disable-next-line no-null/no-null
-            //     return [null, type, true];
-            // }
+            if (anySubImplies){
+                // eslint-disable-next-line no-null/no-null
+                return [null, type, true];
+            }
             //let hadAnyChange = false;
             if (removedIdxSet.size||changedConstraints.length){
                 constraints = constraints.filter((_c,idx)=>removedIdxSet.has(idx));
@@ -261,11 +262,11 @@ namespace ts {
                 constraintItemOut = cin;
             }
             // (B) TODO: Comment this when (A) above is activated
-            if (anySubImplies) {
-                Debug.assert(!constraints);
-                Debug.assert(typeoutEquivTypein);
-                Debug.assert(impliesout);
-            }
+            // if (anySubImplies) {
+            //     Debug.assert(!constraintItemOut);
+            //     Debug.assert(typeoutEquivTypein);
+            //     Debug.assert(impliesout);
+            // }
             return [constraintItemOut, typeout, impliesout];
 
         }
@@ -420,6 +421,107 @@ namespace ts {
         set.forEach(s=>arrsym.push(s));
         compareOverSymbolsAndTypes(c0,c1,arrsym);
     }
+
+
+    export function testOfSimplifyConstraintBySubstitution2(checker: TypeChecker, mrNarrow: MrNarrow): void {
+        type InType = Parameters<typeof simplifyConstraintBySubstitution2>;
+        type OutType = ReturnType<typeof simplifyConstraintBySubstitution2>;
+
+        const rtrbool = mrNarrow.createRefTypesType(checker.getBooleanType());
+        const rtrtrue = mrNarrow.createRefTypesType(checker.getTrueType());
+        const rtrfalse = mrNarrow.createRefTypesType(checker.getFalseType());
+
+        const datum: {in: InType[0],out: OutType}[] = [
+            {
+                in: {
+                    cin: null,
+                    negateConstraintType: false,
+                    symbol: "x" as any as Symbol,
+                    type: rtrbool,
+                    dfltTypeOfSymbol: rtrbool,
+                    mrNarrow,
+                },
+                out: [null, rtrbool, false]
+            },
+            {
+                in: {
+                    cin: createFlowConstraintLeaf("x" as any as Symbol, rtrfalse),
+                    negateConstraintType: false,
+                    symbol: "x" as any as Symbol,
+                    type: rtrbool,
+                    dfltTypeOfSymbol: rtrbool,
+                    mrNarrow,
+                },
+                out: [null, rtrfalse, false]
+            },
+            {
+                in: {
+                    cin: createFlowConstraintLeaf("x" as any as Symbol, rtrtrue),
+                    negateConstraintType: false,
+                    symbol: "x" as any as Symbol,
+                    type: rtrbool,
+                    dfltTypeOfSymbol: rtrbool,
+                    mrNarrow,
+                },
+                out: [null, rtrtrue, false]
+            },
+            {
+                in: {
+                    cin: createFlowConstraintLeaf("x" as any as Symbol, rtrfalse),
+                    negateConstraintType: false,
+                    symbol: "x" as any as Symbol,
+                    type: rtrfalse,
+                    dfltTypeOfSymbol: rtrbool,
+                    mrNarrow,
+                },
+                out: [null, rtrfalse, true]
+            },
+        ];
+        const constraintDeepEqual = (ctest: ConstraintItem | null, cexp: ConstraintItem | null): void => {
+            if (!cexp || !ctest) {
+                Debug.assert(!ctest === !cexp);
+                return;
+            }
+            Debug.assert(cexp.kind===ctest.kind);
+            if (cexp.kind===ConstraintItemKind.leaf){
+                Debug.assert(ctest.kind===ConstraintItemKind.leaf);
+                Debug.assert(cexp.symbol===ctest.symbol);
+                Debug.assert(mrNarrow.equalRefTypesTypes(cexp.type,ctest.type));
+            }
+            else {
+                Debug.assert(cexp.kind===ConstraintItemKind.node);
+                Debug.assert(ctest.kind===ConstraintItemKind.node);
+                if (cexp.op===ConstraintItemNodeOp.not){
+                    Debug.assert(ctest.op===ConstraintItemNodeOp.not);
+                    constraintDeepEqual(ctest.constraint,cexp.constraint);
+                }
+                else if (cexp.op===ConstraintItemNodeOp.and){
+                    Debug.assert(ctest.op===ConstraintItemNodeOp.and);
+                    Debug.assert(cexp.constraints.length===ctest.constraints.length);
+                    for (let i = 0; i<cexp.constraints.length; i++) {
+                        Debug.assert(constraintDeepEqual(cexp.constraints[i],ctest.constraints[i]));
+                    }
+                }
+                else if (cexp.op===ConstraintItemNodeOp.or){
+                    Debug.assert(ctest.op===ConstraintItemNodeOp.or);
+                    Debug.assert(cexp.constraints.length===ctest.constraints.length);
+                    for (let i = 0; i<cexp.constraints.length; i++) {
+                        Debug.assert(constraintDeepEqual(cexp.constraints[i],ctest.constraints[i]));
+                    }
+                }
+            }
+        };
+
+        datum.forEach((data,_iter)=>{
+            if (_iter<0) return;
+            const [constraint, type, implies] = simplifyConstraintBySubstitution2(data.in);
+            constraintDeepEqual(data.out[0], constraint);
+            Debug.assert(mrNarrow.equalRefTypesTypes(data.out[1],type));
+            Debug.assert(data.out[2]===implies);
+        });
+
+    }
+
 
 }
 

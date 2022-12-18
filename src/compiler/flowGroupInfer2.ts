@@ -304,9 +304,9 @@ namespace ts {
             if (isUnknownType(a)) return false;
             // eslint-disable-next-line no-null/no-null
             if (isAnyType(b)||isUnknownType(b)) return false;
-            (a as RefTypesTypeNormal)._set.forEach(t=>{
-                if (!(b as RefTypesTypeNormal)._set.has(t)) return false;
-            });
+            for (let titer = (a as RefTypesTypeNormal)._set.keys(), ti = titer.next(); !ti.done; ti=titer.next()){
+                if (!(b as RefTypesTypeNormal)._set.has(ti.value)) return false;
+            }
             return true;
         }
         function intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean] {
@@ -1969,6 +1969,9 @@ namespace ts {
             // if (innerret.negateCrit){
             //     crit.negate = !critIn.negate; // corresponds to preceding unary !
             // }
+            if (expr.id===17){
+                consoleLog("debug point");
+            }
             const critret = applyCritToArrRefTypesTableReturn(finalArrRefTypesTableReturn, crit, inferStatus);
             if (myDebug){
                 consoleLog("mrNarrowTypes[dbg], applyCritToArrRefTypesTableReturn return passing:");

@@ -1233,8 +1233,8 @@ namespace ts {
             const setOfFlowLabels = gff.groupToFlowLabels.get(g);
             astr.push(`groups[${i}]:  setOfFlowLabels.size===${setOfFlowLabels?.size??0}`);
             if (setOfFlowLabels) {
-                setOfFlowLabels.forEach((fn,i)=>{
-                    astr.push(`  flowLabel[${i}]: ${dbgFlowToString(fn)}`);
+                setOfFlowLabels.forEach((fn)=>{
+                    astr.push(`  flowLabel: ${dbgFlowToString(fn)}`);
                 });
             }
         });

@@ -200,12 +200,19 @@ namespace ts {
             }
         };
 
+        const mrNarrow = createMrNarrow(checker, mrState);
+        let doConstraintTest = true;
+        doConstraintTest = true;
+        if (doConstraintTest){
+            testOfSimplifyConstraintBySubstitution2(checker,mrNarrow);
+        }
+
         return {
             sourceFile,
             //groupedFlowNodes,
             groupsForFlow,
             mrState,
-            mrNarrow: createMrNarrow(checker, mrState)
+            mrNarrow
         };
     }
 
@@ -379,7 +386,7 @@ namespace ts {
         const setOfFlow =groupsForFlow.groupToSetOfFlowMap.get(groupForFlow);
         const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
         if (getMyDebug()){
-            consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, trueref: ${groupForFlow.trueref}, falseref: ${groupForFlow.trueref}`);
+            consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, groupIndex:${groupForFlow.groupIdx}, trueref: ${groupForFlow.trueref}, falseref: ${groupForFlow.trueref}`);
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
             dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`  ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
@@ -408,24 +415,31 @@ namespace ts {
                     if (getMyDebug()){
                         consoleLog(`resolveGroupForFlow[dbg:] FlowLabel: {branchKind:${fn.branchKind}}`);
                     }
-                    const postIfFlowLabels: FlowLabel[] = [];
+                    //const postIfFlowLabels: FlowLabel[] = [];
 
-                    const doOneAntefn = (antefn: Readonly<FlowNode>) => {
+                    const doOneAntefn = (antefn: Readonly<FlowNode>, preBranchKind: BranchKind | undefined) => {
                         if (isFlowStart(antefn)) return;
                         if (isFlowBranch(antefn)) {
-                            if (antefn.branchKind===BranchKind.postIf){
-                                Debug.assert(fn.branchKind===BranchKind.postIf);
-                                antefn.antecedents?.forEach(antefn2=>doOneAntefn(antefn2));
-                                return;
-                            }
-                            Debug.fail();
+                            antefn.antecedents?.forEach(antefn2=>doOneAntefn(antefn2, antefn.branchKind));
+                            return;
+                            // if (antefn.branchKind===BranchKind.postIf){
+                            //     Debug.assert(fn.branchKind===BranchKind.postIf);
+                            //     antefn.antecedents?.forEach(antefn2=>doOneAntefn(antefn2, antefn.branchKind));
+                            //     return;
+                            // }
+                            // if (getMyDebug()){
+                            //     consoleLog(`resolveGroupForFlow[fail:] fn.branchKind:${fn.branchKind}, preBranchKind:${preBranchKind}, antefn.branchKind:${antefn.branchKind}`);
+                            //     consoleLog(`resolveGroupForFlow[fail:] fn: ${dbgs?.dbgFlowToString(fn,/**/ true)}`);
+                            //     consoleLog(`resolveGroupForFlow[fail:] antefn: ${dbgs?.dbgFlowToString(antefn, /**/ true)}`);
+                            // }
+                            // Debug.fail();
                         }
                         if (!isFlowWithNode(antefn)) Debug.fail();
                         const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node);
                         Debug.assert(anteg);
                         const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                         Debug.assert(cbe);
-                        if (!mapCbe.has(cbe)) mapCbe.set(cbe,fn.branchKind);
+                        if (!mapCbe.has(cbe)) mapCbe.set(cbe,/*fn.branchKind*/ preBranchKind);
                         else {
                             const bk = mapCbe.get(cbe);
                             Debug.assert(bk===fn.branchKind);
@@ -433,11 +447,11 @@ namespace ts {
                     };
 
                     fn.antecedents?.forEach(antefn=>{
-                        doOneAntefn(antefn);
+                        doOneAntefn(antefn, fn.branchKind);
                     });
-                    while(postIfFlowLabels.length){
-                        doOneAntefn(postIfFlowLabels.pop()!);
-                    }
+                    // while(postIfFlowLabels.length){
+                    //     doOneAntefn(postIfFlowLabels.pop()!);
+                    // }
                     return;
 
                     // const setOfAnteg = new Set<GroupForFlow>();
@@ -531,7 +545,7 @@ namespace ts {
         if (getMyDebug()){
             const as: string[]=["resolveGroupForFlow:mapCbe:["];
             mapCbe.forEach((bk,cbe)=>{
-                as.push(`  gff.groupIndex:${cbe.gff.groupIdx}, branchKind:${bk}`);
+                as.push(`resolveGroupForFlow:mapCbe:  gff.groupIndex:${cbe.gff.groupIdx}, cbe.kind:${cbe.kind}, branchKind:${bk}`);
             });
             // const as: string[]=["resolveGroupForFlow: ante groups:["];
             // setCbi.forEach(x=>{
@@ -572,7 +586,7 @@ namespace ts {
             // }
             // else
             if (mapCbe.size) {
-                let constraints: ConstraintItem[]=[];
+                const constraints: ConstraintItem[]=[];
                 const symtabs: RefTypesSymtab[] = [];
                 let hadPostIf = false;
                 mapCbe.forEach((bk,cbe)=>{
@@ -609,7 +623,7 @@ namespace ts {
                     refTypesSymtabMerged = sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(symtabs);
                 }
                 if (hadPostIf) {
-                    mapCbe.forEach((bk,_cbe)=>Debug.assert(bk===BranchKind.postIf));
+                    //mapCbe.forEach((bk,_cbe)=>Debug.assert(bk===BranchKind.postIf));
                 }
                 if (constraints.length===1) constraintItemMerged = constraints[0];
                 else if (constraints.length) {
@@ -673,6 +687,22 @@ namespace ts {
         }
         if (!sourceFileMrState.mrState.forFlow.groupToNodeToType) sourceFileMrState.mrState.forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
         sourceFileMrState.mrState.forFlow.groupToNodeToType.set(groupForFlow, retval.byNode);
+
+        // mapCbe.forEach((bk,cbe)=>{
+        //     if (cbe.kind===CurrentBranchesElementKind.plain){
+        //         Debug.assert();
+        //     }
+        //     if (!bk || bk===BranchKind.postIf){
+        //         sourceFileMrState.mrState.forFlow.currentBranchesMap.delete(cbe.gff);
+        //     }
+        //     else if (bk===BranchKind.then){
+        //         //sourceFileMrState.mrState.forFlow.currentBranchesMap.delete(cbe.gff);
+
+
+        //     }
+        //     //sourceFileMrState.mrState.forFlow.currentBranchesMap.delete(cbe.gff);
+        // });
+
         if (getMyDebug()){
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
             dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`  ${s}`));
@@ -686,12 +716,7 @@ namespace ts {
 
     export function getTypeByMrNarrow(reference: Node, sourceFileMrState: SourceFileMrState): Type {
         if (getMyDebug()) consoleGroup(`getTypeByMrNarrow[in] expr: ${dbgs?.dbgNodeToString(reference)}`);
-        //let type: Type;
-        // let useGroupForFlow = true;
-        // useGroupForFlow = true;
-        // if (useGroupForFlow)
         const type = getTypeByMrNarrowAux(reference, sourceFileMrState);
-        //else type = getTypeByMrNarrow_aux(reference, sourceFileMrState);
         if (getMyDebug()){
             consoleLog(`getTypeByMrNarrow[out] expr: ${dbgs?.dbgNodeToString(reference)} -> ${dbgs?.dbgTypeToString(type)}`);
             consoleGroupEnd();

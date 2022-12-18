@@ -120,10 +120,10 @@ namespace ts {
             if (!withAntecedants) return str;
             const antefn = getFlowAntecedents(flow);
             if (antefn.length) {
-                str += "antecedents:[";
+                str += `antecedents(${antefn.length}):[`;
                 antefn.forEach(fn=>{
                     str += "[";
-                    const withAntecedants2 = isFlowBranch(fn) && fn.branchKind===BranchKind.postIf;
+                    const withAntecedants2 = isFlowBranch(fn) /*&& fn.branchKind===BranchKind.postIf*/;
                     str += dbgFlowToString(fn, withAntecedants2);
                     str += "]";
                 });
