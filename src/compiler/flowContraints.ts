@@ -116,7 +116,8 @@ namespace ts {
      * If "typeOut"==="type" that means no such further constraint was detected. "typeOut" is used internally in recursive calls for "and" calculations.
      */
     function simplifyConstraintBySubstitution2(
-        {cin, negateConstraintType, symbol, type, dfltTypeOfSymbol, mrNarrow}: {cin: ConstraintItem | null, negateConstraintType: boolean, symbol: Symbol, type: RefTypesType, dfltTypeOfSymbol: RefTypesType | undefined, mrNarrow: MrNarrow},
+        {cin, negateConstraintType, symbol, type, dfltTypeOfSymbol, mrNarrow, depth}: {
+            cin: ConstraintItem | null, negateConstraintType: boolean, symbol: Symbol, type: RefTypesType, dfltTypeOfSymbol: RefTypesType | undefined, mrNarrow: MrNarrow, depth?: number},
     ): [cout: ConstraintItem | null, typeOut: RefTypesType, implies: boolean ] {
         // function calcIntersectionIfNotImplied(tsub: Readonly<RefTypesType>, ctype: RefTypesType, negateType: boolean): null | RefTypesType {
         //     if (!negateType) return mrNarrow.intersectRefTypesTypesIfNotAImpliesB(tsub, ctype);
@@ -161,9 +162,12 @@ namespace ts {
         }
 
         if (cin.op===ConstraintItemNodeOp.not){
-            return simplifyConstraintBySubstitution2({ cin, symbol, type, dfltTypeOfSymbol, negateConstraintType: !negateConstraintType, mrNarrow });
+            return simplifyConstraintBySubstitution2({ cin, symbol, type, dfltTypeOfSymbol, negateConstraintType: !negateConstraintType, mrNarrow, depth:(depth??0)+1 });
         }
         if ((cin.op===ConstraintItemNodeOp.and && !negateConstraintType) || (cin.op===ConstraintItemNodeOp.or && negateConstraintType)) {
+            if (depth && depth>=3){
+                consoleLog("depth && depth>=3");
+            }
             /**
              * case and:
              * For each member constr of cin
@@ -183,7 +187,7 @@ namespace ts {
                 const changedConstraints: ConstraintItem[] = [];
                 constraints.forEach((c,idx)=>{
                     // _implies is not used in "and" processing
-                    const [c1,tsub1, impliesout] = simplifyConstraintBySubstitution2({ cin:c, symbol, type:tsub, dfltTypeOfSymbol, negateConstraintType, mrNarrow });
+                    const [c1,tsub1, impliesout] = simplifyConstraintBySubstitution2({ cin:c, symbol, type:tsub, dfltTypeOfSymbol, negateConstraintType, mrNarrow, depth:(depth??0)+1 });
                     implies &&= impliesout;
                     if (c1!==c){
                         removedIdxSet.add(idx);
@@ -217,57 +221,76 @@ namespace ts {
              * typeout := union of all returned subtypes
              * impliesout := typeout equivalent to cin.type && countraints out is null
              */
-            const removedIdxSet = new Set<number>();
-            const changedConstraints: ConstraintItem[] = [];
-            let constraints = cin.constraints;
-            //let tunion = mrNarrow.createRefTypesType(); // never
-            const typesForUnion: RefTypesType[] = [];
-            let anySubImplies = false;
-            let anySubTypeWasType = false;
-            for (let idx=0; idx<constraints.length; idx++){
-                const subcin = constraints[idx];
-                const [subconstr, subtype, subimplies] = simplifyConstraintBySubstitution2({ cin: subcin, symbol, type, dfltTypeOfSymbol, negateConstraintType, mrNarrow });
-                anySubImplies ||= subimplies;
-                anySubTypeWasType ||= (subtype===type);
-                if (subconstr!==subcin){
-                    removedIdxSet.add(idx);
-                    if (subconstr) changedConstraints.push(subconstr);
+
+            // const results: ReturnType<typeof simplifyConstraintBySubstitution2>[] = cin.constraints.map(subcin=>{
+            //     simplifyConstraintBySubstitution2({ cin: subcin, symbol, type, dfltTypeOfSymbol, negateConstraintType, mrNarrow });
+            // });
+            // eslint-disable-next-line @typescript-eslint/prefer-for-of
+            for (let idx=0; idx<cin.constraints.length; idx++){
+                const subcin = cin.constraints[idx];
+                const [_subconstr, _subtype, subimplies] = simplifyConstraintBySubstitution2({ cin: subcin, symbol, type, dfltTypeOfSymbol, negateConstraintType, mrNarrow, depth:(depth??0)+1 });
+                if (subimplies){
+                    return [null, type, true];
                 }
             }
-            // (A) TODO: Uncomment this after the testing (B) below is remove
-            if (anySubImplies){
-                // eslint-disable-next-line no-null/no-null
-                return [null, type, true];
-            }
-            //let hadAnyChange = false;
-            if (removedIdxSet.size||changedConstraints.length){
-                constraints = constraints.filter((_c,idx)=>removedIdxSet.has(idx));
-                constraints.push(...changedConstraints);
-                //hadAnyChange = true;
-            }
-            /* eslint prefer-const: ["error", {"destructuring": "all"}]*/
-            let [typeout, typeoutEquivTypein] = anySubTypeWasType ? [type, true] : [mrNarrow.unionOfRefTypesType(typesForUnion), false];
-            if (!typeoutEquivTypein){
-                if (mrNarrow.equalRefTypesTypes(type, typeout)) typeoutEquivTypein = true;
-            }
-            let impliesout = false;
-            let constraintItemOut: ConstraintItem | null;
-            // In order not to increase space requirements, and because distributing type (or )
-            if (constraints.length===0){
-                // eslint-disable-next-line no-null/no-null
-                constraintItemOut = null;
-                impliesout = typeoutEquivTypein;
-            }
-            else {
-                constraintItemOut = cin;
-            }
-            // (B) TODO: Comment this when (A) above is activated
-            // if (anySubImplies) {
-            //     Debug.assert(!constraintItemOut);
-            //     Debug.assert(typeoutEquivTypein);
-            //     Debug.assert(impliesout);
+            return [
+                //createFlowConstraintNodeAnd({ constraints: [createFlowConstraintLeaf(symbol,type),cin] }),
+                cin,
+                type,
+                false
+            ];
+
+            // const removedIdxSet = new Set<number>();
+            // const changedConstraints: ConstraintItem[] = [];
+            // let constraints = cin.constraints;
+            // //let tunion = mrNarrow.createRefTypesType(); // never
+            // const typesForUnion: RefTypesType[] = [];
+            // let anySubImplies = false;
+            // let anySubTypeWasType = false;
+            // for (let idx=0; idx<constraints.length; idx++){
+            //     const subcin = constraints[idx];
+            //     const [subconstr, subtype, subimplies] = simplifyConstraintBySubstitution2({ cin: subcin, symbol, type, dfltTypeOfSymbol, negateConstraintType, mrNarrow });
+            //     anySubImplies ||= subimplies;
+            //     anySubTypeWasType ||= (subtype===type);
+            //     if (subconstr!==subcin){
+            //         removedIdxSet.add(idx);
+            //         if (subconstr) changedConstraints.push(subconstr);
+            //     }
             // }
-            return [constraintItemOut, typeout, impliesout];
+            // // (A) TODO: Uncomment this after the testing (B) below is remove
+            // if (anySubImplies){
+            //     // eslint-disable-next-line no-null/no-null
+            //     return [null, type, true];
+            // }
+            // //let hadAnyChange = false;
+            // if (removedIdxSet.size||changedConstraints.length){
+            //     constraints = constraints.filter((_c,idx)=>removedIdxSet.has(idx));
+            //     constraints.push(...changedConstraints);
+            //     //hadAnyChange = true;
+            // }
+            // /* eslint prefer-const: ["error", {"destructuring": "all"}]*/
+            // let [typeout, typeoutEquivTypein] = anySubTypeWasType ? [type, true] : [mrNarrow.unionOfRefTypesType(typesForUnion), false];
+            // if (!typeoutEquivTypein){
+            //     if (mrNarrow.equalRefTypesTypes(type, typeout)) typeoutEquivTypein = true;
+            // }
+            // let impliesout = false;
+            // let constraintItemOut: ConstraintItem | null;
+            // // In order not to increase space requirements, and because distributing type (or )
+            // if (constraints.length===0){
+            //     // eslint-disable-next-line no-null/no-null
+            //     constraintItemOut = null;
+            //     impliesout = typeoutEquivTypein;
+            // }
+            // else {
+            //     constraintItemOut = cin;
+            // }
+            // // (B) TODO: Comment this when (A) above is activated
+            // // if (anySubImplies) {
+            // //     Debug.assert(!constraintItemOut);
+            // //     Debug.assert(typeoutEquivTypein);
+            // //     Debug.assert(impliesout);
+            // // }
+            // return [constraintItemOut, typeout, impliesout];
 
         }
         Debug.fail("unexpected");
