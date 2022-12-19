@@ -201,11 +201,6 @@ namespace ts {
         };
 
         const mrNarrow = createMrNarrow(checker, mrState);
-        // if (doConstraintTest){
-        //     testOfSimplifyConstraintBySubstitution2(checker,mrNarrow);
-        //     doConstraintTest = false;
-        // }
-
         return {
             sourceFile,
             //groupedFlowNodes,

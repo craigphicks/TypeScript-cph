@@ -1714,9 +1714,10 @@ namespace ts {
             if (symbol && isconst) {
                 const got = symtab.get(symbol);
                 if (got) setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
-                const r = andIntoConstrainTrySimplify({ symbol, type: setTypeTmp, constraintItem: rttr.constraintItem, mrNarrow });
-                tmpConstraintItem = r[0];
-                setTypeTmp = r[1];
+                //const r = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: rttr.constraintItem, mrNarrow });
+                //const r = andIntoConstrainTrySimplify({ symbol, type: setTypeTmp, constraintItem: rttr.constraintItem, mrNarrow });
+                tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: rttr.constraintItem });
+                //setTypeTmp = r[1];
                 symtab = copyRefTypesSymtab(rttr.symtab);
                 //symtab = symtab.size ? copyRefTypesSymtab(symtab) : createRefTypesSymtab();
                 symtab.set(
@@ -1746,13 +1747,14 @@ namespace ts {
             }
             if (crit.kind===InferCritKind.none && arrRttr.length===1){
                 if (!arrRttr[0].symbol) return { passing: [...arrRttr] };
-                return { passing: [mergeTypeIntoNewSymtabAndNewConstraint(arrRttr[0])] };
+                return { passing: [arrRttr[0]] };
+//                return { passing: [mergeTypeIntoNewSymtabAndNewConstraint(arrRttr[0])] };
             }
             if (crit.kind===InferCritKind.none){
-                const arrRttrco: RefTypesTableReturnCritOut[] = arrRttr.map(rttr=> {
-                    if (!rttr.symbol) return rttr;
-                    return mergeTypeIntoNewSymtabAndNewConstraint(rttr);
-                });
+                // const arrRttrco: RefTypesTableReturnCritOut[] = arrRttr.map(rttr=> {
+                //     if (!rttr.symbol) return rttr;
+                //     return mergeTypeIntoNewSymtabAndNewConstraint(rttr);
+                // });
                 const rttrco: RefTypesTableReturnCritOut = {
                     kind: RefTypesTableKind.return,
                     symtab: createRefTypesSymtab(),
@@ -1760,7 +1762,7 @@ namespace ts {
                     constraintItem: undefined
                 };
                 const arrConstraint: ConstraintItem[] = [];
-                arrRttrco.forEach(rttr2=>{
+                arrRttr.forEach(rttr2=>{
                     mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrco.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrco.type });
                     if (rttr2.constraintItem) {
@@ -2288,6 +2290,9 @@ namespace ts {
                         else {
                             type = leaf.type;
                             isconst = leaf.isconst??false;
+                        }
+                        if (isconst && constraintItem){
+                            type = evalTypeOverConstraint({ cin:constraintItem, symbol:condSymbol, typeRange: type, refDfltTypeOfSymbol:[undefined], mrNarrow });
                         }
                         // if (constraintItem){
                         //     [constraintItemOut, type] = andIntoConstrainTrySimplify({ symbol:condSymbol, type, constraintItem, mrNarrow });
