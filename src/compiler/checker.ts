@@ -18,7 +18,7 @@ namespace ts {
     } | undefined;
 
 
-    const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):20000;
+    const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):50000;
     //let myNumLinesOut=0;
     let myMaxDepth = 0; // introspection data
     // @ts-ignore
@@ -43096,6 +43096,7 @@ namespace ts {
             if (nameMatched && dbgFlowFileCnt++===0) {
                 consoleLog(`myDebug=${myDebug}, myNarrowTest=${myNarrowTest}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
                 if (!myDisableInfer && nameMatched && myDebug){
+                    testOfSimplifyConstraintBySubstitution2(checker,checker.getSourceFileInferState().mrNarrow);
                     //let contents = "";
                     // const writeLine = (s: string)=>{
                     //     contents+=(s+sys.newLine);

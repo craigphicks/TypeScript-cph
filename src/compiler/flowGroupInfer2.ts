@@ -15,8 +15,10 @@ namespace ts {
         mrNarrowTypes({ refTypesSymtab: refTypes, condExpr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
         createRefTypesSymtab(): RefTypesSymtab;
         createRefTypesType(type?: Readonly<Type>): RefTypesType;
+        dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string;
         dbgRefTypesTableToStrings(t: RefTypesTable): string[],
         dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[],
+        dbgConstraintItem(ci: ConstraintItem): string[];
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void,
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType,
@@ -28,6 +30,8 @@ namespace ts {
         intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType,
         //intersectRefTypesTypesIfNotAImpliesB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType | null;
         intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean];
+        typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
+        isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         inverseType(part: Readonly<RefTypesType>, whole: Readonly<RefTypesType>): RefTypesType;
         isNeverType(t: Readonly<RefTypesType>): boolean,
         isAnyType(t: Readonly<RefTypesType>): boolean,
@@ -45,8 +49,10 @@ namespace ts {
             mrNarrowTypes,
             createRefTypesSymtab,
             createRefTypesType,
+            dbgRefTypesTypeToString,
             dbgRefTypesTableToStrings,
             dbgRefTypesSymtabToStrings,
+            dbgConstraintItem,
             equalRefTypesTypes,
             mergeToRefTypesType,
             unionOfRefTypesType,
@@ -56,6 +62,8 @@ namespace ts {
             mergeArrRefTypesSymtab,
             intersectRefTypesTypes,
             intersectRefTypesTypesImplies,
+            typeImplies,
+            isASubsetOfB:typeImplies,
             inverseType,
             isNeverType,
             isAnyType,

@@ -201,11 +201,10 @@ namespace ts {
         };
 
         const mrNarrow = createMrNarrow(checker, mrState);
-        let doConstraintTest = true;
-        doConstraintTest = true;
-        if (doConstraintTest){
-            testOfSimplifyConstraintBySubstitution2(checker,mrNarrow);
-        }
+        // if (doConstraintTest){
+        //     testOfSimplifyConstraintBySubstitution2(checker,mrNarrow);
+        //     doConstraintTest = false;
+        // }
 
         return {
             sourceFile,
