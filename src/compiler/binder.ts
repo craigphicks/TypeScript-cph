@@ -1222,6 +1222,7 @@ namespace ts {
             const thenLabel = createBranchLabel(BranchKind.then);
             const elseLabel = createBranchLabel(BranchKind.else);
             const postIfLabel = createBranchLabel(BranchKind.postIf);
+            postIfLabel.originatingConditionExpression = node.expression; // to enable merging of unchanged then/else branch pairs
             bindCondition(node.expression, thenLabel, elseLabel);
             currentFlow = finishFlowLabel(thenLabel);
             bind(node.thenStatement);

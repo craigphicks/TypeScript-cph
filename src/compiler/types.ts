@@ -3505,6 +3505,7 @@ namespace ts {
     export interface FlowLabel extends FlowNodeBase {
         antecedents: FlowNode[] | undefined;
         branchKind?: BranchKind;
+        originatingConditionExpression?: Node; // currently only present when branchKind===BranchKind.postIf
     }
 
     // FlowAssignment represents a node that assigns a value to a narrowable reference,

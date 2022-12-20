@@ -53,7 +53,6 @@ namespace ts {
     interface CurrentBranchesItem {
         refTypesTableReturn: RefTypesTableReturn;
         byNode: NodeToTypeMap;
-        done?: boolean
     };
 
 
@@ -66,23 +65,17 @@ namespace ts {
         kind: CurrentBranchesElementKind.plain;
         gff: GroupForFlow;
         item: CurrentBranchesItem;
+        done?: boolean
     };
     interface CurrentBranchElementTF {
         kind: CurrentBranchesElementKind.tf;
         gff: GroupForFlow;
-        truthy?: CurrentBranchesItem;
-        falsy?: CurrentBranchesItem;
+        truthy?: CurrentBranchesItem; // TODO: should not be optional
+        falsy?: CurrentBranchesItem; // TODO: should not be optional
+        originalConstraintIn: ConstraintItem | undefined;
+        done?: boolean
     };
     type CurrentBranchElement = CurrentBranchElementPlain | CurrentBranchElementTF;
-
-    // export interface Heaper<T = number> {
-    //     heapSortInPlace(h: T[], size: number): void;
-    //     heapInsert(h: T[], s: T): void;
-    //     heapRemove(h: T[]): T;
-    //     heapSize(h: T[]): number;
-    //     heapIsEmpty(h: T[]): boolean;
-    //     heapPeek(h: T[]): T;
-    // };
     export interface Heap {
         _heap: number[];
         _heapset: Set<number>;
@@ -393,141 +386,121 @@ namespace ts {
                 consoleLog(`resolveGroupForFlow[dbg:] }`);
             }
         }
-        // @ts-expect-error
-        const setCbi = new Set<{cbi: CurrentBranchesItem, gff: GroupForFlow}>();
-        const mapCbe = new Map<CurrentBranchElement, BranchKind | undefined>();
+
+        let refTypesSymtabArg: RefTypesSymtab | undefined;
+        let constraintItemArg: ConstraintItem | undefined;
         if (setOfFlow){
+            //const dbgDoNotCancelPostIfs = false;
+            const constraints: ConstraintItem[] = [];
+            const symtabs: RefTypesSymtab[] = [];
             let hadBranch = false;
             let hadNonBranch = false;
-            setOfFlow.forEach(fn=>{
-                // other than Start flows, there should be only one flow
-                Debug.assert(!hadBranch);
-                Debug.assert(!hadNonBranch);
-                if (isFlowStart(fn)) return;
-                if (isFlowBranch(fn)){
-                    hadBranch = true;
-                    if (getMyDebug()){
-                        consoleLog(`resolveGroupForFlow[dbg:] FlowLabel: {branchKind:${fn.branchKind}}`);
-                    }
-                    //const postIfFlowLabels: FlowLabel[] = [];
-
-                    const doOneAntefn = (antefn: Readonly<FlowNode>, preBranchKind: BranchKind | undefined) => {
-                        if (isFlowStart(antefn)) return;
-                        if (isFlowBranch(antefn)) {
-                            antefn.antecedents?.forEach(antefn2=>doOneAntefn(antefn2, antefn.branchKind));
-                            return;
-                            // if (antefn.branchKind===BranchKind.postIf){
-                            //     Debug.assert(fn.branchKind===BranchKind.postIf);
-                            //     antefn.antecedents?.forEach(antefn2=>doOneAntefn(antefn2, antefn.branchKind));
-                            //     return;
-                            // }
-                            // if (getMyDebug()){
-                            //     consoleLog(`resolveGroupForFlow[fail:] fn.branchKind:${fn.branchKind}, preBranchKind:${preBranchKind}, antefn.branchKind:${antefn.branchKind}`);
-                            //     consoleLog(`resolveGroupForFlow[fail:] fn: ${dbgs?.dbgFlowToString(fn,/**/ true)}`);
-                            //     consoleLog(`resolveGroupForFlow[fail:] antefn: ${dbgs?.dbgFlowToString(antefn, /**/ true)}`);
-                            // }
-                            // Debug.fail();
-                        }
-                        if (!isFlowWithNode(antefn)) Debug.fail();
-                        const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node);
-                        Debug.assert(anteg);
-                        const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
-                        Debug.assert(cbe);
-                        if (!mapCbe.has(cbe)) mapCbe.set(cbe,/*fn.branchKind*/ preBranchKind);
-                        else {
-                            const bk = mapCbe.get(cbe);
-                            Debug.assert(bk===fn.branchKind);
-                        }
-                    };
-
-                    fn.antecedents?.forEach(antefn=>{
-                        doOneAntefn(antefn, fn.branchKind);
-                    });
-                    // while(postIfFlowLabels.length){
-                    //     doOneAntefn(postIfFlowLabels.pop()!);
-                    // }
-                    return;
-
-                    // const setOfAnteg = new Set<GroupForFlow>();
-                    // fn.antecedents?.forEach(antefn=>{
-                    //     if (isFlowStart(antefn)) return;
-                    //     if (isFlowBranch(antefn)) return; //Debug.fail();
-                    //     if (!isFlowWithNode(antefn)) Debug.fail();
-                    //     const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node);
-                    //     Debug.assert(anteg);
-                    //     setOfAnteg.add(anteg);
-                    // });
-                    // Debug.assert(setOfAnteg.size===1);
-
-                    // fn.antecedents?.forEach(antefn=>{
-                    //     if (isFlowStart(antefn)) return;
-                    //     if (isFlowBranch(antefn)) return; //Debug.fail();
-                    //     if (!isFlowWithNode(antefn)) Debug.fail();
-                    //     const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node);
-                    //     Debug.assert(anteg);
-                    //     // if (setOfAnteGroups.has(anteg)) return;
-                    //     // setOfAnteGroups.add(anteg);
-                    //     const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
-                    //     Debug.assert(cbe);
-                    //     if (isFlowCondition(antefn)){
-                    //         Debug.assert(cbe.kind===CurrentBranchesElementKind.tf);
-                    //         if (antefn.flags & FlowFlags.TrueCondition){
-                    //             Debug.assert(cbe.truthy);
-                    //             setCbi.add({ cbi:cbe.truthy, gff:anteg });
-                    //         }
-                    //         else if (antefn.flags & FlowFlags.FalseCondition){
-                    //             Debug.assert(cbe.falsy);
-                    //             setCbi.add({ cbi:cbe.falsy, gff:anteg });
-                    //         }
-                    //         else Debug.fail();
-                    //     }
-                    //     else {
-                    //         Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
-                    //         setCbi.add({ cbi:cbe.item,gff:anteg });
-                    //     }
-                    // });
-                }
-                else {
-                    hadNonBranch = true;
-                    if (!isFlowWithNode(fn)) Debug.fail();
-                    const anteg = groupsForFlow.nodeToGroupMap.get(fn.node);
+            setOfFlow?.forEach(fn=>{
+                const doNonBranch = (flownb: FlowNode, precedentBranchKind?: BranchKind | undefined) => {
+                    if (!isFlowWithNode(flownb)) Debug.fail();
+                    const anteg = groupsForFlow.nodeToGroupMap.get(flownb.node);
                     Debug.assert(anteg);
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                     Debug.assert(cbe);
-                    if (isFlowCondition(fn)){
-                        Debug.fail();
-                        // if (cbe.kind!==CurrentBranchesElementKind.tf) {
-                        //     Debug.fail();
-                        // }
-                        // if (fn.flags & FlowFlags.TrueCondition){
-                        //     Debug.assert(cbe.truthy);
-                        //     //Debug.assert(cbe.truthy.arrRefTypesTableReturn.length===1);
-                        //     setCbi.add({ cbi:cbe.truthy, gff:anteg });
-                        //     //setCbi.add(cbe.truthy);
-                        //     //arefTypesSymtab.push(cbe.truthy.arrRefTypesTableReturn[0].symtab);
-                        //     //arrRttrBranch.push(cbe.true.refTypesTableReturn);
-                        // }
-                        // else if (fn.flags & FlowFlags.FalseCondition){
-                        //     Debug.assert(cbe.falsy);
-                        //     //Debug.assert(cbe.falsy.arrRefTypesTableReturn.length===1);
-                        //     setCbi.add({ cbi:cbe.falsy, gff:anteg });
-                        //     //setCbi.add(cbe.falsy);
-                        //     //arefTypesSymtab.push(...cbe.falsy.arrRefTypesTableReturn.map(rttr=>rttr.symtab));
-                        //     //arrRttrBranch.push(cbe.false.refTypesTableReturn);
-                        // }
-                        // else Debug.fail();
+                    if (precedentBranchKind===BranchKind.then){
+                        Debug.assert(cbe.kind===CurrentBranchesElementKind.tf && cbe.truthy);
+                        const {symtab, constraintItem} = cbe.truthy.refTypesTableReturn;
+                        return { symtab, constraintItem };
                     }
-                    else {
-                        Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
-                        if (!mapCbe.has(cbe)) mapCbe.set(cbe, undefined);
-                        else if (mapCbe.get(cbe)) Debug.fail();
-                        return;
-                        //setCbi.add({ cbi:cbe.item, gff: anteg });
+                    if (precedentBranchKind===BranchKind.else){
+                        Debug.assert(cbe.kind===CurrentBranchesElementKind.tf && cbe.falsy);
+                        const {symtab, constraintItem} = cbe.falsy.refTypesTableReturn;
+                        return { symtab, constraintItem };
                     }
+                    Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
+                    // in the case of cbe.kind===CurrentBranchesElementKind.tf, the cbe is removed from currentBranchesMap during postIf processing.
+                    Debug.assert(!cbe.done);
+                    cbe.done=true; // mrState.forFlow.currentBranchesMap.delete(anteg);
+                    const {symtab, constraintItem} = cbe.item.refTypesTableReturn;
+                    return { symtab, constraintItem };
+                };
+                if (isFlowStart(fn)) return;
+                if (isFlowWithNode(fn)){
+                    Debug.assert(!hadNonBranch);
+                    Debug.assert(!hadBranch);
+                    hadNonBranch=true;
+                    const {symtab,constraintItem} = doNonBranch(fn);
+                    if (symtab.size) symtabs.push(symtab);
+                    if (constraintItem) constraints.push(constraintItem);
+                    return;
                 }
+                if (isFlowBranch(fn)){
+                    const doOneFlat = (antefn: Readonly<FlowNode>, precedentBranchKind: BranchKind | undefined): ConstraintItem[] => {
+                        if (isFlowStart(antefn)) return [];
+                        if (isFlowBranch(antefn)) {
+                            // if (!dbgDoNotCancelPostIfs){
+                            Debug.assert(antefn.branchKind!==BranchKind.postIf);
+                            // }
+                            if (!antefn.antecedents) return [];
+                            return antefn.antecedents.flatMap(antefn2=>doOneFlat(antefn2, antefn.branchKind));
+                        }
+                        const {symtab,constraintItem} = doNonBranch(antefn, precedentBranchKind);
+                        if (symtab.size) symtabs.push(symtab);
+                        return constraintItem ? [constraintItem] : [];
+                    };
+                    Debug.assert(!hadNonBranch);
+                    Debug.assert(!hadBranch);
+                    hadBranch = true;
+                    if (/* !dbgDoNotCancelPostIfs && */ fn.branchKind===BranchKind.postIf){
+                        // doPostIf - structured constraintItem
+                        const doOnePostIf = (fnpi: Readonly<FlowLabel>): ConstraintItem | undefined => {
+                            Debug.assert(fnpi.branchKind===BranchKind.postIf);
+                            Debug.assert(fnpi.antecedents!.length===2);
+                            const postIfConstraints = fnpi.antecedents!.map(antefn=>{
+                                Debug.assert(!isFlowStart(antefn));
+                                if (isFlowBranch(antefn) && antefn.branchKind===BranchKind.postIf){
+                                    return doOnePostIf(antefn);
+                                }
+                                else {
+                                    const tmpConstraints = doOneFlat(antefn,BranchKind.postIf);
+                                    if (tmpConstraints.length===0) return undefined;
+                                    else if (tmpConstraints.length===1) return tmpConstraints[0];
+                                    Debug.fail();
+                                }
+                            });
+                            Debug.assert(fnpi.originatingConditionExpression);
+                            const origGroup = groupsForFlow.nodeToGroupMap.get(fnpi.originatingConditionExpression);
+                            Debug.assert(origGroup);
+                            const origCbe = mrState.forFlow.currentBranchesMap.get(origGroup);
+                            Debug.assert(origCbe);
+                            Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
+                            Debug.assert(!origCbe.done);
+                            origCbe.done=true; // mrState.forFlow.currentBranchesMap.delete(origGroup);
+                            if (postIfConstraints[0]===origCbe.truthy?.refTypesTableReturn.constraintItem && postIfConstraints[1]===origCbe.falsy?.refTypesTableReturn.constraintItem){
+                                return origCbe.originalConstraintIn;
+                            }
+                            else {
+                                if (postIfConstraints[0] && postIfConstraints[1]) {
+                                    return createFlowConstraintNodeOr({ constraints: postIfConstraints as ConstraintItem[] });
+                                }
+                                else if (postIfConstraints[0]) return postIfConstraints[0];
+                                else if (postIfConstraints[1]) return postIfConstraints[1];
+                                else return undefined;
+                            }
+                        };
+                        const constraint = doOnePostIf(fn);
+                        if (constraint) constraints.push(constraint);
+                        return;
+                    }
+                    else if (fn.antecedents) {
+                        constraints.push(...fn.antecedents.flatMap(antefn=>doOneFlat(antefn, fn.branchKind)));
+                        return;
+                    }
+                    return;
+                }
+                Debug.fail();
             });
+            if (symtabs.length===0) refTypesSymtabArg = sourceFileMrState.mrNarrow.createRefTypesSymtab();
+            else if (symtabs.length===1) refTypesSymtabArg = symtabs[0];
+            else refTypesSymtabArg = sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(symtabs);
+            if (constraints.length===1) constraintItemArg = constraints[0];
+            else if (constraints.length) constraintItemArg = createFlowConstraintNodeOr({ constraints });
         }
-
         const boolsplit = (groupForFlow.falseref || groupForFlow.trueref);
         const crit: InferCrit = !boolsplit ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         const inferStatus: InferStatus = {
@@ -535,124 +508,8 @@ namespace ts {
             replayItemStack: [],
             replayables: sourceFileMrState.mrState.replayableItems
         };
-
-        if (getMyDebug()){
-            const as: string[]=["resolveGroupForFlow:mapCbe:["];
-            mapCbe.forEach((bk,cbe)=>{
-                as.push(`resolveGroupForFlow:mapCbe:  gff.groupIndex:${cbe.gff.groupIdx}, cbe.kind:${cbe.kind}, branchKind:${bk}`);
-            });
-            // const as: string[]=["resolveGroupForFlow: ante groups:["];
-            // setCbi.forEach(x=>{
-            //     as.push(`resolveGroupForFlow:   anteg.groupIdx: ${x.gff.groupIdx}`);
-            // });
-            as.push("resolveGroupForFlow:mapCbe:]");
-            as.forEach(s=>consoleLog(s));
-        }
-
-        let retval: MrNarrowTypesReturn;
-        {
-            /**
-             * Merge branches - each of ConstraintItem(s), RefTypeSymtab(s)
-             */
-            let constraintItemMerged: ConstraintItem | undefined;
-            let refTypesSymtabMerged: RefTypesSymtab | undefined;
-            // if (mapCbe.size===1) {
-            //     const [cbe,bk] = mapCbe.entries().next().value as [CurrentBranchElement, BranchKind | undefined];
-            //     if (cbe.kind===CurrentBranchesElementKind.tf){
-            //         if (bk===BranchKind.then) {
-            //             ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.truthy!.refTypesTableReturn);
-            //         }
-            //         else if (bk===BranchKind.else) {
-            //             ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.falsy!.refTypesTableReturn);
-            //         }
-            //         else Debug.fail();
-            //     }
-            //     else if (cbe.kind===CurrentBranchesElementKind.plain){
-            //         Debug.assert(bk!==BranchKind.then && bk!==BranchKind.else);
-            //         ({ constraintItem:constraintItemMerged, symtab:refTypesSymtabMerged } = cbe.item.refTypesTableReturn);
-            //         if (bk===BranchKind.postIf) {
-            //             constraintItemMerged = undefined;
-            //             // TODO free up unnecessary cbe's
-            //             // Debug.fail("TODO");
-            //         }
-            //     }
-            //     else Debug.fail();
-            // }
-            // else
-            if (mapCbe.size) {
-                const constraints: ConstraintItem[]=[];
-                const symtabs: RefTypesSymtab[] = [];
-                let hadPostIf = false;
-                mapCbe.forEach((bk,cbe)=>{
-                    if (bk===BranchKind.postIf) hadPostIf = true;
-                    if (cbe.kind===CurrentBranchesElementKind.tf){
-                        if (bk===BranchKind.then) {
-                            const { constraintItem, symtab } = cbe.truthy!.refTypesTableReturn;
-                            if (constraintItem) constraints.push(constraintItem);
-                            if (symtab) symtabs.push(symtab);
-                        }
-                        else if (bk===BranchKind.else) {
-                            const { constraintItem, symtab } = cbe.falsy!.refTypesTableReturn;
-                            if (constraintItem) constraints.push(constraintItem);
-                            if (symtab) symtabs.push(symtab);
-                        }
-                        else Debug.fail();
-                    }
-                    else if (cbe.kind===CurrentBranchesElementKind.plain){
-                        Debug.assert(bk!==BranchKind.then && bk!==BranchKind.else);
-                        const { constraintItem, symtab } = cbe.item.refTypesTableReturn;
-                        if (symtab) symtabs.push(symtab);
-                        if (constraintItem) constraints.push(constraintItem);
-                        // if (bk!==BranchKind.postIf) {
-                        //     hadPostIf = true;
-                        //     if (constraintItem) constraints.push(constraintItem);
-                        //     // TODO free up unnecessary cbe's
-                        //     // Debug.fail("TODO");
-                        // }
-                    }
-                    else Debug.fail();
-                });
-                if (symtabs.length===1) refTypesSymtabMerged = symtabs[0];
-                else if (symtabs.length){
-                    refTypesSymtabMerged = sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(symtabs);
-                }
-                if (hadPostIf) {
-                    //mapCbe.forEach((bk,_cbe)=>Debug.assert(bk===BranchKind.postIf));
-                }
-                if (constraints.length===1) constraintItemMerged = constraints[0];
-                else if (constraints.length) {
-                    Debug.assert(hadPostIf);
-                    // Because constraints are comprised of constants only, they can't be affected by overwrites at a lower level,
-                    // therefore there should not ever be more than one constraint here.
-                    constraintItemMerged = createFlowConstraintNodeOr({ constraints });
-                }
-            }
-            if (!refTypesSymtabMerged) refTypesSymtabMerged = sourceFileMrState.mrNarrow.createRefTypesSymtab();
-            // if (setCbi.size===1) constraintItem = (setCbi.keys().next().value as {cbi: CurrentBranchesItem}).cbi.refTypesTableReturn.constraintItem;
-            // else if (setCbi.size) {
-            //     const constraints: ConstraintItem[]=[];
-            //     setCbi.forEach(x=>{
-            //         if (x.cbi.refTypesTableReturn.constraintItem) constraints.push(x.cbi.refTypesTableReturn.constraintItem);
-            //     });
-            //     // Because constraints are comprised of constants only, they can't be affected by overwrites at a lower level,
-            //     // therefore there should not ever be more than one constraint here.
-            //     if (constraints.length===1) constraintItem = constraints[0];
-            //     else if (constraints.length) {
-            //         Debug.fail("expecting 0 or 1 constraints only");
-            //     }
-            // }
-
-            // const arefTypesSymtab: RefTypesSymtab[] = [];
-            // setCbi.forEach(x=>{
-            //     if (x.cbi.refTypesTableReturn.symtab.size) arefTypesSymtab.push(x.cbi.refTypesTableReturn.symtab);
-            // });
-            // if (!arefTypesSymtab.length) arefTypesSymtab.push(sourceFileMrState.mrNarrow.createRefTypesSymtab());
-
-            // const refTypesSymtab = arefTypesSymtab.length>1 ? sourceFileMrState.mrNarrow.mergeArrRefTypesSymtab(arefTypesSymtab) : arefTypesSymtab[0];
-
-            retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
-                refTypesSymtab: refTypesSymtabMerged, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemMerged });
-        }
+        const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
+            refTypesSymtab: refTypesSymtabArg!, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
         if (boolsplit){
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
@@ -664,7 +521,8 @@ namespace ts {
                 truthy: {
                     refTypesTableReturn: retval.inferRefRtnType.passing,
                     byNode: retval.byNode,
-                }
+                },
+                originalConstraintIn: constraintItemArg
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
@@ -783,6 +641,8 @@ namespace ts {
             astr.push(`[${dbgs?.dbgNodeToString(maximalNode)}]:`);
             astr.push(`  groupIdx:${g.groupIdx}`);
             astr.push(`  cbe.kind:${cbe.kind}`);
+            astr.push(`  cbe.done:${cbe.done??false}`);
+            if (cbe.done) return;
             if (cbe.kind===CurrentBranchesElementKind.plain){
                 astr.push(...doItem(cbe.item).map(s => "    "+s));
             }

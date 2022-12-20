@@ -43096,7 +43096,9 @@ namespace ts {
             if (nameMatched && dbgFlowFileCnt++===0) {
                 consoleLog(`myDebug=${myDebug}, myNarrowTest=${myNarrowTest}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
                 if (!myDisableInfer && nameMatched && myDebug){
-                    testOfEvalTypeOverConstraint(checker,checker.getSourceFileInferState().mrNarrow);
+                    if (node.allFlowNodes?.length===2){
+                        testOfEvalTypeOverConstraint(checker,checker.getSourceFileInferState().mrNarrow);
+                    }
                     //let contents = "";
                     // const writeLine = (s: string)=>{
                     //     contents+=(s+sys.newLine);
