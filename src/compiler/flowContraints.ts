@@ -95,34 +95,34 @@ namespace ts {
         //return type;
     }
 
-    function getDefaultType(sym: Symbol, mrNarrow: MrNarrow): RefTypesType {
-        const tstype = mrNarrow.checker.getTypeOfSymbol(sym);
-        const type = mrNarrow.createRefTypesType(tstype);
-        return type;
-    }
+    // function getDefaultType(sym: Symbol, mrNarrow: MrNarrow): RefTypesType {
+    //     const tstype = mrNarrow.checker.getTypeOfSymbol(sym);
+    //     const type = mrNarrow.createRefTypesType(tstype);
+    //     return type;
+    // }
 
 
-    export function evalTypeOverConstraint({cin, symbol, typeRange, refDfltTypeOfSymbol, mrNarrow, depth}: {
-        cin: Readonly<ConstraintItem | null>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, refDfltTypeOfSymbol: [RefTypesType | undefined], mrNarrow: MrNarrow, depth?: number
+    export function evalTypeOverConstraint({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
+        cin: Readonly<ConstraintItem | null>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {
         depth=depth??0;
         if (getMyDebug()){
             const as: string[] = [];
             consoleGroup(`evalTypeOverConstraint[in][${depth}]`);
-            as.push(`evalTypeOverConstraint[in][${depth}]: depth:${depth}, symbol:${symbol.escapedName}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(typeRange)}, refDefaultType:${refDfltTypeOfSymbol[0]?mrNarrow.dbgRefTypesTypeToString(refDfltTypeOfSymbol[0]):"undefined"}`);
+            as.push(`evalTypeOverConstraint[in][${depth}]: depth:${depth}, symbol:${symbol.escapedName}, negate:${negate}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(typeRange)}.`);
             if (!cin) as.push(`evalTypeOverConstraint[in][${depth}]: constraint: undefined`);
             else mrNarrow.dbgConstraintItem(cin).forEach(s=>as.push(`evalTypeOverConstraint[in][${depth}]: constraint: ${s}`));
             as.forEach(s=>consoleLog(s));
         }
-        const r = evalTypeOverConstraint_aux({ cin, symbol, typeRange, refDfltTypeOfSymbol, mrNarrow, depth });
+        const r = evalTypeOverConstraint_aux({ cin, symbol, typeRange, negate, mrNarrow, depth });
         if (getMyDebug()){
             consoleLog(`evalTypeOverConstraint[out][${depth}]: ${mrNarrow.dbgRefTypesTypeToString(r)}`);
             consoleGroupEnd();
         }
         return r;
     }
-    function evalTypeOverConstraint_aux({cin, symbol, typeRange, refDfltTypeOfSymbol, mrNarrow, depth}: {
-        cin: Readonly<ConstraintItem | null>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, refDfltTypeOfSymbol: [RefTypesType | undefined], mrNarrow: MrNarrow, depth?: number
+    function evalTypeOverConstraint_aux({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
+        cin: Readonly<ConstraintItem | null>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {
         depth=depth??0;
         if (mrNarrow.isNeverType(typeRange)){
@@ -131,34 +131,39 @@ namespace ts {
         if (mrNarrow.isAnyType(typeRange) || mrNarrow.isUnknownType(typeRange)){
             Debug.fail("TODO:  mrNarrow.isAnyType(type) || mrNarrow.isUnknownType(type)");
         }
-        if (!cin) return typeRange;
+        if (!cin) return !negate ? typeRange : mrNarrow.createRefTypesType();
+        if (cin.kind===ConstraintItemKind.never){
+            if (!negate) return mrNarrow.createRefTypesType(); // never
+            return typeRange;
+        }
         if (cin.kind===ConstraintItemKind.leaf){
-            if (cin.symbol!==symbol) return typeRange;
-            return mrNarrow.intersectRefTypesTypes(cin.type,typeRange);
+            if (!negate){
+                if (cin.symbol!==symbol) return typeRange;
+                return mrNarrow.intersectRefTypesTypes(cin.type,typeRange);
+            }
+            else {
+                if (cin.symbol!==symbol) return mrNarrow.createRefTypesType(); // never
+                return mrNarrow.inverseType(cin.type,typeRange);
+            }
         }
         else if (cin.kind===ConstraintItemKind.node){
             //Debug.assert(cin.kind===ConstraintItemKind.node);
             if (cin.op===ConstraintItemNodeOp.not){
-                if (refDfltTypeOfSymbol[0]===undefined){
-                    refDfltTypeOfSymbol[0] = getDefaultType(symbol, mrNarrow);
-                }
-                const subType = evalTypeOverConstraint({ cin:cin.constraint, symbol, typeRange, refDfltTypeOfSymbol, mrNarrow, depth:depth+1 });
-                mrNarrow.inverseType(subType, refDfltTypeOfSymbol[0]);
-                return mrNarrow.intersectRefTypesTypes(subType,typeRange);
+                return evalTypeOverConstraint({ cin:cin.constraint, symbol, typeRange, negate:!negate, mrNarrow, depth:depth+1 });
             }
-            if (cin.op===ConstraintItemNodeOp.and){
+            if (cin.op===ConstraintItemNodeOp.and && !negate || cin.op===ConstraintItemNodeOp.or && negate){
                 let isectType = typeRange;
                 for (const subc of cin.constraints){
-                    const subType = evalTypeOverConstraint({ cin:subc, symbol, typeRange:isectType, refDfltTypeOfSymbol, mrNarrow, depth:depth+1 });
+                    const subType = evalTypeOverConstraint({ cin:subc, symbol, typeRange:isectType, mrNarrow, depth:depth+1 });
                     if (mrNarrow.isNeverType(subType)) return subType;
                     if (subType!==isectType && !mrNarrow.isASubsetOfB(isectType,subType)) isectType=subType;
                 }
                 return isectType;
             }
-            if (cin.op===ConstraintItemNodeOp.or){
+            if (cin.op===ConstraintItemNodeOp.or && !negate || cin.op===ConstraintItemNodeOp.and && negate){
                 const unionType = mrNarrow.createRefTypesType(); // never
                 for (const subc of cin.constraints){
-                    const subType = evalTypeOverConstraint({ cin:subc, symbol, typeRange, refDfltTypeOfSymbol, mrNarrow, depth:depth+1 });
+                    const subType = evalTypeOverConstraint({ cin:subc, symbol, typeRange, mrNarrow, depth:depth+1 });
                     mrNarrow.mergeToRefTypesType({ source:subType, target:unionType });
                     if (mrNarrow.isASubsetOfB(typeRange,unionType)) return typeRange;
                 }
@@ -168,304 +173,12 @@ namespace ts {
         Debug.fail();
     }
 
-
-
-    /**
-     * - The constraints "cin" are simplified under the assumption that "type of symbol is in the set type" is an additional constraint.
-     * In other words that "type of symbol is in the set type" is anded with constraint.
-     * If negateConstraintType is true then the sense of constraint is reversed, without explicitly rewriting the constraint.
-     * We don't want to explicly rewrite the constraint because, generally speaking, the programmer entered expression of "and", "or", and "not" is already
-     * approximately optimal in terms of space, while rewriting that - e.g. to get rid of nots or convert to all ands, could greatly expand the space requirements.
-     * @param param0
-     * @returns
-     *
-     * - The return value is a tuple [ConstraintItem | null, RefTypesType ]
-     * - The first element "cout" is the simplified constraint. A value of "null" indicates the constraint has been completely replaced by the "symbol,type" assumption.
-     * - The second element "typeOut" is indicates that the type of "symbol" is further constrained to be in the set "typeOut".
-     * If "typeOut"==="type" that means no such further constraint was detected. "typeOut" is used internally in recursive calls for "and" calculations.
-     */
-    // function simplifyConstraintBySubstitution2(
-    //     {cin, negateConstraintType, symbol, type, dfltTypeOfSymbol, mrNarrow, depth}: {
-    //         cin: ConstraintItem | null, negateConstraintType: boolean, symbol: Symbol, type: RefTypesType, dfltTypeOfSymbol: RefTypesType | undefined, mrNarrow: MrNarrow, depth?: number},
-    // ): [cout: ConstraintItem | null, typeOut: RefTypesType, implies: boolean ] {
-    //     depth=depth??0;
-    //     if (getMyDebug()){
-    //         const as: string[] = [];
-    //         consoleGroup(`simplifyConstraintBySubstitution2[in][${depth}]`);
-    //         as.push(`simplifyConstraintBySubstitution2[in][${depth}]: depth:${depth}, symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, defaultType:${dfltTypeOfSymbol}, negate:${negateConstraintType}`);
-    //         if (!cin) as.push(`simplifyConstraintBySubstitution2[in][${depth}]: constraint: undefined`);
-    //         else mrNarrow.dbgConstraintItem(cin).forEach(s=>as.push(`simplifyConstraintBySubstitution2[in][${depth}]: constraint: ${s}`));
-    //         as.forEach(s=>consoleLog(s));
-    //     }
-    //     const r = simplifyConstraintBySubstitution2aux({ cin, negateConstraintType, symbol, type, dfltTypeOfSymbol, mrNarrow, depth });
-    //     if (getMyDebug()){
-    //         const as: string[] = [];
-    //         if (!r[0]) as.push(`simplifyConstraintBySubstitution2[out][${depth}]: constraint: undefined`);
-    //         else mrNarrow.dbgConstraintItem(r[0]).forEach(s=>as.push(`simplifyConstraintBySubstitution2[out][${depth}]: constraint: ${s}`));
-    //         as.push(`simplifyConstraintBySubstitution2[out][${depth}]: type: ${mrNarrow.dbgRefTypesTypeToString(r[1])}`);
-    //         as.push(`simplifyConstraintBySubstitution2[out][${depth}]: implies: ${r[2]}`);
-    //         as.forEach(s=>consoleLog(s));
-    //         consoleGroupEnd();
-    //     }
-    //     return r;
-    // }
-
-    // function simplifyConstraintBySubstitution2aux(
-    //     {cin, negateConstraintType, symbol, type, dfltTypeOfSymbol, mrNarrow, depth}: {
-    //         cin: ConstraintItem | null, negateConstraintType: boolean, symbol: Symbol, type: RefTypesType, dfltTypeOfSymbol: RefTypesType | undefined, mrNarrow: MrNarrow, depth?: number},
-    // ): [cout: ConstraintItem | null, typeOut: RefTypesType, implies: boolean ] {
-    //     // function calcIntersectionIfNotImplied(tsub: Readonly<RefTypesType>, ctype: RefTypesType, negateType: boolean): null | RefTypesType {
-    //     //     if (!negateType) return mrNarrow.intersectRefTypesTypesIfNotAImpliesB(tsub, ctype);
-    //     //     else {
-    //     //         if (!dfltTypeOfSymbol) dfltTypeOfSymbol = getDefaultType(symbol, mrNarrow);
-    //     //         const useType: RefTypesType = mrNarrow.inverseType(ctype, dfltTypeOfSymbol);
-    //     //         return mrNarrow.intersectRefTypesTypesIfNotAImpliesB(tsub, useType);
-    //     //     }
-    //     // }
-    //     function calcIntersectionImplies(tsub: Readonly<RefTypesType>, ctype: RefTypesType, negateType: boolean): [isect: RefTypesType, implies: boolean] {
-    //         if (!negateType) return mrNarrow.intersectRefTypesTypesImplies(tsub, ctype);
-    //         else {
-    //             if (!dfltTypeOfSymbol) dfltTypeOfSymbol = getDefaultType(symbol, mrNarrow);
-    //             const useType: RefTypesType = mrNarrow.inverseType(ctype, dfltTypeOfSymbol);
-    //             return mrNarrow.intersectRefTypesTypesImplies(tsub, useType);
-    //         }
-    //     }
-    //     if (mrNarrow.isNeverType(type)){
-    //         return [null, type, true];
-    //     }
-    //     if (mrNarrow.isAnyType(type) || mrNarrow.isUnknownType(type)){
-    //         Debug.fail("mrNarrow.isAnyType(type) || mrNarrow.isUnknownType(type)");
-    //         // return [
-    //         //     cin,
-    //         //     type,
-    //         //     false
-    //         // ];
-    //     }
-
-    //     // eslint-disable-next-line no-null/no-null
-    //     if (!cin) return [ null, type, false ];
-    //     if (cin.kind===ConstraintItemKind.leaf){
-    //         if (cin.symbol!==symbol) return [cin, type, false];
-
-    //         /**
-    //          * type relation to (possibly negated)cin.type (call it c) => [return constraint, return type]
-    //          * return constraint of null means it can be removed
-    //          * equal => [null, type]
-    //          * strict subset => [null, type]
-    //          * superset => [c.in, c.type] - constraint not removed because c.type is more restrictive than type (or maybe we can?)
-    //          * strict intersection => [intersection constraint, intersection type]) - ditto not removed
-    //          */
-    //         // "implied" means type is a subset of cin.type in which case calcIntersectionIfNotImplied return null
-    //         const [tmpType, implies] = calcIntersectionImplies(type, cin.type, negateConstraintType);
-    //         // eslint-disable-next-line no-null/no-null
-    //         // nbif (!tmpType) return [null, type];
-    //         return [
-    //             // eslint-disable-next-line no-null/no-null
-    //             null, //{ kind: ConstraintItemKind.leaf, symbol, type: tmpType },
-    //             tmpType,
-    //             implies
-    //         ];
-    //     }
-
-    //     if (cin.op===ConstraintItemNodeOp.not){
-
-    //         // const [tmpconstraint, tmptype, tmpimplies] = simplifyConstraintBySubstitution2({ cin:cin.constraint, symbol, type, dfltTypeOfSymbol, negateConstraintType: !negateConstraintType, mrNarrow, depth:(depth??0)+1 });
-    //         return simplifyConstraintBySubstitution2({ cin:cin.constraint, symbol, type, dfltTypeOfSymbol, negateConstraintType: !negateConstraintType, mrNarrow, depth:(depth??0)+1 });
-    //     }
-    //     if ((cin.op===ConstraintItemNodeOp.and && !negateConstraintType) || (cin.op===ConstraintItemNodeOp.or && negateConstraintType)) {
-    //         if (depth && depth>=3){
-    //             consoleLog("depth && depth>=3");
-    //         }
-    //         /**
-    //          * case and:
-    //          * For each member constr of cin
-    //          *   If tsub implies constr, then remove constr, else replace tsub with and(tsub,constr).
-    //          * Finally, if (type!==tsub) then add tsub as constraint
-    //          */
-    //         let changed = true;
-    //         let tsub = type;
-    //         let constraints = cin.constraints;
-    //         let implies = true;
-    //         let dbgCount = 0;
-    //         while (changed) {
-    //             implies = true;
-    //             changed = false;
-    //             //const changedContent: [idx:number, ct: ConstraintItem][] = [];
-    //             const removedIdxSet = new Set<number>();
-    //             const changedConstraints: ConstraintItem[] = [];
-    //             constraints.forEach((c,idx)=>{
-    //                 // _implies is not used in "and" processing
-    //                 const [c1,tsub1, impliesout] = simplifyConstraintBySubstitution2({ cin:c, symbol, type:tsub, dfltTypeOfSymbol, negateConstraintType, mrNarrow, depth:(depth??0)+1 });
-    //                 if (mrNarrow.isNeverType(tsub1)) {
-    //                     return [null, tsub1, false];
-    //                 }
-    //                 implies &&= impliesout;
-    //                 if (c1!==c){
-    //                     removedIdxSet.add(idx);
-    //                     if (c1) changedConstraints.push(c1);
-    //                 }
-    //                 if (!mrNarrow.equalRefTypesTypes(tsub1,tsub)) { //if (tsub1!==tsub)
-    //                     tsub = tsub1;
-    //                     changed = true;
-    //                 }
-    //             });
-    //             if (removedIdxSet.size){
-    //                 changed = true;
-    //                 constraints = constraints.filter((_c,idx)=>!removedIdxSet.has(idx));
-    //                 constraints.push(...changedConstraints);
-    //             }
-    //             dbgCount++;
-    //             if (dbgCount===3){
-    //                 consoleLog("mybad");
-    //             }
-    //         } // while changed
-    //         // eslint-disable-next-line no-null/no-null
-    //         if (constraints.length===0) return [null, tsub, implies];
-    //         if (constraints.length===1) return [constraints[0], tsub, implies];
-    //         if (constraints===cin.constraints) return [cin, tsub, implies];
-    //         return [createFlowConstraintNodeAnd({ constraints }), tsub, implies];
-    //     }
-    //     if ((cin.op===ConstraintItemNodeOp.or && !negateConstraintType) || (cin.op===ConstraintItemNodeOp.and && negateConstraintType)) {
-    //         /**
-    //          * case or:
-    //          * constraints out := if (any returned subimplies is true || all returned subconstraints are null) then null else cin.contraints
-    //          * typeout := union of all returned subtypes
-    //          * impliesout := typeout equivalent to cin.type && countraints out is null
-    //          */
-
-    //         // const results: ReturnType<typeof simplifyConstraintBySubstitution2>[] = cin.constraints.map(subcin=>{
-    //         //     simplifyConstraintBySubstitution2({ cin: subcin, symbol, type, dfltTypeOfSymbol, negateConstraintType, mrNarrow });
-    //         // });
-    //         if (getMyDebug()){
-    //             consoleLog(`simplifyConstraintBySubstitution2[dbg][${depth}]: attempt or-by-constraint`);
-    //         }
-    //         // eslint-disable-next-line @typescript-eslint/prefer-for-of
-    //         for (let idx=0; idx<cin.constraints.length; idx++){
-    //             const subcin = cin.constraints[idx];
-    //             const [_subconstr, _subtype, subimplies] = simplifyConstraintBySubstitution2({ cin: subcin, symbol, type, dfltTypeOfSymbol, negateConstraintType, mrNarrow, depth:(depth??0)+1 });
-    //             if (subimplies){
-    //                 if (getMyDebug()){
-    //                     consoleLog(`simplifyConstraintBySubstitution2[dbg][${depth}]: or-by-constraint success`);
-    //                 }
-    //                 return [null, type, true];
-    //             }
-    //         }
-    //         if (getMyDebug()){
-    //             consoleLog(`simplifyConstraintBySubstitution2[dbg][${depth}]: or-by-constraint fail`);
-    //         }
-
-    //         // try expanding per primitive type of type
-    //         if ((type as RefTypesTypeNormal)._set.size>1) {
-    //             if (getMyDebug()){
-    //                 consoleLog(`simplifyConstraintBySubstitution2[dbg][${depth}]: attempt or-by-type`);
-    //             }
-
-    //             const setIter = ((type as RefTypesTypeNormal)._set).keys();
-    //             //const ares: ReturnType<typeof simplifyConstraintBySubstitution2>[] = [];
-    //             const unionTypes: Type[] = [];
-    //             const unionConstraints: ConstraintItem[] = [];
-    //             for (let tmp = setIter.next(); !tmp.done; tmp = setIter.next()){
-    //                 const tmpRtr = mrNarrow.createRefTypesType(tmp.value);
-    //                 const [tmpc, tmpt, _tmpi] = simplifyConstraintBySubstitution2({ cin, symbol, type:tmpRtr, dfltTypeOfSymbol, negateConstraintType, mrNarrow, depth:(depth??0)+1 });
-    //                 if (mrNarrow.isNeverType(tmpt)) continue;
-    //                 Debug.assert(mrNarrow.equalRefTypesTypes(tmpRtr,tmpt));
-    //                 if (tmpc) {
-    //                     unionConstraints.push(createFlowConstraintNodeAnd({ constraints:[createFlowConstraintLeaf(symbol, tmpRtr), tmpc] }));
-    //                 }
-    //                 else {
-    //                     unionConstraints.push(createFlowConstraintLeaf(symbol, tmpRtr));
-    //                 }
-    //                 //ares.push(res);
-    //             }
-    //             // const constraintsNotNotAnd = createFlowConstraintNodeAnd({
-    //             //     negate: true,
-    //             //     constraints: cin.constraints.map(subc=>createFlowConstraintNodeNot(subc))
-    //             // });
-
-    //             if (unionConstraints.length===0) return [null, mrNarrow.createRefTypesType(), false];
-    //             const constraintItemNode: ConstraintItemNode = {
-    //                 ...cin,
-    //                 constraints: unionConstraints
-    //             };
-    //             const rtt: RefTypesTypeNormal = { _flags:RefTypesTypeFlags.none, _set: new Set<Type>(unionTypes) };
-    //             if (getMyDebug()){
-    //                 consoleLog(`simplifyConstraintBySubstitution2[dbg][${depth}]: or-by-type done`);
-    //             }
-    //             return [
-    //                 constraintItemNode,
-    //                 rtt,
-    //                 false
-    //             ];
-    //             // TODO: return this format result only if the relative complexity of expression is less than the original format.
-    //         }
-
-    //         return [
-    //             //createFlowConstraintNodeAnd({ constraints: [createFlowConstraintLeaf(symbol,type),cin] }),
-    //             cin,
-    //             type,
-    //             false
-    //         ];
-
-    //         // const removedIdxSet = new Set<number>();
-    //         // const changedConstraints: ConstraintItem[] = [];
-    //         // let constraints = cin.constraints;
-    //         // //let tunion = mrNarrow.createRefTypesType(); // never
-    //         // const typesForUnion: RefTypesType[] = [];
-    //         // let anySubImplies = false;
-    //         // let anySubTypeWasType = false;
-    //         // for (let idx=0; idx<constraints.length; idx++){
-    //         //     const subcin = constraints[idx];
-    //         //     const [subconstr, subtype, subimplies] = simplifyConstraintBySubstitution2({ cin: subcin, symbol, type, dfltTypeOfSymbol, negateConstraintType, mrNarrow });
-    //         //     anySubImplies ||= subimplies;
-    //         //     anySubTypeWasType ||= (subtype===type);
-    //         //     if (subconstr!==subcin){
-    //         //         removedIdxSet.add(idx);
-    //         //         if (subconstr) changedConstraints.push(subconstr);
-    //         //     }
-    //         // }
-    //         // // (A) TODO: Uncomment this after the testing (B) below is remove
-    //         // if (anySubImplies){
-    //         //     // eslint-disable-next-line no-null/no-null
-    //         //     return [null, type, true];
-    //         // }
-    //         // //let hadAnyChange = false;
-    //         // if (removedIdxSet.size||changedConstraints.length){
-    //         //     constraints = constraints.filter((_c,idx)=>removedIdxSet.has(idx));
-    //         //     constraints.push(...changedConstraints);
-    //         //     //hadAnyChange = true;
-    //         // }
-    //         // /* eslint prefer-const: ["error", {"destructuring": "all"}]*/
-    //         // let [typeout, typeoutEquivTypein] = anySubTypeWasType ? [type, true] : [mrNarrow.unionOfRefTypesType(typesForUnion), false];
-    //         // if (!typeoutEquivTypein){
-    //         //     if (mrNarrow.equalRefTypesTypes(type, typeout)) typeoutEquivTypein = true;
-    //         // }
-    //         // let impliesout = false;
-    //         // let constraintItemOut: ConstraintItem | null;
-    //         // // In order not to increase space requirements, and because distributing type (or )
-    //         // if (constraints.length===0){
-    //         //     // eslint-disable-next-line no-null/no-null
-    //         //     constraintItemOut = null;
-    //         //     impliesout = typeoutEquivTypein;
-    //         // }
-    //         // else {
-    //         //     constraintItemOut = cin;
-    //         // }
-    //         // // (B) TODO: Comment this when (A) above is activated
-    //         // // if (anySubImplies) {
-    //         // //     Debug.assert(!constraintItemOut);
-    //         // //     Debug.assert(typeoutEquivTypein);
-    //         // //     Debug.assert(impliesout);
-    //         // // }
-    //         // return [constraintItemOut, typeout, impliesout];
-
-    //     }
-    //     Debug.fail("unexpected");
-    // }
-
-
     export function andIntoConstraint({symbol, type, constraintItem}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined}): ConstraintItem {
         if (!constraintItem){
             return { kind: ConstraintItemKind.leaf, symbol, type };
+        }
+        if (constraintItem.kind===ConstraintItemKind.never){
+            return constraintItem; // identical constraintItem out is required for clean merging of if-branches
         }
         if (constraintItem.kind===ConstraintItemKind.leaf){
             return {
@@ -491,254 +204,16 @@ namespace ts {
         }
         Debug.fail("unexpected");
     }
-
-
-    // function andIntoConstrainTrySimplify_aux({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined, mrNarrow: MrNarrow}): [ConstraintItem, RefTypesType] {
-    //     if (!constraintItem){
-    //         return [{ kind: ConstraintItemKind.leaf, symbol, type }, type];
-    //     }
-    //     const [cout, typeout] = simplifyConstraintBySubstitution2({ cin:constraintItem, negateConstraintType:false, symbol, type, dfltTypeOfSymbol: undefined, mrNarrow });
-    //     if (!cout) {
-    //         return [{ kind: ConstraintItemKind.leaf, symbol, type:typeout }, typeout];
-    //     }
-    //     else if (cout.kind===ConstraintItemKind.leaf){
-    //         return [
-    //             { kind: ConstraintItemKind.node, op: ConstraintItemNodeOp.and, constraints: [
-    //                 cout,
-    //                 { kind: ConstraintItemKind.leaf, symbol, type:typeout }
-    //             ] }, typeout ];
-    //     }
-    //     else if (cout.kind===ConstraintItemKind.node){
-    //         if (cout.op===ConstraintItemNodeOp.not || cout.op===ConstraintItemNodeOp.or) {
-    //             return [
-    //                 { kind: ConstraintItemKind.node, op: ConstraintItemNodeOp.and, constraints: [
-    //                     cout,
-    //                     { kind: ConstraintItemKind.leaf, symbol, type:typeout }
-    //                 ] }, typeout ];
-    //         }
-    //         else if (cout.op===ConstraintItemNodeOp.and){
-    //             cout.constraints.push({ kind: ConstraintItemKind.leaf, symbol, type:typeout });
-    //             return [cout, type];
-    //         }
-    //     }
-    //     Debug.fail("unexpected");
-    // }
-    // function andIntoConstrainTrySimplify({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined, mrNarrow: MrNarrow}): [ConstraintItem, RefTypesType] {
-    //     const [c,r] = andIntoConstrainTrySimplify_aux({ symbol, type, constraintItem, mrNarrow });
-    //     //testCompareBeforeAfter({ symbol, type, c:constraintItem }, { c }, mrNarrow);
-    //     return [c,r];
-    // }
-
-    ////////////////////////////////////////////////
-    /**
-     * For testing only, remove for production
-     */
-
-    /**
-     * - Testing: Want to ensure "before" and after of logical transformation retain the same results.
-     * This is done by forming an exhaustive table of results for each case, and comparing the tables.
-     * 1. Extract all the symbols in "before" to a set.  (Will be a superset of the symbols in "after").
-     * 2.1. For each symbol in set, enumerate, and recursively to the same with the set remainder.
-     * 2.2. At each recursion leaf, evaluate "before" and "after" reps, which should share the same boolean result.
-     */
-    // @ ts-expect-error
-    // function testCompareBeforeAfter(before: { c: ConstraintItem | undefined, symbol: Symbol, type: RefTypesType }, after: {c: ConstraintItem}, mrNarrow: MrNarrow): void {
-    //     function getSymbols(ci0: ConstraintItem){
-    //         //const map = new Map<Symbol, RefTypesType>();
-    //         const set = new Set<Symbol>();
-    //         function getSymbols1(ci1: ConstraintItem){
-    //             if (ci1.kind===ConstraintItemKind.leaf){
-    //                 set.add(ci1.symbol);
-    //             }
-    //             else {
-    //                 if (ci1.op===ConstraintItemNodeOp.not){
-    //                     getSymbols1(ci1.constraint);
-    //                 }
-    //                 else {
-    //                     ci1.constraints.forEach(ci2=>getSymbols1(ci2));
-    //                 }
-    //             }
-    //         }
-    //         getSymbols1(ci0);
-    //         return set;
-    //     }
-    //     function evalConstraintWithExplicitTypes(ctop: Readonly<ConstraintItem>, map: ESMap<Symbol, Type>): boolean {
-    //         function evalSub(c: Readonly<ConstraintItem>): boolean{
-    //             if (c.kind===ConstraintItemKind.leaf){
-    //                 //const rtt = !negate ? c.type : mrNarrow.inverseType(c.type, getDefaultType(c.symbol, mrNarrow));
-    //                 const rtt = c.type;
-    //                 const mapt = map.get(c.symbol);
-    //                 Debug.assert(mapt);
-    //                 const x = mrNarrow.intersectRefTypesTypes(mrNarrow.createRefTypesType(mapt), rtt);
-    //                 let [ pass, fail ] = [false,false];
-    //                 mrNarrow.applyCritToRefTypesType(x, { kind:InferCritKind.truthy }, (_xt,p,f)=>{
-    //                     pass||=p;
-    //                     fail||=f;
-    //                 });
-    //                 Debug.assert(!(pass&&fail));
-    //                 Debug.assert(pass||fail);
-    //                 return pass;
-    //             }
-    //             else {
-    //                 if (c.op===ConstraintItemNodeOp.not){
-    //                     return !evalSub(c.constraint);
-    //                 }
-    //                 else if (c.op===ConstraintItemNodeOp.and){
-    //                     const b: boolean = c.constraints.every(cs=>evalSub(cs));
-    //                     return b;
-    //                 }
-    //                 else if (c.op===ConstraintItemNodeOp.or){
-    //                     const b: boolean = c.constraints.some(cs=>evalSub(cs));
-    //                     return b;
-    //                 }
-    //                 Debug.fail();
-    //             }
-    //         }
-    //         return evalSub(ctop);
-    //     }
-    //     function compareOverSymbolsAndTypes(ci0: Readonly<ConstraintItem>, ci1: Readonly<ConstraintItem>, arrsym: Readonly<Symbol[]>){
-    //         const map = new Map<Symbol, Type>();
-    //         function sub1(a: Readonly<Symbol[]>){
-    //             if (a.length===0){
-    //                 const b0 = evalConstraintWithExplicitTypes(ci0, map);
-    //                 const b1 = evalConstraintWithExplicitTypes(ci1, map);
-    //                 if (b0!==b1){
-    //                     Debug.fail("testCompareBeforeAfter failed");
-    //                 }
-    //             }
-    //             else {
-    //                 const twhole = getDefaultType(a[0], mrNarrow);
-    //                 let t1: Type | undefined;
-    //                 if (mrNarrow.isAnyType(twhole)) t1 = mrNarrow.checker.getAnyType();
-    //                 else if (mrNarrow.isUnknownType(twhole)) t1 = mrNarrow.checker.getUnknownType();
-    //                 else if (mrNarrow.isNeverType(twhole)) t1 = mrNarrow.checker.getNeverType();
-    //                 if (t1){
-    //                     map.set(a[0], t1);
-    //                     sub1(a.slice(1));
-    //                 }
-    //                 else {
-    //                     (twhole as RefTypesTypeNormal)._set.forEach(tt=>{
-    //                         map.set(a[0], tt);
-    //                         sub1(a.slice(1));
-    //                     });
-    //                 }
-    //             }
-    //         }
-    //         sub1(arrsym);
-
-    //     }
-    //     const c0: ConstraintItem = before.c? {
-    //         kind: ConstraintItemKind.node,
-    //         op: ConstraintItemNodeOp.and,
-    //         constraints:[before.c,{ kind: ConstraintItemKind.leaf, symbol:before.symbol, type:before.type }]
-    //     } : { kind: ConstraintItemKind.leaf, symbol:before.symbol, type:before.type };
-    //     const c1 = after.c;
-
-    //     const set = getSymbols(c0);
-    //     const arrsym: Symbol[] = [];
-    //     set.forEach(s=>arrsym.push(s));
-    //     compareOverSymbolsAndTypes(c0,c1,arrsym);
-    // }
-
-
-    // export function testOfSimplifyConstraintBySubstitution2(checker: TypeChecker, mrNarrow: MrNarrow): void {
-    //     type InType = Parameters<typeof simplifyConstraintBySubstitution2>;
-    //     type OutType = ReturnType<typeof simplifyConstraintBySubstitution2>;
-
-    //     const rtrbool = mrNarrow.createRefTypesType(checker.getBooleanType());
-    //     const rtrtrue = mrNarrow.createRefTypesType(checker.getTrueType());
-    //     const rtrfalse = mrNarrow.createRefTypesType(checker.getFalseType());
-    //     const symx = { escapedName:"x" } as any as Symbol;
-
-    //     const datum: {in: InType[0],out: OutType}[] = [
-    //         {
-    //             in: {
-    //                 cin: null,
-    //                 negateConstraintType: false,
-    //                 symbol: symx,
-    //                 type: rtrbool,
-    //                 dfltTypeOfSymbol: rtrbool,
-    //                 mrNarrow,
-    //             },
-    //             out: [null, rtrbool, false]
-    //         },
-    //         {
-    //             in: {
-    //                 cin: createFlowConstraintLeaf(symx, rtrfalse),
-    //                 negateConstraintType: false,
-    //                 symbol: symx,
-    //                 type: rtrbool,
-    //                 dfltTypeOfSymbol: rtrbool,
-    //                 mrNarrow,
-    //             },
-    //             out: [null, rtrfalse, false]
-    //         },
-    //         {
-    //             in: {
-    //                 cin: createFlowConstraintLeaf(symx, rtrtrue),
-    //                 negateConstraintType: false,
-    //                 symbol: symx,
-    //                 type: rtrbool,
-    //                 dfltTypeOfSymbol: rtrbool,
-    //                 mrNarrow,
-    //             },
-    //             out: [null, rtrtrue, false]
-    //         },
-    //         {
-    //             in: {
-    //                 cin: createFlowConstraintLeaf(symx, rtrfalse),
-    //                 negateConstraintType: false,
-    //                 symbol: symx,
-    //                 type: rtrfalse,
-    //                 dfltTypeOfSymbol: rtrbool,
-    //                 mrNarrow,
-    //             },
-    //             out: [null, rtrfalse, true]
-    //         },
-    //     ];
-    //     const constraintDeepEqual = (ctest: ConstraintItem | null, cexp: ConstraintItem | null): void => {
-    //         if (!cexp || !ctest) {
-    //             Debug.assert(!ctest === !cexp);
-    //             return;
-    //         }
-    //         Debug.assert(cexp.kind===ctest.kind);
-    //         if (cexp.kind===ConstraintItemKind.leaf){
-    //             Debug.assert(ctest.kind===ConstraintItemKind.leaf);
-    //             Debug.assert(cexp.symbol===ctest.symbol);
-    //             Debug.assert(mrNarrow.equalRefTypesTypes(cexp.type,ctest.type));
-    //         }
-    //         else {
-    //             Debug.assert(cexp.kind===ConstraintItemKind.node);
-    //             Debug.assert(ctest.kind===ConstraintItemKind.node);
-    //             if (cexp.op===ConstraintItemNodeOp.not){
-    //                 Debug.assert(ctest.op===ConstraintItemNodeOp.not);
-    //                 constraintDeepEqual(ctest.constraint,cexp.constraint);
-    //             }
-    //             else if (cexp.op===ConstraintItemNodeOp.and){
-    //                 Debug.assert(ctest.op===ConstraintItemNodeOp.and);
-    //                 Debug.assert(cexp.constraints.length===ctest.constraints.length);
-    //                 for (let i = 0; i<cexp.constraints.length; i++) {
-    //                     Debug.assert(constraintDeepEqual(cexp.constraints[i],ctest.constraints[i]));
-    //                 }
-    //             }
-    //             else if (cexp.op===ConstraintItemNodeOp.or){
-    //                 Debug.assert(ctest.op===ConstraintItemNodeOp.or);
-    //                 Debug.assert(cexp.constraints.length===ctest.constraints.length);
-    //                 for (let i = 0; i<cexp.constraints.length; i++) {
-    //                     Debug.assert(constraintDeepEqual(cexp.constraints[i],ctest.constraints[i]));
-    //                 }
-    //             }
-    //         }
-    //     };
-    //     datum.forEach((data,_iter)=>{
-    //         if (_iter<0) return;
-    //         const [constraint, type, implies] = simplifyConstraintBySubstitution2(data.in);
-    //         constraintDeepEqual(data.out[0], constraint);
-    //         Debug.assert(mrNarrow.equalRefTypesTypes(data.out[1],type));
-    //         Debug.assert(data.out[2]===implies);
-    //     });
-    // }
-
+    export function orConstraints(acin: Readonly<(ConstraintItem | undefined)[]>): ConstraintItem | undefined {
+        const ac: ConstraintItem[]=[];
+        for (const c of acin){
+            if (!c) return undefined;
+            if (c.kind!==ConstraintItemKind.never) ac.push(c);
+        }
+        if (ac.length===0) return { kind:ConstraintItemKind.never };
+        if (ac.length===1) return ac[0];
+        return createFlowConstraintNodeOr({ constraints:ac });
+    }
 
     export function testOfEvalTypeOverConstraint(checker: TypeChecker, mrNarrow: MrNarrow): void {
         type InType = Parameters<typeof evalTypeOverConstraint>;
@@ -753,10 +228,33 @@ namespace ts {
         const datum: {in: InType[0],out: OutType}[] = [
             {
                 in: {
+                    cin: createFlowConstraintLeaf(symx, rttfalse, /*negate*/ true),
+                    symbol: symx,
+                    typeRange: rttbool,
+                    // refDfltTypeOfSymbol: [rttbool],
+                    mrNarrow,
+                },
+                out: rtttrue
+            },
+            {
+                in: {
+                    cin: createFlowConstraintNodeAnd({negate:true, constraints:[
+                        createFlowConstraintLeaf(symx, rtttrue),
+                        createFlowConstraintLeaf(symy, rtttrue),
+                    ]}),
+                    symbol: symx,
+                    typeRange: rttbool,
+                    // refDfltTypeOfSymbol: [rttbool],
+                    mrNarrow,
+                },
+                out: rttbool
+            },
+            {
+                in: {
                     cin: null,
                     symbol: symx,
                     typeRange: rttbool,
-                    refDfltTypeOfSymbol: [rttbool],
+                    // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
                 },
                 out: rttbool
@@ -766,7 +264,7 @@ namespace ts {
                     cin: createFlowConstraintLeaf(symx, rttfalse),
                     symbol: symx,
                     typeRange: rttbool,
-                    refDfltTypeOfSymbol: [rttbool],
+                    // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
                 },
                 out: rttfalse
@@ -776,7 +274,7 @@ namespace ts {
                     cin: createFlowConstraintLeaf(symx, rtttrue),
                     symbol: symx,
                     typeRange: rttbool,
-                    refDfltTypeOfSymbol: [rttbool],
+                    // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
                 },
                 out: rtttrue,
@@ -786,7 +284,7 @@ namespace ts {
                     cin: createFlowConstraintLeaf(symx, rttfalse),
                     symbol: symx,
                     typeRange: rttfalse,
-                    refDfltTypeOfSymbol: [rttbool],
+                    // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
                 },
                 out: rttfalse,
@@ -806,14 +304,14 @@ namespace ts {
                     ]}),
                     symbol: symx,
                     typeRange: rttbool,
-                    refDfltTypeOfSymbol: [rttbool],
+                    // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
                 },
                 out: rttbool
             },
             {
                 in: {
-                    cin: createFlowConstraintNodeOr({constraints:[
+                    cin: createFlowConstraintNodeAnd({negate: true, constraints:[
                         createFlowConstraintLeaf(symx, rtttrue),
                         createFlowConstraintNodeAnd({constraints:[
                             createFlowConstraintLeaf(symx, rttfalse),
@@ -826,7 +324,7 @@ namespace ts {
                     ]}),
                     symbol: symy,
                     typeRange: rttbool,
-                    refDfltTypeOfSymbol: [rttbool],
+                    // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
                 },
                 out: rttbool

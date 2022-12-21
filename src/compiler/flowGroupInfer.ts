@@ -31,7 +31,7 @@ namespace ts {
         nodeToGroupMap: ESMap< Node, GroupForFlow >;
         dbgFlowToOriginatingGroupIdx: ESMap<FlowNode, number>;
         dbgCreationTimeMs?: bigint;
-        groupToFlowLabels: ESMap<GroupForFlow, Set<FlowLabel>>
+        //groupToFlowLabels: ESMap<GroupForFlow, Set<FlowLabel>>
     }
 
     export interface SourceFileMrState {
@@ -275,7 +275,7 @@ namespace ts {
             debugCheck = true;
             if (debugCheck) {
                 const setOfAnteGroups =groupsForFlow.groupToAnteGroupMap.get(groupForFlow);
-                if (groupForFlow.branchMerger) Debug.assert(setOfAnteGroups);
+                //if (groupForFlow.branchMerger) Debug.assert(setOfAnteGroups);
                 if (setOfAnteGroups){
                     setOfAnteGroups.forEach(ag=>{
                         Debug.assert(!heap.has(ag.groupIdx));
@@ -317,11 +317,14 @@ namespace ts {
             const symtabs: RefTypesSymtab[] = [];
             let hadBranch = false;
             let hadNonBranch = false;
+            const alreadyDidAnteg = new Set<GroupForFlow>();
             setOfFlow?.forEach(fn=>{
-                const doNonBranch = (flownb: FlowNode, precedentBranchKind?: BranchKind | undefined) => {
+                const doNonBranch = (flownb: FlowNode, precedentBranchKind?: BranchKind | undefined): {symtab: RefTypesSymtab, constraintItem: ConstraintItem | undefined } | undefined => {
                     if (!isFlowWithNode(flownb)) Debug.fail();
                     const anteg = groupsForFlow.nodeToGroupMap.get(flownb.node);
                     Debug.assert(anteg);
+                    if (alreadyDidAnteg.has(anteg)) return undefined;
+                    else alreadyDidAnteg.add(anteg);
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                     Debug.assert(cbe);
                     if (precedentBranchKind===BranchKind.then){
@@ -348,24 +351,33 @@ namespace ts {
                     Debug.assert(!hadNonBranch);
                     Debug.assert(!hadBranch);
                     hadNonBranch=true;
-                    const {symtab,constraintItem} = doNonBranch(fn);
-                    if (symtab.size) symtabs.push(symtab);
-                    if (constraintItem) constraints.push(constraintItem);
+                    const r = doNonBranch(fn);
+                    if (r) {
+                        const {symtab,constraintItem} = r;
+                        if (symtab.size) symtabs.push(symtab);
+                        if (constraintItem) constraints.push(constraintItem);
+                    }
                     return;
                 }
                 if (isFlowBranch(fn)){
-                    const doOneFlat = (antefn: Readonly<FlowNode>, precedentBranchKind: BranchKind | undefined): ConstraintItem[] => {
+                    const doOneFlat = (antefn: Readonly<FlowNode>, precedentBranchKind: BranchKind | undefined): ConstraintItem[] | undefined => {
                         if (isFlowStart(antefn)) return [];
                         if (isFlowBranch(antefn)) {
                             // if (!dbgDoNotCancelPostIfs){
                             Debug.assert(antefn.branchKind!==BranchKind.postIf);
                             // }
                             if (!antefn.antecedents) return [];
-                            return antefn.antecedents.flatMap(antefn2=>doOneFlat(antefn2, antefn.branchKind));
+                            return antefn.antecedents.flatMap(antefn2=>{
+                                return doOneFlat(antefn2, antefn.branchKind)??[];
+                            });
                         }
-                        const {symtab,constraintItem} = doNonBranch(antefn, precedentBranchKind);
-                        if (symtab.size) symtabs.push(symtab);
-                        return constraintItem ? [constraintItem] : [];
+                        const r = doNonBranch(antefn, precedentBranchKind);
+                        if (r) {
+                            const {symtab,constraintItem} = r;
+                            if (symtab.size) symtabs.push(symtab);
+                            return constraintItem ? [constraintItem] : [];
+                        }
+                        else return undefined;
                     };
                     Debug.assert(!hadNonBranch);
                     Debug.assert(!hadBranch);
@@ -382,6 +394,7 @@ namespace ts {
                                 }
                                 else {
                                     const tmpConstraints = doOneFlat(antefn,BranchKind.postIf);
+                                    Debug.assert(tmpConstraints);
                                     if (tmpConstraints.length===0) return undefined;
                                     else if (tmpConstraints.length===1) return tmpConstraints[0];
                                     Debug.fail();
@@ -415,7 +428,7 @@ namespace ts {
                         return;
                     }
                     else if (fn.antecedents) {
-                        constraints.push(...fn.antecedents.flatMap(antefn=>doOneFlat(antefn, fn.branchKind)));
+                        constraints.push(...fn.antecedents.flatMap(antefn=>doOneFlat(antefn, fn.branchKind)??[]));
                         return;
                     }
                     return;

@@ -710,13 +710,14 @@ namespace ts {
 
 
         const groupToAnteGroupMap = new Map< GroupForFlow, Set<GroupForFlow> >();
-        const groupToFlowLabels = new Map< GroupForFlow, Set<FlowLabel> >();
+        //const groupToFlowLabels = new Map< GroupForFlow, Set<FlowLabel> >();
         orderedGroups.forEach(g=>{
             const setOfGroup = new Set<GroupForFlow>();
-            const setOfFlowLabels = new Set<FlowLabel>();
-            const setOfFlow = groupToSetOfFlowMap.get(g);
-            if (!setOfFlow) return;
-            setOfFlow.forEach(fn=>{
+            //const setOfFlowLabels = new Set<FlowLabel>();
+            const origSetOfFlow = groupToSetOfFlowMap.get(g);
+            const filteredSetOfFlow = new Set<FlowNode>();
+            if (!origSetOfFlow) return;
+            origSetOfFlow.forEach(fn=>{
                 if (isFlowStart(fn)) return;
                 if (isFlowWithNode(fn)){
                     const groupToAdd = nodeToGroupMap.get(fn.node);
@@ -727,6 +728,7 @@ namespace ts {
                         Debug.fail();
                     }
                     setOfGroup.add(groupToAdd);
+                    filteredSetOfFlow.add(fn);
                 }
                 else {
                     // flow without node
@@ -735,7 +737,7 @@ namespace ts {
                         const flowLabels: FlowLabel[] = [fn];
                         while (flowLabels.length){
                             const fnlab = flowLabels.pop()!;
-                            setOfFlowLabels.add(fnlab);
+                            // setOfFlowLabels.add(fnlab);
                             fnlab.antecedents?.forEach(antefn=>{
                                 if (isFlowStart(antefn)) return;
                                 if (isFlowWithNode(antefn)){
@@ -745,9 +747,10 @@ namespace ts {
                                         Debug.fail();
                                     }
                                     if (groupToAdd===g) {
-                                        Debug.fail();
+                                        return; //Debug.fail();
                                     }
                                     setOfGroup.add(groupToAdd);
+                                    filteredSetOfFlow.add(fn);
                                 }
                                 else if (isFlowBranch(antefn)) flowLabels.push(antefn);
                                 else Debug.fail();
@@ -758,10 +761,12 @@ namespace ts {
                 }
             });
             if (g.branchMerger){
-                Debug.assert(setOfFlow.size===1);
+                //Debug.assert(setOfFlow.size===1);
             }
             if (setOfGroup.size) groupToAnteGroupMap.set(g,setOfGroup);
-            if (setOfFlowLabels.size) groupToFlowLabels.set(g,setOfFlowLabels);
+            groupToSetOfFlowMap.set(g, filteredSetOfFlow);
+
+            //f (setOfFlowLabels.size) groupToFlowLabels.set(g,setOfFlowLabels);
         });
 
         return {
@@ -770,7 +775,7 @@ namespace ts {
             precOrderContainerItems: precOrderCI,
             groupToSetOfFlowMap,
             groupToAnteGroupMap,
-            groupToFlowLabels,
+            //groupToFlowLabels,
             nodeToGroupMap,
             dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx
         };
@@ -1230,13 +1235,15 @@ namespace ts {
                     astr.push(`groups[${i}]:    anteGroupIdx: ${anteg.groupIdx}`);
                 });
             }
-            const setOfFlowLabels = gff.groupToFlowLabels.get(g);
-            astr.push(`groups[${i}]:  setOfFlowLabels.size===${setOfFlowLabels?.size??0}`);
-            if (setOfFlowLabels) {
-                setOfFlowLabels.forEach((fn)=>{
-                    astr.push(`  flowLabel: ${dbgFlowToString(fn)}`);
-                });
-            }
+            // const setOfFlowLabels = gff.groupToFlowLabels.get(g);
+            // eslint-disable-next-line no-double-space
+            // astr.push(`groups[${i}]:  setOfFlowLabels.size===${setOfFlowLabels?.size??0}`);
+            // if (setOfFlowLabels) {
+            //     setOfFlowLabels.forEach((fn)=>{
+            // eslint-disable-next-line no-double-space
+            //         astr.push(`  flowLabel: ${dbgFlowToString(fn)}`);
+            //     });
+            // }
         });
         gff.precOrderContainerItems.forEach((ci,i)=>{
             astr.push(`containerItems[${i}]: node:${dbgNodeToString(ci.node)}`);

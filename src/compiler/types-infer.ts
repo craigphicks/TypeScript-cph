@@ -320,7 +320,8 @@ namespace ts {
     // };
     export enum ConstraintItemKind {
         node = "node",
-        leaf = "leaf"
+        leaf = "leaf",
+        never = "never",
     };
     export enum ConstraintItemNodeOp {
         or = "or",
@@ -349,5 +350,8 @@ namespace ts {
         symbol: Symbol;
         type: RefTypesType;
     };
-    export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode;
+    export type ContstraintItemNever = & {
+        kind: ConstraintItemKind.never;
+    };
+    export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ContstraintItemNever;
 }

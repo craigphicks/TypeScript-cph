@@ -423,15 +423,35 @@ namespace ts {
          * @param param0
          */
         function mergeIntoRefTypesSymtab({source,target}: { source: Readonly<RefTypesSymtab>, target: RefTypesSymtab }): void {
-            const iter=source.values();
+            let iter=source.values();
             for (let next = iter.next(); !next.done; next=iter.next()){
                 mergeLeafIntoRefTypesSymtab({ source: next.value.leaf, target });
             }
         }
         function mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
             const target = createRefTypesSymtab();
-            arr.forEach(source=>{
-                mergeIntoRefTypesSymtab({ source,target });
+            const symmap = new Map<Symbol, boolean>();
+            arr.forEach(st=>{
+                st.forEach((x,sym)=>symmap.set(sym, x.leaf.isconst??false));
+            });
+            symmap.forEach((isconst,sym)=>{
+                arr.forEach(st=>{
+                    const x = st.get(sym);
+                    const sttype = x ? x?.leaf.type : createRefTypesType(getTypeOfSymbol(sym));
+                    const y = target.get(sym);
+                    if (y){
+                        mergeToRefTypesType({ source:sttype, target:y.leaf.type });
+                    }
+                    else {
+                        const leaf: RefTypesTableLeaf = {
+                            kind:RefTypesTableKind.leaf,
+                            symbol:sym,
+                            isconst,
+                            type:sttype
+                        };
+                        target.set(sym, { leaf });
+                    }
+                });
             });
             return target;
         }
@@ -502,7 +522,8 @@ namespace ts {
         function dbgConstraintItem(ci: ConstraintItem): string[] {
             const as: string[]=["{"];
             as.push(` kind: ${ci.kind},`);
-            if (ci.kind===ConstraintItemKind.leaf){
+            if (ci.kind===ConstraintItemKind.never){/**/}
+            else if (ci.kind===ConstraintItemKind.leaf){
                 as.push(`  symbol: ${dbgSymbolToStringSimple(ci.symbol)},`);
                 as.push(`  type: ${dbgRefTypesTypeToString(ci.type)},`);
             }
@@ -967,9 +988,9 @@ namespace ts {
                 // Ordinarily we won't see && and || expressions in control flow analysis because the Binder breaks those
                 // expressions down to individual conditional control flows. However, we may encounter them when analyzing
                 // aliased conditional expressions.
+                case SyntaxKind.BarBarToken:
                 case SyntaxKind.AmpersandAmpersandToken:{
                     if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken START`);
-                    //const inferStatus1: InferStatus = { ...inferStatus };
                     const {left:leftExpr,right:rightExpr}=binaryExpression;
                     if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken left`);
                     const leftRet = mrNarrowTypes({
@@ -979,81 +1000,67 @@ namespace ts {
                         inferStatus,
                         constraintItem
                     });
-                    if (isNeverType(leftRet.inferRefRtnType.passing.type)){
-                        if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken left passing is never`);
-                        //leftRet.byNode.set(rightExpr, neverType);
-                        const refTypesTableRtn: RefTypesTableReturn = {
-                            kind: RefTypesTableKind.return,
-                            symbol: undefined,
-                            symtab: leftRet.inferRefRtnType.failing?.symtab ?? createRefTypesSymtab(),
-                            type: createRefTypesType(checker.getFalseType()),
-                            constraintItem
-                        };
-                        return {
-                            byNode: leftRet.byNode,
-                            arrRefTypesTableReturn:[refTypesTableRtn]
-                        };
-                    }
                     const byNode = leftRet.byNode;
 
-                    if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
-                    const rightRetT = mrNarrowTypes({
-                        refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.passing.symtab),
-                        crit: { kind:InferCritKind.truthy, alsoFailing:true },
-                        condExpr: rightExpr,
-                        inferStatus,
-                        constraintItem: leftRet.inferRefRtnType.passing.constraintItem
-                    });
-                    mergeIntoNodeToTypeMaps(rightRetT.byNode, byNode);
-                    if (isNeverType(rightRetT.inferRefRtnType.passing.type)) {
-                        if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right passing is never`);
-                        //leftRet.byNode.set(rightExpr, neverType);
-                        const refTypesTableRtn: RefTypesTableReturn = {
-                            kind: RefTypesTableKind.return,
-                            symbol: undefined,
-                            symtab: rightRetT.inferRefRtnType.failing?.symtab ?? createRefTypesSymtab(),
-                            type: createRefTypesType(checker.getFalseType()),
-                            constraintItem: rightRetT.inferRefRtnType.failing?.constraintItem
-                        };
-                        return {
-                            byNode,
-                            arrRefTypesTableReturn:[refTypesTableRtn]
-                        };
+                    let constraintItemPassing: ConstraintItem | undefined;
+                    let constraintItemFailing: ConstraintItem | undefined;
+                    let symtabPassing: RefTypesSymtab | undefined;
+                    let symtabFailing: RefTypesSymtab | undefined;
+                    if (operatorToken.kind===SyntaxKind.AmpersandAmpersandToken){
+                        if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
+                        const rightRet = mrNarrowTypes({
+                            refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.passing.symtab),
+                            crit: { kind:InferCritKind.truthy, alsoFailing:true },
+                            condExpr: rightExpr,
+                            inferStatus,
+                            constraintItem: leftRet.inferRefRtnType.passing.constraintItem
+                        });
+                        mergeIntoNodeToTypeMaps(rightRet.byNode, byNode);
+                        constraintItemPassing = rightRet.inferRefRtnType.passing.constraintItem;
+                        constraintItemFailing = orConstraints([leftRet.inferRefRtnType.failing!.constraintItem, rightRet.inferRefRtnType.failing!.constraintItem]);
+                        symtabPassing = rightRet.inferRefRtnType.passing.symtab;
+                        symtabFailing = mergeArrRefTypesSymtab([leftRet.inferRefRtnType.failing!.symtab, rightRet.inferRefRtnType.failing!.symtab ]);
                     }
-                    const constraintItemTrue = rightRetT.inferRefRtnType.passing.constraintItem;
-                    let constraintItemFalse: ConstraintItem | undefined;
-                    if (!constraintItemTrue) constraintItemFalse = undefined;
-                    else {
-                        constraintItemFalse = {
-                            kind: ConstraintItemKind.node,
-                            op: ConstraintItemNodeOp.not,
-                            constraint: constraintItemTrue
-                        };
+                    else if (operatorToken.kind===SyntaxKind.BarBarToken){
+                        if (myDebug) consoleLog(`case SyntaxKind.BarBarToken right (for left passing)`);
+                        const rightRet = mrNarrowTypes({
+                            refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
+                            crit: { kind:InferCritKind.truthy, alsoFailing:true },
+                            condExpr: rightExpr,
+                            inferStatus,
+                            constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
+                        });
+                        mergeIntoNodeToTypeMaps(rightRet.byNode, byNode);
+                        constraintItemPassing = orConstraints([leftRet.inferRefRtnType.passing.constraintItem, rightRet.inferRefRtnType.passing.constraintItem]);
+                        constraintItemFailing = rightRet.inferRefRtnType.failing!.constraintItem;
+                        symtabFailing = rightRet.inferRefRtnType.failing!.symtab;
+                        symtabPassing= mergeArrRefTypesSymtab([leftRet.inferRefRtnType.passing.symtab, rightRet.inferRefRtnType.passing.symtab]);
                     }
+                    else Debug.fail();
                     return {
                         byNode,
                         arrRefTypesTableReturn:[
                             {
                                 kind: RefTypesTableKind.return,
                                 symbol: undefined,
-                                symtab: rightRetT.inferRefRtnType.passing.symtab ?? createRefTypesSymtab(),
+                                symtab: symtabPassing,
                                 type: createRefTypesType(checker.getTrueType()),
-                                constraintItem: constraintItemTrue
+                                constraintItem: constraintItemPassing
                             },
                             {
                                 kind: RefTypesTableKind.return,
                                 symbol: undefined,
-                                symtab: createRefTypesSymtab(),
+                                symtab: symtabFailing,
                                 type: createRefTypesType(checker.getFalseType()),
-                                constraintItem: constraintItemFalse
+                                constraintItem: constraintItemFailing
                             },
                         ]
                     };
                 }
                     break;
-                case SyntaxKind.BarBarToken:
-                    Debug.fail("mrNarrowTypesByBinaryExpression, BarBarToken not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
-                    break;
+                // case SyntaxKind.BarBarToken:
+                //     Debug.fail("mrNarrowTypesByBinaryExpression, BarBarToken not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                //     break;
                 default:
                     Debug.fail("mrNarrowTypesByBinaryExpression, token kind not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
 
@@ -1846,7 +1853,8 @@ namespace ts {
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoPassing.type });
                     if (rttr2.constraintItem) passingOredConstraints.push(rttr2.constraintItem);
                 });
-                if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
+                if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = { kind:ConstraintItemKind.never };
+                else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
                 else if (passingOredConstraints.length) rttrcoPassing.constraintItem = createFlowConstraintNodeOr({ constraints:passingOredConstraints });
                 const rttrcoFailing: RefTypesTableReturnCritOut = {
                     kind: RefTypesTableKind.return,
@@ -1860,6 +1868,7 @@ namespace ts {
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoFailing.type });
                     if (rttr2.constraintItem) failingOredConstraints.push(rttr2.constraintItem);
                 });
+                if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = { kind:ConstraintItemKind.never };
                 if (failingOredConstraints.length===1) rttrcoFailing.constraintItem = failingOredConstraints[0];
                 else if (failingOredConstraints.length) rttrcoFailing.constraintItem = createFlowConstraintNodeOr({ constraints:failingOredConstraints });
                 const rtn: {
@@ -1976,12 +1985,6 @@ namespace ts {
              * Apply the crit before handling the replayResult (if any)
              */
             const crit = { ...critIn };
-            // if (innerret.negateCrit){
-            //     crit.negate = !critIn.negate; // corresponds to preceding unary !
-            // }
-            if (expr.id===17){
-                consoleLog("debug point");
-            }
             const critret = applyCritToArrRefTypesTableReturn(finalArrRefTypesTableReturn, crit, inferStatus);
             if (myDebug){
                 consoleLog("mrNarrowTypes[dbg], applyCritToArrRefTypesTableReturn return passing:");
@@ -2292,7 +2295,7 @@ namespace ts {
                             isconst = leaf.isconst??false;
                         }
                         if (isconst && constraintItem){
-                            type = evalTypeOverConstraint({ cin:constraintItem, symbol:condSymbol, typeRange: type, refDfltTypeOfSymbol:[undefined], mrNarrow });
+                            type = evalTypeOverConstraint({ cin:constraintItem, symbol:condSymbol, typeRange: type, mrNarrow });
                         }
                         // if (constraintItem){
                         //     [constraintItemOut, type] = andIntoConstrainTrySimplify({ symbol:condSymbol, type, constraintItem, mrNarrow });
