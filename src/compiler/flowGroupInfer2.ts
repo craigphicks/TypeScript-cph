@@ -423,7 +423,7 @@ namespace ts {
          * @param param0
          */
         function mergeIntoRefTypesSymtab({source,target}: { source: Readonly<RefTypesSymtab>, target: RefTypesSymtab }): void {
-            let iter=source.values();
+            const iter=source.values();
             for (let next = iter.next(); !next.done; next=iter.next()){
                 mergeLeafIntoRefTypesSymtab({ source: next.value.leaf, target });
             }
@@ -871,7 +871,7 @@ namespace ts {
 
 
         function mrNarrowTypesByBinaryExpression({
-            refTypesSymtab:refTypesSymtabIn, condExpr:binaryExpression, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus, constraintItem
+            refTypesSymtab:refTypesSymtabIn, condExpr:binaryExpression, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn
         }: InferRefInnerArgs & {condExpr: BinaryExpression}): MrNarrowTypesInnerReturn {
             const {left:leftExpr,operatorToken,right:rightExpr} = binaryExpression;
             switch (operatorToken.kind) {
@@ -990,15 +990,15 @@ namespace ts {
                 // aliased conditional expressions.
                 case SyntaxKind.BarBarToken:
                 case SyntaxKind.AmpersandAmpersandToken:{
-                    if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken START`);
+                    if (myDebug) consoleLog(`case SyntaxKind.(AmpersandAmpersandToken START`);
                     const {left:leftExpr,right:rightExpr}=binaryExpression;
-                    if (myDebug) consoleLog(`case SyntaxKind.AmpersandAmpersandToken left`);
+                    if (myDebug) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`);
                     const leftRet = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
                         condExpr: leftExpr,
                         inferStatus,
-                        constraintItem
+                        constraintItem: constraintItemIn
                     });
                     const byNode = leftRet.byNode;
 
@@ -1017,7 +1017,7 @@ namespace ts {
                         });
                         mergeIntoNodeToTypeMaps(rightRet.byNode, byNode);
                         constraintItemPassing = rightRet.inferRefRtnType.passing.constraintItem;
-                        constraintItemFailing = orConstraints([leftRet.inferRefRtnType.failing!.constraintItem, rightRet.inferRefRtnType.failing!.constraintItem]);
+                        constraintItemFailing = orIntoConstraints([leftRet.inferRefRtnType.failing!.constraintItem, rightRet.inferRefRtnType.failing!.constraintItem]);
                         symtabPassing = rightRet.inferRefRtnType.passing.symtab;
                         symtabFailing = mergeArrRefTypesSymtab([leftRet.inferRefRtnType.failing!.symtab, rightRet.inferRefRtnType.failing!.symtab ]);
                     }
@@ -1031,7 +1031,7 @@ namespace ts {
                             constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
                         });
                         mergeIntoNodeToTypeMaps(rightRet.byNode, byNode);
-                        constraintItemPassing = orConstraints([leftRet.inferRefRtnType.passing.constraintItem, rightRet.inferRefRtnType.passing.constraintItem]);
+                        constraintItemPassing = orIntoConstraints([leftRet.inferRefRtnType.passing.constraintItem, rightRet.inferRefRtnType.passing.constraintItem]);
                         constraintItemFailing = rightRet.inferRefRtnType.failing!.constraintItem;
                         symtabFailing = rightRet.inferRefRtnType.failing!.symtab;
                         symtabPassing= mergeArrRefTypesSymtab([leftRet.inferRefRtnType.passing.symtab, rightRet.inferRefRtnType.passing.symtab]);
@@ -1058,9 +1058,6 @@ namespace ts {
                     };
                 }
                     break;
-                // case SyntaxKind.BarBarToken:
-                //     Debug.fail("mrNarrowTypesByBinaryExpression, BarBarToken not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
-                //     break;
                 default:
                     Debug.fail("mrNarrowTypesByBinaryExpression, token kind not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
 
@@ -2256,7 +2253,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, constraintItem:constraintItemIn}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             switch (condExpr.kind){
                 /**
                  * Identifier
@@ -2294,8 +2291,8 @@ namespace ts {
                             type = leaf.type;
                             isconst = leaf.isconst??false;
                         }
-                        if (isconst && constraintItem){
-                            type = evalTypeOverConstraint({ cin:constraintItem, symbol:condSymbol, typeRange: type, mrNarrow });
+                        if (isconst && constraintItemIn){
+                            type = evalTypeOverConstraint({ cin:constraintItemIn, symbol:condSymbol, typeRange: type, mrNarrow });
                         }
                         // if (constraintItem){
                         //     [constraintItemOut, type] = andIntoConstrainTrySimplify({ symbol:condSymbol, type, constraintItem, mrNarrow });
@@ -2311,7 +2308,7 @@ namespace ts {
                         isconst,
                         type,
                         symtab: refTypesSymtabIn,
-                        constraintItem
+                        constraintItem: constraintItemIn
                     };
                     const mrNarrowTypesInnerReturn: MrNarrowTypesInnerReturn = {
                         byNode,
@@ -2352,7 +2349,7 @@ namespace ts {
                      */
                      const innerret = mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr: condExpr.expression,
                         //crit: {kind: InferCritKind.twocrit, crits:[{ kind:InferCritKind.notnullundef }, crit]},
-                        qdotfallout, inferStatus, constraintItem });
+                        qdotfallout, inferStatus, constraintItem: constraintItemIn });
 
                     /**
                      * Apply notnullundef criteria without squashing the result into passing/failing
@@ -2385,7 +2382,7 @@ namespace ts {
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [start]`);
                     const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as ParenthesizedExpression).expression,
                         crit: inferStatus.inCondition ? { kind: InferCritKind.truthy, alsoFailing: true } : { kind: InferCritKind.none },
-                        inferStatus, constraintItem });
+                        inferStatus, constraintItem: constraintItemIn });
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [end]`);
                     const arrRefTypesTableReturn = [ret.inferRefRtnType.passing];
                     if (ret.inferRefRtnType.failing) arrRefTypesTableReturn.push(ret.inferRefRtnType.failing);
@@ -2411,7 +2408,7 @@ namespace ts {
                         condExpr: condition,
                         crit: { kind: InferCritKind.truthy, alsoFailing: true },
                         inferStatus: { ...inferStatus, inCondition: true },
-                        constraintItem
+                        constraintItem: constraintItemIn
                     });
                     mergeIntoNodeToTypeMaps(rcond.byNode, byNodeSinglepath);
                     //andIntoConstrainTrySimplify({})
@@ -2548,7 +2545,7 @@ namespace ts {
                 }
                 break;
                 case SyntaxKind.BinaryExpression:{
-                    return mrNarrowTypesByBinaryExpression({ refTypesSymtab: refTypesSymtabIn, condExpr: condExpr as BinaryExpression, /*crit, */ qdotfallout, inferStatus });
+                    return mrNarrowTypesByBinaryExpression({ refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, condExpr: condExpr as BinaryExpression, /*crit, */ qdotfallout, inferStatus });
                 }
                 break;
                 case SyntaxKind.TypeOfExpression:{

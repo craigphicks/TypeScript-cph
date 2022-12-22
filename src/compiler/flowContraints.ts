@@ -173,6 +173,83 @@ namespace ts {
         Debug.fail();
     }
 
+    /**
+     * A possibly simplifying transformation
+     * The following identities hold:
+     * A(BC) = A ((AB)/A)(AC)/A)
+     * A(B+C) = A ((AB)/A)+(AC)/A)
+     * A!(BC) = A (A!B/A + A!C/A)
+     * A!(B+C) = A (A!B/A)(A!C/A)
+     * Therefore this andDistributeDivide function prepares for a top level "and" with by the tranforms.
+     * They are without the leading A on the rhs.
+     * (BC) => ((AB)/A)(AC)/A)
+     * (B+C) => ((AB)/A)+(AC)/A)
+     * !(BC) => (A!B/A + A!C/A)
+     * !(B+C) => (A!B/A)(A!C/A)
+     */
+    export function andDistributeDivide({
+        symbol, type, typeRange, cin, negate, mrNarrow, refCountIn, refCountOut}:
+        {symbol: Symbol, type: RefTypesType, typeRange: RefTypesType, cin: ConstraintItem | undefined, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number]
+    }): ConstraintItem | undefined {
+        refCountIn[0]++;
+        refCountOut[0]++;
+        if (!cin) return cin;
+        if (cin.kind===ConstraintItemKind.never) return cin;
+        if (cin.kind===ConstraintItemKind.leaf){
+            if (!negate) {
+                if (symbol!==cin.symbol) return createFlowConstraintLeaf(cin.symbol, cin.type);
+                else createFlowConstraintLeaf(cin.symbol, mrNarrow.inverseType(cin.type, type));
+            }
+            else {
+                if (symbol!==cin.symbol) return { kind: ConstraintItemKind.never };
+                else createFlowConstraintLeaf(cin.symbol, mrNarrow.inverseType(mrNarrow.inverseType(cin.type, typeRange), typeRange));
+            }
+        }
+        else {
+            Debug.assert(cin.kind===ConstraintItemKind.node);
+            if (cin.op===ConstraintItemNodeOp.not){
+                return andDistributeDivide({ symbol, type, typeRange, cin:cin.constraint, negate:!negate, mrNarrow, refCountIn, refCountOut });
+            }
+            else if ((cin.op===ConstraintItemNodeOp.and && !negate) || (cin.op===ConstraintItemNodeOp.or && negate)){
+                const constraints: (ConstraintItem | undefined)[]=[];
+                for (const subc of cin.constraints){
+                    const subcr = andDistributeDivide({ symbol, type, typeRange, cin:subc, negate, mrNarrow, refCountIn, refCountOut });
+                    if (!subcr) {
+                        refCountOut[0]--;
+                        continue;
+                    }
+                    if (subcr.kind===ConstraintItemKind.never) {
+                        refCountOut[0]-=(constraints.length-1);
+                        return subcr;
+                    }
+                    constraints.push(subcr);
+                }
+                if (constraints.length===0) return undefined;
+                if (constraints.length===1) return constraints[0];
+                return createFlowConstraintNodeAnd({ constraints:constraints as ConstraintItem[] });
+            }
+            else if ((cin.op===ConstraintItemNodeOp.or && !negate) || (cin.op===ConstraintItemNodeOp.and && negate)){
+                const constraints: (ConstraintItem | undefined)[]=[];
+                for (const subc of cin.constraints){
+                    const subcr = andDistributeDivide({ symbol, type, typeRange, cin:subc, negate, mrNarrow, refCountIn, refCountOut });
+                    if (!subcr) {
+                        refCountOut[0]-=(constraints.length-1);
+                        return undefined;
+                    }
+                    if (subcr.kind===ConstraintItemKind.never) {
+                        refCountOut[0]--;
+                        continue;
+                    }
+                    constraints.push(subcr);
+                }
+                if (constraints.length===0) return { kind:ConstraintItemKind.never };
+                if (constraints.length===1) return constraints[0];
+                return createFlowConstraintNodeOr({ constraints:constraints as ConstraintItem[] });
+            }
+            Debug.fail();
+        }
+    }
+
     export function andIntoConstraint({symbol, type, constraintItem}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined}): ConstraintItem {
         if (!constraintItem){
             return { kind: ConstraintItemKind.leaf, symbol, type };
@@ -204,7 +281,7 @@ namespace ts {
         }
         Debug.fail("unexpected");
     }
-    export function orConstraints(acin: Readonly<(ConstraintItem | undefined)[]>): ConstraintItem | undefined {
+    export function orIntoConstraints(acin: Readonly<(ConstraintItem | undefined)[]>): ConstraintItem | undefined {
         const ac: ConstraintItem[]=[];
         for (const c of acin){
             if (!c) return undefined;
