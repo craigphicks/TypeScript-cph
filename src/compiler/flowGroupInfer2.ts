@@ -32,7 +32,7 @@ namespace ts {
         intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean];
         typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
-        inverseType(part: Readonly<RefTypesType>, whole: Readonly<RefTypesType>): RefTypesType;
+        subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>): RefTypesType;
         isNeverType(t: Readonly<RefTypesType>): boolean,
         isAnyType(t: Readonly<RefTypesType>): boolean,
         isUnknownType(t: Readonly<RefTypesType>): boolean,
@@ -64,7 +64,7 @@ namespace ts {
             intersectRefTypesTypesImplies,
             typeImplies,
             isASubsetOfB:typeImplies,
-            inverseType,
+            subtractFromType,
             isNeverType,
             isAnyType,
             isUnknownType,
@@ -321,13 +321,19 @@ namespace ts {
             // TODO: could be optimized because computations in intersectRefTypesTypes and typeImplies overlap
             return [ intersectRefTypesTypes(a,b), typeImplies(a,b)];
         }
-        function inverseType(part: Readonly<RefTypesType>, whole: Readonly<RefTypesType>): RefTypesType {
-            if (isNeverType(part)) return whole;
-            if (isAnyType(part)) return createRefTypesType(neverType);
-            if (isUnknownType(part)) Debug.fail("inverseType: input is unknownType");
+        /**
+         * If part of subtrahend set does not exist in minuend it will be ignored.
+         * @param subtrahend: the set subtracted from the minuend
+         * @param minuend: the set from which the subtrahend set will be removed
+         * @returns
+         */
+        function subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>): RefTypesType {
+            if (isNeverType(subtrahend)) return minuend;
+            if (isAnyType(subtrahend)) return createRefTypesType(neverType);
+            if (isUnknownType(subtrahend)||isUnknownType(minuend)) Debug.fail("inverseType: input is unknownType");
             const c = createRefTypesType() as RefTypesTypeNormal;
-            (whole as RefTypesTypeNormal)._set.forEach(t=>{
-                if (!(part as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
+            (minuend as RefTypesTypeNormal)._set.forEach(t=>{
+                if (!(subtrahend as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
             });
             return c;
         }
@@ -1435,8 +1441,8 @@ namespace ts {
                 const declType = createRefTypesType(getTypeOfSymbol(symbol));
                 const refCountIn = [0] as [number];
                 const refCountOut = [0] as [number];
-                tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, typeRange: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
-                tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: rttr.constraintItem });
+                tmpConstraintItem = andDistribute({ symbol, type: setTypeTmp, typeRange: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
+                tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem });
                 symtab = copyRefTypesSymtab(rttr.symtab);
                 symtab.set(
                     symbol,
@@ -1564,7 +1570,7 @@ namespace ts {
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoPassing.type });
                     if (rttr2.constraintItem) passingOredConstraints.push(rttr2.constraintItem);
                 });
-                if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = { kind:ConstraintItemKind.never };
+                if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = createFlowConstraintNever();
                 else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
                 else if (passingOredConstraints.length) rttrcoPassing.constraintItem = createFlowConstraintNodeOr({ constraints:passingOredConstraints });
                 const rttrcoFailing: RefTypesTableReturnCritOut = {
@@ -1579,7 +1585,7 @@ namespace ts {
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoFailing.type });
                     if (rttr2.constraintItem) failingOredConstraints.push(rttr2.constraintItem);
                 });
-                if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = { kind:ConstraintItemKind.never };
+                if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = createFlowConstraintNever();
                 if (failingOredConstraints.length===1) rttrcoFailing.constraintItem = failingOredConstraints[0];
                 else if (failingOredConstraints.length) rttrcoFailing.constraintItem = createFlowConstraintNodeOr({ constraints:failingOredConstraints });
                 const rtn: {
@@ -1911,14 +1917,13 @@ namespace ts {
                  * Identifier
                  */
                 case SyntaxKind.Identifier:{
-                    //let refTypesSymtab = refTypesSymtabIn;
                     if (myDebug) consoleLog(`case SyntaxKind.Identifier`);
                     Debug.assert(isIdentifier(condExpr));
                     const condSymbol = getResolvedSymbol(condExpr); // getSymbolOfNode()?
-                    // const isconst = isConstantReference(condExpr);
                     let type: RefTypesType | undefined;
                     let isconst = false;
                     let tstype: Type | undefined;
+                    let refTypesSymtabOut = refTypesSymtabIn;
                     //let constraintItemOut = constraintItem;
                     if (inferStatus.replayItemStack.length){
                         tstype = inferStatus.replayItemStack.slice(-1)[0].nodeToTypeMap.get(condExpr);
@@ -1930,7 +1935,6 @@ namespace ts {
                     }
                     else {
                         const leaf = refTypesSymtabIn.get(condSymbol)?.leaf;//.type;
-                        //type = refTypesSymtabIn.get(condSymbol)?.leaf.type;
                         if (!leaf){
                             const tstype = getTypeOfSymbol(condSymbol);
                             if (tstype===errorType){
@@ -1944,12 +1948,14 @@ namespace ts {
                             isconst = leaf.isconst??false;
                         }
                         if (isconst && constraintItemIn){
+                            // Could this narrowing be postponed until applyCritToArrRefTypesTableReturn? No.
+                            // If done here, then the constrained result is reflected in byNode.  That could result in better error messages if it were never.
+                            // However, the constraintItem is postponed until applyCritToArrRefTypesTableReturn.
                             type = evalTypeOverConstraint({ cin:constraintItemIn, symbol:condSymbol, typeRange: type, mrNarrow });
+                            if (!leaf || (type !== leaf.type && !mrNarrow.isASubsetOfB(leaf.type,type))){
+                                refTypesSymtabOut = copyRefTypesSymtab(refTypesSymtabOut).set(condSymbol,{ leaf:createRefTypesTableLeaf(condSymbol,isconst,type) });
+                            }
                         }
-                        // if (constraintItem){
-                        //     [constraintItemOut, type] = andIntoConstrainTrySimplify({ symbol:condSymbol, type, constraintItem, mrNarrow });
-                        //     //type = mrNarrowTypeByConstraint({ symbol:condSymbol, type, constraintItem }, mrNarrow);
-                        // }
                         tstype = getTypeFromRefTypesType(type);
                     }
                     const byNode = createNodeToTypeMap();
@@ -2207,36 +2213,6 @@ namespace ts {
                     return mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as TypeOfExpression).expression, qdotfallout, inferStatus });
                 }
                 break;
-                // case SyntaxKind.ConditionalExpression: {
-                //     const {condition, whenTrue, whenFalse} = condExpr as ConditionalExpression;
-                //     const condResult = mrNarrowTypes({
-                //         refTypesSymtab: refTypesSymtabIn, condExpr:(condition as PrefixUnaryExpression).operand,
-                //         crit:{ kind: InferCritKind.truthy, alsoFailing: true },
-                //         qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true }
-                //     });
-                //     /**
-                //      * overwrite ret.inferRefRtnType.[passing,failing].type to booleans.
-                //      */
-                //         [condResult.inferRefRtnType.passing, condResult.inferRefRtnType.failing!].forEach(rttr=>{
-                //         let hadFalse = false;
-                //         let hadTrue = false;
-                //         forEachRefTypesTypeType(rttr.type, t=>{
-                //             if (convertNonUnionNonIntersectionTypeToBoolean(t)) hadTrue = true;
-                //             else hadFalse = true;
-                //         });
-                //         // TODO: merge tables is they have same types?
-                //         if (hadFalse && hadTrue) rttr.type = createRefTypesType(checker.getBooleanType());
-                //         // notice truthy is being negated as well as cast to boolean
-                //         else if (hadFalse) rttr.type = createRefTypesType(checker.getTrueType());
-                //         else if (hadTrue) rttr.type = createRefTypesType(checker.getFalseType());
-                //         else Debug.fail("At least one of hadTrue or hadFalse should have been true");
-                //         // symbol is removed
-                //         rttr.symbol = undefined;
-                //         rttr.isconst = undefined;
-                //     });
-
-                // }
-                // break;
                 case SyntaxKind.TrueKeyword:
                 case SyntaxKind.FalseKeyword:
                 case SyntaxKind.NumericLiteral:
@@ -2252,6 +2228,9 @@ namespace ts {
                         }]
                     };
                 }
+                case SyntaxKind.ArrayLiteralExpression:
+                    Debug.fail("SyntaxKind.ArrayLiteralExpression not yet implemented");
+                break;
                 default: Debug.assert(false, "", ()=>`${Debug.formatSyntaxKind(condExpr.kind)}, ${dbgNodeToString(condExpr)}`);
             }
         }

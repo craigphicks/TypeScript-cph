@@ -32,9 +32,13 @@ myDbgOutFilename=$T1 myDisableInfer=1 gulp runtests  --test=${BN} || true
 cp -r tests/baselines/local  $L1 || return 4
 #grep "checkExpression return: \|checkSourceElement: " $T1 > $T1.cet.txt
 
-echo meld $L0 $L1 
-meld $L0 $L1
-
+if diff $L0 $L1 ; then
+    cat $L0/$BN.types
+    echo "no difference" 
+else 
+    echo "meld $L0 $L1" 
+    meld $L0 $L1 
+fi
 # echo meld $T0 $T1
 # meld $T0 $T1
 

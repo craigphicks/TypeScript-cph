@@ -25,8 +25,8 @@ namespace ts {
         none=0,
         any=1,
         unknown=2,
-        never=4,  // TODO: kill
-        anyOrUnknown=3 // TODO: kill
+//        never=4,  // TODO: kill
+//        anyOrUnknown=3 // TODO: kill
     }
     export interface RefTypesTypeNormal {
         _flags: RefTypesTypeFlags.none;
