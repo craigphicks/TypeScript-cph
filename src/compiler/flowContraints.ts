@@ -197,7 +197,7 @@ namespace ts {
      * !(BC) => (A!B/A + A!C/A)
      * !(B+C) => (A!B)/A(A!C)/A
      */
-    export function andDistribute({
+    export function andDistributeDivide({
         symbol, type, typeRange, cin, negate, mrNarrow, refCountIn, refCountOut, depth}:
         {symbol: Symbol, type: RefTypesType, typeRange: RefTypesType, cin: ConstraintItem | undefined, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
     }): ConstraintItem | undefined {
@@ -265,12 +265,12 @@ namespace ts {
         else {
             Debug.assert(cin.kind===ConstraintItemKind.node);
             if (cin.op===ConstraintItemNodeOp.not){
-                return andDistribute({ symbol, type, typeRange, cin:cin.constraint, negate:!negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
+                return andDistributeDivide({ symbol, type, typeRange, cin:cin.constraint, negate:!negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
             }
             else if ((cin.op===ConstraintItemNodeOp.and && !negate) || (cin.op===ConstraintItemNodeOp.or && negate)){
                 const constraints: (ConstraintItem | undefined)[]=[];
                 for (const subc of cin.constraints){
-                    const subcr = andDistribute({ symbol, type, typeRange, cin:subc, negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
+                    const subcr = andDistributeDivide({ symbol, type, typeRange, cin:subc, negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
                     if (!subcr) {
                         refCountOut[0]--;
                         continue;
@@ -288,7 +288,7 @@ namespace ts {
             else if ((cin.op===ConstraintItemNodeOp.or && !negate) || (cin.op===ConstraintItemNodeOp.and && negate)){
                 const constraints: (ConstraintItem | undefined)[]=[];
                 for (const subc of cin.constraints){
-                    const subcr = andDistribute({ symbol, type, typeRange, cin:subc, negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
+                    const subcr = andDistributeDivide({ symbol, type, typeRange, cin:subc, negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
                     if (!subcr) {
                         refCountOut[0]-=(constraints.length-1);
                         return undefined;

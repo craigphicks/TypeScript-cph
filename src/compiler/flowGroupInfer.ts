@@ -449,7 +449,7 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems
         };
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
-            refTypesSymtab: refTypesSymtabArg!, condExpr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
+            refTypesSymtab: refTypesSymtabArg!, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
         if (boolsplit){
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,

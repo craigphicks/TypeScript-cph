@@ -12,7 +12,7 @@ namespace ts {
 
 
     export interface MrNarrow {
-        mrNarrowTypes({ refTypesSymtab: refTypes, condExpr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
+        mrNarrowTypes({ refTypesSymtab: refTypes, expr: condExpr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
         createRefTypesSymtab(): RefTypesSymtab;
         createRefTypesType(type?: Readonly<Type>): RefTypesType;
         dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string;
@@ -708,7 +708,7 @@ namespace ts {
          * @param param0
          */
         function mrNarrowTypesByTypeof({
-            refTypesSymtab:refTypesSymtabIn, condExpr: typeofArgExpr, inferStatus: inferStatusIn
+            refTypesSymtab:refTypesSymtabIn, expr: typeofArgExpr, inferStatus: inferStatusIn
         }: Omit<InferRefInnerArgs, "qdotfallout">, negateCrit: boolean, typeString: string): MrNarrowTypesInnerReturn {
             const critTypeofString: InferCritTypeofStrings | undefined = (()=>{
                 switch (typeString){
@@ -731,7 +731,7 @@ namespace ts {
             const {/* inCondition, */ replayItemStack, replayables} = inferStatusIn;
             const { inferRefRtnType: {passing,failing}, byNode } = mrNarrowTypes({
                 refTypesSymtab: refTypesSymtabIn,
-                condExpr: typeofArgExpr,
+                expr: typeofArgExpr,
                 crit: {
                     kind: InferCritKind.typeof,
                     typeofString: critTypeofString,
@@ -751,8 +751,8 @@ namespace ts {
 
 
         function mrNarrowTypesByBinaryExpression({
-            refTypesSymtab:refTypesSymtabIn, condExpr:binaryExpression, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn
-        }: InferRefInnerArgs & {condExpr: BinaryExpression}): MrNarrowTypesInnerReturn {
+            refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn
+        }: InferRefInnerArgs & {expr: BinaryExpression}): MrNarrowTypesInnerReturn {
             const {left:leftExpr,operatorToken,right:rightExpr} = binaryExpression;
             switch (operatorToken.kind) {
                 case SyntaxKind.EqualsToken:
@@ -779,14 +779,14 @@ namespace ts {
                         }
                         if (typeofArgExpr && typeofString){
                             const negateCrit = operatorToken.kind===SyntaxKind.ExclamationEqualsEqualsToken || operatorToken.kind===SyntaxKind.ExclamationEqualsToken;
-                            return mrNarrowTypesByTypeof({ refTypesSymtab:refTypesSymtabIn, condExpr:typeofArgExpr, inferStatus }, negateCrit, typeofString);
+                            return mrNarrowTypesByTypeof({ refTypesSymtab:refTypesSymtabIn, expr:typeofArgExpr, inferStatus }, negateCrit, typeofString);
                         }
                         else {
                             // still required to process for side effects
                             const arrRttr: RefTypesTableReturn[]=[];
                             const byNode = createNodeToTypeMap();
-                            const rl = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, condExpr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
-                            const rr = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, condExpr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
+                            const rl = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, expr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
+                            const rr = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, expr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus });
                             mergeIntoNodeToTypeMaps(rl.byNode, byNode);
                             mergeIntoNodeToTypeMaps(rr.byNode, byNode);
                             arrRttr.push(...rl.arrRefTypesTableReturn);
@@ -817,7 +817,7 @@ namespace ts {
                     const leftRet = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
-                        condExpr: leftExpr,
+                        expr: leftExpr,
                         inferStatus,
                         constraintItem: constraintItemIn
                     });
@@ -832,7 +832,7 @@ namespace ts {
                         const rightRet = mrNarrowTypes({
                             refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.passing.symtab),
                             crit: { kind:InferCritKind.truthy, alsoFailing:true },
-                            condExpr: rightExpr,
+                            expr: rightExpr,
                             inferStatus,
                             constraintItem: leftRet.inferRefRtnType.passing.constraintItem
                         });
@@ -847,7 +847,7 @@ namespace ts {
                         const rightRet = mrNarrowTypes({
                             refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
                             crit: { kind:InferCritKind.truthy, alsoFailing:true },
-                            condExpr: rightExpr,
+                            expr: rightExpr,
                             inferStatus,
                             constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
                         });
@@ -885,11 +885,11 @@ namespace ts {
             }
     }
 
-        function mrNarrowTypesByCallExpression({refTypesSymtab:refTypesIn, condExpr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {condExpr: CallExpression}): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesByCallExpression({refTypesSymtab:refTypesIn, expr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {expr: CallExpression}): MrNarrowTypesInnerReturn {
             //return undefined as any as InferRefRtnType;
             Debug.assert(qdotfallout);
             // First duty is to call the precursors
-            const pre = InferRefTypesPreAccess({ refTypesSymtab:refTypesIn, condExpr:callExpr, /*crit,*/ qdotfallout, inferStatus });
+            const pre = InferRefTypesPreAccess({ refTypesSymtab:refTypesIn, expr:callExpr, /*crit,*/ qdotfallout, inferStatus });
             if (pre.kind==="immediateReturn") return pre.retval;
             const prePassing = pre.passing;
             //const prePassingRefTypesType = prePassing.type;
@@ -1052,7 +1052,7 @@ namespace ts {
                     const qdotfallout: RefTypesTableReturn[]=[];
                     const { inferRefRtnType: {passing,failing}, byNode } = mrNarrowTypes({
                         refTypesSymtab: sigargsRefTypesSymtab,
-                        condExpr: carg,
+                        expr: carg,
                         crit: {
                             kind: InferCritKind.assignable,
                             target: targetType,
@@ -1155,9 +1155,9 @@ namespace ts {
          * @param symbolOfRtnType
          * @returns
          */
-        function InferRefTypesPreAccess({refTypesSymtab: refTypes, condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs & {condExpr: {expression: Expression}}): InferRefTypesPreAccessRtnType{
+        function InferRefTypesPreAccess({refTypesSymtab: refTypes, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs & {expr: {expression: Expression}}): InferRefTypesPreAccessRtnType{
             const { inferRefRtnType:{ passing, failing }, byNode:byNodePre } = mrNarrowTypes(
-                { refTypesSymtab: refTypes, condExpr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus,constraintItem });
+                { refTypesSymtab: refTypes, expr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus,constraintItem });
             //Debug.assert(!_saveByNodeForReplayPre);
             Debug.assert(failing);
 
@@ -1189,9 +1189,9 @@ namespace ts {
             return { kind:"normal", passing: [passing], byNode: byNodePre };
         }
 
-        function mrNarrowTypesByPropertyAccessExpression({refTypesSymtab, condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesByPropertyAccessExpression({refTypesSymtab, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             if (myDebug) consoleGroup(`mrNarrowTypesByPropertyAccessExpression[in]`);
-            const r = mrNarrowTypesByPropertyAccessExpression_aux({ refTypesSymtab, condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem });
+            const r = mrNarrowTypesByPropertyAccessExpression_aux({ refTypesSymtab, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem });
             if (myDebug) {
                 consoleLog(`mrNarrowTypesByPropertyAccessExpression[out]`);
                 consoleGroupEnd();
@@ -1205,7 +1205,7 @@ namespace ts {
          * @returns
          * TODO: use _constraintItem
          */
-        function mrNarrowTypesByPropertyAccessExpression_aux({refTypesSymtab:refTypesSymtabIn, condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem:_constraintItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesByPropertyAccessExpression_aux({refTypesSymtab:refTypesSymtabIn, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem:_constraintItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             /**
              * It doesn't really make much sense for the PropertyAccessExpression to have a symbol because the property name is simply a key
              * that may be used to lookup across totally unrelated objects that are present only ambiently in the code - unless the precursor is a constant.
@@ -1228,7 +1228,7 @@ namespace ts {
             Debug.assert(condExpr.expression);
 
 
-            const pre = InferRefTypesPreAccess({ refTypesSymtab:refTypesSymtabIn, condExpr, /* crit,*/ qdotfallout, inferStatus });
+            const pre = InferRefTypesPreAccess({ refTypesSymtab:refTypesSymtabIn, expr: condExpr, /* crit,*/ qdotfallout, inferStatus });
             if (pre.kind==="immediateReturn") return pre.retval;
 
 
@@ -1441,7 +1441,7 @@ namespace ts {
                 const declType = createRefTypesType(getTypeOfSymbol(symbol));
                 const refCountIn = [0] as [number];
                 const refCountOut = [0] as [number];
-                tmpConstraintItem = andDistribute({ symbol, type: setTypeTmp, typeRange: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
+                tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, typeRange: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
                 tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem });
                 symtab = copyRefTypesSymtab(rttr.symtab);
                 symtab.set(
@@ -1608,7 +1608,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypes({refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, condExpr:expr, inferStatus, crit: critIn, qdotfallout: qdotfalloutIn }: InferRefArgs): MrNarrowTypesReturn {
+        function mrNarrowTypes({refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, expr:expr, inferStatus, crit: critIn, qdotfallout: qdotfalloutIn }: InferRefArgs): MrNarrowTypesReturn {
             myDebug = getMyDebug();
             if (myDebug) {
                 const inReplay = inferStatus.replayItemStack.length;
@@ -1668,7 +1668,7 @@ namespace ts {
 
             // const qdotbypass = qdotbypassIn??[] as TypeAndConstraint[];
 
-            const innerret = mrNarrowTypesInner({ refTypesSymtab: replaySymtab??refTypesSymtabIn, constraintItem: constraintItemIn, condExpr: newReplayItem?.expr?? expr, qdotfallout,
+            const innerret = mrNarrowTypesInner({ refTypesSymtab: replaySymtab??refTypesSymtabIn, constraintItem: constraintItemIn, expr: newReplayItem?.expr?? expr, qdotfallout,
                 inferStatus });
 
             if (newReplayItem) inferStatus.replayItemStack.pop();
@@ -1867,7 +1867,7 @@ namespace ts {
             return mrNarrowTypesReturn;
         }
 
-        function mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, constraintItem }: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, expr: condExpr, qdotfallout, inferStatus, constraintItem }: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             if (myDebug){
                 consoleGroup(`mrNarrowTypes_inner[in] condExpr:${dbgNodeToString(condExpr)}, inferStatus.replayItemStack.length: ${
                     inferStatus.replayItemStack.length
@@ -1878,7 +1878,7 @@ namespace ts {
                 consoleLog(`mrNarrowTypesInner[in] constraintItemIn:`);
                 if (constraintItem) dbgConstraintItem(constraintItem).forEach(str=> consoleLog(`  ${str}`));
             }
-            const innerret = mrNarrowTypesInnerAux({ refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, constraintItem });
+            const innerret = mrNarrowTypesInnerAux({ refTypesSymtab: refTypesSymtabIn, expr: condExpr, qdotfallout, inferStatus, constraintItem });
             if (myDebug){
                 innerret.arrRefTypesTableReturn.forEach((rttr,i)=>{
                     dbgRefTypesTableToStrings(rttr).forEach(str=>{
@@ -1911,7 +1911,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, condExpr, qdotfallout, inferStatus, constraintItem:constraintItemIn}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, expr: condExpr, qdotfallout, inferStatus, constraintItem:constraintItemIn}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             switch (condExpr.kind){
                 /**
                  * Identifier
@@ -2005,7 +2005,7 @@ namespace ts {
                      *
                      *
                      */
-                     const innerret = mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, condExpr: condExpr.expression,
+                     const innerret = mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, expr: condExpr.expression,
                         //crit: {kind: InferCritKind.twocrit, crits:[{ kind:InferCritKind.notnullundef }, crit]},
                         qdotfallout, inferStatus, constraintItem: constraintItemIn });
 
@@ -2038,7 +2038,7 @@ namespace ts {
                 }
                 case SyntaxKind.ParenthesizedExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [start]`);
-                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as ParenthesizedExpression).expression,
+                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, expr: (condExpr as ParenthesizedExpression).expression,
                         crit: inferStatus.inCondition ? { kind: InferCritKind.truthy, alsoFailing: true } : { kind: InferCritKind.none },
                         inferStatus, constraintItem: constraintItemIn });
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [end]`);
@@ -2063,7 +2063,7 @@ namespace ts {
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; condition`);
                     const rcond = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
-                        condExpr: condition,
+                        expr: condition,
                         crit: { kind: InferCritKind.truthy, alsoFailing: true },
                         inferStatus: { ...inferStatus, inCondition: true },
                         constraintItem: constraintItemIn
@@ -2079,7 +2079,7 @@ namespace ts {
                     // else {
                         const retTrue = mrNarrowTypes({
                             refTypesSymtab: rcond.inferRefRtnType.passing.symtab,
-                            condExpr: whenTrue,
+                            expr: whenTrue,
                             crit: { kind: InferCritKind.none },
                             inferStatus, //: { ...inferStatus, inCondition: true }
                             constraintItem: rcond.inferRefRtnType.passing.constraintItem
@@ -2095,7 +2095,7 @@ namespace ts {
                     // else {
                         const retFalse = mrNarrowTypes({
                             refTypesSymtab: rcond.inferRefRtnType.failing!.symtab,
-                            condExpr: whenFalse,
+                            expr: whenFalse,
                             crit: { kind: InferCritKind.none },
                             inferStatus, //: { ...inferStatus, inCondition: true }
                             constraintItem: rcond.inferRefRtnType.failing!.constraintItem
@@ -2118,19 +2118,19 @@ namespace ts {
                 // IWOZERE
                 case SyntaxKind.PropertyAccessExpression:
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.PropertyAccessExpression`);
-                    return mrNarrowTypesByPropertyAccessExpression({ refTypesSymtab: refTypesSymtabIn, condExpr, /* crit, */ qdotfallout, inferStatus });
+                    return mrNarrowTypesByPropertyAccessExpression({ refTypesSymtab: refTypesSymtabIn, expr: condExpr, /* crit, */ qdotfallout, inferStatus });
                 /**
                  * CallExpression
                  */
                 case SyntaxKind.CallExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.CallExpression`);
                     Debug.assert(isCallExpression(condExpr));
-                    return mrNarrowTypesByCallExpression({ refTypesSymtab: refTypesSymtabIn, condExpr, /*crit, */ qdotfallout, inferStatus });
+                    return mrNarrowTypesByCallExpression({ refTypesSymtab: refTypesSymtabIn, expr: condExpr, /*crit, */ qdotfallout, inferStatus });
                 }
                 case SyntaxKind.PrefixUnaryExpression:
                     if ((condExpr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
                         const ret = mrNarrowTypes({
-                            refTypesSymtab: refTypesSymtabIn, condExpr:(condExpr as PrefixUnaryExpression).operand,
+                            refTypesSymtab: refTypesSymtabIn, expr:(condExpr as PrefixUnaryExpression).operand,
                             crit:{ negate: true, kind: InferCritKind.truthy, alsoFailing: true },
                             qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true }
                         });
@@ -2163,7 +2163,7 @@ namespace ts {
                     Debug.assert(isVariableDeclaration(condExpr));
                     Debug.assert(condExpr.initializer);
                     const initializer = condExpr.initializer;
-                    const rhs = mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, condExpr:initializer, /* crit:{ kind: InferCritKind.none }, */ qdotfallout, inferStatus });
+                    const rhs = mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, expr:initializer, /* crit:{ kind: InferCritKind.none }, */ qdotfallout, inferStatus });
                     if (isIdentifier(condExpr.name)){
                         /**
                          * More processing and error checking of the lhs is taking place higher up in checkVariableLikeDeclaration.
@@ -2203,14 +2203,14 @@ namespace ts {
                 }
                 break;
                 case SyntaxKind.BinaryExpression:{
-                    return mrNarrowTypesByBinaryExpression({ refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, condExpr: condExpr as BinaryExpression, /*crit, */ qdotfallout, inferStatus });
+                    return mrNarrowTypesByBinaryExpression({ refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, expr: condExpr as BinaryExpression, /*crit, */ qdotfallout, inferStatus });
                 }
                 break;
                 case SyntaxKind.TypeOfExpression:{
                     /**
                      * For a TypeOfExpression not as the child of a binary expressionwith ops  ===,!==,==,!=
                      */
-                    return mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, condExpr: (condExpr as TypeOfExpression).expression, qdotfallout, inferStatus });
+                    return mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, expr: (condExpr as TypeOfExpression).expression, qdotfallout, inferStatus });
                 }
                 break;
                 case SyntaxKind.TrueKeyword:
