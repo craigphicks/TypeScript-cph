@@ -441,6 +441,9 @@ namespace ts {
             if (constraints.length===1) constraintItemArg = constraints[0];
             else if (constraints.length) constraintItemArg = createFlowConstraintNodeOr({ constraints });
         }
+        else {
+            refTypesSymtabArg = sourceFileMrState.mrNarrow.createRefTypesSymtab();
+        }
         const boolsplit = (groupForFlow.falseref || groupForFlow.trueref);
         const crit: InferCrit = !boolsplit ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         const inferStatus: InferStatus = {
@@ -449,7 +452,7 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems
         };
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
-            refTypesSymtab: refTypesSymtabArg!, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
+            refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
         if (boolsplit){
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,

@@ -1,5 +1,12 @@
 namespace ts {
 
+    // function castType<X>(x: any): x is X {
+    //     return true;
+    // };
+    // @ts-expect-error TS6133: 'x' is declared but its value is never read.
+    function assertType<X>(x: any): asserts x is X {};
+
+
     export function isRefTypesTableLeaf(x: RefTypesTable): x is RefTypesTableLeaf {
         return x.kind===RefTypesTableKind.leaf;
     }
@@ -1911,22 +1918,22 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, expr: condExpr, qdotfallout, inferStatus, constraintItem:constraintItemIn}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
-            switch (condExpr.kind){
+        function mrNarrowTypesInnerAux({refTypesSymtab: refTypesSymtabIn, expr, qdotfallout, inferStatus, constraintItem:constraintItemIn}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+            switch (expr.kind){
                 /**
                  * Identifier
                  */
                 case SyntaxKind.Identifier:{
                     if (myDebug) consoleLog(`case SyntaxKind.Identifier`);
-                    Debug.assert(isIdentifier(condExpr));
-                    const condSymbol = getResolvedSymbol(condExpr); // getSymbolOfNode()?
+                    Debug.assert(isIdentifier(expr));
+                    const condSymbol = getResolvedSymbol(expr); // getSymbolOfNode()?
                     let type: RefTypesType | undefined;
                     let isconst = false;
                     let tstype: Type | undefined;
                     let refTypesSymtabOut = refTypesSymtabIn;
                     //let constraintItemOut = constraintItem;
                     if (inferStatus.replayItemStack.length){
-                        tstype = inferStatus.replayItemStack.slice(-1)[0].nodeToTypeMap.get(condExpr);
+                        tstype = inferStatus.replayItemStack.slice(-1)[0].nodeToTypeMap.get(expr);
                         if (!tstype){
                             Debug.assert(tstype);
                         }
@@ -1941,7 +1948,7 @@ namespace ts {
                                 Debug.assert(false);
                             }
                             type = createRefTypesType(tstype);
-                            isconst = isConstantReference(condExpr);
+                            isconst = isConstantReference(expr);
                         }
                         else {
                             type = leaf.type;
@@ -1959,7 +1966,7 @@ namespace ts {
                         tstype = getTypeFromRefTypesType(type);
                     }
                     const byNode = createNodeToTypeMap();
-                    byNode.set(condExpr, tstype);
+                    byNode.set(expr, tstype);
                     const rttr: RefTypesTableReturn = {
                         kind: RefTypesTableKind.return,
                         symbol: condSymbol,
@@ -1983,7 +1990,7 @@ namespace ts {
                  * NonNullExpression
                  */
                 case SyntaxKind.NonNullExpression: {
-                    Debug.assert(isNonNullExpression(condExpr));
+                    Debug.assert(isNonNullExpression(expr));
                     /**
                      * Typescript documentation on "Non-null assertion operator":
                      * https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-0.html#non-null-assertion-operator
@@ -2005,7 +2012,7 @@ namespace ts {
                      *
                      *
                      */
-                     const innerret = mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, expr: condExpr.expression,
+                     const innerret = mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, expr: expr.expression,
                         //crit: {kind: InferCritKind.twocrit, crits:[{ kind:InferCritKind.notnullundef }, crit]},
                         qdotfallout, inferStatus, constraintItem: constraintItemIn });
 
@@ -2038,7 +2045,7 @@ namespace ts {
                 }
                 case SyntaxKind.ParenthesizedExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [start]`);
-                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, expr: (condExpr as ParenthesizedExpression).expression,
+                    const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, expr: (expr as ParenthesizedExpression).expression,
                         crit: inferStatus.inCondition ? { kind: InferCritKind.truthy, alsoFailing: true } : { kind: InferCritKind.none },
                         inferStatus, constraintItem: constraintItemIn });
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [end]`);
@@ -2055,12 +2062,12 @@ namespace ts {
                  */
                 case SyntaxKind.ConditionalExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression`);
-                    const {condition, whenTrue, whenFalse} = (condExpr as ConditionalExpression);
+                    const {condition, whenTrue, whenFalse} = (expr as ConditionalExpression);
                     //const byNodeMultipath = createNodeToTypeMap(); // hopefully obsolete
                     const byNodeSinglepath = createNodeToTypeMap();
                     //const arrRefTypesTableReturnMultipath: RefTypesTableReturn[] = [];
                     //const arrRefTypesTableReturnSinglePath: RefTypesTableReturn[] = [];
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; condition`);
+                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; condition:${dbgNodeToString(condition)}`);
                     const rcond = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
                         expr: condition,
@@ -2118,19 +2125,19 @@ namespace ts {
                 // IWOZERE
                 case SyntaxKind.PropertyAccessExpression:
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.PropertyAccessExpression`);
-                    return mrNarrowTypesByPropertyAccessExpression({ refTypesSymtab: refTypesSymtabIn, expr: condExpr, /* crit, */ qdotfallout, inferStatus });
+                    return mrNarrowTypesByPropertyAccessExpression({ refTypesSymtab: refTypesSymtabIn, expr, /* crit, */ qdotfallout, inferStatus });
                 /**
                  * CallExpression
                  */
                 case SyntaxKind.CallExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.CallExpression`);
-                    Debug.assert(isCallExpression(condExpr));
-                    return mrNarrowTypesByCallExpression({ refTypesSymtab: refTypesSymtabIn, expr: condExpr, /*crit, */ qdotfallout, inferStatus });
+                    Debug.assert(isCallExpression(expr));
+                    return mrNarrowTypesByCallExpression({ refTypesSymtab: refTypesSymtabIn, expr, /*crit, */ qdotfallout, inferStatus });
                 }
                 case SyntaxKind.PrefixUnaryExpression:
-                    if ((condExpr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
+                    if ((expr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
                         const ret = mrNarrowTypes({
-                            refTypesSymtab: refTypesSymtabIn, expr:(condExpr as PrefixUnaryExpression).operand,
+                            refTypesSymtab: refTypesSymtabIn, expr:(expr as PrefixUnaryExpression).operand,
                             crit:{ negate: true, kind: InferCritKind.truthy, alsoFailing: true },
                             qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true }
                         });
@@ -2151,7 +2158,7 @@ namespace ts {
                             nodeTypes.push(ftype);
                             ret.inferRefRtnType.failing!.type = createRefTypesType(ftype);
                         }
-                        ret.byNode.set(condExpr, getUnionType(nodeTypes));
+                        ret.byNode.set(expr, getUnionType(nodeTypes));
                         return {
                             byNode: ret.byNode,
                             arrRefTypesTableReturn: [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!]
@@ -2160,11 +2167,11 @@ namespace ts {
                     Debug.assert(false);
                     break;
                 case SyntaxKind.VariableDeclaration: {
-                    Debug.assert(isVariableDeclaration(condExpr));
-                    Debug.assert(condExpr.initializer);
-                    const initializer = condExpr.initializer;
+                    Debug.assert(isVariableDeclaration(expr));
+                    Debug.assert(expr.initializer);
+                    const initializer = expr.initializer;
                     const rhs = mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, expr:initializer, /* crit:{ kind: InferCritKind.none }, */ qdotfallout, inferStatus });
-                    if (isIdentifier(condExpr.name)){
+                    if (isIdentifier(expr.name)){
                         /**
                          * More processing and error checking of the lhs is taking place higher up in checkVariableLikeDeclaration.
                          *
@@ -2173,7 +2180,7 @@ namespace ts {
                          * Note: the rhs is not required to be all const. If at least one const is on the rhs, replay is meaningful.
                          * However, pure const only rhs could be a condition.
                          */
-                        const symbol = getSymbolOfNode(condExpr); // not condExpr.name
+                        const symbol = getSymbolOfNode(expr); // not condExpr.name
                         const isconstVar = isConstVariable(symbol);
                         const saveByNodeForReplay = isconstVar; // isConstVariable(symbol) && isConstantReference(initializer);
                         if (saveByNodeForReplay){
@@ -2198,28 +2205,28 @@ namespace ts {
                     }
                     else {
                         // could be binding, or could a proeprty access on the lhs
-                        Debug.fail(`not yet implemented: `+Debug.formatSyntaxKind(condExpr.name.kind));
+                        Debug.fail(`not yet implemented: `+Debug.formatSyntaxKind(expr.name.kind));
                     }
                 }
                 break;
                 case SyntaxKind.BinaryExpression:{
-                    return mrNarrowTypesByBinaryExpression({ refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, expr: condExpr as BinaryExpression, /*crit, */ qdotfallout, inferStatus });
+                    return mrNarrowTypesByBinaryExpression({ refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, expr: expr as BinaryExpression, /*crit, */ qdotfallout, inferStatus });
                 }
                 break;
                 case SyntaxKind.TypeOfExpression:{
                     /**
                      * For a TypeOfExpression not as the child of a binary expressionwith ops  ===,!==,==,!=
                      */
-                    return mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, expr: (condExpr as TypeOfExpression).expression, qdotfallout, inferStatus });
+                    return mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, expr: (expr as TypeOfExpression).expression, qdotfallout, inferStatus });
                 }
                 break;
                 case SyntaxKind.TrueKeyword:
                 case SyntaxKind.FalseKeyword:
                 case SyntaxKind.NumericLiteral:
                 case SyntaxKind.StringLiteral:{
-                    const type: Type = checker.getTypeAtLocation(condExpr);
+                    const type: Type = checker.getTypeAtLocation(expr);
                     return {
-                        byNode: createNodeToTypeMap().set(condExpr, type),
+                        byNode: createNodeToTypeMap().set(expr, type),
                         arrRefTypesTableReturn: [{
                             kind: RefTypesTableKind.return,
                             symbol: undefined,
@@ -2228,10 +2235,38 @@ namespace ts {
                         }]
                     };
                 }
-                case SyntaxKind.ArrayLiteralExpression:
-                    Debug.fail("SyntaxKind.ArrayLiteralExpression not yet implemented");
                 break;
-                default: Debug.assert(false, "", ()=>`${Debug.formatSyntaxKind(condExpr.kind)}, ${dbgNodeToString(condExpr)}`);
+                case SyntaxKind.ArrayLiteralExpression:{
+                    // Calling getTypeAtLocation would result in an endless loop
+                    // const type: Type = checker.getTypeAtLocation(expr);
+                    /**
+                     * The array itself is created above the mrNarrowTypes level, in "function checkArrayLiteral", checker.ts.
+                     * So we don't set the byNode entry for expr.
+                     * However, the variable types within the literal array must be set herein.
+                     */
+                    assertType<Readonly<ArrayLiteralExpression>>(expr);
+                    const aret: RefTypesTableReturn[] = [];
+                    let byNodeOut: NodeToTypeMap | undefined;
+                    for (const e of expr.elements){
+                        if (e.kind === SyntaxKind.SpreadElement) continue;
+                        const {byNode, inferRefRtnType} = mrNarrowTypes({
+                            refTypesSymtab: refTypesSymtabIn, expr:e,
+                            crit:{ kind: InferCritKind.none },
+                            qdotfallout: undefined, inferStatus,
+                            constraintItem: constraintItemIn
+                        });
+                        if (!byNodeOut) byNodeOut = byNode;
+                        else mergeIntoNodeToTypeMaps(byNode, byNodeOut);
+                        aret.push({ ...inferRefRtnType.passing, symbol: undefined, isconst: undefined });
+                    }
+                    const rttrOut = mergeArrRefTypesTableReturnToRefTypesTableReturn(/*symbol*/ undefined, /*isconst*/ undefined, aret);
+                    return {
+                        byNode:byNodeOut??createNodeToTypeMap(),
+                        arrRefTypesTableReturn: [rttrOut]
+                    };
+                }
+                break;
+                default: Debug.assert(false, "", ()=>`${Debug.formatSyntaxKind(expr.kind)}, ${dbgNodeToString(expr)}`);
             }
         }
 
