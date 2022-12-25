@@ -2063,10 +2063,7 @@ namespace ts {
                 case SyntaxKind.ConditionalExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression`);
                     const {condition, whenTrue, whenFalse} = (expr as ConditionalExpression);
-                    //const byNodeMultipath = createNodeToTypeMap(); // hopefully obsolete
                     const byNodeSinglepath = createNodeToTypeMap();
-                    //const arrRefTypesTableReturnMultipath: RefTypesTableReturn[] = [];
-                    //const arrRefTypesTableReturnSinglePath: RefTypesTableReturn[] = [];
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; condition:${dbgNodeToString(condition)}`);
                     const rcond = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
@@ -2079,43 +2076,31 @@ namespace ts {
                     //andIntoConstrainTrySimplify({})
 
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenTrue`);
-                    // let retTrue: MrNarrowTypesReturn | undefined;
-                    // if (isNeverType(rcond.inferRefRtnType.passing.type)){
-                    //     mergeIntoNodeToTypeMaps(createNodeToTypeMap().set(whenTrue, neverType), byNodeSinglepath);
-                    // }
-                    // else {
-                        const retTrue = mrNarrowTypes({
-                            refTypesSymtab: rcond.inferRefRtnType.passing.symtab,
-                            expr: whenTrue,
-                            crit: { kind: InferCritKind.none },
-                            inferStatus, //: { ...inferStatus, inCondition: true }
-                            constraintItem: rcond.inferRefRtnType.passing.constraintItem
-                        });
-                        mergeIntoNodeToTypeMaps(retTrue.byNode, byNodeSinglepath);
-                    // }
+                    const retTrue = mrNarrowTypes({
+                        refTypesSymtab: rcond.inferRefRtnType.passing.symtab,
+                        expr: whenTrue,
+                        crit: { kind: InferCritKind.none },
+                        inferStatus, //: { ...inferStatus, inCondition: true }
+                        constraintItem: rcond.inferRefRtnType.passing.constraintItem
+                    });
+                    mergeIntoNodeToTypeMaps(retTrue.byNode, byNodeSinglepath);
 
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenFalse`);
-                    // let retFalse: MrNarrowTypesReturn | undefined;
-                    // if (isNeverType(rcond.inferRefRtnType.failing!.type)){
-                    //     mergeIntoNodeToTypeMaps(createNodeToTypeMap().set(whenFalse, neverType), byNodeSinglepath);
-                    // }
-                    // else {
-                        const retFalse = mrNarrowTypes({
-                            refTypesSymtab: rcond.inferRefRtnType.failing!.symtab,
-                            expr: whenFalse,
-                            crit: { kind: InferCritKind.none },
-                            inferStatus, //: { ...inferStatus, inCondition: true }
-                            constraintItem: rcond.inferRefRtnType.failing!.constraintItem
-                        });
-                        mergeIntoNodeToTypeMaps(retFalse.byNode, byNodeSinglepath);
-                    // }
+                    const retFalse = mrNarrowTypes({
+                        refTypesSymtab: rcond.inferRefRtnType.failing!.symtab,
+                        expr: whenFalse,
+                        crit: { kind: InferCritKind.none },
+                        inferStatus, //: { ...inferStatus, inCondition: true }
+                        constraintItem: rcond.inferRefRtnType.failing!.constraintItem
+                    });
+                    mergeIntoNodeToTypeMaps(retFalse.byNode, byNodeSinglepath);
 
                     const retval: MrNarrowTypesInnerReturn = {
                         byNode: byNodeSinglepath,
                         arrRefTypesTableReturn: []
                     };
-                    if (retTrue) retval.arrRefTypesTableReturn.push(retTrue.inferRefRtnType.passing);
-                    if (retFalse) retval.arrRefTypesTableReturn.push(retFalse.inferRefRtnType.passing);
+                    retval.arrRefTypesTableReturn.push(retTrue.inferRefRtnType.passing);
+                    retval.arrRefTypesTableReturn.push(retFalse.inferRefRtnType.passing);
                     return retval;
                 }
                 break;
