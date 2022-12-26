@@ -116,7 +116,7 @@ namespace ts {
                 str += `branchKind: ${flow.branchKind}, `;
             }
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
-            if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
+            // if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
             if (!withAntecedants) return str;
             const antefn = getFlowAntecedents(flow);
             if (antefn.length) {

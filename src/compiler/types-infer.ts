@@ -83,6 +83,7 @@ namespace ts {
         symbol: Symbol | undefined;
         isconst?: boolean;
         type: RefTypesType;
+        critPassing?: boolean; // set when crit was truthy
         symtab: RefTypesSymtab;
         constraintItem?: ConstraintItem | undefined;
     };

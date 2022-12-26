@@ -15,6 +15,8 @@ namespace ts {
         referenced: boolean;
     }
 
+    const labelBlockScopes = true;
+
     export function getModuleInstanceState(node: ModuleDeclaration, visited?: ESMap<number, ModuleInstanceState | undefined>): ModuleInstanceState {
         if (node.body && !node.body.parent) {
             // getModuleInstanceStateForAliasTarget needs to walk up the parent chain, so parent pointers must be set on this tree already
@@ -182,8 +184,6 @@ namespace ts {
     }
 
     const binder = createBinder();
-
-    const myDisableFlow = true; //!!Number(process.env.myDisable); // Disable inserting FlowJoin, etc.
 
     export function bindSourceFile(file: SourceFile, options: CompilerOptions) {
         performance.mark("beforeBind");
@@ -880,7 +880,19 @@ namespace ts {
                 }
                 case SyntaxKind.Block:
                 case SyntaxKind.ModuleBlock:
-                    bindEachFunctionsFirst((node as Block).statements);
+                    if (labelBlockScopes){
+                        const blockLabel = createBranchLabel(BranchKind.block);
+                        const postBlockLabel = createBranchLabel(BranchKind.postBlock);
+                        postBlockLabel.originatingExpression = node;
+                        addAntecedent(blockLabel, currentFlow);
+                        currentFlow = finishFlowLabel(blockLabel);
+                        //
+                        bindEachFunctionsFirst((node as Block).statements);
+                        //
+                        addAntecedent(postBlockLabel, currentFlow);
+                        currentFlow = finishFlowLabel(postBlockLabel);
+                    }
+                    else bindEachFunctionsFirst((node as Block).statements);
                     break;
                 case SyntaxKind.BindingElement:
                     bindBindingElementFlow(node as BindingElement);
@@ -1057,17 +1069,15 @@ namespace ts {
             return initFlowNode({ flags: FlowFlags.Call, antecedent, node });
         }
 
-        function createFlowJoin({antecedent, joinNode}: {antecedent: FlowNode, joinNode: Expression | VariableDeclaration | ArrayBindingElement}): FlowJoin {
-            //if (myDisable) return antecedent;
-            setFlowNodeReferenced(antecedent);
-            return initFlowNode({ flags:FlowFlags.Join, antecedent, joinNode }) as FlowJoin;
-        }
-
         function finishFlowLabel(flow: FlowLabel): FlowNode {
             const antecedents = flow.antecedents;
             if (!antecedents) {
                 return unreachableFlow;
             }
+            // This special case can be removed without loss of generality.
+            // It was originally put in as an optimization to remove labels if they only had one antecedent.
+            // But now we may need those labels because they indicate special processing is required,
+            // even if they have only one antecedent.
             // if (antecedents.length === 1) {
             //     return antecedents[0];
             // }
@@ -1222,7 +1232,7 @@ namespace ts {
             const thenLabel = createBranchLabel(BranchKind.then);
             const elseLabel = createBranchLabel(BranchKind.else);
             const postIfLabel = createBranchLabel(BranchKind.postIf);
-            postIfLabel.originatingConditionExpression = node.expression; // to enable merging of unchanged then/else branch pairs
+            postIfLabel.originatingExpression = node.expression; // to enable merging of unchanged then/else branch pairs
             bindCondition(node.expression, thenLabel, elseLabel);
             currentFlow = finishFlowLabel(thenLabel);
             bind(node.thenStatement);
@@ -1690,33 +1700,22 @@ namespace ts {
             currentFlow = finishFlowLabel(postExpressionLabel);
         }
 
-        function bindInitializedVariableFlow(node: VariableDeclaration | ArrayBindingElement, setNodeFlowNode: boolean) {
+        function bindInitializedVariableFlow(node: VariableDeclaration | ArrayBindingElement) {
             const name = !isOmittedExpression(node) ? node.name : undefined;
             if (isBindingPattern(name)) {
                 for (const child of name.elements) {
-                    bindInitializedVariableFlow(child, setNodeFlowNode);
+                    bindInitializedVariableFlow(child);
                 }
             }
             else {
                 currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
-                if (setNodeFlowNode){
-                    // node.flowNode is not getting set but we need it now for alias assignments.
-                    // node.flowNode = currentFlow;
-                }
-                // currentFlow = createFlowMutation(FlowFlags.Assignment, currentFlow, node);
             }
         }
 
         function bindVariableDeclarationFlow(node: VariableDeclaration) {
-            //let join: FlowJoin | undefined;
-            let setNodeFlowNode = false;
-            if (!myDisableFlow && node.initializer) {
-                setNodeFlowNode = true;
-                currentFlow = createFlowJoin({ antecedent: currentFlow, joinNode: node });
-            }
             bindEachChild(node);
             if (node.initializer || isForInOrOfStatement(node.parent.parent)) {
-                bindInitializedVariableFlow(node, setNodeFlowNode);
+                bindInitializedVariableFlow(node);
             }
         }
 

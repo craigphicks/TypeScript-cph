@@ -3460,9 +3460,9 @@ namespace ts {
         Referenced     = 1 << 11, // Referenced as antecedent once
         Shared         = 1 << 12, // Referenced as antecedent more than once
         ExpressionStatement = 1<<13, // Plain expression statement
-        Join           = 1 << 14, // Marks the end of an Assignment
-        Other1           = 1 << 15, //
-        Other2           = 1 << 16, //
+        // Join           = 1 << 14, // Marks the end of an Assignment
+        // Other1           = 1 << 15, //
+        // Other2           = 1 << 16, //
 
         Label = BranchLabel | LoopLabel,
         Condition = TrueCondition | FalseCondition,
@@ -3500,12 +3500,16 @@ namespace ts {
         none = "none",
         then = "then",
         else = "else",
-        postIf = "postIf"
+        postIf = "postIf",
+        block = "block",
+        postBlock = "postBlock"
     }
     export interface FlowLabel extends FlowNodeBase {
         antecedents: FlowNode[] | undefined;
         branchKind?: BranchKind;
-        originatingConditionExpression?: Node; // currently only present when branchKind===BranchKind.postIf
+        // In case of branchKind===BranchKind.postIf originatingExpression refers to the condtion of the corresponding if statement.
+        // In case of branchKind===BranchKind.postBlock originatingExpression refers to the ???
+        originatingExpression?: Node; // currently only present when branchKind===BranchKind.postIf
     }
 
     // FlowAssignment represents a node that assigns a value to a narrowable reference,
@@ -3520,14 +3524,17 @@ namespace ts {
         antecedent: FlowNode;
     }
 
+    // kill
     export interface FlowJoin extends FlowNodeBase {
         joinNode: Expression | VariableDeclaration | BindingElement; // same as the node of the Flow being joined.
         antecedent: FlowNode;
     }
+    // kill
     export interface FlowOther1 extends FlowNodeBase {
         node: Expression | VariableDeclaration | BindingElement;
         antecedent: FlowNode;
     }
+    // kill
     export interface FlowOther2 extends FlowNodeBase {
         node: Expression | VariableDeclaration | BindingElement;
         antecedent: FlowNode;
@@ -3563,6 +3570,10 @@ namespace ts {
         target: FlowLabel;
         antecedents: FlowNode[];
         antecedent: FlowNode;
+    }
+
+    export interface FlowWithNode extends FlowNodeBase {
+        node: Node;
     }
 
     export type FlowType = Type | IncompleteType;

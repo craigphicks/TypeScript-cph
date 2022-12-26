@@ -672,51 +672,52 @@ namespace ts {
                 checker.getFlowNodeId(fn);
             });
         }
-        flowNodes.forEach(fn=>{
-            /**
-             * TODO: Not sure this is correct.
-             */
-            // if (isFlowWithAntecedent(fn) && isFlowStart(fn.antecedent)) return;
-            if (isFlowBranch(fn)){
-                const gidxOrig = flowToOriginatingGroupIdx.get(fn) ?? -1;
-                getFlowAntecedents(fn).forEach(antefn=>{
-                    if (isFlowCondition(antefn)) {
-                        const gidxAnte = flowToOriginatingGroupIdx.get(antefn) ?? -1;
-                        if (gidxOrig===-1) return;
-                        if (gidxOrig>=0 && gidxOrig===gidxAnte) return;
-                        const g = nodeToGroupMap.get(antefn.node)!;
-                        if (antefn.flags & FlowFlags.FalseCondition) g.falseref=true;
-                        if (antefn.flags & FlowFlags.TrueCondition) g.trueref=true;
-                    }
-                });
-                return;
-            }
-            if (!flowToOriginatingGroupIdx.has(fn)) return;
-            //if (ignorableFlowSetTemp.has(fn)) return;
-            if (isFlowCondition(fn)) {
-                const g = nodeToGroupMap.get(fn.node)!;
-                if (flowToOriginatingGroupIdx.get(fn)===g.groupIdx) return;
-                //const maximalNode = orderedNodes[g.maximalIdx];
-                //if (fn.node.pos >= maximalNode.pos && fn.node.end <= maximalNode.end) return;
-                if (fn.flags & FlowFlags.FalseCondition) g.falseref=true;
-                if (fn.flags & FlowFlags.TrueCondition) g.trueref=true;
-            }
-            // else if (isFlowWithNode(fn)) {
-            //     const g = nodeToGroupMap.get(fn.node)!;
-            //     if (flowToOriginatingGroupIdx.get(fn)===g.groupIdx) return;
-            //     g.noncondref = true;
-            // }
-        });
+        // flowNodes.forEach(fn=>{
+        //     /**
+        //      * TODO: Not sure this is correct.
+        //      */
+        //     // if (isFlowWithAntecedent(fn) && isFlowStart(fn.antecedent)) return;
+        //     if (isFlowBranch(fn)){
+        //         const gidxOrig = flowToOriginatingGroupIdx.get(fn) ?? -1;
+        //         getFlowAntecedents(fn).forEach(antefn=>{
+        //             if (isFlowCondition(antefn)) {
+        //                 const gidxAnte = flowToOriginatingGroupIdx.get(antefn) ?? -1;
+        //                 if (gidxOrig===-1) return;
+        //                 if (gidxOrig>=0 && gidxOrig===gidxAnte) return;
+        //                 const g = nodeToGroupMap.get(antefn.node)!;
+        //                 if (antefn.flags & FlowFlags.FalseCondition) g.falseref=true;
+        //                 if (antefn.flags & FlowFlags.TrueCondition) g.trueref=true;
+        //             }
+        //         });
+        //         return;
+        //     }
+        //     if (!flowToOriginatingGroupIdx.has(fn)) return;
+        //     //if (ignorableFlowSetTemp.has(fn)) return;
+        //     if (isFlowCondition(fn)) {
+        //         const g = nodeToGroupMap.get(fn.node)!;
+        //         if (flowToOriginatingGroupIdx.get(fn)===g.groupIdx) return;
+        //         //const maximalNode = orderedNodes[g.maximalIdx];
+        //         //if (fn.node.pos >= maximalNode.pos && fn.node.end <= maximalNode.end) return;
+        //         if (fn.flags & FlowFlags.FalseCondition) g.falseref=true;
+        //         if (fn.flags & FlowFlags.TrueCondition) g.trueref=true;
+        //     }
+        //     // else if (isFlowWithNode(fn)) {
+        //     //     const g = nodeToGroupMap.get(fn.node)!;
+        //     //     if (flowToOriginatingGroupIdx.get(fn)===g.groupIdx) return;
+        //     //     g.noncondref = true;
+        //     // }
+        // });
 
 
         const groupToAnteGroupMap = new Map< GroupForFlow, Set<GroupForFlow> >();
         //const groupToFlowLabels = new Map< GroupForFlow, Set<FlowLabel> >();
         orderedGroups.forEach(g=>{
-            const setOfGroup = new Set<GroupForFlow>();
-            //const setOfFlowLabels = new Set<FlowLabel>();
             const origSetOfFlow = groupToSetOfFlowMap.get(g);
-            const filteredSetOfFlow = new Set<FlowNode>();
             if (!origSetOfFlow) return;
+            const setOfGroup = new Set<GroupForFlow>();
+            const filteredSetOfFlow = new Set<FlowNode>();
+            const anteLabels: GroupForFlow["anteLabels"] = {};
+            let hadAnteLabel = false;
             origSetOfFlow.forEach(fn=>{
                 if (isFlowStart(fn)) return;
                 if (isFlowWithNode(fn)){
@@ -728,7 +729,7 @@ namespace ts {
                         Debug.fail();
                     }
                     setOfGroup.add(groupToAdd);
-                    filteredSetOfFlow.add(fn);
+                    filteredSetOfFlow.add(fn); // TODO: we need only the maximal node in flowGroupingInfer.ts
                 }
                 else {
                     // flow without node
@@ -737,7 +738,38 @@ namespace ts {
                         const flowLabels: FlowLabel[] = [fn];
                         while (flowLabels.length){
                             const fnlab = flowLabels.pop()!;
-                            // setOfFlowLabels.add(fnlab);
+                            switch (fnlab.branchKind){
+                                case undefined:
+                                case BranchKind.none:
+                                    continue;
+                                case BranchKind.then:
+                                    Debug.assert(!anteLabels.then);
+                                    anteLabels.then = fnlab;
+                                    hadAnteLabel = true;
+                                    break;
+                                case BranchKind.else:
+                                    Debug.assert(!anteLabels.else);
+                                    anteLabels.else = fnlab;
+                                    hadAnteLabel = true;
+                                    break;
+                                case BranchKind.postIf:
+                                    if (anteLabels.postIf) continue; // only the first one
+                                    anteLabels.postIf = fnlab;
+                                    hadAnteLabel = true;
+                                    break;
+                                case BranchKind.block:
+                                    Debug.assert(!anteLabels.block);
+                                    anteLabels.block = fnlab;
+                                    hadAnteLabel = true;
+                                    break;
+                                case BranchKind.postBlock:
+                                    Debug.assert(!anteLabels.postBlock);
+                                    anteLabels.postBlock = fnlab;
+                                    break;
+                                default:
+                                    Debug.fail(`${fnlab.branchKind}`);
+                            }
+                        // setOfFlowLabels.add(fnlab);
                             fnlab.antecedents?.forEach(antefn=>{
                                 if (isFlowStart(antefn)) return;
                                 if (isFlowWithNode(antefn)){
@@ -750,9 +782,11 @@ namespace ts {
                                         return; //Debug.fail();
                                     }
                                     setOfGroup.add(groupToAdd);
-                                    filteredSetOfFlow.add(fn);
+                                    filteredSetOfFlow.add(fn);  // TODO: we need only the maximal node in flowGroupingInfer.ts
                                 }
-                                else if (isFlowBranch(antefn)) flowLabels.push(antefn);
+                                else if (isFlowBranch(antefn)){
+                                    flowLabels.push(antefn);
+                                }
                                 else Debug.fail();
                             });
                         }
@@ -763,6 +797,7 @@ namespace ts {
             if (g.branchMerger){
                 //Debug.assert(setOfFlow.size===1);
             }
+            if (hadAnteLabel) g.anteLabels = anteLabels;
             if (setOfGroup.size) groupToAnteGroupMap.set(g,setOfGroup);
             groupToSetOfFlowMap.set(g, filteredSetOfFlow);
 
@@ -990,9 +1025,9 @@ namespace ts {
     export function isFlowExpressionStatement(fn: FlowNode): fn is FlowExpressionStatement {
         return !!fn &&  !!(fn.flags & FlowFlags.ExpressionStatement);
     }
-    export function isFlowJoin(fn: FlowNode): fn is FlowJoin {
-        return !!fn &&  !!(fn.flags & FlowFlags.Join);
-    }
+    // export function isFlowJoin(fn: FlowNode): fn is FlowJoin {
+    //     return !!fn &&  !!(fn.flags & FlowFlags.Join);
+    // }
     export function isFlowWithNode(fn: FlowNode | undefined): fn is FlowNode & {node: Node} {
         return !!fn &&  !!(fn as any).node;
     }
@@ -1214,7 +1249,7 @@ namespace ts {
             //const maxnodecont = gff.precOrderContainerItems[g.precOrdContainerIdx];
             astr.push(`groups[${i}]: {maxnode: ${dbgNodeToString(maxnode)}}, contidx: ${
                 g.precOrdContainerIdx
-            }, trueref: ${g.trueref??false}, falseref: ${g.falseref??false}`);
+            }`);
             for (let idx = g.idxb; idx!==g.idxe; idx++){
                 const node = gff.posOrderedNodes[idx];
                 let str = `groups[${i}]:  [${idx}]: ${dbgNodeToString(node)}`;

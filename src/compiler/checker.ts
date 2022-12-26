@@ -397,7 +397,7 @@ namespace ts {
             str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
             if ((flow as FlowLabel).branchKind) str += `branchKind:${((flow as FlowLabel).branchKind)}, `;
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
-            if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
+            // if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;
             return str;
         };
         const dbgFlowTypeToString = (flowType: FlowType): string => {
@@ -24400,10 +24400,11 @@ namespace ts {
                     return lastFlowNodeReachable;
                 }
                 const flags = flow.flags;
-                if (flags & FlowFlags.Join){
-                    flow = getJoinAntecdent(flow as FlowJoin);
-                }
-                else if (flags & FlowFlags.Shared) {
+                // if (flags & FlowFlags.Join){
+                //     flow = getJoinAntecdent(flow as FlowJoin);
+                // }
+                // else
+                if (flags & FlowFlags.Shared) {
                     if (!noCacheCheck) {
                         const id = getFlowNodeId(flow);
                         const reachable = flowNodeReachable[id];
@@ -24479,10 +24480,11 @@ namespace ts {
                     }
                     noCacheCheck = false;
                 }
-                if (flags & FlowFlags.Join){
-                    flow = getJoinAntecdent(flow as FlowJoin);
-                }
-                else if (flags & (FlowFlags.Assignment | FlowFlags.Condition | FlowFlags.ArrayMutation | FlowFlags.SwitchClause)) {
+                // if (flags & FlowFlags.Join){
+                //     flow = getJoinAntecdent(flow as FlowJoin);
+                // }
+                // else
+                if (flags & (FlowFlags.Assignment | FlowFlags.Condition | FlowFlags.ArrayMutation | FlowFlags.SwitchClause)) {
                     flow = (flow as FlowAssignment | FlowCondition | FlowArrayMutation | FlowSwitchClause).antecedent;
                 }
                 else if (flags & FlowFlags.Call) {
@@ -24792,22 +24794,23 @@ namespace ts {
                         sharedFlow = flow;
                     }
                     let type: FlowType | undefined;
-                    if (flags & FlowFlags.Join) {
-                        if (flowTypeQueryState.disable || !joinMap) {
-                            flow = (flow as FlowJoin).antecedent;
-                            continue;
-                        }
-                        else if ((flow as FlowJoin).joinNode && joinMap.joinNode === (flow as FlowJoin).joinNode) {
-                            if (myDebug) consoleLog(`getTypeAtFlowNode: FlowJoin remap`);
-                            flow = joinMap.mapTo;
-                            continue;
-                        }
-                        else {
-                            flow = (flow as FlowJoin).antecedent;
-                            continue;
-                        }
-                    }
-                    else if (flags & FlowFlags.ExpressionStatement) {
+                    // if (flags & FlowFlags.Join) {
+                    //     if (flowTypeQueryState.disable || !joinMap) {
+                    //         flow = (flow as FlowJoin).antecedent;
+                    //         continue;
+                    //     }
+                    //     else if ((flow as FlowJoin).joinNode && joinMap.joinNode === (flow as FlowJoin).joinNode) {
+                    //         if (myDebug) consoleLog(`getTypeAtFlowNode: FlowJoin remap`);
+                    //         flow = joinMap.mapTo;
+                    //         continue;
+                    //     }
+                    //     else {
+                    //         flow = (flow as FlowJoin).antecedent;
+                    //         continue;
+                    //     }
+                    // }
+                    // else
+                    if (flags & FlowFlags.ExpressionStatement) {
                         flow = (flow as FlowExpressionStatement).antecedent;
                         continue;
                     }
@@ -25292,12 +25295,12 @@ namespace ts {
                                         consoleLog(`getTypeAtFlowBranchLabel: unreachable, continue`);
                                     }
                                 }
-                                if (isFlowJoin(antecedent)){
-                                    // always = true;
-                                    if (myDebug){
-                                        consoleLog(`getTypeAtFlowBranchLabel: found Join, means always accept`);
-                                    }
-                                }
+                                // if (isFlowJoin(antecedent)){
+                                //     // always = true;
+                                //     if (myDebug){
+                                //         consoleLog(`getTypeAtFlowBranchLabel: found Join, means always accept`);
+                                //     }
+                                // }
                             }
                             //Debug.assert(isFlowCondition(antecedent),"isFlowCondition(antecedent)"); // +myCurrentSourceFilename);
                             else if (getFlowConditionBoolean(antecedent)!==joinMap.conditionAssumeTrue){
@@ -39277,15 +39280,15 @@ namespace ts {
 
                 //consoleLog(`0: ${typeToString(initializerType0??unknownType)}, 1: ${typeToString(initializerType1??unknownType)}`);
                 const constVariable = !!isConstVariable(symbol);
-                const antecedentIsJoin = isFlowJoin(node.flowNode.antecedent);
-                let valueReadonly = !antecedentIsJoin && constVariable && everyType(preferredType, (t: Type)=>{
+                // const antecedentIsJoin = isFlowJoin(node.flowNode.antecedent);
+                let valueReadonly = constVariable && everyType(preferredType, (t: Type)=>{
                     return t.aliasSymbol?.escapedName==="Readonly" || !(t.flags & TypeFlags.Object);
                 });
                 if (myDebug && valueReadonly) {
                     consoleLog("valueReadonly by type alone");
                 }
 
-                if (!antecedentIsJoin && constVariable && !valueReadonly) {
+                if (constVariable && !valueReadonly) {
                     valueReadonly = !visitorRO(node);
                     if (myDebug && valueReadonly) {
                         consoleLog("valueReadonly by visitorRO");
@@ -39293,14 +39296,13 @@ namespace ts {
                 }
 
                 // const valueReadonly = !!isConstVariable(symbol) && (type.aliasSymbol?.escapedName==="Readonly" || !(type.flags & TypeFlags.Object));
-                aliasable = constVariable && !antecedentIsJoin && valueReadonly;
+                aliasable = constVariable && valueReadonly;
                 if (aliasable) {
                     if (myDebug) {
                         consoleLog(`aliasableAssignments.set(symbolId: ${
                             getSymbolId(symbol)}, node: ${
                             dbgNodeToString(node)}, valueReadOnly: ${
-                            valueReadonly}, antecedentIsJoin: ${
-                            antecedentIsJoin}, constVariable: ${
+                            valueReadonly}, constVariable: ${
                             constVariable}, aliasable: ${
                             aliasable}, lhsType: ${
                             typeToString(lhsType)}, preferredType: ${typeToString(preferredType)}, initializerType: ${
@@ -39313,7 +39315,7 @@ namespace ts {
                      */
 
                     flowTypeQueryState.aliasableAssignments.set(symbol,{
-                        node, inUse:false, valueReadonly, antecedentIsJoin, constVariable, aliasable,
+                        node, inUse:false, valueReadonly, antecedentIsJoin:false, constVariable, aliasable,
                         lhsType, declarationType, initializerType, preferredType
                     });
                 }
@@ -47017,9 +47019,9 @@ namespace ts {
                     write(indent()+"target:");
                     doOne(fn.target);
                 }
-                else if (isFlowJoin(fn)){
-                    write(indent()+`joinNode: ${getText(fn.joinNode)}`);
-                }
+                // else if (isFlowJoin(fn)){
+                //     write(indent()+`joinNode: ${getText(fn.joinNode)}`);
+                // }
                 if ((fn as any).antecedents) {
                     write(indent()+`antecedents:[${((fn as any).antecedents as FlowNode[]).length}]`);
                     ((fn as any).antecedents as Readonly<FlowNode[]>).forEach(a => doOne(a));
