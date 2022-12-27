@@ -882,6 +882,7 @@ namespace ts {
                 case SyntaxKind.ModuleBlock:
                     if (labelBlockScopes){
                         const blockLabel = createBranchLabel(BranchKind.block);
+                        blockLabel.originatingExpression = node;
                         const postBlockLabel = createBranchLabel(BranchKind.postBlock);
                         postBlockLabel.originatingExpression = node;
                         addAntecedent(blockLabel, currentFlow);

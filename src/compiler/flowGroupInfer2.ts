@@ -22,6 +22,7 @@ namespace ts {
         mrNarrowTypes({ refTypesSymtab: refTypes, expr: condExpr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
         createRefTypesSymtab(): RefTypesSymtab;
         createRefTypesType(type?: Readonly<Type>): RefTypesType;
+        createRefTypesTableLeaf(symbol: Symbol | undefined , isconst: boolean | undefined, type?: RefTypesType): RefTypesTableLeaf;
         dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string;
         dbgRefTypesTableToStrings(t: RefTypesTable): string[],
         dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[],
@@ -56,6 +57,7 @@ namespace ts {
             mrNarrowTypes,
             createRefTypesSymtab,
             createRefTypesType,
+            createRefTypesTableLeaf,
             dbgRefTypesTypeToString,
             dbgRefTypesTableToStrings,
             dbgRefTypesSymtabToStrings,
@@ -1471,7 +1473,7 @@ namespace ts {
                 const refCountIn = [0] as [number];
                 const refCountOut = [0] as [number];
                 tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, typeRange: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
-                tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem });
+                tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
                 symtab = copyRefTypesSymtab(rttr.symtab);
                 symtab.set(
                     symbol,

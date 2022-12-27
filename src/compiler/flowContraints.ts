@@ -36,7 +36,7 @@ namespace ts {
         return { kind:ConstraintItemKind.never };
     }
 
-    // @ts-expect-error
+    // @ts-ignore
     function isNeverConstraint(c: ConstraintItem | undefined, mrNarrow: MrNarrow): boolean {
         if (!c) return false;
         if (c.kind===ConstraintItemKind.never) return true;
@@ -45,72 +45,6 @@ namespace ts {
         }
         return false;
     }
-
-
-    // /**
-    //  * Generally speaking the constraintItem must be kept in a canonical state via substitution for mrNarrowTypeByConstraint to work well.
-    //  * That means simplifyConstraintBySubstitution should be called before mrNarrowTypeByConstraint,
-    //  * @param param0
-    //  * @param mrNarrow
-    //  * @returns
-    //  */
-    // // @ ts-expect-error
-    // export function mrNarrowTypeByConstraint({symbol, type, constraintItem, negateResultType}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | null, negateResultType?: boolean}, mrNarrow: MrNarrow): RefTypesType {
-    //     if (!constraintItem) return type;
-    //     if (constraintItem.kind===ConstraintItemKind.leaf){
-    //         if (constraintItem.symbol!==symbol) return type;
-    //         if (!negateResultType){
-    //             // intersection type, constraintItem.type
-    //             return mrNarrow.intersectRefTypesTypes(type, constraintItem.type);
-    //         }
-    //         else {
-    //             // intersection type, inverse of constraintItem.type
-    //             return mrNarrow.subtractFromType(constraintItem.type, type);
-    //         }
-    //     }
-    //     else if (constraintItem.kind===ConstraintItemKind.node){
-    //         if (constraintItem.op===ConstraintItemNodeOp.and){
-    //             /**
-    //              * return the intersection of constraints
-    //              */
-    //             let tmpTypeI = type;
-    //             constraintItem.constraints.forEach(c=>{
-    //                 const t = mrNarrowTypeByConstraint({ symbol,type:tmpTypeI,constraintItem:c }, mrNarrow);
-    //                 if (t===tmpTypeI) return;
-    //                 tmpTypeI = mrNarrow.intersectRefTypesTypes(tmpTypeI,t);
-    //             });
-    //             if (negateResultType) tmpTypeI = mrNarrow.subtractFromType(tmpTypeI, type);
-    //             return tmpTypeI;
-    //         }
-    //         else if (constraintItem.op===ConstraintItemNodeOp.or) {
-    //             // Debug.assert(constraintItem.op===ConstraintItemNodeOp.or);
-    //             /**
-    //              * return the union of constraints
-    //              */
-    //              let tmpTypeU = mrNarrow.createRefTypesType(); // never / empty
-    //              constraintItem.constraints.forEach(c=>{
-    //                  const t = mrNarrowTypeByConstraint({ symbol,type,constraintItem:c }, mrNarrow);
-    //                  mrNarrow.mergeToRefTypesType({ source:t,target:tmpTypeU });
-    //              });
-    //              if (negateResultType) {
-    //                 tmpTypeU = mrNarrow.subtractFromType(tmpTypeU, type);
-    //                 //tmpTypeU = mrNarrow.intersectRefTypesTypes(tmpTypeU, type);
-    //              }
-    //              return tmpTypeU;
-    //         }
-    //         else if (constraintItem.op===ConstraintItemNodeOp.not) {
-    //             return mrNarrowTypeByConstraint({ constraintItem, symbol, type, negateResultType: !negateResultType }, mrNarrow);
-    //         }
-    //     }
-    //     Debug.fail();
-    //     //return type;
-    // }
-
-    // function getDefaultType(sym: Symbol, mrNarrow: MrNarrow): RefTypesType {
-    //     const tstype = mrNarrow.checker.getTypeOfSymbol(sym);
-    //     const type = mrNarrow.createRefTypesType(tstype);
-    //     return type;
-    // }
 
 
     export function evalTypeOverConstraint({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
@@ -275,7 +209,7 @@ namespace ts {
                         refCountOut[0]--;
                         continue;
                     }
-                    if (subcr.kind===ConstraintItemKind.never) {
+                    if (isNeverConstraint(subcr, mrNarrow)) {
                         refCountOut[0]-=(constraints.length-1);
                         return subcr;
                     }
@@ -293,7 +227,7 @@ namespace ts {
                         refCountOut[0]-=(constraints.length-1);
                         return undefined;
                     }
-                    if (subcr.kind===ConstraintItemKind.never) {
+                    if (isNeverConstraint(subcr, mrNarrow)) {
                         refCountOut[0]--;
                         continue;
                     }
@@ -307,14 +241,20 @@ namespace ts {
         }
     }
 
-    export function andIntoConstraint({symbol, type, constraintItem}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined}): ConstraintItem {
+    export function andIntoConstraint({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem | undefined, mrNarrow: MrNarrow}): ConstraintItem {
+        if (mrNarrow.isNeverType(type)) return createFlowConstraintNever();
+        // TODO: if there was a symbol table input we could check for always
         if (!constraintItem){
             return { kind: ConstraintItemKind.leaf, symbol, type };
         }
-        if (constraintItem.kind===ConstraintItemKind.never){
-            return constraintItem; // identical constraintItem out is required for clean merging of if-branches
-        }
+        if (isNeverConstraint(constraintItem, mrNarrow)) return constraintItem;
         if (constraintItem.kind===ConstraintItemKind.leaf){
+            if (constraintItem.symbol===symbol){
+                const isecttype = mrNarrow.intersectRefTypesTypes(type, constraintItem.type);
+                if (mrNarrow.isNeverType(isecttype)) return createFlowConstraintNever();
+                // TODO: if there was a symbol table input we could check for always
+                return createFlowConstraintLeaf(symbol, type);
+            }
             return {
                 kind: ConstraintItemKind.node, op: ConstraintItemNodeOp.and, constraints:[
                     { kind: ConstraintItemKind.leaf, symbol, type },
@@ -338,15 +278,58 @@ namespace ts {
         }
         Debug.fail("unexpected");
     }
-    export function orIntoConstraints(acin: Readonly<(ConstraintItem | undefined)[]>): ConstraintItem | undefined {
+    export function orIntoConstraints(acin: Readonly<(ConstraintItem | undefined)[]>, mrNarrow: MrNarrow): ConstraintItem | undefined {
         const ac: ConstraintItem[]=[];
         for (const c of acin){
             if (!c) return undefined;
-            if (c.kind!==ConstraintItemKind.never) ac.push(c);
+            if (!isNeverConstraint(c,mrNarrow)) ac.push(c);
         }
         if (ac.length===0) return createFlowConstraintNever();
         if (ac.length===1) return ac[0];
         return createFlowConstraintNodeOr({ constraints:ac });
+    }
+
+    export function removeSomeVariablesFromConstraint(cin: ConstraintItem | undefined, rmset: { has(s: Symbol): boolean}, mrNarrow: MrNarrow): ConstraintItem | undefined {
+        const call = (cin: ConstraintItem | undefined): ConstraintItem | undefined => {
+            if (!cin || isNeverConstraint(cin,mrNarrow)) return cin;
+            if (cin.kind===ConstraintItemKind.leaf){
+                if (rmset.has(cin.symbol)) return undefined;
+                else return cin;
+            }
+            else if (cin.kind===ConstraintItemKind.node){
+                if (cin.op===ConstraintItemNodeOp.not){
+                    const c = call(cin.constraint);
+                    if (!c) return createFlowConstraintNever();
+                    if (isNeverConstraint(c,mrNarrow)) return undefined;
+                    return createFlowConstraintNodeNot(c);
+                }
+                if (cin.op===ConstraintItemNodeOp.and){
+                    const acout: ConstraintItem[]=[];
+                    for (const c of cin.constraints){
+                        const cout = call(c);
+                        if (!cout) continue;
+                        if (isNeverConstraint(cout,mrNarrow)) return createFlowConstraintNever();
+                        acout.push(c);
+                    }
+                    if (acout.length===0) return undefined;
+                    if (acout.length===1) return acout[0];
+                    return { ...cin, constraints: acout };
+                }
+                if (cin.op===ConstraintItemNodeOp.or){
+                    const acout: ConstraintItem[]=[];
+                    for (const c of cin.constraints){
+                        const cout = call(c);
+                        if (!cout) return undefined;
+                        if (isNeverConstraint(cout,mrNarrow)) continue;
+                        acout.push(c);
+                    }
+                    if (acout.length===0) return createFlowConstraintNever();
+                    if (acout.length===1) return acout[0];
+                    return { ...cin, constraints: acout };
+                }
+            }
+        };
+        return call(cin);
     }
 
     export function testOfEvalTypeOverConstraint(checker: TypeChecker, mrNarrow: MrNarrow): void {

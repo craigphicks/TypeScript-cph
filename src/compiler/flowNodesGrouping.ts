@@ -758,18 +758,22 @@ namespace ts {
                                     hadAnteLabel = true;
                                     break;
                                 case BranchKind.block:
-                                    Debug.assert(!anteLabels.block);
-                                    anteLabels.block = fnlab;
+                                    if (!anteLabels.arrBlock) {
+                                        anteLabels.arrBlock = [fnlab];
+                                    }
+                                    else anteLabels.arrBlock.push(fnlab);
                                     hadAnteLabel = true;
                                     break;
                                 case BranchKind.postBlock:
-                                    Debug.assert(!anteLabels.postBlock);
-                                    anteLabels.postBlock = fnlab;
+                                    if (!anteLabels.arrPostBlock) {
+                                        anteLabels.arrPostBlock = [fnlab];
+                                    }
+                                    else anteLabels.arrPostBlock.push(fnlab);
+                                    hadAnteLabel = true;
                                     break;
                                 default:
                                     Debug.fail(`${fnlab.branchKind}`);
                             }
-                        // setOfFlowLabels.add(fnlab);
                             fnlab.antecedents?.forEach(antefn=>{
                                 if (isFlowStart(antefn)) return;
                                 if (isFlowWithNode(antefn)){
