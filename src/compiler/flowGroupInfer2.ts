@@ -1603,7 +1603,7 @@ namespace ts {
                 });
                 if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = createFlowConstraintNever();
                 else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
-                else if (passingOredConstraints.length) rttrcoPassing.constraintItem = createFlowConstraintNodeOr({ constraints:passingOredConstraints });
+                else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraints(passingOredConstraints, mrNarrow);
                 const rttrcoFailing: RefTypesTableReturnCritOut = {
                     kind: RefTypesTableKind.return,
                     symtab: createRefTypesSymtab(),
@@ -1618,7 +1618,7 @@ namespace ts {
                 });
                 if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = createFlowConstraintNever();
                 if (failingOredConstraints.length===1) rttrcoFailing.constraintItem = failingOredConstraints[0];
-                else if (failingOredConstraints.length) rttrcoFailing.constraintItem = createFlowConstraintNodeOr({ constraints:failingOredConstraints });
+                else if (failingOredConstraints.length) rttrcoFailing.constraintItem = orIntoConstraints(failingOredConstraints, mrNarrow);
                 const rtn: {
                     passing: RefTypesTableReturnCritOut[], failing?: RefTypesTableReturnCritOut[]
                 } = { passing:[rttrcoPassing] };
