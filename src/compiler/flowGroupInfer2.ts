@@ -727,7 +727,7 @@ namespace ts {
          * @param param0
          */
         function mrNarrowTypesByTypeof({
-            refTypesSymtab:refTypesSymtabIn, expr: typeofArgExpr, inferStatus: inferStatusIn
+            refTypesSymtab:refTypesSymtabIn, constraintItem, expr: typeofArgExpr, inferStatus: inferStatusIn
         }: Omit<InferRefInnerArgs, "qdotfallout">, negateCrit: boolean, typeString: string): MrNarrowTypesInnerReturn {
             const critTypeofString: InferCritTypeofStrings | undefined = (()=>{
                 switch (typeString){
@@ -750,6 +750,7 @@ namespace ts {
             const {/* inCondition, */ replayItemStack, replayables} = inferStatusIn;
             const { inferRefRtnType: {passing,failing}, byNode } = mrNarrowTypes({
                 refTypesSymtab: refTypesSymtabIn,
+                constraintItem,
                 expr: typeofArgExpr,
                 crit: {
                     kind: InferCritKind.typeof,
@@ -909,7 +910,7 @@ namespace ts {
             }
     }
 
-        function mrNarrowTypesByCallExpression({refTypesSymtab:refTypesIn, expr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {expr: CallExpression}): MrNarrowTypesInnerReturn {
+        function mrNarrowTypesByCallExpression({refTypesSymtab:refTypesIn, constraintItem: constraintItemIn, expr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {expr: CallExpression}): MrNarrowTypesInnerReturn {
             //return undefined as any as InferRefRtnType;
             Debug.assert(qdotfallout);
             // First duty is to call the precursors
@@ -1076,6 +1077,7 @@ namespace ts {
                     const qdotfallout: RefTypesTableReturn[]=[];
                     const { inferRefRtnType: {passing,failing}, byNode } = mrNarrowTypes({
                         refTypesSymtab: sigargsRefTypesSymtab,
+                        constraintItem: constraintItemIn, // TODO: just added this here to stop compile error - needs logical analysis.
                         expr: carg,
                         crit: {
                             kind: InferCritKind.assignable,
@@ -2136,21 +2138,22 @@ namespace ts {
                 // IWOZERE
                 case SyntaxKind.PropertyAccessExpression:
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.PropertyAccessExpression`);
-                    return mrNarrowTypesByPropertyAccessExpression({ refTypesSymtab: refTypesSymtabIn, expr, /* crit, */ qdotfallout, inferStatus });
+                    return mrNarrowTypesByPropertyAccessExpression({ refTypesSymtab: refTypesSymtabIn, expr, /* crit, */ qdotfallout, inferStatus, constraintItem: constraintItemIn });
                 /**
                  * CallExpression
                  */
                 case SyntaxKind.CallExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.CallExpression`);
                     Debug.assert(isCallExpression(expr));
-                    return mrNarrowTypesByCallExpression({ refTypesSymtab: refTypesSymtabIn, expr, /*crit, */ qdotfallout, inferStatus });
+                    return mrNarrowTypesByCallExpression({ refTypesSymtab: refTypesSymtabIn, expr, /*crit, */ qdotfallout, inferStatus, constraintItem: constraintItemIn });
                 }
                 case SyntaxKind.PrefixUnaryExpression:
                     if ((expr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
                         const ret = mrNarrowTypes({
                             refTypesSymtab: refTypesSymtabIn, expr:(expr as PrefixUnaryExpression).operand,
                             crit:{ negate: true, kind: InferCritKind.truthy, alsoFailing: true },
-                            qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true }
+                            qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true },
+                            constraintItem: constraintItemIn
                         });
                         /**
                          * The crit was already set with negate: true to reverse the passing and failing.

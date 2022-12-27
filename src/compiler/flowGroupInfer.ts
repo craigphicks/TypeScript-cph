@@ -362,6 +362,8 @@ namespace ts {
                     }
                     const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node)!;
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg)!;
+                    mrState.forFlow.currentBranchesMap.delete(anteg);
+                    mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(anteg,true);
                     if (cbe.kind===CurrentBranchesElementKind.tf){
                         Debug.assert(thenelse);
                         if (thenelse.branchKind===BranchKind.then) {
@@ -432,6 +434,8 @@ namespace ts {
                 const cbe = mrState.forFlow.currentBranchesMap.get(firstAnteGroup);
                 Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
                 const {constraintItem,symtab}=cbe.item.refTypesTableReturn;
+                mrState.forFlow.currentBranchesMap.delete(firstAnteGroup);
+                mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(firstAnteGroup, true);
                 return { constraintItem,symtab };
             }
             else {

@@ -223,7 +223,7 @@ namespace ts {
 
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
-        constraintItem?: ConstraintItem // constraintTODO: make required
+        constraintItem: ConstraintItem | undefined // constraintTODO: make required
         expr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
        //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
