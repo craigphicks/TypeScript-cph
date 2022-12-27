@@ -37,14 +37,16 @@ namespace ts {
     }
 
     // @ts-ignore
-    function isNeverConstraint(c: ConstraintItem | undefined, mrNarrow: MrNarrow): boolean {
-        if (!c) return false;
-        if (c.kind===ConstraintItemKind.never) return true;
-        if (c.kind===ConstraintItemKind.leaf && mrNarrow.isNeverType(c.type)){
-            return true;
-        }
-        return false;
+    function isNeverConstraint(c: ConstraintItem | undefined): boolean {
+        return !!(c && c.kind===ConstraintItemKind.never);
     }
+    //     if (!c) return false;
+    //     if (c.kind===ConstraintItemKind.never) return true;
+    //     // if (c.kind===ConstraintItemKind.leaf && mrNarrow.isNeverType(c.type)){
+    //     //     return true;
+    //     // }
+    //     return false;
+    // }
 
 
     export function evalTypeOverConstraint({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
@@ -135,14 +137,14 @@ namespace ts {
         symbol, type, typeRange, cin, negate, mrNarrow, refCountIn, refCountOut, depth}:
         {symbol: Symbol, type: RefTypesType, typeRange: RefTypesType, cin: ConstraintItem | undefined, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
     }): ConstraintItem | undefined {
-        if (getMyDebug()){
+        if (false && getMyDebug()){
             consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(typeRange)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(cin).forEach(s=>{
                 consoleLog(`andDistributeDivide[in][${depth??0}] constraint: ${s}`);
             });
         }
         const creturn = andDistributeDivideAux({ symbol, type, typeRange, cin, negate, mrNarrow, refCountIn, refCountOut, depth });
-        if (getMyDebug()){
+        if (false && getMyDebug()){
             consoleLog(`andDistributeDivide[out][${depth??0}] countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(creturn).forEach(s=>{
                 consoleLog(`andDistributeDivide[out][${depth??0}] constraint: ${s}`);
@@ -166,7 +168,7 @@ namespace ts {
         if (cin.kind===ConstraintItemKind.never) return negate ? undefined : createFlowConstraintNever();
         if (cin.kind===ConstraintItemKind.leaf){
             if (symbol===cin.symbol){
-                if (mrNarrow.isNeverType(cin.type)) Debug.fail("unexpected, cin should never");
+                if (mrNarrow.isNeverType(cin.type)) Debug.fail("unexpected");
                 if (mrNarrow.isASubsetOfB(typeRange,cin.type)) Debug.fail("unexpected, cin should be always");
                 if (mrNarrow.isAnyType(cin.type)) Debug.fail("not yet implemented");
                 if (mrNarrow.isUnknownType(cin.type)) Debug.fail("not yet implemented");
@@ -209,7 +211,7 @@ namespace ts {
                         refCountOut[0]--;
                         continue;
                     }
-                    if (isNeverConstraint(subcr, mrNarrow)) {
+                    if (isNeverConstraint(subcr)) {
                         refCountOut[0]-=(constraints.length-1);
                         return subcr;
                     }
@@ -227,7 +229,7 @@ namespace ts {
                         refCountOut[0]-=(constraints.length-1);
                         return undefined;
                     }
-                    if (isNeverConstraint(subcr, mrNarrow)) {
+                    if (isNeverConstraint(subcr)) {
                         refCountOut[0]--;
                         continue;
                     }
@@ -247,7 +249,7 @@ namespace ts {
         if (!constraintItem){
             return { kind: ConstraintItemKind.leaf, symbol, type };
         }
-        if (isNeverConstraint(constraintItem, mrNarrow)) return constraintItem;
+        if (isNeverConstraint(constraintItem)) return constraintItem;
         if (constraintItem.kind===ConstraintItemKind.leaf){
             if (constraintItem.symbol===symbol){
                 const isecttype = mrNarrow.intersectRefTypesTypes(type, constraintItem.type);
@@ -278,20 +280,20 @@ namespace ts {
         }
         Debug.fail("unexpected");
     }
-    export function orIntoConstraints(acin: Readonly<(ConstraintItem | undefined)[]>, mrNarrow: MrNarrow): ConstraintItem | undefined {
+    export function orIntoConstraints(acin: Readonly<(ConstraintItem | undefined)[]>, _mrNarrow: MrNarrow): ConstraintItem | undefined {
         const ac: ConstraintItem[]=[];
         for (const c of acin){
             if (!c) return undefined;
-            if (!isNeverConstraint(c,mrNarrow)) ac.push(c);
+            if (!isNeverConstraint(c)) ac.push(c);
         }
         if (ac.length===0) return createFlowConstraintNever();
         if (ac.length===1) return ac[0];
         return createFlowConstraintNodeOr({ constraints:ac });
     }
 
-    export function removeSomeVariablesFromConstraint(cin: ConstraintItem | undefined, rmset: { has(s: Symbol): boolean}, mrNarrow: MrNarrow): ConstraintItem | undefined {
+    export function removeSomeVariablesFromConstraint(cin: ConstraintItem | undefined, rmset: { has(s: Symbol): boolean}, _mrNarrow: MrNarrow): ConstraintItem | undefined {
         const call = (cin: ConstraintItem | undefined): ConstraintItem | undefined => {
-            if (!cin || isNeverConstraint(cin,mrNarrow)) return cin;
+            if (!cin || isNeverConstraint(cin)) return cin;
             if (cin.kind===ConstraintItemKind.leaf){
                 if (rmset.has(cin.symbol)) return undefined;
                 else return cin;
@@ -300,7 +302,7 @@ namespace ts {
                 if (cin.op===ConstraintItemNodeOp.not){
                     const c = call(cin.constraint);
                     if (!c) return createFlowConstraintNever();
-                    if (isNeverConstraint(c,mrNarrow)) return undefined;
+                    if (isNeverConstraint(c)) return undefined;
                     return createFlowConstraintNodeNot(c);
                 }
                 if (cin.op===ConstraintItemNodeOp.and){
@@ -308,7 +310,7 @@ namespace ts {
                     for (const c of cin.constraints){
                         const cout = call(c);
                         if (!cout) continue;
-                        if (isNeverConstraint(cout,mrNarrow)) return createFlowConstraintNever();
+                        if (isNeverConstraint(cout)) return createFlowConstraintNever();
                         acout.push(c);
                     }
                     if (acout.length===0) return undefined;
@@ -320,7 +322,7 @@ namespace ts {
                     for (const c of cin.constraints){
                         const cout = call(c);
                         if (!cout) return undefined;
-                        if (isNeverConstraint(cout,mrNarrow)) continue;
+                        if (isNeverConstraint(cout)) continue;
                         acout.push(c);
                     }
                     if (acout.length===0) return createFlowConstraintNever();

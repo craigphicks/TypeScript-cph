@@ -309,7 +309,7 @@ namespace ts {
         if (getMyDebug()){
             consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, groupIndex:${groupForFlow.groupIdx}, kind:${groupForFlow.kind}, maximalNode.parent.kind:${Debug.formatSyntaxKind(maximalNode.parent.kind)}`);
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
-            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`  ${s}`));
+            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:  ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
             if (!anteLabels) consoleLog(`resolveGroupForFlow[dbg:] anteLabels: undefined`);
             else {
@@ -526,9 +526,9 @@ namespace ts {
 
         if (getMyDebug()){
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
-            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`  ${s}`));
+            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:  ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
-            consoleLog(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}`);
+            consoleLog(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}, `);
             consoleGroupEnd();
         }
     }

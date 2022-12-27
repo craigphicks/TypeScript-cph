@@ -15,7 +15,7 @@ namespace ts {
         referenced: boolean;
     }
 
-    const labelBlockScopes = true;
+    const labelBlockScopes = false;
 
     export function getModuleInstanceState(node: ModuleDeclaration, visited?: ESMap<number, ModuleInstanceState | undefined>): ModuleInstanceState {
         if (node.body && !node.body.parent) {
