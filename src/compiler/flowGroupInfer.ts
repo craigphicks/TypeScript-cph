@@ -460,7 +460,7 @@ namespace ts {
         let {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
         /**
          * Delete all the no-longer-needed CurrentBranchElements
-        */
+         */
         setOfKeysToDeleteFromCurrentBranchesMap.forEach(gff=>mrState.forFlow.currentBranchesMap.delete(gff));
         /**
          * If it is a block start then add in all the new local variables

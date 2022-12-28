@@ -10,7 +10,7 @@ namespace ts {
         };
         return negate ? createFlowConstraintNodeNot(c) : c;
     }
-    export function createFlowConstraintNodeOr({negate, constraints}: {negate?: boolean, constraints: ConstraintItem[]}): ConstraintItemNode {
+    export function createFlowConstraintNodeOr({negate, constraints}: {negate?: boolean, constraints: (ConstraintItem | undefined)[]}): ConstraintItemNode {
         if (constraints.length<=1) Debug.fail("unexpected constraints.length<=1");
         const c: ConstraintItemNodeOr = {
             kind: ConstraintItemKind.node,
@@ -50,7 +50,7 @@ namespace ts {
 
 
     export function evalTypeOverConstraint({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
-        cin: Readonly<ConstraintItem | null>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
+        cin: Readonly<ConstraintItem | undefined>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {
         depth=depth??0;
         if (getMyDebug()){
@@ -69,7 +69,7 @@ namespace ts {
         return r;
     }
     function evalTypeOverConstraint_aux({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
-        cin: Readonly<ConstraintItem | null>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
+        cin: Readonly<ConstraintItem | undefined>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {
         depth=depth??0;
         if (mrNarrow.isNeverType(typeRange)){
@@ -306,7 +306,7 @@ namespace ts {
                     return createFlowConstraintNodeNot(c);
                 }
                 if (cin.op===ConstraintItemNodeOp.and){
-                    const acout: ConstraintItem[]=[];
+                    const acout: (ConstraintItem | undefined)[]=[];
                     for (const c of cin.constraints){
                         const cout = call(c);
                         if (!cout) continue;
@@ -318,7 +318,7 @@ namespace ts {
                     return { ...cin, constraints: acout };
                 }
                 if (cin.op===ConstraintItemNodeOp.or){
-                    const acout: ConstraintItem[]=[];
+                    const acout: (ConstraintItem | undefined)[]=[];
                     for (const c of cin.constraints){
                         const cout = call(c);
                         if (!cout) return undefined;
@@ -370,7 +370,7 @@ namespace ts {
             },
             {
                 in: {
-                    cin: null,
+                    cin: undefined,
                     symbol: symx,
                     typeRange: rttbool,
                     // refDfltTypeOfSymbol: [rttbool],

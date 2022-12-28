@@ -534,6 +534,9 @@ namespace ts {
                     setOfNodes.add(n.parent);
                 }
             }
+            else if (n.parent.kind===SyntaxKind.ConditionalExpression){
+                setOfNodes.add(n.parent);
+            }
         });
         // @ts-expect-error 2679
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion

@@ -693,7 +693,7 @@ namespace ts {
                 });
             }
             else {
-                Debug.assert(false, "", ()=>crit.kind);
+                Debug.assert(false, "cannot handle crit.kind ", ()=>crit.kind);
             }
         }
 
@@ -1511,22 +1511,25 @@ namespace ts {
                     type: createRefTypesType(), // never
                     constraintItem: undefined
                 };
-                const arrConstraint: ConstraintItem[] = [];
+                const arrConstraint: (ConstraintItem | undefined)[] = [];
                 arrRttr.forEach(rttr2=>{
                     mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrco.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrco.type });
-                    if (rttr2.constraintItem) {
+                    // if (rttr2.constraintItem) {
                         arrConstraint.push(rttr2.constraintItem);
-                    }
+                    // }
                 });
                 // TODO: There is no simplication here when or'ing together.  However, if any of the or'ed constraints are
                 // effectively "always" (i.e., the set of types is complete) then the set of constraints should be removed - i.e. return { passing:[] }
                 if (arrConstraint.length===1) rttrco.constraintItem = arrConstraint[0];
-                else if (arrConstraint.length) rttrco.constraintItem = createFlowConstraintNodeOr({ constraints: arrConstraint });
+                // else if (arrConstraint.length) rttrco.constraintItem = createFlowConstraintNodeOr({ constraints: arrConstraint });
+                else if (arrConstraint.length) rttrco.constraintItem = orIntoConstraints(arrConstraint, mrNarrow);
                 return { passing: [rttrco] };
             }
 
-            if (crit.kind===InferCritKind.truthy) {
+            // if (crit.kind===InferCritKind.truthy)
+            {
+                // all other crit kinds
                 const arrRttrcoPassing: RefTypesTableReturnCritOut[] = [];
                 const arrRttrcoFailing: RefTypesTableReturnCritOut[] = [];
                 arrRttr.forEach(rttr=>{

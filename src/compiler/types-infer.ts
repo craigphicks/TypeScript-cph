@@ -332,12 +332,12 @@ namespace ts {
     export type ConstraintItemNodeAnd = & {
         kind: ConstraintItemKind.node;
         op: ConstraintItemNodeOp.and;
-        constraints: ConstraintItem[],
+        constraints: (ConstraintItem | undefined)[],
     };
     export type ConstraintItemNodeOr = & {
         kind: ConstraintItemKind.node;
         op: ConstraintItemNodeOp.or;
-        constraints: ConstraintItem[],
+        constraints: (ConstraintItem | undefined)[],
     };
     export type ConstraintItemNodeNot = & {
         kind: ConstraintItemKind.node;
