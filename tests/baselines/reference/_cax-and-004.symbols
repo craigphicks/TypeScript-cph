@@ -1,0 +1,43 @@
+=== tests/cases/conformance/_cax/_cax-and-004.ts ===
+declare const b1: false;
+>b1 : Symbol(b1, Decl(_cax-and-004.ts, 0, 13))
+
+declare const b2: false;
+>b2 : Symbol(b2, Decl(_cax-and-004.ts, 1, 13))
+
+if (b1 && b2){
+>b1 : Symbol(b1, Decl(_cax-and-004.ts, 0, 13))
+>b2 : Symbol(b2, Decl(_cax-and-004.ts, 1, 13))
+
+    b1;
+>b1 : Symbol(b1, Decl(_cax-and-004.ts, 0, 13))
+
+    b2;
+>b2 : Symbol(b2, Decl(_cax-and-004.ts, 1, 13))
+}
+else if (b1){
+>b1 : Symbol(b1, Decl(_cax-and-004.ts, 0, 13))
+
+    b1;
+>b1 : Symbol(b1, Decl(_cax-and-004.ts, 0, 13))
+
+    b2;
+>b2 : Symbol(b2, Decl(_cax-and-004.ts, 1, 13))
+}
+else if (b2){
+>b2 : Symbol(b2, Decl(_cax-and-004.ts, 1, 13))
+
+    b1;
+>b1 : Symbol(b1, Decl(_cax-and-004.ts, 0, 13))
+
+    b2;
+>b2 : Symbol(b2, Decl(_cax-and-004.ts, 1, 13))
+}
+else {
+    b1;
+>b1 : Symbol(b1, Decl(_cax-and-004.ts, 0, 13))
+
+    b2;
+>b2 : Symbol(b2, Decl(_cax-and-004.ts, 1, 13))
+}
+

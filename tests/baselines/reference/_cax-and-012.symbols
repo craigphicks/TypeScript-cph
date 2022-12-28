@@ -1,0 +1,13 @@
+=== tests/cases/conformance/_cax/_cax-and-012.ts ===
+declare const b1: true;
+>b1 : Symbol(b1, Decl(_cax-and-012.ts, 0, 13))
+
+//declare const b2: true | false;
+const ba = b1 ? b1 : b1 ? b1 : b1; 
+>ba : Symbol(ba, Decl(_cax-and-012.ts, 2, 5))
+>b1 : Symbol(b1, Decl(_cax-and-012.ts, 0, 13))
+>b1 : Symbol(b1, Decl(_cax-and-012.ts, 0, 13))
+>b1 : Symbol(b1, Decl(_cax-and-012.ts, 0, 13))
+>b1 : Symbol(b1, Decl(_cax-and-012.ts, 0, 13))
+>b1 : Symbol(b1, Decl(_cax-and-012.ts, 0, 13))
+

@@ -1,0 +1,19 @@
+=== tests/cases/conformance/_cax/_cax-and-010.ts ===
+declare const b1: true | false;
+>b1 : boolean
+>true : true
+>false : false
+
+const ba = b1 ? b1 : true; 
+>ba : true
+>b1 ? b1 : true : true
+>b1 : boolean
+>b1 : true
+>true : true
+
+// Expecting:
+// >ba : true
+// >b1 ? b1 : true : true
+// >b1 : boolean
+// >b1 : true
+// >true : true

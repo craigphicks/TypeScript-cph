@@ -1,0 +1,11 @@
+=== tests/cases/conformance/_cax/_cax-if-001.ts ===
+declare const c1: boolean;
+>c1 : boolean
+
+if (c1) {
+>c1 : boolean
+
+    c1; 
+>c1 : true
+}
+

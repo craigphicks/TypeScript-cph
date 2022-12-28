@@ -342,7 +342,11 @@ namespace ts {
             });
         }
 
+        // ensure that we don't attemp to delete the same item from mrState.forFlow.currentBranchesMap more than once,
+        // whcih can happen without this guard, e.g., in the situation of an empty "this" or "else" branch with a "postIf"
+        const setOfKeysToDeleteFromCurrentBranchesMap: Set<GroupForFlow> = new Set<GroupForFlow>();
         const doOnePostIf = (fnpi: Readonly<FlowLabel>, symtab: RefTypesSymtab): ConstraintItem | undefined => {
+            consoleGroup(`doOnePostIf[in] fnpi: ${dbgs?.dbgFlowToString(fnpi,/**/ true)}`);
             Debug.assert(fnpi.branchKind===BranchKind.postIf);
             Debug.assert(fnpi.antecedents!.length===2);
             const postIfConstraints = fnpi.antecedents!.map(antefn=>{
@@ -362,8 +366,9 @@ namespace ts {
                     }
                     const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node)!;
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg)!;
-                    mrState.forFlow.currentBranchesMap.delete(anteg);
-                    mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(anteg,true);
+                    // mrState.forFlow.currentBranchesMap.delete(anteg);
+                    // mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(anteg,true);
+                    setOfKeysToDeleteFromCurrentBranchesMap.add(anteg);
                     if (cbe.kind===CurrentBranchesElementKind.tf){
                         Debug.assert(thenelse);
                         if (thenelse.branchKind===BranchKind.then) {
@@ -385,15 +390,19 @@ namespace ts {
                 }
             });
             Debug.assert(fnpi.originatingExpression);
+            consoleLog(`doOnePostIf[dbg] fnpi.originatingExpression: ${dbgs?.dbgNodeToString(fnpi.originatingExpression)})`);
             const origGroup = groupsForFlow.nodeToGroupMap.get(fnpi.originatingExpression);
             Debug.assert(origGroup);
             const origCbe = mrState.forFlow.currentBranchesMap.get(origGroup);
             Debug.assert(origCbe);
             Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
             // Delete the finished-with cbe.
-            mrState.forFlow.currentBranchesMap.delete(origGroup);
-            mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(origGroup, true);
-
+            // consoleLog(`doOnePostIf[dbg] currentBranchesMap.delete(groupIdx:${origGroup.groupIdx})`);
+            // mrState.forFlow.currentBranchesMap.delete(origGroup);
+            // mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(origGroup, true);
+            setOfKeysToDeleteFromCurrentBranchesMap.add(origGroup);
+            consoleLog(`doOnePostIf[out] fnpi: ${dbgs?.dbgFlowToString(fnpi)}`);
+            consoleGroupEnd();
             if (postIfConstraints[0]===origCbe.truthy?.refTypesTableReturn.constraintItem && postIfConstraints[1]===origCbe.falsy?.refTypesTableReturn.constraintItem){
                 return origCbe.originalConstraintIn;
             }
@@ -431,11 +440,14 @@ namespace ts {
                 }
             }
             if (firstAnteGroup){
+                //consoleLog(`getAnteConstraintItemAndSymtab, firstAnteGroup.groupIdx: ${firstAnteGroup.groupIdx}`);
                 const cbe = mrState.forFlow.currentBranchesMap.get(firstAnteGroup);
                 Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
                 const {constraintItem,symtab}=cbe.item.refTypesTableReturn;
-                mrState.forFlow.currentBranchesMap.delete(firstAnteGroup);
-                mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(firstAnteGroup, true);
+                //consoleLog(`getAnteConstraintItemAndSymtab, doOnePostIf[dbg] currentBranchesMap.delete(groupIdx:${firstAnteGroup.groupIdx})`);
+                //mrState.forFlow.currentBranchesMap.delete(firstAnteGroup);
+                //mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(firstAnteGroup, true);
+                setOfKeysToDeleteFromCurrentBranchesMap.add(firstAnteGroup);
                 return { constraintItem,symtab };
             }
             else {
@@ -446,6 +458,10 @@ namespace ts {
         };
         // eslint-disable-next-line prefer-const
         let {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
+        /**
+         * Delete all the no-longer-needed CurrentBranchElements
+        */
+        setOfKeysToDeleteFromCurrentBranchesMap.forEach(gff=>mrState.forFlow.currentBranchesMap.delete(gff));
         /**
          * If it is a block start then add in all the new local variables
          */
