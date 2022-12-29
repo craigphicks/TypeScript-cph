@@ -39008,7 +39008,7 @@ namespace ts {
             checkVariableLikeDeclaration_aux(node);
             //temporaryPerSourceElementCheckExpressionCache = undefined;
             if (myDebug) {
-                consoleLog(`checkVariableLikeDeclaration[in]: node: ${dbgNodeToString(node)}`);
+                consoleLog(`checkVariableLikeDeclaration[out]: node: ${dbgNodeToString(node)}`);
                 consoleGroupEnd();
             }
         }
@@ -39179,147 +39179,147 @@ namespace ts {
              * executed "out-of-order" with getFlowTypeAtReference at any condition further down,
              * even inside a descendent loop.
              */
-             if (!flowTypeQueryState.disable && !flowTypeQueryState.aliasableAssignments.has(symbol) &&
-                node.flowNode && isFlowAssignment(node.flowNode) && isVariableDeclaration(node)) {
-                if (myDebug){
-                    consoleLog(`checkVariableLikeDeclaration: testing FlowAssignment for alias ability: ${dbgFlowToString(node.flowNode)}`);
-                }
+            // if (!flowTypeQueryState.disable && !flowTypeQueryState.aliasableAssignments.has(symbol) &&
+            //     node.flowNode && isFlowAssignment(node.flowNode) && isVariableDeclaration(node)) {
+            //     if (myDebug){
+            //         consoleLog(`checkVariableLikeDeclaration: testing FlowAssignment for alias ability: ${dbgFlowToString(node.flowNode)}`);
+            //     }
 
-                //let initializerType0: Type | undefined;
-                let initializerType: Type | undefined;
-                initializer ||= node.initializer;
-                if (initializer) {
-                    const initializerSymbol = getSymbolAtLocation(initializer);
-                    if (initializerSymbol){
-                        initializerType = getTypeOfSymbol(initializerSymbol);
-                    }
-                }
+            //     //let initializerType0: Type | undefined;
+            //     let initializerType: Type | undefined;
+            //     initializer ||= node.initializer;
+            //     if (initializer) {
+            //         const initializerSymbol = getSymbolAtLocation(initializer);
+            //         if (initializerSymbol){
+            //             initializerType = getTypeOfSymbol(initializerSymbol);
+            //         }
+            //     }
 
-                // So rare as to be not worthwhile
-                // const evalBooleanOfType = (t: Type): boolean | "mixed" => {
-                //     if (t===nullType || t===undefined || t===falseType) return false;
-                //     else if (isLiteralType(t)) return !!(t as LiteralType).value;
-                //     else if (t===trueType || (t.flags & TypeFlags.Object) || isFunctionType(t)) return true;
-                //     else if (t.flags & TypeFlags.UnionOrIntersection) {
-                //         const uitypes = (t as UnionOrIntersectionType).types;
-                //         const test = evalBooleanOfType(uitypes[0]);
-                //         if (test==="mixed") return "mixed";
-                //         if (uitypes.length===1) return test;
-                //         if (uitypes.slice(1).every(tt=>evalBooleanOfType(tt)===test)) return test;
-                //     }
-                //     return "mixed";
-                // };
+            //     // So rare as to be not worthwhile
+            //     // const evalBooleanOfType = (t: Type): boolean | "mixed" => {
+            //     //     if (t===nullType || t===undefined || t===falseType) return false;
+            //     //     else if (isLiteralType(t)) return !!(t as LiteralType).value;
+            //     //     else if (t===trueType || (t.flags & TypeFlags.Object) || isFunctionType(t)) return true;
+            //     //     else if (t.flags & TypeFlags.UnionOrIntersection) {
+            //     //         const uitypes = (t as UnionOrIntersectionType).types;
+            //     //         const test = evalBooleanOfType(uitypes[0]);
+            //     //         if (test==="mixed") return "mixed";
+            //     //         if (uitypes.length===1) return test;
+            //     //         if (uitypes.slice(1).every(tt=>evalBooleanOfType(tt)===test)) return test;
+            //     //     }
+            //     //     return "mixed";
+            //     // };
 
 
-                /**
-                 * It's not necessary to have value readonly and even const,
-                 * if if only the type and never the values are referenced.
-                 * For example
-                 * ```
-                 * declare type Foo:{ foo:()=>[] };
-                 * declare const obj = undefined | Foo;
-                 * const isFoo = obj?.foo();
-                 * if (isFoo) { obj.foo() }; // Foo not readonly
-                 * ```
-                 * That is TODO.
-                 * Call getFlowTypeOfReference with a special argument that will get put on the
-                 * getFlowTypeOfReferenceStack to indicate Join -> correct antecdent mapping.
-                 *
-                 */
-                let firstIdent=false;
-                const visitorRO = (n: Node): undefined | "fail" => {
-                    if (n===node.name) return; // don't need to analyze the lhs
-                    switch (n.kind){
-                        case SyntaxKind.CallExpression:
-                            return forEachChild(n, visitorRO); // the result of the call is effectively a constant
-                        case SyntaxKind.ElementAccessExpression:
-                        case SyntaxKind.PropertyAccessExpression:
-                            return forEachChild(n, visitorRO); //
-                        case SyntaxKind.Identifier:{
-                            if (firstIdent){
-                                // first identifier is the root, it is const if the lhs is const.
-                                firstIdent = true;
-                                return;
-                            }
-                            const s = getSymbolAtLocation(n as Identifier);
-                            if (!s){
-                                return "fail";
-                            }
-                            if (!s.declarations) {
-                                return "fail";
-                            }
-                            else {
-                                /* a member can share a name with multiple types */
-                                if (!(s.flags & SymbolFlags.Optional)) return;
-                                const allok = !s.declarations.some(d=>{
-                                    /**
-                                     * `const ds = getSymbolAtLocation(d);` Nope, Seems no symbols exist at this level.`
-                                     * Look for `questionToken` instead.
-                                     */
-                                    //
-                                    if (!isDeclarationReadonly(d) && (d as any).questionToken){
-                                        return "fail";
-                                    }
-                                });
-                                if (!allok) {
-                                    return "fail";
-                                }
-                            }
-                            if (s.flags & SymbolFlags.Optional && !isDeclarationReadonly(s.declarations[0])){
-                                return "fail";
-                            }
-                            return;
-                        }
-                        default: return forEachChild(n, visitorRO);
-                    }
-                };
+            //     /**
+            //      * It's not necessary to have value readonly and even const,
+            //      * if if only the type and never the values are referenced.
+            //      * For example
+            //      * ```
+            //      * declare type Foo:{ foo:()=>[] };
+            //      * declare const obj = undefined | Foo;
+            //      * const isFoo = obj?.foo();
+            //      * if (isFoo) { obj.foo() }; // Foo not readonly
+            //      * ```
+            //      * That is TODO.
+            //      * Call getFlowTypeOfReference with a special argument that will get put on the
+            //      * getFlowTypeOfReferenceStack to indicate Join -> correct antecdent mapping.
+            //      *
+            //      */
+            //     let firstIdent=false;
+            //     const visitorRO = (n: Node): undefined | "fail" => {
+            //         if (n===node.name) return; // don't need to analyze the lhs
+            //         switch (n.kind){
+            //             case SyntaxKind.CallExpression:
+            //                 return forEachChild(n, visitorRO); // the result of the call is effectively a constant
+            //             case SyntaxKind.ElementAccessExpression:
+            //             case SyntaxKind.PropertyAccessExpression:
+            //                 return forEachChild(n, visitorRO); //
+            //             case SyntaxKind.Identifier:{
+            //                 if (firstIdent){
+            //                     // first identifier is the root, it is const if the lhs is const.
+            //                     firstIdent = true;
+            //                     return;
+            //                 }
+            //                 const s = getSymbolAtLocation(n as Identifier);
+            //                 if (!s){
+            //                     return "fail";
+            //                 }
+            //                 if (!s.declarations) {
+            //                     return "fail";
+            //                 }
+            //                 else {
+            //                     /* a member can share a name with multiple types */
+            //                     if (!(s.flags & SymbolFlags.Optional)) return;
+            //                     const allok = !s.declarations.some(d=>{
+            //                         /**
+            //                          * `const ds = getSymbolAtLocation(d);` Nope, Seems no symbols exist at this level.`
+            //                          * Look for `questionToken` instead.
+            //                          */
+            //                         //
+            //                         if (!isDeclarationReadonly(d) && (d as any).questionToken){
+            //                             return "fail";
+            //                         }
+            //                     });
+            //                     if (!allok) {
+            //                         return "fail";
+            //                     }
+            //                 }
+            //                 if (s.flags & SymbolFlags.Optional && !isDeclarationReadonly(s.declarations[0])){
+            //                     return "fail";
+            //                 }
+            //                 return;
+            //             }
+            //             default: return forEachChild(n, visitorRO);
+            //         }
+            //     };
 
-                const lhsType = type;
-                const preferredType = initializerType ?? declarationType ?? lhsType;
-                let aliasable=false;
+            //     const lhsType = type;
+            //     const preferredType = initializerType ?? declarationType ?? lhsType;
+            //     let aliasable=false;
 
-                //consoleLog(`0: ${typeToString(initializerType0??unknownType)}, 1: ${typeToString(initializerType1??unknownType)}`);
-                const constVariable = !!isConstVariable(symbol);
-                // const antecedentIsJoin = isFlowJoin(node.flowNode.antecedent);
-                let valueReadonly = constVariable && everyType(preferredType, (t: Type)=>{
-                    return t.aliasSymbol?.escapedName==="Readonly" || !(t.flags & TypeFlags.Object);
-                });
-                if (myDebug && valueReadonly) {
-                    consoleLog("valueReadonly by type alone");
-                }
+            //     //consoleLog(`0: ${typeToString(initializerType0??unknownType)}, 1: ${typeToString(initializerType1??unknownType)}`);
+            //     const constVariable = !!isConstVariable(symbol);
+            //     // const antecedentIsJoin = isFlowJoin(node.flowNode.antecedent);
+            //     let valueReadonly = constVariable && everyType(preferredType, (t: Type)=>{
+            //         return t.aliasSymbol?.escapedName==="Readonly" || !(t.flags & TypeFlags.Object);
+            //     });
+            //     if (myDebug && valueReadonly) {
+            //         consoleLog("valueReadonly by type alone");
+            //     }
 
-                if (constVariable && !valueReadonly) {
-                    valueReadonly = !visitorRO(node);
-                    if (myDebug && valueReadonly) {
-                        consoleLog("valueReadonly by visitorRO");
-                    }
-                }
+            //     if (constVariable && !valueReadonly) {
+            //         valueReadonly = !visitorRO(node);
+            //         if (myDebug && valueReadonly) {
+            //             consoleLog("valueReadonly by visitorRO");
+            //         }
+            //     }
 
-                // const valueReadonly = !!isConstVariable(symbol) && (type.aliasSymbol?.escapedName==="Readonly" || !(type.flags & TypeFlags.Object));
-                aliasable = constVariable && valueReadonly;
-                if (aliasable) {
-                    if (myDebug) {
-                        consoleLog(`aliasableAssignments.set(symbolId: ${
-                            getSymbolId(symbol)}, node: ${
-                            dbgNodeToString(node)}, valueReadOnly: ${
-                            valueReadonly}, constVariable: ${
-                            constVariable}, aliasable: ${
-                            aliasable}, lhsType: ${
-                            typeToString(lhsType)}, preferredType: ${typeToString(preferredType)}, initializerType: ${
-                            initializerType ? typeToString(initializerType) : "<undef>"}, declarationType: ${
-                            declarationType ? typeToString(declarationType) : "<undef>"}`
-                        );
-                    }
-                    /**
-                     * aliasAssignable:
-                     */
+            //     // const valueReadonly = !!isConstVariable(symbol) && (type.aliasSymbol?.escapedName==="Readonly" || !(type.flags & TypeFlags.Object));
+            //     aliasable = constVariable && valueReadonly;
+            //     if (aliasable) {
+            //         if (myDebug) {
+            //             consoleLog(`aliasableAssignments.set(symbolId: ${
+            //                 getSymbolId(symbol)}, node: ${
+            //                 dbgNodeToString(node)}, valueReadOnly: ${
+            //                 valueReadonly}, constVariable: ${
+            //                 constVariable}, aliasable: ${
+            //                 aliasable}, lhsType: ${
+            //                 typeToString(lhsType)}, preferredType: ${typeToString(preferredType)}, initializerType: ${
+            //                 initializerType ? typeToString(initializerType) : "<undef>"}, declarationType: ${
+            //                 declarationType ? typeToString(declarationType) : "<undef>"}`
+            //             );
+            //         }
+            //         /**
+            //          * aliasAssignable:
+            //          */
 
-                    flowTypeQueryState.aliasableAssignments.set(symbol,{
-                        node, inUse:false, valueReadonly, antecedentIsJoin:false, constVariable, aliasable,
-                        lhsType, declarationType, initializerType, preferredType
-                    });
-                }
-            }
+            //         flowTypeQueryState.aliasableAssignments.set(symbol,{
+            //             node, inUse:false, valueReadonly, antecedentIsJoin:false, constVariable, aliasable,
+            //             lhsType, declarationType, initializerType, preferredType
+            //         });
+            //     }
+            // }
         }
 
         function errorNextVariableOrPropertyDeclarationMustHaveSameType(firstDeclaration: Declaration | undefined, firstType: Type, nextDeclaration: Declaration, nextType: Type): void {

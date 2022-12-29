@@ -2219,9 +2219,14 @@ namespace ts {
                             }
                         }
                         Debug.assert(!rhs.inferRefRtnType.failing);
-                        //rhs.inferRefRtnType.passing.symtab.set(symbol,{ leaf: createRefTypesTableLeaf(symbol, isconstVar, rhs.inferRefRtnType.passing.type) });
-                        rhs.inferRefRtnType.passing.symbol = symbol;
-                        rhs.inferRefRtnType.passing.isconst = isconstVar;
+                        /**
+                         * These next two lines may be indirectly resulting in the following error:
+                         * --- !!! error TS7022: 'ba' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                         * Somewhere in mrNarrow might be calling "getTypeOfSymbol" because of it.
+                         */
+                        // rhs.inferRefRtnType.passing.symbol = symbol;
+                        // rhs.inferRefRtnType.passing.isconst = isconstVar;
+
                         const retval: MrNarrowTypesInnerReturn = {
                             arrRefTypesTableReturn: [rhs.inferRefRtnType.passing],
                             assignmentData: {
