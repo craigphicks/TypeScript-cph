@@ -177,19 +177,6 @@ namespace ts {
             return Array.from(set.keys()); //as Readonly<T[]>
         }
 
-        // function typeToSet(type: Readonly<Type>): Set<Type> {
-        //     const set = new Set<Type>();
-        //     forEachTypeIfUnion(type, t=>{
-        //         if (t!==neverType) set.add(t);
-        //     });
-        //     return set;
-        // }
-
-        // function setToType(set: Readonly<Set<Type>>): Type {
-        //     // @ts-expect-error 2769
-        //     return getUnionType(Array.from(set.keys()), UnionReduction.Literal);
-        // }
-
         // @ts-expect-error
         function createRefTypesTypeAny(): RefTypesTypeAny {
             return { _flags: RefTypesTypeFlags.any, _set: undefined };
@@ -1495,37 +1482,37 @@ namespace ts {
             if (arrRttr.length===0) {
                 return crit.alsoFailing ? { passing:[], failing:[] } : { passing: [] };
             }
-            if (crit.kind===InferCritKind.none && arrRttr.length===1){
-                if (!arrRttr[0].symbol) return { passing: [...arrRttr] };
-                return { passing: [arrRttr[0]] };
-//                return { passing: [mergeTypeIntoNewSymtabAndNewConstraint(arrRttr[0])] };
-            }
-            if (crit.kind===InferCritKind.none){
-                // const arrRttrco: RefTypesTableReturnCritOut[] = arrRttr.map(rttr=> {
-                //     if (!rttr.symbol) return rttr;
-                //     return mergeTypeIntoNewSymtabAndNewConstraint(rttr);
-                // });
-                const rttrco: RefTypesTableReturnCritOut = {
-                    kind: RefTypesTableKind.return,
-                    symtab: createRefTypesSymtab(),
-                    type: createRefTypesType(), // never
-                    constraintItem: undefined
-                };
-                const arrConstraint: (ConstraintItem | undefined)[] = [];
-                arrRttr.forEach(rttr2=>{
-                    mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrco.symtab });
-                    mergeToRefTypesType({ source: rttr2.type, target: rttrco.type });
-                    // if (rttr2.constraintItem) {
-                        arrConstraint.push(rttr2.constraintItem);
-                    // }
-                });
-                // TODO: There is no simplication here when or'ing together.  However, if any of the or'ed constraints are
-                // effectively "always" (i.e., the set of types is complete) then the set of constraints should be removed - i.e. return { passing:[] }
-                if (arrConstraint.length===1) rttrco.constraintItem = arrConstraint[0];
-                // else if (arrConstraint.length) rttrco.constraintItem = createFlowConstraintNodeOr({ constraints: arrConstraint });
-                else if (arrConstraint.length) rttrco.constraintItem = orIntoConstraints(arrConstraint, mrNarrow);
-                return { passing: [rttrco] };
-            }
+            // if (crit.kind===InferCritKind.none && arrRttr.length===1){
+            //     if (!arrRttr[0].symbol) return { passing: [...arrRttr] };
+            //     return { passing: [arrRttr[0]] };
+            // }
+            // if (crit.kind===InferCritKind.none){
+            //     // const arrRttrco: RefTypesTableReturnCritOut[] = arrRttr.map(rttr=> {
+            //     //     if (!rttr.symbol) return rttr;
+            //     //     return mergeTypeIntoNewSymtabAndNewConstraint(rttr);
+            //     // });
+            //     const rttrco: RefTypesTableReturnCritOut = {
+            //         kind: RefTypesTableKind.return,
+            //         symtab: createRefTypesSymtab(),
+            //         type: createRefTypesType(), // never
+            //         constraintItem: undefined
+            //     };
+            //     const arrConstraint: (ConstraintItem | undefined)[] = [];
+            //     arrRttr.forEach(rttr2=>{
+            //         mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrco.symtab });
+            //         mergeToRefTypesType({ source: rttr2.type, target: rttrco.type });
+            //         // if (rttr2.constraintItem) {
+            //             arrConstraint.push(rttr2.constraintItem);
+            //         // }
+            //     });
+            //     // TODO: There is no simplication here when or'ing together.  However, if any of the or'ed constraints are
+            //     // effectively "always" (i.e., the set of types is complete) then the set of constraints should be removed - i.e. return { passing:[] }
+
+            //     if (arrConstraint.length===1) rttrco.constraintItem = arrConstraint[0];
+            //     // else if (arrConstraint.length) rttrco.constraintItem = createFlowConstraintNodeOr({ constraints: arrConstraint });
+            //     else if (arrConstraint.length) rttrco.constraintItem = orIntoConstraints(arrConstraint, mrNarrow);
+            //     return { passing: [rttrco] };
+            // }
 
             // if (crit.kind===InferCritKind.truthy)
             {
@@ -2214,6 +2201,9 @@ namespace ts {
                             }
                         }
                         Debug.assert(!rhs.inferRefRtnType.failing);
+                        //rhs.inferRefRtnType.passing.symtab.set(symbol,{ leaf: createRefTypesTableLeaf(symbol, isconstVar, rhs.inferRefRtnType.passing.type) });
+                        rhs.inferRefRtnType.passing.symbol = symbol;
+                        rhs.inferRefRtnType.passing.isconst = isconstVar;
                         const retval: MrNarrowTypesInnerReturn = {
                             arrRefTypesTableReturn: [rhs.inferRefRtnType.passing],
                             assignmentData: {
