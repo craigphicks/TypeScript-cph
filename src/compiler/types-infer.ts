@@ -85,7 +85,7 @@ namespace ts {
         type: RefTypesType;
         critPassing?: boolean; // set when crit was truthy
         symtab: RefTypesSymtab;
-        constraintItem?: ConstraintItem | undefined;
+        constraintItem: ConstraintItem;
     };
 
     /**
@@ -223,7 +223,7 @@ namespace ts {
 
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
-        constraintItem: ConstraintItem | undefined // constraintTODO: make required
+        constraintItem: ConstraintItem // constraintTODO: make required
         expr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
        //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
@@ -260,7 +260,7 @@ namespace ts {
         //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         // prevConditionItem?: ConditionItem | undefined
-        constraintItem?: ConstraintItem | undefined;
+        constraintItem: ConstraintItem;
         /**
          * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
          * then the type will be taken from replayMode.byNode instead.
@@ -293,7 +293,7 @@ namespace ts {
             isconst: boolean;
         }
         arrRefTypesTableReturn: RefTypesTableReturn[];
-        //constraintItem: ConstraintItem | undefined;
+        //constraintItem: ConstraintItem;
         //typesAndConstraints?: TypesAndContraints; // constraintTODO: make required
         //arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: kill
         //unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
@@ -323,6 +323,7 @@ namespace ts {
         node = "node",
         leaf = "leaf",
         never = "never",
+        always = "always",
     };
     export enum ConstraintItemNodeOp {
         or = "or",
@@ -332,12 +333,12 @@ namespace ts {
     export type ConstraintItemNodeAnd = & {
         kind: ConstraintItemKind.node;
         op: ConstraintItemNodeOp.and;
-        constraints: (ConstraintItem | undefined)[],
+        constraints: (ConstraintItem)[],
     };
     export type ConstraintItemNodeOr = & {
         kind: ConstraintItemKind.node;
         op: ConstraintItemNodeOp.or;
-        constraints: (ConstraintItem | undefined)[],
+        constraints: (ConstraintItem)[],
     };
     export type ConstraintItemNodeNot = & {
         kind: ConstraintItemKind.node;
@@ -354,5 +355,8 @@ namespace ts {
     export type ContstraintItemNever = & {
         kind: ConstraintItemKind.never;
     };
-    export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ContstraintItemNever;
+    export type ConstraintItemAlways = & {
+        kind: ConstraintItemKind.always;
+    };
+    export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ContstraintItemNever | ConstraintItemAlways;
 }

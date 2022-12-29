@@ -79,7 +79,7 @@ namespace ts {
         gff: GroupForFlow;
         truthy?: CurrentBranchesItem; // TODO: should not be optional
         falsy?: CurrentBranchesItem; // TODO: should not be optional
-        originalConstraintIn: ConstraintItem | undefined;
+        originalConstraintIn: ConstraintItem;
         done?: boolean
     };
     type CurrentBranchElement = CurrentBranchElementPlain | CurrentBranchElementTF;
@@ -345,7 +345,7 @@ namespace ts {
         // ensure that we don't attemp to delete the same item from mrState.forFlow.currentBranchesMap more than once,
         // whcih can happen without this guard, e.g., in the situation of an empty "this" or "else" branch with a "postIf"
         const setOfKeysToDeleteFromCurrentBranchesMap: Set<GroupForFlow> = new Set<GroupForFlow>();
-        const doOnePostIf = (fnpi: Readonly<FlowLabel>, symtab: RefTypesSymtab): ConstraintItem | undefined => {
+        const doOnePostIf = (fnpi: Readonly<FlowLabel>, symtab: RefTypesSymtab): ConstraintItem => {
             consoleGroup(`doOnePostIf[in] fnpi: ${dbgs?.dbgFlowToString(fnpi,/**/ true)}`);
             Debug.assert(fnpi.branchKind===BranchKind.postIf);
             Debug.assert(fnpi.antecedents!.length===2);
@@ -412,11 +412,11 @@ namespace ts {
                 }
                 else if (postIfConstraints[0]) return postIfConstraints[0];
                 else if (postIfConstraints[1]) return postIfConstraints[1];
-                else return undefined;
+                else return createFlowConstraintAlways();
             }
         };
 
-        const getAnteConstraintItemAndSymtab = (): {constraintItem: ConstraintItem | undefined, symtab: RefTypesSymtab}=>{
+        const getAnteConstraintItemAndSymtab = (): {constraintItem: ConstraintItem, symtab: RefTypesSymtab}=>{
             if (anteLabels){
                 // "then" and "else" must come after "postIf" because "postIf" may lead to "then" or "else" anyway.
                 if (anteLabels.postIf){
@@ -453,7 +453,7 @@ namespace ts {
             else {
                 const anteGroups = groupsForFlow.groupToAnteGroupMap.get(groupForFlow);
                 Debug.assert(!anteGroups || !anteGroups.size);
-                return { constraintItem: undefined, symtab: mrNarrow.createRefTypesSymtab() };
+                return { constraintItem: createFlowConstraintAlways(), symtab: mrNarrow.createRefTypesSymtab() };
             }
         };
         // eslint-disable-next-line prefer-const
