@@ -1,0 +1,13 @@
+=== tests/cases/conformance/_cax/_cax-cem-0001.ts ===
+// flow is not engaged here
+declare function isTrue(b:true): true;
+>isTrue : Symbol(isTrue, Decl(_cax-cem-0001.ts, 0, 0), Decl(_cax-cem-0001.ts, 1, 38))
+>b : Symbol(b, Decl(_cax-cem-0001.ts, 1, 24))
+
+declare function isTrue(b:false): false;
+>isTrue : Symbol(isTrue, Decl(_cax-cem-0001.ts, 0, 0), Decl(_cax-cem-0001.ts, 1, 38))
+>b : Symbol(b, Decl(_cax-cem-0001.ts, 2, 24))
+
+isTrue(true);
+>isTrue : Symbol(isTrue, Decl(_cax-cem-0001.ts, 0, 0), Decl(_cax-cem-0001.ts, 1, 38))
+

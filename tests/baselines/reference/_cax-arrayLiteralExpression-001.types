@@ -1,4 +1,4 @@
-gul=== tests/cases/conformance/_cax/_cax-arrayLiteralExpression-001.ts ===
+=== tests/cases/conformance/_cax/_cax-arrayLiteralExpression-001.ts ===
 declare const c: boolean;
 >c : boolean
 

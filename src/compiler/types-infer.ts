@@ -197,20 +197,22 @@ namespace ts {
 
     /**
      * InferStatus
-     * The "inCondition" member is true when the current node is within a discriminating expression (e.g. "if (node){...}else{...}", or "(node)? x : y").
-     * When "inCondition" is true, then the full complexity of expression branching should be preserved to allow for inference, otherwise the complexity should be squashed.
-     * Of course, there are limits on the width of branching allowed ("maxBranches", not yet implemented).
+     * X The "inCondition" member is true when the current node is within a discriminating expression (e.g. "if (node){...}else{...}", or "(node)? x : y").
+     * X When "inCondition" is true, then the full complexity of expression branching should be preserved to allow for inference, otherwise the complexity should be squashed.
+     * Note: Use of "ConstraintItem" obviates the need for "inCondition". (?)
      *
-     * The "replayData" member is non-false when a variables rhs assigned value is being "replayed" as an alias for the variable, and the sub-member
-     * "byNode" is the Node->Type map which will be used for that purpose.
-     * The "replayData" member will only ever be non-false when the "on" member is true.
+     * X The "replayData" member is non-false when a variables rhs assigned value is being "replayed" as an alias for the variable, and the sub-member
+     * X"byNode" is the Node->Type map which will be used for that purpose.
+     * X The "replayData" member will only ever be non-false when the "on" member is true.
+     * Note: Now we have "ConstraintItem", "replayData" will be replaced by "constraintMacros". That will be faster and easier although involve slightly more memory.
      */
     export type InferStatus = & {
         inCondition: boolean;
         // maxBranches: number
         //replayData: ReplayData | false;
-        replayables: ESMap< Symbol, ReplayableItem >;
-        replayItemStack: ReplayableItem[];
+        replayables: ESMap< Symbol, ReplayableItem >; // KILL
+        replayItemStack: ReplayableItem[]; // KILL
+        declaredTypes: ESMap<Symbol, RefTypesTableLeaf>; // note: symbol entries are (should be) deleted when symbol goes out of scope (postBlock trigger).
     };
 
     // export type ConditionItem = & {
@@ -223,10 +225,9 @@ namespace ts {
 
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
-        constraintItem: ConstraintItem // constraintTODO: make required
+        constraintItem: ConstraintItem,
         expr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
-       //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
         crit: InferCrit,
     };

@@ -736,7 +736,6 @@ namespace ts {
                     arrRefTypesTableReturn: []
                 };
             };
-            const {/* inCondition, */ replayItemStack, replayables} = inferStatusIn;
             const { inferRefRtnType: {passing,failing}, byNode } = mrNarrowTypes({
                 refTypesSymtab: refTypesSymtabIn,
                 constraintItem,
@@ -748,7 +747,7 @@ namespace ts {
                     alsoFailing: true
                 },
                 qdotfallout: undefined,
-                inferStatus: { inCondition:true, replayItemStack, replayables }
+                inferStatus: { ...inferStatusIn, inCondition:true }
             });
             const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
             arrRefTypesTableReturn.push(passing, failing!);
@@ -1153,7 +1152,7 @@ namespace ts {
             });
             // const refTypesTable: RefTypesTableNonLeaf = createRefTypesTableNonLeaf(/* symbol*/ undefined, /* isconst */ undefined, mapTypeSymtab);
             mergeIntoNodeToTypeMaps(pre.byNode, byNode);
-            // KILL next line - This is also done upstaits in mrNarrowType/applyCritTo...
+            // KILL next line - This is also done upstairs in mrNarrowType/applyCritToArrRefTypesTableReturn
             byNode.set(callExpr, getTypeFromRefTypesType(totalType));
             // /**
             //  * TODO:
@@ -1457,7 +1456,7 @@ namespace ts {
          * @returns type RefTypesTableReturnCritOut which has no "symbol" or "isconst" members.
          *
          */
-        const mergeTypeIntoNewSymtabAndNewConstraint = (rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >): RefTypesTableReturnCritOut => {
+        const mergeTypeIntoNewSymtabAndNewConstraint = (rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnCritOut => {
             Debug.assert(rttr.symbol);
             const { type, symbol, isconst } = rttr;
             let { symtab, constraintItem: tmpConstraintItem } = rttr;
@@ -1469,11 +1468,27 @@ namespace ts {
                 //     symbol, type, typeRange, cin, negate, mrNarrow, refCountIn, refCountOut}:
                 //     {symbol: Symbol, type: RefTypesType, typeRange: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number]
                 // }): ConstraintItem {
-                const declType = createRefTypesType(getTypeOfSymbol(symbol));
+                //const declType = createRefTypesType(getTypeOfSymbol(symbol));
+                const declType = inferStatus.declaredTypes.get(symbol)?.type;
+                Debug.assert(declType);
+                if (true){
+                    // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
+                    const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
+                    if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
+                        Debug.fail();
+                    }
+                    if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
+                        Debug.fail();
+                    }
+                }
                 const refCountIn = [0] as [number];
                 const refCountOut = [0] as [number];
                 tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, typeRange: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
-                tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
+                // We don't necessary to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
+                // However it is sufficient. Although it might not be opitmal in terms of constraint size. todo?.
+                if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
+                    tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
+                }
                 symtab = copyRefTypesSymtab(rttr.symtab);
                 symtab.set(
                     symbol,
@@ -1494,7 +1509,7 @@ namespace ts {
          * "_inferStatus" is obsolete.
          * The return values {passing, failing} are each arrays of length no larger than 1. (TODO??: return undefined or value instead of array)
          */
-        const applyCritToArrRefTypesTableReturn = (arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, _inferStatus: InferStatus): {
+        const applyCritToArrRefTypesTableReturn = (arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, inferStatus: InferStatus): {
             passing: RefTypesTableReturnCritOut[], failing?: RefTypesTableReturnCritOut[]
         } =>{
             if (arrRttr.length===0) {
@@ -1580,7 +1595,7 @@ namespace ts {
                             symtab: localSymtabPassing ?? createRefTypesSymtab(),
                             isconst: rttr.isconst,
                             constraintItem: rttr.constraintItem
-                        }));
+                        }, inferStatus));
                         arrRttrcoFailing.push(mergeTypeIntoNewSymtabAndNewConstraint({
                             kind: RefTypesTableKind.return,
                             symbol: rttr.symbol,
@@ -1588,7 +1603,7 @@ namespace ts {
                             symtab: localSymtabFailing ?? createRefTypesSymtab(),
                             isconst: rttr.isconst,
                             constraintItem: rttr.constraintItem
-                        }));
+                        }, inferStatus));
 
                     }
                 });
@@ -1962,29 +1977,35 @@ namespace ts {
                 case SyntaxKind.Identifier:{
                     if (myDebug) consoleLog(`case SyntaxKind.Identifier`);
                     Debug.assert(isIdentifier(expr));
-                    const condSymbol = getResolvedSymbol(expr); // getSymbolOfNode()?
+                    const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
                     let type: RefTypesType | undefined;
                     let isconst = false;
                     let tstype: Type | undefined;
                     let refTypesSymtabOut = refTypesSymtabIn;
                     //let constraintItemOut = constraintItem;
-                    if (inferStatus.replayItemStack.length){
-                        tstype = inferStatus.replayItemStack.slice(-1)[0].nodeToTypeMap.get(expr);
-                        if (!tstype){
-                            Debug.assert(tstype);
-                        }
-                        type = createRefTypesType(tstype);
-                        Debug.fail();
-                    }
-                    else {
-                        const leaf = refTypesSymtabIn.get(condSymbol)?.leaf;//.type;
+                    // if (inferStatus.replayItemStack.length){
+                    //     tstype = inferStatus.replayItemStack.slice(-1)[0].nodeToTypeMap.get(expr);
+                    //     if (!tstype){
+                    //         Debug.assert(tstype);
+                    //     }
+                    //     type = createRefTypesType(tstype);
+                    //     Debug.fail();
+                    // }
+                    // else
+                    {
+                        let leaf = refTypesSymtabIn.get(symbol)?.leaf;
                         if (!leaf){
-                            const tstype = getTypeOfSymbol(condSymbol);
+                            leaf = inferStatus.declaredTypes.get(symbol);
+                        }
+                        if (!leaf){
+                            const tstype = getTypeOfSymbol(symbol); // Is it OK for Identifier, will it not result in error TS7022 ?
                             if (tstype===errorType){
                                 Debug.assert(false);
                             }
                             type = createRefTypesType(tstype);
                             isconst = isConstantReference(expr);
+                            leaf = createRefTypesTableLeaf(symbol,isconst,type);
+                            inferStatus.declaredTypes.set(symbol, leaf);
                         }
                         else {
                             type = leaf.type;
@@ -1994,9 +2015,9 @@ namespace ts {
                             // Could this narrowing be postponed until applyCritToArrRefTypesTableReturn? No.
                             // If done here, then the constrained result is reflected in byNode.  That could result in better error messages if it were never.
                             // However, the constraintItem is postponed until applyCritToArrRefTypesTableReturn.
-                            type = evalTypeOverConstraint({ cin:constraintItemIn, symbol:condSymbol, typeRange: type, mrNarrow });
-                            if (!leaf || (type !== leaf.type && !mrNarrow.isASubsetOfB(leaf.type,type))){
-                                refTypesSymtabOut = copyRefTypesSymtab(refTypesSymtabOut).set(condSymbol,{ leaf:createRefTypesTableLeaf(condSymbol,isconst,type) });
+                            type = evalTypeOverConstraint({ cin:constraintItemIn, symbol, typeRange: type, mrNarrow });
+                            if (type !== leaf.type && !mrNarrow.isASubsetOfB(leaf.type,type)){
+                                refTypesSymtabOut = copyRefTypesSymtab(refTypesSymtabOut).set(symbol,{ leaf:createRefTypesTableLeaf(symbol,isconst,type) });
                             }
                         }
                         tstype = getTypeFromRefTypesType(type);
@@ -2005,7 +2026,7 @@ namespace ts {
                     byNode.set(expr, tstype);
                     const rttr: RefTypesTableReturn = {
                         kind: RefTypesTableKind.return,
-                        symbol: condSymbol,
+                        symbol,
                         isconst,
                         type,
                         symtab: refTypesSymtabIn,
@@ -2016,7 +2037,7 @@ namespace ts {
                         arrRefTypesTableReturn: [rttr],
                         assignmentData: {
                             isconst,
-                            symbol: condSymbol
+                            symbol
                         }
                     };
                     return mrNarrowTypesInnerReturn;
@@ -2206,27 +2227,37 @@ namespace ts {
                          */
                         const symbol = getSymbolOfNode(expr); // not condExpr.name
                         const isconstVar = isConstVariable(symbol);
-                        const saveByNodeForReplay = false; //isconstVar; // isConstVariable(symbol) && isConstantReference(initializer);
-                        if (saveByNodeForReplay){
-                            inferStatus.replayables.set(symbol,{
-                                expr: initializer,
-                                isconst: isconstVar,
-                                symbol,
-                                nodeToTypeMap: rhs.byNode
-                            });
-                            if (myDebug){
-                                consoleLog(`mrNarrowTypes_inner: replayable added: { symbol:${dbgSymbolToStringSimple(symbol)}, isconst:${isconstVar}, expr: ${dbgNodeToString(initializer)}}`);
-                            }
-                        }
+                        // const saveByNodeForReplay = false; //isconstVar; // isConstVariable(symbol) && isConstantReference(initializer);
+                        // if (saveByNodeForReplay){
+                        //     inferStatus.replayables.set(symbol,{
+                        //         expr: initializer,
+                        //         isconst: isconstVar,
+                        //         symbol,
+                        //         nodeToTypeMap: rhs.byNode
+                        //     });
+                        //     if (myDebug){
+                        //         consoleLog(`mrNarrowTypes_inner: replayable added: { symbol:${dbgSymbolToStringSimple(symbol)}, isconst:${isconstVar}, expr: ${dbgNodeToString(initializer)}}`);
+                        //     }
+                        // }
                         Debug.assert(!rhs.inferRefRtnType.failing);
                         /**
-                         * These next two lines may be indirectly resulting in the following error:
+                         * These next two lines were indirectly resulting in the following error:
                          * --- !!! error TS7022: 'ba' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
-                         * Somewhere in mrNarrow might be calling "getTypeOfSymbol" because of it.
+                         * Because "getTypeOfSymbol" was being called in "applyCritToArrRefTypesTable"; that's now fixed with "declaredTypes".
                          */
-                        // rhs.inferRefRtnType.passing.symbol = symbol;
-                        // rhs.inferRefRtnType.passing.isconst = isconstVar;
-
+                        rhs.inferRefRtnType.passing.symbol = symbol;
+                        rhs.inferRefRtnType.passing.isconst = isconstVar;
+                        {
+                            const unwidenedTsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
+                            if (isconstVar){
+                                const unwidenedType = createRefTypesType(unwidenedTsType);
+                                inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,unwidenedType));
+                            }
+                            else {
+                                const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));
+                                inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,widenedType));
+                            }
+                        }
                         const retval: MrNarrowTypesInnerReturn = {
                             arrRefTypesTableReturn: [rhs.inferRefRtnType.passing],
                             assignmentData: {

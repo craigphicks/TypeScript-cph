@@ -104,6 +104,7 @@ namespace ts {
 //        groupToNodeToType?: ESMap< FlowNodeGroup, NodeToTypeMap>;
         //symbolToNodeToTypeMap: ESMap< Symbol, NodeToTypeMap>;
         replayableItems: ESMap< Symbol, ReplayableItem >;
+        declaredTypes: ESMap<Symbol,RefTypesTableLeaf>;
         // aliasableAssignmentsCache: ESMap<Symbol, AliasAssignableState>; // not sure it makes sense anymore
         // aliasInlineLevel: number;
         forFlow: {
@@ -182,6 +183,7 @@ namespace ts {
         const mrState: MrState = {
             checker,
             replayableItems: new Map<Symbol, ReplayableItem>(),
+            declaredTypes: new Map<Symbol, RefTypesTableLeaf>(),
             forFlow: {
                 heap,
                 currentBranchesMap: new Map< GroupForFlow, CurrentBranchElement >(),
@@ -510,7 +512,8 @@ namespace ts {
         const inferStatus: InferStatus = {
             inCondition: !!boolsplit,
             replayItemStack: [],
-            replayables: sourceFileMrState.mrState.replayableItems
+            replayables: sourceFileMrState.mrState.replayableItems,
+            declaredTypes: sourceFileMrState.mrState.declaredTypes,
         };
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
             refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });

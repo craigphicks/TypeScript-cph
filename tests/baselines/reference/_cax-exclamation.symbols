@@ -1,0 +1,18 @@
+=== tests/cases/conformance/_cax/_cax-exclamation.ts ===
+declare const n: 0 | 1;
+>n : Symbol(n, Decl(_cax-exclamation.ts, 0, 13))
+
+const b = !!n;
+>b : Symbol(b, Decl(_cax-exclamation.ts, 1, 5))
+>n : Symbol(n, Decl(_cax-exclamation.ts, 0, 13))
+
+if (b){
+>b : Symbol(b, Decl(_cax-exclamation.ts, 1, 5))
+
+    b;
+>b : Symbol(b, Decl(_cax-exclamation.ts, 1, 5))
+} 
+else {
+    b;
+>b : Symbol(b, Decl(_cax-exclamation.ts, 1, 5))
+}

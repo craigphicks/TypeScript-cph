@@ -62,7 +62,7 @@ namespace ts {
         cin: Readonly<ConstraintItem>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {
         depth=depth??0;
-        if (getMyDebug()){
+        if (false && getMyDebug()){
             const as: string[] = [];
             consoleGroup(`evalTypeOverConstraint[in][${depth}]`);
             as.push(`evalTypeOverConstraint[in][${depth}]: depth:${depth}, symbol:${symbol.escapedName}, negate:${negate}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(typeRange)}.`);
@@ -71,7 +71,7 @@ namespace ts {
             as.forEach(s=>consoleLog(s));
         }
         const r = evalTypeOverConstraint_aux({ cin, symbol, typeRange, negate, mrNarrow, depth });
-        if (getMyDebug()){
+        if (false && getMyDebug()){
             consoleLog(`evalTypeOverConstraint[out][${depth}]: ${mrNarrow.dbgRefTypesTypeToString(r)}`);
             consoleGroupEnd();
         }
