@@ -1336,9 +1336,9 @@ namespace ts {
         function applyCritToArrRefTypesTableReturn(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, inferStatus: InferStatus): {
             passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol, unmerged?: Readonly<RefTypesTableReturn[]>
         }{
-            if (arrRttr.length===0) {
-                Debug.assert(false);
-            }
+            // if (arrRttr.length===0) {
+            //     Debug.assert(false);
+            // }
             Debug.assert(!(crit.kind===InferCritKind.none && crit.negate));
             {
                 // all other crit kinds
@@ -1437,9 +1437,10 @@ namespace ts {
                 if (crit.alsoFailing){
                     rtn.failing = rttrcoFailing;
                 }
-                if (crit.kind===InferCritKind.none && inferStatus.inCondition){
-                    rtn.unmerged = arrRttr;
-                }
+                //if (crit.kind===InferCritKind.none && inferStatus.inCondition){
+                // There is no extra work to always output unmerged.
+                rtn.unmerged = arrRttr;
+                //}
                 return rtn;
             }
             Debug.fail(`crit.kind:${crit.kind}`);

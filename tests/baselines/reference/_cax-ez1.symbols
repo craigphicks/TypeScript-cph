@@ -1,0 +1,25 @@
+=== tests/cases/conformance/_cax/_cax-ez1.ts ===
+declare type Foo = { readonly foo: number[] };
+>Foo : Symbol(Foo, Decl(_cax-ez1.ts, 0, 0))
+>foo : Symbol(foo, Decl(_cax-ez1.ts, 0, 20))
+
+declare const obj: Foo | undefined;
+>obj : Symbol(obj, Decl(_cax-ez1.ts, 2, 13))
+>Foo : Symbol(Foo, Decl(_cax-ez1.ts, 0, 0))
+
+const isObj = !!obj;
+>isObj : Symbol(isObj, Decl(_cax-ez1.ts, 3, 5))
+>obj : Symbol(obj, Decl(_cax-ez1.ts, 2, 13))
+
+if (isObj) {
+>isObj : Symbol(isObj, Decl(_cax-ez1.ts, 3, 5))
+
+    obj.foo;
+>obj.foo : Symbol(foo, Decl(_cax-ez1.ts, 0, 20))
+>obj : Symbol(obj, Decl(_cax-ez1.ts, 2, 13))
+>foo : Symbol(foo, Decl(_cax-ez1.ts, 0, 20))
+
+} else {
+    obj.foo;
+>obj : Symbol(obj, Decl(_cax-ez1.ts, 2, 13))
+}
