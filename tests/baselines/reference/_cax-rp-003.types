@@ -1,0 +1,70 @@
+=== tests/cases/conformance/_cax/_cax-rp-003.ts ===
+declare const b01:0|1;
+>b01 : 0 | 1
+
+declare const b02:0|2;
+>b02 : 0 | 2
+
+const ca = b01 && b02;
+>ca : 0 | 2
+>b01 && b02 : 0 | 2
+>b01 : 0 | 1
+>b02 : 0 | 2
+
+const co = b01 || b02;
+>co : 0 | 1 | 2
+>b01 || b02 : 0 | 1 | 2
+>b01 : 0 | 1
+>b02 : 0 | 2
+
+const cao = ca && co;
+>cao : 0 | 1 | 2
+>ca && co : 0 | 1 | 2
+>ca : 0 | 2
+>co : 0 | 1 | 2
+
+if (ca){
+>ca : 0 | 2
+
+    [b01,b02,ca,co,cao];
+>[b01,b02,ca,co,cao] : (1 | 2)[]
+>b01 : 1
+>b02 : 2
+>ca : 2
+>co : 1
+>cao : 1
+}
+else {
+    [b01,b02,ca,co,cao];
+>[b01,b02,ca,co,cao] : (0 | 1 | 2)[]
+>b01 : 0 | 1
+>b02 : 0 | 2
+>ca : 0
+>co : 0 | 1 | 2
+>cao : 0
+}
+
+if (b01 && b02){
+>b01 && b02 : 0 | 2
+>b01 : 0 | 1
+>b02 : 0 | 2
+
+    [b01,b02,ca,co,cao];
+>[b01,b02,ca,co,cao] : (1 | 2)[]
+>b01 : 1
+>b02 : 2
+>ca : 2
+>co : 1
+>cao : 1
+}
+else {
+    [b01,b02,ca,co,cao];
+>[b01,b02,ca,co,cao] : (0 | 1 | 2)[]
+>b01 : 0 | 1
+>b02 : 0 | 2
+>ca : 0
+>co : 0 | 1 | 2
+>cao : 0
+}
+
+

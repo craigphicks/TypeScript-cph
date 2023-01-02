@@ -46,23 +46,8 @@ namespace ts {
     // export type RefTypesSymtabValue = MakeRequired<RefTypesTableLeaf, "symbol">;
     export type RefTypesSymtabValue = & {
         leaf: MakeRequired<RefTypesTableLeaf, "symbol">;
-        //nonLeaf?: MakeRequired<RefTypesTableNonLeaf, "symbol">;
-        /**
-         * 'byNode' added for any const variable declaration with initializer, just the nodes in the initializer.
-         * The requirement for const isn't necessary if 'byNodes' is refreshed for every new assignment, but that would incur more memory usage.
-         * This 'byNode' is passed when calling mrNarrowTypes with `replayMode` argument.
-         * In replay mode, if a symbol is looked-up from a refTypesSymtab and symbol dosen't have isconst set,
-         * then the type will be taken from replayMode.byNode instead.
-         */
-        //byNode?: NodeToTypeMap;
     };
-    /**
-     * Eventually want to extend RefTypesSymtabValue to
-     * ```
-     * { leaf: MakeRequired<RefTypesTableLeaf, "symbol">, nonLeaf?: MakeRequired<RefTypesTableNonLeaf, "symbol">} }
-     * ```
-     * where nonLeaf contains more detailed info and can be the operand of any criteria.
-     */
+
     export type RefTypesSymtab = ESMap<Symbol, RefTypesSymtabValue>;
     export type RefTypesTableNonLeaf = & {
         kind: RefTypesTableKind.nonLeaf;
@@ -76,17 +61,26 @@ namespace ts {
         isconst?: boolean;
         type: RefTypesType;
     };
-    export type RefTypesTable = RefTypesTableReturn | RefTypesTableLeaf | RefTypesTableNonLeaf;
+    export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol | RefTypesTableLeaf | RefTypesTableNonLeaf;
 
-    export type RefTypesTableReturn = & {
+    export type RefTypesTableReturnNoSymbol = & {
         kind: RefTypesTableKind.return;
-        symbol: Symbol | undefined;
-        isconst?: boolean;
+        //isconst?: boolean;
         type: RefTypesType;
-        critPassing?: boolean; // set when crit was truthy
+        //critPassing?: boolean; // set when crit was truthy
         symtab: RefTypesSymtab;
         constraintItem: ConstraintItem;
     };
+    export type RefTypesTableReturn = & {
+        kind: RefTypesTableKind.return;
+        symbol?: Symbol | undefined;
+        isconst?: boolean;
+        type: RefTypesType;
+        //critPassing?: boolean; // set when crit was truthy
+        symtab: RefTypesSymtab;
+        constraintItem: ConstraintItem;
+    };
+
 
     /**
      * In the special case of RefTypesTable being returned from a narrow operation on an expression with no symbol,
@@ -157,43 +151,26 @@ namespace ts {
     )
     & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
-    export interface ReplayableItem {
+    export type ReplayableItem = & {
         symbol: Symbol;
         isconst: boolean;
-        expr: Expression;
+        expr: Node;
         nodeToTypeMap: NodeToTypeMap
     };
 
-    /**
-     * `byNode` and `expr` are always set togather, before calling mrNarrowTypes.
-     * mrNarrowTypes will immed substitue expr for condExpr and set expr to undefined,
-     * however byNode will remain and be passed to mrNarrowTypes for sub-expressions.
-     * Replay can be called resursively, and when that happens, `byNode` and `expr`
-     * will again be set together for that recursive call.
-     */
-    // export type ReplayData = & {
-    //     //byNode: NodeToTypeMap; // corresponds to the expr, even after expression is set to undefined
-    //     //symbol?: Symbol; // in tandem with expr
-    //     //isconst: boolean;
-    //     //expr?: Expression; // immed used as a substitue for condExpr and set to undefined inside mrNarrowTypes
-    // };
+    export type MacroConstraint = & {
+        lhs: {
+            symbol: Symbol;
+        };
+        rhs: {
+            arrRttr: RefTypesTableReturnNoSymbol[];
+        };
+    };
 
-    /**
-     * If an inferRefTypes caller needs the qdotfallout info, they must place this parameter in the call.
-     * If any intermediate has a questionDot token, they must ask for it (crit:alsoFailing) and push the failing result to qdotfallout.
-     * Trying to decide whether this is really necessary or not, and an argument in favor of necessary is as follows:
-     * > When an inferRefTypesBy... function needs to call inferRefType({..... condExpr:self.expression, crit:{kind:InferCritKind.notnullundef, ...., alsoFailing:true},....})
-     * > then it needs to know exactly if the predecessor (and not a prior predecessor to that) has returned a nullish BECAUSE
-     * > it is the 'self' expression that carries the questionDotToken between 'sef' and 'self.expression'.  That is reasonable because it is only if the caller ('self')
-     * > actually performs a lookup that an error might occurs.  So the error decision must be deferred (* at LEAST) until 'self' processing.
-     * > 'self' action pseudocode:
-     * >> if preFailing.rtnType is not never
-     * >>     if I don't have a 'questionDot' token, then Error (I don't think this decision needs to be deferred but ...)
-     * >>     else push `failing.refTypes` to `qdotfallout` - effectively deferring the decision on how to use that until the level "owning" qdotfallout.
-     * >> if I have failing lookup on ANY candidate
-     * >>     if not `context?nonNullExpression`
-     * >>         add {rtnType:undefined, refTypes: refTypes with bySymbol.get(self symbol) lookup value set to `undefined`} to results to results to be passed finally to crit.
-     */
+    export type RefTypesSymtabConstraintItem = & {
+        symtab: RefTypesSymtab;
+        constraintItem: ConstraintItem;
+    };
 
     /**
      * InferStatus
@@ -206,13 +183,19 @@ namespace ts {
      * X The "replayData" member will only ever be non-false when the "on" member is true.
      * Note: Now we have "ConstraintItem", "replayData" will be replaced by "constraintMacros". That will be faster and easier although involve slightly more memory.
      */
+    export type ReplayData = & {
+        byNode: NodeToTypeMap;
+    };
+
     export type InferStatus = & {
         inCondition: boolean;
         // maxBranches: number
         //replayData: ReplayData | false;
-        replayables: ESMap< Symbol, ReplayableItem >; // KILL
+        currentReplayableItem?: undefined | ReplayableItem;
+        replayables: ESMap< Symbol, ReplayableItem >;
         replayItemStack: ReplayableItem[]; // KILL
         declaredTypes: ESMap<Symbol, RefTypesTableLeaf>; // note: symbol entries are (should be) deleted when symbol goes out of scope (postBlock trigger).
+        macroConstraints: ESMap<Symbol, MacroConstraint>; // KILL
     };
 
     // export type ConditionItem = & {
@@ -249,10 +232,10 @@ namespace ts {
         //constraints: MrNarrowTypesReturnConstraints;
     };
     export type InferRefRtnType = & {
-        passing: RefTypesTableReturn;
-        failing?: RefTypesTableReturn;
+        passing: RefTypesTableReturnNoSymbol;
+        failing?: RefTypesTableReturnNoSymbol;
+        unmerged?: Readonly<RefTypesTableReturnNoSymbol[]>;
     };
-
 
     export type InferRefInnerArgs = & {
         refTypesSymtab: RefTypesSymtab,
@@ -293,7 +276,7 @@ namespace ts {
             symbol: Symbol,
             isconst: boolean;
         }
-        arrRefTypesTableReturn: RefTypesTableReturn[];
+        arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]>;
         //constraintItem: ConstraintItem;
         //typesAndConstraints?: TypesAndContraints; // constraintTODO: make required
         //arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: kill

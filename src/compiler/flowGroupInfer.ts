@@ -58,7 +58,7 @@ namespace ts {
     //     depStackItems: StackItem[];  // the referenced items are "safe" from garbage collection even if stack is popped.
     // }
     interface CurrentBranchesItem {
-        refTypesTableReturn: RefTypesTableReturn;
+        refTypesTableReturn: RefTypesTableReturnNoSymbol;
         byNode: NodeToTypeMap;
     };
 
@@ -105,6 +105,7 @@ namespace ts {
         //symbolToNodeToTypeMap: ESMap< Symbol, NodeToTypeMap>;
         replayableItems: ESMap< Symbol, ReplayableItem >;
         declaredTypes: ESMap<Symbol,RefTypesTableLeaf>;
+        macroConstraints: ESMap<Symbol,MacroConstraint>
         // aliasableAssignmentsCache: ESMap<Symbol, AliasAssignableState>; // not sure it makes sense anymore
         // aliasInlineLevel: number;
         forFlow: {
@@ -184,6 +185,7 @@ namespace ts {
             checker,
             replayableItems: new Map<Symbol, ReplayableItem>(),
             declaredTypes: new Map<Symbol, RefTypesTableLeaf>(),
+            macroConstraints: new Map<Symbol, MacroConstraint>(),
             forFlow: {
                 heap,
                 currentBranchesMap: new Map< GroupForFlow, CurrentBranchElement >(),
@@ -514,6 +516,7 @@ namespace ts {
             replayItemStack: [],
             replayables: sourceFileMrState.mrState.replayableItems,
             declaredTypes: sourceFileMrState.mrState.declaredTypes,
+            macroConstraints: sourceFileMrState.mrState.macroConstraints,
         };
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
             refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });

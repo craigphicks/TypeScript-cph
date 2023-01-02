@@ -141,6 +141,8 @@ namespace ts {
      * (B+C) => ((AB)/A+(AC)/A)
      * !(BC) => (A!B/A + A!C/A)
      * !(B+C) => (A!B)/A(A!C)/A
+     *
+     * TODO: change parameter name from typeRange to declaredType
      */
     export function andDistributeDivide({
         symbol, type, typeRange, cin, negate, mrNarrow, refCountIn, refCountOut, depth}:
@@ -263,7 +265,7 @@ namespace ts {
             if (constraintItem.symbol===symbol){
                 const isecttype = mrNarrow.intersectRefTypesTypes(type, constraintItem.type);
                 if (mrNarrow.isNeverType(isecttype)) return createFlowConstraintNever();
-                // TODO: if there was a symbol table input we could check for always
+                // TODO: if there was a symbol table input we could check for "always"
                 return createFlowConstraintLeaf(symbol, type);
             }
             return {
@@ -298,6 +300,26 @@ namespace ts {
         if (ac.length===0) return createFlowConstraintNever();
         if (ac.length===1) return ac[0];
         return createFlowConstraintNodeOr({ constraints:ac });
+    }
+
+
+    // @ts-ignore
+    export function andSymtabConstraintsWithSimplify(sc0: RefTypesSymtabConstraintItem, sc1: RefTypesSymtabConstraintItem, mrNarrow: MrNarrow, getDeclaredType: (symbol: Symbol) => RefTypesType): RefTypesSymtabConstraintItem {
+        // @ts-ignore
+        const symtab = mrNarrow.createRefTypesSymtab(sc0);
+        sc1.symtab.forEach(({leaf},symbol)=>{
+            const got = symtab.get(symbol);
+            if (!got) symtab.set(symbol,{ leaf });
+            else symtab.set(symbol,{ leaf: { ...leaf, type: mrNarrow.intersectRefTypesTypes(leaf.type, got.leaf.type) } });
+        });
+        const tmpConstraint0 = createFlowConstraintNodeAnd({ constraints:[sc0.constraintItem,sc1.constraintItem] });
+        let constraintItem: ConstraintItem = tmpConstraint0;
+        symtab.forEach(({leaf},symbol)=>{
+            const refCountIn: [number]=[0];
+            const refCountOut: [number]=[0];
+            constraintItem = andDistributeDivide({ symbol,type:leaf.type,typeRange:getDeclaredType(symbol), cin:constraintItem, mrNarrow, refCountIn, refCountOut, depth:0 });
+        });
+        return { symtab,constraintItem };
     }
 
     export function removeSomeVariablesFromConstraint(cin: ConstraintItem, rmset: { has(s: Symbol): boolean}, _mrNarrow: MrNarrow): ConstraintItem {
