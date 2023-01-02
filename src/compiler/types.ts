@@ -4341,6 +4341,8 @@ namespace ts {
         /* @internal */ getResolvedSymbol(node: Identifier): Symbol;
         /* @internal */ getSymbolOfNode(node: Declaration): Symbol;
         /* @internal */ getUnknownType(): Type;
+        /* @internal */ getTypeOfExpression(node: Expression): Type;
+
 
 
 

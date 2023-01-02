@@ -1,0 +1,22 @@
+=== tests/cases/conformance/_cax/_cax-arrayLiteralExpression-002.ts ===
+declare const c: boolean;
+>c : boolean
+
+const x = c ? [c,c] : [c,c];
+>x : true[] | false[]
+>c ? [c,c] : [c,c] : true[] | false[]
+>c : boolean
+>[c,c] : true[]
+>c : true
+>c : true
+>[c,c] : false[]
+>c : false
+>c : false
+
+if (c) x;
+>c : boolean
+>x : true[]
+
+else x;
+>x : false[]
+

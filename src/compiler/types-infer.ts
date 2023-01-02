@@ -134,15 +134,6 @@ namespace ts {
         nodeToTypeMap: NodeToTypeMap
     };
 
-    export type MacroConstraint = & {
-        lhs: {
-            symbol: Symbol;
-        };
-        rhs: {
-            arrRttr: RefTypesTableReturnNoSymbol[];
-        };
-    };
-
     export type RefTypesSymtabConstraintItem = & {
         symtab: RefTypesSymtab;
         constraintItem: ConstraintItem;
@@ -165,9 +156,8 @@ namespace ts {
         inCondition: boolean;
         currentReplayableItem?: undefined | ReplayableItem;
         replayables: ESMap< Symbol, ReplayableItem >;
-        //replayItemStack: ReplayableItem[]; // KILL - not being used because it is handled by recurive function calls
         declaredTypes: ESMap<Symbol, RefTypesTableLeaf>; // note: symbol entries are (should be) deleted when symbol goes out of scope (postBlock trigger).
-        //macroConstraints: ESMap<Symbol, MacroConstraint>; // KILL
+        groupNodeToTypeMap: ESMap<Node,Type>;
     };
 
     export type InferRefArgs = & {
@@ -181,7 +171,7 @@ namespace ts {
 
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type MrNarrowTypesReturn = & {
-        byNode: NodeToTypeMap;
+        //byNode: NodeToTypeMap;
         inferRefRtnType: InferRefRtnType;
     };
     export type InferRefRtnType = & {
@@ -198,7 +188,7 @@ namespace ts {
         constraintItem: ConstraintItem;
     };
     export type MrNarrowTypesInnerReturn = & {
-        byNode: NodeToTypeMap;
+        //byNode: NodeToTypeMap;
         assignmentData?: { // set when Delcaration or assignment, and replayData was false
             symbol: Symbol,
             isconst: boolean;

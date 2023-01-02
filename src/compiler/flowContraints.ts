@@ -37,7 +37,7 @@ namespace ts {
     }
 
     // @ts-ignore
-    function isNeverConstraint(c: ConstraintItem): boolean {
+    export function isNeverConstraint(c: ConstraintItem): boolean {
         return (c.kind===ConstraintItemKind.never);
     }
     export function createFlowConstraintAlways(): ConstraintItemAlways {

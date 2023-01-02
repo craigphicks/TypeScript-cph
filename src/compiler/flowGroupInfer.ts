@@ -45,7 +45,7 @@ namespace ts {
     };
     interface CurrentBranchesItem {
         refTypesTableReturn: RefTypesTableReturnNoSymbol;
-        byNode: NodeToTypeMap;
+        //byNode: NodeToTypeMap;
     };
     enum CurrentBranchesElementKind {
         none=0,
@@ -82,7 +82,6 @@ namespace ts {
         checker: TypeChecker;
         replayableItems: ESMap< Symbol, ReplayableItem >;
         declaredTypes: ESMap<Symbol,RefTypesTableLeaf>;
-        macroConstraints: ESMap<Symbol,MacroConstraint>
         forFlow: {
             heap: Heap; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
             currentBranchesMap: ESMap< Readonly<GroupForFlow>, CurrentBranchElement >;
@@ -153,7 +152,6 @@ namespace ts {
             checker,
             replayableItems: new Map<Symbol, ReplayableItem>(),
             declaredTypes: new Map<Symbol, RefTypesTableLeaf>(),
-            macroConstraints: new Map<Symbol, MacroConstraint>(),
             forFlow: {
                 heap,
                 currentBranchesMap: new Map< GroupForFlow, CurrentBranchElement >(),
@@ -463,20 +461,29 @@ namespace ts {
             currentReplayableItem: undefined,
             replayables: sourceFileMrState.mrState.replayableItems,
             declaredTypes: sourceFileMrState.mrState.declaredTypes,
+            groupNodeToTypeMap: new Map<Node,Type>(),
         };
+        /**
+         * groupNodeToTypeMap may be set before calling checker.getTypeOfExpression(...) from beneath mrNarrowTypes, which will require those types in
+         * groupNodeToTypeMap.
+         */
+        if (!sourceFileMrState.mrState.forFlow.groupToNodeToType) sourceFileMrState.mrState.forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
+        sourceFileMrState.mrState.forFlow.groupToNodeToType.set(groupForFlow, inferStatus.groupNodeToTypeMap);
+
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
             refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
+
         if (boolsplit){
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
                 gff: groupForFlow,
                 falsy: {
                     refTypesTableReturn: retval.inferRefRtnType.failing!,
-                    byNode: retval.byNode,
+                    //byNode: retval.byNode,
                 },
                 truthy: {
                     refTypesTableReturn: retval.inferRefRtnType.passing,
-                    byNode: retval.byNode,
+                    //byNode: retval.byNode,
                 },
                 originalConstraintIn: constraintItemArg
             };
@@ -488,13 +495,11 @@ namespace ts {
                 gff: groupForFlow,
                 item: {
                     refTypesTableReturn: retval.inferRefRtnType.passing,
-                    byNode: retval.byNode,
+                    //byNode: retval.byNode,
                 }
             };
             sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
-        if (!sourceFileMrState.mrState.forFlow.groupToNodeToType) sourceFileMrState.mrState.forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
-        sourceFileMrState.mrState.forFlow.groupToNodeToType.set(groupForFlow, retval.byNode);
 
         if (getMyDebug()){
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
@@ -548,6 +553,15 @@ namespace ts {
             const maxnode = sourceFileMrState.groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
             consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, maximalNode: ${dbgs!.dbgNodeToString(maxnode)}`);
         }
+        /**
+         * If the type for expr is already in groupToNodeToType?.get(groupForFlow)?.get(expr) then return that.
+         * It is likely to be a recursive call via checker.getTypeOfExpression(...), e.g. from "case SyntaxKind.ArrayLiteralExpression"
+         */
+        const cachedType = sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr);
+        if (cachedType) {
+            if (getMyDebug()) consoleLog(`getTypeByMrNarrowAux[dbg]: cache hit`);
+            return cachedType;
+        }
         updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState);
         resolveHeap(sourceFileMrState);
         return sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
@@ -570,7 +584,6 @@ namespace ts {
         const doItem = (cbi: CurrentBranchesItem): string[]=>{
             const astr: string[] = [];
             astr.push(`nodeToTypeMap:`);
-            astr.push(...doNodeToTypeMap(cbi.byNode).map(s => "  "+s));
             astr.push(`refTypesTableReturn:`);
             astr.push(...sourceFileMrState.mrNarrow.dbgRefTypesTableToStrings(cbi.refTypesTableReturn).map(s => `  ${s}`));
             return astr;
@@ -593,6 +606,8 @@ namespace ts {
                     astr.push(...doItem(cbe.falsy).map(s => "      "+s));
                 }
             }
+            const byNode = sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(g)!;
+            if (byNode) astr.push(...doNodeToTypeMap(byNode).map(s => "  "+s));
         });
         return astr;
     }
