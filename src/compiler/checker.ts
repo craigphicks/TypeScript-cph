@@ -10,12 +10,12 @@ namespace ts {
     const myNarrowTest = (process.env.myNarrowTest===undefined) ? false : !!Number(process.env.myNarrowTest);
 
     // @ts-ignore-error
-    let currentFlowNodeGroup: {
-        group: NodefulFlowNodeGroup,
-        pos: number,
-        end: number,
-        maxNode: Node
-    } | undefined;
+    // let currentFlowNodeGroup: {
+    //     group: NodefulFlowNodeGroup,
+    //     pos: number,
+    //     end: number,
+    //     maxNode: Node
+    // } | undefined;
 
 
     const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):50000;
@@ -372,7 +372,7 @@ namespace ts {
 
 
         let sourceElementSelectedForInfer: Node | undefined;
-        const currentConditionStack: ConditionStackItem[]=[];
+        //const currentConditionStack: ConditionStackItem[]=[];
         const checkExpressionCache = new Map<Node,Type>();
         // @ts-ignore
         function checkExpressionFromCache(node: Node): Type {
@@ -24564,21 +24564,21 @@ namespace ts {
         //     Debug.assert(false, "getSymbolOfNodeAlways: failed to get symbol");
         // }
 
-        // @ts-ignore
-        function getJoinAntecdent(flow: FlowJoin): FlowNode {
-            if (flowTypeQueryState.disable) return flow.antecedent;
-            if (flowTypeQueryState.getFlowTypeOfReferenceStack.length && flowTypeQueryState.getCurrentReferenceCall().params.joinMap){
-                const joinMap = flowTypeQueryState.getCurrentReferenceCall().params.joinMap!;
-                if (joinMap.joinNode === flow.joinNode) return joinMap.mapTo;
-            }
-            return flow.antecedent;
-        }
+        // @ ts-ignore
+        // function getJoinAntecdent(flow: FlowJoin): FlowNode {
+        //     if (flowTypeQueryState.disable) return flow.antecedent;
+        //     if (flowTypeQueryState.getFlowTypeOfReferenceStack.length && flowTypeQueryState.getCurrentReferenceCall().params.joinMap){
+        //         const joinMap = flowTypeQueryState.getCurrentReferenceCall().params.joinMap!;
+        //         if (joinMap.joinNode === flow.joinNode) return joinMap.mapTo;
+        //     }
+        //     return flow.antecedent;
+        // }
 
         // @ts-ignore-error
-        function dbgFlowGroupToString(group: FlowNodeGroup | undefined): string {
-            if (!group) return "<undef>";
-            else return dbgFlowNodeGroupToString(group, getFlowNodeId, dbgFlowToString, dbgNodeToString);
-        }
+        // function dbgFlowGroupToString(group: FlowNodeGroup | undefined): string {
+        //     if (!group) return "<undef>";
+        //     else return dbgFlowNodeGroupToString(group, getFlowNodeId, dbgFlowToString, dbgNodeToString);
+        // }
 
 
         // @ ts-ignore-error
@@ -39390,37 +39390,37 @@ namespace ts {
 
         function checkIfStatement(node: IfStatement) {
             // Grammar checking
-            let conditionStackItem: ConditionStackItem | undefined;
+            //let conditionStackItem: ConditionStackItem | undefined;
             checkGrammarStatementInAmbientContext(node);
             //if (!myDisableInfer) temporaryPerSourceElementCheckExpressionCache = createTempCheckExprCache();
             checkTruthinessExpression(node.expression);
-            if (!myDisableInfer) {
-                conditionStackItem = { expr:node.expression, assume:true, /* involved: temporaryPerSourceElementCheckExpressionCache! */ };
-                currentConditionStack.push(conditionStackItem);
-                //temporaryPerSourceElementCheckExpressionCache = undefined;
-            }
+            // if (!myDisableInfer) {
+            //     conditionStackItem = { expr:node.expression, assume:true, /* involved: temporaryPerSourceElementCheckExpressionCache! */ };
+            //     currentConditionStack.push(conditionStackItem);
+            //     //temporaryPerSourceElementCheckExpressionCache = undefined;
+            // }
             checkTestingKnownTruthyCallableOrAwaitableType(node.expression, node.thenStatement);
 
             checkSourceElement(node.thenStatement);
-            if (!myDisableInfer) {
-                Debug.assert(currentConditionStack.length && currentConditionStack.slice(-1)[0].expr===node.expression);
-                currentConditionStack.pop();
-            }
+            // if (!myDisableInfer) {
+            //     Debug.assert(currentConditionStack.length && currentConditionStack.slice(-1)[0].expr===node.expression);
+            //     currentConditionStack.pop();
+            // }
 
             if (node.thenStatement.kind === SyntaxKind.EmptyStatement) {
                 error(node.thenStatement, Diagnostics.The_body_of_an_if_statement_cannot_be_the_empty_statement);
             }
 
-            if (!myDisableInfer){
-                Debug.assert(conditionStackItem);
-                conditionStackItem.assume = false;
-                currentConditionStack.push(conditionStackItem);
-            }
+            // if (!myDisableInfer){
+            //     Debug.assert(conditionStackItem);
+            //     conditionStackItem.assume = false;
+            //     currentConditionStack.push(conditionStackItem);
+            // }
             checkSourceElement(node.elseStatement);
-            if (!myDisableInfer) {
-                Debug.assert(currentConditionStack.length && currentConditionStack.slice(-1)[0].expr===node.expression);
-                currentConditionStack.pop();
-            }
+            // if (!myDisableInfer) {
+            //     Debug.assert(currentConditionStack.length && currentConditionStack.slice(-1)[0].expr===node.expression);
+            //     currentConditionStack.pop();
+            // }
         }
 
         function checkTestingKnownTruthyCallableOrAwaitableType(condExpr: Expression, body?: Statement | Expression) {

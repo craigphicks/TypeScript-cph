@@ -19,14 +19,12 @@ namespace ts {
     };
     declare function isRefTypesTableLeaf(x: RefTypesTable): x is RefTypesTableLeaf;
     declare function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn;
-    declare function isRefTypesTableReturn(x: RefTypesTableNonLeaf): x is RefTypesTableNonLeaf;
+//    declare function isRefTypesTableReturn(x: RefTypesTableNonLeaf): x is RefTypesTableNonLeaf;
     //export type RefTypesType = & { type: Type }; // keep it abstact for now - may want to opimize later
     export enum RefTypesTypeFlags {
         none=0,
         any=1,
         unknown=2,
-//        never=4,  // TODO: kill
-//        anyOrUnknown=3 // TODO: kill
     }
     export interface RefTypesTypeNormal {
         _flags: RefTypesTypeFlags.none;
@@ -49,25 +47,23 @@ namespace ts {
     };
 
     export type RefTypesSymtab = ESMap<Symbol, RefTypesSymtabValue>;
-    export type RefTypesTableNonLeaf = & {
-        kind: RefTypesTableKind.nonLeaf;
-        symbol: Symbol | undefined; // undefined because some expressions have no symbol - will never be included in RefTypesSymTab
-        isconst?: boolean;
-        preReqByType?: ESMap<RefTypesType, RefTypesSymtab>;
-    };
+    // export type RefTypesTableNonLeaf = & {
+    //     kind: RefTypesTableKind.nonLeaf;
+    //     symbol: Symbol | undefined; // undefined because some expressions have no symbol - will never be included in RefTypesSymTab
+    //     isconst?: boolean;
+    //     preReqByType?: ESMap<RefTypesType, RefTypesSymtab>;
+    // };
     export type RefTypesTableLeaf = & {
         kind: RefTypesTableKind.leaf;
         symbol: Symbol | undefined;
         isconst?: boolean;
         type: RefTypesType;
     };
-    export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol | RefTypesTableLeaf | RefTypesTableNonLeaf;
+    export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol | RefTypesTableLeaf;
 
     export type RefTypesTableReturnNoSymbol = & {
         kind: RefTypesTableKind.return;
-        //isconst?: boolean;
         type: RefTypesType;
-        //critPassing?: boolean; // set when crit was truthy
         symtab: RefTypesSymtab;
         constraintItem: ConstraintItem;
     };
@@ -76,21 +72,9 @@ namespace ts {
         symbol?: Symbol | undefined;
         isconst?: boolean;
         type: RefTypesType;
-        //critPassing?: boolean; // set when crit was truthy
         symtab: RefTypesSymtab;
         constraintItem: ConstraintItem;
     };
-
-
-    /**
-     * In the special case of RefTypesTable being returned from a narrow operation on an expression with no symbol,
-     * symbol is undefined.  It still has narrowing affect, but the result will never be merged into a RefTypesSymtab.
-     */
-
-    // export type RefTypesTableRtn = MakeOptional<RefTypesTable, "symbol">;
-    // export type RefTypesTableLeafRtn = MakeOptional<RefTypesTableLeaf, "symbol">;
-    // export type RefTypesTableNonLeafRtn = MakeOptional<RefTypesTableNonLeaf, "symbol">;
-
     export enum InferCritKind {
         none= "none",
         truthy= "truthy",
@@ -111,14 +95,6 @@ namespace ts {
         object = "object"
     };
 
-
-    // const InferCritKind = {
-    //     none: "none",
-    //     truthy: "truthy",
-    //     notnullundef: "notnullundef",
-    //     assignable:"assignable",
-    // } as const;
-    //type InferCritKind = typeof InferCritKind[ keyof typeof InferCritKind ];
     export type InferCrit =
     (
         | {
@@ -178,10 +154,8 @@ namespace ts {
      * X When "inCondition" is true, then the full complexity of expression branching should be preserved to allow for inference, otherwise the complexity should be squashed.
      * Note: Use of "ConstraintItem" obviates the need for "inCondition". (?)
      *
-     * X The "replayData" member is non-false when a variables rhs assigned value is being "replayed" as an alias for the variable, and the sub-member
+     * X The "currentReplayableItem" member is non-false when a variables rhs assigned value is being "replayed" as an alias for the variable, and the sub-member
      * X"byNode" is the Node->Type map which will be used for that purpose.
-     * X The "replayData" member will only ever be non-false when the "on" member is true.
-     * Note: Now we have "ConstraintItem", "replayData" will be replaced by "constraintMacros". That will be faster and easier although involve slightly more memory.
      */
     export type ReplayData = & {
         byNode: NodeToTypeMap;
@@ -189,22 +163,12 @@ namespace ts {
 
     export type InferStatus = & {
         inCondition: boolean;
-        // maxBranches: number
-        //replayData: ReplayData | false;
         currentReplayableItem?: undefined | ReplayableItem;
         replayables: ESMap< Symbol, ReplayableItem >;
-        replayItemStack: ReplayableItem[]; // KILL
+        //replayItemStack: ReplayableItem[]; // KILL - not being used because it is handled by recurive function calls
         declaredTypes: ESMap<Symbol, RefTypesTableLeaf>; // note: symbol entries are (should be) deleted when symbol goes out of scope (postBlock trigger).
-        macroConstraints: ESMap<Symbol, MacroConstraint>; // KILL
+        //macroConstraints: ESMap<Symbol, MacroConstraint>; // KILL
     };
-
-    // export type ConditionItem = & {
-    //     //groupIdx: number;
-    //     arrRttr: RefTypesTableReturn[];
-    //     expr: Expression,
-    //     negate?: boolean;
-    //     prev?: ConditionItem | undefined;
-    // };
 
     export type InferRefArgs = & {
         refTypesSymtab: RefTypesSymtab,
@@ -215,21 +179,10 @@ namespace ts {
         crit: InferCrit,
     };
 
-    /**
-     * InferRefRtnType
-     * This is also the result of applyCrit...
-     * Finally multiple branches are projected onto this binary state.
-     */
     export type NodeToTypeMap = ESMap<Node, Type>;
-    // export type MrNarrowTypesReturnConstraints = & {
-    //     passing: TypeAndConstraint,
-    //     failing?: TypeAndConstraint,
-    // };
     export type MrNarrowTypesReturn = & {
         byNode: NodeToTypeMap;
-        //saveByNodeForReplay?: boolean;
         inferRefRtnType: InferRefRtnType;
-        //constraints: MrNarrowTypesReturnConstraints;
     };
     export type InferRefRtnType = & {
         passing: RefTypesTableReturnNoSymbol;
@@ -241,68 +194,17 @@ namespace ts {
         refTypesSymtab: RefTypesSymtab,
         expr: Readonly<Node>,
         qdotfallout: RefTypesTableReturn[],
-        //qdotbypass?: TypeAndConstraint[], // constraintTODO: make required
         inferStatus: InferStatus,
-        // prevConditionItem?: ConditionItem | undefined
         constraintItem: ConstraintItem;
-        /**
-         * In replay mode, if a symbol is looked-up from a refTypesSymtab and either symbol is undefined or isconst is not true,
-         * then the type will be taken from replayMode.byNode instead.
-         */
-        //readonly replayData: Omit<ReplayData, "symbol" | "expr"> | false;
     };
-
-    // export enum MrNarrowTypesInnerUnaryModifierKind {
-    //     prefixExclamation = 1
-    // };
-    // export type TypeAndConstraint = & {
-    //     type: RefTypesType, symbol?: Symbol, isconst?: boolean,
-    //     constraintNode: ConstraintItemNode,
-
-    // };
-    // export type TypesAndContraints = & {
-    //     arrTypeAndConstraint: {
-    //         type: RefTypesType;
-    //         symbol?: Symbol;
-    //         isconst?: boolean;
-    //         constraintNode?: ConstraintItemNode;
-    //     }[];
-    //     sharedConstraint?: ConstraintItemNode;
-    // };
     export type MrNarrowTypesInnerReturn = & {
         byNode: NodeToTypeMap;
         assignmentData?: { // set when Delcaration or assignment, and replayData was false
-            //saveByNodeForReplay?: boolean;
             symbol: Symbol,
             isconst: boolean;
         }
         arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]>;
-        //constraintItem: ConstraintItem;
-        //typesAndConstraints?: TypesAndContraints; // constraintTODO: make required
-        //arrTypeAndConstraint?: TypeAndConstraint[]; // constraintTODO: kill
-        //unaryModifiers?: MrNarrowTypesInnerUnaryModifierKind[];
-        //negateCrit?: boolean; // set when kind === SyntaxKind.UnaryPrefix && operator === SyntaxKind.ExclamationToken
     };
-
-
-
-    export type CheckExprData = & {
-        node: Node;
-        isConst: boolean;
-        symbol: Symbol;
-        type: Type;
-    };
-    export type ConditionStackItem = & {
-        expr: Expression;
-        assume: boolean;
-        //involved: ESMap<Symbol, CheckExprData[]>;
-    };
-    // export type AliasableAssignmentCacheItem = & {
-    //     expr: Expression;
-    // };
-    // export type AliasableAssignmentCache = & {
-    //     bySymbol: ESMap<Symbol, AliasableAssignmentCacheItem>;
-    // };
     export enum ConstraintItemKind {
         node = "node",
         leaf = "leaf",
@@ -332,7 +234,6 @@ namespace ts {
     export type ConstraintItemNode = ConstraintItemNodeAnd | ConstraintItemNodeOr | ConstraintItemNodeNot;
     export type ConstraintItemLeaf = & {
         kind: ConstraintItemKind.leaf;
-        //negate?: boolean;
         symbol: Symbol;
         type: RefTypesType;
     };

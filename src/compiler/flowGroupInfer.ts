@@ -22,10 +22,7 @@ namespace ts {
             arrBlock?: FlowLabel[];
             arrPostBlock?: FlowLabel[];
         },
-        branchMerger?: boolean; // kill?
-        // trueref?: boolean;
-        // falseref?: boolean;
-        //noncondref?: boolean;
+        //branchMerger?: boolean; // kill?
     };
 
     export interface ContainerItem { node: Node, precOrderIdx: number };
@@ -38,31 +35,18 @@ namespace ts {
         nodeToGroupMap: ESMap< Node, GroupForFlow >;
         dbgFlowToOriginatingGroupIdx: ESMap<FlowNode, number>;
         dbgCreationTimeMs?: bigint;
-        //groupToFlowLabels: ESMap<GroupForFlow, Set<FlowLabel>>
     }
 
     export interface SourceFileMrState {
         sourceFile: SourceFile;
-        //groupedFlowNodes: GroupedFlowNodes;
         groupsForFlow: GroupsForFlow,
         mrState: MrState;
         mrNarrow: MrNarrow;
     };
-
-    // interface AccState {
-    //     dummy: void;
-    // }
-    // interface StackItem {
-    //     group: FlowNodeGroup;
-    //     //refTypes?: RefTypes;
-    //     depStackItems: StackItem[];  // the referenced items are "safe" from garbage collection even if stack is popped.
-    // }
     interface CurrentBranchesItem {
         refTypesTableReturn: RefTypesTableReturnNoSymbol;
         byNode: NodeToTypeMap;
     };
-
-
     enum CurrentBranchesElementKind {
         none=0,
         plain=1,
@@ -77,8 +61,8 @@ namespace ts {
     interface CurrentBranchElementTF {
         kind: CurrentBranchesElementKind.tf;
         gff: GroupForFlow;
-        truthy?: CurrentBranchesItem; // TODO: should not be optional
-        falsy?: CurrentBranchesItem; // TODO: should not be optional
+        truthy: CurrentBranchesItem;
+        falsy: CurrentBranchesItem;
         originalConstraintIn: ConstraintItem;
         done?: boolean
     };
@@ -95,19 +79,10 @@ namespace ts {
     };
 
     export interface MrState {
-        //flowNodeGroupToStateMap: ESMap <FlowNodeGroup, AccState>;
-        //stack?: FlowNodeGroup[];
-        //groupToStackIdx: ESMap<FlowNodeGroup, number>;
-//        stack?: StackItem[];
         checker: TypeChecker;
-//        currentBranchesMap: ESMap<FlowNodeGroup, CurrentBranchesItem >;
-//        groupToNodeToType?: ESMap< FlowNodeGroup, NodeToTypeMap>;
-        //symbolToNodeToTypeMap: ESMap< Symbol, NodeToTypeMap>;
         replayableItems: ESMap< Symbol, ReplayableItem >;
         declaredTypes: ESMap<Symbol,RefTypesTableLeaf>;
         macroConstraints: ESMap<Symbol,MacroConstraint>
-        // aliasableAssignmentsCache: ESMap<Symbol, AliasAssignableState>; // not sure it makes sense anymore
-        // aliasInlineLevel: number;
         forFlow: {
             heap: Heap; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
             currentBranchesMap: ESMap< Readonly<GroupForFlow>, CurrentBranchElement >;
@@ -164,11 +139,6 @@ namespace ts {
     }
 
     export function createSourceFileInferState(sourceFile: SourceFile, checker: TypeChecker): SourceFileMrState {
-        //const t0 = process.hrtime.bigint();
-        //const groupedFlowNodes = groupFlowNodesFromSourceFile(sourceFile);
-        //const t1 = process.hrtime.bigint() - t0;
-        //groupedFlowNodes.dbgCreationTimeMs = t1/BigInt(1000000);
-
         const t0 = process.hrtime.bigint();
         const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
         if (getMyDebug()){
@@ -177,9 +147,7 @@ namespace ts {
         }
         const t1 = process.hrtime.bigint() - t0;
         groupsForFlow.dbgCreationTimeMs = t1/BigInt(1000000);
-
         dbgs = createDbgs(checker);
-
         const heap = createHeap(groupsForFlow);
         const mrState: MrState = {
             checker,
@@ -193,7 +161,6 @@ namespace ts {
                 groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap >(),
             }
         };
-
         const mrNarrow = createMrNarrow(checker, mrState);
         return {
             sourceFile,
@@ -224,7 +191,6 @@ namespace ts {
          * Currently requiring heap to be empty - so a simple sort could be used instead.
          * However, if heap were were to be added to on the fly, while resolving, heap will be useful.
          */
-        // @ ts-expect-error
         const acc = new Set<GroupForFlow>();
         let tmpacc0 = new Set<GroupForFlow>();
         let change = true;
@@ -240,7 +206,6 @@ namespace ts {
                 if (!setAnteg) return;
                 setAnteg.forEach(anteg=>{
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
-                    //if (cbe) Debug.assert(!cbe.done);
                     if (!cbe){
                         Debug.assert(!mrState.forFlow.dbgCurrentBranchesMapWasDeleted.has(anteg));
                         tmpacc1.add(anteg);
@@ -286,7 +251,6 @@ namespace ts {
             debugCheck = true;
             if (debugCheck) {
                 const setOfAnteGroups =groupsForFlow.groupToAnteGroupMap.get(groupForFlow);
-                //if (groupForFlow.branchMerger) Debug.assert(setOfAnteGroups);
                 if (setOfAnteGroups){
                     setOfAnteGroups.forEach(ag=>{
                         Debug.assert(!heap.has(ag.groupIdx));
@@ -329,14 +293,6 @@ namespace ts {
                 });
                 consoleLog(`resolveGroupForFlow[dbg:] }`);
             }
-            // if (!setOfFlow) consoleLog(`resolveGroupForFlow[dbg:], setOfFlow: undefined`);
-            // else {
-            //     consoleLog(`resolveGroupForFlow[dbg:] setOfFlow:{`);
-            //     setOfFlow?.forEach(fn=>{
-            //         consoleLog(`resolveGroupForFlow[dbg:]   ${dbgs!.dbgFlowToString(fn, /* */ true)},`);
-            //     });
-            //     consoleLog(`resolveGroupForFlow[dbg:] }`);
-            // }
         }
         function mergeInfoRefTypesSymtab(source: Readonly<RefTypesSymtab>, target: RefTypesSymtab): void {
             source.forEach((x,symbol)=>{
@@ -400,10 +356,6 @@ namespace ts {
             const origCbe = mrState.forFlow.currentBranchesMap.get(origGroup);
             Debug.assert(origCbe);
             Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
-            // Delete the finished-with cbe.
-            // consoleLog(`doOnePostIf[dbg] currentBranchesMap.delete(groupIdx:${origGroup.groupIdx})`);
-            // mrState.forFlow.currentBranchesMap.delete(origGroup);
-            // mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(origGroup, true);
             setOfKeysToDeleteFromCurrentBranchesMap.add(origGroup);
             consoleLog(`doOnePostIf[out] fnpi: ${dbgs?.dbgFlowToString(fnpi)}`);
             consoleGroupEnd();
@@ -444,13 +396,9 @@ namespace ts {
                 }
             }
             if (firstAnteGroup){
-                //consoleLog(`getAnteConstraintItemAndSymtab, firstAnteGroup.groupIdx: ${firstAnteGroup.groupIdx}`);
                 const cbe = mrState.forFlow.currentBranchesMap.get(firstAnteGroup);
                 Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
                 const {constraintItem,symtab}=cbe.item.refTypesTableReturn;
-                //consoleLog(`getAnteConstraintItemAndSymtab, doOnePostIf[dbg] currentBranchesMap.delete(groupIdx:${firstAnteGroup.groupIdx})`);
-                //mrState.forFlow.currentBranchesMap.delete(firstAnteGroup);
-                //mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(firstAnteGroup, true);
                 setOfKeysToDeleteFromCurrentBranchesMap.add(firstAnteGroup);
                 return { constraintItem,symtab };
             }
@@ -492,17 +440,16 @@ namespace ts {
             });
             /**
              * clear the deleted variables from the constraint
+             * TODO: not at all clear about this - it is dire need of some very explicit testing.
              */
             if (localsSet.size) {
                 if (getMyDebug()){
-                    //consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[before removal]:`);
                     mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
                         consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[before removal]: ${s}`);
                     });
                 }
                 constraintItemArg = removeSomeVariablesFromConstraint(constraintItemArg,localsSet,mrNarrow);
                 if (getMyDebug()){
-                    //consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[before removal]:`);
                     mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
                         consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[after removal]: ${s}`);
                     });
@@ -513,10 +460,9 @@ namespace ts {
         const crit: InferCrit = !boolsplit ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         const inferStatus: InferStatus = {
             inCondition: !!boolsplit,
-            replayItemStack: [],
+            currentReplayableItem: undefined,
             replayables: sourceFileMrState.mrState.replayableItems,
             declaredTypes: sourceFileMrState.mrState.declaredTypes,
-            macroConstraints: sourceFileMrState.mrState.macroConstraints,
         };
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
             refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
@@ -585,7 +531,6 @@ namespace ts {
         if (!groupForFlow){
             if (getMyDebug()){
                 consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
-                //return sourceFileMrState.mrState.checker.getErrorType();
             }
             // try to get symbol and defeault type
             switch (expr.kind){
@@ -606,7 +551,6 @@ namespace ts {
         updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState);
         resolveHeap(sourceFileMrState);
         return sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
-            // sourceFileMrState.mrState.checker.getErrorType();
 
     }
 
@@ -636,9 +580,6 @@ namespace ts {
             astr.push(`[${dbgs?.dbgNodeToString(maximalNode)}]:`);
             astr.push(`  groupIdx:${g.groupIdx}`);
             astr.push(`  cbe.kind:${cbe.kind}`);
-            // eslint-disable-next-line no-double-space
-            //astr.push(`  cbe.done:${cbe.done??false}`);
-            //if (cbe.done) return;
             if (cbe.kind===CurrentBranchesElementKind.plain){
                 astr.push(...doItem(cbe.item).map(s => "    "+s));
             }
