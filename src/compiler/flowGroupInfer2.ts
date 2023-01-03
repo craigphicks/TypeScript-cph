@@ -26,10 +26,10 @@ namespace ts {
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void,
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType,
-        mergeArrRefTypesTableReturnToRefTypesTableReturn({
-            symbol, isconst, type:typeIn, arr, stripSymbols}: {
-            symbol?: Symbol | undefined, isconst?: boolean | undefined, type?: RefTypesType, arr: Readonly<RefTypesTableReturn[]>, stripSymbols?: boolean}):
-            RefTypesTableReturn;
+        // mergeArrRefTypesTableReturnToRefTypesTableReturn({
+        //     symbol, isconst, type:typeIn, arr, stripSymbols}: {
+        //     symbol?: Symbol | undefined, isconst?: boolean | undefined, type?: RefTypesType, arr: Readonly<RefTypesTableReturn[]>, stripSymbols?: boolean}):
+        //     RefTypesTableReturn;
         createNodeToTypeMap(): NodeToTypeMap,
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
         mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab,
@@ -60,7 +60,7 @@ namespace ts {
             equalRefTypesTypes,
             mergeToRefTypesType,
             unionOfRefTypesType,
-            mergeArrRefTypesTableReturnToRefTypesTableReturn,
+            //mergeArrRefTypesTableReturnToRefTypesTableReturn,
             createNodeToTypeMap,
             mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
             mergeArrRefTypesSymtab,
@@ -127,6 +127,7 @@ namespace ts {
             dbgSignatureToString,
             dbgSymbolToStringSimple,
             dbgTypeToString,
+            dbgTypeToStringDetail,
         } = createDbgs(checker);
 
         function arrayFromSet<T>(set: Set<T>): T[] {
@@ -141,7 +142,10 @@ namespace ts {
         function createRefTypesTypeUnknown(): RefTypesTypeUnknown {
             return { _flags: RefTypesTypeFlags.unknown, _set: undefined };
         }
-        function createRefTypesType(type?: Readonly<Type>): RefTypesType {
+        function createRefTypesType(type?: Readonly<Type> | Readonly<Type[]>): RefTypesType {
+            if (isArray(type)){
+                return addTypesToRefTypesType({ source:type.slice(1), target:createRefTypesType(type[0]) });
+            }
             if (type===anyType) return { _flags: RefTypesTypeFlags.any, _set: undefined };
             if (type===unknownType) return { _flags: RefTypesTypeFlags.unknown, _set: undefined };
             const _set = new Set<Type>();
@@ -161,6 +165,10 @@ namespace ts {
             return { _flags: t._flags, _set: t._set? new Set(t._set) : undefined } as any as RefTypesType;
         }
 
+        function addTypesToRefTypesType({source:at,target:target}: { source: Readonly<Type>[], target: RefTypesType}): RefTypesType {
+            at.forEach(t=>addTypeToRefTypesType({ source:t,target }));
+            return target;
+        }
         function addTypeToRefTypesType({source:t,target:target}: { source: Readonly<Type>, target: RefTypesType}): void {
             if (target._flags){
                 if (target._flags===RefTypesTypeFlags.any) return;
@@ -398,13 +406,8 @@ namespace ts {
             }
         }
 
-        // function mergeArrRefTypesTableReturnToRefTypesTableNonLeaf(symbol: Symbol | undefined, isconst: boolean | undefined, arr: Readonly<RefTypesTableReturn[]>): RefTypesTableNonLeaf {
-        //     const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = arr.map(t=>{
-        //         return [t.type,t.symtab];
-        //     });
-        //     return createRefTypesTableNonLeaf(symbol, isconst, arrTypeSymtab);
-        // };
         /**
+         * TODO: Doesn't do clever stuff when merging symbols and constraints - think about it.
          * Requires: that every RefTypesTableReturn in "arr" have undefined values for symbol and isconst.
          * arr[i].type, for all i, will be merged (union).
          * arr[i].symtab, for all i, will be merged (union).
@@ -415,33 +418,52 @@ namespace ts {
          * @param arr
          * @returns
          */
-        function mergeArrRefTypesTableReturnToRefTypesTableReturn({
-            symbol, isconst, type:typeIn, arr, stripSymbols}: {
-            symbol?: Symbol | undefined, isconst?: boolean | undefined, type?: RefTypesType, arr: Readonly<RefTypesTableReturn[]>, stripSymbols?: boolean}):
-            RefTypesTableReturn {
+        function mergeArrRefTypesTableReturnToRefTypesTableReturnShallow({
+            arr, stripSymbols}: {
+            arr: Readonly<RefTypesTableReturn[]>, stripSymbols?: boolean}):
+            RefTypesTableReturnNoSymbol {
+
+                // const rttrcoPassing: RefTypesTableReturnNoSymbol = {
+                //     kind: RefTypesTableKind.return,
+                //     symtab: createRefTypesSymtab(),
+                //     type: createRefTypesType(), // never
+                //     constraintItem: createFlowConstraintAlways(),
+                // };
+                // const passingOredConstraints: ConstraintItem[] = [];
+                // arrRttrcoPassing.forEach(rttr2=>{
+                //     mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoPassing.symtab });
+                //     mergeToRefTypesType({ source: rttr2.type, target: rttrcoPassing.type });
+                //     if (rttr2.constraintItem) passingOredConstraints.push(rttr2.constraintItem);
+                // });
+                // if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = createFlowConstraintNever();
+                // else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
+                // else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraintsShallow(passingOredConstraints, mrNarrow);
+
+
             if (arr.length===0) Debug.fail("arr.length unexpectedly 0");
             if (!stripSymbols) {
+                // Removing symbols could be removing valuable info. Design time check.
                 arr.forEach(rttr=>{
-                    Debug.assert(rttr.symbol===undefined || rttr.symbol===symbol, "rttr.symbol!==undefined");
-                    Debug.assert(rttr.isconst!==true || rttr.isconst===isconst, "rttr.isconst===true");
+                    Debug.assert(rttr.symbol===undefined, "rttr.symbol!==undefined");
+                    Debug.assert(rttr.isconst!==true, "rttr.isconst===true");
                 });
             }
             if (arr.length===1){
                 return arr[0];
             }
-            const type = typeIn??createRefTypesType();
+            const type = createRefTypesType();
             const symtab = createRefTypesSymtab();
             const arrConstr: ConstraintItem[]=[];
             arr.forEach(rttr=>{
-                if (!typeIn) mergeToRefTypesType({ source:rttr.type, target:type });
+                mergeToRefTypesType({ source:rttr.type, target:type });
                 mergeIntoRefTypesSymtab({ source: rttr.symtab, target: symtab });
-                if (rttr.constraintItem) arrConstr.push(rttr.constraintItem);
+                arrConstr.push(rttr.constraintItem);
             });
-            const constraintItem: ConstraintItem = (arrConstr.length === 0) ? createFlowConstraintAlways() : (arrConstr.length === 1) ? arrConstr[0]: orIntoConstraints(arrConstr, mrNarrow);
+            let constraintItem: ConstraintItem;
+            if (isNeverType(type)) constraintItem = createFlowConstraintNever();
+            else constraintItem = orIntoConstraintsShallow(arrConstr, mrNarrow);
             return {
                 kind: RefTypesTableKind.return,
-                symbol,
-                isconst,
                 type,
                 symtab,
                 constraintItem
@@ -576,32 +598,34 @@ namespace ts {
                 });
             }
             else if (crit.kind===InferCritKind.typeof) {
-                forEachRefTypesTypeType(rt, type => {
-                    if (type===anyType || type===unknownType){
-                        func(type, /* pass */ true, /* fail */ true);
-                        return;
-                    }
-                    else if (type===neverType){
-                        func(type, /* pass */ false, /* fail */ false);
-                        return;
-                    }
-                    let rel: boolean;
-                    if (crit.typeofString===InferCritTypeofStrings.undefined) rel = (type===undefinedType);
-                    else if (crit.typeofString===InferCritTypeofStrings.boolean) rel = !!(type.flags & TypeFlags.BooleanLike);
-                    else if (crit.typeofString===InferCritTypeofStrings.number) rel = !!(type.flags & TypeFlags.NumberLike);
-                    else if (crit.typeofString===InferCritTypeofStrings.bigint) rel = !!(type.flags & TypeFlags.BigIntLike);
-                    else if (crit.typeofString===InferCritTypeofStrings.string) rel = !!(type.flags & TypeFlags.StringLike);
-                    else if (crit.typeofString===InferCritTypeofStrings.symbol) rel = !!(type.flags & TypeFlags.ESSymbolLike);
-                    else if (crit.typeofString===InferCritTypeofStrings.function || crit.typeofString===InferCritTypeofStrings.object) {
-                        const isFunc = !!(checker.getSignaturesOfType(type, SignatureKind.Call).length || checker.getSignaturesOfType(type, SignatureKind.Construct).length);
-                        const isObj = !!(type.flags & TypeFlags.Object);
-                        if (crit.typeofString===InferCritTypeofStrings.function) rel = isFunc;
-                        else rel = isObj && !isFunc;
-                    }
-                    else Debug.fail();
-                    if (crit.negate) rel = !rel;
-                    func(type, rel, !rel);
-                });
+                Debug.fail("unexpected");
+                //forEachRefTypesTypeType(rt, type => {
+                    // const atypeofstrings = typeToTypeofStrings(type);
+                    // if (type===anyType || type===unknownType){
+                    //     func(type, /* pass */ true, /* fail */ true);
+                    //     return;
+                    // }
+                    // else if (type===neverType){
+                    //     func(type, /* pass */ false, /* fail */ false);
+                    //     return;
+                    // }
+                    // let rel: boolean;
+                    // if (crit.typeofString===InferCritTypeofStrings.undefined) rel = (type===undefinedType);
+                    // else if (crit.typeofString===InferCritTypeofStrings.boolean) rel = !!(type.flags & TypeFlags.BooleanLike);
+                    // else if (crit.typeofString===InferCritTypeofStrings.number) rel = !!(type.flags & TypeFlags.NumberLike);
+                    // else if (crit.typeofString===InferCritTypeofStrings.bigint) rel = !!(type.flags & TypeFlags.BigIntLike);
+                    // else if (crit.typeofString===InferCritTypeofStrings.string) rel = !!(type.flags & TypeFlags.StringLike);
+                    // else if (crit.typeofString===InferCritTypeofStrings.symbol) rel = !!(type.flags & TypeFlags.ESSymbolLike);
+                    // else if (crit.typeofString===InferCritTypeofStrings.function || crit.typeofString===InferCritTypeofStrings.object) {
+                    //     const isFunc = !!(checker.getSignaturesOfType(type, SignatureKind.Call).length || checker.getSignaturesOfType(type, SignatureKind.Construct).length);
+                    //     const isObj = !!(type.flags & TypeFlags.Object);
+                    //     if (crit.typeofString===InferCritTypeofStrings.function) rel = isFunc;
+                    //     else rel = isObj && !isFunc;
+                    // }
+                    // else Debug.fail();
+                    // if (crit.negate) rel = !rel;
+                    // func(type, rel, !rel);
+                //});
             }
             else {
                 Debug.assert(false, "cannot handle crit.kind ", ()=>crit.kind);
@@ -633,49 +657,238 @@ namespace ts {
         }
 
 
-        /**
-         *
-         * @param param0
-         */
-        function mrNarrowTypesByTypeof({
-            refTypesSymtab:refTypesSymtabIn, constraintItem, expr: typeofArgExpr, inferStatus: inferStatusIn
-        }: Omit<InferRefInnerArgs, "qdotfallout">, negateCrit: boolean, typeString: string): MrNarrowTypesInnerReturn {
-            const critTypeofString: InferCritTypeofStrings | undefined = (()=>{
-                switch (typeString){
-                    case InferCritTypeofStrings.undefined: return InferCritTypeofStrings.undefined;
-                    case InferCritTypeofStrings.boolean: return InferCritTypeofStrings.boolean;
-                    case InferCritTypeofStrings.number: return InferCritTypeofStrings.number;
-                    case InferCritTypeofStrings.bigint: return InferCritTypeofStrings.bigint;
-                    case InferCritTypeofStrings.string: return InferCritTypeofStrings.string;
-                    case InferCritTypeofStrings.symbol: return InferCritTypeofStrings.symbol;
-                    case InferCritTypeofStrings.function: return InferCritTypeofStrings.function;
-                    case InferCritTypeofStrings.object: return InferCritTypeofStrings.object;
+        // /**
+        //  *
+        //  * @param param0
+        //  */
+        // function mrNarrowTypesByTypeof({
+        //     refTypesSymtab:refTypesSymtabIn, constraintItem, expr: typeofArgExpr, inferStatus: inferStatusIn
+        // }: Omit<InferRefInnerArgs, "qdotfallout">, negateCrit: boolean, typeString: string): MrNarrowTypesInnerReturn {
+        //     const critTypeofString: InferCritTypeofStrings | undefined = (()=>{
+        //         switch (typeString){
+        //             case InferCritTypeofStrings.undefined: return InferCritTypeofStrings.undefined;
+        //             case InferCritTypeofStrings.boolean: return InferCritTypeofStrings.boolean;
+        //             case InferCritTypeofStrings.number: return InferCritTypeofStrings.number;
+        //             case InferCritTypeofStrings.bigint: return InferCritTypeofStrings.bigint;
+        //             case InferCritTypeofStrings.string: return InferCritTypeofStrings.string;
+        //             case InferCritTypeofStrings.symbol: return InferCritTypeofStrings.symbol;
+        //             case InferCritTypeofStrings.function: return InferCritTypeofStrings.function;
+        //             case InferCritTypeofStrings.object: return InferCritTypeofStrings.object;
+        //         }
+        //     })();
+        //     if (!critTypeofString) {
+        //         inferStatusIn.groupNodeToTypeMap.set(typeofArgExpr, errorType);
+        //         return {
+        //             arrRefTypesTableReturn: []
+        //         };
+        //     };
+        //     const { inferRefRtnType: {passing,failing} } = mrNarrowTypes({
+        //         refTypesSymtab: refTypesSymtabIn,
+        //         constraintItem,
+        //         expr: typeofArgExpr,
+        //         crit: {
+        //             kind: InferCritKind.typeof,
+        //             typeofString: critTypeofString,
+        //             negate: negateCrit,
+        //             alsoFailing: true
+        //         },
+        //         qdotfallout: undefined,
+        //         inferStatus: { ...inferStatusIn, inCondition:true }
+        //     });
+        //     const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
+        //     arrRefTypesTableReturn.push(passing , failing!);
+        //     return {
+        //         arrRefTypesTableReturn
+        //     };
+        // }
+
+        function typeToTypeofStrings(tstype: Type): string[]{
+            const flags = tstype.flags;
+            if (flags & TypeFlags.UnionOrIntersection) Debug.fail("union or intersection types unexpected here");
+            // Never           = 1 << 17,  // Never type
+            // Unknown         = 1 << 1,
+            if (flags & (TypeFlags.Never)) return []; //Debug.fail("never type unexpected here");
+            // Any             = 1 << 0,
+            if (flags & (TypeFlags.Any | TypeFlags.Unknown)) return ["undefined","string","number","boolean","bignint","object","function","symbol"];
+            // String          = 1 << 2,
+            // StringLiteral   = 1 << 7,
+            if (flags & (TypeFlags.String | TypeFlags.StringLiteral)) return ["string"];
+            // Number          = 1 << 3,
+            // NumberLiteral   = 1 << 8,
+            if (flags & (TypeFlags.Number | TypeFlags.NumberLiteral)) return ["number"];
+            // Boolean         = 1 << 4,
+            // BooleanLiteral  = 1 << 9,
+            if (flags & (TypeFlags.Boolean | TypeFlags.BooleanLiteral)) return ["boolean"];
+            // BigInt          = 1 << 6,
+            // BigIntLiteral   = 1 << 11,
+            if (flags & (TypeFlags.BigInt | TypeFlags.BigIntLiteral)) return ["bigint"];
+
+            // Enum            = 1 << 5, -- is this always or'ed with number or string???
+            // EnumLiteral     = 1 << 10,  // Always combined with StringLiteral, NumberLiteral, or Union
+
+            // ESSymbol        = 1 << 12,  // Type of symbol primitive introduced in ES6
+            // UniqueESSymbol  = 1 << 13,  // unique symbol
+            if (flags & (TypeFlags.ESSymbol | TypeFlags.UniqueESSymbol)) return ["symbol"];
+
+            // Void            = 1 << 14,
+            // Undefined       = 1 << 15,
+            if (flags & (TypeFlags.Void | TypeFlags.Undefined)) return ["undefined"];
+
+            // Null            = 1 << 16,
+            if (flags & (TypeFlags.Null)) return ["object"];
+            // Object          = 1 << 19,  // Object type
+            if (flags & (TypeFlags.Object)) {
+                if (checker.isArrayType(tstype)||checker.isTupleType(tstype)) return ["object"];
+                assertType<ObjectType>(tstype);
+                if (tstype.callSignatures?.length || tstype.constructSignatures?.length) return ["function"];
+                return ["object"];
+            }
+            Debug.fail(`unexpected tstype.flags: ${Debug.formatTypeFlags(flags)}`);
+            // TypeParameter   = 1 << 18,  // Type parameter
+            // Union           = 1 << 20,  // Union (T | U)
+            // Intersection    = 1 << 21,  // Intersection (T & U)
+            // Index           = 1 << 22,  // keyof T
+            // IndexedAccess   = 1 << 23,  // T[K]
+            // Conditional     = 1 << 24,  // T extends U ? X : Y
+            // Substitution    = 1 << 25,  // Type parameter substitution
+            // NonPrimitive    = 1 << 26,  // intrinsic object type
+            // TemplateLiteral = 1 << 27,  // Template literal type
+            // StringMapping   = 1 << 28,  // Uppercase/Lowercase type
+
+        }
+
+        function mrNarrowTypesByTypeofExpression({
+            refTypesSymtab:refTypesSymtabIn, expr, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn
+        }: InferRefInnerArgs & {expr: TypeOfExpression}): MrNarrowTypesInnerReturn {
+            const rhs = mrNarrowTypes({ refTypesSymtab:refTypesSymtabIn, expr:expr.expression, qdotfallout: undefined, inferStatus, constraintItem: constraintItemIn, crit:{ kind:InferCritKind.none } });
+
+            // This call will return a particular union type of LiteralStringType, with all 8 possible types.
+            // This is very confusing, but required, magic:
+            // (1) The "TypeOf" has nothing to do the typeof operator, it is simply evaluating the type of the expresion.
+            // (2) It always returns a union of ALL EIGHT types, even though the "typeof" operand may have a range of only a subset of that.
+            // (3) We cannot just create the appropriate subset calling checker.createLiteralType(TypeFlags.StringLiteral, str)
+            // --- because those StringLiteralType will incur "not comparable" errors when comparing to strings, despite having identical values.
+            // --- The exact logic for that incompatibility is opaque.
+            // (4) However, by using "tot8type" created here, the constituent StringLiteralType members are comparable.
+            // --- One would expect that there would be a function with no argument, e.g, "getUnionOfTypeOfStringLiterals()".
+            const tot8Type = checker.getTypeOfExpression(expr);
+            // const filteredTypes = (tot8Type as UnionType).types.filter(t=>{
+            //     return set.has((t as StringLiteralType).value);
+            // });
+
+
+            const rhsUnmerged = rhs.inferRefRtnType.unmerged!;
+            const byTypeofMap = new Map<string, RefTypesTableReturnNoSymbol[]>();
+            const aAnyOrUnknown: Readonly<RefTypesTableReturn>[];
+            rhsUnmerged.forEach(rttr=>{
+                if (isNeverType(rttr.type)) return;
+                if (isNeverConstraint(rttr.constraintItem)) return;
+                if (isAnyType(rttr.type)||isUnknownType(rttr.type)) {
+                    aAnyOrUnknown.push(rttr);
                 }
-            })();
-            if (!critTypeofString) {
-                inferStatusIn.groupNodeToTypeMap.set(typeofArgExpr, errorType);
-                return {
-                    arrRefTypesTableReturn: []
-                };
-            };
-            const { inferRefRtnType: {passing,failing} } = mrNarrowTypes({
-                refTypesSymtab: refTypesSymtabIn,
-                constraintItem,
-                expr: typeofArgExpr,
-                crit: {
-                    kind: InferCritKind.typeof,
-                    typeofString: critTypeofString,
-                    negate: negateCrit,
-                    alsoFailing: true
-                },
-                qdotfallout: undefined,
-                inferStatus: { ...inferStatusIn, inCondition:true }
+                const map = new Map<string, Type[]>();
+                forEachRefTypesTypeType(rttr.type, t=>{
+                    const astr = typeToTypeofStrings(t);
+                    Debug.assert(astr.length===1);
+                    const got = map.get(astr[0]);
+                    if (got) got.push(t);
+                    else map.set(astr[0],[t]);
+                });
+                map.forEach((at,typeofstr)=>{
+                    //const type = createRefTypesType(at);
+                    let rttr1: RefTypesTableReturn = {
+                        ...rttr,
+                        type: createRefTypesType(at)
+                    };
+                    if (rttr1.symbol) rttr1 = mergeTypeIntoNewSymtabAndNewConstraint(rttr1, inferStatus);
+                    const got = byTypeofMap.get(typeofstr);
+                    if (got) got.push(rttr1);
+                    else byTypeofMap.set(typeofstr,[rttr1]);
+                });
             });
+            // Prepare up to 8 RefTypetTableReturn, one for used typeofstring.
             const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
-            arrRefTypesTableReturn.push(passing , failing!);
+            byTypeofMap.forEach((arr,typeofstr)=>{
+                const rttr2 = mergeArrRefTypesTableReturnToRefTypesTableReturnShallow({ arr });
+                rttr2.type =
+                arrRefTypesTableReturn.push({})
+            })
+
+
+            const rhstype = rhs.inferRefRtnType.passing.type;
+
+            // Get the subset of typeof result strings corresponfing to the operand.
+            const set = new Set<string>();
+            forEachRefTypesTypeType(rhstype, tstype=>{
+                typeToTypeofStrings(tstype).forEach(str=>set.add(str));
+            });
+
+            const filtered8type = checker.getUnionType(filteredTypes);
+            // (tot8Type as UnionType).types = filteredTypes;
+            // This does NOT work.
+            // const type = createRefTypesType();
+            // set.forEach(str=>{
+            //     addTypeToRefTypesType({ source: checker.createLiteralType(TypeFlags.StringLiteral, str), target: type });
+            // });
             return {
-                arrRefTypesTableReturn
+                arrRefTypesTableReturn:[{
+                    kind:RefTypesTableKind.return,
+                    type: createRefTypesType(filtered8type),
+                    symtab: rhs.inferRefRtnType.passing.symtab,
+                    constraintItem: rhs.inferRefRtnType.passing.constraintItem
+                }]
             };
+        }
+
+        function binaryEquality(typeLeft: Type, typeRight: Type):
+        { eq: boolean,neq: boolean, identity: boolean, comparable: boolean, comparableLR: boolean, comparableRL: boolean | undefined }{
+            let eq = false;
+            let neq = false;
+            let comparableLR: boolean;
+            let comparableRL: boolean | undefined;
+            let comparable = false;
+            let identity = false;
+            // if (typeLeft.flags | TypeFlags.Literal && typeRight.flags | TypeFlags.Literal){
+            //     assertType<LiteralType>(typeLeft);
+            //     assertType<LiteralType>(typeRight);
+            //     if (typeLeft.flags | TypeFlags.BigIntLiteral && typeRight.flags | TypeFlags.BigIntLiteral){
+            //         assertType<PseudoBigInt>(typeLeft.value);
+            //         assertType<PseudoBigInt>(typeRight.value);
+            //         if (typeLeft.value.base10Value===typeRight.value.base10Value && typeLeft.value.negative===typeRight.value.negative) eq=true;
+            //         else neq = true;
+            //     }
+            //     else {
+            //         if (typeLeft.value===typeRight.value) eq = true;
+            //         else neq = true;
+            //     }
+            // }
+            // if (typeLeft.flags | TypeFlags.Undefined || typeRight.flags | TypeFlags.Undefined) {
+            //     if (typeLeft.flags | TypeFlags.Undefined && typeRight.flags | TypeFlags.Undefined) eq = true;
+            //     else neq = true;
+            // }
+            comparable = ((comparableLR = checker.isTypeRelatedTo(typeLeft,typeRight,checker.getRelations().comparableRelation))
+                || (comparableRL = checker.isTypeRelatedTo(typeRight,typeLeft,checker.getRelations().comparableRelation)));
+            if (!comparable) neq = true;
+            else {
+                identity = checker.isTypeRelatedTo(typeLeft,typeRight,checker.getRelations().identityRelation);
+                {
+                    const identityRL = checker.isTypeRelatedTo(typeRight,typeLeft,checker.getRelations().identityRelation);
+                    Debug.assert(identity===identityRL);
+                }
+                if (identity) eq = true;
+                else neq = true;
+            }
+            if (getMyDebug()){
+                consoleGroup(`binaryEquality start`);
+                const as: string[] = [];
+                as.push(...dbgTypeToStringDetail(typeLeft).map(s=>`binaryEquality: leftType: ${s}`));
+                as.push(...dbgTypeToStringDetail(typeRight).map(s=>`binaryEquality: rightType: ${s}`));
+                as.push(`{eq:${eq}, neq:${neq}, identity:${identity}, comparable:${comparable} , comparableLR:${comparableLR}, comparableRL:${comparableRL}}`);
+                as.forEach(s=>consoleLog(s));
+                consoleLog(`binaryEquality end`);
+                consoleGroupEnd();
+            }
+            return { eq,neq, identity, comparable , comparableLR, comparableRL };
         }
 
 
@@ -693,36 +906,85 @@ namespace ts {
                     //return narrowTypeByTruthiness(narrowType(type, expr.right, assumeTrue), expr.left, assumeTrue);
                 case SyntaxKind.EqualsEqualsToken:
                 case SyntaxKind.ExclamationEqualsToken:
-                case SyntaxKind.EqualsEqualsEqualsToken:
-                case SyntaxKind.ExclamationEqualsEqualsToken:
-                    if (leftExpr.kind === SyntaxKind.TypeOfExpression || rightExpr.kind === SyntaxKind.TypeOfExpression){
-                        let typeofArgExpr: Expression | undefined;
-                        let typeofString: string | undefined;
-                        if (isTypeOfExpression(leftExpr) && isStringLiteral(rightExpr)){
-                            typeofArgExpr = leftExpr.expression;
-                            typeofString = rightExpr.text;
-                        }
-                        else if (isTypeOfExpression(rightExpr) && isStringLiteral(leftExpr)){
-                            typeofArgExpr = rightExpr.expression;
-                            typeofString = leftExpr.text;
-                        }
-                        if (typeofArgExpr && typeofString){
-                            const negateCrit = operatorToken.kind===SyntaxKind.ExclamationEqualsEqualsToken || operatorToken.kind===SyntaxKind.ExclamationEqualsToken;
-                            return mrNarrowTypesByTypeof({ refTypesSymtab:refTypesSymtabIn, expr:typeofArgExpr, inferStatus, constraintItem: constraintItemIn }, negateCrit, typeofString);
-                        }
-                        else {
-                            // still required to process for side effects
-                            const arrRttr: RefTypesTableReturn[]=[];
-                            const rl = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, expr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn });
-                            const rr = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, expr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn });
-                            arrRttr.push(...rl.arrRefTypesTableReturn);
-                            arrRttr.push(...rr.arrRefTypesTableReturn);
-                            return {
-                                arrRefTypesTableReturn: arrRttr
-                            };
-                        }
-
+                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    break;
+                case SyntaxKind.EqualsEqualsEqualsToken:{
+                    const rhs0 = mrNarrowTypes({
+                        expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
+                        refTypesSymtab:refTypesSymtabIn,
+                        constraintItem: constraintItemIn
+                    });
+                    const rhs1 = mrNarrowTypes({
+                        expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
+                        refTypesSymtab:rhs0.inferRefRtnType.passing.symtab,
+                        constraintItem: rhs0.inferRefRtnType.passing.constraintItem
+                    });
+                    // now that the precursor flow types have been setup, we can call checker.getTypeOfExpression.
+                    if (getMyDebug()){
+                        dbgTypeToStringDetail(getTypeFromRefTypesType(rhs0.inferRefRtnType.passing.type)).forEach(s=>{
+                            consoleLog(`mrNarrowTypesByBinaryExpression[dbg] leftType: ${s}`);
+                        });
+                        dbgTypeToStringDetail(getTypeFromRefTypesType(rhs1.inferRefRtnType.passing.type)).forEach(s=>{
+                            consoleLog(`mrNarrowTypesByBinaryExpression[dbg] rightType: ${s}`);
+                        });
                     }
+                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                    rhs0.inferRefRtnType.unmerged?.forEach(rttrLeft=>{
+                        const typeLeft = getTypeFromRefTypesType(rttrLeft.type);
+                        const rhs1 = mrNarrowTypes({
+                            expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
+                            refTypesSymtab:rttrLeft.symtab,
+                            constraintItem: rttrLeft.constraintItem
+                        });
+
+                        rhs1.inferRefRtnType.unmerged?.forEach(rttrRight=>{
+                            const typeRight = getTypeFromRefTypesType(rttrRight.type);
+                            const {eq,neq, identity, comparable} = binaryEquality(typeLeft,typeRight);
+                            if (getMyDebug()) {
+                                consoleLog(`mrNarrowTypesByBinaryExpression[dbg]`);
+                                consoleLog(`mrNarrowTypesByBinaryExpression[dbg] leftType:${dbgTypeToStringDetail(typeLeft)}`);
+                                consoleLog(`mrNarrowTypesByBinaryExpression[dbg] rightType:${dbgTypeToStringDetail(typeRight)}`);
+                                consoleLog(`mrNarrowTypesByBinaryExpression[dbg] eq:${eq}, neq: ${neq}, identity:${identity}, comparable: ${comparable}`);
+                            }
+                            const resultType = eq ? checker.getTrueType() : neq ? checker.getFalseType() : checker.getBooleanType();
+                            arrRefTypesTableReturn.push({
+                                ...rttrRight, type: createRefTypesType(resultType)
+                            });
+                        });
+                    });
+                    //const tstype  = checker.getTypeOfExpression(binaryExpression);
+                    return { arrRefTypesTableReturn };
+                }
+                break;
+                case SyntaxKind.ExclamationEqualsEqualsToken:
+                    // if (leftExpr.kind === SyntaxKind.TypeOfExpression || rightExpr.kind === SyntaxKind.TypeOfExpression){
+                    //     let typeofArgExpr: Expression | undefined;
+                    //     let typeofString: string | undefined;
+                    //     if (isTypeOfExpression(leftExpr) && isStringLiteral(rightExpr)){
+                    //         typeofArgExpr = leftExpr.expression;
+                    //         typeofString = rightExpr.text;
+                    //     }
+                    //     else if (isTypeOfExpression(rightExpr) && isStringLiteral(leftExpr)){
+                    //         typeofArgExpr = rightExpr.expression;
+                    //         typeofString = leftExpr.text;
+                    //     }
+                    //     if (typeofArgExpr && typeofString){
+                    //         const negateCrit = operatorToken.kind===SyntaxKind.ExclamationEqualsEqualsToken || operatorToken.kind===SyntaxKind.ExclamationEqualsToken;
+                    //         return mrNarrowTypesByTypeof({ refTypesSymtab:refTypesSymtabIn, expr:typeofArgExpr, inferStatus, constraintItem: constraintItemIn }, negateCrit, typeofString);
+                    //     }
+                    //     else {
+                    //         // still required to process for side effects
+                    //         const arrRttr: RefTypesTableReturn[]=[];
+                    //         const rl = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, expr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn });
+                    //         const rr = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, expr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn });
+                    //         arrRttr.push(...rl.arrRefTypesTableReturn);
+                    //         arrRttr.push(...rr.arrRefTypesTableReturn);
+                    //         return {
+                    //             arrRefTypesTableReturn: arrRttr
+                    //         };
+                    //     }
+
+                    // }
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;
                 case SyntaxKind.InstanceOfKeyword:
@@ -738,7 +1000,7 @@ namespace ts {
                 case SyntaxKind.BarBarToken:
                 case SyntaxKind.AmpersandAmpersandToken:{
                     if (myDebug) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token START`);
-                    const {left:leftExpr,right:rightExpr}=binaryExpression;
+                    //const {left:leftExpr,right:rightExpr}=binaryExpression;
                     if (myDebug) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`);
                     const leftRet = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
@@ -1311,7 +1573,7 @@ namespace ts {
                 // We don't necessary to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
                 // However it is sufficient. Although it might not be opitmal in terms of constraint size. todo?.
                 if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
-                    tmpConstraintItem = andIntoConstraint({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
+                    tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
                 }
                 symtab = copyRefTypesSymtab(rttr.symtab);
                 symtab.set(
@@ -1330,7 +1592,6 @@ namespace ts {
         /**
          * "arrRttr" is an array of type RefTypesTableReturn that are implicitly or-ed together - they are alternate assertions about symbol+type constraints.
          * "crit" projects the net or-ed result onto passing and (optionally) failing assertions.
-         * "_inferStatus" is obsolete.
          * The return values {passing, failing} are each arrays of length no larger than 1. (TODO??: return undefined or value instead of array)
          */
         function applyCritToArrRefTypesTableReturn(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, inferStatus: InferStatus): {
@@ -1417,7 +1678,8 @@ namespace ts {
                 });
                 if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = createFlowConstraintNever();
                 else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
-                else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraints(passingOredConstraints, mrNarrow);
+                else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraintsShallow(passingOredConstraints, mrNarrow);
+
                 const rttrcoFailing: RefTypesTableReturnNoSymbol = {
                     kind: RefTypesTableKind.return,
                     symtab: createRefTypesSymtab(),
@@ -1432,7 +1694,7 @@ namespace ts {
                 });
                 if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = createFlowConstraintNever();
                 if (failingOredConstraints.length===1) rttrcoFailing.constraintItem = failingOredConstraints[0];
-                else if (failingOredConstraints.length) rttrcoFailing.constraintItem = orIntoConstraints(failingOredConstraints, mrNarrow);
+                else if (failingOredConstraints.length) rttrcoFailing.constraintItem = orIntoConstraintsShallow(failingOredConstraints, mrNarrow);
                 const rtn: ReturnType<typeof applyCritToArrRefTypesTableReturn>  = { passing:rttrcoPassing };
                 if (crit.alsoFailing){
                     rtn.failing = rttrcoFailing;
@@ -1453,7 +1715,7 @@ namespace ts {
         function mrNarrowTypes({refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, expr:expr, inferStatus, crit: critIn, qdotfallout: qdotfalloutIn }: InferRefArgs): MrNarrowTypesReturn {
             myDebug = getMyDebug();
             if (myDebug) {
-                consoleGroup(`mrNarrowTypes[in] expr:${dbgNodeToString(expr)}, crit:{kind:${critIn.kind},negate:${critIn.negate}}, qdotfalloutIn: ${!qdotfalloutIn ? "<undef>" : `length: ${qdotfalloutIn.length}`}`);
+                consoleGroup(`mrNarrowTypes[in] expr:${dbgNodeToString(expr)}, crit:{kind:${critIn.kind},negate:${(critIn as any).negate}}, qdotfalloutIn: ${!qdotfalloutIn ? "<undef>" : `length: ${qdotfalloutIn.length}`}`);
                 consoleLog(`mrNarrowTypes[in] refTypesSymtab:`);
                 dbgRefTypesSymtabToStrings(refTypesSymtabIn).forEach(str=> consoleLog(`  ${str}`));
                 consoleLog(`mrNarrowTypes[in] constraintItemIn:`);
@@ -1477,7 +1739,7 @@ namespace ts {
                  */
                 if (myDebug){
                     consoleLog(`mrNarrowTypes[dbg]: ${dbgNodeToString(expr)} Merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit:`
-                    + `{kind:${critIn.kind},negate:${critIn.negate}}`);
+                    + `{kind:${critIn.kind},negate:${(critIn as any).negate}}`);
                     qdotfallout.forEach((rttr,i)=>{
                         dbgRefTypesTableToStrings(rttr).forEach(str=>{
                             consoleLog(`mrNarrowTypes[dbg]:  qdotfallout[${i}]: ${str}`);
@@ -1926,10 +2188,11 @@ namespace ts {
                 }
                 break;
                 case SyntaxKind.TypeOfExpression:{
+                    return mrNarrowTypesByTypeofExpression({ refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, expr: expr as TypeOfExpression, /*crit, */ qdotfallout, inferStatus });
                     /**
                      * For a TypeOfExpression not as the child of a binary expressionwith ops  ===,!==,==,!=
                      */
-                    return mrNarrowTypesInner({ refTypesSymtab: refTypesSymtabIn, constraintItem:constraintItemIn, expr: (expr as TypeOfExpression).expression, qdotfallout, inferStatus });
+
                 }
                 break;
                 case SyntaxKind.TrueKeyword:

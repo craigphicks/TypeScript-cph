@@ -4342,6 +4342,8 @@ namespace ts {
         /* @internal */ getSymbolOfNode(node: Declaration): Symbol;
         /* @internal */ getUnknownType(): Type;
         /* @internal */ getTypeOfExpression(node: Expression): Type;
+        /* @internal */ createLiteralType(flags: TypeFlags, value: string | number | PseudoBigInt, symbol?: Symbol, regularType?: LiteralType): Type;
+
 
 
 

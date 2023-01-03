@@ -244,7 +244,7 @@ namespace ts {
         }
     }
 
-    export function andIntoConstraint({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem, mrNarrow: MrNarrow}): ConstraintItem {
+    export function andIntoConstraintShallow({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem, mrNarrow: MrNarrow}): ConstraintItem {
         if (mrNarrow.isNeverType(type)) return createFlowConstraintNever();
         // TODO: if there was a symbol table input we could check for always
         if (constraintItem.kind===ConstraintItemKind.always){
@@ -281,13 +281,13 @@ namespace ts {
         }
         Debug.fail("unexpected");
     }
-    export function orIntoConstraints(acin: Readonly<(ConstraintItem)[]>, _mrNarrow: MrNarrow): ConstraintItem {
+    export function orIntoConstraintsShallow(acin: Readonly<(ConstraintItem)[]>, _mrNarrow: MrNarrow): ConstraintItem {
         const ac: ConstraintItem[]=[];
         for (const c of acin){
             if (isAlwaysConstraint(c)) return createFlowConstraintAlways();;
             if (!isNeverConstraint(c)) ac.push(c);
         }
-        if (ac.length===0) return createFlowConstraintNever();
+        if (ac.length===0) Debug.fail("unexpected"); //return createFlowConstraintNever();
         if (ac.length===1) return ac[0];
         return createFlowConstraintNodeOr({ constraints:ac });
     }

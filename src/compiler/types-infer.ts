@@ -121,8 +121,6 @@ namespace ts {
         }
         | {
             kind: typeof InferCritKind.typeof;
-            negate?: boolean;
-            typeofString: InferCritTypeofStrings;
         }
     )
     & {alsoFailing?: boolean}; // also output failing, in addition to passing
@@ -177,7 +175,7 @@ namespace ts {
     export type InferRefRtnType = & {
         passing: RefTypesTableReturnNoSymbol;
         failing?: RefTypesTableReturnNoSymbol;
-        unmerged?: Readonly<RefTypesTableReturnNoSymbol[]>;
+        unmerged?: Readonly<RefTypesTableReturn[]>;
     };
 
     export type InferRefInnerArgs = & {

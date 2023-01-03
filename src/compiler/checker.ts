@@ -710,6 +710,7 @@ namespace ts {
             getSymbolOfNode,
             getUnknownType(){ return unknownType; },
             getTypeOfExpression,
+            createLiteralType,
 
             getNodeCount: () => sum(host.getSourceFiles(), "nodeCount"),
             getIdentifierCount: () => sum(host.getSourceFiles(), "identifierCount"),

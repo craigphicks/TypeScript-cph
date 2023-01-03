@@ -94,6 +94,7 @@ namespace ts {
         dbgFlowToString: (flow: FlowNode | undefined, withAntecedants?: boolean) => string;
         dbgFlowTypeToString: (flowType: FlowType) => string;
         dbgTypeToString: (type: Type) => string;
+        dbgTypeToStringDetail: (type: Type) => string[];
         dbgNodeToString: (node: Node | undefined) => string;
         dbgSignatureToString: (c: Signature) => string;
         dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
@@ -134,6 +135,15 @@ namespace ts {
         const dbgTypeToString = (type: Type): string => {
             return checker.typeToString(type);
         };
+        const dbgTypeToStringDetail = (type: Type): string[] => {
+            const as: string[] = [];
+            checker.forEachType(type, t=>{
+                Debug.formatTypeFlags(t.flags);
+                as.push(`[${checker.typeToString(t)}, ${Debug.formatTypeFlags(t.flags)}]`);
+            });
+            if (as.length===1) return as;
+            else return ["[", ...as, "]"];
+        };
         const dbgFlowTypeToString = (flowType: FlowType): string => {
             if (!flowType.flags) return "IncompleteType";
             return checker.typeToString(flowType as Type);
@@ -159,6 +169,7 @@ namespace ts {
             dbgFlowToString,
             dbgFlowTypeToString,
             dbgTypeToString,
+            dbgTypeToStringDetail,
             dbgNodeToString,
             dbgSignatureToString,
             dbgWriteSignatureArray,
