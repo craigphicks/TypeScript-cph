@@ -768,18 +768,18 @@ namespace ts {
             // (2) It always returns a union of ALL EIGHT types, even though the "typeof" operand may have a range of only a subset of that.
             // (3) We cannot just create the appropriate subset calling checker.createLiteralType(TypeFlags.StringLiteral, str)
             // --- because those StringLiteralType will incur "not comparable" errors when comparing to strings, despite having identical values.
+            // --- c.f. "checker.isTypeRelatedTo(typeRight,typeLeft,checker.getRelations().comparableRelation)"
             // --- The exact logic for that incompatibility is opaque.
             // (4) However, by using "tot8type" created here, the constituent StringLiteralType members are comparable.
             // --- One would expect that there would be a function with no argument, e.g, "getUnionOfTypeOfStringLiterals()".
             const tot8Type = checker.getTypeOfExpression(expr);
+            const tot8TypeofstringToTypeMap = new Map<string,StringLiteralType>(((tot8Type as UnionType).types as StringLiteralType[]).map(t=>[t.value,t]));
             // const filteredTypes = (tot8Type as UnionType).types.filter(t=>{
             //     return set.has((t as StringLiteralType).value);
             // });
-
-
             const rhsUnmerged = rhs.inferRefRtnType.unmerged!;
             const byTypeofMap = new Map<string, RefTypesTableReturnNoSymbol[]>();
-            const aAnyOrUnknown: Readonly<RefTypesTableReturn>[];
+            const aAnyOrUnknown: Readonly<RefTypesTableReturn>[]=[];
             rhsUnmerged.forEach(rttr=>{
                 if (isNeverType(rttr.type)) return;
                 if (isNeverConstraint(rttr.constraintItem)) return;
@@ -810,10 +810,11 @@ namespace ts {
             const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
             byTypeofMap.forEach((arr,typeofstr)=>{
                 const rttr2 = mergeArrRefTypesTableReturnToRefTypesTableReturnShallow({ arr });
-                rttr2.type =
-                arrRefTypesTableReturn.push({})
-            })
-
+                if (isNeverType(rttr2.type) || isNeverConstraint(rttr2.constraintItem)) return;
+                rttr2.type = createRefTypesType(tot8TypeofstringToTypeMap.get(typeofstr));
+                arrRefTypesTableReturn.push(rttr2);
+            });
+            Debug.assert(aAnyOrUnknown.length===0,"case any or unknow type not yet implemented");
 
             const rhstype = rhs.inferRefRtnType.passing.type;
 
@@ -823,7 +824,7 @@ namespace ts {
                 typeToTypeofStrings(tstype).forEach(str=>set.add(str));
             });
 
-            const filtered8type = checker.getUnionType(filteredTypes);
+            // const filtered8type = checker.getUnionType(filteredTypes);
             // (tot8Type as UnionType).types = filteredTypes;
             // This does NOT work.
             // const type = createRefTypesType();
@@ -831,12 +832,7 @@ namespace ts {
             //     addTypeToRefTypesType({ source: checker.createLiteralType(TypeFlags.StringLiteral, str), target: type });
             // });
             return {
-                arrRefTypesTableReturn:[{
-                    kind:RefTypesTableKind.return,
-                    type: createRefTypesType(filtered8type),
-                    symtab: rhs.inferRefRtnType.passing.symtab,
-                    constraintItem: rhs.inferRefRtnType.passing.constraintItem
-                }]
+                arrRefTypesTableReturn
             };
         }
 
