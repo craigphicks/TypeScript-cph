@@ -4,26 +4,20 @@ namespace ts {
     let myDebug = false;
     const myDisable = (process.env.myDisable===undefined) ? true : !!Number(process.env.myDisable);
     const myNoAliasAction = (process.env.myNoAliasAction===undefined) ? true : !!Number(process.env.myNoAliasAction);
-    //myDisable = !!Number(process.env.myDisable); // This must be outside of filename control in order to work properly
-    //myNoAliasAction = !!Number(process.env.myNoAliasAction);
     const myDisableInfer = (process.env.myDisableInfer===undefined) ? false : !!Number(process.env.myDisableInfer);
     const myNarrowTest = (process.env.myNarrowTest===undefined) ? false : !!Number(process.env.myNarrowTest);
 
-    // @ts-ignore-error
-    // let currentFlowNodeGroup: {
-    //     group: NodefulFlowNodeGroup,
-    //     pos: number,
-    //     end: number,
-    //     maxNode: Node
-    // } | undefined;
-
-
     const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):50000;
-    //let myNumLinesOut=0;
     let myMaxDepth = 0; // introspection data
     // @ts-ignore
     let myCurrentSourceFilename = "";
     let myCurrentSourceFile: SourceFile | undefined;
+
+    // export const narrowTypeExports: {
+    //     narrowTypeByEquality?: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
+    // }={};
+
+//    export function getChecker(){return checker;}
 
     createMyConsole({
         myMaxLinesOut,
@@ -677,6 +671,7 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
+            getNarrowTypeExports,
             getSourceFileInferState(){
                 return sourceFileInferState!;
             },
@@ -24617,9 +24612,24 @@ namespace ts {
         //     }
         // }
 
+        function getNarrowTypeExports(): NarrowTypeExports {
+            const x = getFlowTypeOfReference(
+                /*reference*/{ flowNode: undefined as any as FlowNode } as any as Node,
+                /*declaredType*/undefined as any as Type) as any as NarrowTypeExports;
+            //     /*initialType*/undefined as any as Type,
+            //     /*flowContainer*/undefined,
+            //     /*flowNode*/
+            // );
+            return x;
+        }
 
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode,
             joinMap: JoinMap | undefined=undefined): Type {
+
+            if (!declaredType){
+                return ((getFlowTypeOfReference_aux as any as () => Type)());
+            }
+
             flowTypeQueryState.disable = myDisable;
 
             /**
@@ -24656,6 +24666,8 @@ namespace ts {
                          * Only here because a FlowNode was present, so this is a logical place to set up currentFlowNodeGroup
                          * and call infer once for the group.
                          */
+                    //if (!narrowTypeExports.narrowTypeByEquality) narrowTypeExports.narrowTypeByEquality = narrowTypeByEquality;
+
                     Debug.assert(checker.getSourceFileInferState());
                     const sourceFileInferState = checker.getSourceFileInferState();
                     const typeByMrNarrow = getTypeByMrNarrow(reference, sourceFileInferState);
@@ -24689,6 +24701,13 @@ namespace ts {
             return type;
         }
         function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer: Node | undefined, flowNode: FlowNode, joinMap: JoinMap | undefined): Type {
+            if (!declaredType){
+
+                const out: NarrowTypeExports = {
+                    narrowTypeByEquality
+                };
+                return out as any as Type;
+            }
             let key: string | undefined;
             let isKeySet = false;
             let flowDepth = 0;
@@ -25804,6 +25823,7 @@ namespace ts {
                 }
                 return retType;
             }
+
             function narrowTypeByEquality_aux(type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean): Type {
                 if (type.flags & TypeFlags.Any) {
                     return type;

@@ -17,7 +17,7 @@ namespace ts {
         mrNarrowTypes({ refTypesSymtab: refTypes, expr: condExpr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
         createRefTypesSymtab(): RefTypesSymtab;
         copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
-        createRefTypesType(type?: Readonly<Type>): RefTypesType;
+        createRefTypesType(type?: Readonly<Type> | Readonly<Type[]>): RefTypesType;
         createRefTypesTableLeaf(symbol: Symbol | undefined , isconst: boolean | undefined, type?: RefTypesType): RefTypesTableLeaf;
         dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string;
         dbgRefTypesTableToStrings(t: RefTypesTable): string[],
@@ -262,8 +262,17 @@ namespace ts {
             if (isAnyType(b)) return cloneRefTypesType(a);
             if (isUnknownType(a)||isUnknownType(b)) return createRefTypesTypeUnknown();
             const c = createRefTypesType() as RefTypesTypeNormal;
+            //// considers whether a type could be a subset of another type; this might be optimzed by keeping literal types in a separate array.
+            //(a as RefTypesTypeNormal)._set.forEach(ta=>{
+            //    (b as RefTypesTypeNormal)._set.forEach(tb=>{
+            //        if (!(ta.flags & tb.flags)) return; // the types cannot possibly overlap
+            //
+            //    });
+            //});
+
+            // Old code that doesn't consider whether a type could be a subset of another type
             (a as RefTypesTypeNormal)._set.forEach(t=>{
-                if ((b as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
+              if ((b as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
             });
             return c;
         }
@@ -905,27 +914,49 @@ namespace ts {
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;
                 case SyntaxKind.EqualsEqualsEqualsToken:{
-                    const rhs0 = mrNarrowTypes({
+                    const leftRet = mrNarrowTypes({
                         expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
                         refTypesSymtab:refTypesSymtabIn,
                         constraintItem: constraintItemIn
                     });
-                    const rhs1 = mrNarrowTypes({
+                    const rightRet = mrNarrowTypes({
                         expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
-                        refTypesSymtab:rhs0.inferRefRtnType.passing.symtab,
-                        constraintItem: rhs0.inferRefRtnType.passing.constraintItem
+                        refTypesSymtab:leftRet.inferRefRtnType.passing.symtab,
+                        constraintItem: leftRet.inferRefRtnType.passing.constraintItem
                     });
-                    // now that the precursor flow types have been setup, we can call checker.getTypeOfExpression.
                     if (getMyDebug()){
-                        dbgTypeToStringDetail(getTypeFromRefTypesType(rhs0.inferRefRtnType.passing.type)).forEach(s=>{
+                        dbgTypeToStringDetail(getTypeFromRefTypesType(leftRet.inferRefRtnType.passing.type)).forEach(s=>{
                             consoleLog(`mrNarrowTypesByBinaryExpression[dbg] leftType: ${s}`);
                         });
-                        dbgTypeToStringDetail(getTypeFromRefTypesType(rhs1.inferRefRtnType.passing.type)).forEach(s=>{
+                        dbgTypeToStringDetail(getTypeFromRefTypesType(rightRet.inferRefRtnType.passing.type)).forEach(s=>{
                             consoleLog(`mrNarrowTypesByBinaryExpression[dbg] rightType: ${s}`);
                         });
                     }
+                    const { narrowTypeByEquality } = checker.getNarrowTypeExports();
+
+                    const narrowTypeLeft = narrowTypeByEquality(
+                        getTypeFromRefTypesType(leftRet.inferRefRtnType.passing.type),
+                        operatorToken.kind,rightExpr, /**/ true);
+
+                    const narrowTypeRight = narrowTypeByEquality(
+                        getTypeFromRefTypesType(rightRet.inferRefRtnType.passing.type),
+                        operatorToken.kind,leftExpr, /**/ true);
+
+                    if (getMyDebug()){
+                        dbgTypeToStringDetail(narrowTypeLeft).forEach(s=>{
+                            consoleLog(`mrNarrowTypesByBinaryExpression[dbg] narrowTypeLeft: ${s}`);
+                        });
+                        dbgTypeToStringDetail(narrowTypeRight).forEach(s=>{
+                            consoleLog(`mrNarrowTypesByBinaryExpression[dbg] narrowTypeRight: ${s}`);
+                        });
+                    }
+
+                    // leftRet.inferRefRtnType.unmerged?.forEach(rttrLeft=>{
+                    //     andSymtabConstraintsWithSimplify
+                    // });
+
                     const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
-                    rhs0.inferRefRtnType.unmerged?.forEach(rttrLeft=>{
+                    leftRet.inferRefRtnType.unmerged?.forEach(rttrLeft=>{
                         const typeLeft = getTypeFromRefTypesType(rttrLeft.type);
                         const rhs1 = mrNarrowTypes({
                             expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },

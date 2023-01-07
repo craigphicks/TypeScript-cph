@@ -138,14 +138,15 @@ namespace ts {
         symbol, type, declaredType, cin, negate, mrNarrow, refCountIn, refCountOut, depth}:
         {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
     }): ConstraintItem {
-        if (false && getMyDebug()){
+        const doLog = true;
+        if (doLog && getMyDebug()){
             consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(cin).forEach(s=>{
                 consoleLog(`andDistributeDivide[in][${depth??0}] constraint: ${s}`);
             });
         }
         const creturn = andDistributeDivideAux({ symbol, type, declaredType, cin, negate, mrNarrow, refCountIn, refCountOut, depth });
-        if (false && getMyDebug()){
+        if (doLog && getMyDebug()){
             consoleLog(`andDistributeDivide[out][${depth??0}] countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(creturn).forEach(s=>{
                 consoleLog(`andDistributeDivide[out][${depth??0}] constraint: ${s}`);
@@ -366,6 +367,15 @@ namespace ts {
         const symx = { escapedName:"x" } as any as Symbol;
         const symy = { escapedName:"y" } as any as Symbol;
 
+        // @ts-expect-error
+        const rttNum = mrNarrow.createRefTypesType(checker.getNumberType());
+        // @ts-expect-error
+        const rttStr = mrNarrow.createRefTypesType(checker.getStringType());
+        const rttNumStr = mrNarrow.createRefTypesType([checker.getNumberType(), checker.getStringType()]);
+        const rttLitNum0 = mrNarrow.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,0));
+        // @ts-expect-error
+        const rttLitNum1 = mrNarrow.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,1));
+
         const datum: {in: InType[0],out: OutType}[] = [
             {
                 in: {
@@ -476,7 +486,25 @@ namespace ts {
             const type = evalTypeOverConstraint(data.in);
             Debug.assert(mrNarrow.equalRefTypesTypes(data.out,type));
         });
+
+        //andDistributeDivide
+        type DDArgs = Parameters<typeof andDistributeDivide>["0"];
+        const dddata: { in: DDArgs }[] = [
+            {
+                in: {
+                    symbol:symx, type:rttLitNum0, declaredType: rttNumStr,
+                    cin: createFlowConstraintLeaf(symx, rttNumStr),
+                    mrNarrow, refCountIn:[0], refCountOut:[0]
+                },
+            }
+        ];
+        dddata.forEach(dda=>{
+            // @ts-expect-error
+            const r = andDistributeDivide(dda.in);
+        });
+
     }
+
 
 }
 

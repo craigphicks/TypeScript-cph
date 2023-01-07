@@ -4316,7 +4316,11 @@ namespace ts {
         AndFactsMask = All & ~OrFactsMask,
     }
 
+    export interface NarrowTypeExports {
+        narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
+    }
     export interface TypeChecker {
+        /* @internal */ getNarrowTypeExports(): NarrowTypeExports;
         /* @internal */ getSourceFileInferState(): SourceFileMrState;
         /* @internal */ createAndSetSourceFileInferState(sourceFile?: SourceFile): void;
         /* @internal */ unsetSourceFileInferState(): void;
