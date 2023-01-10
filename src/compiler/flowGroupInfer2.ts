@@ -1035,7 +1035,6 @@ namespace ts {
                     mergeIntoMapIntoNodeToTypeMaps(ms.byNode, inferStatus.groupNodeToTypeMap);
                 }
             });
-            // KILL next line - This is also done upstairs in mrNarrowType/applyCritToArrRefTypesTableReturn
             mergeOneIntoNodeToTypeMaps(callExpr, getTypeFromRefTypesType(totalType), inferStatus.groupNodeToTypeMap);
             // /**
             //  * TODO:
@@ -1265,7 +1264,6 @@ namespace ts {
             }
             const totalType = createRefTypesType();
             arrRttr.forEach(rttr=>mergeToRefTypesType({ source: rttr.type, target: totalType }));
-            // KILL? - is this done elsewhere?
             mergeOneIntoNodeToTypeMaps(expr, getTypeFromRefTypesType(totalType), inferStatus.groupNodeToTypeMap);
             // inferStatus.groupNodeToTypeMap.set(expr, getTypeFromRefTypesType(totalType));
 
@@ -1295,7 +1293,7 @@ namespace ts {
             if (symbol && isconst) {
                 const got = symtab.get(symbol);
                 if (got) {
-                    setTypeTmp = intersectRefTypesTypes(got.leaf.type, type); // if literals are involved add to constraint instead.
+                    setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
                 }
                 const declType = inferStatus.declaredTypes.get(symbol)?.type;
                 if (!declType){

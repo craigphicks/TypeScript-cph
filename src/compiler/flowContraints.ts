@@ -489,13 +489,16 @@ namespace ts {
 
         //andDistributeDivide
         type DDArgs = Parameters<typeof andDistributeDivide>["0"];
-        const dddata: { in: DDArgs }[] = [
+        const dddata: { in: DDArgs, out: (cout: ConstraintItem) => void }[] = [
             {
                 in: {
                     symbol:symx, type:rttLitNum0, declaredType: rttNumStr,
                     cin: createFlowConstraintLeaf(symx, rttNumStr),
                     mrNarrow, refCountIn:[0], refCountOut:[0]
                 },
+                out: (cout: ConstraintItem) => {
+                    Debug.assert(isAlwaysConstraint(cout));
+                }
             }
         ];
         dddata.forEach(dda=>{

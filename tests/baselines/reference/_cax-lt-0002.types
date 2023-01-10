@@ -1,0 +1,28 @@
+=== tests/cases/conformance/_cax/_cax-lt-0002.ts ===
+declare const x: 0|1;
+>x : 0 | 1
+
+declare const y: 0|1;
+>y : 0 | 1
+
+if (x && y){
+>x && y : 0 | 1
+>x : 0 | 1
+>y : 0 | 1
+
+    x;
+>x : 1
+
+    y;
+>y : 1
+}
+else if (x) {
+>x : 0 | 1
+
+    x;
+>x : 1
+
+    y;
+>y : 0
+}
+

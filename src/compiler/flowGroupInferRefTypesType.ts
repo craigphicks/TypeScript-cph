@@ -38,6 +38,14 @@ namespace ts {
         // const errorType = checker.getErrorType();
         // const nullType = checker.getNullType();
 
+        const {
+            // dbgNodeToString,
+            // dbgSignatureToString,
+            // dbgSymbolToStringSimple,
+            // dbgTypeToString,
+            dbgTypeToStringDetail,
+        } = createDbgs(checker);
+
         return {
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
             // createRefTypesTypeAny,
@@ -60,7 +68,7 @@ namespace ts {
         };
 
         function forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void {
-            type.flags & TypeFlags.Union ? (type as UnionType).types.forEach(t => f(t)) : f(type);
+            (type.flags & TypeFlags.Union) ? (type as UnionType).types.forEach(t => f(t)) : f(type);
         };
         function createRefTypesTypeAny(): RefTypesTypeAny {
             return { _flags: RefTypesTypeFlags.any, _set: undefined, _mapLiteral: undefined };
@@ -80,26 +88,38 @@ namespace ts {
             }
             // Note: boolean type is actually a union of true and false types.  Therefore
             // does not get treated as a literal here.
-            if (!(tstype.flags & TypeFlags.Boolean) && tstype.flags & TypeFlags.Literal) {
-                let keyType: Type;
-                let regularTsType: LiteralType;
-                if (tstype.flags & TypeFlags.NumberLiteral && !type._set.has(numberType)) {
-                    keyType = numberType;
-                    regularTsType = checker.getNumberLiteralType((tstype as NumberLiteralType).value);
+            /**
+             * If the superset type of the literal type is already present, then the literal type is ignored.
+             * E.g., If string type is present, then adding literal string type "something" will be a non op.
+             */
+            if (!(tstype.flags & TypeFlags.BooleanLiteral) && tstype.flags & TypeFlags.Literal) {
+                let keyType: Type | undefined;
+                let regularTsType: LiteralType | undefined;
+                if (tstype.flags & TypeFlags.NumberLiteral) {
+                    if (!type._set.has(numberType)){
+                        keyType = numberType;
+                        regularTsType = checker.getNumberLiteralType((tstype as NumberLiteralType).value);
+                    }
                 }
-                else if (tstype.flags & TypeFlags.StringLiteral && !type._set.has(stringType)){
-                    keyType = stringType;
-                    regularTsType = checker.getStringLiteralType((tstype as StringLiteralType).value);
+                else if (tstype.flags & TypeFlags.StringLiteral){
+                    if (!type._set.has(stringType)) {
+                        keyType = stringType;
+                        regularTsType = checker.getStringLiteralType((tstype as StringLiteralType).value);
+                    }
                 }
-                else if (tstype.flags & TypeFlags.BigIntLiteral && !type._set.has(bigintType)) {
-                    keyType = bigintType;
-                    regularTsType = checker.getBigIntLiteralType((tstype as BigIntLiteralType).value);
+                else if (tstype.flags & TypeFlags.BigIntLiteral) {
+                    if (!type._set.has(bigintType)) {
+                        keyType = bigintType;
+                        regularTsType = checker.getBigIntLiteralType((tstype as BigIntLiteralType).value);
+                    }
                 }
-                else Debug.fail("unexpected");
+                else Debug.fail("unexpected: "+dbgTypeToStringDetail(tstype));
 
-                const got = type._mapLiteral.get(keyType);
-                if (!got) type._mapLiteral.set(keyType, new Set<LiteralType>([regularTsType]));
-                else got.add(regularTsType);
+                if (keyType && regularTsType){
+                    const got = type._mapLiteral.get(keyType);
+                    if (!got) type._mapLiteral.set(keyType, new Set<LiteralType>([regularTsType]));
+                    else got.add(regularTsType);
+                }
             }
             else {
                 const regularTsType = (tstype as any).regularType ? (tstype as any).regularType : tstype;
@@ -122,6 +142,7 @@ namespace ts {
                 _set: new Set<Type>(),
                 _mapLiteral: new Map<Type, Set<LiteralType>>()
             };
+            if (!tstype) return typeOut;
             return addTypeToRefTypesType({ source:tstype as Readonly<Type>,target:typeOut });
         }
         function cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType{
@@ -265,7 +286,7 @@ namespace ts {
             let isSubset = true;
             for (let mapiter = a._mapLiteral.entries(), mi = mapiter.next(); !mi.done && isSubset; mi=mapiter.next()){
                 const [tstype, litset] = mi.value;
-                const bmapset = a._mapLiteral.get(tstype);
+                const bmapset = b._mapLiteral.get(tstype);
                 for (let litsetiter = litset.values(), litsi = litsetiter.next(); !litsi.done && isSubset; litsi=litsetiter.next()){
                     const ltype = litsi.value;
                     if ((bmapset && bmapset.has(ltype)) || (b._set.has(tstype))) continue; // success
@@ -288,7 +309,6 @@ namespace ts {
          * @returns
          */
         function subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>, /* errorOnMissing = false */): RefTypesType {
-            // IWOZERE
             if (isNeverType(subtrahend)) return minuend;
             if (isAnyType(subtrahend)) return createRefTypesType(neverType);
             if (isUnknownType(subtrahend)||isUnknownType(minuend)) Debug.fail("not yet implemented");
@@ -314,7 +334,7 @@ namespace ts {
         function getTypeFromRefTypesType(type: Readonly<RefTypesType>): Type {
             if (type._flags===RefTypesTypeFlags.any) return anyType;
             if (type._flags===RefTypesTypeFlags.unknown) return unknownType;
-            if (type._set.size===0) return neverType;
+            if (isNeverType(type)) return neverType;
             const tstypes: Type[] = [];
             const tslittypes: LiteralType[] = [];
             type._set.forEach(t=>tstypes.push(t));
