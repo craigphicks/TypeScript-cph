@@ -133,14 +133,27 @@ namespace ts {
             return str;
         };
         const dbgTypeToString = (type: Type): string => {
+            const alwaysDetail = true;
+            if (alwaysDetail) return "(type detail)" + dbgTypeToStringDetail(type).join(", ");
             return checker.typeToString(type);
         };
         const dbgTypeToStringDetail = (type: Type): string[] => {
+            const doOne = (t: Type): string => {
+                let str = `${checker.typeToString(t)}, id:${t.id}, flags:${Debug.formatTypeFlags(t.flags)}, symbol:${t.symbol?`{${t.symbol.escapedName},${t.symbol.id}}`:`undefined`}`;
+                if ((t as any).regularType && (t as any).regularType.id !== t.id){
+                    str += `, regularType:{id:${(t as any).regularType.id}}`;
+                }
+                return str;
+            };
             const as: string[] = [];
-            checker.forEachType(type, t=>{
-                Debug.formatTypeFlags(t.flags);
-                as.push(`[${checker.typeToString(t)}, ${Debug.formatTypeFlags(t.flags)}]`);
-            });
+            as.push(doOne(type));
+            if (type.flags & TypeFlags.UnionOrIntersection) {
+                checker.everyContainedType(type, t=>{
+                    //Debug.formatTypeFlags(t.flags);
+                    as.push(doOne(t));
+                    return true; // dont stop
+                });
+            }
             if (as.length===1) return as;
             else return ["[", ...as, "]"];
         };

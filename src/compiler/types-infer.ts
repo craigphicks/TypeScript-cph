@@ -1,16 +1,16 @@
 namespace ts {
 
-    export interface AliasAssignableState {
-        readonly node: Node;
-        readonly valueReadonly: boolean;
-        readonly constVariable: boolean;
-        readonly aliasable: boolean; // constVariable && valueReadonly && !antecedentIsJoin
-        readonly lhsType: Type;
-        readonly declarationType: Type | undefined;
-        readonly initializerType: Type | undefined;
-        readonly preferredType: Type;
-        inUse: boolean; // to prevent recursion of aliases
-    };
+    // export interface AliasAssignableState {
+    //     readonly node: Node;
+    //     readonly valueReadonly: boolean;
+    //     readonly constVariable: boolean;
+    //     readonly aliasable: boolean; // constVariable && valueReadonly && !antecedentIsJoin
+    //     readonly lhsType: Type;
+    //     readonly declarationType: Type | undefined;
+    //     readonly initializerType: Type | undefined;
+    //     readonly preferredType: Type;
+    //     inUse: boolean; // to prevent recursion of aliases
+    // };
 
     export enum RefTypesTableKind {
         leaf = "leaf",
@@ -29,14 +29,17 @@ namespace ts {
     export interface RefTypesTypeNormal {
         _flags: RefTypesTypeFlags.none;
         _set: Set<Type>;
+        _mapLiteral: ESMap<Type, Set<LiteralType>>;
     };
     export interface RefTypesTypeAny {
         _flags: RefTypesTypeFlags.any;
         _set: undefined;
+        _mapLiteral: undefined;
     };
     export interface RefTypesTypeUnknown {
         _flags: RefTypesTypeFlags.unknown;
         _set: undefined;
+        _mapLiteral: undefined;
     };
     export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
 
@@ -64,6 +67,7 @@ namespace ts {
     export type RefTypesTableReturnNoSymbol = & {
         kind: RefTypesTableKind.return;
         type: RefTypesType;
+        //typeConstraintItem?: ConstraintItem;
         symtab: RefTypesSymtab;
         constraintItem: ConstraintItem;
     };
@@ -72,6 +76,7 @@ namespace ts {
         symbol?: Symbol | undefined;
         isconst?: boolean;
         type: RefTypesType;
+        //typeConstraintItem: ConstraintItem;
         symtab: RefTypesSymtab;
         constraintItem: ConstraintItem;
     };

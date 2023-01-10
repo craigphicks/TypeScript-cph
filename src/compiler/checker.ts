@@ -671,6 +671,10 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
+            getStringLiteralType,
+            getNumberLiteralType,
+            getBigIntLiteralType,
+            everyContainedType,
             getNarrowTypeExports,
             getSourceFileInferState(){
                 return sourceFileInferState!;
@@ -938,6 +942,7 @@ namespace ts {
             getAnyType: () => anyType,
             getStringType: () => stringType,
             getNumberType: () => numberType,
+            getBigIntType: () => bigintType,
             getErrorType: () => errorType,
             createPromiseType,
             createArrayType,

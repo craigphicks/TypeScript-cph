@@ -4320,6 +4320,11 @@ namespace ts {
         narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     }
     export interface TypeChecker {
+        // /* @internal */ getBigIntType(): BigintType;
+        /* @internal */ getStringLiteralType(value: string): StringLiteralType;
+        /* @internal */ getNumberLiteralType(value: number): NumberLiteralType;
+        /* @internal */ getBigIntLiteralType(value: PseudoBigInt): BigIntLiteralType;
+        /* @internal */ everyContainedType(type: Type, f: (t: Type) => boolean): void;
         /* @internal */ getNarrowTypeExports(): NarrowTypeExports;
         /* @internal */ getSourceFileInferState(): SourceFileMrState;
         /* @internal */ createAndSetSourceFileInferState(sourceFile?: SourceFile): void;
@@ -4509,6 +4514,7 @@ namespace ts {
         /* @internal */ getAnyType(): Type;
         /* @internal */ getStringType(): Type;
         /* @internal */ getNumberType(): Type;
+        /* @internal */ getBigIntType(): Type;
         /* @internal */ getErrorType(): Type;
         /* @internal */ getBooleanType(): Type;
         /* @internal */ getFalseType(fresh?: boolean): Type;

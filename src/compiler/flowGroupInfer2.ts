@@ -14,7 +14,7 @@ namespace ts {
     }
 
     export interface MrNarrow {
-        mrNarrowTypes({ refTypesSymtab: refTypes, expr: condExpr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
+        mrNarrowTypes({ refTypesSymtab, expr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
         createRefTypesSymtab(): RefTypesSymtab;
         copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
         createRefTypesType(type?: Readonly<Type> | Readonly<Type[]>): RefTypesType;
@@ -34,8 +34,8 @@ namespace ts {
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
         mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab,
         intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType,
-        intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean];
-        typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
+        // intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean];
+        // typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>): RefTypesType;
         isNeverType(t: Readonly<RefTypesType>): boolean,
@@ -65,9 +65,9 @@ namespace ts {
             mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
             mergeArrRefTypesSymtab,
             intersectRefTypesTypes,
-            intersectRefTypesTypesImplies,
-            typeImplies,
-            isASubsetOfB:typeImplies,
+            // intersectRefTypesTypesImplies,
+            // typeImplies,
+            isASubsetOfB,
             subtractFromType,
             isNeverType,
             isAnyType,
@@ -99,6 +99,8 @@ namespace ts {
         const nullType = checker.getNullType();
         const stringType = checker.getStringType();
         const numberType = checker.getNumberType();
+        const bigintType = checker.getBigIntType();
+        //const booleanType = checker.getBooleanType();
         const anyType = checker.getAnyType();
         // 'checker' has a function 'forEach(t,f)', but it unexpectedly works like 'some' returning immediately if f(t) return a truthy value.
         // Confusingly, 'checker' also has a function 'some(t,f)', that works as expected.
@@ -130,200 +132,280 @@ namespace ts {
             dbgTypeToStringDetail,
         } = createDbgs(checker);
 
-        function arrayFromSet<T>(set: Set<T>): T[] {
-            // @ts-expect-error 2769
-            return Array.from(set.keys()); //as Readonly<T[]>
-        }
+        // function arrayFromSet<T>(set: Set<T>): T[] {
+        //     // @ts-expect-error 2769
+        //     return Array.from(set.keys()); //as Readonly<T[]>
+        // }
 
-        // @ts-expect-error
         function createRefTypesTypeAny(): RefTypesTypeAny {
-            return { _flags: RefTypesTypeFlags.any, _set: undefined };
+            return { _flags: RefTypesTypeFlags.any, _set: undefined, _mapLiteral: undefined };
         }
         function createRefTypesTypeUnknown(): RefTypesTypeUnknown {
-            return { _flags: RefTypesTypeFlags.unknown, _set: undefined };
+            return { _flags: RefTypesTypeFlags.unknown, _set: undefined, _mapLiteral: undefined };
         }
-        function createRefTypesType(type?: Readonly<Type> | Readonly<Type[]>): RefTypesType {
-            if (isArray(type)){
-                return addTypesToRefTypesType({ source:type.slice(1), target:createRefTypesType(type[0]) });
+        function _privateAddTsTypeNonUnionToRefTypesType(tstype: Type, type: RefTypesType): RefTypesType {
+            Debug.assert(!(tstype.flags & TypeFlags.Union),"unexpected");
+            Debug.assert(!(tstype.flags & TypeFlags.Intersection),"not yet implemented");
+            if (tstype===neverType) return type;
+            if (tstype===anyType || type._flags===RefTypesTypeFlags.any) {
+                return createRefTypesTypeAny();
             }
-            if (type===anyType) return { _flags: RefTypesTypeFlags.any, _set: undefined };
-            if (type===unknownType) return { _flags: RefTypesTypeFlags.unknown, _set: undefined };
-            const _set = new Set<Type>();
-            if (type===neverType || !type) return { _flags: RefTypesTypeFlags.none, _set };
-            forEachTypeIfUnion(type, t=>{
-                Debug.assert(t!==neverType);
-                Debug.assert(t!==anyType);
-                Debug.assert(t!==unknownType);
-                _set.add(t);
+            if (tstype===unknownType || type._flags===RefTypesTypeFlags.unknown) {
+                return createRefTypesTypeUnknown();
+            }
+            // Note: boolean type is actually a union of true and false types.
+            if (!(tstype.flags & TypeFlags.Boolean) && tstype.flags & TypeFlags.Literal) {
+                // might be an enum literal type, or a fresh?/regular? type in which case it should be converted
+                // const keyType = tstype.flags & TypeFlags.NumberLiteral ? numberType :
+                // tstype.flags & TypeFlags.StringLiteral ? stringType :
+                // tstype.flags & TypeFlags.BigIntLiteral ? bigintType :
+                // Debug.fail("unexpected");
+                let keyType: Type;
+                let regularTsType: LiteralType;
+                if (tstype.flags & TypeFlags.NumberLiteral && !type._set.has(numberType)) {
+                    keyType = numberType;
+                    regularTsType = checker.getNumberLiteralType((tstype as NumberLiteralType).value);
+                }
+                else if (tstype.flags & TypeFlags.StringLiteral && !type._set.has(stringType)){
+                    keyType = stringType;
+                    regularTsType = checker.getStringLiteralType((tstype as StringLiteralType).value);
+                }
+                else if (tstype.flags & TypeFlags.BigIntLiteral && !type._set.has(bigintType)) {
+                    keyType = bigintType;
+                    regularTsType = checker.getBigIntLiteralType((tstype as BigIntLiteralType).value);
+                }
+                else Debug.fail("unexpected");
+
+                const got = type._mapLiteral.get(keyType);
+                if (!got) type._mapLiteral.set(keyType, new Set<LiteralType>([regularTsType]));
+                else got.add(regularTsType);
+            }
+            else {
+                const regularTsType = (tstype as any).regularType ? (tstype as any).regularType : tstype;
+                // may have to erase literals
+                if (regularTsType.flags & (TypeFlags.Number|TypeFlags.String|TypeFlags.BigInt)){
+                    Debug.assert(regularTsType===numberType||regularTsType===stringType||regularTsType===bigintType, "unexpected");
+                    /* if (type._setLiteral.has(regularTsType)) */ type._mapLiteral.delete(regularTsType);
+                }
+                type._set.add(regularTsType);
+            }
+            return type;
+        }
+
+        function createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType {
+            if (Array.isArray(tstype)){
+                return addTypesToRefTypesType({ source:tstype.slice(1), target:createRefTypesType(tstype[0]) });
+            }
+            const typeOut: RefTypesType = {
+                _flags: RefTypesTypeFlags.none,
+                _set: new Set<Type>(),
+                _mapLiteral: new Map<Type, Set<LiteralType>>()
+            };
+            return addTypeToRefTypesType({ source:tstype as Readonly<Type>,target:typeOut });
+        }
+        function cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType{
+            if (t._flags) return { _flags:t._flags, _set: undefined, _mapLiteral: undefined };
+            const _mapLiterals = new Map<Type, Set<LiteralType>>();
+            t._mapLiteral.forEach((set,key)=>{
+                _mapLiterals.set(key,new Set<LiteralType>(set));
             });
             return {
                 _flags: RefTypesTypeFlags.none,
-                _set
+                _set: new Set(t._set),
+                _mapLiteral: _mapLiterals
             };
-        }
-        function cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType{
-            return { _flags: t._flags, _set: t._set? new Set(t._set) : undefined } as any as RefTypesType;
         }
 
         function addTypesToRefTypesType({source:at,target:target}: { source: Readonly<Type>[], target: RefTypesType}): RefTypesType {
-            at.forEach(t=>addTypeToRefTypesType({ source:t,target }));
+            at.forEach(t=>{
+                target = addTypeToRefTypesType({ source:t,target });
+            });
             return target;
         }
-        function addTypeToRefTypesType({source:t,target:target}: { source: Readonly<Type>, target: RefTypesType}): void {
-            if (target._flags){
-                if (target._flags===RefTypesTypeFlags.any) return;
-                else if (t===anyType){
-                    (target as any as RefTypesTypeAny)._flags=RefTypesTypeFlags.any;
-                    return;
-                }
-                return; // target._flags=RefTypesTypeFlags.unknown
-            }
-            if (!(t.flags & TypeFlags.Union)) {
-                if (t===anyType) {
-                    (target as any as RefTypesTypeAny)._set=undefined;
-                    (target as any as RefTypesTypeAny)._flags=RefTypesTypeFlags.any;
-                }
-                else if (t===unknownType){
-                    (target as any as RefTypesTypeUnknown)._set=undefined;
-                    (target as any as RefTypesTypeUnknown)._flags=RefTypesTypeFlags.unknown;
-                }
-                else if (t!==neverType) target._set.add(t);
-            }
-            else {
-                // let hadAny = false;
-                // let hadUnknown = false;
-                forEachTypeIfUnion(t, tt=> {
-                    Debug.assert(t!==anyType);
-                    Debug.assert(t!==unknownType);
-                    // if (t===anyType) hadAny = true;
-                    // if (t===unknownType) hadUnknown = true;
-                    if (t!==neverType) target._set.add(tt);
-                });
-                // if (hadAny) {
-                //     rt._set.clear();
-                //     rt._flags=RefTypesTypeFlags.any;
-                // }
-                // else if (hadUnknown){
-                //     rt._set.clear();
-                //     rt._flags=RefTypesTypeFlags.unknown;
-                // }
-            }
+        function addTypeToRefTypesType({source:tstype,target:target}: { source: Readonly<Type>, target: RefTypesType}): RefTypesType {
+            forEachTypeIfUnion(tstype, t=>{
+                target = _privateAddTsTypeNonUnionToRefTypesType(t, target);
+            });
+            return target;
         }
+
+        /**
+         * @param param0 In place modification of target. (Probably would have been better to return new type)
+         * @returns void
+         */
         function mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void {
             if (isNeverType(source)) return;
             if (isAnyType(source)){
                 (target as any as RefTypesTypeAny)._flags = RefTypesTypeFlags.any;
                 (target as any as RefTypesTypeAny)._set = undefined;
+                (target as any as RefTypesTypeAny)._mapLiteral = undefined;
                 return;
             }
             if (isAnyType(target)) return;
             if (isUnknownType(source)){
                 (target as any as RefTypesTypeUnknown)._flags = RefTypesTypeFlags.unknown;
                 (target as any as RefTypesTypeUnknown)._set = undefined;
+                (target as any as RefTypesTypeAny)._mapLiteral = undefined;
                 return;
             }
             if (isUnknownType(target)) return;
-            (source as RefTypesTypeNormal)._set.forEach(t=>{
-               (target as RefTypesTypeNormal)._set.add(t);
+            // merge set to set, merge setLiteral to setLiteral
+            // (source as RefTypesTypeNormal)._set.forEach(t=>{
+            //    (target as RefTypesTypeNormal)._set.add(t);
+            // });
+            // (source as RefTypesTypeNormal)._setLiteral.forEach(t=>{
+            //     (target as RefTypesTypeNormal)._setLiteral.add(t);
+            // });
+            Debug.assert(!source._flags);
+            let tmpTarget = target;
+            source._set.forEach(tstype=>{
+                tmpTarget = addTypeToRefTypesType({ source:tstype, target:tmpTarget });
             });
+            source._mapLiteral.forEach((set,_key)=>{
+                //tmpTarget = addTypeToRefTypesType({ source:tstype, target:tmpTarget });
+                set.forEach(tsLiteralType=>{
+                    tmpTarget = addTypeToRefTypesType({ source:tsLiteralType, target:tmpTarget });
+                });
+            });
+            target._flags = tmpTarget._flags;
+            target._set = tmpTarget._set;
+            target._mapLiteral = tmpTarget._mapLiteral;
         }
+
         function unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType {
             let hasUnknown = false;
             const target = createRefTypesType();//never
             for (const type of types){
                 if (isAnyType(type)) {
-                    return { _flags: RefTypesTypeFlags.any, _set: undefined };
+                    return createRefTypesTypeAny();
                 }
                 if (isUnknownType(type)){
                     hasUnknown = true;
                     continue;
                 }
                 if (hasUnknown) continue;
-                (type as RefTypesTypeNormal)._set.forEach(t=>{
-                    (target as RefTypesTypeNormal)._set.add(t);
-                 });
+                mergeToRefTypesType({ source:type, target });
             }
-            if (hasUnknown) return { _flags: RefTypesTypeFlags.unknown, _set: undefined };
+            if (hasUnknown) return createRefTypesTypeUnknown();
             return target;
         }
 
-        /**
-         * How to deal with unknown type?
-         * If either is never then return never.
-         * Else if both are unknown return unknown.
-         * Else if either is unknown, and the other is not any, then the answer is a specific non-any type that need to be confirmed before use, but such a category doesn't exist in Typescript.
-         * - solutions? (1) return unknown, (2) return the type of other, (3) Debug fail. Start with Debug fail and see what happens.
-         * @param a
-         * @param b
-         * @returns
-         */
+        function isectSet<T>(x: Readonly<Set<T>>,y: Readonly<Set<T>>): Set<T> {
+            const z = new Set<T>();
+            if (y.size<x.size) [x,y]=[y,x];
+            x.forEach(t=>{
+                if (y.has(t)) z.add(t);
+            });
+            return z;
+        }
+
+        function intersectRefTypesTypesAux(x: Readonly<RefTypesTypeNormal>, y: Readonly<RefTypesTypeNormal>, iset: Set<Type>, _mapLiteral: ESMap<Type, Set<LiteralType>>): void {
+            x._mapLiteral.forEach((xmapset,tstype)=>{
+                const ymapset = y._mapLiteral.get(tstype);
+                xmapset.forEach(lt=>{
+                    if ((ymapset && ymapset.has(lt))||y._set.has(tstype)){
+                        let ltset = _mapLiteral.get(tstype);
+                        if (!ltset){
+                            ltset = new Set<LiteralType>([lt]);
+                            _mapLiteral.set(tstype,ltset);
+                        }
+                        else ltset.add(lt);
+                        iset.delete(tstype);
+                    }
+                });
+            });
+        }
         function intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType {
             if (isAnyType(a)) return cloneRefTypesType(b);
             if (isAnyType(b)) return cloneRefTypesType(a);
+            Debug.assert(!a._flags && !b._flags);
             if (isUnknownType(a)||isUnknownType(b)) return createRefTypesTypeUnknown();
-            const c = createRefTypesType() as RefTypesTypeNormal;
-            //// considers whether a type could be a subset of another type; this might be optimzed by keeping literal types in a separate array.
-            //(a as RefTypesTypeNormal)._set.forEach(ta=>{
-            //    (b as RefTypesTypeNormal)._set.forEach(tb=>{
-            //        if (!(ta.flags & tb.flags)) return; // the types cannot possibly overlap
-            //
-            //    });
-            //});
-
-            // Old code that doesn't consider whether a type could be a subset of another type
-            (a as RefTypesTypeNormal)._set.forEach(t=>{
-              if ((b as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
-            });
-            return c;
+            const iset = isectSet(a._set, b._set);
+            const _mapLiteral = new Map<Type, Set<LiteralType>>();
+            intersectRefTypesTypesAux(a,b,iset,_mapLiteral);
+            intersectRefTypesTypesAux(b,a,iset,_mapLiteral);
+            return {
+                _flags: RefTypesTypeFlags.none,
+                _set: iset,
+                _mapLiteral
+            };
         }
-        /**
-         * If a is a subset of b returns true, else false.
-         * @param a
-         * @param b
-         */
-         function typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>) {
+        // /**
+        //  * If a is a subset of b returns true, else false.
+        //  * @param a
+        //  * @param b
+        //  */
+         function isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean{
             if (isAnyType(a)) return isAnyType(b) ? true : false;
             if (isUnknownType(a)) return false;
             // eslint-disable-next-line no-null/no-null
             if (isAnyType(b)||isUnknownType(b)) return false;
-            for (let titer = (a as RefTypesTypeNormal)._set.keys(), ti = titer.next(); !ti.done; ti=titer.next()){
-                if (!(b as RefTypesTypeNormal)._set.has(ti.value)) return false;
+            Debug.assert(!a._flags && !b._flags);
+            let isSubset = true;
+            for (let mapiter = a._mapLiteral.entries(), mi = mapiter.next(); !mi.done && isSubset; mi=mapiter.next()){
+                const [tstype, litset] = mi.value;
+                const bmapset = a._mapLiteral.get(tstype);
+                for (let litsetiter = litset.values(), litsi = litsetiter.next(); !litsi.done && isSubset; litsi=litsetiter.next()){
+                    const ltype = litsi.value;
+                    if ((bmapset && bmapset.has(ltype)) || (b._set.has(tstype))) continue; // success
+                    isSubset = false;
+                }
             }
-            return true;
+            if (isSubset){
+                for (let setiter = a._set.values(), si=setiter.next(); !si.done && isSubset; si=setiter.next()){
+                    if (b._set.has(si.value)) continue;
+                    isSubset = false;
+                }
+            }
+            return isSubset;
         }
-        function intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean] {
-            // TODO: could be optimized because computations in intersectRefTypesTypes and typeImplies overlap
-            return [ intersectRefTypesTypes(a,b), typeImplies(a,b)];
-        }
+
         /**
          * If part of subtrahend set does not exist in minuend it will be ignored.
          * @param subtrahend: the set subtracted from the minuend
          * @param minuend: the set from which the subtrahend set will be removed
          * @returns
          */
-        function subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>): RefTypesType {
+        function subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>, /* errorOnMissing = false */): RefTypesType {
+            // IWOZERE
             if (isNeverType(subtrahend)) return minuend;
             if (isAnyType(subtrahend)) return createRefTypesType(neverType);
-            if (isUnknownType(subtrahend)||isUnknownType(minuend)) Debug.fail("inverseType: input is unknownType");
+            if (isUnknownType(subtrahend)||isUnknownType(minuend)) Debug.fail("not yet implemented");
+            Debug.assert(!subtrahend._flags && !minuend._flags);
             const c = createRefTypesType() as RefTypesTypeNormal;
+            minuend._mapLiteral.forEach((ltset,tstype)=>{
+                const subltset = subtrahend._mapLiteral.get(tstype);
+                ltset.forEach(ltype=>{
+                    if ((subltset && subltset.has(ltype))||subtrahend._set.has(tstype)) return; // subtract ltype
+                    let cltset = c._mapLiteral.get(tstype);
+                    if (!cltset) {
+                        cltset = new Set<LiteralType>([ltype]);
+                        c._mapLiteral.set(tstype,cltset);
+                    }
+                    else cltset.add(ltype);
+                });
+            });
             (minuend as RefTypesTypeNormal)._set.forEach(t=>{
                 if (!(subtrahend as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
             });
             return c;
         }
-        // @ts-ignore-error
-        function copyRefTypesType(rt: Readonly<RefTypesType>): RefTypesType {
-            const _set = rt._set;
-            return { _set: _set? new Set(_set) : undefined, _flags: rt._flags } as RefTypesType;
-        }
-        function getTypeFromRefTypesType(rt: Readonly<RefTypesType>): Type {
-            if (rt._flags===RefTypesTypeFlags.any) return anyType;
-            if (rt._flags===RefTypesTypeFlags.unknown) return unknownType;
-            if (rt._set.size===0) return neverType;
-            return getUnionType(arrayFromSet(rt._set),UnionReduction.Literal);
+        function getTypeFromRefTypesType(type: Readonly<RefTypesType>): Type {
+            if (type._flags===RefTypesTypeFlags.any) return anyType;
+            if (type._flags===RefTypesTypeFlags.unknown) return unknownType;
+            if (type._set.size===0) return neverType;
+            const tstypes: Type[] = [];
+            const tslittypes: LiteralType[] = [];
+            type._set.forEach(t=>tstypes.push(t));
+            type._mapLiteral.forEach((litset,_tstype)=>{
+                litset.forEach(lt=>{
+                    tslittypes.push(lt);
+                });
+            });
+            return getUnionType([...tstypes,...tslittypes],UnionReduction.Literal);
         }
         function isNeverType(type: Readonly<RefTypesType>): boolean {
-            return type._flags===RefTypesTypeFlags.none && type._set.size===0;
+            return type._flags===RefTypesTypeFlags.none && type._set.size===0 && type._mapLiteral.size===0;
         }
         function isAnyType(type: Readonly<RefTypesType>): boolean {
             return type._flags===RefTypesTypeFlags.any;
@@ -331,26 +413,48 @@ namespace ts {
         function isUnknownType(type: Readonly<RefTypesType>): boolean {
             return type._flags===RefTypesTypeFlags.unknown;
         }
-        function forEachRefTypesTypeType<F extends (t: Type) => any>(r: Readonly<RefTypesType>, f: F): void {
-            if (r._flags){
-                if (r._flags===RefTypesTypeFlags.any) f(anyType);
+        function forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void {
+            if (type._flags){
+                if (type._flags===RefTypesTypeFlags.any) f(anyType);
                 else f(unknownType);
             }
-            else if (r._set.size===0) f(neverType);
-            else r._set.forEach(t=>f(t));
+            else if (isNeverType(type)) f(neverType);
+            else {
+                type._set.forEach(t=>f(t));
+                type._mapLiteral.forEach((litset,_tstype)=>{
+                    litset.forEach(lt=>{
+                        f(lt);
+                    });
+                });
+            }
         }
         function equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>){
-            if (a._flags===RefTypesTypeFlags.any || b._flags===RefTypesTypeFlags.any) return true;
-            if (a._flags===RefTypesTypeFlags.unknown || b._flags===RefTypesTypeFlags.unknown) return false;
+            if (a._flags===RefTypesTypeFlags.any && b._flags===RefTypesTypeFlags.any) return true;
+            if (a._flags===RefTypesTypeFlags.unknown && b._flags===RefTypesTypeFlags.unknown) return false;
             if (a._flags !== b._flags) return false;
+            Debug.assert(!a._flags && !b._flags);
             if (a._set.size !== b._set.size) return false;
-            let subset = true;
-            a._set.forEach(v=>subset&&=b._set.has(v));
-            if (!subset) return false;
-            subset = true;
-            b._set.forEach(v=>subset&&=a._set.has(v));
-            return subset;
+            if (a._mapLiteral.size !== b._mapLiteral.size) return false;
+            for (let iter=a._mapLiteral.entries(), it=iter.next(); !it.done; it=iter.next()){
+                const [tstype, altset] = it.value;
+                const bltset = b._mapLiteral.get(tstype);
+                if (!bltset || bltset.size!==altset.size) return false;
+                for (let iter2=altset.values(),it2=iter2.next(); !it2.done; it2=iter2.next()){
+                    if (!bltset.has(it2.value)) return false;
+                }
+            }
+            for (let iter=a._set.values(), it=iter.next(); !it.done; it=iter.next()){
+                if (!b._set.has(it.value)) return false;
+            }
+            return true;
         }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
         function createRefTypesTableLeaf(symbol: Symbol | undefined , isconst: boolean | undefined, type?: RefTypesType): RefTypesTableLeaf {
@@ -406,7 +510,7 @@ namespace ts {
             if (!source.symbol) return;
             //const sourceSymbol = source.symbol!;
             const got = target.get(source.symbol);
-            if (!got) target.set(source.symbol, { leaf: { ... source, type: copyRefTypesType(source.type) } });
+            if (!got) target.set(source.symbol, { leaf: { ... source, type: cloneRefTypesType(source.type) } });
             else {
                 if (!(!got.leaf.symbol || !!got.leaf.isconst===!!source.isconst)){
                     Debug.assert(!got.leaf.symbol || !!got.leaf.isconst===!!source.isconst);
@@ -783,9 +887,9 @@ namespace ts {
             // --- One would expect that there would be a function with no argument, e.g, "getUnionOfTypeOfStringLiterals()".
             const tot8Type = checker.getTypeOfExpression(expr);
             const tot8TypeofstringToTypeMap = new Map<string,StringLiteralType>(((tot8Type as UnionType).types as StringLiteralType[]).map(t=>[t.value,t]));
-            // const filteredTypes = (tot8Type as UnionType).types.filter(t=>{
-            //     return set.has((t as StringLiteralType).value);
-            // });
+            if (myDebug){
+                consoleLog("typeof type: "+dbgTypeToStringDetail(tot8Type));
+            }
             const rhsUnmerged = rhs.inferRefRtnType.unmerged!;
             const byTypeofMap = new Map<string, RefTypesTableReturnNoSymbol[]>();
             const aAnyOrUnknown: Readonly<RefTypesTableReturn>[]=[];
@@ -1560,14 +1664,16 @@ namespace ts {
          * @returns type RefTypesTableReturnCritOut which has no "symbol" or "isconst" members.
          *
          */
-        const mergeTypeIntoNewSymtabAndNewConstraint = (rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol => {
+        function mergeTypeIntoNewSymtabAndNewConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
             Debug.assert(rttr.symbol);
             const { type, symbol, isconst } = rttr;
             let { symtab, constraintItem: tmpConstraintItem } = rttr;
             let setTypeTmp = type;
             if (symbol && isconst) {
                 const got = symtab.get(symbol);
-                if (got) setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
+                if (got) {
+                    setTypeTmp = intersectRefTypesTypes(got.leaf.type, type); // if literals are involved add to constraint instead.
+                }
                 const declType = inferStatus.declaredTypes.get(symbol)?.type;
                 if (!declType){
                     Debug.assert(declType);
@@ -1781,7 +1887,7 @@ namespace ts {
             const crit = { ...critIn };
             const critret = applyCritToArrRefTypesTableReturn(finalArrRefTypesTableReturn, crit, inferStatus);
 
-            const nodeType = copyRefTypesType(critret.passing.type);
+            const nodeType = cloneRefTypesType(critret.passing.type);
             if (critret.failing) mergeToRefTypesType({ source:critret.failing.type, target:nodeType });
             mergeOneIntoNodeToTypeMaps(expr,getTypeFromRefTypesType(nodeType),inferStatus.groupNodeToTypeMap);
             // inferStatus.groupNodeToTypeMap.set(expr,getTypeFromRefTypesType(nodeType));
