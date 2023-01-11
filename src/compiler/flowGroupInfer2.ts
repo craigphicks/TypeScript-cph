@@ -241,40 +241,41 @@ namespace ts {
          * @param arr
          * @returns
          */
-        function mergeArrRefTypesTableReturnToRefTypesTableReturnShallow({
-            arr, stripSymbols}: {
-            arr: Readonly<RefTypesTableReturn[]>, stripSymbols?: boolean}):
-            RefTypesTableReturnNoSymbol {
 
-                if (arr.length===0) Debug.fail("arr.length unexpectedly 0");
-            if (!stripSymbols) {
-                // Removing symbols could be removing valuable info. Design time check.
-                arr.forEach(rttr=>{
-                    Debug.assert(rttr.symbol===undefined, "rttr.symbol!==undefined");
-                    Debug.assert(rttr.isconst!==true, "rttr.isconst===true");
-                });
-            }
-            if (arr.length===1){
-                return arr[0];
-            }
-            const type = createRefTypesType();
-            const symtab = createRefTypesSymtab();
-            const arrConstr: ConstraintItem[]=[];
-            arr.forEach(rttr=>{
-                mergeToRefTypesType({ source:rttr.type, target:type });
-                mergeIntoRefTypesSymtab({ source: rttr.symtab, target: symtab });
-                arrConstr.push(rttr.constraintItem);
-            });
-            let constraintItem: ConstraintItem;
-            if (isNeverType(type)) constraintItem = createFlowConstraintNever();
-            else constraintItem = orIntoConstraintsShallow(arrConstr, mrNarrow);
-            return {
-                kind: RefTypesTableKind.return,
-                type,
-                symtab,
-                constraintItem
-            };
-        };
+        // function mergeArrRefTypesTableReturnToRefTypesTableReturnShallow({
+        //     arr, stripSymbols}: {
+        //     arr: Readonly<RefTypesTableReturn[]>, stripSymbols?: boolean}):
+        //     RefTypesTableReturnNoSymbol {
+
+        //         if (arr.length===0) Debug.fail("arr.length unexpectedly 0");
+        //     if (!stripSymbols) {
+        //         // Removing symbols could be removing valuable info. Design time check.
+        //         arr.forEach(rttr=>{
+        //             Debug.assert(rttr.symbol===undefined, "rttr.symbol!==undefined");
+        //             Debug.assert(rttr.isconst!==true, "rttr.isconst===true");
+        //         });
+        //     }
+        //     if (arr.length===1){
+        //         return arr[0];
+        //     }
+        //     const type = createRefTypesType();
+        //     const symtab = createRefTypesSymtab();
+        //     const arrConstr: ConstraintItem[]=[];
+        //     arr.forEach(rttr=>{
+        //         mergeToRefTypesType({ source:rttr.type, target:type });
+        //         mergeIntoRefTypesSymtab({ source: rttr.symtab, target: symtab });
+        //         arrConstr.push(rttr.constraintItem);
+        //     });
+        //     let constraintItem: ConstraintItem;
+        //     if (isNeverType(type)) constraintItem = createFlowConstraintNever();
+        //     else constraintItem = orIntoConstraintsShallow(arrConstr, mrNarrow);
+        //     return {
+        //         kind: RefTypesTableKind.return,
+        //         type,
+        //         symtab,
+        //         constraintItem
+        //     };
+        // };
 
         function dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string {
             const astr: string[]=[];
@@ -496,77 +497,25 @@ namespace ts {
             refTypesSymtab:refTypesSymtabIn, expr, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn
         }: InferRefInnerArgs & {expr: TypeOfExpression}): MrNarrowTypesInnerReturn {
             const rhs = mrNarrowTypes({ refTypesSymtab:refTypesSymtabIn, expr:expr.expression, qdotfallout: undefined, inferStatus, constraintItem: constraintItemIn, crit:{ kind:InferCritKind.none } });
-
-            // This call will return a particular union type of LiteralStringType, with all 8 possible types.
-            // This is very confusing, but required, magic:
-            // (1) The "TypeOf" has nothing to do the typeof operator, it is simply evaluating the type of the expresion.
-            // (2) It always returns a union of ALL EIGHT types, even though the "typeof" operand may have a range of only a subset of that.
-            // (3) We cannot just create the appropriate subset calling checker.createLiteralType(TypeFlags.StringLiteral, str)
-            // --- because those StringLiteralType will incur "not comparable" errors when comparing to strings, despite having identical values.
-            // --- c.f. "checker.isTypeRelatedTo(typeRight,typeLeft,checker.getRelations().comparableRelation)"
-            // --- The exact logic for that incompatibility is opaque.
-            // (4) However, by using "tot8type" created here, the constituent StringLiteralType members are comparable.
-            // --- One would expect that there would be a function with no argument, e.g, "getUnionOfTypeOfStringLiterals()".
-            const tot8Type = checker.getTypeOfExpression(expr);
-            const tot8TypeofstringToTypeMap = new Map<string,StringLiteralType>(((tot8Type as UnionType).types as StringLiteralType[]).map(t=>[t.value,t]));
-            if (myDebug){
-                consoleLog("typeof type: "+dbgTypeToStringDetail(tot8Type));
-            }
             const rhsUnmerged = rhs.inferRefRtnType.unmerged!;
-            const byTypeofMap = new Map<string, RefTypesTableReturnNoSymbol[]>();
-            const aAnyOrUnknown: Readonly<RefTypesTableReturn>[]=[];
+            const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
             rhsUnmerged.forEach(rttr=>{
                 if (isNeverType(rttr.type)) return;
                 if (isNeverConstraint(rttr.constraintItem)) return;
-                if (isAnyType(rttr.type)||isUnknownType(rttr.type)) {
-                    aAnyOrUnknown.push(rttr);
-                }
-                const map = new Map<string, Type[]>();
+                if (rttr.symbol) rttr = mergeTypeIntoNewSymtabAndNewConstraint(rttr, inferStatus);
+                const setOfTypeOfStrings = new Set<string>();
                 forEachRefTypesTypeType(rttr.type, t=>{
-                    const astr = typeToTypeofStrings(t);
-                    Debug.assert(astr.length===1);
-                    const got = map.get(astr[0]);
-                    if (got) got.push(t);
-                    else map.set(astr[0],[t]);
+                    typeToTypeofStrings(t).forEach(s=>setOfTypeOfStrings.add(s));
                 });
-                map.forEach((at,typeofstr)=>{
-                    //const type = createRefTypesType(at);
-                    let rttr1: RefTypesTableReturn = {
-                        ...rttr,
-                        type: createRefTypesType(at)
-                    };
-                    if (rttr1.symbol) rttr1 = mergeTypeIntoNewSymtabAndNewConstraint(rttr1, inferStatus);
-                    const got = byTypeofMap.get(typeofstr);
-                    if (got) got.push(rttr1);
-                    else byTypeofMap.set(typeofstr,[rttr1]);
+                const arrStringLiteralType: StringLiteralType[]=[];
+                setOfTypeOfStrings.forEach(str=>{
+                    arrStringLiteralType.push(checker.getStringLiteralType(str));
+                });
+                arrRefTypesTableReturn.push({
+                    ...rttr,
+                    type: createRefTypesType(arrStringLiteralType)
                 });
             });
-            // Prepare up to 8 RefTypetTableReturn, one for used typeofstring.
-            const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
-            byTypeofMap.forEach((arr,typeofstr)=>{
-                const rttr2 = mergeArrRefTypesTableReturnToRefTypesTableReturnShallow({ arr });
-                if (isNeverType(rttr2.type) || isNeverConstraint(rttr2.constraintItem)) return;
-                rttr2.type = createRefTypesType(tot8TypeofstringToTypeMap.get(typeofstr));
-                arrRefTypesTableReturn.push(rttr2);
-            });
-            Debug.assert(aAnyOrUnknown.length===0,"case any or unknow type not yet implemented");
-
-            const rhstype = rhs.inferRefRtnType.passing.type;
-
-            // Get the subset of typeof result strings corresponfing to the operand.
-            const set = new Set<string>();
-            forEachRefTypesTypeType(rhstype, tstype=>{
-                typeToTypeofStrings(tstype).forEach(str=>set.add(str));
-            });
-
-            // TODO: IWOZERE: Oops! Should be done using checker.getStringLiteralType()
-            // const filtered8type = checker.getUnionType(filteredTypes);
-            // (tot8Type as UnionType).types = filteredTypes;
-            // This does NOT work.
-            // const type = createRefTypesType();
-            // set.forEach(str=>{
-            //     addTypeToRefTypesType({ source: checker.createLiteralType(TypeFlags.StringLiteral, str), target: type });
-            // });
             return {
                 arrRefTypesTableReturn
             };

@@ -1,0 +1,12 @@
+=== tests/cases/conformance/_cax/_cax-typeof-0010.ts ===
+const x = typeof 1 === "number";
+>x : boolean
+>typeof 1 === "number" : boolean
+>typeof 1 : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>1 : 1
+>"number" : "number"
+
+x;
+>x : true
+
+

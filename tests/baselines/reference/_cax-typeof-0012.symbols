@@ -1,0 +1,12 @@
+=== tests/cases/conformance/_cax/_cax-typeof-0012.ts ===
+declare const a: number|string;
+>a : Symbol(a, Decl(_cax-typeof-0012.ts, 0, 13))
+
+const xa = typeof a;
+>xa : Symbol(xa, Decl(_cax-typeof-0012.ts, 1, 5))
+>a : Symbol(a, Decl(_cax-typeof-0012.ts, 0, 13))
+
+xa;
+>xa : Symbol(xa, Decl(_cax-typeof-0012.ts, 1, 5))
+
+

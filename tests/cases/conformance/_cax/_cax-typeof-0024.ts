@@ -2,16 +2,14 @@
 // @declaration: true
 
 declare const a: number|string;
-declare const b: number|boolean;
 const xa = typeof a;
 xa;
-const xb = typeof b;
-xb;
-if (xa==="number"){
+if (a===0){
+    a;
+    xa;
+} 
+else {
     a;
     xa;
 }
-if (typeof a ==="number"){
-    a;
-    xa;
-}
+
