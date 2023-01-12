@@ -73,6 +73,8 @@ namespace ts {
         // const bigintType = checker.getBigIntType();
         //const booleanType = checker.getBooleanType();
         const anyType = checker.getAnyType();
+        const trueType = checker.getTrueType();
+        const falseType = checker.getFalseType();
         // 'checker' has a function 'forEach(t,f)', but it unexpectedly works like 'some' returning immediately if f(t) return a truthy value.
         // Confusingly, 'checker' also has a function 'some(t,f)', that works as expected.
         // TODO: Internally, just use Set until rendering.
@@ -100,6 +102,7 @@ namespace ts {
             dbgSignatureToString,
             dbgSymbolToStringSimple,
             dbgTypeToString,
+            // @ts-expect-error
             dbgTypeToStringDetail,
         } = createDbgs(checker);
 
@@ -121,6 +124,7 @@ namespace ts {
             isAnyType,
             isUnknownType,
             forEachRefTypesTypeType,
+            partitionIntoSingularAndNonSingularTypes,
             equalRefTypesTypes,
         } = createRefTypesTypeModule(checker);
 
@@ -149,7 +153,7 @@ namespace ts {
             //mergeArrRefTypesTableReturnToRefTypesTableReturn,
             createNodeToTypeMap,
             mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
-            mergeArrRefTypesSymtab,
+            mergeArrRefTypesSymtab: unionArrRefTypesSymtab,
             // intersectRefTypesTypesImplies,
             // typeImplies,
             checker,
@@ -189,30 +193,35 @@ namespace ts {
                 mergeLeafIntoRefTypesSymtab({ source: next.value.leaf, target });
             }
         }
-        function mergeArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
+        /**
+         * Should be the most efficient way to get union of symtabs
+         * @param arr
+         * @returns
+         */
+        function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
             const target = createRefTypesSymtab();
-            const symmap = new Map<Symbol, boolean>();
-            arr.forEach(st=>{
-                st.forEach((x,sym)=>symmap.set(sym, x.leaf.isconst??false));
-            });
-            symmap.forEach((isconst,sym)=>{
-                arr.forEach(st=>{
-                    const x = st.get(sym);
-                    const sttype = x ? x?.leaf.type : createRefTypesType(getTypeOfSymbol(sym));
-                    const y = target.get(sym);
-                    if (y){
-                        mergeToRefTypesType({ source:sttype, target:y.leaf.type });
+            if (arr.length===0) return target;
+            const mapSymToType = new Map<Symbol,{isconst: boolean, set: Set<Type>}>();
+            arr.forEach(rts=>{
+                rts.forEach(({leaf},symbol)=>{
+                    let got = mapSymToType.get(symbol);
+                    if (!got) {
+                        got = { isconst:leaf.isconst??false, set:new Set<Type>() };
+                        mapSymToType.set(symbol, got);
                     }
-                    else {
-                        const leaf: RefTypesTableLeaf = {
-                            kind:RefTypesTableKind.leaf,
-                            symbol:sym,
-                            isconst,
-                            type:sttype
-                        };
-                        target.set(sym, { leaf });
-                    }
+                    forEachRefTypesTypeType(leaf.type, t=>got!.set.add(t));
                 });
+            });
+            mapSymToType.forEach(({isconst,set},symbol)=>{
+                const atype: Type[]=[];
+                set.forEach(t=>atype.push(t));
+                const type = createRefTypesType(atype);
+                target.set(symbol,{leaf:{
+                    kind:RefTypesTableKind.leaf,
+                    symbol,
+                    isconst,
+                    type
+                }});
             });
             return target;
         }
@@ -226,6 +235,23 @@ namespace ts {
                     Debug.assert(!got.leaf.symbol || !!got.leaf.isconst===!!source.isconst);
                 }
                 mergeToRefTypesType({ source: source.type, target: got.leaf.type });
+            }
+        }
+        // @ ts-expect-error
+        function andIntoRefTypesSymtabInPlace({symbol, type, isconst, symtab}: {symbol: Symbol,type: Readonly<RefTypesType>, isconst: boolean | undefined, symtab: RefTypesSymtab}): void {
+            const got = symtab.get(symbol);
+            if (!got) symtab.set(symbol,{ leaf:{ symbol,type,isconst,kind:RefTypesTableKind.leaf } });
+            else {
+                const isectType = intersectRefTypesTypes(type, got.leaf.type);
+                got.leaf.type = isectType;
+            }
+        }
+        // @ts-expect-error
+        function orIntoRefTypesSymtabInPlace({symbol, type, isconst, symtab}: {symbol: Symbol,type: Readonly<RefTypesType>, isconst: boolean | undefined, symtab: RefTypesSymtab}): void {
+            const got = symtab.get(symbol);
+            if (!got) symtab.set(symbol,{ leaf:{ symbol,type,isconst,kind:RefTypesTableKind.leaf } });
+            else {
+                got.leaf.type = unionOfRefTypesType([type, got.leaf.type]);
             }
         }
 
@@ -502,18 +528,213 @@ namespace ts {
             rhsUnmerged.forEach(rttr=>{
                 if (isNeverType(rttr.type)) return;
                 if (isNeverConstraint(rttr.constraintItem)) return;
-                if (rttr.symbol) rttr = mergeTypeIntoNewSymtabAndNewConstraint(rttr, inferStatus);
-                const setOfTypeOfStrings = new Set<string>();
-                forEachRefTypesTypeType(rttr.type, t=>{
-                    typeToTypeofStrings(t).forEach(s=>setOfTypeOfStrings.add(s));
+                if (!inferStatus.inCondition){
+                    if (rttr.symbol) rttr = mergeTypeIntoNewSymtabAndNewConstraint(rttr, inferStatus);
+                    const setOfTypeOfStrings = new Set<string>();
+                    forEachRefTypesTypeType(rttr.type, t=>{
+                        typeToTypeofStrings(t).forEach(s=>setOfTypeOfStrings.add(s));
+                    });
+                    const arrStringLiteralType: StringLiteralType[]=[];
+                    setOfTypeOfStrings.forEach(str=>{
+                        arrStringLiteralType.push(checker.getStringLiteralType(str));
+                    });
+                    arrRefTypesTableReturn.push({
+                        ...rttr,
+                        type: createRefTypesType(arrStringLiteralType)
+                    });
+                }
+                else {
+                    // infreStatus.inCondition is true
+                    const mapTypeOfStringToTypes = new Map<string,Set<Type>>();
+                    forEachRefTypesTypeType(rttr.type, t=>{
+                        const arrTypeOfString = typeToTypeofStrings(t);
+                        arrTypeOfString.forEach(typeOfString=>{
+                            const got = mapTypeOfStringToTypes.get(typeOfString);
+                            if (!got) mapTypeOfStringToTypes.set(typeOfString, new Set<Type>([t]));
+                            else got.add(t);
+                        });
+                    });
+                    mapTypeOfStringToTypes.forEach((setOfTypes,typeOfString)=>{
+                        const arrTypes: Type[]=[];
+                        setOfTypes.forEach(t=>arrTypes.push(t));
+                        let tmpRttr = {
+                            ...rttr,
+                            type: createRefTypesType(arrTypes),
+                        };
+                        if (tmpRttr.symbol) tmpRttr = mergeTypeIntoNewSymtabAndNewConstraint(tmpRttr, inferStatus);
+                        arrRefTypesTableReturn.push({
+                            ...tmpRttr,
+                            type: createRefTypesType(checker.getStringLiteralType(typeOfString)),
+                        });
+                    });
+                }
+            });
+            return {
+                arrRefTypesTableReturn
+            };
+        }
+
+        function mrNarrowTypesByBinaryExpressionEqualsHelper({
+            asym, partitionedType, passType, rttrRight, inferStatus}:
+            Readonly<{
+                asym: {symbol: Symbol, declared: RefTypesTableLeaf}[], partitionedType: RefTypesType, passType: RefTypesType,
+                rttrRight: RefTypesTableReturn, inferStatus: InferStatus
+            }
+            >): {passRttr: RefTypesTableReturnNoSymbol } {
+            // We can make two tables - one with true type, and one with false type
+            let passRttr: RefTypesTableReturnNoSymbol;
+            // let failRttr: RefTypesTableReturnNoSymbol;
+            const arrSC0: RefTypesSymtabConstraintItem[] = [];
+            forEachRefTypesTypeType(partitionedType,tstype=>{
+                const type = createRefTypesType(tstype);
+                const sc: RefTypesSymtabConstraintItem = { symtab:createRefTypesSymtab(), constraintItem:createFlowConstraintAlways() };
+                // eslint-disable-next-line @typescript-eslint/prefer-for-of
+                for (let i=0; i<asym.length; i++){
+                    andIntoRefTypesSymtabInPlace({ symbol:asym[i].symbol, isconst: asym[i].declared.isconst, type, symtab: sc.symtab });
+                    sc.constraintItem = andIntoConstraintShallow({ symbol:asym[i].symbol, type, constraintItem: sc.constraintItem, mrNarrow });
+                };
+                arrSC0.push(sc);
+            });
+            {
+                const arrCI: ConstraintItem[] = [];
+                let symtabUnion = createRefTypesSymtab();
+                for (const sc of arrSC0){
+                    const {symtab,constraintItem} = andSymtabConstraintsWithSimplify(
+                        sc,{ symtab: rttrRight.symtab, constraintItem: rttrRight.constraintItem },
+                        mrNarrow, (s: Symbol)=>inferStatus.declaredTypes.get(s)!.type);
+                    symtabUnion = unionArrRefTypesSymtab([symtab,symtabUnion]);
+                    arrCI.push(constraintItem);
+                }
+                passRttr = {
+                    kind: RefTypesTableKind.return,
+                    type: passType,
+                    symtab: symtabUnion,
+                    constraintItem: orIntoConstraintsShallow(arrCI)
+                };
+            }
+            return { passRttr };
+        }
+
+        function mrNarrowTypesByBinaryExpressionEquals({
+            refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, /* qdotfallout: _qdotFalloutIn, */ inferStatus, constraintItem: constraintItemIn
+        }: InferRefInnerArgs & {expr: BinaryExpression}): MrNarrowTypesInnerReturn {
+            if (myDebug){
+                consoleGroup(`mrNarrowTypesByBinaryExpressionEquals[in]`);
+            }
+            const ret = mrNarrowTypesByBinaryExpressionEquals_aux({ refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, inferStatus, constraintItem: constraintItemIn, qdotfallout:[] });
+            if (myDebug){
+                consoleLog(`mrNarrowTypesByBinaryExpressionEquals[out]`);
+                consoleGroupEnd();
+            }
+            return ret;
+        }
+
+        // @ ts-expect-error
+        function mrNarrowTypesByBinaryExpressionEquals_aux({
+            refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, /* qdotfallout: _qdotFalloutIn, */ inferStatus, constraintItem: constraintItemIn
+        }: InferRefInnerArgs & {expr: BinaryExpression}): MrNarrowTypesInnerReturn {
+
+            const {left:leftExpr,operatorToken,right:rightExpr} = binaryExpression;
+            Debug.assert(operatorToken.kind===SyntaxKind.EqualsEqualsEqualsToken); // TODO: expand this range
+            if (myDebug){
+                consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] start left mrNarrowTypes`);
+            }
+            const leftRet = mrNarrowTypes({
+                expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
+                refTypesSymtab:refTypesSymtabIn,
+                constraintItem: constraintItemIn
+            });
+            if (myDebug){
+                consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] end left mrNarrowTypes`);
+            }
+            const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[] = [];
+            leftRet.inferRefRtnType.unmerged?.forEach((rttrLeft, _leftIdx)=>{
+                const tmpSymtabConstraintLeft: RefTypesSymtabConstraintItem = { symtab:rttrLeft.symtab,constraintItem:rttrLeft.constraintItem };
+                // May not need this?
+                // if (rttrLeft.symbol){
+                //     tmpSymtabConstraintLeft = mergeTypeIntoNewSymtabAndNewConstraint(rttrLeft, inferStatus);
+                // }
+                if (myDebug){
+                    consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] start right mrNarrowTypes for left#${_leftIdx} `);
+                }
+                 const rhs1 = mrNarrowTypes({
+                    expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
+                    refTypesSymtab: tmpSymtabConstraintLeft.symtab,
+                    constraintItem: tmpSymtabConstraintLeft.constraintItem,
                 });
-                const arrStringLiteralType: StringLiteralType[]=[];
-                setOfTypeOfStrings.forEach(str=>{
-                    arrStringLiteralType.push(checker.getStringLiteralType(str));
-                });
-                arrRefTypesTableReturn.push({
-                    ...rttr,
-                    type: createRefTypesType(arrStringLiteralType)
+                if (myDebug){
+                    consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] end right mrNarrowTypes for left#${_leftIdx} `);
+                }
+                rhs1.inferRefRtnType.unmerged?.forEach((rttrRight, _rightIdx)=>{
+                    const isect = intersectRefTypesTypes(rttrLeft.type, rttrRight.type);
+                    if (myDebug){
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        +`rttrLeft.type:${dbgRefTypesTypeToString(rttrLeft.type)}, `
+                        +`rttrRight.type:${dbgRefTypesTypeToString(rttrRight.type)}, `);
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        +`isect:${dbgRefTypesTypeToString(isect)} `);
+                    }
+                    const {singular,singularCount,nonSingular,nonSingularCount} = partitionIntoSingularAndNonSingularTypes(isect);
+                    const mismatchRight = subtractFromType(isect,rttrRight.type);
+                    const mismatchLeft = subtractFromType(isect,rttrLeft.type);
+                    // if (singularCount===0 && nonSingularCount===0) return; // never
+                    if (myDebug){
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        +`singular:${dbgRefTypesTypeToString(singular)}, singularCount:${singularCount}`);
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        +`nonSingular:${dbgRefTypesTypeToString(nonSingular)}, nonSingularCount:${nonSingularCount}`);
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        +`mismatchLeft:${dbgRefTypesTypeToString(mismatchLeft)}`);
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        +`mismatchRight:${dbgRefTypesTypeToString(mismatchRight)}`);
+                    }
+
+                    const asym: {symbol: Symbol,declared: RefTypesTableLeaf}[] = [];
+                    if (rttrLeft.symbol && rttrLeft.isconst) {
+                        asym.push({ symbol:rttrLeft.symbol, declared: inferStatus.declaredTypes.get(rttrLeft.symbol)! });
+                    }
+                    if (rttrRight.symbol && rttrRight.isconst) {
+                        asym.push({ symbol:rttrRight.symbol, declared: inferStatus.declaredTypes.get(rttrRight.symbol)! });
+                    }
+                    if (singularCount){
+                        const {passRttr} = mrNarrowTypesByBinaryExpressionEqualsHelper(
+                            { asym, partitionedType: singular, passType: createRefTypesType(trueType), rttrRight, inferStatus });
+                        arrRefTypesTableReturn.push(passRttr);
+                    }
+                    if (nonSingularCount){
+                        const {passRttr} = mrNarrowTypesByBinaryExpressionEqualsHelper(
+                            { asym, partitionedType: nonSingular, passType: createRefTypesType([trueType,falseType]), rttrRight, inferStatus });
+                        arrRefTypesTableReturn.push(passRttr);
+                    }
+                    if (!isNeverType(mismatchLeft) || !isNeverType(mismatchRight)){
+                        let tmpsc = { symtab:rttrRight.symtab,constraintItem:rttrRight.constraintItem };
+                        // @ts-ignore
+                        let _constraintedMismatchLeft = mismatchLeft;
+                        // @ts-ignore
+                        let _constraintedMismatchRight = mismatchRight;
+                        if (!isNeverType(mismatchLeft) && rttrLeft.symbol && rttrLeft.isconst){
+                            ({type:_constraintedMismatchLeft, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
+                                symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
+                                sc:tmpsc, inferStatus}));
+                        }
+                        if (!isNeverType(mismatchRight) && rttrRight.symbol && rttrRight.isconst){
+                            ({type:_constraintedMismatchRight, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
+                                symbol:rttrRight.symbol, isconst: rttrRight.isconst, type: mismatchRight,
+                                sc:tmpsc, inferStatus}));
+                        }
+                        const mismatchRttr = {
+                            ...rttrRight,
+                            type: createRefTypesType(falseType),
+                            symtab:tmpsc.symtab,
+                            constraintItem: tmpsc.constraintItem
+                        };
+                        if (myDebug){
+                            const str = `mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, mismatchRttr: `;
+                            consoleLog(str);
+                            dbgRefTypesTableToStrings(mismatchRttr).forEach(s=>consoleLog(str+s));
+                        }
+                        arrRefTypesTableReturn.push(mismatchRttr);
+                    }
                 });
             });
             return {
@@ -521,56 +742,6 @@ namespace ts {
             };
         }
 
-        function binaryEquality(typeLeft: Type, typeRight: Type):
-        { eq: boolean,neq: boolean, identity: boolean, comparable: boolean, comparableLR: boolean, comparableRL: boolean | undefined }{
-            let eq = false;
-            let neq = false;
-            let comparableLR: boolean;
-            let comparableRL: boolean | undefined;
-            let comparable = false;
-            let identity = false;
-            // if (typeLeft.flags | TypeFlags.Literal && typeRight.flags | TypeFlags.Literal){
-            //     assertType<LiteralType>(typeLeft);
-            //     assertType<LiteralType>(typeRight);
-            //     if (typeLeft.flags | TypeFlags.BigIntLiteral && typeRight.flags | TypeFlags.BigIntLiteral){
-            //         assertType<PseudoBigInt>(typeLeft.value);
-            //         assertType<PseudoBigInt>(typeRight.value);
-            //         if (typeLeft.value.base10Value===typeRight.value.base10Value && typeLeft.value.negative===typeRight.value.negative) eq=true;
-            //         else neq = true;
-            //     }
-            //     else {
-            //         if (typeLeft.value===typeRight.value) eq = true;
-            //         else neq = true;
-            //     }
-            // }
-            // if (typeLeft.flags | TypeFlags.Undefined || typeRight.flags | TypeFlags.Undefined) {
-            //     if (typeLeft.flags | TypeFlags.Undefined && typeRight.flags | TypeFlags.Undefined) eq = true;
-            //     else neq = true;
-            // }
-            comparable = ((comparableLR = checker.isTypeRelatedTo(typeLeft,typeRight,checker.getRelations().comparableRelation))
-                || (comparableRL = checker.isTypeRelatedTo(typeRight,typeLeft,checker.getRelations().comparableRelation)));
-            if (!comparable) neq = true;
-            else {
-                identity = checker.isTypeRelatedTo(typeLeft,typeRight,checker.getRelations().identityRelation);
-                {
-                    const identityRL = checker.isTypeRelatedTo(typeRight,typeLeft,checker.getRelations().identityRelation);
-                    Debug.assert(identity===identityRL);
-                }
-                if (identity) eq = true;
-                else neq = true;
-            }
-            if (getMyDebug()){
-                consoleGroup(`binaryEquality start`);
-                const as: string[] = [];
-                as.push(...dbgTypeToStringDetail(typeLeft).map(s=>`binaryEquality: leftType: ${s}`));
-                as.push(...dbgTypeToStringDetail(typeRight).map(s=>`binaryEquality: rightType: ${s}`));
-                as.push(`{eq:${eq}, neq:${neq}, identity:${identity}, comparable:${comparable} , comparableLR:${comparableLR}, comparableRL:${comparableRL}}`);
-                as.forEach(s=>consoleLog(s));
-                consoleLog(`binaryEquality end`);
-                consoleGroupEnd();
-            }
-            return { eq,neq, identity, comparable , comparableLR, comparableRL };
-        }
 
 
         function mrNarrowTypesByBinaryExpression({
@@ -590,109 +761,15 @@ namespace ts {
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;
                 case SyntaxKind.EqualsEqualsEqualsToken:{
-                    const leftRet = mrNarrowTypes({
-                        expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
-                        refTypesSymtab:refTypesSymtabIn,
-                        constraintItem: constraintItemIn
-                    });
-                    const rightRet = mrNarrowTypes({
-                        expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
-                        refTypesSymtab:leftRet.inferRefRtnType.passing.symtab,
-                        constraintItem: leftRet.inferRefRtnType.passing.constraintItem
-                    });
-                    if (getMyDebug()){
-                        dbgTypeToStringDetail(getTypeFromRefTypesType(leftRet.inferRefRtnType.passing.type)).forEach(s=>{
-                            consoleLog(`mrNarrowTypesByBinaryExpression[dbg] leftType: ${s}`);
-                        });
-                        dbgTypeToStringDetail(getTypeFromRefTypesType(rightRet.inferRefRtnType.passing.type)).forEach(s=>{
-                            consoleLog(`mrNarrowTypesByBinaryExpression[dbg] rightType: ${s}`);
-                        });
-                    }
-                    const { narrowTypeByEquality } = checker.getNarrowTypeExports();
-
-                    const narrowTypeLeft = narrowTypeByEquality(
-                        getTypeFromRefTypesType(leftRet.inferRefRtnType.passing.type),
-                        operatorToken.kind,rightExpr, /**/ true);
-
-                    const narrowTypeRight = narrowTypeByEquality(
-                        getTypeFromRefTypesType(rightRet.inferRefRtnType.passing.type),
-                        operatorToken.kind,leftExpr, /**/ true);
-
-                    if (getMyDebug()){
-                        dbgTypeToStringDetail(narrowTypeLeft).forEach(s=>{
-                            consoleLog(`mrNarrowTypesByBinaryExpression[dbg] narrowTypeLeft: ${s}`);
-                        });
-                        dbgTypeToStringDetail(narrowTypeRight).forEach(s=>{
-                            consoleLog(`mrNarrowTypesByBinaryExpression[dbg] narrowTypeRight: ${s}`);
-                        });
-                    }
-
-                    // leftRet.inferRefRtnType.unmerged?.forEach(rttrLeft=>{
-                    //     andSymtabConstraintsWithSimplify
-                    // });
-
-                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
-                    leftRet.inferRefRtnType.unmerged?.forEach(rttrLeft=>{
-                        const typeLeft = getTypeFromRefTypesType(rttrLeft.type);
-                        const rhs1 = mrNarrowTypes({
-                            expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
-                            refTypesSymtab:rttrLeft.symtab,
-                            constraintItem: rttrLeft.constraintItem
-                        });
-
-                        rhs1.inferRefRtnType.unmerged?.forEach(rttrRight=>{
-                            const typeRight = getTypeFromRefTypesType(rttrRight.type);
-                            const {eq,neq, identity, comparable} = binaryEquality(typeLeft,typeRight);
-                            if (getMyDebug()) {
-                                consoleLog(`mrNarrowTypesByBinaryExpression[dbg]`);
-                                consoleLog(`mrNarrowTypesByBinaryExpression[dbg] leftType:${dbgTypeToStringDetail(typeLeft)}`);
-                                consoleLog(`mrNarrowTypesByBinaryExpression[dbg] rightType:${dbgTypeToStringDetail(typeRight)}`);
-                                consoleLog(`mrNarrowTypesByBinaryExpression[dbg] eq:${eq}, neq: ${neq}, identity:${identity}, comparable: ${comparable}`);
-                            }
-                            const resultType = eq ? checker.getTrueType() : neq ? checker.getFalseType() : checker.getBooleanType();
-                            arrRefTypesTableReturn.push({
-                                ...rttrRight, type: createRefTypesType(resultType)
-                            });
-                        });
-                    });
-                    //const tstype  = checker.getTypeOfExpression(binaryExpression);
-                    return { arrRefTypesTableReturn };
+                    return mrNarrowTypesByBinaryExpressionEquals(
+                        { refTypesSymtab:refTypesSymtabIn, constraintItem: constraintItemIn, expr:binaryExpression, inferStatus, qdotfallout:[] });
                 }
                 break;
                 case SyntaxKind.ExclamationEqualsEqualsToken:
-                    // if (leftExpr.kind === SyntaxKind.TypeOfExpression || rightExpr.kind === SyntaxKind.TypeOfExpression){
-                    //     let typeofArgExpr: Expression | undefined;
-                    //     let typeofString: string | undefined;
-                    //     if (isTypeOfExpression(leftExpr) && isStringLiteral(rightExpr)){
-                    //         typeofArgExpr = leftExpr.expression;
-                    //         typeofString = rightExpr.text;
-                    //     }
-                    //     else if (isTypeOfExpression(rightExpr) && isStringLiteral(leftExpr)){
-                    //         typeofArgExpr = rightExpr.expression;
-                    //         typeofString = leftExpr.text;
-                    //     }
-                    //     if (typeofArgExpr && typeofString){
-                    //         const negateCrit = operatorToken.kind===SyntaxKind.ExclamationEqualsEqualsToken || operatorToken.kind===SyntaxKind.ExclamationEqualsToken;
-                    //         return mrNarrowTypesByTypeof({ refTypesSymtab:refTypesSymtabIn, expr:typeofArgExpr, inferStatus, constraintItem: constraintItemIn }, negateCrit, typeofString);
-                    //     }
-                    //     else {
-                    //         // still required to process for side effects
-                    //         const arrRttr: RefTypesTableReturn[]=[];
-                    //         const rl = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, expr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn });
-                    //         const rr = mrNarrowTypesInner({ refTypesSymtab:refTypesSymtabIn, expr:leftExpr, qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn });
-                    //         arrRttr.push(...rl.arrRefTypesTableReturn);
-                    //         arrRttr.push(...rr.arrRefTypesTableReturn);
-                    //         return {
-                    //             arrRefTypesTableReturn: arrRttr
-                    //         };
-                    //     }
-
-                    // }
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;
                 case SyntaxKind.InstanceOfKeyword:
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
-                    //return narrowTypeByInstanceof(type, expr, assumeTrue);
                     break;
                 case SyntaxKind.InKeyword:
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
@@ -1233,6 +1310,7 @@ namespace ts {
          * @param rttr
          * @returns type RefTypesTableReturnCritOut which has no "symbol" or "isconst" members.
          *
+         * TODO: Modify to use "andSymbolTypeIntoSymtabConstraint", to avoid code duplication
          */
         function mergeTypeIntoNewSymtabAndNewConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
             Debug.assert(rttr.symbol);
@@ -1273,8 +1351,8 @@ namespace ts {
                     }
                 }
 
-                // We don't necessary to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
-                // However it is sufficient. Although it might not be opitmal in terms of constraint size. todo?.
+                // We don't necessary have to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
+                // However it is sufficient. Although it might not be opitmal in terms of constraint size.
                 if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
                     tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
                 }
@@ -1290,6 +1368,67 @@ namespace ts {
                 });
             }
             return { kind:RefTypesTableKind.return, symtab, type: setTypeTmp, constraintItem: tmpConstraintItem };
+        };
+
+        function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type,sc,inferStatus}: Readonly<{
+            symbol: Readonly<Symbol>,
+            readonly isconst: true,
+            type: Readonly<RefTypesType>,
+            sc: RefTypesSymtabConstraintItem,
+            inferStatus: InferStatus}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+            let { symtab, constraintItem: tmpConstraintItem } = sc;
+            let setTypeTmp = type;
+            if (symbol && isconst) {
+                const got = symtab.get(symbol);
+                if (got) {
+                    setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
+                }
+                const declType = inferStatus.declaredTypes.get(symbol)?.type;
+                if (!declType){
+                    Debug.assert(declType);
+                }
+                if (true){
+                    // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
+                    const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
+                    if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
+                        Debug.fail();
+                    }
+                    if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
+                        Debug.fail();
+                    }
+                }
+                const refCountIn = [0] as [number];
+                const refCountOut = [0] as [number];
+                tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, declaredType: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
+
+                if (true){
+                    // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
+                    const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
+                    if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
+                        Debug.fail();
+                    }
+                    if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
+                        Debug.fail();
+                    }
+                }
+
+                // We don't necessary have to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
+                // However it is sufficient. Although it might not be opitmal in terms of constraint size.
+                if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
+                    tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
+                }
+                symtab = copyRefTypesSymtab(symtab);
+                symtab.set(
+                    symbol,
+                    {leaf: {
+                        kind: RefTypesTableKind.leaf,
+                        symbol,
+                        isconst,
+                        type: setTypeTmp,
+                    },
+                });
+            }
+            return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
         };
 
         /**
@@ -1381,7 +1520,7 @@ namespace ts {
                 });
                 if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = createFlowConstraintNever();
                 else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
-                else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraintsShallow(passingOredConstraints, mrNarrow);
+                else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraintsShallow(passingOredConstraints);
 
                 const rttrcoFailing: RefTypesTableReturnNoSymbol = {
                     kind: RefTypesTableKind.return,
@@ -1397,7 +1536,7 @@ namespace ts {
                 });
                 if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = createFlowConstraintNever();
                 if (failingOredConstraints.length===1) rttrcoFailing.constraintItem = failingOredConstraints[0];
-                else if (failingOredConstraints.length) rttrcoFailing.constraintItem = orIntoConstraintsShallow(failingOredConstraints, mrNarrow);
+                else if (failingOredConstraints.length) rttrcoFailing.constraintItem = orIntoConstraintsShallow(failingOredConstraints);
                 const rtn: ReturnType<typeof applyCritToArrRefTypesTableReturn>  = { passing:rttrcoPassing };
                 if (crit.alsoFailing){
                     rtn.failing = rttrcoFailing;
@@ -1418,7 +1557,9 @@ namespace ts {
         function mrNarrowTypes({refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, expr:expr, inferStatus, crit: critIn, qdotfallout: qdotfalloutIn }: InferRefArgs): MrNarrowTypesReturn {
             myDebug = getMyDebug();
             if (myDebug) {
-                consoleGroup(`mrNarrowTypes[in] expr:${dbgNodeToString(expr)}, crit:{kind:${critIn.kind},negate:${(critIn as any).negate}}, qdotfalloutIn: ${!qdotfalloutIn ? "<undef>" : `length: ${qdotfalloutIn.length}`}`);
+                consoleGroup(`mrNarrowTypes[in] expr:${dbgNodeToString(expr)}, crit:{kind:${critIn.kind},negate:${(critIn as any).negate}}, `
+                +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
+                +`qdotfalloutIn: ${!qdotfalloutIn ? "<undef>" : `length: ${qdotfalloutIn.length}`}`);
                 consoleLog(`mrNarrowTypes[in] refTypesSymtab:`);
                 dbgRefTypesSymtabToStrings(refTypesSymtabIn).forEach(str=> consoleLog(`  ${str}`));
                 consoleLog(`mrNarrowTypes[in] constraintItemIn:`);
@@ -1565,7 +1706,7 @@ namespace ts {
                             refTypesSymtab: refTypesSymtabIn,
                             constraintItem: constraintItemIn,
                             qdotfallout: undefined,
-                            inferStatus: { ...inferStatus, inCondition:true, currentReplayableItem:replayable, groupNodeToTypeMap: dummyNodeToTypeMap }
+                            inferStatus: { ...inferStatus, currentReplayableItem:replayable, groupNodeToTypeMap: dummyNodeToTypeMap }
                         });
                         if (getMyDebug()){
                             consoleLog(`mrNarrowTypesInner[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}`);
@@ -1822,7 +1963,7 @@ namespace ts {
 
                     const rhs = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn, expr:initializer, crit:{ kind: InferCritKind.none }, qdotfallout:undefined,
-                        inferStatus: { ...inferStatus, inCondition: isconstVar },
+                        inferStatus: { ...inferStatus, inCondition: false },
                         constraintItem: constraintItemIn
                     });
                     Debug.assert(!rhs.inferRefRtnType.failing);

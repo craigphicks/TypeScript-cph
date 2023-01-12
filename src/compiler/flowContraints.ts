@@ -1,6 +1,9 @@
 /* eslint-disable no-null/no-null */
 namespace ts {
 
+    // @ts-expect-error
+    type GetDeclaredTypeFn = (symbol: Symbol) => RefTypesType;
+
     export function createFlowConstraintNodeAnd({negate, constraints}: {negate?: boolean, constraints: ConstraintItem[]}): ConstraintItemNode {
         if (constraints.length<=1) Debug.fail("unexpected constraints.length<=1");
         const c: ConstraintItemNodeAnd = {
@@ -44,7 +47,7 @@ namespace ts {
         return { kind:ConstraintItemKind.always };
     }
     // @ts-ignore
-    function isAlwaysConstraint(c: ConstraintItem): boolean {
+    export function isAlwaysConstraint(c: ConstraintItem): boolean {
         return (c.kind===ConstraintItemKind.always);
     }
 
@@ -136,8 +139,10 @@ namespace ts {
      */
     export function andDistributeDivide({
         symbol, type, declaredType, cin, negate, mrNarrow, refCountIn, refCountOut, depth}:
-        {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
+        {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn?: [number], refCountOut?: [number], depth?: number
     }): ConstraintItem {
+        if (!refCountIn) refCountIn=[0];
+        if (!refCountOut) refCountOut=[0];
         const doLog = true;
         if (doLog && getMyDebug()){
             consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
@@ -282,7 +287,7 @@ namespace ts {
         }
         Debug.fail("unexpected");
     }
-    export function orIntoConstraintsShallow(acin: Readonly<(ConstraintItem)[]>, _mrNarrow: MrNarrow): ConstraintItem {
+    export function orIntoConstraintsShallow(acin: Readonly<(ConstraintItem)[]>): ConstraintItem {
         const ac: ConstraintItem[]=[];
         for (const c of acin){
             if (isAlwaysConstraint(c)) return createFlowConstraintAlways();;
@@ -293,26 +298,61 @@ namespace ts {
         return createFlowConstraintNodeOr({ constraints:ac });
     }
 
+    export function andSymtabConstraintsWithSimplifyHelper(cia: Readonly<ConstraintItem>, cib: Readonly<ConstraintItem>): ConstraintItem {
+        if (isAlwaysConstraint(cia)) return cib;
+        if (isAlwaysConstraint(cib)) return cia;
+        if (isNeverConstraint(cia)) return cia;
+        if (isNeverConstraint(cib)) return cib;
+        if (cia.kind===ConstraintItemKind.leaf && cib.kind===ConstraintItemKind.node && cib.op===ConstraintItemNodeOp.and){
+            return createFlowConstraintNodeAnd({ constraints:[cia, ...cib.constraints] });
+        }
+        if (cib.kind===ConstraintItemKind.leaf && cia.kind===ConstraintItemKind.node && cia.op===ConstraintItemNodeOp.and){
+            return createFlowConstraintNodeAnd({ constraints:[cib, ...cia.constraints] });
+        }
+        return createFlowConstraintNodeAnd({ constraints:[cia,cib] });
+    }
 
-    // @ts-ignore
-    export function andSymtabConstraintsWithSimplify(sc0: RefTypesSymtabConstraintItem, sc1: RefTypesSymtabConstraintItem, mrNarrow: MrNarrow, getDeclaredType: (symbol: Symbol) => RefTypesType): RefTypesSymtabConstraintItem {
-        // @ts-ignore
-        const symtab = mrNarrow.createRefTypesSymtab(sc0);
+    // @ ts-ignore
+    export function andSymtabConstraintsWithSimplify(sc0: Readonly<RefTypesSymtabConstraintItem>, sc1: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow, getDeclaredType: (symbol: Symbol) => RefTypesType): RefTypesSymtabConstraintItem {
+        if (getMyDebug()){
+            consoleGroup(`andSymtabConstraintsWithSimplify[in]`);
+            mrNarrow.dbgRefTypesSymtabToStrings(sc0.symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc0.symtab: ${s}`));
+            mrNarrow.dbgConstraintItem(sc0.constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc0.constraintItem: ${s}`));
+            mrNarrow.dbgRefTypesSymtabToStrings(sc1.symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc1.symtab: ${s}`));
+            mrNarrow.dbgConstraintItem(sc1.constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc1.constraintItem: ${s}`));
+        }
+        const symtab = mrNarrow.createRefTypesSymtab();
+        sc0.symtab.forEach(({leaf},symbol)=>{
+            symtab.set(symbol,{ leaf });
+        });
         sc1.symtab.forEach(({leaf},symbol)=>{
             const got = symtab.get(symbol);
             if (!got) symtab.set(symbol,{ leaf });
             else symtab.set(symbol,{ leaf: { ...leaf, type: mrNarrow.intersectRefTypesTypes(leaf.type, got.leaf.type) } });
         });
-        const tmpConstraint0 = createFlowConstraintNodeAnd({ constraints:[sc0.constraintItem,sc1.constraintItem] });
+        const tmpConstraint0 = andSymtabConstraintsWithSimplifyHelper(sc0.constraintItem,sc1.constraintItem);
         let constraintItem: ConstraintItem = tmpConstraint0;
         symtab.forEach(({leaf},symbol)=>{
             const refCountIn: [number]=[0];
             const refCountOut: [number]=[0];
             constraintItem = andDistributeDivide({ symbol,type:leaf.type,declaredType:getDeclaredType(symbol), cin:constraintItem, mrNarrow, refCountIn, refCountOut, depth:0 });
         });
+        if (getMyDebug()){
+            consoleLog(`andSymtabConstraintsWithSimplify[out]`);
+            mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[out] symtab: ${s}`));
+            mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[out] constraintItem: ${s}`));
+            consoleGroupEnd();
+        }
         return { symtab,constraintItem };
     }
 
+    /**
+     * TODO: Not at all sure about this.
+     * @param cin
+     * @param rmset
+     * @param _mrNarrow
+     * @returns
+     */
     export function removeSomeVariablesFromConstraint(cin: ConstraintItem, rmset: { has(s: Symbol): boolean}, _mrNarrow: MrNarrow): ConstraintItem {
         const call = (cin: ConstraintItem): ConstraintItem => {
             if (cin.kind===ConstraintItemKind.always || cin.kind===ConstraintItemKind.never) return cin;

@@ -23,6 +23,7 @@ namespace ts {
         isAnyType(type: Readonly<RefTypesType>): boolean ;
         isUnknownType(type: Readonly<RefTypesType>): boolean ;
         forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void ;
+        partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number};
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
     };
 
@@ -64,6 +65,7 @@ namespace ts {
             isAnyType,
             isUnknownType,
             forEachRefTypesTypeType,
+            partitionIntoSingularAndNonSingularTypes,
             equalRefTypesTypes,
         };
 
@@ -369,6 +371,44 @@ namespace ts {
                 });
             }
         }
+        function partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {
+            singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number
+        } {
+            let singularCount = 0;
+            let nonSingularCount = 0;
+            if (isAnyType(type)) return { singular: createRefTypesType(), singularCount, nonSingular: createRefTypesTypeAny(), nonSingularCount:1 };
+            if (isUnknownType(type)) return { singular: createRefTypesType(), singularCount, nonSingular: createRefTypesTypeUnknown(), nonSingularCount:1 };
+            if (!type._flags){
+                const singular = createRefTypesType() as RefTypesTypeNormal;
+                const nonSingular = createRefTypesType() as RefTypesTypeNormal;
+                type._set.forEach(t=>{
+                    if (t.flags & TypeFlags.BooleanLiteral) {
+                        singular._set.add(t);
+                        singularCount++;
+                    }
+                    else {
+                        nonSingular._set.add(t);
+                        nonSingularCount++;
+                    }
+                });
+                type._mapLiteral.forEach((set,tstype)=>{
+                    set.forEach(t=>{
+                        const got = singular._mapLiteral.get(tstype);
+                        if (!got) singular._mapLiteral.set(tstype, new Set<LiteralType>([t]));
+                        else got.add(t);
+                        singularCount++;
+                    });
+                });
+                return { singular,singularCount,nonSingular,nonSingularCount };
+            }
+            Debug.fail("unexpected");
+        }
+        /**
+         * Used for testing purposes
+         * @param a
+         * @param b
+         * @returns
+         */
         function equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean{
             if (a._flags===RefTypesTypeFlags.any && b._flags===RefTypesTypeFlags.any) return true;
             if (a._flags===RefTypesTypeFlags.unknown && b._flags===RefTypesTypeFlags.unknown) return false;
@@ -389,7 +429,6 @@ namespace ts {
             }
             return true;
         }
-
 
     }
 
