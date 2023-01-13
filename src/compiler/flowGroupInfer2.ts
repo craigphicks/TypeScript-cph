@@ -189,16 +189,6 @@ namespace ts {
             return new Map<Symbol, RefTypesSymtabValue>(symtab);
         }
         /**
-         * Does NOT make a copy of target before modification.
-         * @param param0
-         */
-        function mergeIntoRefTypesSymtab({source,target}: { source: Readonly<RefTypesSymtab>, target: RefTypesSymtab }): void {
-            const iter=source.values();
-            for (let next = iter.next(); !next.done; next=iter.next()){
-                mergeLeafIntoRefTypesSymtab({ source: next.value.leaf, target });
-            }
-        }
-        /**
          * Should be the most efficient way to get union of symtabs
          * @param arr
          * @returns
@@ -230,83 +220,24 @@ namespace ts {
             });
             return target;
         }
-        function mergeLeafIntoRefTypesSymtab({source,target}: { source: Readonly<RefTypesTableLeaf>, target: RefTypesSymtab }): void {
-            if (!source.symbol) return;
-            //const sourceSymbol = source.symbol!;
-            const got = target.get(source.symbol);
-            if (!got) target.set(source.symbol, { leaf: { ... source, type: cloneRefTypesType(source.type) } });
-            else {
-                if (!(!got.leaf.symbol || !!got.leaf.isconst===!!source.isconst)){
-                    Debug.assert(!got.leaf.symbol || !!got.leaf.isconst===!!source.isconst);
-                }
-                mergeToRefTypesType({ source: source.type, target: got.leaf.type });
-            }
-        }
-        // @ts-expect-error
-        function andIntoRefTypesSymtabInPlace({symbol, type, isconst, symtab}: {symbol: Symbol,type: Readonly<RefTypesType>, isconst: boolean | undefined, symtab: RefTypesSymtab}): void {
-            const got = symtab.get(symbol);
-            if (!got) symtab.set(symbol,{ leaf:{ symbol,type,isconst,kind:RefTypesTableKind.leaf } });
-            else {
-                const isectType = intersectRefTypesTypes(type, got.leaf.type);
-                got.leaf.type = isectType;
-            }
-        }
-        // @ts-expect-error
-        function orIntoRefTypesSymtabInPlace({symbol, type, isconst, symtab}: {symbol: Symbol,type: Readonly<RefTypesType>, isconst: boolean | undefined, symtab: RefTypesSymtab}): void {
-            const got = symtab.get(symbol);
-            if (!got) symtab.set(symbol,{ leaf:{ symbol,type,isconst,kind:RefTypesTableKind.leaf } });
-            else {
-                got.leaf.type = unionOfRefTypesType([type, got.leaf.type]);
-            }
-        }
 
-        /**
-         * TODO: Doesn't do clever stuff when merging symbols and constraints - think about it.
-         * Requires: that every RefTypesTableReturn in "arr" have undefined values for symbol and isconst.
-         * arr[i].type, for all i, will be merged (union).
-         * arr[i].symtab, for all i, will be merged (union).
-         * arr[i].constraintItem, for all i, will be merged (union) by joining under a single "or"-kind constraintItem
-         *
-         * @param symbol
-         * @param isconst
-         * @param arr
-         * @returns
-         */
-
-        // function mergeArrRefTypesTableReturnToRefTypesTableReturnShallow({
-        //     arr, stripSymbols}: {
-        //     arr: Readonly<RefTypesTableReturn[]>, stripSymbols?: boolean}):
-        //     RefTypesTableReturnNoSymbol {
-
-        //         if (arr.length===0) Debug.fail("arr.length unexpectedly 0");
-        //     if (!stripSymbols) {
-        //         // Removing symbols could be removing valuable info. Design time check.
-        //         arr.forEach(rttr=>{
-        //             Debug.assert(rttr.symbol===undefined, "rttr.symbol!==undefined");
-        //             Debug.assert(rttr.isconst!==true, "rttr.isconst===true");
-        //         });
+        // @ ts-expect-error
+        // function andIntoRefTypesSymtabInPlace({symbol, type, isconst, symtab}: {symbol: Symbol,type: Readonly<RefTypesType>, isconst: boolean | undefined, symtab: RefTypesSymtab}): void {
+        //     const got = symtab.get(symbol);
+        //     if (!got) symtab.set(symbol,{ leaf:{ symbol,type,isconst,kind:RefTypesTableKind.leaf } });
+        //     else {
+        //         const isectType = intersectRefTypesTypes(type, got.leaf.type);
+        //         got.leaf.type = isectType;
         //     }
-        //     if (arr.length===1){
-        //         return arr[0];
+        // }
+        // @ ts-expect-error
+        // function orIntoRefTypesSymtabInPlace({symbol, type, isconst, symtab}: {symbol: Symbol,type: Readonly<RefTypesType>, isconst: boolean | undefined, symtab: RefTypesSymtab}): void {
+        //     const got = symtab.get(symbol);
+        //     if (!got) symtab.set(symbol,{ leaf:{ symbol,type,isconst,kind:RefTypesTableKind.leaf } });
+        //     else {
+        //         got.leaf.type = unionOfRefTypesType([type, got.leaf.type]);
         //     }
-        //     const type = createRefTypesType();
-        //     const symtab = createRefTypesSymtab();
-        //     const arrConstr: ConstraintItem[]=[];
-        //     arr.forEach(rttr=>{
-        //         mergeToRefTypesType({ source:rttr.type, target:type });
-        //         mergeIntoRefTypesSymtab({ source: rttr.symtab, target: symtab });
-        //         arrConstr.push(rttr.constraintItem);
-        //     });
-        //     let constraintItem: ConstraintItem;
-        //     if (isNeverType(type)) constraintItem = createFlowConstraintNever();
-        //     else constraintItem = orIntoConstraintsShallow(arrConstr, mrNarrow);
-        //     return {
-        //         kind: RefTypesTableKind.return,
-        //         type,
-        //         symtab,
-        //         constraintItem
-        //     };
-        // };
+        // }
 
         function dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string {
             const astr: string[]=[];
@@ -1512,15 +1443,18 @@ namespace ts {
                     type: createRefTypesType(), // never
                     constraintItem: createFlowConstraintAlways(),
                 };
-                const passingOredConstraints: ConstraintItem[] = [];
+                const arrPassingSC: RefTypesSymtabConstraintItem[] = [];
+                // const passingOredConstraints: ConstraintItem[] = [];
                 arrRttrcoPassing.forEach(rttr2=>{
-                    mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoPassing.symtab });
+                    // mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoPassing.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoPassing.type });
-                    if (rttr2.constraintItem) passingOredConstraints.push(rttr2.constraintItem);
+                    arrPassingSC.push({ symtab:rttr2.symtab, constraintItem:rttr2.constraintItem });
+                    // passingOredConstraints.push(rttr2.constraintItem);
                 });
-                if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = createFlowConstraintNever();
-                else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
-                else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraintsShallow(passingOredConstraints);
+                ({ symtab:rttrcoPassing.symtab,constraintItem:rttrcoPassing.constraintItem }=orSymtabConstraints(arrPassingSC, mrNarrow));
+                // if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = createFlowConstraintNever();
+                // else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
+                // else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraintsShallow(passingOredConstraints);
 
                 const rttrcoFailing: RefTypesTableReturnNoSymbol = {
                     kind: RefTypesTableKind.return,
@@ -1528,15 +1462,18 @@ namespace ts {
                     type: createRefTypesType(), // never
                     constraintItem: createFlowConstraintAlways(),
                 };
-                const failingOredConstraints: ConstraintItem[] = [];
+                const arrFailingSC: RefTypesSymtabConstraintItem[] = [];
+                // const failingOredConstraints: ConstraintItem[] = [];
                 arrRttrcoFailing.forEach(rttr2=>{
-                    mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoFailing.symtab });
+                    // mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoFailing.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoFailing.type });
-                    if (rttr2.constraintItem) failingOredConstraints.push(rttr2.constraintItem);
+                    arrFailingSC.push({ symtab:rttr2.symtab, constraintItem:rttr2.constraintItem });
+                    // failingOredConstraints.push(rttr2.constraintItem);
                 });
-                if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = createFlowConstraintNever();
-                if (failingOredConstraints.length===1) rttrcoFailing.constraintItem = failingOredConstraints[0];
-                else if (failingOredConstraints.length) rttrcoFailing.constraintItem = orIntoConstraintsShallow(failingOredConstraints);
+                ({ symtab:rttrcoFailing.symtab,constraintItem:rttrcoFailing.constraintItem }=orSymtabConstraints(arrFailingSC, mrNarrow));
+                // if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = createFlowConstraintNever();
+                // if (failingOredConstraints.length===1) rttrcoFailing.constraintItem = failingOredConstraints[0];
+                // else if (failingOredConstraints.length) rttrcoFailing.constraintItem = orIntoConstraintsShallow(failingOredConstraints);
                 const rtn: ReturnType<typeof applyCritToArrRefTypesTableReturn>  = { passing:rttrcoPassing };
                 if (crit.alsoFailing){
                     rtn.failing = rttrcoFailing;
