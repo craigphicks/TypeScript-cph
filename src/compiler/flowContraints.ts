@@ -325,13 +325,14 @@ namespace ts {
         return { symtab: unionSymtab, constraintItem: orIntoConstraintsShallow(arrCI) };
     }
 
-    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type,sc, mrNarrow, inferStatus}: Readonly<{
+    // @ ts-expect-error getDeclaredType not used
+    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type,sc, mrNarrow, getDeclaredType}: Readonly<{
         symbol: Readonly<Symbol>,
         readonly isconst: true,
         type: Readonly<RefTypesType>,
         sc: RefTypesSymtabConstraintItem,
-        mrNarrow: MrNarrow,
-        inferStatus: InferStatus}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+        getDeclaredType: GetDeclaredTypeFn,
+        mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
         let { symtab, constraintItem: tmpConstraintItem } = sc;
         let setTypeTmp = type;
         if (symbol && isconst) {
@@ -339,40 +340,45 @@ namespace ts {
             if (got) {
                 setTypeTmp = mrNarrow.intersectRefTypesTypes(got.leaf.type, type);
             }
-            const declType = inferStatus.declaredTypes.get(symbol)?.type;
-            if (!declType){
-                Debug.assert(declType);
-            }
+            const declType = getDeclaredType(symbol);
+            // if (!declType){
+            //     Debug.assert(declType);
+            // }
             if (true){
-                // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
-                const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
+                // Expecting that setTypeTmp can be a strict subset of setTypeTmpCheck, but not the reverse.
+                const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: type, mrNarrow });
                 if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
                     Debug.fail();
                 }
-                if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
-                    Debug.fail();
-                }
+                // if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
+                //     Debug.fail();
+                // }
             }
             const refCountIn = [0] as [number];
             const refCountOut = [0] as [number];
             tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, declaredType: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
 
             if (true){
-                // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
+                // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the type is not changed.
                 const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
                 if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
                     Debug.fail();
                 }
                 if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
-                    Debug.fail();
+                    const astr: string[]=[];
+                    astr.push("mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)");
+                    astr.push(`setTypeTmp: ${mrNarrow.dbgRefTypesTypeToString(setTypeTmp)}`);
+                    astr.push(`setTypeTmpCheck:${mrNarrow.dbgRefTypesTypeToString(setTypeTmpCheck)}`);
+                    mrNarrow.dbgConstraintItem(tmpConstraintItem).forEach(s=> astr.push(`tmpConstraintItem: ${s}`));
+                    Debug.fail(astr.join(`\n`));
                 }
             }
 
             // We don't necessary have to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
             // However it is sufficient. Although it might not be opitmal in terms of constraint size.
-            if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
-                tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
-            }
+            // if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
+            //     tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
+            // }
             symtab = mrNarrow.copyRefTypesSymtab(symtab);
             symtab.set(
                 symbol,

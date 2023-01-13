@@ -17,7 +17,6 @@ determine the value to (eventually) be added to symtab, in the case where it was
 
 ### Priority: High
 
-0. Don't pass `inferStatus` to functions in `flowConstraints.ts`.
 1. `case SyntaxKind.ParenthesizedExpression`, in case of `inferStatus.inCondition===true`, return `ret.inferRefRtnType.unmerged`.
 2. As stated in Note[1] above, in `case SyntaxKind.Identifier`, only call `evalTypeOverConstraint` if symbol is not already in `refTypesTableSymtabIn`.  (Make the code match the doc).
 
@@ -38,3 +37,6 @@ even though the second if clause should be never.  The fundamental reason is tha
 That could be "fixed" by implementing "not" of literal types, and modifying several operations on `RefTypesType`.
 (C.f. `_cax-typeof-003(4|5).ts` test files).
 
+### Done
+
+0. Don't pass `inferStatus` to functions in `flowConstraints.ts`.

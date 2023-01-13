@@ -170,7 +170,7 @@ namespace ts {
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        /* @ts-expect-error */
+        /* @ ts-expect-error */
         function createGetDeclaredTypeFn(inferStatus: InferStatus): GetDeclaredTypeFn {
             return (symbol: Symbol) => inferStatus.declaredTypes.get(symbol)!.type;
         }
@@ -532,8 +532,8 @@ namespace ts {
                         isconst: asym[i].declared.isconst as true,
                         type: createRefTypesType(tstype),
                         sc,
+                        getDeclaredType: createGetDeclaredTypeFn(inferStatus),
                         mrNarrow,
-                        inferStatus
                     }));
                 }
                 arrSC0.push(sc);
@@ -647,12 +647,16 @@ namespace ts {
                         if (!isNeverType(mismatchLeft) && rttrLeft.symbol && rttrLeft.isconst){
                             ({type:_constraintedMismatchLeft, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
                                 symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
-                                sc:tmpsc, mrNarrow, inferStatus}));
+                                sc:tmpsc,
+                                getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                mrNarrow}));
                         }
                         if (!isNeverType(mismatchRight) && rttrRight.symbol && rttrRight.isconst){
                             ({type:_constraintedMismatchRight, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
                                 symbol:rttrRight.symbol, isconst: rttrRight.isconst, type: mismatchRight,
-                                sc:tmpsc, mrNarrow, inferStatus}));
+                                sc:tmpsc,
+                                getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                mrNarrow}));
                         }
                         const mismatchRttr = {
                             ...rttrRight,
@@ -1246,7 +1250,9 @@ namespace ts {
             const { symbol, isconst } = rttr;
             let { type, symtab, constraintItem } = rttr;
             if (isconst) {
-                ({type, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:{ symtab,constraintItem }, mrNarrow, inferStatus }));
+                ({type, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:{ symtab,constraintItem },
+                    getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                    mrNarrow}));
             }
             return { kind:RefTypesTableKind.return, type, symtab, constraintItem };
         };
