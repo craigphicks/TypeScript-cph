@@ -160,7 +160,7 @@ namespace ts {
         }
         return creturn;
     }
-    export function andDistributeDivideAux({
+    function andDistributeDivideAux({
         symbol, type, declaredType: declaredType, cin, negate, mrNarrow, refCountIn, refCountOut, depth}:
         {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
     }): ConstraintItem {
@@ -250,7 +250,7 @@ namespace ts {
         }
     }
 
-    export function andIntoConstraintShallow({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem, mrNarrow: MrNarrow}): ConstraintItem {
+    function andIntoConstraintShallow({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem, mrNarrow: MrNarrow}): ConstraintItem {
         if (mrNarrow.isNeverType(type)) return createFlowConstraintNever();
         // TODO: if there was a symbol table input we could check for always
         if (constraintItem.kind===ConstraintItemKind.always){
@@ -287,7 +287,7 @@ namespace ts {
         }
         Debug.fail("unexpected");
     }
-    export function orIntoConstraintsShallow(acin: Readonly<(ConstraintItem)[]>): ConstraintItem {
+    function orIntoConstraintsShallow(acin: Readonly<(ConstraintItem)[]>): ConstraintItem {
         const ac: ConstraintItem[]=[];
         for (const c of acin){
             if (isAlwaysConstraint(c)) return createFlowConstraintAlways();;
@@ -325,6 +325,67 @@ namespace ts {
         return { symtab: unionSymtab, constraintItem: orIntoConstraintsShallow(arrCI) };
     }
 
+    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type,sc, mrNarrow, inferStatus}: Readonly<{
+        symbol: Readonly<Symbol>,
+        readonly isconst: true,
+        type: Readonly<RefTypesType>,
+        sc: RefTypesSymtabConstraintItem,
+        mrNarrow: MrNarrow,
+        inferStatus: InferStatus}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+        let { symtab, constraintItem: tmpConstraintItem } = sc;
+        let setTypeTmp = type;
+        if (symbol && isconst) {
+            const got = symtab.get(symbol);
+            if (got) {
+                setTypeTmp = mrNarrow.intersectRefTypesTypes(got.leaf.type, type);
+            }
+            const declType = inferStatus.declaredTypes.get(symbol)?.type;
+            if (!declType){
+                Debug.assert(declType);
+            }
+            if (true){
+                // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
+                const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
+                if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
+                    Debug.fail();
+                }
+                if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
+                    Debug.fail();
+                }
+            }
+            const refCountIn = [0] as [number];
+            const refCountOut = [0] as [number];
+            tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, declaredType: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
+
+            if (true){
+                // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
+                const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
+                if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
+                    Debug.fail();
+                }
+                if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
+                    Debug.fail();
+                }
+            }
+
+            // We don't necessary have to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
+            // However it is sufficient. Although it might not be opitmal in terms of constraint size.
+            if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
+                tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
+            }
+            symtab = mrNarrow.copyRefTypesSymtab(symtab);
+            symtab.set(
+                symbol,
+                {leaf: {
+                    kind: RefTypesTableKind.leaf,
+                    symbol,
+                    isconst,
+                    type: setTypeTmp,
+                },
+            });
+        }
+        return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
+    };
 
     /**
      * TODO: Not at all sure about this.

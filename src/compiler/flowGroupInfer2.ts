@@ -532,6 +532,7 @@ namespace ts {
                         isconst: asym[i].declared.isconst as true,
                         type: createRefTypesType(tstype),
                         sc,
+                        mrNarrow,
                         inferStatus
                     }));
                 }
@@ -609,7 +610,6 @@ namespace ts {
                     const {singular,singularCount,nonSingular,nonSingularCount} = partitionIntoSingularAndNonSingularTypes(isect);
                     const mismatchRight = subtractFromType(isect,rttrRight.type);
                     const mismatchLeft = subtractFromType(isect,rttrLeft.type);
-                    // if (singularCount===0 && nonSingularCount===0) return; // never
                     if (myDebug){
                         consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         +`singular:${dbgRefTypesTypeToString(singular)}, singularCount:${singularCount}`);
@@ -647,12 +647,12 @@ namespace ts {
                         if (!isNeverType(mismatchLeft) && rttrLeft.symbol && rttrLeft.isconst){
                             ({type:_constraintedMismatchLeft, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
                                 symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
-                                sc:tmpsc, inferStatus}));
+                                sc:tmpsc, mrNarrow, inferStatus}));
                         }
                         if (!isNeverType(mismatchRight) && rttrRight.symbol && rttrRight.isconst){
                             ({type:_constraintedMismatchRight, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
                                 symbol:rttrRight.symbol, isconst: rttrRight.isconst, type: mismatchRight,
-                                sc:tmpsc, inferStatus}));
+                                sc:tmpsc, mrNarrow, inferStatus}));
                         }
                         const mismatchRttr = {
                             ...rttrRight,
@@ -1237,146 +1237,29 @@ namespace ts {
          */
 
         /**
-         * If "rttr.symbol" is defined and "rtti.isconst" is true,
-         * then and/simplify "rtti.constraint" and "rtti.symtab" with assertion "type of rtti.symbol is in rtti.type"
+         * If "rttr.symbol" is defined and "rtti.isconst" is true, then and/simplify "rtti.constraint" and "rtti.symtab"
          * @param rttr
          * @returns type RefTypesTableReturnCritOut which has no "symbol" or "isconst" members.
-         *
-         * TODO: Modify to use "andSymbolTypeIntoSymtabConstraint", to avoid code duplication
          */
         function mergeTypeIntoNewSymtabAndNewConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
             Debug.assert(rttr.symbol);
-            const { type, symbol, isconst } = rttr;
-            let { symtab, constraintItem: tmpConstraintItem } = rttr;
-            let setTypeTmp = type;
-            if (symbol && isconst) {
-                const got = symtab.get(symbol);
-                if (got) {
-                    setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
-                }
-                const declType = inferStatus.declaredTypes.get(symbol)?.type;
-                if (!declType){
-                    Debug.assert(declType);
-                }
-                if (true){
-                    // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
-                    const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
-                    if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
-                        Debug.fail();
-                    }
-                    if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
-                        Debug.fail();
-                    }
-                }
-                const refCountIn = [0] as [number];
-                const refCountOut = [0] as [number];
-                tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, declaredType: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
-
-                if (true){
-                    // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
-                    const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
-                    if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
-                        Debug.fail();
-                    }
-                    if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
-                        Debug.fail();
-                    }
-                }
-
-                // We don't necessary have to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
-                // However it is sufficient. Although it might not be opitmal in terms of constraint size.
-                if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
-                    tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
-                }
-                symtab = copyRefTypesSymtab(rttr.symtab);
-                symtab.set(
-                    symbol,
-                    {leaf: {
-                        kind: RefTypesTableKind.leaf,
-                        symbol,
-                        isconst,
-                        type: setTypeTmp,
-                    },
-                });
+            const { symbol, isconst } = rttr;
+            let { type, symtab, constraintItem } = rttr;
+            if (isconst) {
+                ({type, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:{ symtab,constraintItem }, mrNarrow, inferStatus }));
             }
-            return { kind:RefTypesTableKind.return, symtab, type: setTypeTmp, constraintItem: tmpConstraintItem };
-        };
-
-        function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type,sc,inferStatus}: Readonly<{
-            symbol: Readonly<Symbol>,
-            readonly isconst: true,
-            type: Readonly<RefTypesType>,
-            sc: RefTypesSymtabConstraintItem,
-            inferStatus: InferStatus}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
-            let { symtab, constraintItem: tmpConstraintItem } = sc;
-            let setTypeTmp = type;
-            if (symbol && isconst) {
-                const got = symtab.get(symbol);
-                if (got) {
-                    setTypeTmp = intersectRefTypesTypes(got.leaf.type, type);
-                }
-                const declType = inferStatus.declaredTypes.get(symbol)?.type;
-                if (!declType){
-                    Debug.assert(declType);
-                }
-                if (true){
-                    // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
-                    const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
-                    if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
-                        Debug.fail();
-                    }
-                    if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
-                        Debug.fail();
-                    }
-                }
-                const refCountIn = [0] as [number];
-                const refCountOut = [0] as [number];
-                tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, declaredType: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
-
-                if (true){
-                    // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the tye-p is not changed.
-                    const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
-                    if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
-                        Debug.fail();
-                    }
-                    if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
-                        Debug.fail();
-                    }
-                }
-
-                // We don't necessary have to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
-                // However it is sufficient. Although it might not be opitmal in terms of constraint size.
-                if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
-                    tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
-                }
-                symtab = copyRefTypesSymtab(symtab);
-                symtab.set(
-                    symbol,
-                    {leaf: {
-                        kind: RefTypesTableKind.leaf,
-                        symbol,
-                        isconst,
-                        type: setTypeTmp,
-                    },
-                });
-            }
-            return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
+            return { kind:RefTypesTableKind.return, type, symtab, constraintItem };
         };
 
         /**
          * "arrRttr" is an array of type RefTypesTableReturn that are implicitly or-ed together - they are alternate assertions about symbol+type constraints.
          * "crit" projects the net or-ed result onto passing and (optionally) failing assertions.
-         * The return values {passing, failing} are each arrays of length no larger than 1. (TODO??: return undefined or value instead of array)
          */
         function applyCritToArrRefTypesTableReturn(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, inferStatus: InferStatus): {
             passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol, unmerged?: Readonly<RefTypesTableReturn[]>
         }{
-            // if (arrRttr.length===0) {
-            //     Debug.assert(false);
-            // }
             Debug.assert(!(crit.kind===InferCritKind.none && crit.negate));
             {
-                // all other crit kinds
                 const arrRttrcoPassing: RefTypesTableReturnNoSymbol[] = [];
                 const arrRttrcoFailing: RefTypesTableReturnNoSymbol[] = [];
                 arrRttr.forEach(rttr=>{
@@ -1401,17 +1284,15 @@ namespace ts {
                                 kind: RefTypesTableKind.return,
                                 type: localTypePassing,
                                 symtab: localSymtabPassing ?? createRefTypesSymtab(),
-                                //isconst: rttr.isconst,
                                 constraintItem: rttr.constraintItem
                             });
                         }
                         if (!isNeverType(localTypeFailing)){
                             arrRttrcoFailing.push({
-                            kind: RefTypesTableKind.return,
-                            type: localTypeFailing,
-                            symtab: localSymtabFailing ?? createRefTypesSymtab(),
-                            //isconst: rttr.isconst,
-                            constraintItem: rttr.constraintItem
+                                kind: RefTypesTableKind.return,
+                                type: localTypeFailing,
+                                symtab: localSymtabFailing ?? createRefTypesSymtab(),
+                                constraintItem: rttr.constraintItem
                             });
                         }
                     }
@@ -1445,17 +1326,11 @@ namespace ts {
                     constraintItem: createFlowConstraintAlways(),
                 };
                 const arrPassingSC: RefTypesSymtabConstraintItem[] = [];
-                // const passingOredConstraints: ConstraintItem[] = [];
                 arrRttrcoPassing.forEach(rttr2=>{
-                    // mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoPassing.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoPassing.type });
                     arrPassingSC.push({ symtab:rttr2.symtab, constraintItem:rttr2.constraintItem });
-                    // passingOredConstraints.push(rttr2.constraintItem);
                 });
                 ({ symtab:rttrcoPassing.symtab,constraintItem:rttrcoPassing.constraintItem }=orSymtabConstraints(arrPassingSC, mrNarrow));
-                // if (isNeverType(rttrcoPassing.type)) rttrcoPassing.constraintItem = createFlowConstraintNever();
-                // else if (passingOredConstraints.length===1) rttrcoPassing.constraintItem = passingOredConstraints[0];
-                // else if (passingOredConstraints.length) rttrcoPassing.constraintItem = orIntoConstraintsShallow(passingOredConstraints);
 
                 const rttrcoFailing: RefTypesTableReturnNoSymbol = {
                     kind: RefTypesTableKind.return,
@@ -1464,25 +1339,16 @@ namespace ts {
                     constraintItem: createFlowConstraintAlways(),
                 };
                 const arrFailingSC: RefTypesSymtabConstraintItem[] = [];
-                // const failingOredConstraints: ConstraintItem[] = [];
                 arrRttrcoFailing.forEach(rttr2=>{
-                    // mergeIntoRefTypesSymtab({ source:rttr2.symtab, target:rttrcoFailing.symtab });
                     mergeToRefTypesType({ source: rttr2.type, target: rttrcoFailing.type });
                     arrFailingSC.push({ symtab:rttr2.symtab, constraintItem:rttr2.constraintItem });
-                    // failingOredConstraints.push(rttr2.constraintItem);
                 });
                 ({ symtab:rttrcoFailing.symtab,constraintItem:rttrcoFailing.constraintItem }=orSymtabConstraints(arrFailingSC, mrNarrow));
-                // if (isNeverType(rttrcoFailing.type)) rttrcoFailing.constraintItem = createFlowConstraintNever();
-                // if (failingOredConstraints.length===1) rttrcoFailing.constraintItem = failingOredConstraints[0];
-                // else if (failingOredConstraints.length) rttrcoFailing.constraintItem = orIntoConstraintsShallow(failingOredConstraints);
                 const rtn: ReturnType<typeof applyCritToArrRefTypesTableReturn>  = { passing:rttrcoPassing };
                 if (crit.alsoFailing){
                     rtn.failing = rttrcoFailing;
                 }
-                //if (crit.kind===InferCritKind.none && inferStatus.inCondition){
-                // There is no extra work to always output unmerged.
                 rtn.unmerged = arrRttr;
-                //}
                 return rtn;
             }
             Debug.fail(`crit.kind:${crit.kind}`);
@@ -1702,15 +1568,8 @@ namespace ts {
                     }
 
                     {
-
-                        if (isconst && constraintItemIn){
-                            // Could this narrowing be postponed until applyCritToArrRefTypesTableReturn? No.
-                            // If done here, then the constrained result is reflected in byNode.  That could result in better error messages if it were never.
-                            // However, the constraintItem is postponed until applyCritToArrRefTypesTableReturn.
+                        if (isconst){
                             type = evalTypeOverConstraint({ cin:constraintItemIn, symbol, typeRange: type, mrNarrow });
-                            // if (type !== leaf.type && !mrNarrow.isASubsetOfB(leaf.type,type)){
-                            //     refTypesSymtabOut = copyRefTypesSymtab(refTypesSymtabOut).set(symbol,{ leaf:createRefTypesTableLeaf(symbol,isconst,type) });
-                            // }
                         }
                         tstype = getTypeFromRefTypesType(type);
                     }
@@ -1795,6 +1654,7 @@ namespace ts {
                         crit: inferStatus.inCondition ? { kind: InferCritKind.truthy, alsoFailing: true } : { kind: InferCritKind.none },
                         inferStatus, constraintItem: constraintItemIn });
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [end]`);
+                    // TODO: in case of inferStatus.inCondition===true, return ret.inferRefRtnType.unmerged
                     const arrRefTypesTableReturn = [ret.inferRefRtnType.passing];
                     if (ret.inferRefRtnType.failing) arrRefTypesTableReturn.push(ret.inferRefRtnType.failing);
                     return {
