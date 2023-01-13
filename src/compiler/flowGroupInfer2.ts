@@ -322,7 +322,8 @@ namespace ts {
                 }
             });
         }
-        function mergeOneIntoNodeToTypeMaps(node: Readonly<Node>, type: Type, target: NodeToTypeMap): void {
+        function mergeOneIntoNodeToTypeMaps(node: Readonly<Node>, type: Type, target: NodeToTypeMap, dontSkip?: boolean): void {
+            if (!dontSkip) return;
             const gott = target.get(node);
             if (!gott) target.set(node,type);
             else {
@@ -1537,8 +1538,7 @@ namespace ts {
 
             const nodeType = cloneRefTypesType(critret.passing.type);
             if (critret.failing) mergeToRefTypesType({ source:critret.failing.type, target:nodeType });
-            mergeOneIntoNodeToTypeMaps(expr,getTypeFromRefTypesType(nodeType),inferStatus.groupNodeToTypeMap);
-            // inferStatus.groupNodeToTypeMap.set(expr,getTypeFromRefTypesType(nodeType));
+            mergeOneIntoNodeToTypeMaps(expr,getTypeFromRefTypesType(nodeType),inferStatus.groupNodeToTypeMap, /*dont skip*/ true);
             const mrNarrowTypesReturn: MrNarrowTypesReturn  = {
                 inferRefRtnType: { passing: critret.passing }
             };
