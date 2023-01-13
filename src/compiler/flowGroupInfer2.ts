@@ -1532,7 +1532,6 @@ namespace ts {
                     }
                     let type: RefTypesType | undefined;
                     let isconst = false;
-                    let tstype: Type | undefined;
                     let leaf = refTypesSymtabIn.get(symbol)?.leaf;
                     if (!leaf){
                         leaf = inferStatus.declaredTypes.get(symbol);
@@ -1573,13 +1572,13 @@ namespace ts {
                         }
                     }
 
-                    {
-                        if (isconst){
-                            type = evalTypeOverConstraint({ cin:constraintItemIn, symbol, typeRange: type, mrNarrow });
-                        }
-                        tstype = getTypeFromRefTypesType(type);
+                    if (isconst){
+                        type = evalTypeOverConstraint({ cin:constraintItemIn, symbol, typeRange: type, mrNarrow });
                     }
-                    mergeOneIntoNodeToTypeMaps(expr, tstype,inferStatus.groupNodeToTypeMap);
+                    {
+                        const tstype = getTypeFromRefTypesType(type);
+                        mergeOneIntoNodeToTypeMaps(expr, tstype,inferStatus.groupNodeToTypeMap);
+                    }
                     const rttr: RefTypesTableReturn = {
                         kind: RefTypesTableKind.return,
                         symbol,
@@ -1657,12 +1656,19 @@ namespace ts {
                 case SyntaxKind.ParenthesizedExpression:{
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [start]`);
                     const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, expr: (expr as ParenthesizedExpression).expression,
-                        crit: inferStatus.inCondition ? { kind: InferCritKind.truthy, alsoFailing: true } : { kind: InferCritKind.none },
+                        crit: { kind: InferCritKind.none },
                         inferStatus, constraintItem: constraintItemIn });
                     if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [end]`);
                     // TODO: in case of inferStatus.inCondition===true, return ret.inferRefRtnType.unmerged
-                    const arrRefTypesTableReturn = [ret.inferRefRtnType.passing];
-                    if (ret.inferRefRtnType.failing) arrRefTypesTableReturn.push(ret.inferRefRtnType.failing);
+                    let arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]> = [];
+                    if (ret.inferRefRtnType.unmerged){
+                        arrRefTypesTableReturn = ret.inferRefRtnType.unmerged!;
+                    }
+                    else {
+                        const arr = [ret.inferRefRtnType.passing];
+                        if (ret.inferRefRtnType.failing) arr.push(ret.inferRefRtnType.failing);
+                        arrRefTypesTableReturn = arr as Readonly<RefTypesTableReturn[]>;
+                    }
                     return {
                         arrRefTypesTableReturn,
                     };
