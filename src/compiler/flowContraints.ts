@@ -1,8 +1,8 @@
 /* eslint-disable no-null/no-null */
 namespace ts {
 
-    // @ts-expect-error
-    type GetDeclaredTypeFn = (symbol: Symbol) => RefTypesType;
+    // @ ts-expect-error
+    export type GetDeclaredTypeFn = (symbol: Symbol) => RefTypesType;
 
     export function createFlowConstraintNodeAnd({negate, constraints}: {negate?: boolean, constraints: ConstraintItem[]}): ConstraintItemNode {
         if (constraints.length<=1) Debug.fail("unexpected constraints.length<=1");
@@ -293,58 +293,85 @@ namespace ts {
             if (isAlwaysConstraint(c)) return createFlowConstraintAlways();;
             if (!isNeverConstraint(c)) ac.push(c);
         }
-        if (ac.length===0) Debug.fail("unexpected"); //return createFlowConstraintNever();
+        if (ac.length===0) return createFlowConstraintNever();
         if (ac.length===1) return ac[0];
         return createFlowConstraintNodeOr({ constraints:ac });
     }
 
-    export function andSymtabConstraintsWithSimplifyHelper(cia: Readonly<ConstraintItem>, cib: Readonly<ConstraintItem>): ConstraintItem {
-        if (isAlwaysConstraint(cia)) return cib;
-        if (isAlwaysConstraint(cib)) return cia;
-        if (isNeverConstraint(cia)) return cia;
-        if (isNeverConstraint(cib)) return cib;
-        if (cia.kind===ConstraintItemKind.leaf && cib.kind===ConstraintItemKind.node && cib.op===ConstraintItemNodeOp.and){
-            return createFlowConstraintNodeAnd({ constraints:[cia, ...cib.constraints] });
-        }
-        if (cib.kind===ConstraintItemKind.leaf && cia.kind===ConstraintItemKind.node && cia.op===ConstraintItemNodeOp.and){
-            return createFlowConstraintNodeAnd({ constraints:[cib, ...cia.constraints] });
-        }
-        return createFlowConstraintNodeAnd({ constraints:[cia,cib] });
+    /**
+     *  Calculate "or" (union) of array of RefTypesSymtabConstraintItem
+     * @param asc
+     * @param getDeclaredType
+     * Prior to combing under an or node, each sub-constraint is shallow anded with each of its symtab entries {symbol,type} if necessary,
+     * where necessity exists if type is a strict subset of unionSymtab.get(symbol).
+     */
+    export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
+        const mapSymbolCount = new Map<Symbol,number>();
+        asc.forEach(sc=>sc.symtab.forEach((_,symbol)=>{
+            const got = mapSymbolCount.get(symbol);
+            if (!got) mapSymbolCount.set(symbol,1);
+            else mapSymbolCount.set(symbol,got+1);
+        }));
+        const unionSymtab = mrNarrow.unionArrRefTypesSymtab(asc.map(x=>x.symtab));
+        const arrCI: ConstraintItem[] = [];
+        asc.forEach(({symtab,constraintItem})=>{
+            symtab.forEach(({leaf:{isconst,type}},symbol)=>{
+                if (isconst && mapSymbolCount.get(symbol)!>1 && !mrNarrow.isASubsetOfB(unionSymtab.get(symbol)!.leaf.type, type)) {
+                    constraintItem = andIntoConstraintShallow({ symbol,type,constraintItem,mrNarrow });
+                }
+            });
+            arrCI.push(constraintItem);
+        });
+        return { symtab: unionSymtab, constraintItem: orIntoConstraintsShallow(arrCI) };
     }
 
-    // @ ts-ignore
-    export function andSymtabConstraintsWithSimplify(sc0: Readonly<RefTypesSymtabConstraintItem>, sc1: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow, getDeclaredType: (symbol: Symbol) => RefTypesType): RefTypesSymtabConstraintItem {
-        if (getMyDebug()){
-            consoleGroup(`andSymtabConstraintsWithSimplify[in]`);
-            mrNarrow.dbgRefTypesSymtabToStrings(sc0.symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc0.symtab: ${s}`));
-            mrNarrow.dbgConstraintItem(sc0.constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc0.constraintItem: ${s}`));
-            mrNarrow.dbgRefTypesSymtabToStrings(sc1.symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc1.symtab: ${s}`));
-            mrNarrow.dbgConstraintItem(sc1.constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc1.constraintItem: ${s}`));
-        }
-        const symtab = mrNarrow.createRefTypesSymtab();
-        sc0.symtab.forEach(({leaf},symbol)=>{
-            symtab.set(symbol,{ leaf });
-        });
-        sc1.symtab.forEach(({leaf},symbol)=>{
-            const got = symtab.get(symbol);
-            if (!got) symtab.set(symbol,{ leaf });
-            else symtab.set(symbol,{ leaf: { ...leaf, type: mrNarrow.intersectRefTypesTypes(leaf.type, got.leaf.type) } });
-        });
-        const tmpConstraint0 = andSymtabConstraintsWithSimplifyHelper(sc0.constraintItem,sc1.constraintItem);
-        let constraintItem: ConstraintItem = tmpConstraint0;
-        symtab.forEach(({leaf},symbol)=>{
-            const refCountIn: [number]=[0];
-            const refCountOut: [number]=[0];
-            constraintItem = andDistributeDivide({ symbol,type:leaf.type,declaredType:getDeclaredType(symbol), cin:constraintItem, mrNarrow, refCountIn, refCountOut, depth:0 });
-        });
-        if (getMyDebug()){
-            consoleLog(`andSymtabConstraintsWithSimplify[out]`);
-            mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[out] symtab: ${s}`));
-            mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[out] constraintItem: ${s}`));
-            consoleGroupEnd();
-        }
-        return { symtab,constraintItem };
-    }
+    // export function andSymtabConstraintsWithSimplifyHelper(cia: Readonly<ConstraintItem>, cib: Readonly<ConstraintItem>): ConstraintItem {
+    //     if (isAlwaysConstraint(cia)) return cib;
+    //     if (isAlwaysConstraint(cib)) return cia;
+    //     if (isNeverConstraint(cia)) return cia;
+    //     if (isNeverConstraint(cib)) return cib;
+    //     if (cia.kind===ConstraintItemKind.leaf && cib.kind===ConstraintItemKind.node && cib.op===ConstraintItemNodeOp.and){
+    //         return createFlowConstraintNodeAnd({ constraints:[cia, ...cib.constraints] });
+    //     }
+    //     if (cib.kind===ConstraintItemKind.leaf && cia.kind===ConstraintItemKind.node && cia.op===ConstraintItemNodeOp.and){
+    //         return createFlowConstraintNodeAnd({ constraints:[cib, ...cia.constraints] });
+    //     }
+    //     return createFlowConstraintNodeAnd({ constraints:[cia,cib] });
+    // }
+
+    // // @ ts-ignore
+    // export function andSymtabConstraintsWithSimplify(sc0: Readonly<RefTypesSymtabConstraintItem>, sc1: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow, getDeclaredType: (symbol: Symbol) => RefTypesType): RefTypesSymtabConstraintItem {
+    //     if (getMyDebug()){
+    //         consoleGroup(`andSymtabConstraintsWithSimplify[in]`);
+    //         mrNarrow.dbgRefTypesSymtabToStrings(sc0.symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc0.symtab: ${s}`));
+    //         mrNarrow.dbgConstraintItem(sc0.constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc0.constraintItem: ${s}`));
+    //         mrNarrow.dbgRefTypesSymtabToStrings(sc1.symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc1.symtab: ${s}`));
+    //         mrNarrow.dbgConstraintItem(sc1.constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[in] sc1.constraintItem: ${s}`));
+    //     }
+    //     const symtab = mrNarrow.createRefTypesSymtab();
+    //     sc0.symtab.forEach(({leaf},symbol)=>{
+    //         symtab.set(symbol,{ leaf });
+    //     });
+    //     sc1.symtab.forEach(({leaf},symbol)=>{
+    //         const got = symtab.get(symbol);
+    //         if (!got) symtab.set(symbol,{ leaf });
+    //         else symtab.set(symbol,{ leaf: { ...leaf, type: mrNarrow.intersectRefTypesTypes(leaf.type, got.leaf.type) } });
+    //     });
+    //     const tmpConstraint0 = andSymtabConstraintsWithSimplifyHelper(sc0.constraintItem,sc1.constraintItem);
+    //     let constraintItem: ConstraintItem = tmpConstraint0;
+    //     symtab.forEach(({leaf},symbol)=>{
+    //         const refCountIn: [number]=[0];
+    //         const refCountOut: [number]=[0];
+    //         constraintItem = andDistributeDivide({ symbol,type:leaf.type,declaredType:getDeclaredType(symbol), cin:constraintItem, mrNarrow, refCountIn, refCountOut, depth:0 });
+    //     });
+    //     if (getMyDebug()){
+    //         consoleLog(`andSymtabConstraintsWithSimplify[out]`);
+    //         mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[out] symtab: ${s}`));
+    //         mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`andSymtabConstraintsWithSimplify[out] constraintItem: ${s}`));
+    //         consoleGroupEnd();
+    //     }
+    //     return { symtab,constraintItem };
+    // }
 
     /**
      * TODO: Not at all sure about this.
