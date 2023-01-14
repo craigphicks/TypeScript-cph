@@ -88,7 +88,7 @@ namespace ts {
         if (cin.kind===ConstraintItemKind.leaf){
             if (!negate){
                 if (cin.symbol!==symbol) return typeRange;
-                return mrNarrow.intersectRefTypesTypes(cin.type,typeRange);
+                return mrNarrow.intersectionOfRefTypesType(cin.type,typeRange);
             }
             else {
                 if (cin.symbol!==symbol) return mrNarrow.createRefTypesType(); // never
@@ -188,7 +188,7 @@ namespace ts {
                 }
                 else {
                     // @ ts-expect-error
-                    const isectType = mrNarrow.intersectRefTypesTypes(cin.type, type);
+                    const isectType = mrNarrow.intersectionOfRefTypesType(cin.type, type);
                     if (mrNarrow.isNeverType(isectType)) return createFlowConstraintNever();
                     if (!mrNarrow.isASubsetOfB(type,isectType)) return createFlowConstraintLeaf(symbol,isectType);
                     return createFlowConstraintAlways();
@@ -200,7 +200,7 @@ namespace ts {
                     return createFlowConstraintNodeNot(cin);
                 }
                 else {
-                    const isectInvType = mrNarrow.intersectRefTypesTypes(mrNarrow.subtractFromType(cin.type, declaredType), type);
+                    const isectInvType = mrNarrow.intersectionOfRefTypesType(mrNarrow.subtractFromType(cin.type, declaredType), type);
                     if (mrNarrow.isNeverType(isectInvType)) return createFlowConstraintNever();
                     if (!mrNarrow.isASubsetOfB(type,isectInvType)) return createFlowConstraintLeaf(symbol,isectInvType);
                     return createFlowConstraintAlways();
@@ -239,7 +239,7 @@ namespace ts {
                     else {
                         const atype: RefTypesType[] = [];
                         setc.forEach(cleaf=>atype.push(cleaf.type));
-                        const ctype = mrNarrow.intersectRefTypesTypes(...atype);
+                        const ctype = mrNarrow.intersectionOfRefTypesType(...atype);
                         if (mrNarrow.isNeverType(ctype)) hasNeverLeaf = true;
                         constraints.push({ kind:ConstraintItemKind.leaf,symbol:csymbol,type:ctype });
                     }
@@ -300,7 +300,7 @@ namespace ts {
         if (constraintItem.kind===ConstraintItemKind.never) return constraintItem;
         if (constraintItem.kind===ConstraintItemKind.leaf){
             if (constraintItem.symbol===symbol){
-                const isecttype = mrNarrow.intersectRefTypesTypes(type, constraintItem.type);
+                const isecttype = mrNarrow.intersectionOfRefTypesType(type, constraintItem.type);
                 if (mrNarrow.isNeverType(isecttype)) return createFlowConstraintNever();
                 // TODO: if there was a symbol table input we could check for "always"
                 return createFlowConstraintLeaf(symbol, type);
@@ -379,7 +379,7 @@ namespace ts {
         if (symbol && isconst) {
             const got = symtab.get(symbol);
             if (got) {
-                setTypeTmp = mrNarrow.intersectRefTypesTypes(got.leaf.type, type);
+                setTypeTmp = mrNarrow.intersectionOfRefTypesType(got.leaf.type, type);
             }
             const declType = getDeclaredType(symbol);
             // if (!declType){

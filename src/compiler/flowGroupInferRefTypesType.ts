@@ -15,7 +15,7 @@ namespace ts {
         addTypeToRefTypesType({source,target}: { source: Readonly<Type>, target: RefTypesType}): RefTypesType ;
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void ;
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType ;
-        intersectRefTypesTypes(...args: Readonly<RefTypesType>[]): RefTypesType ;
+        intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType ;
         isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>, /* errorOnMissing = false */): RefTypesType ;
         getTypeFromRefTypesType(type: Readonly<RefTypesType>): Type ;
@@ -57,7 +57,7 @@ namespace ts {
             addTypeToRefTypesType,
             mergeToRefTypesType,
             unionOfRefTypesType,
-            intersectRefTypesTypes,
+            intersectionOfRefTypesType,
             isASubsetOfB,
             subtractFromType,
             getTypeFromRefTypesType,
@@ -274,7 +274,7 @@ namespace ts {
                 _mapLiteral
             };
         }
-        function intersectRefTypesTypes(...args: Readonly<RefTypesType>[]): RefTypesType {
+        function intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType {
             if (args.length===0) return createRefTypesType(); // never
             if (args.length===1) return args[0];
             let tleft = args[0];

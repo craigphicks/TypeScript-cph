@@ -34,7 +34,7 @@ namespace ts {
         createNodeToTypeMap(): NodeToTypeMap,
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
         unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab,
-        intersectRefTypesTypes(...args: Readonly<RefTypesType>[]): RefTypesType,
+        intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType,
         // intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean];
         // typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
@@ -117,7 +117,7 @@ namespace ts {
             addTypeToRefTypesType,
             mergeToRefTypesType,
             unionOfRefTypesType,
-            intersectRefTypesTypes,
+            intersectionOfRefTypesType,
             isASubsetOfB,
             subtractFromType,
             getTypeFromRefTypesType,
@@ -135,7 +135,7 @@ namespace ts {
             equalRefTypesTypes,
             mergeToRefTypesType,
             unionOfRefTypesType,
-            intersectRefTypesTypes,
+            intersectionOfRefTypesType,
             isASubsetOfB,
             subtractFromType,
             isNeverType,
@@ -601,7 +601,7 @@ namespace ts {
                     consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] end right mrNarrowTypes for left#${_leftIdx} `);
                 }
                 rhs1.inferRefRtnType.unmerged?.forEach((rttrRight, _rightIdx)=>{
-                    const isect = intersectRefTypesTypes(rttrLeft.type, rttrRight.type);
+                    const isect = intersectionOfRefTypesType(rttrLeft.type, rttrRight.type);
                     if (myDebug){
                         consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         +`rttrLeft.type:${dbgRefTypesTypeToString(rttrLeft.type)}, `

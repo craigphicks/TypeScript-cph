@@ -16,8 +16,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-1. `intersectRefTypesTypes` -> `intersectionOfRefTypesTypes` to match `unionOfRefTypesTypes`
-
+1. Working with let (as opposed to const).  
 
 
 ### Priotity: Low
@@ -41,8 +40,9 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 either way it is O(#(tree nodes) * #(symbols)), but might be less function calls in a single pass.
 
 
-### Done
+### Done (reverse order)
 
+0. `intersectRefTypesTypes` -> `intersectionOfRefTypesTypes` to match `unionOfRefTypesTypes`
 0. `RefTypesSymtabConstraintItem` invariance is fixed by updating the symtab at the end of `andSymbolTypeIntoSymtabConstraint`.
 0. Don't pass `inferStatus` to functions in `flowConstraints.ts`.
 0. `case SyntaxKind.ParenthesizedExpression`, in case of `inferStatus.inCondition===true`, return `ret.inferRefRtnType.unmerged`. Test case: `_cax-parens-0001`
