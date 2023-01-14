@@ -774,9 +774,215 @@ namespace ts {
                     Debug.fail("mrNarrowTypesByBinaryExpression, token kind not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
 
             }
-    }
+        }
 
-        function mrNarrowTypesByCallExpression({refTypesSymtab:refTypesIn, constraintItem, expr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {expr: CallExpression}): MrNarrowTypesInnerReturn {
+        type CallExpressionHelperPassReturn = & {
+            pass: true,
+            rttr: RefTypesTableReturnNoSymbol,
+        };
+        function mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig(
+            sigs: readonly Signature[],
+            callExpr: CallExpression,
+            symtabIn: RefTypesSymtab,
+            constraintItemIn: ConstraintItem,
+            inferStatusIn: InferStatus
+        ): CallExpressionHelperPassReturn | { pass: false } {
+            if (sigs.length===0) return { pass:false }; // "no match" indicated by returning empty array ?
+            // use "some" to return the result of the first passing sig
+            let result: (CallExpressionHelperPassReturn | {pass: false}) = { pass:false };
+            const inferStatus: InferStatus = { ... inferStatusIn, groupNodeToTypeMap: createNodeToTypeMap() };
+            sigs.some((sig,_sigIdx) =>{
+                let sargidx = -1;
+                let sargRestElemType: Type | undefined;
+                let sargRestSymbol: Symbol | undefined;
+                /**
+                 * Matching the arguments should ideally be a forward only matching,
+                 * or at worst require a single "lookahead" that can be undone.
+                 * Unfortunately, call parameters are not the same as tuples, so the same code cannot be used for both.
+                 * This is allowed
+                 * > declare function foo(a:number,b:number,...c:number[]):void;
+                 * > foo(...[1,2]); // A spread argument must either have a tuple type or be passed to a rest parameter.(2556)
+                 * > foo(...([1,2] as [number,number])); // No error
+                 * > const tup:[number,number] = [1,2];
+                 * > foo(...tup); // No error;
+                 * > const tup2:[number,number,number,...number[]] = [1,2,3,4];
+                 * > foo(...tup2); // No error;
+                 * but I'm not clear on whether the expansion has already taken place before we get here. (Probably not).
+                 * TODO: implement the expansion of tuples if required
+                 */
+                // Even with exactOptionalPropertyTypes: true, undefined can be passed to optional args, but not to a rest element.
+                // But that is only because optional parameter types are forcibly OR'd with undefinedType early on.
+                // foo(); // No error
+                // foo(undefined); // No error
+                // foo(undefined,undefined); // No error
+                // foo(undefined,undefined,undefined);
+                // //                      ^ // Argument of type 'undefined' is not assignable to parameter of type 'number'.(2345)
+
+                if (signatureHasRestParameter(sig)) {
+                    sargRestSymbol = sig.parameters.slice(-1)[0];
+                    const sargRestType = getTypeOfSymbol(sig.parameters.slice(-1)[0]);
+                    if (isArrayType(sargRestType)) sargRestElemType = getElementTypeOfArrayType(sargRestType)!;
+                    Debug.assert(sargRestElemType, "Error: signatureHasRestParameter but couldn't get element type");
+                }
+                const sigParamsLength = sargRestElemType ? sig.parameters.length -1 : sig.parameters.length;
+                const cargs = callExpr.arguments;
+                //const cargsNodeToType = createNodeToTypeMap();
+                // The symtab and constraint get refreshed for every sig attempt
+                let sigargsRefTypesSymtab = symtabIn;
+                let sigargsConstraintItem = constraintItemIn;
+                let signatureReturnType: Type | undefined;
+
+                // fake NodeToTypeMap until result is good
+                inferStatus.groupNodeToTypeMap = createNodeToTypeMap();;
+
+                const pass = cargs.every((carg,_cargidx)=>{
+                    sargidx++;
+                    if (sargidx>=sigParamsLength && !sargRestElemType) {
+                        if (myDebug){
+                            consoleLog(`Deferred Error: excess calling parameters starting at ${dbgNodeToString(carg)} in call ${dbgNodeToString(callExpr)}`);
+                        }
+                        return false;
+                    }
+                    let targetType: Type;
+                    let targetSymbol: Symbol;
+                    if (sargidx<sigParamsLength){
+                        targetSymbol = sig.parameters[sargidx];
+                        targetType = getTypeOfSymbol(targetSymbol);
+                    }
+                    else {
+                        targetSymbol = sargRestSymbol!; // not the element though
+                        targetType = sargRestElemType!;
+                    }
+                    let targetTypeIncludesUndefined = false;
+                    forEachTypeIfUnion(targetType, t=>{
+                        if (t===undefinedType) targetTypeIncludesUndefined = true;
+                    });
+                    if (targetType===errorType){
+                        if (myDebug) {
+                            consoleLog(`Error?: in signature ${
+                                sig.declaration?dbgNodeToString(sig.declaration):"???"
+                            }, definition of parameter ${targetSymbol.escapedName} is invalid`);
+                        }
+                        return false;
+                    }
+                    /**
+                     * Check the result is assignable to the signature
+                     */
+                    const qdotfallout: RefTypesTableReturn[]=[];
+                    const { inferRefRtnType: {passing,failing} } = mrNarrowTypes({
+                        refTypesSymtab: sigargsRefTypesSymtab,
+                        constraintItem: sigargsConstraintItem, // this is the constraintItem from mrNarrowTypesByCallExpression arguments
+                        expr: carg,
+                        crit: {
+                            kind: InferCritKind.assignable,
+                            target: targetType,
+                            // negate: false,
+                            alsoFailing:true,
+                        },
+                        qdotfallout,
+                        inferStatus
+                    });
+                    if (qdotfallout.length && !targetTypeIncludesUndefined){
+                        if (myDebug) {
+                            consoleLog(
+                            `param mismatch: possible type of undefined/null can not be assigned to param ${targetSymbol.escapedName} with type ${typeToString(targetType)}`);
+                        }
+                        return false;
+                    }
+                    else if (failing && !isNeverType(failing.type)) {
+                        if (myDebug) {
+                            consoleLog(
+                            `param mismatch: possible type of ${
+                                typeToString(getTypeFromRefTypesType(failing.type))
+                            } can not be assigned to param ${targetSymbol.escapedName} with type ${typeToString(targetType)}`);
+                        }
+                        return false;
+                    }
+                    sigargsRefTypesSymtab = copyRefTypesSymtab(passing.symtab); //createRefTypesSymtab();
+                    sigargsConstraintItem = passing.constraintItem;
+                    return true;
+                });
+                if (!pass){
+                    return false; // try the next signature
+                }
+                else {
+                    if (sig.resolvedReturnType) signatureReturnType = sig.resolvedReturnType;
+                    else signatureReturnType = getReturnTypeOfSignature(sig); // TODO: this could be problematic
+                    result = {
+                        pass:true,
+                        rttr: {
+                            kind: RefTypesTableKind.return,
+                            type: createRefTypesType(signatureReturnType),
+                            symtab: sigargsRefTypesSymtab,
+                            constraintItem: sigargsConstraintItem
+                        },
+                    };
+                    mergeIntoMapIntoNodeToTypeMaps(inferStatus.groupNodeToTypeMap, inferStatusIn.groupNodeToTypeMap);
+                    return true;
+                }
+            });
+            return result;
+        }
+
+        function mrNarrowTypesByCallExpression({refTypesSymtab:symtabIn, constraintItem: constraintItemIn, expr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {expr: CallExpression}): MrNarrowTypesInnerReturn {
+            Debug.assert(qdotfallout);
+            // First duty is to call the precursors
+            const pre = InferRefTypesPreAccess({ refTypesSymtab:symtabIn, constraintItem: constraintItemIn, expr:callExpr, /*crit,*/ qdotfallout, inferStatus });
+            if (pre.kind==="immediateReturn") return pre.retval;
+            const prePassing = pre.passing;
+            if (myDebug) {
+                consoleLog(`candidates by return of pre: [${prePassing.map(preRttr=>dbgRefTypesTypeToString(preRttr.type)).join(", ")}]`);
+            }
+            const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[]=[];
+            let hadSomeSigFailure = false;
+            prePassing.forEach(rttr=>{
+                const prePassingRefTypesType = rttr.type;
+                forEachRefTypesTypeType(prePassingRefTypesType, (t: Type) => {
+                    const sigs = checker.getSignaturesOfType(t, SignatureKind.Call);
+                    if (myDebug) {
+                        consoleGroup(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[in]`);
+                    }
+                    const result = mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig(
+                        sigs,
+                        callExpr,
+                        symtabIn,
+                        constraintItemIn,
+                        inferStatus
+                    );
+                    if (myDebug) {
+                        consoleLog(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[out] result.pass: ${result.pass}`);
+                        if (result.pass){
+                            dbgRefTypesTableToStrings(result.rttr).forEach(s=>{
+                                consoleLog(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[out] result.rttr: ${s}`);
+                            });
+                        }
+                        consoleLog(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[out]`);
+                        consoleGroupEnd();
+                    }
+                    if (!result.pass){
+                        hadSomeSigFailure = true;
+                        if (myDebug){
+                            consoleLog(`mrNarrowTypesByCallExpression[dbg] failed mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`);
+                        }
+                    }
+                    else {
+                        arrRefTypesTableReturn.push(result.rttr);
+                        if (myDebug){
+                            consoleLog(`mrNarrowTypesByCallExpression[dbg] passed mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`);
+                        }
+                    }
+                });
+            });
+            if (myDebug){
+                if (hadSomeSigFailure){
+                    consoleLog(`mrNarrowTypesByCallExpression[dbg] has some sign failure`);
+                }
+            }
+            return { arrRefTypesTableReturn };
+        }
+
+        // @ts-ignore
+        function mrNarrowTypesByCallExpression_old({refTypesSymtab:refTypesIn, constraintItem, expr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {expr: CallExpression}): MrNarrowTypesInnerReturn {
             //return undefined as any as InferRefRtnType;
             Debug.assert(qdotfallout);
             // First duty is to call the precursors

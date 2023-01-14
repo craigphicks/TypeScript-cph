@@ -16,7 +16,9 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-1. Working with let (as opposed to const).  
+1. There is a mistake in `mrNarrowTypesByCallExpression`:  it is flat'ing the the pre-result candidates and all the signature candidates for one pre-result to the same level.  That is not correct - each pre-result candidate with one signature must match, but if the pre-result candidate has multiple sigs then we should accept the first one that matches and ignore the rest (of course if none match thsat's an error).
+
+1. Working with let (as opposed to const).
 
 
 ### Priotity: Low

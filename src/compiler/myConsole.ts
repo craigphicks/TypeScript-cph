@@ -133,7 +133,7 @@ namespace ts {
             return str;
         };
         const dbgTypeToString = (type: Type): string => {
-            const alwaysDetail = true;
+            const alwaysDetail = false;
             if (alwaysDetail) return "(type detail)" + dbgTypeToStringDetail(type).join(", ");
             return checker.typeToString(type);
         };
