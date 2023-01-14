@@ -12,16 +12,41 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 - `andSymbolTypeIntoSymtabConstraint`
 - `orSymtabConstraints`
 
-[1] Note that `evalTypeOverConstraint` is exposed by `flowConstraints.ts`, so it can called from `case SyntaxKind.Identifier` to
-determine the value to (eventually) be added to symtab, in the case where it was not already present.
-
 ## TODO:
 
 ### Priority: High
 
-1. As stated in Note[1] above, in `case SyntaxKind.Identifier`, only call `evalTypeOverConstraint` if symbol is not already in `refTypesTableSymtabIn`.  (Make the code match the doc).
+1. `intersectRefTypesTypes` -> `intersectionOfRefTypesTypes` to match `unionOfRefTypesTypes`
 
-1. During `andSymbolTypeIntoSymtabConstraint`, the constraint tree is not being properly cleaned up after simplification.
+
+
+### Priotity: Low
+
+1.  Implement "not" of literal types to apply to uncountable nonSingular types.
+Currently
+```
+declare const a: number;
+if (a===0){
+    a; // 0
+} else if (a===0) {
+    a; // 0
+}
+```
+even though the second if clause should be never.  The fundamental reason is that currently
+`subtractFromType(`0,number`)===`number, even though the intersection of 0 and number is not empty.
+That could be "fixed" by implementing "not" of literal types, and modifying several operations on `RefTypesType`.
+(C.f. `_cax-typeof-003(4|5).ts` test files).
+
+1. Inside `andSymbolTypeIntoSymtabConstraint`, before returning, the symtab is updated to assure the invariance property of the returned `RefTypesSymtabConstraintItem`.  There might be some advantage to doing in a single pass with all symbols together, although
+either way it is O(#(tree nodes) * #(symbols)), but might be less function calls in a single pass.
+
+
+### Done
+
+0. `RefTypesSymtabConstraintItem` invariance is fixed by updating the symtab at the end of `andSymbolTypeIntoSymtabConstraint`.
+0. Don't pass `inferStatus` to functions in `flowConstraints.ts`.
+0. `case SyntaxKind.ParenthesizedExpression`, in case of `inferStatus.inCondition===true`, return `ret.inferRefRtnType.unmerged`. Test case: `_cax-parens-0001`
+0. During `andSymbolTypeIntoSymtabConstraint`, the constraint tree is not being properly cleaned up after simplification.
 E.g. in the following
 ```
 {
@@ -94,28 +119,4 @@ E.g. in the following
 }
 ```
 the `always` should be removed and then the leaf constraints with the same symbol should be combined.
-
-1. Inside `andSymbolTypeIntoSymtabConstraint`, before returning, the symtab is updated to assure the invariance property of the returned `RefTypesSymtabConstraintItem`.  This must be optimized, probably during `andSymbolTypeIntoSymtabConstraint`.
-
-### Priotity: Low
-
-1.  Implement "not" of literal types to apply to uncountable nonSingular types.
-Currently
-```
-declare const a: number;
-if (a===0){
-    a; // 0
-} else if (a===0) {
-    a; // 0
-}
-```
-even though the second if clause should be never.  The fundamental reason is that currently
-`subtractFromType(`0,number`)===`number, even though the intersection of 0 and number is not empty.
-That could be "fixed" by implementing "not" of literal types, and modifying several operations on `RefTypesType`.
-(C.f. `_cax-typeof-003(4|5).ts` test files).
-
-### Done
-
-0. `RefTypesSymtabConstraintItem` invariance is fixed by updating the symtab at the end of `andSymbolTypeIntoSymtabConstraint`.  Still need to be optimized.
-0. Don't pass `inferStatus` to functions in `flowConstraints.ts`.
-0. `case SyntaxKind.ParenthesizedExpression`, in case of `inferStatus.inCondition===true`, return `ret.inferRefRtnType.unmerged`. Test case: `_cax-parens-0001`
+(Examples from `_cax-and-005` output).

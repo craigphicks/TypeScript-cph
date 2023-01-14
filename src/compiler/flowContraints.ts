@@ -138,8 +138,9 @@ namespace ts {
      * TODO: change parameter name from typeRange to declaredType
      */
     export function andDistributeDivide({
-        symbol, type, declaredType, cin, negate, mrNarrow, refCountIn, refCountOut, depth}:
-        {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn?: [number], refCountOut?: [number], depth?: number
+        symbol, type, declaredType, cin, negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth}:
+        {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, getDeclaredType: GetDeclaredTypeFn,
+            mrNarrow: MrNarrow, refCountIn?: [number], refCountOut?: [number], depth?: number
     }): ConstraintItem {
         if (!refCountIn) refCountIn=[0];
         if (!refCountOut) refCountOut=[0];
@@ -150,7 +151,7 @@ namespace ts {
                 consoleLog(`andDistributeDivide[in][${depth??0}] constraint: ${s}`);
             });
         }
-        const creturn = andDistributeDivideAux({ symbol, type, declaredType, cin, negate, mrNarrow, refCountIn, refCountOut, depth });
+        const creturn = andDistributeDivideAux({ symbol, type, declaredType, cin, negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth });
         if (doLog && getMyDebug()){
             consoleLog(`andDistributeDivide[out][${depth??0}] countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(creturn).forEach(s=>{
@@ -161,8 +162,9 @@ namespace ts {
         return creturn;
     }
     function andDistributeDivideAux({
-        symbol, type, declaredType: declaredType, cin, negate, mrNarrow, refCountIn, refCountOut, depth}:
-        {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
+        symbol, type, declaredType: declaredType, cin, negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth}:
+        {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, getDeclaredType: GetDeclaredTypeFn,
+            mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
     }): ConstraintItem {
         if (mrNarrow.isAnyType(type)) Debug.fail("not yet implemented");
         if (mrNarrow.isUnknownType(type)) Debug.fail("not yet implemented");
@@ -208,13 +210,14 @@ namespace ts {
         else {
             Debug.assert(cin.kind===ConstraintItemKind.node);
             if (cin.op===ConstraintItemNodeOp.not){
-                return andDistributeDivide({ symbol, type, declaredType, cin:cin.constraint, negate:!negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
+                return andDistributeDivide({ symbol, type, declaredType, cin:cin.constraint, negate:!negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
             }
             else if ((cin.op===ConstraintItemNodeOp.and && !negate) || (cin.op===ConstraintItemNodeOp.or && negate)){
                 const constraints: (ConstraintItem)[]=[];
+                const mapSymbolLeafs = new Map<Symbol, Set<ConstraintItemLeaf>>(); // for gathering same symbol leafs
                 for (const subc of cin.constraints){
-                    const subcr = andDistributeDivide({ symbol, type, declaredType, cin:subc, negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
-                    if (!subcr) {
+                    const subcr = andDistributeDivide({ symbol, type, declaredType, cin:subc, negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
+                    if (isAlwaysConstraint(subcr)) {
                         refCountOut[0]--;
                         continue;
                     }
@@ -222,17 +225,36 @@ namespace ts {
                         refCountOut[0]-=(constraints.length-1);
                         return subcr;
                     }
+                    if (subcr.kind===ConstraintItemKind.leaf){
+                        const got = mapSymbolLeafs.get(subcr.symbol);
+                        if (!got) mapSymbolLeafs.set(subcr.symbol, new Set<ConstraintItemLeaf>([subcr]));
+                        else got.add(subcr);
+                        continue;
+                    }
                     constraints.push(subcr);
                 }
+                let hasNeverLeaf = false;
+                mapSymbolLeafs.forEach((setc,csymbol)=>{
+                    if (setc.size===1) constraints.push(setc.values().next().value as ConstraintItem);
+                    else {
+                        const atype: RefTypesType[] = [];
+                        setc.forEach(cleaf=>atype.push(cleaf.type));
+                        const ctype = mrNarrow.intersectRefTypesTypes(...atype);
+                        if (mrNarrow.isNeverType(ctype)) hasNeverLeaf = true;
+                        constraints.push({ kind:ConstraintItemKind.leaf,symbol:csymbol,type:ctype });
+                    }
+                });
+                if (hasNeverLeaf) return createFlowConstraintNever();
                 if (constraints.length===0) return createFlowConstraintAlways();
                 if (constraints.length===1) return constraints[0];
                 return createFlowConstraintNodeAnd({ constraints });
             }
             else if ((cin.op===ConstraintItemNodeOp.or && !negate) || (cin.op===ConstraintItemNodeOp.and && negate)){
                 const constraints: (ConstraintItem)[]=[];
+                const mapSymbolLeafs = new Map<Symbol, Set<ConstraintItemLeaf>>(); // for gathering same symbol leafs
                 for (const subc of cin.constraints){
-                    const subcr = andDistributeDivide({ symbol, type, declaredType, cin:subc, negate, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
-                    if (!subcr) {
+                    const subcr = andDistributeDivide({ symbol, type, declaredType, cin:subc, negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
+                    if (isAlwaysConstraint(subcr)) {
                         refCountOut[0]-=(constraints.length-1);
                         return createFlowConstraintAlways();
                     }
@@ -240,8 +262,27 @@ namespace ts {
                         refCountOut[0]--;
                         continue;
                     }
+                    if (subcr.kind===ConstraintItemKind.leaf){
+                        const got = mapSymbolLeafs.get(subcr.symbol);
+                        if (!got) mapSymbolLeafs.set(subcr.symbol, new Set<ConstraintItemLeaf>([subcr]));
+                        else got.add(subcr);
+                        continue;
+                    }
                     constraints.push(subcr);
                 }
+                let hasAlwaysLeaf = false;
+                mapSymbolLeafs.forEach((setc,csymbol)=>{
+                    if (setc.size===1) constraints.push(setc.values().next().value as ConstraintItem);
+                    else {
+                        const atype: RefTypesType[] = [];
+                        setc.forEach(cleaf=>atype.push(cleaf.type));
+                        const ctype = mrNarrow.unionOfRefTypesType(atype);
+                        const cdeclType = getDeclaredType(csymbol);
+                        if (mrNarrow.isASubsetOfB(cdeclType,ctype)) hasAlwaysLeaf = true;
+                        constraints.push({ kind:ConstraintItemKind.leaf,symbol:csymbol,type:ctype });
+                    }
+                });
+                if (hasAlwaysLeaf) return createFlowConstraintAlways();
                 if (constraints.length===0) return createFlowConstraintNever();
                 if (constraints.length===1) return constraints[0];
                 return createFlowConstraintNodeOr({ constraints });
@@ -364,7 +405,7 @@ namespace ts {
             }
             const refCountIn = [0] as [number];
             const refCountOut = [0] as [number];
-            tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, declaredType: declType, cin: tmpConstraintItem, mrNarrow, refCountIn, refCountOut });
+            tmpConstraintItem = andDistributeDivide({ symbol, type: setTypeTmp, declaredType: declType, cin: tmpConstraintItem, mrNarrow, getDeclaredType, refCountIn, refCountOut });
 
             if (true){
                 // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the type is not changed.
@@ -385,11 +426,10 @@ namespace ts {
             }
             symtab = mrNarrow.copyRefTypesSymtab(symtab);
 
-            // TODO: Optimize this.
+            // TODO: Could this be optimized by evaluating all symbols together in a single pass, instead of calling once per symbol?
+            // Seems like either way it is O(#(tree nodes) * #(symbols)), but might be less function calls in a single pass.
+            //
             // Some subconstraints may have collapsed thus destroying the SymtabConstraint invariance, and so the symtab must be corrected before returning.
-            // There are better (in comp complexity) ways do this than evaluating every symtab entry (*), but this will do to establish
-            // correct baseline results that can be used to test a better implementation.
-            // (*) Perhaps during the compuation of andDistributeDivide?
             symtab.forEach(({leaf},tmpSymbol)=>{
                 if (!leaf.isconst) return;
                 if (tmpSymbol===symbol) return;
@@ -502,7 +542,9 @@ namespace ts {
         const rttNum = mrNarrow.createRefTypesType(checker.getNumberType());
         // @ts-expect-error
         const rttStr = mrNarrow.createRefTypesType(checker.getStringType());
+        // @ts-expect-error
         const rttNumStr = mrNarrow.createRefTypesType([checker.getNumberType(), checker.getStringType()]);
+        // @ts-expect-error
         const rttLitNum0 = mrNarrow.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,0));
         // @ts-expect-error
         const rttLitNum1 = mrNarrow.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,1));
@@ -618,24 +660,25 @@ namespace ts {
             Debug.assert(mrNarrow.equalRefTypesTypes(data.out,type));
         });
 
+        // Have to remove this test until the new arg "getDeclaredType" is provided
         //andDistributeDivide
-        type DDArgs = Parameters<typeof andDistributeDivide>["0"];
-        const dddata: { in: DDArgs, out: (cout: ConstraintItem) => void }[] = [
-            {
-                in: {
-                    symbol:symx, type:rttLitNum0, declaredType: rttNumStr,
-                    cin: createFlowConstraintLeaf(symx, rttNumStr),
-                    mrNarrow, refCountIn:[0], refCountOut:[0]
-                },
-                out: (cout: ConstraintItem) => {
-                    Debug.assert(isAlwaysConstraint(cout));
-                }
-            }
-        ];
-        dddata.forEach(dda=>{
-            // @ts-expect-error
-            const r = andDistributeDivide(dda.in);
-        });
+        // type DDArgs = Parameters<typeof andDistributeDivide>["0"];
+        // const dddata: { in: DDArgs, out: (cout: ConstraintItem) => void }[] = [
+        //     {
+        //         in: {
+        //             symbol:symx, type:rttLitNum0, declaredType: rttNumStr,
+        //             cin: createFlowConstraintLeaf(symx, rttNumStr),
+        //             mrNarrow, refCountIn:[0], refCountOut:[0]
+        //         },
+        //         out: (cout: ConstraintItem) => {
+        //             Debug.assert(isAlwaysConstraint(cout));
+        //         }
+        //     }
+        // ];
+        // dddata.forEach(dda=>{
+        //     // @ts-expect-error
+        //     const r = andDistributeDivide(dda.in);
+        // });
 
     }
 

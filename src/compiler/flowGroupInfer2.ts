@@ -34,7 +34,7 @@ namespace ts {
         createNodeToTypeMap(): NodeToTypeMap,
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
         unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab,
-        intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType,
+        intersectRefTypesTypes(...args: Readonly<RefTypesType>[]): RefTypesType,
         // intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean];
         // typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;

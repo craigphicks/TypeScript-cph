@@ -15,7 +15,7 @@ namespace ts {
         addTypeToRefTypesType({source,target}: { source: Readonly<Type>, target: RefTypesType}): RefTypesType ;
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void ;
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType ;
-        intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType ;
+        intersectRefTypesTypes(...args: Readonly<RefTypesType>[]): RefTypesType ;
         isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>, /* errorOnMissing = false */): RefTypesType ;
         getTypeFromRefTypesType(type: Readonly<RefTypesType>): Type ;
@@ -254,12 +254,12 @@ namespace ts {
                             _mapLiteral.set(tstype,ltset);
                         }
                         else ltset.add(lt);
-                        iset.delete(tstype);
+                        iset.delete(tstype); // TODO: kill
                     }
                 });
             });
         }
-        function intersectRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType {
+        function intersectRefTypesTypes2(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType {
             if (isAnyType(a)) return cloneRefTypesType(b);
             if (isAnyType(b)) return cloneRefTypesType(a);
             Debug.assert(!a._flags && !b._flags);
@@ -274,12 +274,22 @@ namespace ts {
                 _mapLiteral
             };
         }
+        function intersectRefTypesTypes(...args: Readonly<RefTypesType>[]): RefTypesType {
+            if (args.length===0) return createRefTypesType(); // never
+            if (args.length===1) return args[0];
+            let tleft = args[0];
+            args.slice(1).forEach(tright=>{
+                tleft = intersectRefTypesTypes2(tleft,tright);
+            });
+            return tleft;
+        }
+
         // /**
         //  * If a is a subset of b returns true, else false.
         //  * @param a
         //  * @param b
         //  */
-         function isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean{
+        function isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean{
             if (isAnyType(a)) return isAnyType(b) ? true : false;
             if (isUnknownType(a)) return false;
             // eslint-disable-next-line no-null/no-null
