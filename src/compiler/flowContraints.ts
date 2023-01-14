@@ -143,7 +143,7 @@ namespace ts {
     }): ConstraintItem {
         if (!refCountIn) refCountIn=[0];
         if (!refCountOut) refCountOut=[0];
-        const doLog = true;
+        const doLog = false;
         if (doLog && getMyDebug()){
             consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(cin).forEach(s=>{
@@ -346,9 +346,17 @@ namespace ts {
             // }
             if (true){
                 // Expecting that setTypeTmp can be a strict subset of setTypeTmpCheck, but not the reverse.
-                const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: type, mrNarrow });
-                if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
-                    Debug.fail();
+                const evaledType = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: type, mrNarrow });
+                if (mrNarrow.isASubsetOfB(evaledType, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, evaledType)){
+                    const astr: string[]=[];
+                    astr.push("[before andDistributeDivide] mrNarrow.isASubsetOfB(evaledType, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, evaledType)");
+                    astr.push(`symbol: ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+                    astr.push(`type: ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+                    astr.push(`setTypeTmp: ${mrNarrow.dbgRefTypesTypeToString(setTypeTmp)}`);
+                    astr.push(`evaledType:${mrNarrow.dbgRefTypesTypeToString(evaledType)}`);
+                    mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=> astr.push(`symtab: ${s}`));
+                    mrNarrow.dbgConstraintItem(tmpConstraintItem).forEach(s=> astr.push(`constraintItem: ${s}`));
+                    Debug.fail(astr.join(`\n`));
                 }
                 // if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
                 //     Debug.fail();
@@ -360,26 +368,43 @@ namespace ts {
 
             if (true){
                 // Would running evalTypeOverConstraint help? It doesn't seem to change the type.  This development test assert the type is not changed.
-                const setTypeTmpCheck = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
-                if (mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck)){
+                const evaledType = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: setTypeTmp, mrNarrow });
+                if (mrNarrow.isASubsetOfB(evaledType, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, evaledType)){
                     Debug.fail();
                 }
-                if (mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)){
+                if (mrNarrow.isASubsetOfB(setTypeTmp, evaledType) && !mrNarrow.isASubsetOfB(evaledType, setTypeTmp)){
                     const astr: string[]=[];
-                    astr.push("mrNarrow.isASubsetOfB(setTypeTmp, setTypeTmpCheck) && !mrNarrow.isASubsetOfB(setTypeTmpCheck, setTypeTmp)");
+                    astr.push("[after andDistributeDivide] mrNarrow.isASubsetOfB(setTypeTmp, evaledType) && !mrNarrow.isASubsetOfB(evaledType, setTypeTmp)");
+                    astr.push(`symbol: ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+                    astr.push(`type: ${mrNarrow.dbgRefTypesTypeToString(type)}`);
                     astr.push(`setTypeTmp: ${mrNarrow.dbgRefTypesTypeToString(setTypeTmp)}`);
-                    astr.push(`setTypeTmpCheck:${mrNarrow.dbgRefTypesTypeToString(setTypeTmpCheck)}`);
+                    astr.push(`evaledType:${mrNarrow.dbgRefTypesTypeToString(evaledType)}`);
                     mrNarrow.dbgConstraintItem(tmpConstraintItem).forEach(s=> astr.push(`tmpConstraintItem: ${s}`));
                     Debug.fail(astr.join(`\n`));
                 }
             }
-
-            // We don't necessary have to "and" into the constrint here - it could be posponed untli multiple branches or "or"'ed together.
-            // However it is sufficient. Although it might not be opitmal in terms of constraint size.
-            // if (!mrNarrow.isASubsetOfB(declType,setTypeTmp)) {
-            //     tmpConstraintItem = andIntoConstraintShallow({ symbol, type: setTypeTmp, constraintItem: tmpConstraintItem, mrNarrow });
-            // }
             symtab = mrNarrow.copyRefTypesSymtab(symtab);
+
+            // TODO: Optimize this.
+            // Some subconstraints may have collapsed thus destroying the SymtabConstraint invariance, and so the symtab must be corrected before returning.
+            // There are better (in comp complexity) ways do this than evaluating every symtab entry (*), but this will do to establish
+            // correct baseline results that can be used to test a better implementation.
+            // (*) Perhaps during the compuation of andDistributeDivide?
+            symtab.forEach(({leaf},tmpSymbol)=>{
+                if (!leaf.isconst) return;
+                if (tmpSymbol===symbol) return;
+                const evaledType = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol:tmpSymbol, typeRange: leaf.type, mrNarrow });
+                symtab.set(
+                    tmpSymbol,
+                    {leaf: {
+                        kind: RefTypesTableKind.leaf,
+                        symbol:tmpSymbol,
+                        isconst,
+                        type: evaledType,
+                    },
+                });
+            });
+
             symtab.set(
                 symbol,
                 {leaf: {
@@ -390,8 +415,27 @@ namespace ts {
                 },
             });
         }
+        assertSymtabConstraintInvariance({ symtab, constraintItem: tmpConstraintItem }, mrNarrow);
         return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
     };
+
+    export function assertSymtabConstraintInvariance({symtab,constraintItem}: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow): void {
+        symtab.forEach(({leaf:{isconst,type}},symbol)=>{
+            if (!isconst) return;
+            const evaledType = evalTypeOverConstraint({ symbol,typeRange:type,cin:constraintItem,mrNarrow });
+            // evaledType and type must be equal
+            if (!mrNarrow.isASubsetOfB(evaledType,type) || !mrNarrow.isASubsetOfB(type,evaledType)){
+                const astr: string[]=[];
+                astr.push("assertSymtabConstraintInvariance evaledType and type must be equal");
+                astr.push(`symbol: ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+                astr.push(`type: ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+                astr.push(`evaledType:${mrNarrow.dbgRefTypesTypeToString(evaledType)}`);
+                mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=> astr.push(`symtab: ${s}`));
+                mrNarrow.dbgConstraintItem(constraintItem).forEach(s=> astr.push(`constraintItem: ${s}`));
+                Debug.fail(astr.join(`\n`));
+            }
+        });
+    }
 
     /**
      * TODO: Not at all sure about this.

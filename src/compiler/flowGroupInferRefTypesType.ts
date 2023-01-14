@@ -289,9 +289,13 @@ namespace ts {
             for (let mapiter = a._mapLiteral.entries(), mi = mapiter.next(); !mi.done && isSubset; mi=mapiter.next()){
                 const [tstype, litset] = mi.value;
                 const bmapset = b._mapLiteral.get(tstype);
+                if (!bmapset) {
+                    if (!b._set.has(tstype)) isSubset = false;
+                    continue;
+                }
                 for (let litsetiter = litset.values(), litsi = litsetiter.next(); !litsi.done && isSubset; litsi=litsetiter.next()){
                     const ltype = litsi.value;
-                    if ((bmapset && bmapset.has(ltype)) || (b._set.has(tstype))) continue; // success
+                    if (bmapset.has(ltype)) continue; // success
                     isSubset = false;
                 }
             }

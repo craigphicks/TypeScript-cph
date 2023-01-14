@@ -23,6 +23,7 @@ namespace ts {
         dbgRefTypesTableToStrings(t: RefTypesTable): string[],
         dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[],
         dbgConstraintItem(ci: ConstraintItem): string[];
+        dbgSymbolToStringSimple(symbol: Symbol): string,
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void,
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType,
@@ -150,6 +151,7 @@ namespace ts {
             dbgRefTypesTableToStrings,
             dbgRefTypesSymtabToStrings,
             dbgConstraintItem,
+            dbgSymbolToStringSimple,
             //mergeArrRefTypesTableReturnToRefTypesTableReturn,
             createNodeToTypeMap,
             mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
@@ -1479,6 +1481,9 @@ namespace ts {
                 consoleLog(`mrNarrowTypesInner[out] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}`);
                 consoleGroupEnd();
             }
+            innerret.arrRefTypesTableReturn.forEach((rttr)=>{
+                assertSymtabConstraintInvariance({ symtab:rttr.symtab, constraintItem:rttr.constraintItem }, mrNarrow);
+            });
             return innerret;
         }
 
@@ -1533,27 +1538,32 @@ namespace ts {
                     let type: RefTypesType | undefined;
                     let isconst = false;
                     let leaf = refTypesSymtabIn.get(symbol)?.leaf;
-                    if (!leaf){
-                        leaf = inferStatus.declaredTypes.get(symbol);
-                    }
-                    if (!leaf){
-                        const tstype = getTypeOfSymbol(symbol); // Is it OK for Identifier, will it not result in error TS7022 ?
-                        if (tstype===errorType){
-                            Debug.assert(false);
-                        }
-                        type = createRefTypesType(tstype);
-                        isconst = isConstantReference(expr);
-                        leaf = createRefTypesTableLeaf(symbol,isconst,type);
-                        inferStatus.declaredTypes.set(symbol, leaf);
-                    }
-                    else {
+                    if (leaf){
                         type = leaf.type;
                         isconst = leaf.isconst??false;
+                    }
+                    else {
+                        leaf = inferStatus.declaredTypes.get(symbol);
+                        if (leaf){
+                            type = leaf.type;
+                            isconst = leaf.isconst??false;
+                        }
+                        else {
+                            const tstype = getTypeOfSymbol(symbol); // Is it OK for Identifier, will it not result in error TS7022 ?
+                            if (tstype===errorType){
+                                Debug.assert(false);
+                            }
+                            type = createRefTypesType(tstype);
+                            isconst = isConstantReference(expr);
+                            leaf = createRefTypesTableLeaf(symbol,isconst,type);
+                            inferStatus.declaredTypes.set(symbol, leaf);
+                        }
                     }
                     if (inferStatus.currentReplayableItem){
                         // If the value of the symbol has definitely NOT changed since the defintion of the replayable.
                         // then we can continue on below to find the value via constraints.  Otherwise, we must use the value of the symbol
                         // at the time of the definition of the replayable, as recorded in the replayables byNode map.
+                        // Currently `isconst` is equivalent to "definitely NOT changed".
                         if (!isconst){
                             const tstype = inferStatus.currentReplayableItem.nodeToTypeMap.get(expr)!;
                             mergeOneIntoNodeToTypeMaps(expr,tstype,inferStatus.groupNodeToTypeMap);
@@ -1570,10 +1580,6 @@ namespace ts {
                                 }],
                             };
                         }
-                    }
-
-                    if (isconst){
-                        type = evalTypeOverConstraint({ cin:constraintItemIn, symbol, typeRange: type, mrNarrow });
                     }
                     {
                         const tstype = getTypeFromRefTypesType(type);
