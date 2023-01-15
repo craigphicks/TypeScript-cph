@@ -16,7 +16,9 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!  
+1. Fix `mrNarrowTypesByBinaryExpressionEquals` to either properly calculate mismatches, of if that is too complex, let mismatches be always.
+1. Fix `andSymbolTypeIntoSymtabConstraint` to modify symtab for non-const cases.
+1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
 1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
 1. Rest parameter testing for `mrNarrowTypesByCallExpression`.
 1. Coding and testing of Optional parameter handling for `mrNarrowTypesByCallExpression`.

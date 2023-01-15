@@ -108,6 +108,8 @@ namespace ts {
         } = createDbgs(checker);
 
         const {
+            isBooleanFalseType,
+            isBooleanTrueType,
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
             // createRefTypesTypeAny,
             // createRefTypesTypeUnknown,
@@ -570,7 +572,15 @@ namespace ts {
         }: InferRefInnerArgs & {expr: BinaryExpression}): MrNarrowTypesInnerReturn {
 
             const {left:leftExpr,operatorToken,right:rightExpr} = binaryExpression;
-            Debug.assert(operatorToken.kind===SyntaxKind.EqualsEqualsEqualsToken); // TODO: expand this range
+            Debug.assert([
+                SyntaxKind.EqualsEqualsEqualsToken,
+                SyntaxKind.EqualsEqualsToken,
+                SyntaxKind.ExclamationEqualsEqualsToken,
+                SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind));
+            const negateEq = [
+                SyntaxKind.ExclamationEqualsEqualsToken,
+                SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind);
+
             if (myDebug){
                 consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] start left mrNarrowTypes`);
             }
@@ -610,6 +620,16 @@ namespace ts {
                         +`isect:${dbgRefTypesTypeToString(isect)} `);
                     }
                     const {singular,singularCount,nonSingular,nonSingularCount} = partitionIntoSingularAndNonSingularTypes(isect);
+                    /**
+                     * If the complexity is limited, the mismatches can be fully computed.
+                     * The mismatch count, if fully expanded, would be (singularCount + nonSingularCount)^2-1.
+                     * Set a limit and if beyond that limit, just pass always.
+                     */
+                    const countLimit = 2;
+                    if (singularCount + nonSingularCount <= countLimit){
+                        // code goes here
+                    }
+
                     const mismatchRight = subtractFromType(isect,rttrRight.type);
                     const mismatchLeft = subtractFromType(isect,rttrLeft.type);
                     if (myDebug){
@@ -675,6 +695,12 @@ namespace ts {
                     }
                 });
             });
+            if (negateEq){
+                arrRefTypesTableReturn.forEach(rttr=>{
+                    if (isBooleanTrueType(rttr.type)) rttr.type = createRefTypesType(falseType);
+                    if (isBooleanFalseType(rttr.type)) rttr.type = createRefTypesType(trueType);
+                });
+            }
             return {
                 arrRefTypesTableReturn
             };
@@ -694,18 +720,14 @@ namespace ts {
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;
                     //return narrowTypeByTruthiness(narrowType(type, expr.right, assumeTrue), expr.left, assumeTrue);
-                case SyntaxKind.EqualsEqualsToken:
                 case SyntaxKind.ExclamationEqualsToken:
-                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
-                    break;
+                case SyntaxKind.ExclamationEqualsEqualsToken:
+                case SyntaxKind.EqualsEqualsToken:
                 case SyntaxKind.EqualsEqualsEqualsToken:{
                     return mrNarrowTypesByBinaryExpressionEquals(
                         { refTypesSymtab:refTypesSymtabIn, constraintItem: constraintItemIn, expr:binaryExpression, inferStatus, qdotfallout:[] });
                 }
                 break;
-                case SyntaxKind.ExclamationEqualsEqualsToken:
-                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
-                    break;
                 case SyntaxKind.InstanceOfKeyword:
                     Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
                     break;

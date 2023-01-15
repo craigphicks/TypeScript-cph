@@ -376,6 +376,7 @@ namespace ts {
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
         let { symtab, constraintItem: tmpConstraintItem } = sc;
         let setTypeTmp = type;
+        // TODO: fix so that symtab is updated for non-const symbols.
         if (symbol && isconst) {
             const got = symtab.get(symbol);
             if (got) {
