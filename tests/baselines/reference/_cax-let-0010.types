@@ -1,0 +1,53 @@
+=== tests/cases/conformance/_cax/_cax-let-0010.ts ===
+declare const c1: true | false;
+>c1 : boolean
+>true : true
+>false : false
+
+declare const c2: true | false;
+>c2 : boolean
+>true : true
+>false : false
+
+let b1 = c1;
+>b1 : boolean
+>c1 : boolean
+
+let b2 = c2;
+>b2 : boolean
+>c2 : boolean
+
+if (b1){
+>b1 : boolean
+
+    b1;
+>b1 : true
+
+    b2;
+>b2 : boolean
+
+    if (b2){
+>b2 : boolean
+
+        b1;
+>b1 : true
+
+        b2;
+>b2 : true
+    }
+    else {
+        b1;
+>b1 : true
+
+        b2;
+>b2 : false
+    }
+}
+else {
+    b1;
+>b1 : false
+
+    b2;
+>b2 : boolean
+}
+

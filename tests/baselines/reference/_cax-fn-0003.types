@@ -1,0 +1,57 @@
+=== tests/cases/conformance/_cax/_cax-fn-0003.ts ===
+declare interface FooA {
+    foo(b:string): "1",
+>foo : { (b: string): "1"; (b: number): undefined; }
+>b : string
+
+    foo(b:number): undefined;
+>foo : { (b: string): "1"; (b: number): undefined; }
+>b : number
+
+};
+declare const obja: undefined | FooA;
+>obja : FooA | undefined
+
+declare const arg: string | number;
+>arg : string | number
+
+if (obja?.foo(arg)){
+>obja?.foo(arg) : undefined
+>obja?.foo : { (b: string): "1"; (b: number): undefined; } | undefined
+>obja : FooA | undefined
+>foo : { (b: string): "1"; (b: number): undefined; } | undefined
+>arg : string | number
+
+    obja; // should be FooA
+>obja : FooA
+
+    arg; // should be string
+>arg : string
+
+    const x = obja.foo(arg); // x should be "1"
+>x : "1"
+>obja.foo(arg) : "1"
+>obja.foo : { (b: string): "1"; (b: number): undefined; }
+>obja : FooA
+>foo : { (b: string): "1"; (b: number): undefined; }
+>arg : string
+}
+else if (obja) {
+>obja : FooA | undefined
+
+    arg; // should be number
+>arg : number
+
+    const x = obja.foo(arg); // x should be undefined
+>x : undefined
+>obja.foo(arg) : undefined
+>obja.foo : { (b: string): "1"; (b: number): undefined; }
+>obja : FooA
+>foo : { (b: string): "1"; (b: number): undefined; }
+>arg : number
+
+} else {
+    obja; // should be undefined
+>obja : undefined
+}
+

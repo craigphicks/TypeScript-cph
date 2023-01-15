@@ -1,0 +1,57 @@
+=== tests/cases/conformance/_cax/_cax-fn-0003.ts ===
+declare interface FooA {
+>FooA : Symbol(FooA, Decl(_cax-fn-0003.ts, 0, 0))
+
+    foo(b:string): "1",
+>foo : Symbol(FooA.foo, Decl(_cax-fn-0003.ts, 0, 24), Decl(_cax-fn-0003.ts, 1, 23))
+>b : Symbol(b, Decl(_cax-fn-0003.ts, 1, 8))
+
+    foo(b:number): undefined;
+>foo : Symbol(FooA.foo, Decl(_cax-fn-0003.ts, 0, 24), Decl(_cax-fn-0003.ts, 1, 23))
+>b : Symbol(b, Decl(_cax-fn-0003.ts, 2, 8))
+
+};
+declare const obja: undefined | FooA;
+>obja : Symbol(obja, Decl(_cax-fn-0003.ts, 4, 13))
+>FooA : Symbol(FooA, Decl(_cax-fn-0003.ts, 0, 0))
+
+declare const arg: string | number;
+>arg : Symbol(arg, Decl(_cax-fn-0003.ts, 5, 13))
+
+if (obja?.foo(arg)){
+>obja?.foo : Symbol(FooA.foo, Decl(_cax-fn-0003.ts, 0, 24), Decl(_cax-fn-0003.ts, 1, 23))
+>obja : Symbol(obja, Decl(_cax-fn-0003.ts, 4, 13))
+>foo : Symbol(FooA.foo, Decl(_cax-fn-0003.ts, 0, 24), Decl(_cax-fn-0003.ts, 1, 23))
+>arg : Symbol(arg, Decl(_cax-fn-0003.ts, 5, 13))
+
+    obja; // should be FooA
+>obja : Symbol(obja, Decl(_cax-fn-0003.ts, 4, 13))
+
+    arg; // should be string
+>arg : Symbol(arg, Decl(_cax-fn-0003.ts, 5, 13))
+
+    const x = obja.foo(arg); // x should be "1"
+>x : Symbol(x, Decl(_cax-fn-0003.ts, 9, 9))
+>obja.foo : Symbol(FooA.foo, Decl(_cax-fn-0003.ts, 0, 24), Decl(_cax-fn-0003.ts, 1, 23))
+>obja : Symbol(obja, Decl(_cax-fn-0003.ts, 4, 13))
+>foo : Symbol(FooA.foo, Decl(_cax-fn-0003.ts, 0, 24), Decl(_cax-fn-0003.ts, 1, 23))
+>arg : Symbol(arg, Decl(_cax-fn-0003.ts, 5, 13))
+}
+else if (obja) {
+>obja : Symbol(obja, Decl(_cax-fn-0003.ts, 4, 13))
+
+    arg; // should be number
+>arg : Symbol(arg, Decl(_cax-fn-0003.ts, 5, 13))
+
+    const x = obja.foo(arg); // x should be undefined
+>x : Symbol(x, Decl(_cax-fn-0003.ts, 13, 9))
+>obja.foo : Symbol(FooA.foo, Decl(_cax-fn-0003.ts, 0, 24), Decl(_cax-fn-0003.ts, 1, 23))
+>obja : Symbol(obja, Decl(_cax-fn-0003.ts, 4, 13))
+>foo : Symbol(FooA.foo, Decl(_cax-fn-0003.ts, 0, 24), Decl(_cax-fn-0003.ts, 1, 23))
+>arg : Symbol(arg, Decl(_cax-fn-0003.ts, 5, 13))
+
+} else {
+    obja; // should be undefined
+>obja : Symbol(obja, Decl(_cax-fn-0003.ts, 4, 13))
+}
+

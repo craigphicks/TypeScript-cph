@@ -1,8 +1,10 @@
-// @strict: true 
+// @strict: true
 // @declaration: true
 
-declare const b1: true | false;
-declare const b2: true | false;
+declare const c1: true | false;
+declare const c2: true | false;
+let b1 = c1;
+let b2 = c2;
 if (b1){
     b1;
     b2;

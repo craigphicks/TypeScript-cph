@@ -16,11 +16,10 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!  
 1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
 1. Rest parameter testing for `mrNarrowTypesByCallExpression`.
 1. Coding and testing of Optional parameter handling for `mrNarrowTypesByCallExpression`.
-1. Working with let (as opposed to const).
-
 
 ### Priotity: Low
 
@@ -45,6 +44,7 @@ either way it is O(#(tree nodes) * #(symbols)), but might be less function calls
 
 ### Done (reverse order)
 
+0. Fix non-const variables to work as they should, similarly to existing flow.  Tests "_cax-let-".
 0. Rewrite of `mrNarrowTypesByCallExpression`:  each sig candidate set is processed separately in `mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`.  Input parameters combinations are exhaustively checked by
 using first failing parameter `{symtab,constraintItem}` of a successful match as the starting condition for the next signature.  If there is
 no failing parameter, then matching is complete and the other sigs do not need to be checked.

@@ -343,7 +343,7 @@ namespace ts {
      *  Calculate "or" (union) of array of RefTypesSymtabConstraintItem
      * @param asc
      * @param getDeclaredType
-     * Prior to combing under an or node, each sub-constraint is shallow anded with each of its symtab entries {symbol,type} if necessary,
+     * Prior to combining under an or node, each sub-constraint is shallow anded with each of its symtab entries {symbol,type} if necessary,
      * where necessity exists if type is a strict subset of unionSymtab.get(symbol).
      */
     export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
@@ -353,7 +353,7 @@ namespace ts {
             if (!got) mapSymbolCount.set(symbol,1);
             else mapSymbolCount.set(symbol,got+1);
         }));
-        const unionSymtab = mrNarrow.unionArrRefTypesSymtab(asc.map(x=>x.symtab));
+        const unionSymtab = mrNarrow.unionArrRefTypesSymtab(asc.map(x=>x.symtab)); // isconst===false symbols get properly handled here
         const arrCI: ConstraintItem[] = [];
         asc.forEach(({symtab,constraintItem})=>{
             symtab.forEach(({leaf:{isconst,type}},symbol)=>{

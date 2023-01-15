@@ -468,7 +468,7 @@ namespace ts {
                 if (isNeverType(rttr.type)) return;
                 if (isNeverConstraint(rttr.constraintItem)) return;
                 if (!inferStatus.inCondition){
-                    if (rttr.symbol) rttr = mergeTypeIntoNewSymtabAndNewConstraint(rttr, inferStatus);
+                    if (rttr.symbol) rttr = andTypeIntoNewSymtabAndNewConstraint(rttr, inferStatus);
                     const setOfTypeOfStrings = new Set<string>();
                     forEachRefTypesTypeType(rttr.type, t=>{
                         typeToTypeofStrings(t).forEach(s=>setOfTypeOfStrings.add(s));
@@ -500,7 +500,7 @@ namespace ts {
                             ...rttr,
                             type: createRefTypesType(arrTypes),
                         };
-                        if (tmpRttr.symbol) tmpRttr = mergeTypeIntoNewSymtabAndNewConstraint(tmpRttr, inferStatus);
+                        if (tmpRttr.symbol) tmpRttr = andTypeIntoNewSymtabAndNewConstraint(tmpRttr, inferStatus);
                         arrRefTypesTableReturn.push({
                             ...tmpRttr,
                             type: createRefTypesType(checker.getStringLiteralType(typeOfString)),
@@ -1568,7 +1568,7 @@ namespace ts {
          * @param rttr
          * @returns type RefTypesTableReturnCritOut which has no "symbol" or "isconst" members.
          */
-        function mergeTypeIntoNewSymtabAndNewConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
+        function andTypeIntoNewSymtabAndNewConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
             Debug.assert(rttr.symbol);
             const { symbol, isconst } = rttr;
             let { type, symtab, constraintItem } = rttr;
@@ -1576,6 +1576,15 @@ namespace ts {
                 ({type, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:{ symtab,constraintItem },
                     getDeclaredType: createGetDeclaredTypeFn(inferStatus),
                     mrNarrow}));
+            }
+            else {
+                symtab = copyRefTypesSymtab(symtab); // necessary, and the function name says it.
+                const got = symtab.get(symbol);
+                if (!got) symtab.set(symbol,{ leaf:createRefTypesTableLeaf(symbol,isconst,type) });
+                else {
+                    const isectType = intersectionOfRefTypesType(got.leaf.type,type);
+                    symtab.set(symbol,{ leaf:{ ...got.leaf, type:isectType } });
+                }
             }
             return { kind:RefTypesTableKind.return, type, symtab, constraintItem };
         };
@@ -1626,7 +1635,7 @@ namespace ts {
                         }
                     }
                     else {
-                        const tmpPassing = mergeTypeIntoNewSymtabAndNewConstraint({
+                        const tmpPassing = andTypeIntoNewSymtabAndNewConstraint({
                             kind: RefTypesTableKind.return,
                             symbol: rttr.symbol,
                             type: localTypePassing,
@@ -1636,7 +1645,7 @@ namespace ts {
                         }, inferStatus);
                         if (!isNeverConstraint(tmpPassing.constraintItem)) arrRttrcoPassing.push(tmpPassing);
 
-                        const tmpFailing = mergeTypeIntoNewSymtabAndNewConstraint({
+                        const tmpFailing = andTypeIntoNewSymtabAndNewConstraint({
                             kind: RefTypesTableKind.return,
                             symbol: rttr.symbol,
                             type: localTypeFailing,
@@ -2128,7 +2137,20 @@ namespace ts {
                                 constraintItem: constraintItemIn
                             }]};
                         }
-                        const arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]> = inferStatus.inCondition ? rhs.inferRefRtnType.unmerged : [rhs.inferRefRtnType.passing];
+                        let arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]> = inferStatus.inCondition ? rhs.inferRefRtnType.unmerged : [rhs.inferRefRtnType.passing];
+                        // adding in symbols which are not isconst
+                        Debug.assert(isconstVar===false);
+                        arrRefTypesTableReturn = arrRefTypesTableReturn.map(rttr=>{
+                            if (rttr.symbol){
+                                if (rttr.isconst) {
+                                    rttr = andTypeIntoNewSymtabAndNewConstraint(rttr, inferStatus);
+                                }
+                                else rttr.symtab.set(rttr.symbol,{ leaf:createRefTypesTableLeaf(rttr.symbol,/*isconst*/ false,rttr.type) });
+                            }
+                            rttr.symbol = symbol;
+                            // rttr.type remains the same.
+                            return rttr;
+                        });
                         {
                             /**
                              * Adding to the global declaredTypes here, but the property symbol wont be cleared when the property owner goes out of scope.
@@ -2139,14 +2161,9 @@ namespace ts {
                              *  >>>!!! unless otherwise declared to be a more narrowed type !!!!<<<.
                              */
                             const unwidenedTsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
-                            if (isconstVar){
-                                const unwidenedType = createRefTypesType(unwidenedTsType);
-                                inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,unwidenedType));
-                            }
-                            else {
-                                const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));
-                                inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,widenedType));
-                            }
+                            // isconstVar is always false here
+                            const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));
+                            inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,widenedType));
                         }
                         const retval: MrNarrowTypesInnerReturn = {
                             arrRefTypesTableReturn,

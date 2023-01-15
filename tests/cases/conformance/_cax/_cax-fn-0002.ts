@@ -1,16 +1,15 @@
-// @strict: true 
+// @strict: true
 // @declaration: true
 
-declare interface FooA { 
+declare interface FooA {
     foo(b:string): "1",
-    foo(b:number): undefined; 
-    foo(b:number|string): "1"|undefined;
-}; 
+    foo(b:number): undefined;
+};
 declare const obja: FooA | undefined;
 declare const arg: number | string;
 if (typeof arg==="string" && obja){
     arg;
     obja;
-    //const x = obja.foo(arg);
+    const x = obja.foo(arg);
 }
 

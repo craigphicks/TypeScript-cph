@@ -1,0 +1,41 @@
+=== tests/cases/conformance/_cax/_cax-fn-0002.ts ===
+declare interface FooA {
+    foo(b:string): "1",
+>foo : { (b: string): "1"; (b: number): undefined; }
+>b : string
+
+    foo(b:number): undefined;
+>foo : { (b: string): "1"; (b: number): undefined; }
+>b : number
+
+};
+declare const obja: FooA | undefined;
+>obja : FooA | undefined
+
+declare const arg: number | string;
+>arg : string | number
+
+if (typeof arg==="string" && obja){
+>typeof arg==="string" && obja : false | FooA | undefined
+>typeof arg==="string" : boolean
+>typeof arg : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>arg : string | number
+>"string" : "string"
+>obja : FooA | undefined
+
+    arg;
+>arg : string
+
+    obja;
+>obja : FooA
+
+    const x = obja.foo(arg);
+>x : "1"
+>obja.foo(arg) : "1"
+>obja.foo : { (b: string): "1"; (b: number): undefined; }
+>obja : FooA
+>foo : { (b: string): "1"; (b: number): undefined; }
+>arg : string
+}
+
+
