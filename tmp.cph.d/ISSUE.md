@@ -16,8 +16,9 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-1. There is a mistake in `mrNarrowTypesByCallExpression`:  it is flat'ing the the pre-result candidates and all the signature candidates for one pre-result to the same level.  That is not correct - each pre-result candidate with one signature must match, but if the pre-result candidate has multiple sigs then we should accept the first one that matches and ignore the rest (of course if none match thsat's an error).
-
+1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
+1. Rest parameter testing for `mrNarrowTypesByCallExpression`.
+1. Coding and testing of Optional parameter handling for `mrNarrowTypesByCallExpression`.
 1. Working with let (as opposed to const).
 
 
@@ -44,6 +45,9 @@ either way it is O(#(tree nodes) * #(symbols)), but might be less function calls
 
 ### Done (reverse order)
 
+0. Rewrite of `mrNarrowTypesByCallExpression`:  each sig candidate set is processed separately in `mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`.  Input parameters combinations are exhaustively checked by
+using first failing parameter `{symtab,constraintItem}` of a successful match as the starting condition for the next signature.  If there is
+no failing parameter, then matching is complete and the other sigs do not need to be checked.
 0. `intersectRefTypesTypes` -> `intersectionOfRefTypesTypes` to match `unionOfRefTypesTypes`
 0. `RefTypesSymtabConstraintItem` invariance is fixed by updating the symtab at the end of `andSymbolTypeIntoSymtabConstraint`.
 0. Don't pass `inferStatus` to functions in `flowConstraints.ts`.

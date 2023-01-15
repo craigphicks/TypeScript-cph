@@ -1,0 +1,25 @@
+=== tests/cases/conformance/_cax/_cax-ez0006.ts ===
+// Note that Foo1.foo1 is overwritable, but it shouldn't make a difference because the type must be the same.
+declare type Foo1 = { foo1: ()=> number[] };
+>Foo1 : Symbol(Foo1, Decl(_cax-ez0006.ts, 0, 0))
+>foo1 : Symbol(foo1, Decl(_cax-ez0006.ts, 1, 21))
+
+declare const obj1: undefined | Foo1;
+>obj1 : Symbol(obj1, Decl(_cax-ez0006.ts, 2, 13))
+>Foo1 : Symbol(Foo1, Decl(_cax-ez0006.ts, 0, 0))
+
+const isFoo1 = obj1?.foo1();
+>isFoo1 : Symbol(isFoo1, Decl(_cax-ez0006.ts, 3, 5))
+>obj1?.foo1 : Symbol(foo1, Decl(_cax-ez0006.ts, 1, 21))
+>obj1 : Symbol(obj1, Decl(_cax-ez0006.ts, 2, 13))
+>foo1 : Symbol(foo1, Decl(_cax-ez0006.ts, 1, 21))
+
+if (isFoo1){
+>isFoo1 : Symbol(isFoo1, Decl(_cax-ez0006.ts, 3, 5))
+
+    const x2 = obj1.foo1();
+>x2 : Symbol(x2, Decl(_cax-ez0006.ts, 5, 9))
+>obj1.foo1 : Symbol(foo1, Decl(_cax-ez0006.ts, 1, 21))
+>obj1 : Symbol(obj1, Decl(_cax-ez0006.ts, 2, 13))
+>foo1 : Symbol(foo1, Decl(_cax-ez0006.ts, 1, 21))
+}
