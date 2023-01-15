@@ -366,28 +366,35 @@ namespace ts {
         return { symtab: unionSymtab, constraintItem: orIntoConstraintsShallow(arrCI) };
     }
 
-    // @ ts-expect-error getDeclaredType not used
     export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type,sc, mrNarrow, getDeclaredType}: Readonly<{
         symbol: Readonly<Symbol>,
-        readonly isconst: true,
+        readonly isconst: undefined | boolean,
         type: Readonly<RefTypesType>,
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+
+        assertSymtabConstraintInvariance({ symtab: sc.symtab, constraintItem: sc.constraintItem }, mrNarrow);
+
         let { symtab, constraintItem: tmpConstraintItem } = sc;
         let setTypeTmp = type;
-        // TODO: fix so that symtab is updated for non-const symbols.
-        if (symbol && isconst) {
-            const got = symtab.get(symbol);
-            if (got) {
-                setTypeTmp = mrNarrow.intersectionOfRefTypesType(got.leaf.type, type);
-            }
+        const got = symtab.get(symbol);
+        symtab = mrNarrow.copyRefTypesSymtab(symtab); // for now always make this copy even though it might not be modified TODO:
+        if (got) {
+            setTypeTmp = mrNarrow.intersectionOfRefTypesType(got.leaf.type, type);
+        }
+        else {
+            // There is no possibility that the constraints contain symbol that the
+            symtab.set(symbol,{ leaf:mrNarrow.createRefTypesTableLeaf(symbol,isconst,setTypeTmp) });
+        }
+
+        if (isconst){  // shouldn't need to do this if isASubsetOfB(type,setTypeTmp)
             const declType = getDeclaredType(symbol);
             // if (!declType){
             //     Debug.assert(declType);
             // }
             if (true){
-                // Expecting that setTypeTmp can be a strict subset of setTypeTmpCheck, but not the reverse.
+            // Expecting that setTypeTmp can be a strict subset of setTypeTmpCheck, but not the reverse.
                 const evaledType = evalTypeOverConstraint({ cin:tmpConstraintItem, symbol, typeRange: type, mrNarrow });
                 if (mrNarrow.isASubsetOfB(evaledType, setTypeTmp) && !mrNarrow.isASubsetOfB(setTypeTmp, evaledType)){
                     const astr: string[]=[];
@@ -425,7 +432,6 @@ namespace ts {
                     Debug.fail(astr.join(`\n`));
                 }
             }
-            symtab = mrNarrow.copyRefTypesSymtab(symtab);
 
             // TODO: Could this be optimized by evaluating all symbols together in a single pass, instead of calling once per symbol?
             // Seems like either way it is O(#(tree nodes) * #(symbols)), but might be less function calls in a single pass.
@@ -445,22 +451,49 @@ namespace ts {
                     },
                 });
             });
-
-            symtab.set(
+        } // if (isconst)
+        symtab.set(
+            symbol,
+            {leaf: {
+                kind: RefTypesTableKind.leaf,
                 symbol,
-                {leaf: {
-                    kind: RefTypesTableKind.leaf,
-                    symbol,
-                    isconst,
-                    type: setTypeTmp,
-                },
-            });
-        }
+                isconst,
+                type: setTypeTmp,
+            },
+        });
         assertSymtabConstraintInvariance({ symtab, constraintItem: tmpConstraintItem }, mrNarrow);
         return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
     };
 
+    // @ts-expect-error
+    function collectSymbolsInvolvedInConstraints(ciTop: ConstraintItem): Set<Symbol>{
+        const set = new Set<Symbol>();
+        const func = (ci: ConstraintItem) => {
+            if (ci.kind===ConstraintItemKind.leaf){
+                set.add(ci.symbol);
+            }
+            else if (ci.kind===ConstraintItemKind.node){
+                if (ci.op===ConstraintItemNodeOp.not) func(ci.constraint);
+                else ci.constraints.forEach(citmp=>func(citmp));
+            }
+        };
+        func(ciTop);
+        return set;
+    }
+
     export function assertSymtabConstraintInvariance({symtab,constraintItem}: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow): void {
+        // assert that every symbol involved in constraints is also in symtab
+        // const set = collectSymbolsInvolvedInConstraints(constraintItem);
+        // set.forEach(symbol=>{
+        //     if (!symtab.has(symbol)){
+        //         const astr: string[]=[];
+        //         astr.push("assertSymtabConstraintInvariance symtab must containt all symbol involved in constraint");
+        //         astr.push(`symbol: ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+        //         mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=>astr.push(`symtab: ${s}`));
+        //         mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>astr.push(`constraintItem:${s}`));
+        //         Debug.fail(astr.join(`\n`));
+        //     }
+        // });
         symtab.forEach(({leaf:{isconst,type}},symbol)=>{
             if (!isconst) return;
             const evaledType = evalTypeOverConstraint({ symbol,typeRange:type,cin:constraintItem,mrNarrow });

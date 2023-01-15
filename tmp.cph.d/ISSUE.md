@@ -16,8 +16,8 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-1. Fix `mrNarrowTypesByBinaryExpressionEquals` to either properly calculate mismatches, of if that is too complex, let mismatches be always.
-1. Fix `andSymbolTypeIntoSymtabConstraint` to modify symtab for non-const cases.
+1. Add functionality to `assertSymtabConstraintInvariance`: symtab must containt all symbol involved in constraint. (Already know to fail assertion - that must be analyzed and fixed).
+1. Fix `mrNarrowTypesByBinaryExpressionEquals` to either properly calculate mismatches.
 1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
 1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
 1. Rest parameter testing for `mrNarrowTypesByCallExpression`.
@@ -46,6 +46,7 @@ either way it is O(#(tree nodes) * #(symbols)), but might be less function calls
 
 ### Done (reverse order)
 
+0. Fix `andSymbolTypeIntoSymtabConstraint` to modify symtab for non-const cases. (Needs to be done before `mrNarrowTypesByBinaryExpressionEquals` mismatches fix).  Be sure to modify `andTypeIntoNewSymtabAndNewConstraint` (changed name to `andRttrSymbolTypeIntoSymtabAndConstraint`) as well.
 0. Fix non-const variables to work as they should, similarly to existing flow.  Tests "_cax-let-".
 0. Rewrite of `mrNarrowTypesByCallExpression`:  each sig candidate set is processed separately in `mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`.  Input parameters combinations are exhaustively checked by
 using first failing parameter `{symtab,constraintItem}` of a successful match as the starting condition for the next signature.  If there is

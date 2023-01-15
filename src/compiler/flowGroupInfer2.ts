@@ -108,6 +108,8 @@ namespace ts {
         } = createDbgs(checker);
 
         const {
+            // @ts-expect-error
+            getTypeMemberCount,
             isBooleanFalseType,
             isBooleanTrueType,
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
@@ -470,7 +472,7 @@ namespace ts {
                 if (isNeverType(rttr.type)) return;
                 if (isNeverConstraint(rttr.constraintItem)) return;
                 if (!inferStatus.inCondition){
-                    if (rttr.symbol) rttr = andTypeIntoNewSymtabAndNewConstraint(rttr, inferStatus);
+                    if (rttr.symbol) rttr = andRttrSymbolTypeIntoSymtabConstraint(rttr, inferStatus);
                     const setOfTypeOfStrings = new Set<string>();
                     forEachRefTypesTypeType(rttr.type, t=>{
                         typeToTypeofStrings(t).forEach(s=>setOfTypeOfStrings.add(s));
@@ -502,7 +504,7 @@ namespace ts {
                             ...rttr,
                             type: createRefTypesType(arrTypes),
                         };
-                        if (tmpRttr.symbol) tmpRttr = andTypeIntoNewSymtabAndNewConstraint(tmpRttr, inferStatus);
+                        if (tmpRttr.symbol) tmpRttr = andRttrSymbolTypeIntoSymtabConstraint(tmpRttr, inferStatus);
                         arrRefTypesTableReturn.push({
                             ...tmpRttr,
                             type: createRefTypesType(checker.getStringLiteralType(typeOfString)),
@@ -530,7 +532,7 @@ namespace ts {
                 let _type: RefTypesType;
                 // eslint-disable-next-line @typescript-eslint/prefer-for-of
                 for (let i=0; i<asym.length; i++){
-                    if (!asym[i].declared.isconst) continue;
+                    //if (!asym[i].declared.isconst) continue; // TODO: kill this because the symtab needs mod even if not const
                     ({type:_type, sc} = andSymbolTypeIntoSymtabConstraint({
                         symbol: asym[i].symbol,
                         isconst: asym[i].declared.isconst as true,
@@ -620,27 +622,15 @@ namespace ts {
                         +`isect:${dbgRefTypesTypeToString(isect)} `);
                     }
                     const {singular,singularCount,nonSingular,nonSingularCount} = partitionIntoSingularAndNonSingularTypes(isect);
-                    /**
-                     * If the complexity is limited, the mismatches can be fully computed.
-                     * The mismatch count, if fully expanded, would be (singularCount + nonSingularCount)^2-1.
-                     * Set a limit and if beyond that limit, just pass always.
-                     */
-                    const countLimit = 2;
-                    if (singularCount + nonSingularCount <= countLimit){
-                        // code goes here
-                    }
-
-                    const mismatchRight = subtractFromType(isect,rttrRight.type);
-                    const mismatchLeft = subtractFromType(isect,rttrLeft.type);
                     if (myDebug){
                         consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         +`singular:${dbgRefTypesTypeToString(singular)}, singularCount:${singularCount}`);
                         consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         +`nonSingular:${dbgRefTypesTypeToString(nonSingular)}, nonSingularCount:${nonSingularCount}`);
-                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
-                        +`mismatchLeft:${dbgRefTypesTypeToString(mismatchLeft)}`);
-                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
-                        +`mismatchRight:${dbgRefTypesTypeToString(mismatchRight)}`);
+                        // consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        // +`mismatchLeft:${dbgRefTypesTypeToString(mismatchLeft)}`);
+                        // consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        // +`mismatchRight:${dbgRefTypesTypeToString(mismatchRight)}`);
                     }
 
                     const asym: {symbol: Symbol,declared: RefTypesTableLeaf}[] = [];
@@ -660,20 +650,81 @@ namespace ts {
                             { asym, partitionedType: nonSingular, passType: createRefTypesType([trueType,falseType]), rttrRight, inferStatus });
                         arrRefTypesTableReturn.push(passRttr);
                     }
+
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // new code for mistaches fix, don't delete
+                    /**
+                     * If the complexity is limited, the mismatches can be fully computed.
+                     * The total explicit mismatch count would be leftCount*rightCount-(singularCount+nonSingularCount),
+                     * which could be too much.
+                     * If (singularCount+nonSingularCount)===1, the matched type must be removed from a copy of rttrRight.type,
+                     * and symtab modifed regardless of isconst.
+                     * Otherwise, do the correlations.
+                     */
+
+                    // const leftCount = getTypeMemberCount(rttrLeft.type);
+                    // const rightCount = getTypeMemberCount(rttrRight.type);
+                    // if ((singularCount+nonSingularCount)===0){
+                    //     arrRefTypesTableReturn.push({
+                    //         kind:RefTypesTableKind.return,
+                    //         type: createRefTypesType(falseType),
+                    //         symtab: rttrRight.symtab,
+                    //         constraintItem: rttrRight.constraintItem
+                    //     });
+                    // }
+                    // else if ((singularCount+nonSingularCount)===1){
+                    //     if (rttrLeft.symbol){
+                    //         const mismatchLeft = subtractFromType(isect,rttrLeft.type);
+                    //         ({type:_constraintedMismatchLeft, sc:{symtab: }} = andSymbolTypeIntoSymtabConstraint({
+                    //             symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
+                    //             sc:tmpsc,
+                    //             getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                    //             mrNarrow}));
+                    //     }
+                    // }
+
+                    // const mismatchExplicitCount = leftCount*rightCount-(singularCount+nonSingularCount);
+                    // let doMismatch = false;
+                    // if (mismatchExplicitCount<=4) doMismatch = true;
+                    // else if (leftCount===1 || rightCount===1) doMismatch = true;
+                    // else if (mismatchExplicitCount<=(singularCount+nonSingularCount)*2) doMismatch = true;
+
+                    // if (!doMismatch) {
+                    //     arrRefTypesTableReturn.push({
+                    //         kind:RefTypesTableKind.return,
+                    //         type: createRefTypesType(falseType),
+                    //         symtab: rttrRight.symtab,
+                    //         constraintItem: rttrRight.constraintItem
+                    //     });
+                    // }
+                    // else {
+                    // }
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // Old code for mismatches which is not correct.
+                    const mismatchRight = subtractFromType(isect,rttrRight.type);
+                    const mismatchLeft = subtractFromType(isect,rttrLeft.type);
                     if (!isNeverType(mismatchLeft) || !isNeverType(mismatchRight)){
                         let tmpsc = { symtab:rttrRight.symtab,constraintItem:rttrRight.constraintItem };
                         // @ts-ignore
                         let _constraintedMismatchLeft = mismatchLeft;
                         // @ts-ignore
                         let _constraintedMismatchRight = mismatchRight;
-                        if (!isNeverType(mismatchLeft) && rttrLeft.symbol && rttrLeft.isconst){
+                        if (!isNeverType(mismatchLeft) && rttrLeft.symbol /*&& rttrLeft.isconst*/){
                             ({type:_constraintedMismatchLeft, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
                                 symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
                                 sc:tmpsc,
                                 getDeclaredType: createGetDeclaredTypeFn(inferStatus),
                                 mrNarrow}));
                         }
-                        if (!isNeverType(mismatchRight) && rttrRight.symbol && rttrRight.isconst){
+                        if (!isNeverType(mismatchRight) && rttrRight.symbol /*&& rttrRight.isconst*/){
                             ({type:_constraintedMismatchRight, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
                                 symbol:rttrRight.symbol, isconst: rttrRight.isconst, type: mismatchRight,
                                 sc:tmpsc,
@@ -1590,24 +1641,25 @@ namespace ts {
          * @param rttr
          * @returns type RefTypesTableReturnCritOut which has no "symbol" or "isconst" members.
          */
-        function andTypeIntoNewSymtabAndNewConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
+        function andRttrSymbolTypeIntoSymtabConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
             Debug.assert(rttr.symbol);
             const { symbol, isconst } = rttr;
             let { type, symtab, constraintItem } = rttr;
-            if (isconst) {
+            // if (isconst) {
                 ({type, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:{ symtab,constraintItem },
                     getDeclaredType: createGetDeclaredTypeFn(inferStatus),
                     mrNarrow}));
-            }
-            else {
-                symtab = copyRefTypesSymtab(symtab); // necessary, and the function name says it.
-                const got = symtab.get(symbol);
-                if (!got) symtab.set(symbol,{ leaf:createRefTypesTableLeaf(symbol,isconst,type) });
-                else {
-                    const isectType = intersectionOfRefTypesType(got.leaf.type,type);
-                    symtab.set(symbol,{ leaf:{ ...got.leaf, type:isectType } });
-                }
-            }
+            // }
+            // TODO: remove this else case because andSymbolTypeIntoSymtabConstraint should now do it for isconst === false
+            // else {
+            //     symtab = copyRefTypesSymtab(symtab); // necessary, and the function name says it.
+            //     const got = symtab.get(symbol);
+            //     if (!got) symtab.set(symbol,{ leaf:createRefTypesTableLeaf(symbol,isconst,type) });
+            //     else {
+            //         const isectType = intersectionOfRefTypesType(got.leaf.type,type);
+            //         symtab.set(symbol,{ leaf:{ ...got.leaf, type:isectType } });
+            //     }
+            // }
             return { kind:RefTypesTableKind.return, type, symtab, constraintItem };
         };
 
@@ -1657,7 +1709,7 @@ namespace ts {
                         }
                     }
                     else {
-                        const tmpPassing = andTypeIntoNewSymtabAndNewConstraint({
+                        const tmpPassing = andRttrSymbolTypeIntoSymtabConstraint({
                             kind: RefTypesTableKind.return,
                             symbol: rttr.symbol,
                             type: localTypePassing,
@@ -1667,7 +1719,7 @@ namespace ts {
                         }, inferStatus);
                         if (!isNeverConstraint(tmpPassing.constraintItem)) arrRttrcoPassing.push(tmpPassing);
 
-                        const tmpFailing = andTypeIntoNewSymtabAndNewConstraint({
+                        const tmpFailing = andRttrSymbolTypeIntoSymtabConstraint({
                             kind: RefTypesTableKind.return,
                             symbol: rttr.symbol,
                             type: localTypeFailing,
@@ -2165,7 +2217,7 @@ namespace ts {
                         arrRefTypesTableReturn = arrRefTypesTableReturn.map(rttr=>{
                             if (rttr.symbol){
                                 if (rttr.isconst) {
-                                    rttr = andTypeIntoNewSymtabAndNewConstraint(rttr, inferStatus);
+                                    rttr = andRttrSymbolTypeIntoSymtabConstraint(rttr, inferStatus);
                                 }
                                 else rttr.symtab.set(rttr.symbol,{ leaf:createRefTypesTableLeaf(rttr.symbol,/*isconst*/ false,rttr.type) });
                             }

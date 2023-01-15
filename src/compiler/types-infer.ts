@@ -25,7 +25,7 @@ namespace ts {
         none=0,
         any=1,
         unknown=2,
-    }
+    };
     export interface RefTypesTypeNormal {
         _flags: RefTypesTypeFlags.none;
         _set: Set<Type>;

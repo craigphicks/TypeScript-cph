@@ -6,6 +6,7 @@ namespace ts {
         return Debug.assert(arguments);
     }
     export type RefTypesTypeModule = & {
+        getTypeMemberCount(type: Readonly<RefTypesType>): number;
         isBooleanTrueType(type: Readonly<RefTypesType>): boolean;
         isBooleanFalseType(type: Readonly<RefTypesType>): boolean;
         forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void ;
@@ -50,6 +51,7 @@ namespace ts {
         } = createDbgs(checker);
 
         return {
+            getTypeMemberCount,
             isBooleanFalseType,
             isBooleanTrueType,
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
@@ -405,6 +407,14 @@ namespace ts {
                     });
                 });
             }
+        }
+        function getTypeMemberCount(type: RefTypesType): number {
+            if (type._flags!==RefTypesTypeFlags.none) return 1;
+            let count = type._set.size;
+            type._mapLiteral.forEach((set,_tstype)=>{
+                count += set.size;
+            });
+            return count;
         }
         function partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {
             singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number
