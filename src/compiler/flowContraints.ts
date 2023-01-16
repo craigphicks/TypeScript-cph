@@ -465,7 +465,7 @@ namespace ts {
         return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
     };
 
-    // @ts-expect-error
+    // @ ts-expect-error
     function collectSymbolsInvolvedInConstraints(ciTop: ConstraintItem): Set<Symbol>{
         const set = new Set<Symbol>();
         const func = (ci: ConstraintItem) => {
@@ -483,17 +483,17 @@ namespace ts {
 
     export function assertSymtabConstraintInvariance({symtab,constraintItem}: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow): void {
         // assert that every symbol involved in constraints is also in symtab
-        // const set = collectSymbolsInvolvedInConstraints(constraintItem);
-        // set.forEach(symbol=>{
-        //     if (!symtab.has(symbol)){
-        //         const astr: string[]=[];
-        //         astr.push("assertSymtabConstraintInvariance symtab must containt all symbol involved in constraint");
-        //         astr.push(`symbol: ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
-        //         mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=>astr.push(`symtab: ${s}`));
-        //         mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>astr.push(`constraintItem:${s}`));
-        //         Debug.fail(astr.join(`\n`));
-        //     }
-        // });
+        const set = collectSymbolsInvolvedInConstraints(constraintItem);
+        set.forEach(symbol=>{
+            if (!symtab.has(symbol)){
+                const astr: string[]=[];
+                astr.push("assertSymtabConstraintInvariance symtab must containt all symbol involved in constraint");
+                astr.push(`symbol: ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+                mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=>astr.push(`symtab: ${s}`));
+                mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>astr.push(`constraintItem:${s}`));
+                Debug.fail(astr.join(`\n`));
+            }
+        });
         symtab.forEach(({leaf:{isconst,type}},symbol)=>{
             if (!isconst) return;
             const evaledType = evalTypeOverConstraint({ symbol,typeRange:type,cin:constraintItem,mrNarrow });
