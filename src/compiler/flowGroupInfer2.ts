@@ -108,10 +108,9 @@ namespace ts {
         } = createDbgs(checker);
 
         const {
-            // @ts-expect-error
             getTypeMemberCount,
-            isBooleanFalseType,
-            isBooleanTrueType,
+            // isBooleanFalseType,
+            // isBooleanTrueType,
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
             // createRefTypesTypeAny,
             // createRefTypesTypeUnknown,
@@ -545,7 +544,7 @@ namespace ts {
                 arrSC0.push(sc);
             });
             // new function for oring RefTypesSymtabConstraintItem
-            const scout = orSymtabConstraints(arrSC0, mrNarrow, /*createGetDeclaredTypeFn(inferStatus)*/);
+            const scout = orSymtabConstraints(arrSC0, mrNarrow);
             return {
                 kind: RefTypesTableKind.return,
                 type: passType,
@@ -558,11 +557,11 @@ namespace ts {
             refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, /* qdotfallout: _qdotFalloutIn, */ inferStatus, constraintItem: constraintItemIn
         }: InferRefInnerArgs & {expr: BinaryExpression}): MrNarrowTypesInnerReturn {
             if (myDebug){
-                consoleGroup(`mrNarrowTypesByBinaryExpressionEquals[in]`);
+                consoleGroup(`mrNarrowTypesByBinaryExpressionEquals[in] ${dbgNodeToString(binaryExpression)}`);
             }
             const ret = mrNarrowTypesByBinaryExpressionEquals_aux({ refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, inferStatus, constraintItem: constraintItemIn, qdotfallout:[] });
             if (myDebug){
-                consoleLog(`mrNarrowTypesByBinaryExpressionEquals[out]`);
+                consoleLog(`mrNarrowTypesByBinaryExpressionEquals[out] ${dbgNodeToString(binaryExpression)}`);
                 consoleGroupEnd();
             }
             return ret;
@@ -582,6 +581,8 @@ namespace ts {
             const negateEq = [
                 SyntaxKind.ExclamationEqualsEqualsToken,
                 SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind);
+            const nomativeTrueType = negateEq ? falseType : trueType;
+            const nomativeFalseType = negateEq ? trueType : falseType;
 
             if (myDebug){
                 consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] start left mrNarrowTypes`);
@@ -642,7 +643,7 @@ namespace ts {
                     }
                     if (singularCount){
                         const passRttr = mrNarrowTypesByBinaryExpressionEqualsHelper(
-                            { asym, partitionedType: singular, passType: createRefTypesType(trueType), rttrRight, inferStatus });
+                            { asym, partitionedType: singular, passType: createRefTypesType(nomativeTrueType), rttrRight, inferStatus });
                         arrRefTypesTableReturn.push(passRttr);
                     }
                     if (nonSingularCount){
@@ -655,6 +656,7 @@ namespace ts {
                     /////////////////////////////////////////////////////////////////////////////////////////////////////
                     /////////////////////////////////////////////////////////////////////////////////////////////////////
                     // new code for mistaches fix, don't delete
+                    if (true){
                     /**
                      * If the complexity is limited, the mismatches can be fully computed.
                      * The total explicit mismatch count would be leftCount*rightCount-(singularCount+nonSingularCount),
@@ -664,94 +666,126 @@ namespace ts {
                      * Otherwise, do the correlations.
                      */
 
-                    // const leftCount = getTypeMemberCount(rttrLeft.type);
-                    // const rightCount = getTypeMemberCount(rttrRight.type);
-                    // if ((singularCount+nonSingularCount)===0){
-                    //     arrRefTypesTableReturn.push({
-                    //         kind:RefTypesTableKind.return,
-                    //         type: createRefTypesType(falseType),
-                    //         symtab: rttrRight.symtab,
-                    //         constraintItem: rttrRight.constraintItem
-                    //     });
-                    // }
-                    // else if ((singularCount+nonSingularCount)===1){
-                    //     if (rttrLeft.symbol){
-                    //         const mismatchLeft = subtractFromType(isect,rttrLeft.type);
-                    //         ({type:_constraintedMismatchLeft, sc:{symtab: }} = andSymbolTypeIntoSymtabConstraint({
-                    //             symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
-                    //             sc:tmpsc,
-                    //             getDeclaredType: createGetDeclaredTypeFn(inferStatus),
-                    //             mrNarrow}));
-                    //     }
-                    // }
-
-                    // const mismatchExplicitCount = leftCount*rightCount-(singularCount+nonSingularCount);
-                    // let doMismatch = false;
-                    // if (mismatchExplicitCount<=4) doMismatch = true;
-                    // else if (leftCount===1 || rightCount===1) doMismatch = true;
-                    // else if (mismatchExplicitCount<=(singularCount+nonSingularCount)*2) doMismatch = true;
-
-                    // if (!doMismatch) {
-                    //     arrRefTypesTableReturn.push({
-                    //         kind:RefTypesTableKind.return,
-                    //         type: createRefTypesType(falseType),
-                    //         symtab: rttrRight.symtab,
-                    //         constraintItem: rttrRight.constraintItem
-                    //     });
-                    // }
-                    // else {
-                    // }
-                    /////////////////////////////////////////////////////////////////////////////////////////////////////
-                    /////////////////////////////////////////////////////////////////////////////////////////////////////
-                    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-                    /////////////////////////////////////////////////////////////////////////////////////////////////////
-                    /////////////////////////////////////////////////////////////////////////////////////////////////////
-                    // Old code for mismatches which is not correct.
-                    const mismatchRight = subtractFromType(isect,rttrRight.type);
-                    const mismatchLeft = subtractFromType(isect,rttrLeft.type);
-                    if (!isNeverType(mismatchLeft) || !isNeverType(mismatchRight)){
-                        let tmpsc = { symtab:rttrRight.symtab,constraintItem:rttrRight.constraintItem };
-                        // @ts-ignore
-                        let _constraintedMismatchLeft = mismatchLeft;
-                        // @ts-ignore
-                        let _constraintedMismatchRight = mismatchRight;
-                        if (!isNeverType(mismatchLeft) && rttrLeft.symbol /*&& rttrLeft.isconst*/){
-                            ({type:_constraintedMismatchLeft, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
-                                symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
-                                sc:tmpsc,
-                                getDeclaredType: createGetDeclaredTypeFn(inferStatus),
-                                mrNarrow}));
+                        const leftCount = getTypeMemberCount(rttrLeft.type);
+                        const rightCount = getTypeMemberCount(rttrRight.type);
+                        if ((singularCount+nonSingularCount)===0){
+                            // no overlap at all => always false
+                            arrRefTypesTableReturn.push({
+                                kind:RefTypesTableKind.return,
+                                type: createRefTypesType(nomativeFalseType),
+                                symtab: rttrRight.symtab,
+                                constraintItem: rttrRight.constraintItem
+                            });
                         }
-                        if (!isNeverType(mismatchRight) && rttrRight.symbol /*&& rttrRight.isconst*/){
-                            ({type:_constraintedMismatchRight, sc:tmpsc} = andSymbolTypeIntoSymtabConstraint({
-                                symbol:rttrRight.symbol, isconst: rttrRight.isconst, type: mismatchRight,
-                                sc:tmpsc,
-                                getDeclaredType: createGetDeclaredTypeFn(inferStatus),
-                                mrNarrow}));
+                        else if ((singularCount+nonSingularCount)===1){
+                            // overlap type removed completely from both sides  => always false
+                            let scTmp = { symtab: rttrRight.symtab, constraintItem: rttrRight.constraintItem };
+                            let scLeftTmp: RefTypesSymtabConstraintItem | undefined;
+                            let scRightTmp: RefTypesSymtabConstraintItem | undefined;
+                            // @ts-ignore
+                            let _unusedType: RefTypesType;
+                            const mismatchLeft = subtractFromType(isect,rttrLeft.type);
+                            const mismatchRight = subtractFromType(isect,rttrRight.type);
+                            const hasSomeMismatch = (!isNeverType(mismatchLeft)||!isNeverType(mismatchRight));
+                            if (rttrLeft.symbol){
+                                ({type:_unusedType, sc:scLeftTmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
+                                    sc: scTmp,
+                                    getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                    mrNarrow}));
+                            }
+                            if (rttrRight.symbol){
+                                ({type:_unusedType, sc:scRightTmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:rttrRight.symbol, isconst: rttrRight.isconst, type: mismatchRight,
+                                    sc: scTmp,
+                                    getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                    mrNarrow}));
+                            }
+                            if (scLeftTmp && scRightTmp){
+                                scTmp = orSymtabConstraints([scLeftTmp, scRightTmp], mrNarrow);
+                            }
+                            else if (scLeftTmp) scTmp = scLeftTmp;
+                            else if (scRightTmp) scTmp = scRightTmp;
+                            if (hasSomeMismatch){
+                                arrRefTypesTableReturn.push({
+                                    kind:RefTypesTableKind.return,
+                                    type: createRefTypesType(nomativeFalseType),
+                                    symtab: scTmp.symtab,
+                                    constraintItem: scTmp.constraintItem
+                                });
+                            }
                         }
-                        const mismatchRttr = {
-                            ...rttrRight,
-                            type: createRefTypesType(falseType),
-                            symtab:tmpsc.symtab,
-                            constraintItem: tmpsc.constraintItem
-                        };
-                        if (myDebug){
-                            const str = `mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, mismatchRttr: `;
-                            consoleLog(str);
-                            dbgRefTypesTableToStrings(mismatchRttr).forEach(s=>consoleLog(str+s));
+                        else {
+                            // @ts-expect-error
+                            const mismatchExplicitCount = leftCount*rightCount-(singularCount+nonSingularCount);
+
+                            // eslint-disable-next-line prefer-const
+                            let doExplicit = true;
+                            // The explicit case is not yet correct - TODO
+                            // if (mismatchExplicitCount<=4) doExplicit = true;
+                            // else if (leftCount===1 || rightCount===1) doExplicit = true;
+                            // else if (mismatchExplicitCount<=(singularCount+nonSingularCount)*2) doExplicit = true;
+                            if (!doExplicit) {
+                                arrRefTypesTableReturn.push({
+                                    kind:RefTypesTableKind.return,
+                                    type: createRefTypesType(nomativeFalseType),
+                                    symtab: rttrRight.symtab,
+                                    constraintItem: rttrRight.constraintItem
+                                });
+                            }
+                            else {
+                                let scTmp = { symtab: rttrRight.symtab, constraintItem: rttrRight.constraintItem };
+                                let scLeftTmp: RefTypesSymtabConstraintItem | undefined;
+                                let scRightTmp: RefTypesSymtabConstraintItem | undefined;
+                                    // @ts-ignore
+                                let _unusedType: RefTypesType;
+                                let hasSomeMismatch = false;
+                                forEachRefTypesTypeType(isect, isectTsType=>{
+                                    const isectType = createRefTypesType(isectTsType);
+                                    const mismatchLeft = subtractFromType(isectType,rttrLeft.type);
+                                    const mismatchRight = subtractFromType(isectType,rttrRight.type);
+                                    if (!isNeverType(mismatchLeft)||!isNeverType(mismatchRight)) hasSomeMismatch = true;
+
+                                    // And(Or(mismatchLeft,mismatchRight)
+                                    if (rttrLeft.symbol){
+                                        ({type:_unusedType, sc:scLeftTmp } = andSymbolTypeIntoSymtabConstraint({
+                                            symbol:rttrLeft.symbol, isconst: rttrLeft.isconst,
+                                            type:mismatchLeft,
+                                            sc: scTmp,
+                                            getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                            mrNarrow}));
+                                    }
+                                    if (rttrRight.symbol){
+                                        ({type:_unusedType, sc:scRightTmp } = andSymbolTypeIntoSymtabConstraint({
+                                            symbol:rttrRight.symbol, isconst: rttrRight.isconst,
+                                            type: mismatchRight,
+                                            sc: scTmp,
+                                            getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                            mrNarrow}));
+                                    }
+                                    if (scLeftTmp && scRightTmp){
+                                        scTmp = orSymtabConstraints([scLeftTmp, scRightTmp], mrNarrow);
+                                    }
+                                    else if (scLeftTmp) scTmp = scLeftTmp;
+                                    else if (scRightTmp) scTmp = scRightTmp;
+                                });
+                                if (hasSomeMismatch){
+                                    arrRefTypesTableReturn.push({
+                                        kind:RefTypesTableKind.return,
+                                        type: createRefTypesType(nomativeFalseType),
+                                        symtab: scTmp.symtab,
+                                        constraintItem: scTmp.constraintItem
+                                    });
+                                }
+                            }
                         }
-                        arrRefTypesTableReturn.push(mismatchRttr);
                     }
-                });
-            });
-            if (negateEq){
-                arrRefTypesTableReturn.forEach(rttr=>{
-                    if (isBooleanTrueType(rttr.type)) rttr.type = createRefTypesType(falseType);
-                    if (isBooleanFalseType(rttr.type)) rttr.type = createRefTypesType(trueType);
-                });
-            }
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                }); // rhs1.inferRefRtnType.unmerged?.forEach((rttrRight, _rightIdx)=>
+            }); // leftRet.inferRefRtnType.unmerged?.forEach((rttrLeft, _leftIdx)=>{
             return {
                 arrRefTypesTableReturn
             };

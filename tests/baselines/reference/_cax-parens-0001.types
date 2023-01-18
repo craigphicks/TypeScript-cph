@@ -45,7 +45,7 @@ else {
 >xa : "string" | "number"
 
     b;
->b : number | false
+>b : number | boolean
 
     xb;
 >xb : "number" | "boolean"

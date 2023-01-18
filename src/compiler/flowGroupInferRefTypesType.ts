@@ -7,8 +7,6 @@ namespace ts {
     }
     export type RefTypesTypeModule = & {
         getTypeMemberCount(type: Readonly<RefTypesType>): number;
-        isBooleanTrueType(type: Readonly<RefTypesType>): boolean;
-        isBooleanFalseType(type: Readonly<RefTypesType>): boolean;
         forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void ;
         // createRefTypesTypeAny(): RefTypesTypeAny ;
         // createRefTypesTypeUnknown(): RefTypesTypeUnknown ;
@@ -52,8 +50,6 @@ namespace ts {
 
         return {
             getTypeMemberCount,
-            isBooleanFalseType,
-            isBooleanTrueType,
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
             // createRefTypesTypeAny,
             // createRefTypesTypeUnknown,
@@ -75,22 +71,22 @@ namespace ts {
             equalRefTypesTypes,
         };
 
-        function isBooleanTrueType(type: Readonly<RefTypesType>): boolean {
-            if (type._flags===RefTypesTypeFlags.none && type._set.size===1){
-                if (type._set.values().next().value===checker.getTrueType()){
-                    return true;
-                }
-            }
-            return false;
-        }
-        function isBooleanFalseType(type: Readonly<RefTypesType>): boolean {
-            if (type._flags===RefTypesTypeFlags.none && type._set.size===1){
-                if (type._set.values().next().value===checker.getFalseType()){
-                    return true;
-                }
-            }
-            return false;
-        }
+        // function isBooleanTrueType(type: Readonly<RefTypesType>): boolean {
+        //     if (type._flags===RefTypesTypeFlags.none && type._set.size===1){
+        //         if (type._set.values().next().value===checker.getTrueType()){
+        //             return true;
+        //         }
+        //     }
+        //     return false;
+        // }
+        // function isBooleanFalseType(type: Readonly<RefTypesType>): boolean {
+        //     if (type._flags===RefTypesTypeFlags.none && type._set.size===1){
+        //         if (type._set.values().next().value===checker.getFalseType()){
+        //             return true;
+        //         }
+        //     }
+        //     return false;
+        // }
 
         function forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void {
             (type.flags & TypeFlags.Union) ? (type as UnionType).types.forEach(t => f(t)) : f(type);

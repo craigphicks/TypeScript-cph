@@ -16,7 +16,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-1. Fix `mrNarrowTypesByBinaryExpressionEquals` to either properly calculate mismatches.
+1. Add another functionality `vistDNF` to help with `assertSymtabConstraintInvariance`
 1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
 1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
 1. Rest parameter testing for `mrNarrowTypesByCallExpression`.
@@ -45,6 +45,7 @@ either way it is O(#(tree nodes) * #(symbols)), but might be less function calls
 
 ### Done (reverse order)
 
+0. Fix `mrNarrowTypesByBinaryExpressionEquals` to properly calculate mismatches. AND[over i](OR(left-isect[i],right-isect[i]).
 0. Add functionality to `assertSymtabConstraintInvariance`: symtab must containt all symbol involved in constraint. (Already know to fail assertion - that bug must be analyzed and fixed). The bug was in `applyCritToArrRefTypesTableReturn`.
 0. Fix `andSymbolTypeIntoSymtabConstraint` to modify symtab for non-const cases. (Needs to be done before `mrNarrowTypesByBinaryExpressionEquals` mismatches fix).  Be sure to modify `andTypeIntoNewSymtabAndNewConstraint` (changed name to `andRttrSymbolTypeIntoSymtabAndConstraint`) as well.
 0. Fix non-const variables to work as they should, similarly to existing flow.  Tests "_cax-let-".
