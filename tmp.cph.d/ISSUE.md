@@ -16,15 +16,19 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-1. Add another functionality `vistDNF` to help with `assertSymtabConstraintInvariance`
+1. Add another functionality `vistDNF` (Disjunstive Normal Form) to help with `assertSymtabConstraintInvariance`.  Visit each DNF factor without storing all the memory.
 1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
 1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
 1. Rest parameter testing for `mrNarrowTypesByCallExpression`.
 1. Coding and testing of Optional parameter handling for `mrNarrowTypesByCallExpression`.
 
-### Priotity: Low
+### Priotity: Postponed
 
-1.  Implement "not" of literal types to apply to uncountable nonSingular types.
+1. [Implicit-not to economize memory use] Currently `ConstrantItemKind.not` is never involed in the `type` arugment to `andSymbolTypeIntoSymtabConstraint`, and therefore never exists in the modifed constraint.  (1) That means the `not` paths are never actually being run (although they were at an earlier period in development).  (2) It means that the not components, e.g., from else, are always expanded before calling `andSymbolTypeIntoSymtabConstraint`.  If an enumerable of literals has many values (say thousands) then that becomes a memory hog. Possible approaches: (1) Use the `not` feature, at least for leafs. (2) Add a not flag/member to `ConstraintItemLeaf`. (3) Implement `not` at the `RefTypesType` level for individual literal type elements.
+
+### Priority Low
+
+1. [Not of uncountable nonSingular] Implement "not" of literal types to apply to uncountable nonSingular types.
 Currently
 ```
 declare const a: number;

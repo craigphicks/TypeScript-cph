@@ -465,6 +465,28 @@ namespace ts {
         return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
     };
 
+    function visitDNF(ciTop: Readonly<ConstraintItem>, visitor: (aci: Readonly<ConstraintItemLeaf[]>) => void): void {
+        function worker(aleaf: Readonly<ConstraintItemLeaf>[], ciLeft: Readonly<ConstraintItem>, negate: boolean, aciRight: Readonly<ConstraintItem>[]): void{
+            if (ciLeft.kind===ConstraintItemKind.never || ciLeft.kind===ConstraintItemKind.always) Debug.fail("not yet implemented");
+            if (ciLeft.kind===ConstraintItemKind.leaf){
+                if (aciRight.length) worker([...aleaf, ciLeft], aciRight[0], negate, aciRight.slice(1));
+                else visitor([...aleaf, ciLeft]);
+            }
+            else if (ciLeft.kind===ConstraintItemKind.node){
+                if (ciLeft.op===ConstraintItemNodeOp.not) worker(aleaf, ciLeft.constraint, !negate, aciRight);
+                else if ((ciLeft.op===ConstraintItemNodeOp.or && !negate) || (ciLeft.op===ConstraintItemNodeOp.and && negate)){
+                    ciLeft.constraints.forEach(ciOfOr=>{
+                        worker(aleaf, ciOfOr, negate, aciRight);
+                    });
+                }
+                else if ((ciLeft.op===ConstraintItemNodeOp.and && !negate) || (ciLeft.op===ConstraintItemNodeOp.or && negate)){
+                    worker(aleaf, ciLeft.constraints[0], negate, [...ciLeft.constraints.slice(1), ...aciRight]); // OK?
+                }
+            }
+        };
+        worker([],ciTop,/*negate*/ false,[]);
+    }
+
     // @ ts-expect-error
     function collectSymbolsInvolvedInConstraints(ciTop: ConstraintItem): Set<Symbol>{
         const set = new Set<Symbol>();
@@ -512,54 +534,57 @@ namespace ts {
     }
 
     /**
-     * TODO: Not at all sure about this.
+     * TODO: Not at all sure about this.  We cannot remove variables are they go out of scope because returns or other jumps means the variable still plays a role
+     * because it is entangled with other variables outside the scope.
+     * Another way to say it that the scope (in terms of flow) really doesn't end (despite lexically ending).
      * @param cin
      * @param rmset
      * @param _mrNarrow
      * @returns
      */
     export function removeSomeVariablesFromConstraint(cin: ConstraintItem, rmset: { has(s: Symbol): boolean}, _mrNarrow: MrNarrow): ConstraintItem {
-        const call = (cin: ConstraintItem): ConstraintItem => {
-            if (cin.kind===ConstraintItemKind.always || cin.kind===ConstraintItemKind.never) return cin;
-            if (cin.kind===ConstraintItemKind.leaf){
-                if (rmset.has(cin.symbol)) return createFlowConstraintAlways();
-                else return cin;
-            }
-            else if (cin.kind===ConstraintItemKind.node){
-                if (cin.op===ConstraintItemNodeOp.not){
-                    const cout = call(cin.constraint);
-                    if (isAlwaysConstraint(cout)) return createFlowConstraintNever();
-                    if (isNeverConstraint(cout)) return createFlowConstraintAlways();
-                    return createFlowConstraintNodeNot(cout);
-                }
-                if (cin.op===ConstraintItemNodeOp.and){
-                    const acout: (ConstraintItem)[]=[];
-                    for (const c of cin.constraints){
-                        const cout = call(c);
-                        if (isAlwaysConstraint(cout)) continue;
-                        if (isNeverConstraint(cout)) return createFlowConstraintNever();
-                        acout.push(c);
-                    }
-                    if (acout.length===0) return createFlowConstraintAlways();
-                    if (acout.length===1) return acout[0];
-                    return { ...cin, constraints: acout };
-                }
-                if (cin.op===ConstraintItemNodeOp.or){
-                    const acout: (ConstraintItem)[]=[];
-                    for (const c of cin.constraints){
-                        const cout = call(c);
-                        if (isAlwaysConstraint(cout)) return createFlowConstraintAlways();
-                        if (isNeverConstraint(cout)) continue;
-                        acout.push(c);
-                    }
-                    if (acout.length===0) return createFlowConstraintNever();
-                    if (acout.length===1) return acout[0];
-                    return { ...cin, constraints: acout };
-                }
-            }
-            Debug.fail();
-        };
-        return call(cin);
+        Debug.fail();
+        // const call = (cin: ConstraintItem): ConstraintItem => {
+        //     if (cin.kind===ConstraintItemKind.always || cin.kind===ConstraintItemKind.never) return cin;
+        //     if (cin.kind===ConstraintItemKind.leaf){
+        //         if (rmset.has(cin.symbol)) return createFlowConstraintAlways();
+        //         else return cin;
+        //     }
+        //     else if (cin.kind===ConstraintItemKind.node){
+        //         if (cin.op===ConstraintItemNodeOp.not){
+        //             const cout = call(cin.constraint);
+        //             if (isAlwaysConstraint(cout)) return createFlowConstraintNever();
+        //             if (isNeverConstraint(cout)) return createFlowConstraintAlways();
+        //             return createFlowConstraintNodeNot(cout);
+        //         }
+        //         if (cin.op===ConstraintItemNodeOp.and){
+        //             const acout: (ConstraintItem)[]=[];
+        //             for (const c of cin.constraints){
+        //                 const cout = call(c);
+        //                 if (isAlwaysConstraint(cout)) continue;
+        //                 if (isNeverConstraint(cout)) return createFlowConstraintNever();
+        //                 acout.push(c);
+        //             }
+        //             if (acout.length===0) return createFlowConstraintAlways();
+        //             if (acout.length===1) return acout[0];
+        //             return { ...cin, constraints: acout };
+        //         }
+        //         if (cin.op===ConstraintItemNodeOp.or){
+        //             const acout: (ConstraintItem)[]=[];
+        //             for (const c of cin.constraints){
+        //                 const cout = call(c);
+        //                 if (isAlwaysConstraint(cout)) return createFlowConstraintAlways();
+        //                 if (isNeverConstraint(cout)) continue;
+        //                 acout.push(c);
+        //             }
+        //             if (acout.length===0) return createFlowConstraintNever();
+        //             if (acout.length===1) return acout[0];
+        //             return { ...cin, constraints: acout };
+        //         }
+        //     }
+        //     Debug.fail();
+        // };
+        // return call(cin);
     }
 
     export function testOfEvalTypeOverConstraint(checker: TypeChecker, mrNarrow: MrNarrow): void {

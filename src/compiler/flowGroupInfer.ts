@@ -439,20 +439,21 @@ namespace ts {
             /**
              * clear the deleted variables from the constraint
              * TODO: not at all clear about this - it is dire need of some very explicit testing.
+             * See comments on removeSomeVariablesFromConstraint.
              */
-            if (localsSet.size) {
-                if (getMyDebug()){
-                    mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
-                        consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[before removal]: ${s}`);
-                    });
-                }
-                constraintItemArg = removeSomeVariablesFromConstraint(constraintItemArg,localsSet,mrNarrow);
-                if (getMyDebug()){
-                    mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
-                        consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[after removal]: ${s}`);
-                    });
-                }
-            }
+            // if (localsSet.size) {
+            //     if (getMyDebug()){
+            //         mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
+            //             consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[before removal]: ${s}`);
+            //         });
+            //     }
+            //     constraintItemArg = removeSomeVariablesFromConstraint(constraintItemArg,localsSet,mrNarrow);
+            //     if (getMyDebug()){
+            //         mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
+            //             consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[after removal]: ${s}`);
+            //         });
+            //     }
+            // }
         }
         const boolsplit = groupForFlow.kind===GroupForFlowKind.ifexpr;  //maximalNode.parent.kind===SyntaxKind.IfStatement;
         const crit: InferCrit = !boolsplit ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
