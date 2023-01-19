@@ -1905,7 +1905,7 @@ namespace ts {
                 consoleGroupEnd();
             }
             innerret.arrRefTypesTableReturn.forEach((rttr)=>{
-                assertSymtabConstraintInvariance({ symtab:rttr.symtab, constraintItem:rttr.constraintItem }, mrNarrow);
+                assertSymtabConstraintInvariance({ symtab:rttr.symtab, constraintItem:rttr.constraintItem }, createGetDeclaredTypeFn(inferStatus) ,mrNarrow);
             });
             return innerret;
         }
