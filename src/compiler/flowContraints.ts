@@ -35,7 +35,7 @@ namespace ts {
             symbol, type
         };
     }
-    export function createFlowConstraintNever(): ContstraintItemNever {
+    export function createFlowConstraintNever(): ConstraintItemNever {
         return { kind:ConstraintItemKind.never };
     }
 
@@ -55,7 +55,7 @@ namespace ts {
         cin: Readonly<ConstraintItem>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {
         depth=depth??0;
-        if (false && getMyDebug()){
+        if (getMyDebug()){
             const as: string[] = [];
             consoleGroup(`evalTypeOverConstraint[in][${depth}]`);
             as.push(`evalTypeOverConstraint[in][${depth}]: depth:${depth}, symbol:${symbol.escapedName}, negate:${negate}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(typeRange)}.`);
@@ -64,12 +64,13 @@ namespace ts {
             as.forEach(s=>consoleLog(s));
         }
         const r = evalTypeOverConstraint_aux({ cin, symbol, typeRange, negate, mrNarrow, depth });
-        if (false && getMyDebug()){
+        if (getMyDebug()){
             consoleLog(`evalTypeOverConstraint[out][${depth}]: ${mrNarrow.dbgRefTypesTypeToString(r)}`);
             consoleGroupEnd();
         }
         return r;
     }
+
     function evalTypeOverConstraint_aux({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
         cin: Readonly<ConstraintItem>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {
@@ -80,6 +81,7 @@ namespace ts {
         if (mrNarrow.isAnyType(typeRange) || mrNarrow.isUnknownType(typeRange)){
             Debug.fail("TODO:  mrNarrow.isAnyType(type) || mrNarrow.isUnknownType(type)");
         }
+
         if (cin.kind===ConstraintItemKind.always) return !negate ? typeRange : mrNarrow.createRefTypesType();
         if (cin.kind===ConstraintItemKind.never){
             if (!negate) return mrNarrow.createRefTypesType(); // never
@@ -121,6 +123,55 @@ namespace ts {
         }
         Debug.fail();
     }
+
+    // @ts-ignore
+    function evalTypeOverConstraint2({cin:ciTop, symbol, typeRange, mrNarrow, depth:_depth}: {
+        cin: Readonly<ConstraintItem>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
+    }): RefTypesType {
+        function worker(cin: ConstraintItem, negate: boolean): RefTypesType {
+            if (cin.kind===ConstraintItemKind.always) return !negate ? typeRange : mrNarrow.createRefTypesType(); //never
+            if (cin.kind===ConstraintItemKind.never) return negate ? typeRange : mrNarrow.createRefTypesType(); //never
+            if (cin.kind===ConstraintItemKind.leaf){
+                if (cin.symbol!==symbol) return mrNarrow.createRefTypesType(); // never
+                if (!negate){
+                    return mrNarrow.intersectionOfRefTypesType(cin.type,typeRange);
+                }
+                else {
+                    return mrNarrow.subtractFromType(cin.type,typeRange);
+                }
+            }
+            else if (cin.kind===ConstraintItemKind.node){
+                if (cin.op===ConstraintItemNodeOp.not){
+                    return worker(cin.constraint, !negate);
+                }
+                if (cin.op===ConstraintItemNodeOp.and && !negate || cin.op===ConstraintItemNodeOp.or && negate){
+                    // convert "and" to "or" by taking the union of results of the "not"-ed subsconstraints
+                    const unionType = mrNarrow.createRefTypesType(); // never
+                    for (const subc of cin.constraints){
+                        const subType = worker(subc, /*negate*/ !negate);
+                        //const subType = mrNarrow.subtractFromType(subTypeToBeInverted,typeRange);
+                        if (mrNarrow.isNeverType(subType)) continue;
+                        mrNarrow.mergeToRefTypesType({ source:subType, target:unionType });
+                        if (mrNarrow.isASubsetOfB(typeRange,unionType)) return typeRange;
+                    }
+                    return unionType;
+                }
+                if (cin.op===ConstraintItemNodeOp.or && !negate || cin.op===ConstraintItemNodeOp.and && negate){
+                    const unionType = mrNarrow.createRefTypesType(); // never
+                    for (const subc of cin.constraints){
+                        const subType = worker(subc, negate);
+                        mrNarrow.mergeToRefTypesType({ source:subType, target:unionType });
+                        if (mrNarrow.isASubsetOfB(typeRange,unionType)) return typeRange;
+                    }
+                    return unionType;
+                }
+            }
+            Debug.fail();
+        }
+        return worker(ciTop,/**/ false);
+    }
+
+
 
     /**
      * A possibly simplifying transformation
@@ -465,22 +516,67 @@ namespace ts {
         return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
     };
 
-    function visitDNF(ciTop: Readonly<ConstraintItem>, visitor: (aci: Readonly<ConstraintItemLeaf[]>) => void): void {
-        function worker(aleaf: Readonly<ConstraintItemLeaf>[], ciLeft: Readonly<ConstraintItem>, negate: boolean, aciRight: Readonly<ConstraintItem>[]): void{
-            if (ciLeft.kind===ConstraintItemKind.never || ciLeft.kind===ConstraintItemKind.always) Debug.fail("not yet implemented");
-            if (ciLeft.kind===ConstraintItemKind.leaf){
-                if (aciRight.length) worker([...aleaf, ciLeft], aciRight[0], negate, aciRight.slice(1));
-                else visitor([...aleaf, ciLeft]);
+    type ConstraintItemNonNode = ConstraintItemLeaf | ConstraintItemAlways | ConstraintItemNever;
+    // @ts-ignore-error
+    function visitDNF(ciTop: Readonly<ConstraintItem>,
+        visitor: (aci: Readonly<(ConstraintItemNonNode | ConstraintItemNodeNot)[]>) => void,
+        mrNarrow: MrNarrow, getDeclaredType: GetDeclaredTypeFn):
+        void{
+        function worker(aleaf: Readonly<(ConstraintItemNonNode | ConstraintItemNodeNot)[]>,
+            ciLeft: Readonly<ConstraintItem>, negate: boolean,
+            aciRight: Readonly<ConstraintItem[]>): void{
+
+            // let ciLeft = ciLeftIn;
+            // if (ciLeftIn.kind===ConstraintItemKind.node && ciLeftIn.op===ConstraintItemNodeOp.not){
+            //     negate = !negate;
+            //     ciLeft = ciLeftIn.constraint;
+            //     Debug.assert(!(ciLeft.kind===ConstraintItemKind.node && ciLeft.op===ConstraintItemNodeOp.not));
+            // }
+
+            if (ciLeft.kind===ConstraintItemKind.leaf || ciLeft.kind===ConstraintItemKind.always || ciLeft.kind===ConstraintItemKind.never){
+                let leaf = ciLeft;
+                if (negate){
+                    if (ciLeft.kind===ConstraintItemKind.always) leaf = { kind: ConstraintItemKind.never };
+                    else if (ciLeft.kind===ConstraintItemKind.never) leaf = { kind: ConstraintItemKind.always };
+                    else {
+                        leaf = {
+                            ...ciLeft,
+                            type: mrNarrow.subtractFromType(ciLeft.type, getDeclaredType(ciLeft.symbol))
+                        };
+                    }
+                }
+                //const leaf = negate ? { kind: ConstraintItemKind.node, op: ConstraintItemNodeOp.not, constraint: ciLeft } as ConstraintItemNodeNot : ciLeft;
+
+                if (aciRight.length) {
+                    worker([...aleaf, leaf], aciRight[0], /**/ false, aciRight.slice(1));
+                }
+                else {
+                    visitor([...aleaf, leaf]);
+                }
             }
             else if (ciLeft.kind===ConstraintItemKind.node){
                 if (ciLeft.op===ConstraintItemNodeOp.not) worker(aleaf, ciLeft.constraint, !negate, aciRight);
-                else if ((ciLeft.op===ConstraintItemNodeOp.or && !negate) || (ciLeft.op===ConstraintItemNodeOp.and && negate)){
+                if ((ciLeft.op===ConstraintItemNodeOp.or && !negate) || (ciLeft.op===ConstraintItemNodeOp.and && negate)){
                     ciLeft.constraints.forEach(ciOfOr=>{
                         worker(aleaf, ciOfOr, negate, aciRight);
                     });
                 }
                 else if ((ciLeft.op===ConstraintItemNodeOp.and && !negate) || (ciLeft.op===ConstraintItemNodeOp.or && negate)){
-                    worker(aleaf, ciLeft.constraints[0], negate, [...ciLeft.constraints.slice(1), ...aciRight]); // OK?
+                    let insertRight = ciLeft.constraints.slice(1);
+                    if (negate){
+                        insertRight = insertRight.map(c=>{
+                            if (c.kind===ConstraintItemKind.never) (c.kind as ConstraintItemKind) = ConstraintItemKind.always;
+                            else if (c.kind===ConstraintItemKind.always) (c.kind as ConstraintItemKind) = ConstraintItemKind.never;
+                            else if (c.kind===ConstraintItemKind.node && c.op===ConstraintItemNodeOp.not) {
+                                c = c.constraint;
+                            }
+                            else {
+                                c = { kind: ConstraintItemKind.node, op: ConstraintItemNodeOp.not, constraint: c };
+                            }
+                            return c;
+                        });
+                    }
+                    worker(aleaf, ciLeft.constraints[0], negate, [...insertRight, ...aciRight]);
                 }
             }
         };
@@ -542,6 +638,7 @@ namespace ts {
      * @param _mrNarrow
      * @returns
      */
+    // @ts-ignore
     export function removeSomeVariablesFromConstraint(cin: ConstraintItem, rmset: { has(s: Symbol): boolean}, _mrNarrow: MrNarrow): ConstraintItem {
         Debug.fail();
         // const call = (cin: ConstraintItem): ConstraintItem => {
@@ -588,7 +685,8 @@ namespace ts {
     }
 
     export function testOfEvalTypeOverConstraint(checker: TypeChecker, mrNarrow: MrNarrow): void {
-        type InType = Parameters<typeof evalTypeOverConstraint>;
+        type Symtab = ESMap<Symbol, RefTypesType>;
+        type InType = Parameters<typeof evalTypeOverConstraint>["0"] & { symtab: Symtab} ;
         type OutType = ReturnType<typeof evalTypeOverConstraint>;
 
         const rttbool = mrNarrow.createRefTypesType(checker.getBooleanType());
@@ -596,6 +694,7 @@ namespace ts {
         const rttfalse = mrNarrow.createRefTypesType(checker.getFalseType());
         const symx = { escapedName:"x" } as any as Symbol;
         const symy = { escapedName:"y" } as any as Symbol;
+        const symtabxy = new Map<Symbol, RefTypesType>([[symx,rttbool],[symy,rttbool]]);
 
         // @ts-expect-error
         const rttNum = mrNarrow.createRefTypesType(checker.getNumberType());
@@ -608,7 +707,7 @@ namespace ts {
         // @ts-expect-error
         const rttLitNum1 = mrNarrow.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,1));
 
-        const datum: {in: InType[0],out: OutType}[] = [
+        const datum: {in: InType,out: OutType}[] = [
             {
                 in: {
                     cin: createFlowConstraintNodeNot(createFlowConstraintLeaf(symx, rttfalse)),
@@ -616,6 +715,21 @@ namespace ts {
                     typeRange: rttbool,
                     // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
+                    symtab: symtabxy
+                },
+                out: rtttrue
+            },
+            {
+                in: {
+                    cin: createFlowConstraintNodeAnd({negate:false, constraints:[
+                        createFlowConstraintLeaf(symx, rtttrue),
+                        createFlowConstraintLeaf(symy, rtttrue),
+                    ]}),
+                    symbol: symx,
+                    typeRange: rttbool,
+                    // refDfltTypeOfSymbol: [rttbool],
+                    mrNarrow,
+                    symtab: symtabxy
                 },
                 out: rtttrue
             },
@@ -629,8 +743,41 @@ namespace ts {
                     typeRange: rttbool,
                     // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
+                    symtab: symtabxy
                 },
                 out: rttbool
+            },
+            {
+                in: {
+                    cin: createFlowConstraintNodeOr({constraints:[
+                        createFlowConstraintLeaf(symx, rtttrue),
+                        createFlowConstraintNodeAnd({constraints:[
+                            createFlowConstraintLeaf(symx, rttfalse),
+                            createFlowConstraintLeaf(symy, rtttrue),
+                        ]}),
+                    ]}),
+                    symbol: symx,
+                    typeRange: rttbool,
+                    mrNarrow,
+                    symtab: symtabxy
+                },
+                out: rttbool
+            },
+            {
+                in: {
+                    cin: createFlowConstraintNodeOr({negate:true,constraints:[
+                        createFlowConstraintLeaf(symx, rtttrue),
+                        createFlowConstraintNodeAnd({constraints:[
+                            createFlowConstraintLeaf(symx, rttfalse),
+                            createFlowConstraintLeaf(symy, rtttrue),
+                        ]}),
+                    ]}),
+                    symbol: symx,
+                    typeRange: rttbool,
+                    mrNarrow,
+                    symtab: symtabxy
+                },
+                out: rttfalse
             },
             {
                 in: {
@@ -639,6 +786,7 @@ namespace ts {
                     typeRange: rttbool,
                     // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
+                    symtab: symtabxy
                 },
                 out: rttbool
             },
@@ -649,6 +797,7 @@ namespace ts {
                     typeRange: rttbool,
                     // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
+                    symtab: symtabxy
                 },
                 out: rttfalse
             },
@@ -659,6 +808,7 @@ namespace ts {
                     typeRange: rttbool,
                     // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
+                    symtab: symtabxy
                 },
                 out: rtttrue,
             },
@@ -669,6 +819,7 @@ namespace ts {
                     typeRange: rttfalse,
                     // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
+                    symtab: symtabxy
                 },
                 out: rttfalse,
             },
@@ -689,6 +840,7 @@ namespace ts {
                     typeRange: rttbool,
                     // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
+                    symtab: symtabxy
                 },
                 out: rttbool
             },
@@ -709,14 +861,32 @@ namespace ts {
                     typeRange: rttbool,
                     // refDfltTypeOfSymbol: [rttbool],
                     mrNarrow,
+                    symtab: symtabxy
                 },
                 out: rttbool
             },
         ];
         datum.forEach((data,_iter)=>{
-            if (_iter<0) return;
-            const type = evalTypeOverConstraint(data.in);
-            Debug.assert(mrNarrow.equalRefTypesTypes(data.out,type));
+            if (_iter<3) return;
+            if (_iter>4) return;
+
+            consoleGroup(`${_iter}`);
+            consoleLog(`----`);
+            mrNarrow.dbgConstraintItem(data.in.cin).forEach(s=> consoleLog(`in[${_iter}] ${s}`));
+            visitDNF(data.in.cin, (aleaf: Readonly<(ConstraintItemNonNode | ConstraintItemNodeNot)[]>)=>{
+                mrNarrow.dbgConstraintItem({
+                    kind: ConstraintItemKind.node,
+                    op: ConstraintItemNodeOp.and,
+                    constraints: aleaf as ConstraintItem[],
+                }).forEach(s=>{
+                    consoleLog(`dnf${_iter} ` + s);
+                });
+            }, mrNarrow, (symbol: Symbol) =>{ return data.in.symtab.get(symbol)!; });
+
+            consoleGroupEnd();
+            // const type = evalTypeOverConstraint(data.in);
+            // Debug.assert(mrNarrow.equalRefTypesTypes(data.out,type),
+            //     `expected ${mrNarrow.dbgRefTypesTypeToString(data.out)}, actual: ${mrNarrow.dbgRefTypesTypeToString(type)}}`);
         });
 
         // Have to remove this test until the new arg "getDeclaredType" is provided

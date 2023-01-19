@@ -22,7 +22,7 @@ namespace ts {
         dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string;
         dbgRefTypesTableToStrings(t: RefTypesTable): string[],
         dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[],
-        dbgConstraintItem(ci: ConstraintItem): string[];
+        dbgConstraintItem(ci: Readonly<ConstraintItem>): string[];
         dbgSymbolToStringSimple(symbol: Symbol): string,
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void,

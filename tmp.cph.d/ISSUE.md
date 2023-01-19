@@ -134,3 +134,43 @@ E.g. in the following
 ```
 the `always` should be removed and then the leaf constraints with the same symbol should be combined.
 (Examples from `_cax-and-005` output).
+
+
+# Notes:
+
+## visitDNF manual simulation
+
+```
+or(x:t, b:t)
+1. [], or(x:t, y:t)), []
+1.1. [], x:t, []
+1.1. action([x:t])
+2.1. [], y:t, []
+2.1. action([y:t])
+```
+
+```
+not(or(x:t, b:t))
+1.[], not(or(x:t, b:t)), []
+1.[not(x:t)], not(y:t), []
+1. action([not(x:t),not(y:t)])
+
+```
+
+```
+and(x:t, b:t)
+1.[], and(x:t, y:t)), []
+1.[], x:t, [y:t]
+1.[x:t], y:t, []
+1.action([x:t, y:t])
+```
+
+```
+(not(and(x:t, b:t))
+1.[], (not(and(x:t, y:t)), []
+1.1 [], not(x:t), []
+1.1 action([not(x:t)])
+1.2 [], not(y:t), true, []
+1.3 action([not(y:t)])
+```
+

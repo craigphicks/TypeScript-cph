@@ -230,11 +230,11 @@ namespace ts {
         symbol: Symbol;
         type: RefTypesType;
     };
-    export type ContstraintItemNever = & {
+    export type ConstraintItemNever = & {
         kind: ConstraintItemKind.never;
     };
     export type ConstraintItemAlways = & {
         kind: ConstraintItemKind.always;
     };
-    export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ContstraintItemNever | ConstraintItemAlways;
+    export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ConstraintItemNever | ConstraintItemAlways;
 }
