@@ -516,49 +516,50 @@ namespace ts {
         return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
     };
 
-    type ConstraintItemNonNode = ConstraintItemLeaf | ConstraintItemAlways | ConstraintItemNever;
     // @ts-ignore-error
+    type VisitDNFMap = ESMap<Symbol,RefTypesType>;
     function visitDNF(ciTop: Readonly<ConstraintItem>,
-        visitor: (aci: Readonly<(ConstraintItemNonNode | ConstraintItemNodeNot)[]>) => void,
+        visitor: (mapSymbolType: Readonly<VisitDNFMap>) => void,
         mrNarrow: MrNarrow, getDeclaredType: GetDeclaredTypeFn):
         void{
-        function worker(aleaf: Readonly<(ConstraintItemNonNode | ConstraintItemNodeNot)[]>,
-            ciLeft: Readonly<ConstraintItem>, negate: boolean,
-            aciRight: Readonly<ConstraintItem[]>): void{
-
-            // let ciLeft = ciLeftIn;
-            // if (ciLeftIn.kind===ConstraintItemKind.node && ciLeftIn.op===ConstraintItemNodeOp.not){
-            //     negate = !negate;
-            //     ciLeft = ciLeftIn.constraint;
-            //     Debug.assert(!(ciLeft.kind===ConstraintItemKind.node && ciLeft.op===ConstraintItemNodeOp.not));
-            // }
-
+        function newMap(){
+            return new Map<Symbol,RefTypesType>();
+        }
+        function copyMap(m: Readonly<VisitDNFMap>){
+            return new Map<Symbol,RefTypesType>(m);
+        }
+        function worker(mapref: [Readonly<VisitDNFMap>],
+            ciLeft: Readonly<ConstraintItem>,
+            negate: boolean,
+            aciRight: Readonly<ConstraintItem[]>):
+            void{
+            // we should be able optimize by not always copying the map.  TODO:
+            function andSymType(symbol: Symbol, type: RefTypesType, m: Readonly<VisitDNFMap>): VisitDNFMap {
+                const prevType = mapref[0].get(symbol);
+                return copyMap(m).set(symbol, prevType ? mrNarrow.intersectionOfRefTypesType(prevType,type) : type);
+            }
             if (ciLeft.kind===ConstraintItemKind.leaf || ciLeft.kind===ConstraintItemKind.always || ciLeft.kind===ConstraintItemKind.never){
-                let leaf = ciLeft;
-                if (negate){
-                    if (ciLeft.kind===ConstraintItemKind.always) leaf = { kind: ConstraintItemKind.never };
-                    else if (ciLeft.kind===ConstraintItemKind.never) leaf = { kind: ConstraintItemKind.always };
-                    else {
-                        leaf = {
-                            ...ciLeft,
-                            type: mrNarrow.subtractFromType(ciLeft.type, getDeclaredType(ciLeft.symbol))
-                        };
-                    }
+                if (ciLeft.kind===ConstraintItemKind.leaf){
+                    const type = negate ? mrNarrow.subtractFromType(ciLeft.type, getDeclaredType(ciLeft.symbol)) : ciLeft.type;
+                    mapref[0] = andSymType(ciLeft.symbol, type,mapref[0]);
+                    // negate is "false" because the negate associated with the pulled aciRight[0] was earlier pushed with it.
+                    if (aciRight.length) worker(mapref, aciRight[0], /*negate*/ false, aciRight.slice(1));
+                    else visitor(mapref[0]);
                 }
-                //const leaf = negate ? { kind: ConstraintItemKind.node, op: ConstraintItemNodeOp.not, constraint: ciLeft } as ConstraintItemNodeNot : ciLeft;
-
-                if (aciRight.length) {
-                    worker([...aleaf, leaf], aciRight[0], /**/ false, aciRight.slice(1));
+                if ((ciLeft.kind===ConstraintItemKind.always && negate) || (ciLeft.kind===ConstraintItemKind.never && !negate)){
+                    // case never - how to represent?
+                    Debug.fail("case never not yet implemented");
                 }
-                else {
-                    visitor([...aleaf, leaf]);
-                }
+                // case "always" do nothing
             }
             else if (ciLeft.kind===ConstraintItemKind.node){
-                if (ciLeft.op===ConstraintItemNodeOp.not) worker(aleaf, ciLeft.constraint, !negate, aciRight);
+                if (ciLeft.op===ConstraintItemNodeOp.not) {
+                    worker(mapref, ciLeft.constraint, !negate, aciRight);
+                }
                 if ((ciLeft.op===ConstraintItemNodeOp.or && !negate) || (ciLeft.op===ConstraintItemNodeOp.and && negate)){
                     ciLeft.constraints.forEach(ciOfOr=>{
-                        worker(aleaf, ciOfOr, negate, aciRight);
+                        // this might be the only place where a copy of map is really needed
+                        worker([copyMap(mapref[0])], ciOfOr, negate, aciRight);
                     });
                 }
                 else if ((ciLeft.op===ConstraintItemNodeOp.and && !negate) || (ciLeft.op===ConstraintItemNodeOp.or && negate)){
@@ -576,11 +577,11 @@ namespace ts {
                             return c;
                         });
                     }
-                    worker(aleaf, ciLeft.constraints[0], negate, [...insertRight, ...aciRight]);
+                    worker([copyMap(mapref[0])], ciLeft.constraints[0], negate, [...insertRight, ...aciRight]);
                 }
             }
         };
-        worker([],ciTop,/*negate*/ false,[]);
+        worker([newMap()],ciTop,/*negate*/ false,[]);
     }
 
     // @ ts-expect-error
@@ -846,7 +847,7 @@ namespace ts {
             },
             {
                 in: {
-                    cin: createFlowConstraintNodeAnd({negate: true, constraints:[
+                    cin: createFlowConstraintNodeOr({negate: true, constraints:[
                         createFlowConstraintLeaf(symx, rtttrue),
                         createFlowConstraintNodeAnd({constraints:[
                             createFlowConstraintLeaf(symx, rttfalse),
@@ -867,20 +868,19 @@ namespace ts {
             },
         ];
         datum.forEach((data,_iter)=>{
-            if (_iter<3) return;
-            if (_iter>4) return;
+             if (_iter!==10) return;
+            // if (_iter>4) return;
 
             consoleGroup(`${_iter}`);
             consoleLog(`----`);
             mrNarrow.dbgConstraintItem(data.in.cin).forEach(s=> consoleLog(`in[${_iter}] ${s}`));
-            visitDNF(data.in.cin, (aleaf: Readonly<(ConstraintItemNonNode | ConstraintItemNodeNot)[]>)=>{
-                mrNarrow.dbgConstraintItem({
-                    kind: ConstraintItemKind.node,
-                    op: ConstraintItemNodeOp.and,
-                    constraints: aleaf as ConstraintItem[],
-                }).forEach(s=>{
-                    consoleLog(`dnf${_iter} ` + s);
+            let dnfIdx = 0;
+            visitDNF(data.in.cin, (map: Readonly<VisitDNFMap>)=>{
+                let str = `vout[${_iter}],[dnf#${dnfIdx++}]`;
+                map.forEach((type,symbol)=>{
+                    str += ` ${mrNarrow.dbgSymbolToStringSimple(symbol)}:${mrNarrow.dbgRefTypesTypeToString(type)},`;
                 });
+                consoleLog(str);
             }, mrNarrow, (symbol: Symbol) =>{ return data.in.symtab.get(symbol)!; });
 
             consoleGroupEnd();
