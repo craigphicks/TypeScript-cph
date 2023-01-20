@@ -146,7 +146,7 @@ namespace ts {
     }): ConstraintItem {
         if (!refCountIn) refCountIn=[0];
         if (!refCountOut) refCountOut=[0];
-        const doLog = false;
+        const doLog = true;
         if (doLog && getMyDebug()){
             consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(cin).forEach(s=>{
@@ -375,6 +375,10 @@ namespace ts {
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+        if (getMyDebug()){
+            consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
+            +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(type)}}`);
+        }
 
         assertSymtabConstraintInvariance({ symtab: sc.symtab, constraintItem: sc.constraintItem }, getDeclaredType, mrNarrow);
 
@@ -385,10 +389,7 @@ namespace ts {
         if (got) {
             setTypeTmp = mrNarrow.intersectionOfRefTypesType(got.leaf.type, type);
         }
-        else {
-            // There is no possibility that the constraints contain symbol because otherwise it would already be there.
-            symtab.set(symbol,{ leaf:mrNarrow.createRefTypesTableLeaf(symbol,isconst,setTypeTmp) });
-        }
+        symtab.set(symbol,{ leaf:mrNarrow.createRefTypesTableLeaf(symbol,isconst,setTypeTmp) });
 
         if (isconst){  // shouldn't need to do this if isASubsetOfB(type,setTypeTmp)
             const declType = getDeclaredType(symbol);
@@ -402,7 +403,9 @@ namespace ts {
                 if (!leaf.isconst) return;
                 setOfInvolvedSymbols.add(tmpSymbol);
             });
-            const cover = evalCoverPerSymbol(sc.constraintItem, setOfInvolvedSymbols, getDeclaredType, mrNarrow);
+            const cover = evalCoverPerSymbol(tmpConstraintItem,
+                (s: Symbol)=>{ return symtab.get(s)!.leaf.type; },
+                setOfInvolvedSymbols, getDeclaredType, mrNarrow);
             cover.forEach((ctype,csymbol)=>{
                 symtab.set(
                     csymbol,
@@ -415,25 +418,20 @@ namespace ts {
                 });
             });
         }
-        else {
-            symtab.set(
-                symbol,
-                {leaf: {
-                    kind: RefTypesTableKind.leaf,
-                    symbol,
-                    isconst,
-                    type: setTypeTmp,
-                },
-            });
-        }
         // this call to assertSymtabConstraintInvariance is probably overkill now
         assertSymtabConstraintInvariance({ symtab, constraintItem: tmpConstraintItem }, getDeclaredType, mrNarrow);
+        if (getMyDebug()){
+            consoleLog(`andSymbolTypeIntoSymtabConstraint[out]`
+            +`type:${mrNarrow.dbgRefTypesTypeToString(setTypeTmp)}}`);
+            consoleGroupEnd();
+        }
         return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
     };
 
     /**
-     * SOP = Sum Of Products.
      * This replaces "evaluateTypeOverConstraint" which could give overly large cover values.
+     * This is currently called from within EACH call to `andDistributeDivide` to rectify the constraint tree after it has been simplified.
+     * That's a lot! Might be less compuatation-work to leave the constraint item unsimplified and just call visitSOP when evaluation is required.
      */
     // @ts-ignore-error
     type VisitSOPMap = ESMap<Symbol,RefTypesType>;
@@ -474,7 +472,8 @@ namespace ts {
                 }
                 else if ((ciLeft.kind===ConstraintItemKind.always && negate) || (ciLeft.kind===ConstraintItemKind.never && !negate)){
                     // Just return the same as if a never type was encountered
-                    Debug.fail("case never not yet implemented");
+                    // Debug.fail("case never not yet implemented");
+                    return;
                 }
                 else {
                     // Continue working but without making any modification to mapref[0]
@@ -516,13 +515,24 @@ namespace ts {
     }
 
     function evalCoverPerSymbol(ciTop: Readonly<ConstraintItem>,
+        getConstrainedType: GetDeclaredTypeFn,
         setOfInvolvedSymbols: Set<Symbol>, getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow):
      ESMap<Symbol,RefTypesType> {
+        if (getMyDebug()){
+            consoleGroup(`evalCoverPerSymbol`);
+        }
         const map = new Map<Symbol,RefTypesType>();
+        let prodnum = 0;
         function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
+            if (getMyDebug()){
+                mapSymbolType.forEach((type,symbol)=>{
+                    consoleLog(`evalCoverPerSymbol vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+                });
+                prodnum++;
+            }
             setOfInvolvedSymbols.forEach((dsymbol)=>{
-                const type = mapSymbolType.get(dsymbol) ?? getDeclaredType(dsymbol);
+                const type = mapSymbolType.get(dsymbol) ?? getConstrainedType(dsymbol);
                 const got = map.get(dsymbol);
                 if (!got) map.set(dsymbol,type);
                 else map.set(dsymbol, mrNarrow.unionOfRefTypesType([got,type]));
@@ -534,6 +544,12 @@ namespace ts {
             // });
         }
         visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
+        if (getMyDebug()){
+            map.forEach((type,symbol)=>{
+                consoleLog(`evalCoverPerSymbol covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+            });
+            consoleGroupEnd();
+        }
         return map;
     }
 
@@ -571,7 +587,9 @@ namespace ts {
             if (!leaf.isconst) return;
             setOfInvolvedSymbols.add(tmpSymbol);
         });
-        const cover = evalCoverPerSymbol(constraintItem, setOfInvolvedSymbols, getDeclaredType, mrNarrow);
+        const cover = evalCoverPerSymbol(constraintItem,
+            (s: Symbol)=>{ return symtab.get(s)!.leaf.type; },
+            setOfInvolvedSymbols, getDeclaredType, mrNarrow);
         cover.forEach((type,symbol)=>{
             const symtabType = symtab.get(symbol)?.leaf.type;
             Debug.assert(symtabType);
@@ -882,7 +900,8 @@ namespace ts {
             for (let iter = data.in.declaredSymbolTypes.keys(), it=iter.next(); !it.done; it = iter.next()){
                 setOfInvolvedSymbols.add(it.value);
             }
-            const coverMap = evalCoverPerSymbol(data.in.cin, setOfInvolvedSymbols, getDeclaredType, mrNarrow);
+            const coverMap = evalCoverPerSymbol(data.in.cin, /*getConstrainedType*/ getDeclaredType,
+                setOfInvolvedSymbols, getDeclaredType, mrNarrow);
             coverMap.forEach((_type,symbol)=>{
                 Debug.assert(data.out.has(symbol), `data[${_iter}].out missing symbol ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
                 // const expectedType = data.out.get(symbol)!;

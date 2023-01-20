@@ -16,7 +16,11 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. Add another functionality `vistSOP` (Sum of products) to help with `assertSymtabConstraintInvariance`.  Visit each DNF factor without storing all the memory. Going from SOP to DNF is harder.
+0. VisitSOP replaces "evaluateTypeOverConstraint" which could give overly large cover values.
+It is currently called from within EACH call to `andDistributeDivide` to rectify the constraint tree after it has been simplified.
+That's a lot! Might be less compuatation-work to leave the constraint item unsimplified and just call visitSOP when evaluation is required.
+
+
 
 1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
 1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
@@ -50,6 +54,7 @@ either way it is O(#(tree nodes) * #(symbols)), but might be less function calls
 
 ### Done (reverse order)
 
+0. Add another functionality `vistSOP` (Sum of products) to help with `assertSymtabConstraintInvariance`.  Visit each SOP factor without storing all the memory.
 0. Fix `mrNarrowTypesByBinaryExpressionEquals` to properly calculate mismatches. AND[over i](OR(left-isect[i],right-isect[i]).
 0. Add functionality to `assertSymtabConstraintInvariance`: symtab must containt all symbol involved in constraint. (Already know to fail assertion - that bug must be analyzed and fixed). The bug was in `applyCritToArrRefTypesTableReturn`.
 0. Fix `andSymbolTypeIntoSymtabConstraint` to modify symtab for non-const cases. (Needs to be done before `mrNarrowTypesByBinaryExpressionEquals` mismatches fix).  Be sure to modify `andTypeIntoNewSymtabAndNewConstraint` (changed name to `andRttrSymbolTypeIntoSymtabAndConstraint`) as well.
