@@ -409,11 +409,12 @@ namespace ts {
         // eslint-disable-next-line prefer-const
         let {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
         /**
-         * Delete all the no-longer-needed CurrentBranchElements
+         * Delete all the no-longer-needed CurrentBranchElements.  Note that unentangled lower scoped const variables will be
+         * implicitly deleted with these deletions of their containing ConstraintItem-s.
          */
         setOfKeysToDeleteFromCurrentBranchesMap.forEach(gff=>mrState.forFlow.currentBranchesMap.delete(gff));
         /**
-         * If it is a block start then add in all the new local variables
+         * If it is a block start then add in all the new local variables: TODO - no longer necessary with unmodified constraints and evalCover
          */
         if (anteLabels?.arrBlock){
             anteLabels?.arrBlock.forEach(block=>{
@@ -425,6 +426,9 @@ namespace ts {
             });
         }
         else if (anteLabels?.arrPostBlock){
+            /**
+             * Delete locally scoped variables from the symtab.
+             */
             const localsSet = new Set<Symbol>();
             anteLabels?.arrPostBlock.forEach(block=>{
                 const locals = block.originatingExpression?.locals;
@@ -437,9 +441,12 @@ namespace ts {
                 }
             });
             /**
-             * clear the deleted variables from the constraint
-             * TODO: not at all clear about this - it is dire need of some very explicit testing.
-             * See comments on removeSomeVariablesFromConstraint.
+             * Originally: clear the deleted variables from the constraint
+             * Update: (See comments on removeSomeVariablesFromConstraint) - in cases of inner returns or jumps
+             * lexically lower scoped variables may be acting
+             * as hidden variables that are entangled with higher scoped variables. Therefore those lower
+             * scoped variables cannot be removed.
+             * As a consequence, there may be no need for post block processing at all.
              */
             // if (localsSet.size) {
             //     if (getMyDebug()){

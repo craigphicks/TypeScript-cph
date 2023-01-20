@@ -16,11 +16,17 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. VisitSOP replaces "evaluateTypeOverConstraint" which could give overly large cover values.
+
+
+0. [`evalCoverPerSymbol` and unmodified constraints]
+- VisitSOP replaces "evaluateTypeOverConstraint" which could give overly large cover values.
 It is currently called from within EACH call to `andDistributeDivide` to rectify the constraint tree after it has been simplified.
 That's a lot! Might be less compuatation-work to leave the constraint item unsimplified and just call visitSOP when evaluation is required.
+Consequences of that:
+- No need to maintain the cover of `const` variables in `symtab` as an invariant.  Instead, compute the covers directly from the unmodified constraint via `evalCoverPerSymbol`.  That result can be cached on the constraint.  `symtab` remains for non-const variables only.
+- Constraints remaining unmodifed means they will be removed properly at 
 
-
+- 0.0. Optional member in ConstraintItem `recalc` which will contain an equivalent but less verbose expression of the constraint.  This could be set when evaluation result has a less verbose SOP than the original.
 
 1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
 1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
