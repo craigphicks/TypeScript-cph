@@ -305,6 +305,10 @@ namespace ts {
                 const isecttype = mrNarrow.intersectionOfRefTypesType(type, constraintItem.type);
                 if (mrNarrow.isNeverType(isecttype)) return createFlowConstraintNever();
                 // TODO: if there was a symbol table input we could check for "always"
+                if (useConstraintsV2()){
+                    // I think it was a bug not to use isecttype for V1, but did not seem to affect the result?
+                    return createFlowConstraintLeaf(symbol, isecttype);
+                }
                 return createFlowConstraintLeaf(symbol, type);
             }
             return {
@@ -340,6 +344,9 @@ namespace ts {
         if (ac.length===1) return ac[0];
         return createFlowConstraintNodeOr({ constraints:ac });
     }
+    export function useConstraintsV2(): boolean {
+        return true;
+    }
 
     /**
      *  Calculate "or" (union) of array of RefTypesSymtabConstraintItem
@@ -348,7 +355,7 @@ namespace ts {
      * Prior to combining under an or node, each sub-constraint is shallow anded with each of its symtab entries {symbol,type} if necessary,
      * where necessity exists if type is a strict subset of unionSymtab.get(symbol).
      */
-    export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
+    function orSymtabConstraintsV1(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
         const mapSymbolCount = new Map<Symbol,number>();
         asc.forEach(sc=>sc.symtab.forEach((_,symbol)=>{
             const got = mapSymbolCount.get(symbol);
@@ -367,8 +374,17 @@ namespace ts {
         });
         return { symtab: unionSymtab, constraintItem: orIntoConstraintsShallow(arrCI) };
     }
+    function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
+        const unionSymtab = mrNarrow.unionArrRefTypesSymtab(asc.map(x=>x.symtab));
+        const constraintItem = orIntoConstraintsShallow(asc.map(x=>x.constraintItem));
+        return { symtab: unionSymtab, constraintItem };
+    }
+    export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
+        if (!useConstraintsV2()) return orSymtabConstraintsV1(asc,mrNarrow);
+        else return orSymtabConstraintsV2(asc, mrNarrow);
+    }
 
-    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type,sc, mrNarrow, getDeclaredType}: Readonly<{
+    function andSymbolTypeIntoSymtabConstraintV1({symbol,isconst,type,sc, mrNarrow, getDeclaredType}: Readonly<{
         symbol: Readonly<Symbol>,
         readonly isconst: undefined | boolean,
         type: Readonly<RefTypesType>,
@@ -427,6 +443,64 @@ namespace ts {
         }
         return { type: setTypeTmp, sc:{ symtab, constraintItem: tmpConstraintItem } };
     };
+
+    function andSymbolTypeIntoSymtabConstraintV2({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType}: Readonly<{
+        symbol: Readonly<Symbol>,
+        readonly isconst: undefined | boolean,
+        type: Readonly<RefTypesType>,
+        sc: RefTypesSymtabConstraintItem,
+        getDeclaredType: GetDeclaredTypeFn,
+        mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+        if (getMyDebug()){
+            consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
+            +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(typeIn)}}`);
+        }
+        let constraintItem = sc.constraintItem;
+        let symtab = sc.symtab;
+        let type = typeIn;
+        if (symbol.flags & (SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
+            // do nothing - an enum parent is not a real type
+        }
+        else if (isconst){
+            constraintItem = andIntoConstraintShallow({ symbol,type,constraintItem,mrNarrow });
+        }
+        else {
+            const got = symtab.get(symbol);
+            if (!got) type = getDeclaredType(symbol);
+            else type = mrNarrow.intersectionOfRefTypesType(type, got.leaf.type);
+            symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,/*isconst*/ false,type) });
+        }
+        if (getMyDebug()){
+            // consoleLog(`andSymbolTypeIntoSymtabConstraint[out]`
+            // +`type:${mrNarrow.dbgRefTypesTypeToString(type)}}`);
+            let str = "`andSymbolTypeIntoSymtabConstraint[out] symtab:";
+            symtab.forEach(({leaf})=>{
+                str += ` {symbol:${leaf.symbol!.escapedName}, isconst:${leaf.isconst}, type:${mrNarrow.dbgRefTypesTypeToString(leaf.type)}},`;
+            });
+            consoleLog(str);
+            mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>{
+                consoleLog("andSymbolTypeIntoSymtabConstraint[out] constraints: "+s);
+            });
+            consoleGroupEnd();
+        }
+        // when useConstraintsV2() is true, the returned type is a dummy.
+        return { type: null as any as RefTypesType, sc:{ symtab, constraintItem } };
+    }
+
+    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType}: Readonly<{
+        symbol: Readonly<Symbol>,
+        readonly isconst: undefined | boolean,
+        type: Readonly<RefTypesType>,
+        sc: RefTypesSymtabConstraintItem,
+        getDeclaredType: GetDeclaredTypeFn,
+        mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+        if (!useConstraintsV2()){
+            return andSymbolTypeIntoSymtabConstraintV1({ symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType });
+        }
+        else {
+            return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType });
+        }
+    }
 
     /**
      * This replaces "evaluateTypeOverConstraint" which could give overly large cover values.
@@ -514,20 +588,20 @@ namespace ts {
         worker([newMap()],ciTop,/*negate*/ false,[]);
     }
 
-    function evalCoverPerSymbol(ciTop: Readonly<ConstraintItem>,
+    function evalCoverPerSymbolV1(ciTop: Readonly<ConstraintItem>,
         getConstrainedType: GetDeclaredTypeFn,
         setOfInvolvedSymbols: Set<Symbol>, getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow):
      ESMap<Symbol,RefTypesType> {
         if (getMyDebug()){
-            consoleGroup(`evalCoverPerSymbol`);
+            consoleGroup(`evalCoverPerSymbolV1`);
         }
         const map = new Map<Symbol,RefTypesType>();
         let prodnum = 0;
         function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
             if (getMyDebug()){
                 mapSymbolType.forEach((type,symbol)=>{
-                    consoleLog(`evalCoverPerSymbol vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+                    consoleLog(`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
                 });
                 prodnum++;
             }
@@ -546,11 +620,60 @@ namespace ts {
         visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
         if (getMyDebug()){
             map.forEach((type,symbol)=>{
-                consoleLog(`evalCoverPerSymbol covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+                consoleLog(`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
             });
             consoleGroupEnd();
         }
         return map;
+    }
+    function evalCoverPerSymbolV2(ciTop: Readonly<ConstraintItem>,
+        getDeclaredType: GetDeclaredTypeFn,
+        mrNarrow: MrNarrow):
+     ESMap<Symbol,RefTypesType> {
+        if (getMyDebug()){
+            consoleGroup(`evalCoverPerSymbolV1`);
+        }
+        const map = new Map<Symbol,RefTypesType>();
+        let prodnum = 0;
+        function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
+            if (getMyDebug()){
+                mapSymbolType.forEach((type,symbol)=>{
+                    consoleLog(`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+                });
+                prodnum++;
+            }
+            mapSymbolType.forEach((type,symbol)=>{
+                const got = map.get(symbol);
+                if (!got) map.set(symbol,type);
+                else map.set(symbol, mrNarrow.unionOfRefTypesType([got,type]));
+            });
+        }
+        visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
+        if (getMyDebug()){
+            map.forEach((type,symbol)=>{
+                consoleLog(`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+            });
+            consoleGroupEnd();
+        }
+        return map;
+    }
+
+    export function evalCoverPerSymbol(...args: Parameters<typeof evalCoverPerSymbolV1> | Parameters<typeof evalCoverPerSymbolV2>): ESMap<Symbol,RefTypesType>{
+        if (args.length===3) return evalCoverPerSymbolV2(...(args as Parameters<typeof evalCoverPerSymbolV2>));
+        else return evalCoverPerSymbolV1(...(args as Parameters<typeof evalCoverPerSymbolV1>));
+    }
+    // TODO: This can be optimized for one symbol instead of just calling evalCoverPerSymbolV2
+    export function evalCoverForOneSymbol(symbol: Symbol, ciTop: Readonly<ConstraintItem>,
+        getDeclaredType: GetDeclaredTypeFn,
+        mrNarrow: MrNarrow):
+    RefTypesType {
+        Debug.assert(useConstraintsV2());
+        const cover = evalCoverPerSymbolV2(ciTop,getDeclaredType,mrNarrow);
+        const got = cover.get(symbol);
+        if (!got) return getDeclaredType(symbol);
+        else return got;
+        // Debug.assert(cover.has(symbol));
+        // return cover.get(symbol)!;
     }
 
     // @ ts-expect-error

@@ -18,16 +18,10 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 
 
-0. [`evalCoverPerSymbol` and unmodified constraints]
-- VisitSOP replaces "evaluateTypeOverConstraint" which could give overly large cover values.
-It is currently called from within EACH call to `andDistributeDivide` to rectify the constraint tree after it has been simplified.
-That's a lot! Might be less compuatation-work to leave the constraint item unsimplified and just call visitSOP when evaluation is required.
-Consequences of that:
-- No need to maintain the cover of `const` variables in `symtab` as an invariant.  Instead, compute the covers directly from the unmodified constraint via `evalCoverPerSymbol`.  That result can be cached on the constraint.  `symtab` remains for non-const variables only.
-- Constraints remaining unmodifed means they will be removed properly at 
-
-- 0.0. Optional member in ConstraintItem `recalc` which will contain an equivalent but less verbose expression of the constraint.  This could be set when evaluation result has a less verbose SOP than the original.
-
+1. Other useConstraintsV2 features
+- `evalCoverPerSymbol` results could be cached on the constraint.
+- Optional member in ConstraintItem `recalc` to contain an equivalent but less verbose (SOP )expression of the constraint - but only when the SOP is actually less verbose than the original.
+1. The Map type members in InferStatus (`declaredTypes`, `replayables`, `groupNodeToTypeMap` could all be `WeakMap`s).
 1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
 1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
 1. Rest parameter testing for `mrNarrowTypesByCallExpression`.
@@ -35,7 +29,7 @@ Consequences of that:
 
 ### Priotity: Postponed
 
-1. [Implicit-not to economize memory use] Currently `ConstrantItemKind.not` is never involed in the `type` arugment to `andSymbolTypeIntoSymtabConstraint`, and therefore never exists in the modifed constraint.  (1) That means the `not` paths are never actually being run (although they were at an earlier period in development).  (2) It means that the not components, e.g., from else, are always expanded before calling `andSymbolTypeIntoSymtabConstraint`.  If an enumerable of literals has many values (say thousands) then that becomes a memory hog. Possible approaches: (1) Use the `not` feature, at least for leafs. (2) Add a not flag/member to `ConstraintItemLeaf`. (3) Implement `not` at the `RefTypesType` level for individual literal type elements.
+1. [Implicit-not to economize memory use]  Implement `not` at the `RefTypesType` level for individual literal type elements. For any symbol with a finite literal type range, the type is represents by either positive() or negatative(not) items, but not both at once.  Whichever is less verbose.
 
 ### Priority Low
 
@@ -54,11 +48,11 @@ even though the second if clause should be never.  The fundamental reason is tha
 That could be "fixed" by implementing "not" of literal types, and modifying several operations on `RefTypesType`.
 (C.f. `_cax-typeof-003(4|5).ts` test files).
 
-1. Inside `andSymbolTypeIntoSymtabConstraint`, before returning, the symtab is updated to assure the invariance property of the returned `RefTypesSymtabConstraintItem`.  There might be some advantage to doing in a single pass with all symbols together, although
-either way it is O(#(tree nodes) * #(symbols)), but might be less function calls in a single pass.
-
 
 ### Done (reverse order)
+
+
+0. (+) With `useConstraintsV2()` returning true, `andSymbolTypeIntoSymtabConstraintV2` replaces `andSymbolTypeIntoSymtabConstraintV1`, and `evalCoverPerSymbol` more or less replaces `andDistributeDivide`.  No need to maintain the cover of `const` variables in `symtab` as an invariant.  Instead, compute the covers directly from the unmodified constraint via `evalCoverPerSymbol`. (+) symbol.flags & EnumMember are treated as a LiteralType, symbols elided. (+) symbol.flags & (ConstEnum|RegularEnum) are not aded to symbol table or constraints. (+) By having no overlap of Constraints and symtab symbols, proper garbage collection when branches are trimmed (c.f. `setOfKeysToDeleteFromCurrentBranchesMap`) is enabled.
 
 0. Add another functionality `vistSOP` (Sum of products) to help with `assertSymtabConstraintInvariance`.  Visit each SOP factor without storing all the memory.
 0. Fix `mrNarrowTypesByBinaryExpressionEquals` to properly calculate mismatches. AND[over i](OR(left-isect[i],right-isect[i]).
