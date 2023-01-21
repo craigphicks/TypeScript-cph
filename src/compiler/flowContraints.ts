@@ -32,7 +32,8 @@ namespace ts {
     export function createFlowConstraintLeaf(symbol: Symbol, type: RefTypesType): ConstraintItemLeaf {
         return {
             kind: ConstraintItemKind.leaf,
-            symbol, type
+            symbol, type,
+            //symbolsInvolved: new Set<Symbol>([symbol])
         };
     }
     export function createFlowConstraintNever(): ConstraintItemNever {
@@ -174,7 +175,11 @@ namespace ts {
         refCountIn[0]++;
         refCountOut[0]++;
         if (mrNarrow.isNeverType(type)) return createFlowConstraintNever();
-        if (mrNarrow.isASubsetOfB(declaredType,type)) return createFlowConstraintAlways();
+        if (mrNarrow.isASubsetOfB(declaredType,type)) {
+            // Bug fix with ConstraintsV2
+            // keep on going, (could also just return cin?).
+            //return createFlowConstraintAlways();
+        }
         if ((cin.kind===ConstraintItemKind.never && !negate) || (cin.kind===ConstraintItemKind.always && negate)) return createFlowConstraintNever();
         if ((cin.kind===ConstraintItemKind.never && negate) || (cin.kind===ConstraintItemKind.always && !negate)) return createFlowConstraintAlways();
         if (cin.kind===ConstraintItemKind.leaf){
@@ -374,10 +379,26 @@ namespace ts {
         });
         return { symtab: unionSymtab, constraintItem: orIntoConstraintsShallow(arrCI) };
     }
-    function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
+    function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow): RefTypesSymtabConstraintItem{
         const unionSymtab = mrNarrow.unionArrRefTypesSymtab(asc.map(x=>x.symtab));
-        const constraintItem = orIntoConstraintsShallow(asc.map(x=>x.constraintItem));
-        return { symtab: unionSymtab, constraintItem };
+        const oredConstraint = orConstraintsV2(asc.map(x=>x.constraintItem));
+        // const symbolsInvolved = new Set<Symbol>();
+        // asc.forEach(x=>{
+        //     if (x.constraintItem.symbolsInvolved) x.constraintItem.symbolsInvolved.forEach(s=>symbolsInvolved.add(s));
+        // });
+        // const constraintItem = orIntoConstraintsShallow(asc.map(x=>x.constraintItem));
+        // constraintItem.symbolsInvolved = symbolsInvolved;
+        return { symtab: unionSymtab, constraintItem: oredConstraint };
+    }
+    // called from flowGroupInfer.ts when merging branches post-if
+    export function orConstraintsV2(asc: Readonly<ConstraintItem>[]): ConstraintItem{
+        const symbolsInvolved = new Set<Symbol>();
+        asc.forEach(x=>{
+            if (x.symbolsInvolved) x.symbolsInvolved.forEach(s=>symbolsInvolved.add(s));
+        });
+        const constraintItem = orIntoConstraintsShallow(asc);
+        constraintItem.symbolsInvolved = symbolsInvolved;
+        return constraintItem;
     }
     export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
         if (!useConstraintsV2()) return orSymtabConstraintsV1(asc,mrNarrow);
@@ -462,7 +483,14 @@ namespace ts {
             // do nothing - an enum parent is not a real type
         }
         else if (isconst){
+            const symbolsInvolved = new Set<Symbol>(constraintItem.symbolsInvolved ?? []);
+            symbolsInvolved.add(symbol);
+            /////////////////////////
+            constraintItem = andDistributeDivide({symbol,type,cin:constraintItem,getDeclaredType,declaredType: getDeclaredType(symbol),
+                mrNarrow});
+            /////////////////////////
             constraintItem = andIntoConstraintShallow({ symbol,type,constraintItem,mrNarrow });
+            constraintItem.symbolsInvolved = symbolsInvolved;
         }
         else {
             const got = symtab.get(symbol);
@@ -632,6 +660,7 @@ namespace ts {
      ESMap<Symbol,RefTypesType> {
         if (getMyDebug()){
             consoleGroup(`evalCoverPerSymbolV1`);
+            mrNarrow.dbgConstraintItem(ciTop).forEach(str=>consoleLog(`evalCoverPerSymbolV1 ciTop: ${str}`));
         }
         const map = new Map<Symbol,RefTypesType>();
         let prodnum = 0;
@@ -642,11 +671,27 @@ namespace ts {
                 });
                 prodnum++;
             }
-            mapSymbolType.forEach((type,symbol)=>{
-                const got = map.get(symbol);
-                if (!got) map.set(symbol,type);
-                else map.set(symbol, mrNarrow.unionOfRefTypesType([got,type]));
-            });
+            if (true){
+                if (!ciTop.symbolsInvolved){
+                    Debug.assert(ciTop.symbolsInvolved);
+                }
+                for (let iter = mapSymbolType.keys(), it = iter.next(); !it.done; it = iter.next()){
+                    Debug.assert(ciTop.symbolsInvolved.has(it.value));
+                }
+                ciTop.symbolsInvolved.forEach((dsymbol)=>{
+                    const type = mapSymbolType.get(dsymbol) ?? getDeclaredType(dsymbol);
+                    const got = map.get(dsymbol);
+                    if (!got) map.set(dsymbol,type);
+                    else map.set(dsymbol, mrNarrow.unionOfRefTypesType([got,type]));
+                });
+            }
+            else {
+                mapSymbolType.forEach((type,symbol)=>{
+                    const got = map.get(symbol);
+                    if (!got) map.set(symbol,type);
+                    else map.set(symbol, mrNarrow.unionOfRefTypesType([got,type]));
+                });
+            }
         }
         visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
         if (getMyDebug()){

@@ -279,6 +279,12 @@ namespace ts {
             Debug.assert(ci);
             //if (!ci) return ["undefined"];
             const as: string[]=["{"];
+            if (!ci.symbolsInvolved) as.push(` symbolsInvoled: <undefined>`);
+            else {
+                let str = " symbolsInvoled:";
+                ci.symbolsInvolved.forEach(s=>str+=`${s.escapedName},`);
+                as.push(str);
+            }
             as.push(` kind: ${ci.kind},`);
             if (ci.kind===ConstraintItemKind.never){/**/}
             else if (ci.kind===ConstraintItemKind.always){/**/}

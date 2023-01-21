@@ -209,31 +209,35 @@ namespace ts {
         and = "and",
         not = "not"
     };
-    export type ConstraintItemNodeAnd = & {
+    export type ConstraintItemBase = & {
+        kind: ConstraintItemKind;
+        symbolsInvolved?: Set<Symbol>;
+    };
+    export type ConstraintItemNodeAnd = ConstraintItemBase & {
         kind: ConstraintItemKind.node;
         op: ConstraintItemNodeOp.and;
         constraints: (ConstraintItem)[],
     };
-    export type ConstraintItemNodeOr = & {
+    export type ConstraintItemNodeOr = ConstraintItemBase & {
         kind: ConstraintItemKind.node;
         op: ConstraintItemNodeOp.or;
         constraints: (ConstraintItem)[],
     };
-    export type ConstraintItemNodeNot = & {
+    export type ConstraintItemNodeNot = ConstraintItemBase & {
         kind: ConstraintItemKind.node;
         op: ConstraintItemNodeOp.not;
         constraint: ConstraintItem,
     };
     export type ConstraintItemNode = ConstraintItemNodeAnd | ConstraintItemNodeOr | ConstraintItemNodeNot;
-    export type ConstraintItemLeaf = & {
+    export type ConstraintItemLeaf = ConstraintItemBase & {
         kind: ConstraintItemKind.leaf;
         symbol: Symbol;
         type: RefTypesType;
     };
-    export type ConstraintItemNever = & {
+    export type ConstraintItemNever = ConstraintItemBase & {
         kind: ConstraintItemKind.never;
     };
-    export type ConstraintItemAlways = & {
+    export type ConstraintItemAlways = ConstraintItemBase & {
         kind: ConstraintItemKind.always;
     };
     export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ConstraintItemNever | ConstraintItemAlways;
