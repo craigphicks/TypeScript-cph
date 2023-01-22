@@ -147,7 +147,7 @@ namespace ts {
     }): ConstraintItem {
         if (!refCountIn) refCountIn=[0];
         if (!refCountOut) refCountOut=[0];
-        const doLog = true;
+        const doLog = false;
         if (doLog && getMyDebug()){
             consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(cin).forEach(s=>{
@@ -412,7 +412,8 @@ namespace ts {
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
-        if (getMyDebug()){
+        const log = false;
+        if (log && getMyDebug()){
             consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
             +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(type)}}`);
         }
@@ -457,7 +458,7 @@ namespace ts {
         }
         // this call to assertSymtabConstraintInvariance is probably overkill now
         assertSymtabConstraintInvariance({ symtab, constraintItem: tmpConstraintItem }, getDeclaredType, mrNarrow);
-        if (getMyDebug()){
+        if (log && getMyDebug()){
             consoleLog(`andSymbolTypeIntoSymtabConstraint[out]`
             +`type:${mrNarrow.dbgRefTypesTypeToString(setTypeTmp)}}`);
             consoleGroupEnd();
@@ -472,7 +473,8 @@ namespace ts {
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
-        if (getMyDebug()){
+        const log = false;
+        if (log && getMyDebug()){
             consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
             +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(typeIn)}}`);
         }
@@ -498,7 +500,7 @@ namespace ts {
             else type = mrNarrow.intersectionOfRefTypesType(type, got.leaf.type);
             symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,/*isconst*/ false,type) });
         }
-        if (getMyDebug()){
+        if (log && getMyDebug()){
             // consoleLog(`andSymbolTypeIntoSymtabConstraint[out]`
             // +`type:${mrNarrow.dbgRefTypesTypeToString(type)}}`);
             let str = "`andSymbolTypeIntoSymtabConstraint[out] symtab:";
@@ -658,14 +660,15 @@ namespace ts {
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow):
      ESMap<Symbol,RefTypesType> {
-        if (getMyDebug()){
+        const log = false;
+        if (log && getMyDebug()){
             consoleGroup(`evalCoverPerSymbolV1`);
             mrNarrow.dbgConstraintItem(ciTop).forEach(str=>consoleLog(`evalCoverPerSymbolV1 ciTop: ${str}`));
         }
         const map = new Map<Symbol,RefTypesType>();
         let prodnum = 0;
         function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
-            if (getMyDebug()){
+            if (log && getMyDebug()){
                 mapSymbolType.forEach((type,symbol)=>{
                     consoleLog(`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
                 });
@@ -694,7 +697,7 @@ namespace ts {
             }
         }
         visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
-        if (getMyDebug()){
+        if (log && getMyDebug()){
             map.forEach((type,symbol)=>{
                 consoleLog(`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
             });

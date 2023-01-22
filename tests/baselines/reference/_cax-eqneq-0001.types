@@ -1,0 +1,44 @@
+=== tests/cases/conformance/_cax/_cax-eqneq-0001.ts ===
+// declare function f(x:1,y:1): 1;
+// declare function f(x:2,y:2): 2;
+// declare function f(x:3,y:3): 2;
+
+declare const a: 1|2;
+>a : 1 | 2
+
+declare const b: 1|2;
+>b : 1 | 2
+
+declare const c: 1|2;
+>c : 1 | 2
+
+//if (a!==b||b!==c)
+if (a===b&&b===c)
+>a===b&&b===c : boolean
+>a===b : boolean
+>a : 1 | 2
+>b : 1 | 2
+>b===c : boolean
+>b : 1 | 2
+>c : 1 | 2
+{
+    let x = a===c;
+>x : boolean
+>a===c : boolean
+>a : 1 | 2
+>c : 1 | 2
+
+    x;
+>x : true
+}
+else {
+    let y = a===c;
+>y : boolean
+>a===c : boolean
+>a : 1 | 2
+>c : 1 | 2
+
+    y;
+>y : boolean
+}
+

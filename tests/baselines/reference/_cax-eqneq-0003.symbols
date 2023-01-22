@@ -1,0 +1,94 @@
+=== tests/cases/conformance/_cax/_cax-eqneq-0003.ts ===
+// declare function f(x:1,y:1): 1;
+// declare function f(x:2,y:2): 2;
+// declare function f(x:3,y:3): 2;
+
+declare const a: 1|2|3;
+>a : Symbol(a, Decl(_cax-eqneq-0003.ts, 4, 13))
+
+declare const b: 2|3|4;
+>b : Symbol(b, Decl(_cax-eqneq-0003.ts, 5, 13))
+
+declare const c: 3|4|5;
+>c : Symbol(c, Decl(_cax-eqneq-0003.ts, 6, 13))
+
+const aeqb=a===b;
+>aeqb : Symbol(aeqb, Decl(_cax-eqneq-0003.ts, 7, 5))
+>a : Symbol(a, Decl(_cax-eqneq-0003.ts, 4, 13))
+>b : Symbol(b, Decl(_cax-eqneq-0003.ts, 5, 13))
+
+const beqc=b===c;
+>beqc : Symbol(beqc, Decl(_cax-eqneq-0003.ts, 8, 5))
+>b : Symbol(b, Decl(_cax-eqneq-0003.ts, 5, 13))
+>c : Symbol(c, Decl(_cax-eqneq-0003.ts, 6, 13))
+
+const aeqc=a===c;
+>aeqc : Symbol(aeqc, Decl(_cax-eqneq-0003.ts, 9, 5))
+>a : Symbol(a, Decl(_cax-eqneq-0003.ts, 4, 13))
+>c : Symbol(c, Decl(_cax-eqneq-0003.ts, 6, 13))
+
+if (aeqb&&beqc)
+>aeqb : Symbol(aeqb, Decl(_cax-eqneq-0003.ts, 7, 5))
+>beqc : Symbol(beqc, Decl(_cax-eqneq-0003.ts, 8, 5))
+{
+    aeqb;
+>aeqb : Symbol(aeqb, Decl(_cax-eqneq-0003.ts, 7, 5))
+
+    beqc;
+>beqc : Symbol(beqc, Decl(_cax-eqneq-0003.ts, 8, 5))
+
+    aeqc;
+>aeqc : Symbol(aeqc, Decl(_cax-eqneq-0003.ts, 9, 5))
+
+    a;
+>a : Symbol(a, Decl(_cax-eqneq-0003.ts, 4, 13))
+
+    b;
+>b : Symbol(b, Decl(_cax-eqneq-0003.ts, 5, 13))
+
+    c;
+>c : Symbol(c, Decl(_cax-eqneq-0003.ts, 6, 13))
+
+}
+else {
+    aeqb;
+>aeqb : Symbol(aeqb, Decl(_cax-eqneq-0003.ts, 7, 5))
+
+    beqc;
+>beqc : Symbol(beqc, Decl(_cax-eqneq-0003.ts, 8, 5))
+
+    aeqc;
+>aeqc : Symbol(aeqc, Decl(_cax-eqneq-0003.ts, 9, 5))
+
+    a;
+>a : Symbol(a, Decl(_cax-eqneq-0003.ts, 4, 13))
+
+    b;
+>b : Symbol(b, Decl(_cax-eqneq-0003.ts, 5, 13))
+
+    c;
+>c : Symbol(c, Decl(_cax-eqneq-0003.ts, 6, 13))
+
+    if (aeqc){
+>aeqc : Symbol(aeqc, Decl(_cax-eqneq-0003.ts, 9, 5))
+
+        aeqb;
+>aeqb : Symbol(aeqb, Decl(_cax-eqneq-0003.ts, 7, 5))
+
+        beqc;
+>beqc : Symbol(beqc, Decl(_cax-eqneq-0003.ts, 8, 5))
+
+        aeqc;
+>aeqc : Symbol(aeqc, Decl(_cax-eqneq-0003.ts, 9, 5))
+
+        a;
+>a : Symbol(a, Decl(_cax-eqneq-0003.ts, 4, 13))
+
+        b;
+>b : Symbol(b, Decl(_cax-eqneq-0003.ts, 5, 13))
+
+        c;
+>c : Symbol(c, Decl(_cax-eqneq-0003.ts, 6, 13))
+    }
+}
+
