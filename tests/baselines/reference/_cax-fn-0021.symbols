@@ -1,0 +1,54 @@
+=== tests/cases/conformance/_cax/_cax-fn-0021.ts ===
+declare type Foo = {
+>Foo : Symbol(Foo, Decl(_cax-fn-0021.ts, 0, 0))
+
+    foo(x?:number):number[]
+>foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>x : Symbol(x, Decl(_cax-fn-0021.ts, 1, 8))
+
+    foo(x?:number,y?:string):string[]
+>foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>x : Symbol(x, Decl(_cax-fn-0021.ts, 2, 8))
+>y : Symbol(y, Decl(_cax-fn-0021.ts, 2, 18))
+
+};
+declare const obj: Readonly<Foo>;
+>obj : Symbol(obj, Decl(_cax-fn-0021.ts, 4, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Foo : Symbol(Foo, Decl(_cax-fn-0021.ts, 0, 0))
+
+const a1 = obj.foo();
+>a1 : Symbol(a1, Decl(_cax-fn-0021.ts, 5, 5))
+>obj.foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>obj : Symbol(obj, Decl(_cax-fn-0021.ts, 4, 13))
+>foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+
+const a2 = obj.foo(1);
+>a2 : Symbol(a2, Decl(_cax-fn-0021.ts, 6, 5))
+>obj.foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>obj : Symbol(obj, Decl(_cax-fn-0021.ts, 4, 13))
+>foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+
+const a3 = obj.foo(1,"2");
+>a3 : Symbol(a3, Decl(_cax-fn-0021.ts, 7, 5))
+>obj.foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>obj : Symbol(obj, Decl(_cax-fn-0021.ts, 4, 13))
+>foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+
+const a4 = obj.foo(...[1,"2"] as const);
+>a4 : Symbol(a4, Decl(_cax-fn-0021.ts, 8, 5))
+>obj.foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>obj : Symbol(obj, Decl(_cax-fn-0021.ts, 4, 13))
+>foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>const : Symbol(const)
+
+const z: [number,string] = [1,"2"];
+>z : Symbol(z, Decl(_cax-fn-0021.ts, 9, 5))
+
+const a5 = obj.foo(...z);
+>a5 : Symbol(a5, Decl(_cax-fn-0021.ts, 10, 5))
+>obj.foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>obj : Symbol(obj, Decl(_cax-fn-0021.ts, 4, 13))
+>foo : Symbol(foo, Decl(_cax-fn-0021.ts, 0, 20), Decl(_cax-fn-0021.ts, 1, 27))
+>z : Symbol(z, Decl(_cax-fn-0021.ts, 9, 5))
+

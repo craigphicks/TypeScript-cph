@@ -4320,7 +4320,6 @@ namespace ts {
         narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     }
     export interface TypeChecker {
-        // /* @internal */ getBigIntType(): BigintType;
         /* @internal */ getStringLiteralType(value: string): StringLiteralType;
         /* @internal */ getNumberLiteralType(value: number): NumberLiteralType;
         /* @internal */ getBigIntLiteralType(value: PseudoBigInt): BigIntLiteralType;

@@ -1,0 +1,36 @@
+=== tests/cases/conformance/_cax/_cax-fn-0020.ts ===
+declare type Foo = {
+>Foo : Symbol(Foo, Decl(_cax-fn-0020.ts, 0, 0))
+
+    foo(x?:number):number[]
+>foo : Symbol(foo, Decl(_cax-fn-0020.ts, 0, 20), Decl(_cax-fn-0020.ts, 1, 27))
+>x : Symbol(x, Decl(_cax-fn-0020.ts, 1, 8))
+
+    foo(x?:number,y?:string):string[]
+>foo : Symbol(foo, Decl(_cax-fn-0020.ts, 0, 20), Decl(_cax-fn-0020.ts, 1, 27))
+>x : Symbol(x, Decl(_cax-fn-0020.ts, 2, 8))
+>y : Symbol(y, Decl(_cax-fn-0020.ts, 2, 18))
+
+};
+// declare type Boo = {
+//     foo(x?:bigint):bigint[]
+// };
+declare const obj: Readonly<Foo>;
+>obj : Symbol(obj, Decl(_cax-fn-0020.ts, 7, 13))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Foo : Symbol(Foo, Decl(_cax-fn-0020.ts, 0, 0))
+
+// const a1 = obj.foo();
+// const a2 = obj.foo(1);
+// const a3 = obj.foo(1,"2");
+// const a4 = obj.foo(...[1,"2"] as const);
+const z: [number,string] = [1,"2"];
+>z : Symbol(z, Decl(_cax-fn-0020.ts, 13, 5))
+
+const a5 = obj.foo(...z);
+>a5 : Symbol(a5, Decl(_cax-fn-0020.ts, 14, 5))
+>obj.foo : Symbol(foo, Decl(_cax-fn-0020.ts, 0, 20), Decl(_cax-fn-0020.ts, 1, 27))
+>obj : Symbol(obj, Decl(_cax-fn-0020.ts, 7, 13))
+>foo : Symbol(foo, Decl(_cax-fn-0020.ts, 0, 20), Decl(_cax-fn-0020.ts, 1, 27))
+>z : Symbol(z, Decl(_cax-fn-0020.ts, 13, 5))
+

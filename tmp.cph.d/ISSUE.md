@@ -16,7 +16,13 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+1.0. As I originally suggested to myself in commit eec46167d54d1d171663a0a78d7eb44eec2cb319, there is now a call `getTypeOfExpressionShallowRecursion` as a member of `InferStatus`, which sets up a temporary cache `ESMap<Node,Type>` used to call `checker.getTypeOfExpression`.  This allows `checker.getTypeOfExpression(expr)` even within a speculative branch, e.g., mrNarrowTypesByCallExpression.  (In test _cax-fn-0020.ts it is called in SpreadElement deep under mrNarrowTypesByCallExpression).
+1.1. Fixed bug with `inferStatus` in `mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`.
+1.2. Handle `SyntaxKind.SpreadElement` within `case SyntaxKind.ArrayLiteralExpression` of `mrNarrowTypesInner`.
+1.3. Add `case SyntaxKind.AsExpression:` of `mrNarrowTypesInner`.
+1.4. Add `case SyntaxKind.SpreadElement:` of `mrNarrowTypesInner`.
 
+1. measure the verbosity of and compare tree vs SOP reps (curious)
 1. useConstraintsV2===true optimizations
 - `evalCoverPerSymbol` results could be cached on the constraint, but having a lot of caches could end up being expensive.
 - Check that branches that can be reverted to the original pre-branching, do so.

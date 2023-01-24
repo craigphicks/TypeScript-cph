@@ -35906,9 +35906,9 @@ namespace ts {
          * with computing the type and may not fully check all contained sub-expressions for errors.
          */
         function getTypeOfExpression(node: Expression): Type {
-            if (myDebug||true) consoleGroup(`getTypeOfExpression[in] ${dbgNodeToString(node)}`);
+            if (myDebug) consoleGroup(`getTypeOfExpression[in] ${dbgNodeToString(node)}`);
             const r = getTypeOfExpression_aux(node);
-            if (myDebug||true) {
+            if (myDebug) {
                 consoleLog(`getTypeOfExpression[out] ${dbgNodeToString(node)} -> ${typeToString(r)}`);
                 consoleGroupEnd();
             }

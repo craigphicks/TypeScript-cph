@@ -1,8 +1,6 @@
 namespace ts {
 
     let dbgs: Dbgs | undefined;
-    //let myDebug: boolean | undefined;
-
     export enum GroupForFlowKind {
         none="none",
         plain="plain",
@@ -88,6 +86,11 @@ namespace ts {
             dbgCurrentBranchesMapWasDeleted: ESMap< Readonly<GroupForFlow>, boolean >;
             groupToNodeToType?: ESMap< Readonly<GroupForFlow>, NodeToTypeMap >;
         };
+        recursionLevel: number;
+        dataForGetTypeOfExpressionShallowRecursive?: {
+            tmpExprNodeToTypeMap: Readonly<ESMap<Node,Type>>;
+            expr: Expression
+        } | undefined;
     };
 
     function createHeap(groupsForFlow: GroupsForFlow): Heap {
@@ -152,6 +155,7 @@ namespace ts {
             checker,
             replayableItems: new Map<Symbol, ReplayableItem>(),
             declaredTypes: new Map<Symbol, RefTypesTableLeaf>(),
+            recursionLevel: 0,
             forFlow: {
                 heap,
                 currentBranchesMap: new Map< GroupForFlow, CurrentBranchElement >(),
@@ -471,6 +475,17 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems,
             declaredTypes: sourceFileMrState.mrState.declaredTypes,
             groupNodeToTypeMap: new Map<Node,Type>(),
+            getTypeOfExpressionShallowRecursion(expr: Expression): Type {
+                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+                let tstype: Type;
+                try {
+                   tstype = mrState.checker.getTypeOfExpression(expr);
+                   return tstype;
+                }
+                finally {
+                    delete mrState.dataForGetTypeOfExpressionShallowRecursive;
+                }
+            }
         };
         /**
          * groupNodeToTypeMap may be set before calling checker.getTypeOfExpression(...) from beneath mrNarrowTypes, which will require those types in
@@ -518,9 +533,6 @@ namespace ts {
             consoleGroupEnd();
         }
     }
-
-
-
     export function getTypeByMrNarrow(reference: Node, sourceFileMrState: SourceFileMrState): Type {
         if (getMyDebug()) consoleGroup(`getTypeByMrNarrow[in] expr: ${dbgs?.dbgNodeToString(reference)}`);
         const type = getTypeByMrNarrowAux(reference, sourceFileMrState);
@@ -530,50 +542,68 @@ namespace ts {
         }
         return type;
     }
-
-
     export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileMrState): Type {
 
-        const groupsForFlow = sourceFileMrState.groupsForFlow;
-        const groupForFlow = (()=>{
-            let parent = expr;
-            let fg = groupsForFlow.nodeToGroupMap.get(expr);
-            if (fg) return fg;
-            while (!fg && parent && parent.kind!==SyntaxKind.SourceFile && !(fg=groupsForFlow.nodeToGroupMap.get(parent))) parent = parent.parent;
-            return fg;
-        })();
-        if (!groupForFlow){
+        if (sourceFileMrState.mrState.dataForGetTypeOfExpressionShallowRecursive){
             if (getMyDebug()){
-                consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
+                consoleLog(`getTypeByMrNarrowAux[dbg]: getTypeOfExpressionShallowRecursive: ${dbgs!.dbgNodeToString(expr)}`);
+                let p = expr;
+                while (p!==sourceFileMrState.mrState.dataForGetTypeOfExpressionShallowRecursive.expr && p.kind!==SyntaxKind.SourceFile) p=p.parent;
+                Debug.assert(p===sourceFileMrState.mrState.dataForGetTypeOfExpressionShallowRecursive.expr, "unexpected");
             }
-            // try to get symbol and defeault type
-            switch (expr.kind){
-                case SyntaxKind.Identifier:{
-                    const getResolvedSymbol = sourceFileMrState.mrState.checker.getResolvedSymbol;
-                    const getTypeOfSymbol = sourceFileMrState.mrState.checker.getTypeOfSymbol;
-                    const symbol = getResolvedSymbol(expr as Identifier);
-                    const tstype = getTypeOfSymbol(symbol);
-                    return tstype;
+            const tstype = sourceFileMrState.mrState.dataForGetTypeOfExpressionShallowRecursive.tmpExprNodeToTypeMap.get(expr);
+            Debug.assert(tstype);
+            return tstype;
+        }
+
+        try {
+            Debug.assert(sourceFileMrState.mrState.recursionLevel===0,"expected sourceFileMrState.mrState.recursionLevel===0");
+            sourceFileMrState.mrState.recursionLevel++;
+
+            const groupsForFlow = sourceFileMrState.groupsForFlow;
+            const groupForFlow = (()=>{
+                let parent = expr;
+                let fg = groupsForFlow.nodeToGroupMap.get(expr);
+                if (fg) return fg;
+                while (!fg && parent && parent.kind!==SyntaxKind.SourceFile && !(fg=groupsForFlow.nodeToGroupMap.get(parent))) parent = parent.parent;
+                return fg;
+            })();
+            if (!groupForFlow){
+                if (getMyDebug()){
+                    consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
                 }
+                // try to get symbol and defeault type
+                switch (expr.kind){
+                    case SyntaxKind.Identifier:{
+                        const getResolvedSymbol = sourceFileMrState.mrState.checker.getResolvedSymbol;
+                        const getTypeOfSymbol = sourceFileMrState.mrState.checker.getTypeOfSymbol;
+                        const symbol = getResolvedSymbol(expr as Identifier);
+                        const tstype = getTypeOfSymbol(symbol);
+                        return tstype;
+                    }
+                }
+                Debug.fail();
             }
-            Debug.fail();
+            if (getMyDebug()){
+                const maxnode = sourceFileMrState.groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+                consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, maximalNode: ${dbgs!.dbgNodeToString(maxnode)}`);
+            }
+            /**
+             * If the type for expr is already in groupToNodeToType?.get(groupForFlow)?.get(expr) then return that.
+             * It is likely to be a recursive call via checker.getTypeOfExpression(...), e.g. from "case SyntaxKind.ArrayLiteralExpression"
+             */
+            const cachedType = sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr);
+            if (cachedType) {
+                if (getMyDebug()) consoleLog(`getTypeByMrNarrowAux[dbg]: cache hit`);
+                return cachedType;
+            }
+            updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState);
+            resolveHeap(sourceFileMrState);
+            return sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
         }
-        if (getMyDebug()){
-            const maxnode = sourceFileMrState.groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
-            consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, maximalNode: ${dbgs!.dbgNodeToString(maxnode)}`);
+        finally {
+            sourceFileMrState.mrState.recursionLevel--;
         }
-        /**
-         * If the type for expr is already in groupToNodeToType?.get(groupForFlow)?.get(expr) then return that.
-         * It is likely to be a recursive call via checker.getTypeOfExpression(...), e.g. from "case SyntaxKind.ArrayLiteralExpression"
-         */
-        const cachedType = sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr);
-        if (cachedType) {
-            if (getMyDebug()) consoleLog(`getTypeByMrNarrowAux[dbg]: cache hit`);
-            return cachedType;
-        }
-        updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState);
-        resolveHeap(sourceFileMrState);
-        return sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
 
     }
 

@@ -1,0 +1,15 @@
+=== tests/cases/conformance/_cax/_cax-arrayLiteralExpression-0005.ts ===
+const x = [1,"2"] as const;
+>x : readonly [1, "2"]
+>[1,"2"] as const : readonly [1, "2"]
+>[1,"2"] : readonly [1, "2"]
+>1 : 1
+>"2" : "2"
+
+// This calls ArrayLiteralExpression with a spread element.
+let y = [...x];
+>y : (1 | "2")[]
+>[...x] : (1 | "2")[]
+>...x : 1 | "2"
+>x : readonly [1, "2"]
+
