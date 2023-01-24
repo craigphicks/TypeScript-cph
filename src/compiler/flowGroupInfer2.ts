@@ -938,7 +938,7 @@ namespace ts {
         }
 
         type CallExpressionHelperPassReturn = & {
-            pass: true,
+            //pass: true,
             arrReTypesTableReturn: RefTypesTableReturnNoSymbol[],
         };
         function mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig(
@@ -947,14 +947,14 @@ namespace ts {
             symtabIn: RefTypesSymtab,
             constraintItemIn: ConstraintItem,
             inferStatusIn: InferStatus
-        ): CallExpressionHelperPassReturn | { pass: false } {
+        ): CallExpressionHelperPassReturn {
             // const orIntoArrPos(type: RefTypesType, idx: number, arr: RefTypesType[]): void => {
             //     if (!arr[idx]) arr[idx] = type;
             //     else mergeToRefTypesType({ source:type, target:arr[idx] });
             // }
 
             const dbgHdr = `mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[dbg] `;
-            if (sigs.length===0) return { pass:false };
+            if (sigs.length===0) return { arrReTypesTableReturn:[] };
 
             //const inferStatus: InferStatus = { ... inferStatusIn, groupNodeToTypeMap: createNodeToTypeMap() };
             //const inferStatus: InferStatus = { ... inferStatusIn, groupNodeToTypeMap: createNodeToTypeMap() };
@@ -1186,9 +1186,7 @@ namespace ts {
             //     str = dbgHdr + `sigReturnType: ${dbgTypeToString(signatureReturnType)}`;
             //     consoleLog(str);
             // }
-            if (arrReTypesTableReturn.length===0) return { pass:false };
             return {
-                pass: true,
                 arrReTypesTableReturn
             };
         }
@@ -1219,41 +1217,31 @@ namespace ts {
                         inferStatus
                     );
                     if (myDebug) {
-                        consoleLog(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[out] result.pass: ${result.pass}`);
-                        if (result.pass){
-                            result.arrReTypesTableReturn.forEach((rttr,i)=>{
-                                dbgRefTypesTableToStrings(rttr).forEach(s=>{
-                                    consoleLog(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[out] result[${i}]: ${s}`);
-                                });
+                        consoleLog(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[out] result.arrReTypesTableReturn.length: ${result.arrReTypesTableReturn.length}`);
+                        result.arrReTypesTableReturn.forEach((rttr,i)=>{
+                            dbgRefTypesTableToStrings(rttr).forEach(s=>{
+                                consoleLog(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[out] result[${i}]: ${s}`);
                             });
-                        }
+                        });
                         consoleLog(`mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig[out]`);
                         consoleGroupEnd();
                     }
-                    if (!result.pass){
-                        hadSomeSigFailure = true;
-                        if (myDebug){
-                            consoleLog(`mrNarrowTypesByCallExpression[dbg] failed mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`);
-                        }
+                    if (result.arrReTypesTableReturn.length===0 || result.arrReTypesTableReturn.length===1 && isNeverConstraint(result.arrReTypesTableReturn[0].constraintItem)){
+                        hadSomeSigFailure=true;
+                        arrRefTypesTableReturn.push({
+                            kind:RefTypesTableKind.return,
+                            type: createRefTypesType(checker.getUnknownType()), // the call doesn't not return, it returns an unknown type
+                            symtab: symtabIn, // the symtab and constraint would be unknown too, but we just revert them to original inputs
+                            constraintItem: constraintItemIn
+                        });
                     }
-                    else {
-                        arrRefTypesTableReturn.push(...result.arrReTypesTableReturn);
-                        if (myDebug){
-                            consoleLog(`mrNarrowTypesByCallExpression[dbg] passed mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`);
-                        }
-                    }
+                    else arrRefTypesTableReturn.push(...result.arrReTypesTableReturn);
                 });
             });
-            if (hadSomeSigFailure || arrRefTypesTableReturn.length===0){
-                if (myDebug){
-                    consoleLog(`mrNarrowTypesByCallExpression[dbg] has some sign failure or arrRefTypesTableReturn.length===0`);
+            if (myDebug){
+                if (hadSomeSigFailure || arrRefTypesTableReturn.length===0){
+                    consoleLog(`mrNarrowTypesByCallExpression[dbg] has some sig failure or arrRefTypesTableReturn.length===0`);
                 }
-                return { arrRefTypesTableReturn:[{
-                    kind:RefTypesTableKind.return,
-                    type: createRefTypesType(), // never
-                    symtab: createRefTypesSymtab(),
-                    constraintItem: createFlowConstraintNever()
-                }] };
             }
             return { arrRefTypesTableReturn };
         }
