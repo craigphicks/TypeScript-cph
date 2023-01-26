@@ -89,7 +89,7 @@ namespace ts {
         recursionLevel: number;
         dataForGetTypeOfExpressionShallowRecursive?: {
             tmpExprNodeToTypeMap: Readonly<ESMap<Node,Type>>;
-            expr: Expression
+            expr: Expression | Node
         } | undefined;
     };
 
@@ -278,9 +278,9 @@ namespace ts {
         const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
         if (getMyDebug()){
             consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, groupIndex:${groupForFlow.groupIdx}, kind:${groupForFlow.kind}, maximalNode.parent.kind:${Debug.formatSyntaxKind(maximalNode.parent.kind)}`);
-            consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
-            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:  ${s}`));
-            consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
+            // consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
+            // dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`));
+            // consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
             if (!anteLabels) consoleLog(`resolveGroupForFlow[dbg:] anteLabels: undefined`);
             else {
                 consoleLog(`resolveGroupForFlow[dbg:] anteLabels: {`);
@@ -477,15 +477,27 @@ namespace ts {
             groupNodeToTypeMap: new Map<Node,Type>(),
             getTypeOfExpressionShallowRecursion(expr: Expression): Type {
                 mrState.dataForGetTypeOfExpressionShallowRecursive = { expr, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
-                let tstype: Type;
                 try {
-                   tstype = mrState.checker.getTypeOfExpression(expr);
+                   const tstype = mrState.checker.getTypeOfExpression(expr);
                    return tstype;
                 }
                 finally {
                     delete mrState.dataForGetTypeOfExpressionShallowRecursive;
                 }
+            },
+            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
+            //callCheckerFunctionWithShallowRecursion<FN extends CheckerNodeFn>(checkerFn: FN, expr: Expression): ReturnType<FN> {
+                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+                try {
+                   const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
+                   return ret;
+                }
+                finally {
+                    delete mrState.dataForGetTypeOfExpressionShallowRecursive;
+                }
+
             }
+
         };
         /**
          * groupNodeToTypeMap may be set before calling checker.getTypeOfExpression(...) from beneath mrNarrowTypes, which will require those types in
@@ -526,9 +538,9 @@ namespace ts {
         }
 
         if (getMyDebug()){
-            consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
-            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:  ${s}`));
-            consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
+            // consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
+            // dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`));
+            // consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
             consoleLog(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}, `);
             consoleGroupEnd();
         }
@@ -607,7 +619,7 @@ namespace ts {
 
     }
 
-
+    /* @ts-ignore */
     function dbgCurrentBranchesMap(sourceFileMrState: SourceFileMrState): string[]{
         const groupsForFlow = sourceFileMrState.groupsForFlow;
         const mrState = sourceFileMrState.mrState;

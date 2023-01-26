@@ -33,7 +33,7 @@ namespace ts {
         return {
             kind: ConstraintItemKind.leaf,
             symbol, type,
-            //symbolsInvolved: new Set<Symbol>([symbol])
+            symbolsInvolved: new Set<Symbol>([symbol])
         };
     }
     export function createFlowConstraintNever(): ConstraintItemNever {
@@ -45,7 +45,7 @@ namespace ts {
         return (c.kind===ConstraintItemKind.never);
     }
     export function createFlowConstraintAlways(): ConstraintItemAlways {
-        return { kind:ConstraintItemKind.always };
+        return { kind:ConstraintItemKind.always, symbolsInvolved: new Set<Symbol>() };
     }
     // @ts-ignore
     export function isAlwaysConstraint(c: ConstraintItem): boolean {
@@ -169,8 +169,16 @@ namespace ts {
         {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, getDeclaredType: GetDeclaredTypeFn,
             mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
     }): ConstraintItem {
-        if (mrNarrow.isAnyType(type)) Debug.fail("not yet implemented");
-        if (mrNarrow.isUnknownType(type)) Debug.fail("not yet implemented");
+        if (mrNarrow.isAnyType(type)) {
+            //Debug.fail("not yet implemented");
+            // return createFlowConstraintAlways();
+            return cin;
+        }
+        if (mrNarrow.isUnknownType(type)) {
+            //Debug.fail("not yet implemented");
+            // return createFlowConstraintAlways();
+            return cin;
+        }
         depth = depth??0;
         refCountIn[0]++;
         refCountOut[0]++;

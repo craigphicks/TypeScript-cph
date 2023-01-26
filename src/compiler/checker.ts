@@ -671,6 +671,10 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
+            getReducedType,
+            resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode?: number): Signature {
+                return resolveCallExpression(node, candidatesOutArray, checkMode??CheckMode.Normal);
+            },
             getStringLiteralType,
             getNumberLiteralType,
             getBigIntLiteralType,

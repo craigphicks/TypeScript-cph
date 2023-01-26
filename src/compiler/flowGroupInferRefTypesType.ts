@@ -97,9 +97,11 @@ namespace ts {
         function createRefTypesTypeUnknown(): RefTypesTypeUnknown {
             return { _flags: RefTypesTypeFlags.unknown, _set: undefined, _mapLiteral: undefined };
         }
-        function _privateAddTsTypeNonUnionToRefTypesType(tstype: Type, type: RefTypesType): RefTypesType {
+        function _privateAddTsTypeNonUnionToRefTypesType(tstype: Type, type: Readonly<RefTypesType>): RefTypesType {
             Debug.assert(!(tstype.flags & TypeFlags.Union),"unexpected");
-            Debug.assert(!(tstype.flags & TypeFlags.Intersection),"not yet implemented");
+            if (tstype.flags & TypeFlags.Intersection){
+                Debug.assert(!(tstype.flags & TypeFlags.Intersection),"not yet implemented");
+            }
             if (tstype===neverType) return type;
             if (tstype===anyType || type._flags===RefTypesTypeFlags.any) {
                 return createRefTypesTypeAny();
@@ -185,7 +187,7 @@ namespace ts {
             });
             return target;
         }
-        function addTypeToRefTypesType({source:tstype,target:target}: { source: Readonly<Type>, target: RefTypesType}): RefTypesType {
+        function addTypeToRefTypesType({source:tstype,target:target}: { source: Readonly<Type>, target: Readonly<RefTypesType>}): RefTypesType {
             forEachTypeIfUnion(tstype, t=>{
                 target = _privateAddTsTypeNonUnionToRefTypesType(t, target);
             });

@@ -151,39 +151,28 @@ the `always` should be removed and then the leaf constraints with the same symbo
 
 # Notes:
 
-## visitDNF manual simulation
+## visitSOP to
 
-```
-or(x:t, b:t)
-1. [], or(x:t, y:t)), []
-1.1. [], x:t, []
-1.1. action([x:t])
-2.1. [], y:t, []
-2.1. action([y:t])
-```
 
+## Typescript limitation on calling overloads:
+It is a typescript error to call an overload with a parameter type that can satisfy more than one overload.
+That seems like an excessive limitation but I suppose the counter argument is that a generic could be used instead,
+although that would be extra work for the user.
+Example:
 ```
-not(or(x:t, b:t))
-1.[], not(or(x:t, b:t)), []
-1.[not(x:t)], not(y:t), []
-1. action([not(x:t),not(y:t)])
-
-```
-
-```
-and(x:t, b:t)
-1.[], and(x:t, y:t)), []
-1.[], x:t, [y:t]
-1.[x:t], y:t, []
-1.action([x:t, y:t])
+// @strict: true
+// @declaration: true
+declare function foo(x:number):number[];
+declare function foo(x:string):string[];
+declare const a: number | string;
+const r = foo(a);
+// No overload matches this call.
+//   Overload 1 of 2, '(x: number): number[]', gave the following error.
+//     Argument of type 'string | number' is not assignable to parameter of type 'number'.
+//       Type 'string' is not assignable to type 'number'.
+//   Overload 2 of 2, '(x: string): string[]', gave the following error.
+//     Argument of type 'string | number' is not assignable to parameter of type 'string'.
+//       Type 'number' is not assignable to type 'string'.ts(2769)
 ```
 
-```
-(not(and(x:t, b:t))
-1.[], (not(and(x:t, y:t)), []
-1.1 [], not(x:t), []
-1.1 action([not(x:t)])
-1.2 [], not(y:t), true, []
-1.3 action([not(y:t)])
-```
-
+A consequence is that `case SyntaxKind.CallExpression` currently has a narrow constraint making it easier to code.

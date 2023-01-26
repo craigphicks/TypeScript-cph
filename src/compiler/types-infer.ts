@@ -155,6 +155,8 @@ namespace ts {
         byNode: NodeToTypeMap;
     };
 
+    export type TypeCheckerFn = ((node: Expression | Node, ...args: any[]) => any);
+
     export type InferStatus = & {
         inCondition: boolean;
         currentReplayableItem?: undefined | ReplayableItem;
@@ -168,6 +170,7 @@ namespace ts {
          * @param checker
          */
         getTypeOfExpressionShallowRecursion(expr: Expression): Type;
+        callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
     };
 
     export type InferRefArgs = & {
