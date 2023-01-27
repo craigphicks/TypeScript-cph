@@ -142,11 +142,12 @@ namespace ts {
      */
     export function andDistributeDivide({
         symbol, type, declaredType, cin, negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth}:
-        {symbol: Symbol, type: RefTypesType, declaredType: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, getDeclaredType: GetDeclaredTypeFn,
+        {symbol: Symbol, type: RefTypesType, declaredType?: RefTypesType, cin: ConstraintItem, negate?: boolean | undefined, getDeclaredType: GetDeclaredTypeFn,
             mrNarrow: MrNarrow, refCountIn?: [number], refCountOut?: [number], depth?: number
     }): ConstraintItem {
         if (!refCountIn) refCountIn=[0];
         if (!refCountOut) refCountOut=[0];
+        if (!declaredType) declaredType = getDeclaredType(symbol);
         const doLog = false;
         if (doLog && getMyDebug()){
             consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
@@ -182,7 +183,7 @@ namespace ts {
         depth = depth??0;
         refCountIn[0]++;
         refCountOut[0]++;
-        if (mrNarrow.isNeverType(type)) return createFlowConstraintNever();
+        //if (mrNarrow.isNeverType(type)) return createFlowConstraintNever(); don't want this because pass never to remove symbols and their products
         if (mrNarrow.isASubsetOfB(declaredType,type)) {
             // Bug fix with ConstraintsV2
             // keep on going, (could also just return cin?).
@@ -493,6 +494,7 @@ namespace ts {
             // do nothing - an enum parent is not a real type
         }
         else if (isconst){
+            // TODO: change this section to call andSymbolTypeIntoConstraint which has a bug fix.
             const symbolsInvolved = new Set<Symbol>(constraintItem.symbolsInvolved ?? []);
             symbolsInvolved.add(symbol);
             /////////////////////////
@@ -521,8 +523,32 @@ namespace ts {
             });
             consoleGroupEnd();
         }
-        // when useConstraintsV2() is true, the returned type is a dummy.
+        // when useConstraintsV2() is true, the returned type is a dummy, to prevent unnecessary computation.
         return { type: null as any as RefTypesType, sc:{ symtab, constraintItem } };
+    }
+
+    export function andSymbolTypeIntoConstraint({symbol,type,constraintItem, getDeclaredType, mrNarrow}: Readonly<{
+        symbol: Readonly<Symbol>,
+        type: Readonly<RefTypesType>,
+        constraintItem: ConstraintItem,
+        getDeclaredType: GetDeclaredTypeFn,
+        mrNarrow: MrNarrow}>
+        ): ConstraintItem {
+        const symbolsInvolved = new Set<Symbol>(constraintItem.symbolsInvolved ?? []);
+        symbolsInvolved.add(symbol);
+        /////////////////////////
+        const evaledType = evalCoverForOneSymbol(symbol,constraintItem,getDeclaredType,mrNarrow);
+        if (!mrNarrow.isASubsetOfB(evaledType,type)){
+            constraintItem = andDistributeDivide({symbol,type,cin:constraintItem,getDeclaredType,declaredType: getDeclaredType(symbol),
+                mrNarrow});
+            /////////////////////////
+            if (constraintItem.kind===ConstraintItemKind.node && constraintItem.op===ConstraintItemNodeOp.and){
+                Debug.assert(!constraintItem.constraints.some(subci=>subci.kind===ConstraintItemKind.leaf && subci.symbol===symbol));
+            }
+            constraintItem = andIntoConstraintShallow({ symbol,type,constraintItem,mrNarrow });
+        }
+        constraintItem.symbolsInvolved = symbolsInvolved;
+        return constraintItem;
     }
 
     export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType}: Readonly<{
@@ -714,7 +740,7 @@ namespace ts {
         return map;
     }
 
-    export function evalCoverPerSymbol(...args: Parameters<typeof evalCoverPerSymbolV1> | Parameters<typeof evalCoverPerSymbolV2>): ESMap<Symbol,RefTypesType>{
+    export function evalCoverPerSymbol(...args: Parameters<typeof evalCoverPerSymbolV2> | Parameters<typeof evalCoverPerSymbolV1>): ESMap<Symbol,RefTypesType>{
         if (args.length===3) return evalCoverPerSymbolV2(...(args as Parameters<typeof evalCoverPerSymbolV2>));
         else return evalCoverPerSymbolV1(...(args as Parameters<typeof evalCoverPerSymbolV1>));
     }
@@ -733,7 +759,7 @@ namespace ts {
     }
 
     // @ ts-expect-error
-    function collectSymbolsInvolvedInConstraints(ciTop: ConstraintItem): Set<Symbol>{
+    export function collectSymbolsInvolvedInConstraints(ciTop: ConstraintItem): Set<Symbol>{
         const set = new Set<Symbol>();
         const func = (ci: ConstraintItem) => {
             if (ci.kind===ConstraintItemKind.leaf){

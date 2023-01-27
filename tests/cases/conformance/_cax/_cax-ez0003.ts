@@ -10,14 +10,14 @@ declare type Boo = {
     foo(x?:bigint):bigint[]
 };
 declare const obj: Readonly<Foo> | Readonly<Boo> | undefined;
-// declare const okobj: Readonly<Foo> | Readonly<Boo>;
-const isFoo = obj?.foo();
-//let x: Readonly<Foo> | Readonly<Boo> | undefined;
+const isFoo = obj?.foo(); // isFoo should be number[] | bigint[] | undefined, because string[] is shadowed in case of empty input
+isFoo; // isFoo should be number[] | bigint[] | undefined
+
 if (isFoo) {
-    isFoo;
+    isFoo; // isFoo should be number[] | bigint[]
     let x = obj; // x should be Readonly<Foo> | Readonly<Boo>
     let y = x.foo; // should be no error
-    let z = y(); // z should be number[] | string[] | bigint[] - it is not because obtained via checker.ts,resolveCallExpression
-    console.log(z); // again z should be number[] | string[] | bigint[] - now it is because it is obtained via getFlowTypeOfReference
+    let z = y(); // z should be number[] | bigint[]
+    console.log(z); // again z should be number[] | bigint[]
 }
-isFoo;
+isFoo; // isFoo should be number[] | bigint[] | undefined

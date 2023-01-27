@@ -1,0 +1,82 @@
+=== tests/cases/conformance/_cax/_cax-fn-0004.ts ===
+declare interface FooA {
+    foo(a:string): "A";
+>foo : { (a: string): "A"; (...args: any[]): undefined; }
+>a : string
+
+    foo(...args: any[]): undefined;
+>foo : { (a: string): "A"; (...args: any[]): undefined; }
+>args : any[]
+}
+declare interface FooB {
+    foo(b:number): "B";
+>foo : { (b: number): "B"; (...args: any[]): undefined; }
+>b : number
+
+    foo(...args: any[]): undefined;
+>foo : { (b: number): "B"; (...args: any[]): undefined; }
+>args : any[]
+
+};
+declare const obja: FooA;
+>obja : FooA
+
+declare const objb: FooB;
+>objb : FooB
+
+declare const arg: string | number;
+>arg : string | number
+
+declare const b: boolean;
+>b : boolean
+
+const obj = b? obja : objb
+>obj : FooA | FooB
+>b? obja : objb : FooA | FooB
+>b : boolean
+>obja : FooA
+>objb : FooB
+
+if (obj.foo(arg)){
+>obj.foo(arg) : undefined
+>obj.foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>obj : FooA | FooB
+>foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>arg : string | number
+
+    // if (obj===obja){
+    //     arg; // should be string
+    //     const xa = obj.foo(arg);
+    //     xa; // should be "A"
+    // }
+    // if (obj===objb){
+    //     arg; // should be number
+    //     const xb = obj.foo(arg);
+    //     xb; // should be "B"
+    // }
+    const x = obj.foo(arg); // x should be "A" | "B"
+>x : undefined
+>obj.foo(arg) : undefined
+>obj.foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>obj : FooA | FooB
+>foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>arg : string | number
+
+    obj;
+>obj : FooA | FooB
+
+    obj.foo;
+>obj.foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>obj : FooA | FooB
+>foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+
+    x; // should be "A" | "B"
+>x : "A" | "B"
+}
+
+
+// if ((obj===obja && arg==="one") || (obj===objb && arg===1)){
+//     arg; // should be "one" | 1
+//     const x = obja.foo(arg); // x should be "1"
+// }
+

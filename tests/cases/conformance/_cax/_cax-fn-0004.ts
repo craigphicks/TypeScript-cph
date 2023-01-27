@@ -2,21 +2,38 @@
 // @declaration: true
 
 declare interface FooA {
-    foo(b:string): "1";
+    foo(a:string): "A";
+    foo(...args: any[]): undefined;
 }
 declare interface FooB {
-    foo(b:number): undefined;
+    foo(b:number): "B";
+    foo(...args: any[]): undefined;
 };
-declare const obja: undefined | FooA | FooB;
+declare const obja: FooA;
+declare const objb: FooB;
 declare const arg: string | number;
-if (obja?.foo(arg)){
-    obja; // should be FooA
-    arg; // should be string
-    const x = obja.foo(arg); // x should be "1"
+declare const b: boolean;
+const obj = b? obja : objb
+
+if (obj.foo(arg)){
+    // if (obj===obja){
+    //     arg; // should be string
+    //     const xa = obj.foo(arg);
+    //     xa; // should be "A"
+    // }
+    // if (obj===objb){
+    //     arg; // should be number
+    //     const xb = obj.foo(arg);
+    //     xb; // should be "B"
+    // }
+    const x = obj.foo(arg); // x should be "A" | "B"
+    obj;
+    obj.foo;
+    x; // should be "A" | "B"
 }
-else if (obja) {
-    arg; // should be number
-    const x = obja.foo(arg); // x should be undefined
-} else {
-    obja; // should be undefined
-}
+
+
+// if ((obj===obja && arg==="one") || (obj===objb && arg===1)){
+//     arg; // should be "one" | 1
+//     const x = obja.foo(arg); // x should be "1"
+// }

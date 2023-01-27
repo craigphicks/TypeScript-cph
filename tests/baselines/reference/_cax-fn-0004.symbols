@@ -1,0 +1,85 @@
+=== tests/cases/conformance/_cax/_cax-fn-0004.ts ===
+declare interface FooA {
+>FooA : Symbol(FooA, Decl(_cax-fn-0004.ts, 0, 0))
+
+    foo(a:string): "A";
+>foo : Symbol(FooA.foo, Decl(_cax-fn-0004.ts, 0, 24), Decl(_cax-fn-0004.ts, 1, 23))
+>a : Symbol(a, Decl(_cax-fn-0004.ts, 1, 8))
+
+    foo(...args: any[]): undefined;
+>foo : Symbol(FooA.foo, Decl(_cax-fn-0004.ts, 0, 24), Decl(_cax-fn-0004.ts, 1, 23))
+>args : Symbol(args, Decl(_cax-fn-0004.ts, 2, 8))
+}
+declare interface FooB {
+>FooB : Symbol(FooB, Decl(_cax-fn-0004.ts, 3, 1))
+
+    foo(b:number): "B";
+>foo : Symbol(FooB.foo, Decl(_cax-fn-0004.ts, 4, 24), Decl(_cax-fn-0004.ts, 5, 23))
+>b : Symbol(b, Decl(_cax-fn-0004.ts, 5, 8))
+
+    foo(...args: any[]): undefined;
+>foo : Symbol(FooB.foo, Decl(_cax-fn-0004.ts, 4, 24), Decl(_cax-fn-0004.ts, 5, 23))
+>args : Symbol(args, Decl(_cax-fn-0004.ts, 6, 8))
+
+};
+declare const obja: FooA;
+>obja : Symbol(obja, Decl(_cax-fn-0004.ts, 8, 13))
+>FooA : Symbol(FooA, Decl(_cax-fn-0004.ts, 0, 0))
+
+declare const objb: FooB;
+>objb : Symbol(objb, Decl(_cax-fn-0004.ts, 9, 13))
+>FooB : Symbol(FooB, Decl(_cax-fn-0004.ts, 3, 1))
+
+declare const arg: string | number;
+>arg : Symbol(arg, Decl(_cax-fn-0004.ts, 10, 13))
+
+declare const b: boolean;
+>b : Symbol(b, Decl(_cax-fn-0004.ts, 11, 13))
+
+const obj = b? obja : objb
+>obj : Symbol(obj, Decl(_cax-fn-0004.ts, 12, 5))
+>b : Symbol(b, Decl(_cax-fn-0004.ts, 11, 13))
+>obja : Symbol(obja, Decl(_cax-fn-0004.ts, 8, 13))
+>objb : Symbol(objb, Decl(_cax-fn-0004.ts, 9, 13))
+
+if (obj.foo(arg)){
+>obj.foo : Symbol(foo, Decl(_cax-fn-0004.ts, 0, 24), Decl(_cax-fn-0004.ts, 1, 23), Decl(_cax-fn-0004.ts, 4, 24), Decl(_cax-fn-0004.ts, 5, 23))
+>obj : Symbol(obj, Decl(_cax-fn-0004.ts, 12, 5))
+>foo : Symbol(foo, Decl(_cax-fn-0004.ts, 0, 24), Decl(_cax-fn-0004.ts, 1, 23), Decl(_cax-fn-0004.ts, 4, 24), Decl(_cax-fn-0004.ts, 5, 23))
+>arg : Symbol(arg, Decl(_cax-fn-0004.ts, 10, 13))
+
+    // if (obj===obja){
+    //     arg; // should be string
+    //     const xa = obj.foo(arg);
+    //     xa; // should be "A"
+    // }
+    // if (obj===objb){
+    //     arg; // should be number
+    //     const xb = obj.foo(arg);
+    //     xb; // should be "B"
+    // }
+    const x = obj.foo(arg); // x should be "A" | "B"
+>x : Symbol(x, Decl(_cax-fn-0004.ts, 25, 9))
+>obj.foo : Symbol(foo, Decl(_cax-fn-0004.ts, 0, 24), Decl(_cax-fn-0004.ts, 1, 23), Decl(_cax-fn-0004.ts, 4, 24), Decl(_cax-fn-0004.ts, 5, 23))
+>obj : Symbol(obj, Decl(_cax-fn-0004.ts, 12, 5))
+>foo : Symbol(foo, Decl(_cax-fn-0004.ts, 0, 24), Decl(_cax-fn-0004.ts, 1, 23), Decl(_cax-fn-0004.ts, 4, 24), Decl(_cax-fn-0004.ts, 5, 23))
+>arg : Symbol(arg, Decl(_cax-fn-0004.ts, 10, 13))
+
+    obj;
+>obj : Symbol(obj, Decl(_cax-fn-0004.ts, 12, 5))
+
+    obj.foo;
+>obj.foo : Symbol(foo, Decl(_cax-fn-0004.ts, 0, 24), Decl(_cax-fn-0004.ts, 1, 23), Decl(_cax-fn-0004.ts, 4, 24), Decl(_cax-fn-0004.ts, 5, 23))
+>obj : Symbol(obj, Decl(_cax-fn-0004.ts, 12, 5))
+>foo : Symbol(foo, Decl(_cax-fn-0004.ts, 0, 24), Decl(_cax-fn-0004.ts, 1, 23), Decl(_cax-fn-0004.ts, 4, 24), Decl(_cax-fn-0004.ts, 5, 23))
+
+    x; // should be "A" | "B"
+>x : Symbol(x, Decl(_cax-fn-0004.ts, 25, 9))
+}
+
+
+// if ((obj===obja && arg==="one") || (obj===objb && arg===1)){
+//     arg; // should be "one" | 1
+//     const x = obja.foo(arg); // x should be "1"
+// }
+

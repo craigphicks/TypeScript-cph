@@ -142,6 +142,14 @@ namespace ts {
         constraintItem: ConstraintItem;
     };
 
+
+    export type RefDeltaInferState = & {
+        symtab: RefTypesSymtab;
+        constraintItem: ConstraintItem;
+        deltaNodeToTypeMap: ESMap<Node,Type>;
+        inferStatus: InferStatus;
+    };
+
     /**
      * InferStatus
      * X The "inCondition" member is true when the current node is within a discriminating expression (e.g. "if (node){...}else{...}", or "(node)? x : y").

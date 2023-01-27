@@ -73,6 +73,7 @@ namespace ts {
         const numberType = checker.getNumberType();
         // const bigintType = checker.getBigIntType();
         //const booleanType = checker.getBooleanType();
+        // @ts-ignore
         const anyType = checker.getAnyType();
         const trueType = checker.getTrueType();
         const falseType = checker.getFalseType();
@@ -88,7 +89,7 @@ namespace ts {
         const isArrayOrTupleType = checker.isArrayOrTupleType;
         const getElementTypeOfArrayType = checker.getElementTypeOfArrayType;
         const getReturnTypeOfSignature = checker.getReturnTypeOfSignature;
-        const isReadonlyProperty = checker.isReadonlyProperty;
+        // const isReadonlyProperty = checker.isReadonlyProperty;
         const isConstVariable = checker.isConstVariable;
         // @ts-ignore-error
         const isConstantReference = checker.isConstantReference;
@@ -392,6 +393,23 @@ namespace ts {
             //     consoleGroupEnd();
             // }
         }
+
+        // @ts-expect-error
+        function typeIsTruthy(tstype: Type): {true: boolean, false: boolean} {
+            const tf = checker.getTypeFacts(tstype);
+            return { true: !!(tf&TypeFacts.Truthy), false: !!(tf&TypeFacts.Falsy) };
+        }
+        // @ts-expect-error
+        function typeIsNotNullUndef(tstype: Type): {true: boolean, false: boolean} {
+            const tf = checker.getTypeFacts(tstype);
+            return { true: !!(tf&TypeFacts.NEUndefinedOrNull), false: !!(tf&TypeFacts.EQUndefinedOrNull) };
+        }
+        // @ts-expect-error
+        function typeIsAssignableTo(source: Type, target: Type): boolean {
+            return checker.isTypeRelatedTo(source, target, assignableRelation);
+        }
+
+
         /**
          *
          * @param type
@@ -1123,55 +1141,109 @@ namespace ts {
                 arrReTypesTableReturn
             };
         }
-        // TODO: remove this function
+
         // @ts-expect-error
-        function getSigParamType(sig: Readonly<Signature>, idx: number): { type: Type, isRest?: boolean } {
+        function createRefDeltaInferState(sc: Readonly<RefTypesSymtabConstraintItem>, inferStatus: Readonly<InferStatus>): RefDeltaInferState {
+            const deltaNodeToTypeMap = new Map<Node,Type>();
+            return { ...sc, deltaNodeToTypeMap, inferStatus: { ...inferStatus, groupNodeToTypeMap: deltaNodeToTypeMap } };
+        }
+
+
+        // @ ts-expect-error
+        function getSigParamType(sig: Readonly<Signature>, idx: number): { type: Type, isRest?: boolean, optional?: boolean, symbol: Symbol } {
             if (idx>=sig.parameters.length-1){
                 if (signatureHasRestParameter(sig)){
                     const symbol = sig.parameters.slice(-1)[0];
                     const arrayType = getTypeOfSymbol(symbol);
                     Debug.assert(isArrayType(arrayType));
                     const type = getElementTypeOfArrayType(arrayType)!;
-                    return { type, isRest:true };
+                    return { type, isRest:true, symbol };
                 }
             }
+            //if (idx>=sig.parameters.length)
             Debug.assert(idx<sig.parameters.length);
             const symbol = sig.parameters[idx];
             const type = getTypeOfSymbol(symbol);
-            return { type };
+            // determining optional is hard! signatureToString seems to call this line several layers beneath the surface:
+            // const isOptional = parameterDeclaration && isOptionalParameter(parameterDeclaration) || getCheckFlags(parameterSymbol) & CheckFlags.OptionalParameter;
+            // c.f. checker.ts, function isOptionalParameter(node: ParameterDeclaration | JSDocParameterTag | JSDocPropertyTag) {...}
+
+            let optional = !!(symbol.flags & SymbolFlags.Optional);
+            if (!optional) {
+                optional = !!(getCheckFlags(symbol) & CheckFlags.OptionalParameter);
+            }
+            if (!optional && symbol.valueDeclaration){
+                Debug.assert(symbol.valueDeclaration.kind===SyntaxKind.Parameter);
+                optional = checker.isOptionalParameter(symbol.valueDeclaration as ParameterDeclaration);
+            }
+            // if (!optional && symbol.valueDeclaration) {
+            //     Debug.assert(symbol.valueDeclaration.kind===SyntaxKind.Parameter);
+            //     const pdecl = (symbol.valueDeclaration as ParameterDeclaration);
+            //     optional = (!!pdecl.questionToken || !!pdecl.initializer);
+            // }
+            return { type, optional, symbol };
+        }
+        // @ ts-expect-error
+        function isValidSigParamIndex(sig: Readonly<Signature>, idx: number): boolean {
+            return signatureHasRestParameter(sig) || idx<sig.parameters.length;
         }
 
 
+        type TransientCallArgumentSymbol = Symbol & {
+            //callExpresionResolvedArg: CallExpressionResolvedArg;
+            cargidx: number;
+            tupleMember?: {
+                indexInTuple: number;
+            };
+        };
+        type CallArgumentSymbol = TransientCallArgumentSymbol | Symbol;
+        type CallExpressionResolvedArg = & {
+            symbol: CallArgumentSymbol;
+            type: RefTypesType;
+            tstype: Type;
+            hasSpread?: boolean; // last arg might have it
+        };
         /**
-         * Process the arguments of a CallExpression, whose results will be written to inferStatus.groupNodeToTypeMap,
-         * thus allowing inferStatus.getTypeOfExpressionShallowRecursion(callExpr) to be called successfully.
-         * Note that full constraint processing based on narrowed choice of function overrides is not yet performed.
+         * Process the arguments of a CallExpression.
          * @param args
          */
         function mrNarrowTypesByCallExpressionProcessCallArguments(args: {
             callExpr: Readonly<CallExpression>,
             sc: RefTypesSymtabConstraintItem, inferStatus: InferStatus
-        }): RefTypesSymtabConstraintItem {
+        }): {
+            sc: RefTypesSymtabConstraintItem,
+            resolvedCallArguments: CallExpressionResolvedArg[]
+        }{
             const {callExpr,sc:scIn,inferStatus} = args;
+            // function createSymbolAndIntoConstraint(cargidx: number,tupleMember: TransientCallArgumentSymbol["tupleMember"] | undefined, type: RefTypesType, ci: ConstraintItem):
+            // {symbol: CallArgumentSymbol,constraintItem: ConstraintItem}{
+            //     let name = `cargidx:${cargidx}`;
+            //     if (tupleMember) name += `indexInTuple:${tupleMember.indexInTuple}`;
+            //     const symbol: CallArgumentSymbol = { ... checker.createSymbol(0, name as __String), cargidx };
+            //     inferStatus.declaredTypes.set(symbol as Symbol, createRefTypesTableLeaf(symbol as Symbol, /*isconst*/ true, type));
+            //     if (tupleMember) symbol.tupleMember = tupleMember;
+            //     return { symbol, constraintItem:andSymbolTypeIntoConstraint({ symbol:symbol as Symbol,type,constraintItem:ci, getDeclaredType: createGetDeclaredTypeFn(inferStatus),mrNarrow }) };
+            // }
 
-            type CallArg = & {
-                type: RefTypesType;
-                tstype: Type;
-                hasSpread?: boolean; // last arg might have it
-            };
-            const resolvedCallArguments: CallArg[] = [];
-            let sctmp: RefTypesSymtabConstraintItem = { ... scIn };
-            //const inferStatus: InferStatus = { ...inferStatusIn, groupNodeToTypeMap: new Map<Node,Type>() };
-            const cargStack: Expression[] = [...callExpr.arguments];
-            while (cargStack.length) {
-                const carg = cargStack.shift()!;
+            function createTransientCallArgumentSymbol(idx: number, cargidx: number,tupleMember: TransientCallArgumentSymbol["tupleMember"] | undefined, type: RefTypesType): TransientCallArgumentSymbol {
+                let name = `idx:${idx},cargidx:${cargidx}`;
+                if (tupleMember) name += `indexInTuple:${tupleMember.indexInTuple}`;
+                const symbol: CallArgumentSymbol = { ... checker.createSymbol(0, name as __String), cargidx };
+                inferStatus.declaredTypes.set(symbol,createRefTypesTableLeaf(symbol,/**/ true, type));
+                return symbol;
+            }
+            const getDeclaredType = createGetDeclaredTypeFn(inferStatus);
+
+            const resolvedCallArguments: CallExpressionResolvedArg[] = [];
+            let sctmp: RefTypesSymtabConstraintItem = scIn;
+            callExpr.arguments.forEach((carg,cargidx)=>{
             //for (const carg of callExpr.arguments){
                 // do something about spreads "...", don't pass "..." to getTypeOfExpressionShallowRec because it doesn't honor "as const"
                 if (carg.kind===SyntaxKind.SpreadElement){
                     //
-                    const { inferRefRtnType: {passing} } = mrNarrowTypes({
+                    const { inferRefRtnType: {passing, unmerged} } = mrNarrowTypes({
                         refTypesSymtab: sctmp.symtab,
-                        constraintItem: sctmp.constraintItem, // this is the constraintItem from mrNarrowTypesByCallExpression arguments
+                        constraintItem: sctmp.constraintItem,
                         expr: (carg as SpreadElement).expression,
                         crit: {
                             kind: InferCritKind.none,
@@ -1179,33 +1251,40 @@ namespace ts {
                         qdotfallout:undefined,
                         inferStatus,
                     });
-                    sctmp = { symtab: passing.symtab, constraintItem: passing.constraintItem };
+
+                    const rttr: RefTypesTableReturn = unmerged?.length===1 ? unmerged[0] : passing;
+                    sctmp = { symtab: rttr.symtab, constraintItem: rttr.constraintItem };
                     // The type ought to be a tuple or an array
-                    const tstype1 = getTypeFromRefTypesType(passing.type);
+                    const tstype1 = getTypeFromRefTypesType(rttr.type);
                     if (checker.isArrayOrTupleType(tstype1)){
                         if (checker.isTupleType(tstype1)){
                             // tstype1 is TypeReference
                             if (tstype1.objectFlags & ObjectFlags.Reference){
-                                tstype1.resolvedTypeArguments?.forEach(tstype=>{
-                                    resolvedCallArguments.push({
-                                        tstype,
-                                        type: createRefTypesType(tstype),
-                                    });
+                                Debug.assert(tstype1.resolvedTypeArguments);
+                                tstype1.resolvedTypeArguments?.forEach((tstype,indexInTuple)=>{
+                                    const type = createRefTypesType(tstype);
+                                    const symbol: CallArgumentSymbol = createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,{ indexInTuple },type);
+                                    sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol, type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
+                                    resolvedCallArguments.push({ tstype,type,symbol });
                                 });
+                                const tupleSymbol = rttr.symbol ?? createTransientCallArgumentSymbol(cargidx, resolvedCallArguments.length,/**/ undefined, rttr.type);
+                                sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol:tupleSymbol, type:rttr.type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
                             }
                             else {
                                 Debug.fail("unexpected");
                             }
                         }
                         else {
-                            const type = passing.type;
+                            const type = rttr.type;
                             const tstype = getTypeFromRefTypesType(type);
-                            resolvedCallArguments.push({ type,tstype,hasSpread:true });
+                            const symbol: CallArgumentSymbol = rttr.symbol ?? createTransientCallArgumentSymbol(cargidx, resolvedCallArguments.length,/**/ undefined, type);
+                            sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol, type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
+                            resolvedCallArguments.push({ type,tstype,hasSpread:true, symbol });
                         }
                     }
                 }
                 else {
-                    const { inferRefRtnType: {passing} } = mrNarrowTypes({
+                    const { inferRefRtnType: {passing,unmerged} } = mrNarrowTypes({
                         refTypesSymtab: sctmp.symtab,
                         constraintItem: sctmp.constraintItem, // this is the constraintItem from mrNarrowTypesByCallExpression arguments
                         expr: carg,
@@ -1215,89 +1294,232 @@ namespace ts {
                         qdotfallout:undefined,
                         inferStatus,
                     });
-                    sctmp = { symtab: passing.symtab, constraintItem: passing.constraintItem };
-                    const type = passing.type;
+                    const rttr: RefTypesTableReturn = unmerged?.length===1 ? unmerged[0] : passing;
+                    sctmp = { symtab: rttr.symtab, constraintItem: rttr.constraintItem };
+                    const type = rttr.type;
                     const tstype = getTypeFromRefTypesType(type);
-                    resolvedCallArguments.push({ type,tstype });
+                    // const name: __String = `carg:${cargidx}` as __String;
+                    // const symbol = { ... checker.createSymbol(0,name), cargidx };
+                    const symbol: CallArgumentSymbol = rttr.symbol ?? createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,/**/ undefined, type);
+                    sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol, type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
+                    resolvedCallArguments.push({ type,tstype,symbol });
                 }
-            }
+            });
             if (myDebug) {
                 const hdr0 = "mrNarrowTypesByCallExpressionProcessCallArguments ";
-                consoleLog(hdr0 + "start");
+                consoleLog(hdr0 + `resolvedCallArguments.length: ${resolvedCallArguments.length}`);
                 resolvedCallArguments.forEach((ca,idx)=>{
-                    let str = hdr0 + `arg[${idx}] tstype: ${typeToString(ca.tstype)}`;
+                    let str = hdr0 + `arg[${idx}] tstype: ${typeToString(ca.tstype)}, symbol${dbgSymbolToStringSimple(ca.symbol)}`;
                     if (ca.hasSpread) str +="hasSpread:true, ";
                     consoleLog(str);
                 });
             }
-            return sctmp;
+            return { sc:sctmp, resolvedCallArguments };
         }
 
+        function calculateNextLeftovers(leftoverMappings: Readonly<RefTypesType[]>, ci: ConstraintItem, arrSymbols: Readonly<CallArgumentSymbol[]>, getDeclaredType: GetDeclaredTypeFn):
+        ConstraintItem | any {
+            //const getDeclaredType = (symbol: Symbol) => argsSymbolTable.get(symbol)!;
+            const ors: ConstraintItem[] = [];
+            leftoverMappings.forEach((type,idx)=>{
+                if (isNeverType(type)) return;
+                ors.push(andSymbolTypeIntoConstraint({ symbol:arrSymbols[idx],type,constraintItem:ci,getDeclaredType,mrNarrow }));
+            });
+            const nextci = orConstraintsV2(ors);
+            const mapCover = evalCoverPerSymbol(nextci,getDeclaredType,mrNarrow);
+            let hasNonNever=false;
+            for (let iter = mapCover.values(), it=iter.next(); !it.done; it = iter.next()){
+                if (!isNeverType(it.value)) {
+                    hasNonNever=true;
+                }
+            }
+            if (!hasNonNever) return createFlowConstraintNever();
+            return nextci;
+        }
 
         function mrNarrowTypesByCallExpression({refTypesSymtab:symtabIn, constraintItem: constraintItemIn, expr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {expr: CallExpression}): MrNarrowTypesInnerReturn {
             if (myDebug){
                 consoleGroup(`mrNarrowTypesByCallExpression[in]`);
             }
             Debug.assert(qdotfallout);
-            // First duty is to call the precursors
+            const getDeclaredType = createGetDeclaredTypeFn(inferStatus);
+            // First duty is to call the pre-chain, if any.
             const pre = InferRefTypesPreAccess({ refTypesSymtab:symtabIn, constraintItem: constraintItemIn, expr:callExpr, /*crit,*/ qdotfallout, inferStatus });
             if (pre.kind==="immediateReturn") return pre.retval;
             assertType<CallExpression>(callExpr);
             const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[]=[];
-            /**
-             * Merge the passing and let checker.resolveCallExpression operate on the non null nodetotype map - will it work?
-             */
-            //const mergepre = applyCritToArrRefTypesTableReturn(pre.passing, { kind:InferCritKind.none }, inferStatus);
-            pre.unmergedPassing.forEach((rttr,rttridx)=>{
-                // const rttridx = 0;
-                // const rttr = mergepre.passing;
-                const arrsig = checker.getSignaturesOfType(getTypeFromRefTypesType(rttr.type), SignatureKind.Call);
-                if (myDebug) {
-                    arrsig.forEach((sig,sigidx)=>{
-                        consoleLog(`mrNarrowTypesByCallExpression[] rttridx:${rttridx}, sigidx:${sigidx}, sig: ${checker.signatureToString(sig)}`);
-                    });
-                    consoleLog(`rttridx:${rttridx}, resolve arguments by mrNarrowTypesByCallExpressionProcessCallArguments`);
-                }
-                const scout = mrNarrowTypesByCallExpressionProcessCallArguments({ callExpr,sc:{ symtab:rttr.symtab,constraintItem:rttr.constraintItem },inferStatus });
-                if (myDebug) {
-                    consoleLog(`resolve arguments completed, `);
+            let sigGroupFailedCount = 0;
+            pre.unmergedPassing.forEach((umrttr,rttridx)=>{
+                /**
+                 * In the case where multiple functions with the same name but different symbols are coincide on this CallExpression
+                 * we have to disambiguate the constraints by and-not'ing with all other instances than the one of interest.
+                 * .... What needs top be done is to ....
+                 */
+                const scIsolated: RefTypesSymtabConstraintItem = { symtab: umrttr.symtab, constraintItem: umrttr.constraintItem };
+                pre.unmergedPassing.forEach((umrttr1,_rttridx1)=>{
+                    if (!umrttr1.symbol || umrttr1.symbol===umrttr.symbol) return;
+                    if (!umrttr1.isconst) scIsolated.symtab.delete(umrttr1.symbol);
+                    else {
+                        scIsolated.constraintItem = andDistributeDivide(
+                            { symbol: umrttr1.symbol, type:createRefTypesType()/*never*/,cin:scIsolated.constraintItem,getDeclaredType,mrNarrow });
+                        scIsolated.constraintItem.symbolsInvolved = collectSymbolsInvolvedInConstraints(scIsolated.constraintItem); // OK?
+                    }
+                });
+                if (myDebug){
+                    dbgConstraintItem(scIsolated.constraintItem).forEach(s=>consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx} scIsolated: ${s}`));
                 }
 
-                const candidatesOutArray: Signature[] = [];
-                // If not hadError, there is a guaranteed unique matching sig because typescript will error if more than one matching sig exists for the types present.
-                const singleType = getTypeFromRefTypesType(rttr.type);
-                const { hadError, signature: uniqueSig } = inferStatus.callCheckerFunctionWithShallowRecursion(scout, checker.resolveCallExpression,callExpr, candidatesOutArray, 0, { ignoreCallChain: true, singleType });
-                const uniqueSigReturnType = checker.getReturnTypeOfSignature(uniqueSig);
-                // const uniqueSigReturnType = !hadError ? uniqueSig.resolvedReturnType??checker.getUnknownType() : checker.getUnknownType();
+                const {sc: scResolvedArgs, resolvedCallArguments} = mrNarrowTypesByCallExpressionProcessCallArguments({
+                    callExpr, sc:{ symtab:scIsolated.symtab, constraintItem: scIsolated.constraintItem },inferStatus });
+
+                const tstype = getTypeFromRefTypesType(umrttr.type);
+                const arrsig = checker.getSignaturesOfType(tstype, SignatureKind.Call);
+                const arrsigrettype = arrsig.map((sig)=>checker.getReturnTypeOfSignature(sig));
                 if (myDebug){
-                    consoleLog(`mrNarrowTypesByCallExpression[dbg] hadError: ${hadError}`);
-                    consoleLog(`mrNarrowTypesByCallExpression[dbg] uniqueSig: ${dbgSignatureToString(uniqueSig)}`);
-                    consoleLog(`mrNarrowTypesByCallExpression[dbg] uniqueSig.resolvedReturnType: ${uniqueSig.resolvedReturnType?dbgTypeToString(uniqueSig.resolvedReturnType):"<undef>"}`);
-                    consoleLog(`mrNarrowTypesByCallExpression[dbg] uniqueSigReturnType: ${dbgTypeToString(uniqueSigReturnType)}`);
-                    candidatesOutArray.forEach((sig,sigidx)=>{
-                        consoleLog(`mrNarrowTypesByCallExpression[dbg] resolved sig#${sigidx} ${dbgSignatureToString(sig)}`);
+                    arrsig.forEach((sig,sigidx)=>consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx} sigidx:${sigidx} ${checker.signatureToString(sig)}`));
+                }
+
+                // const makeFakeSymbol = (id: number) => {
+                //     return { id } as any as Symbol;
+                // };
+                // const argsSymbolTable = new Map<Symbol, RefTypesType>();
+                // resolvedCallArguments.every((carg,cargidx)=>{
+                //     argsSymbolTable.set(makeFakeSymbol(cargidx), carg.type);
+                // });
+                // let argsConstr: RefTypesSymtabConstraintItem  = { symtab:undefined as any as RefTypesSymtab, constraintItem:createFlowConstraintAlways() };
+                // let nextArgsConstr = argsConstr;
+                const allMappings: RefTypesType[][]=[];
+                const allLeftoverMappings: RefTypesType[][]=[];
+                const arrCargSymbols: CallArgumentSymbol[] = resolvedCallArguments.map(x=>x.symbol);
+                // const cargsSymbolTable = new Map<FakeSymbol, RefTypesType>(resolvedCallArguments.map((carg,idx)=>{
+                //     const fakeSymbol = { id:idx } as any as Symbol;
+                //     arrCargSymbols.push(fakeSymbol);
+                //     return [fakeSymbol, carg.type];
+                // }));
+                let cumLeftoverConstraintItem = createFlowConstraintAlways();
+                let nextConstraint = scResolvedArgs.constraintItem;
+                const finished = arrsig.some((sig,sigidx)=>{
+                    const oneMapping: RefTypesType[]=[];
+                    const oneLeftoverMapping: (RefTypesType)[]=[];
+                    let tmpArgsConstr = nextConstraint;
+                    if (myDebug){
+                        dbgConstraintItem(tmpArgsConstr).forEach(s=>consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx} sigidx:${sigidx},nextConstraint: ${s}`));
+                        dbgConstraintItem(cumLeftoverConstraintItem).forEach(s=>consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx} sigidx:${sigidx},cumLeftoverConstraintItem: ${s}`));
+                    }
+                    let pass1 = resolvedCallArguments.every((carg,cargidx)=>{
+                        if (!isValidSigParamIndex(sig,cargidx)){
+                            return false;
+                        }
+                        const sparam = getSigParamType(sig,cargidx);
+                        if (carg.hasSpread /*final spread only*/ && !sparam.isRest) {
+                            return false;
+                        }
+                        let assignableType = intersectionOfRefTypesType(carg.type, createRefTypesType(sparam.type));
+                        if (isNeverType(assignableType)){
+                            return false;
+                        }
+                        tmpArgsConstr = andSymbolTypeIntoConstraint({ symbol:carg.symbol as Symbol,type:assignableType, constraintItem:tmpArgsConstr,getDeclaredType,mrNarrow });
+                        if (isNeverConstraint(tmpArgsConstr)) {
+                            return false;
+                        }
+                        // is this necessary? evalCover is expensive
+                        const evaledAssignableType = evalCoverForOneSymbol(carg.symbol,tmpArgsConstr, getDeclaredType, mrNarrow);
+                        if (isNeverType(evaledAssignableType)){
+                            return false;
+                        }
+                        if (!isASubsetOfB(assignableType,evaledAssignableType)){
+                            assignableType = evaledAssignableType;
+                        }
+                        oneMapping.push(assignableType);
+
+                        const notAssignableType = subtractFromType(assignableType, carg.type);
+                        // check if the non assignable type is allowed.
+                        const checkConstr = andSymbolTypeIntoConstraint({ symbol:carg.symbol, type:notAssignableType, constraintItem:scResolvedArgs.constraintItem,
+                            getDeclaredType, mrNarrow });
+                        if (!isNeverConstraint(checkConstr)){
+                            const evaledNotAssignableType = evalCoverForOneSymbol(carg.symbol,checkConstr, getDeclaredType, mrNarrow);
+                            if (!isNeverType(evaledNotAssignableType)){
+                                oneLeftoverMapping.push(evaledNotAssignableType);
+                            }
+                        }
+                        return true;
+                    });
+                    if (pass1 && isValidSigParamIndex(sig, resolvedCallArguments.length)){
+                        // if there are leftover sig params the first one must be optional or final spread
+                        const sparam = getSigParamType(sig, resolvedCallArguments.length);
+                        if (!sparam.optional && !sparam.isRest){
+                            pass1 = false;
+                        }
+                    }
+                    if (pass1){
+                        // check if mapping lies within the shadow of any pervious mapping, in which case it pass1->false
+                        const shadowsPrev = allMappings.some((prevMapping,_prevMappingIdx)=>{
+                            if (prevMapping.length<oneMapping.length) return false; // need to include default params in mappings?
+                            const oneshadow = oneMapping.every((onetype,idx)=>{
+                                return isASubsetOfB(onetype,prevMapping[idx]);
+                            });
+                            return oneshadow;
+                        });
+                        if (shadowsPrev){
+                            pass1 = false;
+                        }
+                    }
+                    let finished1 = false;
+                    if (pass1){
+                        allMappings.push(oneMapping);
+
+                        arrRefTypesTableReturn.push({
+                            kind: RefTypesTableKind.return,
+                            type: createRefTypesType(arrsigrettype[sigidx]),
+                            symtab:scResolvedArgs.symtab,
+                            constraintItem: tmpArgsConstr
+                        });
+
+                        finished1 = oneLeftoverMapping.every(oneNotType=>isNeverType(oneNotType));
+                        if (!finished1){
+                            allLeftoverMappings.push(oneLeftoverMapping);
+                            // the combination (logical and / intersection) of allLeftoverMappings might evaluate to never, if so then finished->true
+                            // We might wonder if the simple per-position intersection of of allLeftoverMappings would be enough to imply finished ...
+                            // but it is not so because it is the cross product of all inputs combinations that must be accounted for.
+                            // Each leftoverMapping is treated as a cross product, and the intesection of those cross products is what is calculated here.
+                            // If that is never, then all input cross products have been accounted for.
+                            cumLeftoverConstraintItem = calculateNextLeftovers(oneLeftoverMapping,cumLeftoverConstraintItem,arrCargSymbols,getDeclaredType);
+                            if (isNeverConstraint(cumLeftoverConstraintItem)) finished1 = true;
+                            if (!finished){
+                                nextConstraint = calculateNextLeftovers(oneLeftoverMapping,nextConstraint,arrCargSymbols,getDeclaredType);
+                            }
+                        }
+                    }
+                    // eslint-disable-next-line prefer-const
+                    //if (pass1) arrAssigned.push(tmpAssigned);
+                    if (myDebug){
+                        consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, pass1:${pass1}`);
+                    }
+                    return finished1;
+                });
+                // if not all possible assignment combinations have been covered then ...
+
+                if (!finished) {
+                    sigGroupFailedCount++;
+                    // "not finished" means there could be uncovered/unexpected arguments passed to the function and therefore the result is unknown.
+                    // This situation can always be prevented if the user declares a final overload - `function [functionName](...args: any[]): never;`
+                    // which could be backed up by terminating in case of unexpected inputs.
+                    // This next added return is the same as the user declaring a final overload - `function [functionName](...args: any[]): unknown;`
+                    // If the user declares `function [functionName](...args: any[]): unknown;` and the processing "finishes" before reaching it, then the
+                    // function return effectively becomes never.
+                    arrRefTypesTableReturn.push({
+                        kind: RefTypesTableKind.return,
+                        type: createRefTypesType(checker.getUnknownType()),
+                        symtab:scResolvedArgs.symtab,
+                        constraintItem: scResolvedArgs.constraintItem
                     });
                 }
-                if (!uniqueSig.resolvedReturnType){
-                    Debug.assert(uniqueSig.resolvedReturnType);
+                if (myDebug){
+                    consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, finished:${finished}`);
                 }
-                // if ((uniqueSigReturnType as IntersectionType).objectFlags & ObjectFlags.IsNeverIntersection){
-                //     uniqueSigReturnType = checker.getUnknownType(); // because we don't know that user program stops
-                // }
-                // else if (uniqueSigReturnType.flags & TypeFlags.Intersection){
-                //     if ((uniqueSigReturnType as IntersectionType).types.some(t=>(t as ObjectType).objectFlags & ObjectFlags.IsNeverIntersection)){
-                //         uniqueSigReturnType = checker.getUnknownType(); // because we don't know that user program stops
-                //     }
-                // }
-                arrRefTypesTableReturn.push({
-                    kind: RefTypesTableKind.return,
-                    type: createRefTypesType(uniqueSigReturnType),
-                    symtab: scout.symtab,
-                    constraintItem: scout.constraintItem
-                });
             });
             if (myDebug){
-                consoleLog(`mrNarrowTypesByCallExpression[out]`);
+                consoleLog(`mrNarrowTypesByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${pre.unmergedPassing.length}`);
                 consoleGroupEnd();
             }
             return { arrRefTypesTableReturn };
@@ -1326,6 +1548,8 @@ namespace ts {
          * @returns
          */
         function InferRefTypesPreAccess({refTypesSymtab: refTypes, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs & {expr: {expression: Expression}}): InferRefTypesPreAccessRtnType{
+        consoleGroup(`InferRefTypesPreAccess[in] expr: ${dbgNodeToString(condExpr)}`);
+        try{
             const { inferRefRtnType:{ passing, failing, unmerged } } = mrNarrowTypes(
                 { refTypesSymtab: refTypes, expr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus,constraintItem });
             Debug.assert(failing);
@@ -1346,11 +1570,6 @@ namespace ts {
                     if (myDebug) consoleLog(`Error: expression ${dbgNodeToString(condExpr)} cannot be applied to undefined or null.  Add '?' or '!' if appropriate.`);
                 }
             }
-            if (myDebug){
-                dbgRefTypesTableToStrings(passing).forEach(s=>{
-                    consoleLog(`InferRefTypesPreAccess[dbg] passing: ${s}`);
-                });
-            }
             if (isNeverType(passing.type)){
                 return { kind:"immediateReturn", retval: { arrRefTypesTableReturn:[] } };
             }
@@ -1358,22 +1577,39 @@ namespace ts {
             unmerged?.forEach(rttr=>{
                 const type = subtractFromType(createRefTypesType([nullType,undefinedType]),rttr.type);
                 if (isNeverType(type)) return;
-                if (rttr.symbol){
-                    rttr = andRttrSymbolTypeIntoSymtabConstraint({ ...rttr,type }, inferStatus);
-                    if (!isNeverType(rttr.type) && !isNeverConstraint(rttr.constraintItem)) {
-                        unmergedPassing.push(rttr);
-                    }
-
-                }
-                else unmergedPassing.push({ ...rttr, type });
+                // if (rttr.symbol){
+                //     rttr = andRttrSymbolTypeIntoSymtabConstraint({ ...rttr,type }, inferStatus);
+                //     if (!isNeverType(rttr.type) && !isNeverConstraint(rttr.constraintItem)) {
+                //         unmergedPassing.push(rttr);
+                //     }
+                // }
+                unmergedPassing.push({ ...rttr, type });
             });
+            if (myDebug){
+                dbgRefTypesTableToStrings(passing).forEach(s=>{
+                    consoleLog(`InferRefTypesPreAccess[dbg] passing: ${s}`);
+                });
+                unmergedPassing.forEach((umrttr,umidx)=>{
+                    dbgRefTypesTableToStrings(umrttr).forEach(s=>{
+                        consoleLog(`InferRefTypesPreAccess[dbg] unmergedPassing[${umidx}]: ${s}`);
+                    });
+                });
+            }
             return { kind:"normal", passing, unmergedPassing };
+        }
+        finally {
+            consoleLog(`InferRefTypesPreAccess[out]`);
+            consoleGroupEnd();
+        }
         }
 
         function mrNarrowTypesByPropertyAccessExpression({refTypesSymtab, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             if (myDebug) consoleGroup(`mrNarrowTypesByPropertyAccessExpression[in]`);
             const r = mrNarrowTypesByPropertyAccessExpression_aux({ refTypesSymtab, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem });
             if (myDebug) {
+                r.arrRefTypesTableReturn.forEach((rttr,idx)=>{
+                    dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`mrNarrowTypesByPropertyAccessExpression[out] arrRefTypesTableReturn[${idx}] ${s}`));
+                });
                 consoleLog(`mrNarrowTypesByPropertyAccessExpression[out]`);
                 consoleGroupEnd();
             }
@@ -1416,7 +1652,7 @@ namespace ts {
              * (1) The node type is already squashed so the infer info is lost
              * (2) We don't need it, because the types passed back from preAccess must be correct - identical to what is here (only squashed). Can be verified.
 .             * */
-            const accessedTypes: {baseType: Type, type: Type, declaredType?: Type, lookupFail?: true, optional: boolean, readonlyProp?: boolean, narrowable?: boolean}[]=[];
+            // const accessedTypes: {baseType: Type, type: Type, declaredType?: Type, lookupFail?: true, optional: boolean, readonlyProp?: boolean, narrowable?: boolean}[]=[];
             const keystr = expr.name.escapedText as string;
             //const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = []; //
             const arrRttr: RefTypesTableReturn[]=[];
@@ -1426,50 +1662,49 @@ namespace ts {
                  * For each new branch a RefTypesTableReturn is created and pushed to arrRttr.
                  *
                  */
-                const preRefTypesSymtab = prePassing.symtab;
-                const preConstraintItemNode = prePassing.constraintItem;
                 forEachRefTypesTypeType(prePassing.type, t => {
                     if (t===undefinedType||t===nullType) {
                         //Debug.assert(false);
                         return;
                     }
-                    if (!(t.flags & TypeFlags.Object) && t!==stringType){
-                        let tstype: Type;
-                        if (t===numberType) tstype = errorType;  // special case ERROR TYPE for t===numberType
-                        else tstype = undefinedType;
-                        const type = createRefTypesType(tstype);
-                        accessedTypes.push({ baseType: t, type:tstype, lookupFail: true, optional:false });
-                        //arrTypeSymtab.push([createRefTypesType(undefinedType), preRefTypesSymtab]);
-                        arrRttr.push({
-                            kind: RefTypesTableKind.return,
-                            symbol: undefined,
-                            type,
-                            symtab: preRefTypesSymtab,
-                            constraintItem: preConstraintItemNode
-                        });
-                        return;
+
+                    let symtab = prePassing.symtab;
+                    let constraintItem = prePassing.constraintItem;
+
+                    consoleLog(`XXX1 ${typeToString(t)}`);
+                    dbgConstraintItem(prePassing.constraintItem).forEach(s=>consoleLog(`XXX1 prePassing.constraintItem ${s}`));
+
+                    if (prePassing.symbol) {
+                        ({sc:{symtab,constraintItem}}=andSymbolTypeIntoSymtabConstraint(
+                            {symbol:prePassing.symbol, type:createRefTypesType(t), isconst:prePassing.isconst, sc:{ symtab,constraintItem },
+                            getDeclaredType: createGetDeclaredTypeFn(inferStatus), mrNarrow }));
                     }
+                    dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`XXX2 prePassing.constraintItem ${s}`));
+
+
                     if (isArrayOrTupleType(t)||t===stringType) {
+                        if (myDebug) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
                         if (keystr==="length") {
-                            accessedTypes.push({ baseType: t, type:numberType, optional:false });
+                            // accessedTypes.push({ baseType: t, type:numberType, optional:false });
                             //arrTypeSymtab.push([createRefTypesType(numberType), preRefTypesSymtab]);
                             arrRttr.push({
                                 kind: RefTypesTableKind.return,
                                 symbol: undefined,
                                 type: createRefTypesType(numberType),
-                                symtab: preRefTypesSymtab,
-                                constraintItem: preConstraintItemNode
+                                symtab,
+                                constraintItem
                             });
                         }
                         else {
-                            accessedTypes.push({ baseType: t, type:undefinedType, lookupFail: true, optional:false });
+                            // accessedTypes.push({ baseType: t, type:undefinedType, lookupFail: true, optional:false });
                             //arrTypeSymtab.push([createRefTypesType(undefinedType), preRefTypesSymtab]);
+                            Debug.fail("not yet implemented "+keystr);
                             arrRttr.push({
                                 kind: RefTypesTableKind.return,
                                 symbol: undefined,
                                 type: createRefTypesType(undefinedType),
-                                symtab: preRefTypesSymtab,
-                                constraintItem: preConstraintItemNode
+                                symtab,
+                                constraintItem
                             });
                         };
                         return;
@@ -1480,85 +1715,117 @@ namespace ts {
                      */
                     const propSymbol = checker.getPropertyOfType(t, keystr);
                     if (propSymbol) {
+                        if (myDebug) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
                         if (useConstraintsV2() && propSymbol.flags & SymbolFlags.EnumMember){
                             // treat it as a literal type, not a symbol
                             const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
-                            accessedTypes.push({ baseType: t, type:tstype, optional:false });
+                            // accessedTypes.push({ baseType: t, type:tstype, optional:false });
                             arrRttr.push({
                                 kind: RefTypesTableKind.return,
                                 type: createRefTypesType(tstype),
-                                symtab: preRefTypesSymtab,
-                                constraintItem: preConstraintItemNode
+                                symtab,
+                                constraintItem
                             });
                             return;
                         }
-                        let readonlyProp = isReadonlyProperty(propSymbol);
-                        const optionalProp = !!(propSymbol.flags & SymbolFlags.Optional);
+                        // let readonlyProp = isReadonlyProperty(propSymbol);
+                        // const optionalProp = !!(propSymbol.flags & SymbolFlags.Optional);
                         const declaredType = getTypeOfSymbol(propSymbol);
-                        let resolvedType = createRefTypesType(declaredType);
-                        let narrowable = optionalProp || declaredType===anyType || !!(declaredType.flags & TypeFlags.Union);
+                        //let narrowable = optionalProp || declaredType===anyType || !!(declaredType.flags & TypeFlags.Union);
+                        // if (propSymbol.declarations){
+                        //     const declarations = propSymbol.declarations;
+                        //     const kind: SyntaxKind = declarations[0].kind;
+                        //     readonlyProp ||= !!(kind===SyntaxKind.MethodSignature); // e.g. { foo():number[]; }, foo cannot be changed
+                        //     //narrowable &&= (kind!==SyntaxKind.MethodSignature); // MethodSignature are invariant, including overloads.
+                        //     if (declarations.length>1){
+                        //         Debug.assert(declarations.every(d=>d.kind===SyntaxKind.MethodSignature)); // could only be overloads?
+                        //     }
+                        // }
+                        // Assumption: the type of propSymbol cannot change because it is fixed by the object definition, whether method or function.
+                        // This assumption might be wrong in case of interfaces which are more fluid - so this might be a TODO.
+                        const isconst = true;
 
-                        const declarations = propSymbol.declarations;
-                        if (declarations){
-                            const kind: SyntaxKind = declarations[0].kind;
-                            readonlyProp ||= !!(kind===SyntaxKind.MethodSignature); // e.g. { foo():number[]; }, foo cannot be changed
-                            narrowable &&= (kind!==SyntaxKind.MethodSignature); // MethodSignature are invariant, including overloads.
-                            if (declarations.length>1){
-                                Debug.assert(declarations.every(d=>d.kind===SyntaxKind.MethodSignature)); // could only be overloads?
+                        if (!inferStatus.declaredTypes.has(propSymbol)){
+                            if (myDebug){
+                                consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg]: adding new symbol to declaredTypes, {symbol:<${
+                                    propSymbol.escapedName},${getSymbolId(propSymbol)}>, type ${typeToString(declaredType)}, isconst:${isconst}`);
                             }
+                            // added because propSymbol might get involved in constraintItem, so it would be needed
+                            inferStatus.declaredTypes.set(propSymbol, createRefTypesTableLeaf(propSymbol,isconst,createRefTypesType(declaredType)));
                         }
-                        /**
-                         * TODO: should resolved prop type ever be narrowed by constraintItem ?
-                         *
-                         */
-                        let value = preRefTypesSymtab.get(propSymbol);
-                        if (value){
-                            resolvedType = value.leaf.type;
-                            Debug.assert(value.leaf.isconst===readonlyProp);
+
+                        const propType = createRefTypesType(declaredType);
+                        // let propSC: RefTypesSymtabConstraintItem;
+                        // eslint-disable-next-line prefer-const
+                        let propSC = { symtab,constraintItem };
+                        if (prePassing.symbol){
+                            ({sc:propSC} = andSymbolTypeIntoSymtabConstraint(
+                                {symbol :prePassing.symbol, isconst: prePassing.isconst, type:createRefTypesType(t), sc:{ symtab,constraintItem },
+                                getDeclaredType: createGetDeclaredTypeFn(inferStatus), mrNarrow }));
                         }
-                        else {
-                            if (myDebug) {
-                                consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg]: adding new symbol to ref types, {symbol:<${
-                                    propSymbol.escapedName},${getSymbolId(propSymbol)}>, type ${typeToString(declaredType)}, const:${readonlyProp}`);
-                            }
-                            value = { leaf: { kind: RefTypesTableKind.leaf, symbol: propSymbol, isconst:readonlyProp, type: resolvedType } };
-                            inferStatus.declaredTypes.set(propSymbol,value.leaf);
-                        }
-                        //arrTypeSymtab.push([resolvedType, preRefTypesSymtab]);
-                        accessedTypes.push({ baseType: t, type: getTypeFromRefTypesType(resolvedType), declaredType, optional: optionalProp, readonlyProp, narrowable });
+                        ({sc:propSC} = andSymbolTypeIntoSymtabConstraint(
+                            {symbol:propSymbol, type:propType, isconst, sc:propSC,
+                            getDeclaredType: createGetDeclaredTypeFn(inferStatus), mrNarrow }));
+
+                        consoleLog(`XXX2 ${typeToString(t)}`);
+                        dbgConstraintItem(prePassing.constraintItem).forEach(s=>consoleLog(`XXX2 prePassing.constraintItem ${s}`));
+                        dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`constraintItem XXX2 ${s}`));
+                        dbgConstraintItem(propSC.constraintItem).forEach(s=>consoleLog(`propSC.constraintItem XXX2 ${s}`));
+
+
+                        // accessedTypes.push({ baseType: t, type: getTypeFromRefTypesType(propType), declaredType, optional: optionalProp, readonlyProp, narrowable:true });
                         arrRttr.push({
                             kind: RefTypesTableKind.return,
                             symbol: propSymbol,
-                            isconst: readonlyProp,
-                            type: value.leaf.type,
-                            symtab: preRefTypesSymtab,
-                            constraintItem: preConstraintItemNode
+                            isconst,
+                            type: propType,
+                            symtab: propSC.symtab,
+                            constraintItem: propSC.constraintItem
                         });
-                    return;
+                        return;
+                    }
+                    if (!(t.flags & TypeFlags.Object) && t!==stringType){
+                        if (myDebug) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] (!(t.flags & TypeFlags.Object) && t!==stringType)`);
+                        let tstype: Type;
+                        if (t===numberType) tstype = errorType;  // special case ERROR TYPE for t===numberType
+                        else tstype = undefinedType;
+                        const type = createRefTypesType(tstype);
+                        // accessedTypes.push({ baseType: t, type:tstype, lookupFail: true, optional:false });
+                        //arrTypeSymtab.push([createRefTypesType(undefinedType), preRefTypesSymtab]);
+                        arrRttr.push({
+                            kind: RefTypesTableKind.return,
+                            symbol: undefined,
+                            type,
+                            symtab,
+                            constraintItem
+                        });
+                        return;
                     }
                     Debug.assert(false);
                 });
             });
 
-            if (myDebug){
-                consoleLog(`propertyTypes:`);
-                accessedTypes.forEach(t=> {
-                    consoleLog(`baseType:${typeToString(t.baseType)}, propType:${typeToString(t.type)}, optional:${t.optional}, lookupFail:${t.lookupFail}, readonlyProp: ${t.readonlyProp}, narrowable: ${t.narrowable} `);
-                });
-                consoleLog(`end propertyTypes:`);
-            }
-            const hasFailedLookup = accessedTypes.some(x=>x.lookupFail);
-            const hasSuccessLookup = accessedTypes.some(x=>!x.lookupFail);
-            let requirePropertyDefinedForEachSubtype = false;
-            requirePropertyDefinedForEachSubtype = false;
-            if (requirePropertyDefinedForEachSubtype && hasFailedLookup){
-                if (myDebug) consoleLog(`inferTypesByPropertyAccessExpression[dbg]: Error: some lookup(s) were unsuccessful`);
-            }
-            else if (!hasSuccessLookup){
-                if (myDebug) consoleLog(`inferTypesByPropertyAccessExpression[dbg]: Error: no lookups were successful`);
-            }
-            const totalType = createRefTypesType();
-            arrRttr.forEach(rttr=>mergeToRefTypesType({ source: rttr.type, target: totalType }));
+
+
+            // if (myDebug){
+            //     consoleLog(`propertyTypes:`);
+            //     accessedTypes.forEach(t=> {
+            //         consoleLog(`baseType:${typeToString(t.baseType)}, propType:${typeToString(t.type)}, optional:${t.optional}, lookupFail:${t.lookupFail}, readonlyProp: ${t.readonlyProp}, narrowable: ${t.narrowable} `);
+            //     });
+            //     consoleLog(`end propertyTypes:`);
+            // }
+            // const hasFailedLookup = accessedTypes.some(x=>x.lookupFail);
+            // const hasSuccessLookup = accessedTypes.some(x=>!x.lookupFail);
+            // let requirePropertyDefinedForEachSubtype = false;
+            // requirePropertyDefinedForEachSubtype = false;
+            // if (requirePropertyDefinedForEachSubtype && hasFailedLookup){
+            //     if (myDebug) consoleLog(`inferTypesByPropertyAccessExpression[dbg]: Error: some lookup(s) were unsuccessful`);
+            // }
+            // else if (!hasSuccessLookup){
+            //     if (myDebug) consoleLog(`inferTypesByPropertyAccessExpression[dbg]: Error: no lookups were successful`);
+            // }
+            // const totalType = createRefTypesType();
+            // arrRttr.forEach(rttr=>mergeToRefTypesType({ source: rttr.type, target: totalType }));
             //mergeOneIntoNodeToTypeMaps(expr, getTypeFromRefTypesType(totalType), inferStatus.groupNodeToTypeMap);
             return { arrRefTypesTableReturn: arrRttr };
         }
@@ -1885,7 +2152,7 @@ namespace ts {
                             refTypesSymtab: refTypesSymtabIn,
                             constraintItem: constraintItemIn,
                             qdotfallout: undefined,
-                            inferStatus: { ...inferStatus, currentReplayableItem:replayable, groupNodeToTypeMap: dummyNodeToTypeMap }
+                            inferStatus: { ...inferStatus, inCondition:true, currentReplayableItem:replayable, groupNodeToTypeMap: dummyNodeToTypeMap }
                         });
                         if (getMyDebug()){
                             consoleLog(`mrNarrowTypesInner[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}`);

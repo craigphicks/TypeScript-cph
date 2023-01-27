@@ -1,0 +1,74 @@
+=== tests/cases/conformance/_cax/_cax-fn-0005.ts ===
+declare interface FooA {
+    foo(b:string): "A";
+>foo : { (b: string): "A"; (...args: any[]): unknown; }
+>b : string
+
+    foo(...args:any[]): unknown;
+>foo : { (b: string): "A"; (...args: any[]): unknown; }
+>args : any[]
+}
+declare interface FooB {
+    foo(b:number): "B";
+>foo : { (b: number): "B"; (...args: any[]): unknown; }
+>b : number
+
+    foo(...args:any[]): unknown;
+>foo : { (b: number): "B"; (...args: any[]): unknown; }
+>args : any[]
+
+};
+declare const obja: FooA;
+>obja : FooA
+
+declare const objb: FooB;
+>objb : FooB
+
+declare const arg: string | number;
+>arg : string | number
+
+declare const b: boolean;
+>b : boolean
+
+const obj = b? obja : objb
+>obj : FooA | FooB
+>b? obja : objb : FooA | FooB
+>b : boolean
+>obja : FooA
+>objb : FooB
+
+if (obj===obja && arg==="one" || obj===objb && arg===1){
+>obj===obja && arg==="one" || obj===objb && arg===1 : boolean
+>obj===obja && arg==="one" : boolean
+>obj===obja : boolean
+>obj : FooA | FooB
+>obja : FooA
+>arg==="one" : boolean
+>arg : string | number
+>"one" : "one"
+>obj===objb && arg===1 : boolean
+>obj===objb : boolean
+>obj : FooA | FooB
+>objb : FooB
+>arg===1 : boolean
+>arg : string | number
+>1 : 1
+
+    arg; // should be "one" | 1
+>arg : "one" | 1
+
+    const x = obj.foo(arg);
+>x : unknown
+>obj.foo(arg) : unknown
+>obj.foo : { (b: number): "B"; (...args: any[]): unknown; } | { (b: string): "A"; (...args: any[]): unknown; }
+>obj : FooA | FooB
+>foo : { (b: number): "B"; (...args: any[]): unknown; } | { (b: string): "A"; (...args: any[]): unknown; }
+>arg : "one" | 1
+
+    obj; // obj should be FooA | FooB
+>obj : FooA | FooB
+
+    x; // x should be "A" | "B",
+>x : "A" | "B"
+}
+

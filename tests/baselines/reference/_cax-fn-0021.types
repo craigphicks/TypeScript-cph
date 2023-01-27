@@ -1,68 +1,28 @@
 === tests/cases/conformance/_cax/_cax-fn-0021.ts ===
-declare type Foo = {
->Foo : { foo(x?: number): number[]; foo(x?: number, y?: string): string[]; }
-
-    foo(x?:number):number[]
->foo : { (x?: number): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
+declare function foo(x?:number):number[];
+>foo : { (x?: number): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
 >x : number | undefined
 
-    foo(x?:number,y?:string):string[]
->foo : { (x?: number | undefined): number[]; (x?: number, y?: string): string[]; }
+declare function foo(x?:number,y?:string,z?:string):string[];
+>foo : { (x?: number | undefined): number[]; (x?: number, y?: string, z?: string): string[]; }
 >x : number | undefined
 >y : string | undefined
+>z : string | undefined
 
-};
-declare const obj: Readonly<Foo>;
->obj : Readonly<Foo>
+declare const x: [string,...string[]];
+>x : [string, ...string[]]
 
-const a1 = obj.foo();
->a1 : number[]
->obj.foo() : number[]
->obj.foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->obj : Readonly<Foo>
->foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
-
-const a2 = obj.foo(1);
->a2 : number[]
->obj.foo(1) : number[]
->obj.foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->obj : Readonly<Foo>
->foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->1 : 1
-
-const a3 = obj.foo(1,"2");
->a3 : string[]
->obj.foo(1,"2") : string[]
->obj.foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->obj : Readonly<Foo>
->foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->1 : 1
->"2" : "2"
-
-const a4 = obj.foo(...[1,"2"] as const);
+const a4 = foo(...[1,...x] as const);
 >a4 : string[]
->obj.foo(...[1,"2"] as const) : string[]
->obj.foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->obj : Readonly<Foo>
->foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->...[1,"2"] as const : 1 | "2"
->[1,"2"] as const : readonly [1, "2"]
->[1,"2"] : readonly [1, "2"]
+>foo(...[1,...x] as const) : string[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>...[1,...x] as const : string | 1
+>[1,...x] as const : readonly [1, string, ...string[]]
+>[1,...x] : readonly [1, string, ...string[]]
 >1 : 1
->"2" : "2"
+>...x : string
+>x : [string, ...string[]]
 
-const z: [number,string] = [1,"2"];
->z : [number, string]
->[1,"2"] : [number, string]
->1 : 1
->"2" : "2"
-
-const a5 = obj.foo(...z);
->a5 : string[]
->obj.foo(...z) : string[]
->obj.foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->obj : Readonly<Foo>
->foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->...z : string | number
->z : [number, string]
+a4; // should be string[]
+>a4 : string[]
 

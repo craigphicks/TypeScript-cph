@@ -17,5 +17,5 @@ const a5 = foo(...[1,...y] as const);
 a5; // expect number[] | string[] ???? but typescript says only string[]
 const z: [number,string] = [1,"2"];
 const a6 = foo(...z);
-a6;
+a6; // expect string[]
 [a1,a2,a3,a4,a5,a6];

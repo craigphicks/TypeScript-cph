@@ -16,13 +16,6 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-1.0. As I originally suggested to myself in commit eec46167d54d1d171663a0a78d7eb44eec2cb319, there is now a call `getTypeOfExpressionShallowRecursion` as a member of `InferStatus`, which sets up a temporary cache `ESMap<Node,Type>` used to call `checker.getTypeOfExpression`.  This allows `checker.getTypeOfExpression(expr)` even within a speculative branch, e.g., mrNarrowTypesByCallExpression.  (In test _cax-fn-0020.ts it is called in SpreadElement deep under mrNarrowTypesByCallExpression).
-1.1. Fixed bug with `inferStatus` in `mrNarrowTypesByCallExpressionHelperAttemptOneSetOfSig`.
-1.2. Handle `SyntaxKind.SpreadElement` within `case SyntaxKind.ArrayLiteralExpression` of `mrNarrowTypesInner`.
-1.3. Add `case SyntaxKind.AsExpression:` of `mrNarrowTypesInner`.
-1.4. Add `case SyntaxKind.SpreadElement:` of `mrNarrowTypesInner`.
-
-1. measure the verbosity of and compare tree vs SOP reps (curious)
 1. useConstraintsV2===true optimizations
 - `evalCoverPerSymbol` results could be cached on the constraint, but having a lot of caches could end up being expensive.
 - Check that branches that can be reverted to the original pre-branching, do so.
@@ -34,6 +27,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priotity: Postponed
 
+1. measure the verbosity of and compare tree vs SOP reps (curious)
 1. [Implicit-not to economize memory use]  Implement `not` at the `RefTypesType` level for individual literal type elements. For any symbol with a finite literal type range, the type is represents by either positive() or negatative(not) items, but not both at once.  Whichever is less verbose.
 
 ### Priority Low
@@ -56,6 +50,13 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
+
+1.1. Major rewrite of with `inferStatus` in `mrNarrowTypesByCallExpression`.
+1.2. Handle `SyntaxKind.SpreadElement` within `case SyntaxKind.ArrayLiteralExpression` of `mrNarrowTypesInner`.
+1.3. Add `case SyntaxKind.AsExpression:` of `mrNarrowTypesInner`.
+1.4. Add `case SyntaxKind.SpreadElement:` of `mrNarrowTypesInner`.XXX always done from above.
+
+0. As I originally suggested to myself in commit eec46167d54d1d171663a0a78d7eb44eec2cb319, there is now a call `getTypeOfExpressionShallowRecursion` as a member of `InferStatus`, which sets up a temporary cache `ESMap<Node,Type>` used to call `checker.getTypeOfExpression`.  This allows `checker.getTypeOfExpression(expr)` even within a speculative branch, e.g., mrNarrowTypesByCallExpression.  (In test _cax-fn-0020.ts it is called in SpreadElement deep under mrNarrowTypesByCallExpression).
 0. tests for transitive equality `_cax-eqneq-000(1|2|3)`.
 0. Add `andDistributeDivide` into `andSymbolTypeIntoSymtabConstraintV2`, and add a new member `involvedSymbols?: Set<Symbol>` to `ConstraintItem`, which is inherited by new dependent `ConstraintItem`.  That solves the problem of symbols being simplified out by `andDistributeDivide` - `calcCoverPerSymbol` will use `involvedSymbols` so that none are left out.  With a couple of fixes, now working.  Passes both V1 and V2.  V1 not necessary now because V2 also uses the simplifying power of `andDistributeDivide`.  (The downside is not being able to match should-be-reverted-to-pre-branch joins by object compare.)
 

@@ -283,8 +283,8 @@ namespace ts {
         function intersectRefTypesTypes2(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType {
             if (isAnyType(a)) return cloneRefTypesType(b);
             if (isAnyType(b)) return cloneRefTypesType(a);
-            Debug.assert(!a._flags && !b._flags);
             if (isUnknownType(a)||isUnknownType(b)) return createRefTypesTypeUnknown();
+            Debug.assert(!a._flags && !b._flags);
             const iset = isectSet(a._set, b._set);
             const _mapLiteral = new Map<Type, Set<LiteralType>>();
             intersectRefTypesTypesAux(a,b,iset,_mapLiteral);
