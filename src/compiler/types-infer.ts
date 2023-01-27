@@ -169,8 +169,8 @@ namespace ts {
          * @param expr
          * @param checker
          */
-        getTypeOfExpressionShallowRecursion(expr: Expression): Type;
-        callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
+        getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type;
+        callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
     };
 
     export type InferRefArgs = & {

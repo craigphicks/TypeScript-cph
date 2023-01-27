@@ -672,8 +672,11 @@ namespace ts {
         // checker.
         const checker: TypeChecker = {
             getReducedType,
-            resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode?: number): Signature {
-                return resolveCallExpression(node, candidatesOutArray, checkMode??CheckMode.Normal);
+            resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode?: number, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type}): {hadError: boolean, signature: Signature} {
+                // eslint-disable-next-line prefer-const
+                let hadErrorRef: [boolean] = [false];
+                const signature = resolveCallExpression(node, candidatesOutArray, checkMode??CheckMode.Normal, optionalInputs, hadErrorRef);
+                return { hadError: hadErrorRef[0], signature };
             },
             getStringLiteralType,
             getNumberLiteralType,
@@ -31731,18 +31734,18 @@ namespace ts {
             return createDiagnosticForNodeArray(getSourceFileOfNode(node), typeArguments, Diagnostics.Expected_0_type_arguments_but_got_1, belowArgCount === -Infinity ? aboveArgCount : belowArgCount, argCount);
         }
 
-        function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, fallbackError?: DiagnosticMessage): Signature {
+        function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, fallbackError?: DiagnosticMessage | undefined, hadErrorRef?: [boolean] | undefined): Signature {
             if (myDebug) {
                 consoleGroup(`resolveCall[in]: node: ${dbgNodeToString(node)}`);
             }
-            const r = resolveCall_aux(node, signatures, candidatesOutArray, checkMode, callChainFlags, fallbackError);
+            const r = resolveCall_aux(node, signatures, candidatesOutArray, checkMode, callChainFlags, fallbackError, hadErrorRef);
             if (myDebug) {
                 consoleLog(`resolveCall[out]: node: ${dbgNodeToString(node)}`);
                 consoleGroupEnd();
             }
             return r;
         }
-        function resolveCall_aux(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, fallbackError?: DiagnosticMessage): Signature {
+        function resolveCall_aux(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, fallbackError?: DiagnosticMessage, hadErrorRef?: [boolean] | undefined): Signature {
             const isTaggedTemplate = node.kind === SyntaxKind.TaggedTemplateExpression;
             const isDecorator = node.kind === SyntaxKind.Decorator;
             const isJsxOpeningOrSelfClosingElement = isJsxOpeningLikeElement(node);
@@ -31928,6 +31931,11 @@ namespace ts {
                 }
             }
 
+            /**
+             * [cph] At this point it is definitely an error.  Adding a pure error indicator would be helpful, because of the difficulty in
+             * disabugating error status from the returned candidate alone.
+             */
+            if (hadErrorRef) hadErrorRef[0] = true;
             return getCandidateForOverloadFailure(node, candidates, args, !!candidatesOutArray, checkMode);
 
             function addImplementationSuccessElaboration(failed: Signature, diagnostic: Diagnostic) {
@@ -32162,18 +32170,18 @@ namespace ts {
             return maxParamsIndex;
         }
 
-        function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+        function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, optionalInputs?: {ignoreCallChain?: boolean} | undefined, hadErrorRef?: [boolean] | undefined): Signature {
             if (myDebug) {
                 consoleGroup(`resolveCallExpression[in]: node: ${dbgNodeToString(node)}`);
             }
-            const r = resolveCallExpression_aux(node, candidatesOutArray, checkMode);
+            const r = resolveCallExpression_aux(node, candidatesOutArray, checkMode, optionalInputs, hadErrorRef);
             if (myDebug) {
                 consoleLog(`resolveCallExpression[out]: node: ${dbgNodeToString(node)}`);
                 consoleGroupEnd();
             }
             return r;
         }
-        function resolveCallExpression_aux(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+        function resolveCallExpression_aux(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type} | undefined, hadErrorRef?: [boolean] | undefined): Signature {
             if (node.expression.kind === SyntaxKind.SuperKeyword) {
                 const superType = checkSuperExpression(node.expression);
                 if (isTypeAny(superType)) {
@@ -32206,6 +32214,12 @@ namespace ts {
             else {
                 callChainFlags = SignatureFlags.None;
             }
+            // @ts-ignore
+            const origFuncType = funcType;
+            if (optionalInputs){
+                if (optionalInputs.ignoreCallChain) callChainFlags = SignatureFlags.None;
+                if (optionalInputs.singleType) funcType = optionalInputs.singleType;
+            }
 
             funcType = checkNonNullTypeWithReporter(
                 funcType,
@@ -32223,10 +32237,6 @@ namespace ts {
                 return resolveErrorCall(node);
             }
 
-            // Technically, this signatures list may be incomplete. We are taking the apparent type,
-            // but we are not including call signatures that may have been added to the Object or
-            // Function interface, since they have none by default. This is a bit of a leap of faith
-            // that the user will not add any.
             const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
             const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
 
@@ -32282,7 +32292,7 @@ namespace ts {
                 return resolveErrorCall(node);
             }
 
-            return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
+            return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*fallbackError*/ undefined, hadErrorRef);
         }
 
         function isGenericFunctionReturningFunction(signature: Signature) {

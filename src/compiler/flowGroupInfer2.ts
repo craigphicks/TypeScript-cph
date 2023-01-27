@@ -46,7 +46,7 @@ namespace ts {
         checker: TypeChecker
     };
 
-    export function createMrNarrow(checker: TypeChecker, _mrState: MrState): MrNarrow {
+    export function createMrNarrow(checker: TypeChecker, _mrState: MrState, refTypesTypeModule: RefTypesTypeModule): MrNarrow {
 
 
         let myDebug = getMyDebug();
@@ -130,7 +130,7 @@ namespace ts {
             forEachRefTypesTypeType,
             partitionIntoSingularAndNonSingularTypes,
             equalRefTypesTypes,
-        } = createRefTypesTypeModule(checker);
+        } = refTypesTypeModule; //createRefTypesTypeModule(checker);
 
         const mrNarrow: MrNarrow = {
             // forwarded from flowGroupInferRefTypesType
@@ -1155,14 +1155,17 @@ namespace ts {
             const {callExpr,sc:scIn,inferStatus} = args;
 
             type CallArg = & {
-                inferRefRtnType: InferRefRtnType;
+                type: RefTypesType;
+                tstype: Type;
                 hasSpread?: boolean; // last arg might have it
             };
             const resolvedCallArguments: CallArg[] = [];
             let sctmp: RefTypesSymtabConstraintItem = { ... scIn };
             //const inferStatus: InferStatus = { ...inferStatusIn, groupNodeToTypeMap: new Map<Node,Type>() };
-            //const cargQueue:
-            for (const carg of callExpr.arguments){
+            const cargStack: Expression[] = [...callExpr.arguments];
+            while (cargStack.length) {
+                const carg = cargStack.shift()!;
+            //for (const carg of callExpr.arguments){
                 // do something about spreads "...", don't pass "..." to getTypeOfExpressionShallowRec because it doesn't honor "as const"
                 if (carg.kind===SyntaxKind.SpreadElement){
                     //
@@ -1181,13 +1184,23 @@ namespace ts {
                     const tstype1 = getTypeFromRefTypesType(passing.type);
                     if (checker.isArrayOrTupleType(tstype1)){
                         if (checker.isTupleType(tstype1)){
-                            for (const tstype of (tstype1 as TupleType).typeParameters??([] as Type[])){
-                                resolvedCallArguments.push({ inferRefRtnType:{ passing:{ ...passing, type: createRefTypesType(tstype) } } });
-
+                            // tstype1 is TypeReference
+                            if (tstype1.objectFlags & ObjectFlags.Reference){
+                                tstype1.resolvedTypeArguments?.forEach(tstype=>{
+                                    resolvedCallArguments.push({
+                                        tstype,
+                                        type: createRefTypesType(tstype),
+                                    });
+                                });
+                            }
+                            else {
+                                Debug.fail("unexpected");
                             }
                         }
                         else {
-                            resolvedCallArguments.push({ inferRefRtnType:{ passing },hasSpread:true });
+                            const type = passing.type;
+                            const tstype = getTypeFromRefTypesType(type);
+                            resolvedCallArguments.push({ type,tstype,hasSpread:true });
                         }
                     }
                 }
@@ -1202,54 +1215,92 @@ namespace ts {
                         qdotfallout:undefined,
                         inferStatus,
                     });
-                    resolvedCallArguments.push({ inferRefRtnType:{ passing } });
+                    sctmp = { symtab: passing.symtab, constraintItem: passing.constraintItem };
+                    const type = passing.type;
+                    const tstype = getTypeFromRefTypesType(type);
+                    resolvedCallArguments.push({ type,tstype });
                 }
+            }
+            if (myDebug) {
+                const hdr0 = "mrNarrowTypesByCallExpressionProcessCallArguments ";
+                consoleLog(hdr0 + "start");
+                resolvedCallArguments.forEach((ca,idx)=>{
+                    let str = hdr0 + `arg[${idx}] tstype: ${typeToString(ca.tstype)}`;
+                    if (ca.hasSpread) str +="hasSpread:true, ";
+                    consoleLog(str);
+                });
             }
             return sctmp;
         }
 
 
         function mrNarrowTypesByCallExpression({refTypesSymtab:symtabIn, constraintItem: constraintItemIn, expr:callExpr, /* crit,*/ qdotfallout, inferStatus}: InferRefInnerArgs & {expr: CallExpression}): MrNarrowTypesInnerReturn {
+            if (myDebug){
+                consoleGroup(`mrNarrowTypesByCallExpression[in]`);
+            }
             Debug.assert(qdotfallout);
             // First duty is to call the precursors
             const pre = InferRefTypesPreAccess({ refTypesSymtab:symtabIn, constraintItem: constraintItemIn, expr:callExpr, /*crit,*/ qdotfallout, inferStatus });
             if (pre.kind==="immediateReturn") return pre.retval;
-            const prePassing = pre.passing;
-            if (myDebug) {
-                consoleLog(`candidates by return of pre: [${prePassing.map(preRttr=>dbgRefTypesTypeToString(preRttr.type)).join(", ")}]`);
-                consoleLog(`resolve arguments`);
-            }
             assertType<CallExpression>(callExpr);
-            const scout = mrNarrowTypesByCallExpressionProcessCallArguments({ callExpr,sc:{ symtab:symtabIn,constraintItem:constraintItemIn },inferStatus });
-            const candidatesOutArray = undefined;
-            // There is a guaranteed unique matching sig because typescript will error if more than one matching sig exists for the types present.
-            // That easy to code, but perhaps a limiting experience for the typescript user.
-            const uniqueSig = inferStatus.callCheckerFunctionWithShallowRecursion(checker.resolveCallExpression,callExpr, candidatesOutArray);
-            let uniqueSigReturnType = uniqueSig.resolvedReturnType??checker.getUnknownType();
-            if (uniqueSigReturnType.flags && TypeFlags.Intersection){
-                // when resolveCallExpression can't find a match it returns an intersection of all possible return types
-                uniqueSigReturnType = checker.getReducedType(uniqueSigReturnType);
-                if (uniqueSigReturnType===checker.getNeverType()){
-                    uniqueSigReturnType = checker.getUnknownType(); // because we don't know that user program stops
+            const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[]=[];
+            /**
+             * Merge the passing and let checker.resolveCallExpression operate on the non null nodetotype map - will it work?
+             */
+            //const mergepre = applyCritToArrRefTypesTableReturn(pre.passing, { kind:InferCritKind.none }, inferStatus);
+            pre.unmergedPassing.forEach((rttr,rttridx)=>{
+                // const rttridx = 0;
+                // const rttr = mergepre.passing;
+                const arrsig = checker.getSignaturesOfType(getTypeFromRefTypesType(rttr.type), SignatureKind.Call);
+                if (myDebug) {
+                    arrsig.forEach((sig,sigidx)=>{
+                        consoleLog(`mrNarrowTypesByCallExpression[] rttridx:${rttridx}, sigidx:${sigidx}, sig: ${checker.signatureToString(sig)}`);
+                    });
+                    consoleLog(`rttridx:${rttridx}, resolve arguments by mrNarrowTypesByCallExpressionProcessCallArguments`);
                 }
-            }
-            if (myDebug){
-                consoleLog(`mrNarrowTypesByCallExpression[dbg] uniqueSig: ${dbgSignatureToString(uniqueSig)}`);
-                consoleLog(`mrNarrowTypesByCallExpression[dbg] uniqueSig.resolvedReturnType: ${dbgTypeToString(uniqueSig.resolvedReturnType??checker.getNeverType())}`);
-                // candidatesOutArray.forEach((sig,sigidx)=>{
-                //     consoleLog(`mrNarrowTypesByCallExpression[dbg] resolved sig#${sigidx} ${dbgSignatureToString(sig)}`);
-                // });
-            }
-            consoleLog(`mrNarrowTypesByCallExpression[dbg] TODO: compute symtab and ConstraintItem based on result in callExprType`);
+                const scout = mrNarrowTypesByCallExpressionProcessCallArguments({ callExpr,sc:{ symtab:rttr.symtab,constraintItem:rttr.constraintItem },inferStatus });
+                if (myDebug) {
+                    consoleLog(`resolve arguments completed, `);
+                }
 
-            return {
-                arrRefTypesTableReturn:[{
+                const candidatesOutArray: Signature[] = [];
+                // If not hadError, there is a guaranteed unique matching sig because typescript will error if more than one matching sig exists for the types present.
+                const singleType = getTypeFromRefTypesType(rttr.type);
+                const { hadError, signature: uniqueSig } = inferStatus.callCheckerFunctionWithShallowRecursion(scout, checker.resolveCallExpression,callExpr, candidatesOutArray, 0, { ignoreCallChain: true, singleType });
+                const uniqueSigReturnType = checker.getReturnTypeOfSignature(uniqueSig);
+                // const uniqueSigReturnType = !hadError ? uniqueSig.resolvedReturnType??checker.getUnknownType() : checker.getUnknownType();
+                if (myDebug){
+                    consoleLog(`mrNarrowTypesByCallExpression[dbg] hadError: ${hadError}`);
+                    consoleLog(`mrNarrowTypesByCallExpression[dbg] uniqueSig: ${dbgSignatureToString(uniqueSig)}`);
+                    consoleLog(`mrNarrowTypesByCallExpression[dbg] uniqueSig.resolvedReturnType: ${uniqueSig.resolvedReturnType?dbgTypeToString(uniqueSig.resolvedReturnType):"<undef>"}`);
+                    consoleLog(`mrNarrowTypesByCallExpression[dbg] uniqueSigReturnType: ${dbgTypeToString(uniqueSigReturnType)}`);
+                    candidatesOutArray.forEach((sig,sigidx)=>{
+                        consoleLog(`mrNarrowTypesByCallExpression[dbg] resolved sig#${sigidx} ${dbgSignatureToString(sig)}`);
+                    });
+                }
+                if (!uniqueSig.resolvedReturnType){
+                    Debug.assert(uniqueSig.resolvedReturnType);
+                }
+                // if ((uniqueSigReturnType as IntersectionType).objectFlags & ObjectFlags.IsNeverIntersection){
+                //     uniqueSigReturnType = checker.getUnknownType(); // because we don't know that user program stops
+                // }
+                // else if (uniqueSigReturnType.flags & TypeFlags.Intersection){
+                //     if ((uniqueSigReturnType as IntersectionType).types.some(t=>(t as ObjectType).objectFlags & ObjectFlags.IsNeverIntersection)){
+                //         uniqueSigReturnType = checker.getUnknownType(); // because we don't know that user program stops
+                //     }
+                // }
+                arrRefTypesTableReturn.push({
                     kind: RefTypesTableKind.return,
-                    type: createRefTypesType(uniqueSig.resolvedReturnType??checker.getNeverType()),
-                    symtab: scout.symtab, // TODO: this and constraintItem need to be narrowed based on narrowed choice of overlaod functions, before return
+                    type: createRefTypesType(uniqueSigReturnType),
+                    symtab: scout.symtab,
                     constraintItem: scout.constraintItem
-                }]
-            };
+                });
+            });
+            if (myDebug){
+                consoleLog(`mrNarrowTypesByCallExpression[out]`);
+                consoleGroupEnd();
+            }
+            return { arrRefTypesTableReturn };
         }
 
 
@@ -1258,7 +1309,8 @@ namespace ts {
             retval: MrNarrowTypesInnerReturn
         } | {
             kind: "normal",
-            passing: RefTypesTableReturn[],
+            passing: RefTypesTableReturn,
+            unmergedPassing: RefTypesTableReturn[]
             //byNode: ESMap<Node, Type>,
         };
         /**
@@ -1274,12 +1326,17 @@ namespace ts {
          * @returns
          */
         function InferRefTypesPreAccess({refTypesSymtab: refTypes, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs & {expr: {expression: Expression}}): InferRefTypesPreAccessRtnType{
-            const { inferRefRtnType:{ passing, failing } } = mrNarrowTypes(
+            const { inferRefRtnType:{ passing, failing, unmerged } } = mrNarrowTypes(
                 { refTypesSymtab: refTypes, expr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus,constraintItem });
             Debug.assert(failing);
             if (!isNeverType(failing.type)){
                 if (isPropertyAccessExpression(condExpr) && condExpr.questionDotToken){
                     qdotfallout.push(failing); // The caller of InferRefTypesPreAccess need deal with this no further.
+                    if (myDebug){
+                        dbgRefTypesTableToStrings(failing).forEach(s=>{
+                            consoleLog(`InferRefTypesPreAccess[dbg] failling->qdotfallout: ${s}`);
+                        });
+                    }
                 }
                 else {
                     /**
@@ -1289,10 +1346,28 @@ namespace ts {
                     if (myDebug) consoleLog(`Error: expression ${dbgNodeToString(condExpr)} cannot be applied to undefined or null.  Add '?' or '!' if appropriate.`);
                 }
             }
+            if (myDebug){
+                dbgRefTypesTableToStrings(passing).forEach(s=>{
+                    consoleLog(`InferRefTypesPreAccess[dbg] passing: ${s}`);
+                });
+            }
             if (isNeverType(passing.type)){
                 return { kind:"immediateReturn", retval: { arrRefTypesTableReturn:[] } };
             }
-            return { kind:"normal", passing: [passing] };
+            const unmergedPassing: RefTypesTableReturn[] = [];
+            unmerged?.forEach(rttr=>{
+                const type = subtractFromType(createRefTypesType([nullType,undefinedType]),rttr.type);
+                if (isNeverType(type)) return;
+                if (rttr.symbol){
+                    rttr = andRttrSymbolTypeIntoSymtabConstraint({ ...rttr,type }, inferStatus);
+                    if (!isNeverType(rttr.type) && !isNeverConstraint(rttr.constraintItem)) {
+                        unmergedPassing.push(rttr);
+                    }
+
+                }
+                else unmergedPassing.push({ ...rttr, type });
+            });
+            return { kind:"normal", passing, unmergedPassing };
         }
 
         function mrNarrowTypesByPropertyAccessExpression({refTypesSymtab, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs): MrNarrowTypesInnerReturn {
@@ -1330,7 +1405,9 @@ namespace ts {
             Debug.assert(isPropertyAccessExpression(expr));
             Debug.assert(expr.expression);
             const pre = InferRefTypesPreAccess({ refTypesSymtab:refTypesSymtabIn, constraintItem, expr, /* crit,*/ qdotfallout, inferStatus });
-            if (pre.kind==="immediateReturn") return pre.retval;
+            if (pre.kind==="immediateReturn") {
+                return pre.retval;
+            }
             /**
              * Each lookup should be treated as a separate virtual branch, with it's own RefTypesReturn, because the crit might distinguish between them.
              * We get by here with arrTypeSymtab, only because the symtab is added to directly: `refTypesSymtab.set(propSymbol, value); `
@@ -1343,7 +1420,7 @@ namespace ts {
             const keystr = expr.name.escapedText as string;
             //const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = []; //
             const arrRttr: RefTypesTableReturn[]=[];
-            pre.passing.forEach(prePassing=>{
+            pre.unmergedPassing.forEach(prePassing=>{
                 /**
                  * Each prePassing.type is a potential compound type.  For each primitive type of that compound type, a new branch is generated.
                  * For each new branch a RefTypesTableReturn is created and pushed to arrRttr.
@@ -1353,7 +1430,8 @@ namespace ts {
                 const preConstraintItemNode = prePassing.constraintItem;
                 forEachRefTypesTypeType(prePassing.type, t => {
                     if (t===undefinedType||t===nullType) {
-                        Debug.assert(false);
+                        //Debug.assert(false);
+                        return;
                     }
                     if (!(t.flags & TypeFlags.Object) && t!==stringType){
                         let tstype: Type;
@@ -1774,7 +1852,7 @@ namespace ts {
                  * Identifier
                  */
                 case SyntaxKind.Identifier:{
-                    if (myDebug) consoleLog(`case SyntaxKind.Identifier`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.Identifier`);
                     Debug.assert(isIdentifier(expr));
                     const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
 
@@ -1952,11 +2030,11 @@ namespace ts {
                     };
                 }
                 case SyntaxKind.ParenthesizedExpression:{
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [start]`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case ParenthesizedExpression [start]`);
                     const ret = mrNarrowTypes({ refTypesSymtab: refTypesSymtabIn, expr: (expr as ParenthesizedExpression).expression,
                         crit: { kind: InferCritKind.none },
                         inferStatus, constraintItem: constraintItemIn });
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case ParenthesizedExpression [end]`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case ParenthesizedExpression [end]`);
                     // TODO: in case of inferStatus.inCondition===true, return ret.inferRefRtnType.unmerged
                     let arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]> = [];
                     if (ret.inferRefRtnType.unmerged){
@@ -1976,9 +2054,9 @@ namespace ts {
                  * ConditionalExpression
                  */
                 case SyntaxKind.ConditionalExpression:{
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression`);
                     const {condition, whenTrue, whenFalse} = (expr as ConditionalExpression);
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; condition:${dbgNodeToString(condition)}`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; condition:${dbgNodeToString(condition)}`);
                     const rcond = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn,
                         expr: condition,
@@ -1987,7 +2065,7 @@ namespace ts {
                         constraintItem: constraintItemIn
                     });
 
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenTrue`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; whenTrue`);
                     const retTrue = mrNarrowTypes({
                         refTypesSymtab: rcond.inferRefRtnType.passing.symtab,
                         expr: whenTrue,
@@ -1996,7 +2074,7 @@ namespace ts {
                         constraintItem: rcond.inferRefRtnType.passing.constraintItem
                     });
 
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.ConditionalExpression ; whenFalse`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; whenFalse`);
                     const retFalse = mrNarrowTypes({
                         refTypesSymtab: rcond.inferRefRtnType.failing!.symtab,
                         expr: whenFalse,
@@ -2019,13 +2097,13 @@ namespace ts {
                  */
                 // IWOZERE
                 case SyntaxKind.PropertyAccessExpression:
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.PropertyAccessExpression`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.PropertyAccessExpression`);
                     return mrNarrowTypesByPropertyAccessExpression({ refTypesSymtab: refTypesSymtabIn, expr, /* crit, */ qdotfallout, inferStatus, constraintItem: constraintItemIn });
                 /**
                  * CallExpression
                  */
                 case SyntaxKind.CallExpression:{
-                    if (myDebug) consoleLog(`mrNarrowTypes[dbg]: case SyntaxKind.CallExpression`);
+                    if (myDebug) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.CallExpression`);
                     Debug.assert(isCallExpression(expr));
                     return mrNarrowTypesByCallExpression({ refTypesSymtab: refTypesSymtabIn, expr, /*crit, */ qdotfallout, inferStatus, constraintItem: constraintItemIn });
                 }
@@ -2085,7 +2163,7 @@ namespace ts {
                             };
                             inferStatus.replayables.set(symbol,replayableItem);
                             if (getMyDebug()){
-                                const shdr = `mrNarrowTypes[dbg] case SyntaxKind.VariableDeclaration +replayable `;
+                                const shdr = `mrNarrowTypesInner[dbg] case SyntaxKind.VariableDeclaration +replayable `;
                                 consoleLog(shdr);
                                 const as: string[]=[];
                                 as.push(`symbol: ${dbgSymbolToStringSimple(replayableItem.symbol)}, isconst: ${replayableItem.isconst}`);
@@ -2209,7 +2287,7 @@ namespace ts {
                     }
 
                     //const arrayType = checker.getTypeOfExpression(expr);
-                    const arrayType = inferStatus.getTypeOfExpressionShallowRecursion(expr);
+                    const arrayType = inferStatus.getTypeOfExpressionShallowRecursion({ symtab:st,constraintItem:ci }, expr);
                     if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg]: case SyntaxKind.ArrayLiteralExpression: arrayType: ${dbgTypeToString(arrayType)}`);
                     //const rttrOut = mergeArrRefTypesTableReturnToRefTypesTableReturn({ arr:aret });
                     return {
@@ -2234,11 +2312,14 @@ namespace ts {
                     // When the typeNode is "const" checker.getTypeFromTypeNode will reparse the whole parent of typeNode expression,
                     // triggering an unwanted recursion in mrNarrowType.  A solution to this problem is to call inferStatus.getTypeOfExpression(expr) instead.
                     // Because that might extra work when typeNode is NOT const, we check first.
+                    const symtab = rhs.inferRefRtnType.passing.symtab;
+                    const constraintItem = rhs.inferRefRtnType.passing.constraintItem;
+
                     let tstype: Type;
                     if (typeNode.kind===SyntaxKind.TypeReference &&
                         (typeNode as TypeReferenceNode).typeName.kind===SyntaxKind.Identifier &&
                         ((typeNode as TypeReferenceNode).typeName as Identifier).escapedText === "const"){
-                        tstype = inferStatus.getTypeOfExpressionShallowRecursion(expr);
+                        tstype = inferStatus.getTypeOfExpressionShallowRecursion({ symtab, constraintItem }, expr);
                     }
                     else {
                         tstype = checker.getTypeFromTypeNode(typeNode);
@@ -2247,8 +2328,8 @@ namespace ts {
                         arrRefTypesTableReturn: [{
                             kind: RefTypesTableKind.return,
                             type: createRefTypesType(tstype),
-                            symtab:rhs.inferRefRtnType.passing.symtab,
-                            constraintItem:rhs.inferRefRtnType.passing.constraintItem
+                            symtab,
+                            constraintItem
                         }]
                     };
 
@@ -2257,7 +2338,7 @@ namespace ts {
                 }
                 break;
                 case SyntaxKind.SpreadElement:{
-                    Debug.fail("context off caller is important, getTypeOfExpressionShallowRecursion ignore type.target.readonly");
+                    Debug.fail("mrNarrowTypesInner[dbg] context off caller is important, getTypeOfExpressionShallowRecursion ignore type.target.readonly");
                     // assertType<SpreadElement>(expr);
                     // const spreadTargetResult = mrNarrowTypes({
                     //     expr: expr.expression,

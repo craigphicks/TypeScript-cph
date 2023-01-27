@@ -4320,8 +4320,8 @@ namespace ts {
         narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     }
     export interface TypeChecker {
-        /* @internal */ getReducedType(type: Type): Type;
-        /* @internal */ resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode?: number): Signature;
+        /* @internal */ getReducedType(type: Type): Type; // KILL
+        /* @internal */ resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode?: number, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type}): {hadError: boolean, signature: Signature};
         /* @internal */ getStringLiteralType(value: string): StringLiteralType;
         /* @internal */ getNumberLiteralType(value: number): NumberLiteralType;
         /* @internal */ getBigIntLiteralType(value: PseudoBigInt): BigIntLiteralType;

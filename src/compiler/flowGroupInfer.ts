@@ -40,6 +40,7 @@ namespace ts {
         groupsForFlow: GroupsForFlow,
         mrState: MrState;
         mrNarrow: MrNarrow;
+        refTypesTypeModule: RefTypesTypeModule;
     };
     interface CurrentBranchesItem {
         refTypesTableReturn: RefTypesTableReturnNoSymbol;
@@ -88,6 +89,7 @@ namespace ts {
         };
         recursionLevel: number;
         dataForGetTypeOfExpressionShallowRecursive?: {
+            sc: Readonly<RefTypesSymtabConstraintItem>,
             tmpExprNodeToTypeMap: Readonly<ESMap<Node,Type>>;
             expr: Expression | Node
         } | undefined;
@@ -163,12 +165,14 @@ namespace ts {
                 groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap >(),
             }
         };
-        const mrNarrow = createMrNarrow(checker, mrState);
+        const refTypesTypeModule = createRefTypesTypeModule(checker);
+        const mrNarrow = createMrNarrow(checker, mrState, refTypesTypeModule);
         return {
             sourceFile,
             groupsForFlow,
             mrState,
-            mrNarrow
+            mrNarrow,
+            refTypesTypeModule
         };
     }
 
@@ -278,9 +282,9 @@ namespace ts {
         const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
         if (getMyDebug()){
             consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, groupIndex:${groupForFlow.groupIdx}, kind:${groupForFlow.kind}, maximalNode.parent.kind:${Debug.formatSyntaxKind(maximalNode.parent.kind)}`);
-            // consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
-            // dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`));
-            // consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
+            consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
+            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`));
+            consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
             if (!anteLabels) consoleLog(`resolveGroupForFlow[dbg:] anteLabels: undefined`);
             else {
                 consoleLog(`resolveGroupForFlow[dbg:] anteLabels: {`);
@@ -475,19 +479,21 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems,
             declaredTypes: sourceFileMrState.mrState.declaredTypes,
             groupNodeToTypeMap: new Map<Node,Type>(),
-            getTypeOfExpressionShallowRecursion(expr: Expression): Type {
-                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
-                try {
-                   const tstype = mrState.checker.getTypeOfExpression(expr);
-                   return tstype;
-                }
-                finally {
-                    delete mrState.dataForGetTypeOfExpressionShallowRecursive;
-                }
+            getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
+                return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
+
+                // mrState.dataForGetTypeOfExpressionShallowRecursive = { sc, expr, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+                // try {
+                //    const tstype = mrState.checker.getTypeOfExpression(expr);
+                //    return tstype;
+                // }
+                // finally {
+                //     delete mrState.dataForGetTypeOfExpressionShallowRecursive;
+                // }
             },
-            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
+            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
             //callCheckerFunctionWithShallowRecursion<FN extends CheckerNodeFn>(checkerFn: FN, expr: Expression): ReturnType<FN> {
-                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
                 try {
                    const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
                    return ret;
@@ -538,9 +544,9 @@ namespace ts {
         }
 
         if (getMyDebug()){
-            // consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
-            // dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`));
-            // consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
+            consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
+            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`));
+            consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
             consoleLog(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}, `);
             consoleGroupEnd();
         }
@@ -556,14 +562,28 @@ namespace ts {
     }
     export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileMrState): Type {
 
-        if (sourceFileMrState.mrState.dataForGetTypeOfExpressionShallowRecursive){
+        const { mrState, /* refTypesTypeModule */ } = sourceFileMrState;
+
+        if (mrState.dataForGetTypeOfExpressionShallowRecursive){
             if (getMyDebug()){
                 consoleLog(`getTypeByMrNarrowAux[dbg]: getTypeOfExpressionShallowRecursive: ${dbgs!.dbgNodeToString(expr)}`);
                 let p = expr;
-                while (p!==sourceFileMrState.mrState.dataForGetTypeOfExpressionShallowRecursive.expr && p.kind!==SyntaxKind.SourceFile) p=p.parent;
-                Debug.assert(p===sourceFileMrState.mrState.dataForGetTypeOfExpressionShallowRecursive.expr, "unexpected");
+                while (p!==mrState.dataForGetTypeOfExpressionShallowRecursive.expr && p.kind!==SyntaxKind.SourceFile) p=p.parent;
+                Debug.assert(p===mrState.dataForGetTypeOfExpressionShallowRecursive.expr, "unexpected");
             }
-            const tstype = sourceFileMrState.mrState.dataForGetTypeOfExpressionShallowRecursive.tmpExprNodeToTypeMap.get(expr);
+            // if (expr.kind===SyntaxKind.Identifier){
+            //     const {symtab, constraintItem} = mrState.dataForGetTypeOfExpressionShallowRecursive.sc;
+            //     const symbol = sourceFileMrState.mrState.checker.getResolvedSymbol(expr as Identifier);
+            //     {
+            //         const got = symtab.get(symbol);
+            //         if (got) return refTypesTypeModule.getTypeFromRefTypesType(got.leaf.type);
+            //     }
+            //     if (constraintItem.symbolsInvolved?.has(symbol)){
+            //         const getDeclaredType = (symbol: Symbol) => mrState.declaredTypes.get(symbol)!.type;
+            //         evalCoverForOneSymbol(symbol,constraintItem, getDeclaredType, sourceFileMrState.mrNarrow);
+            //     }
+            // }
+            const tstype = mrState.dataForGetTypeOfExpressionShallowRecursive.tmpExprNodeToTypeMap.get(expr);
             Debug.assert(tstype);
             return tstype;
         }

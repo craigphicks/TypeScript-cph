@@ -1,21 +1,21 @@
 === tests/cases/conformance/_cax/_cax-ez0004.ts ===
-declare type Foo = { 
+declare type Foo = {
 >Foo : { foo(x?: number): number[]; foo(x?: string, y?: string): string[]; }
 
-    foo(x?:number):number[] 
+    foo(x?:number):number[]
 >foo : { (x?: number): number[]; (x?: string | undefined, y?: string | undefined): string[]; }
 >x : number | undefined
 
-    foo(x?:string,y?:string):string[] 
+    foo(x?:string,y?:string):string[]
 >foo : { (x?: number | undefined): number[]; (x?: string, y?: string): string[]; }
 >x : string | undefined
 >y : string | undefined
 
 };
-declare type Boo = { 
+declare type Boo = {
 >Boo : { foo(x?: bigint): bigint[]; }
 
-    foo(x?:bigint):bigint[]  
+    foo(x?:bigint):bigint[]
 >foo : (x?: bigint) => bigint[]
 >x : bigint | undefined
 
@@ -36,7 +36,7 @@ if (isFoo) {
     let x = obj;
 >x : Readonly<Foo> | Readonly<Boo>
 >obj : Readonly<Foo> | Readonly<Boo>
-} 
+}
 else {
     obj;
 >obj : undefined
