@@ -442,16 +442,17 @@ namespace ts {
         symbolsInvolved.add(symbol);
         /////////////////////////
         const evaledType = evalCoverForOneSymbol(symbol,constraintItem,getDeclaredType,mrNarrow);
-        if (true){
-            // compare to evalTypeOverConstraint
-            const compareType = evalTypeOverConstraint({ cin: constraintItem, symbol, typeRange:getDeclaredType(symbol),mrNarrow });
-            if (mrNarrow.isASubsetOfB(compareType, evaledType)){
-                Debug.assert("unexpected1");
-            }
-            if (mrNarrow.isASubsetOfB(evaledType,compareType)){
-                Debug.assert("unexpected2");
-            }
-        }
+        // The comparison test is now inside evalCoverForOneSymbol
+        // if (true){
+        //     // compare to evalTypeOverConstraint
+        //     const compareType = evalTypeOverConstraint({ cin: constraintItem, symbol, typeRange:getDeclaredType(symbol),mrNarrow });
+        //     if (mrNarrow.isASubsetOfB(compareType, evaledType)){
+        //         Debug.assert("unexpected1");
+        //     }
+        //     if (mrNarrow.isASubsetOfB(evaledType,compareType)){
+        //         Debug.assert("unexpected2");
+        //     }
+        // }
 
         if (!mrNarrow.isASubsetOfB(evaledType,type)){
             constraintItem = andDistributeDivide({symbol,type,cin:constraintItem,getDeclaredType,declaredType: getDeclaredType(symbol),
@@ -618,7 +619,7 @@ namespace ts {
                 });
                 prodnum++;
             }
-            if (true){
+            // if (true){
                 if (!ciTop.symbolsInvolved){
                     Debug.assert(ciTop.symbolsInvolved);
                 }
@@ -631,14 +632,14 @@ namespace ts {
                     if (!got) map.set(dsymbol,type);
                     else map.set(dsymbol, mrNarrow.unionOfRefTypesType([got,type]));
                 });
-            }
-            else {
-                mapSymbolType.forEach((type,symbol)=>{
-                    const got = map.get(symbol);
-                    if (!got) map.set(symbol,type);
-                    else map.set(symbol, mrNarrow.unionOfRefTypesType([got,type]));
-                });
-            }
+            // }
+            // else {
+            //     mapSymbolType.forEach((type,symbol)=>{
+            //         const got = map.get(symbol);
+            //         if (!got) map.set(symbol,type);
+            //         else map.set(symbol, mrNarrow.unionOfRefTypesType([got,type]));
+            //     });
+            // }
         }
         visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
         if (log && getMyDebug()){
@@ -658,13 +659,25 @@ namespace ts {
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow):
     RefTypesType {
-        //Debug.assert(useConstraintsV2());
+
         const cover = evalCoverPerSymbolV2(ciTop,getDeclaredType,mrNarrow);
-        const got = cover.get(symbol);
-        if (!got) return getDeclaredType(symbol);
-        else return got;
-        // Debug.assert(cover.has(symbol));
-        // return cover.get(symbol)!;
+        let type = cover.get(symbol);
+        if (!type) type=getDeclaredType(symbol);
+        ////////////////////////////////
+        if (true){
+            /**
+             * Running a comparison test here to condifm results match.
+             */
+            const compareType = evalTypeOverConstraint({ cin: ciTop, symbol, typeRange:getDeclaredType(symbol),mrNarrow });
+            if (mrNarrow.isASubsetOfB(compareType, type)){
+                Debug.assert("unexpected1");
+            }
+            if (mrNarrow.isASubsetOfB(type,compareType)){
+                Debug.assert("unexpected2");
+            }
+        }
+        ////////////////////////////////
+        return type;
     }
 
     // @ ts-expect-error
@@ -681,96 +694,6 @@ namespace ts {
         };
         func(ciTop);
         return set;
-    }
-
-    // export function assertSymtabConstraintInvariance({symtab,constraintItem}: Readonly<RefTypesSymtabConstraintItem>, getDeclaredType: GetDeclaredTypeFn, mrNarrow: MrNarrow): void {
-    //     // assert that every symbol involved in constraints is also in symtab
-    //     const set = collectSymbolsInvolvedInConstraints(constraintItem);
-    //     set.forEach(symbol=>{
-    //         if (!symtab.has(symbol)){
-    //             const astr: string[]=[];
-    //             astr.push("assertSymtabConstraintInvariance symtab must containt all symbol involved in constraint");
-    //             astr.push(`symbol: ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
-    //             mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=>astr.push(`symtab: ${s}`));
-    //             mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>astr.push(`constraintItem:${s}`));
-    //             Debug.fail(astr.join(`\n`));
-    //         }
-    //     });
-    //     const setOfInvolvedSymbols = new Set<Symbol>();
-    //     symtab.forEach(({leaf},tmpSymbol)=>{
-    //         if (!leaf.isconst) return;
-    //         setOfInvolvedSymbols.add(tmpSymbol);
-    //     });
-    //     const cover = evalCoverPerSymbol(constraintItem,getDeclaredType, mrNarrow);
-    //     cover.forEach((type,symbol)=>{
-    //         const symtabType = symtab.get(symbol)?.leaf.type;
-    //         Debug.assert(symtabType);
-    //         if (!mrNarrow.isASubsetOfB(type,symtabType) || !mrNarrow.isASubsetOfB(symtabType,type)){
-    //             const astr: string[]=[];
-    //             astr.push("assertSymtabConstraintInvariance evaledType and type must be equal");
-    //             astr.push(`symbol: ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
-    //             astr.push(`symtabType: ${mrNarrow.dbgRefTypesTypeToString(symtabType)}`);
-    //             astr.push(`coverType:${mrNarrow.dbgRefTypesTypeToString(type)}`);
-    //             mrNarrow.dbgRefTypesSymtabToStrings(symtab).forEach(s=> astr.push(`symtab: ${s}`));
-    //             mrNarrow.dbgConstraintItem(constraintItem).forEach(s=> astr.push(`constraintItem: ${s}`));
-    //             Debug.fail(astr.join(`\n`));
-    //         }
-    //     });
-    // }
-
-    /**
-     * TODO: Not at all sure about this.  We cannot remove variables are they go out of scope because returns or other jumps means the variable still plays a role
-     * because it is entangled with other variables outside the scope.
-     * Another way to say it that the scope (in terms of flow) really doesn't end (despite lexically ending).
-     * @param cin
-     * @param rmset
-     * @param _mrNarrow
-     * @returns
-     */
-    // @ts-ignore
-    export function removeSomeVariablesFromConstraint(cin: ConstraintItem, rmset: { has(s: Symbol): boolean}, _mrNarrow: MrNarrow): ConstraintItem {
-        Debug.fail();
-        // const call = (cin: ConstraintItem): ConstraintItem => {
-        //     if (cin.kind===ConstraintItemKind.always || cin.kind===ConstraintItemKind.never) return cin;
-        //     if (cin.kind===ConstraintItemKind.leaf){
-        //         if (rmset.has(cin.symbol)) return createFlowConstraintAlways();
-        //         else return cin;
-        //     }
-        //     else if (cin.kind===ConstraintItemKind.node){
-        //         if (cin.op===ConstraintItemNodeOp.not){
-        //             const cout = call(cin.constraint);
-        //             if (isAlwaysConstraint(cout)) return createFlowConstraintNever();
-        //             if (isNeverConstraint(cout)) return createFlowConstraintAlways();
-        //             return createFlowConstraintNodeNot(cout);
-        //         }
-        //         if (cin.op===ConstraintItemNodeOp.and){
-        //             const acout: (ConstraintItem)[]=[];
-        //             for (const c of cin.constraints){
-        //                 const cout = call(c);
-        //                 if (isAlwaysConstraint(cout)) continue;
-        //                 if (isNeverConstraint(cout)) return createFlowConstraintNever();
-        //                 acout.push(c);
-        //             }
-        //             if (acout.length===0) return createFlowConstraintAlways();
-        //             if (acout.length===1) return acout[0];
-        //             return { ...cin, constraints: acout };
-        //         }
-        //         if (cin.op===ConstraintItemNodeOp.or){
-        //             const acout: (ConstraintItem)[]=[];
-        //             for (const c of cin.constraints){
-        //                 const cout = call(c);
-        //                 if (isAlwaysConstraint(cout)) return createFlowConstraintAlways();
-        //                 if (isNeverConstraint(cout)) continue;
-        //                 acout.push(c);
-        //             }
-        //             if (acout.length===0) return createFlowConstraintNever();
-        //             if (acout.length===1) return acout[0];
-        //             return { ...cin, constraints: acout };
-        //         }
-        //     }
-        //     Debug.fail();
-        // };
-        // return call(cin);
     }
 
     export function testOfEvalTypeOverConstraint(checker: TypeChecker, mrNarrow: MrNarrow): void {

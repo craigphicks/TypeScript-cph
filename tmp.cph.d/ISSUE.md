@@ -17,16 +17,8 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 ### Priority: High
 
 
-
-
-1. useConstraintsV2===true optimizations
-- `evalCoverPerSymbol` results could be cached on the constraint, but having a lot of caches could end up being expensive.
-- Check that branches that can be reverted to the original pre-branching, do so.
-1. The Map type members in InferStatus (`declaredTypes`, `replayables`, `groupNodeToTypeMap` could all be `WeakMap`s).
 1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
-1. Most testing of input combinations for `mrNarrowTypesByCallExpression`.
-1. Rest parameter testing for `mrNarrowTypesByCallExpression`.
-1. Coding and testing of Optional parameter handling for `mrNarrowTypesByCallExpression`.
+1. The Map type members in InferStatus (`declaredTypes`, `replayables`, `groupNodeToTypeMap` could all be `WeakMap`s).
 
 ### Priotity: Postponed
 
@@ -52,6 +44,11 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+1. There is bug at the top branchinglevel for expressions like `((a&&b)||(c&&d))`, but not `(a&&b||c&&d)`. Fixed:  Change in flowNodesGrouping to make grouping more expansive.  All tests passing.
+
+1.  The testing call to `evalTypeOverConstraint` can actually be placed inside `evalCoverForOneSymbol`, to get a few more hits (in case Identifier).
+
 
 1. Every call to `andSymbolTypeIntoConstraint` is now calling both `evalCoverForOneSymbol` and `evalTypeOverConstraint` to compare results with a Debug.assert(),
 all passing so far. `evalTypeOverConstraint` should be faster, but the tree must be in a good state or it can fail - `evalCoverForOneSymbol` is more robust.

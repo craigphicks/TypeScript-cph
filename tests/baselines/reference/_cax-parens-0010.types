@@ -1,0 +1,32 @@
+=== tests/cases/conformance/_cax/_cax-parens-0010.ts ===
+declare const a: boolean;
+>a : boolean
+
+declare const b: boolean;
+>b : boolean
+
+declare const c: boolean;
+>c : boolean
+
+declare const d: boolean;
+>d : boolean
+
+if ((a&&b)||(c&&d)){
+>(a&&b)||(c&&d) : boolean
+>(a&&b) : boolean
+>a&&b : boolean
+>a : boolean
+>b : boolean
+>(c&&d) : boolean
+>c&&d : boolean
+>c : boolean
+>d : boolean
+
+    [a,b,c,d];
+>[a,b,c,d] : boolean[]
+>a : boolean
+>b : boolean
+>c : boolean
+>d : boolean
+}
+

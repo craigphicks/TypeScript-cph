@@ -1,5 +1,41 @@
 /* eslint-disable no-double-space */
 namespace ts {
+
+    function nodeIsExpressionForGrouping(node: Node){
+        const yes = [
+            SyntaxKind.ArrayLiteralExpression,
+            SyntaxKind.ObjectLiteralExpression,
+            SyntaxKind.PropertyAccessExpression,
+            SyntaxKind.ElementAccessExpression,
+            SyntaxKind.CallExpression,
+            SyntaxKind.NewExpression,
+            // SyntaxKind.TaggedTemplateExpression,
+            SyntaxKind.TypeAssertionExpression,
+            SyntaxKind.ParenthesizedExpression,
+            SyntaxKind.FunctionExpression,
+            // SyntaxKind.ArrowFunction,
+            SyntaxKind.DeleteExpression,
+            SyntaxKind.TypeOfExpression,
+            // SyntaxKind.VoidExpression,
+            // SyntaxKind.AwaitExpression,
+            SyntaxKind.PrefixUnaryExpression,
+            SyntaxKind.PostfixUnaryExpression,
+            SyntaxKind.BinaryExpression,
+            SyntaxKind.ConditionalExpression,
+            // SyntaxKind.TemplateExpression,
+            SyntaxKind.YieldExpression,
+            SyntaxKind.SpreadElement,
+            // SyntaxKind.ClassExpression,
+            SyntaxKind.OmittedExpression,
+            SyntaxKind.ExpressionWithTypeArguments,
+            SyntaxKind.AsExpression,
+            SyntaxKind.NonNullExpression,
+            // SyntaxKind.MetaProperty,
+            // SyntaxKind.SyntheticExpression,
+            ].includes(node.kind);
+        return yes;
+    }
+
     export function makeGroupsForFlow(sourceFile: SourceFile, checker: TypeChecker): GroupsForFlow {
 
         const flowNodes: FlowNode[] = sourceFile.allFlowNodes ?? [];
@@ -47,20 +83,36 @@ namespace ts {
         flowNodes.forEach(f=>{
             if (isFlowWithNode(f)) setOfNodes.add(f.node);
         });
-        setOfNodes.forEach(n=>{
-            if (n.parent.kind===SyntaxKind.BinaryExpression){
-                const pk = (n.parent as BinaryExpression).operatorToken.kind;
-                if (pk===SyntaxKind.AmpersandAmpersandToken
-                || pk===SyntaxKind.AmpersandAmpersandEqualsToken
-                || pk===SyntaxKind.BarBarToken
-                || pk===SyntaxKind.BarBarEqualsToken){
-                    setOfNodes.add(n.parent);
+        let tmpSetOfNodes0: Set<Node> = setOfNodes;
+        let tmpSetOfNodes1 = new Set<Node>();
+        while (tmpSetOfNodes0.size){
+            tmpSetOfNodes0.forEach(n=>{
+                if (nodeIsExpressionForGrouping(n.parent)){
+                    tmpSetOfNodes1.add(n.parent);
                 }
-            }
-            else if (n.parent.kind===SyntaxKind.ConditionalExpression){
-                setOfNodes.add(n.parent);
-            }
-        });
+            });
+            tmpSetOfNodes1.forEach(n=>setOfNodes.add(n));
+            tmpSetOfNodes0 = tmpSetOfNodes1;
+            tmpSetOfNodes1 = new Set<Node>();
+        }
+
+        // setOfNodes.forEach(n=>{
+        //     if (nodeIsExpressionForGrouping(n)){
+        //         setOfNodes.add(n.parent);
+        //     }
+        //     // if (n.parent.kind===SyntaxKind.BinaryExpression){
+        //     //     const pk = (n.parent as BinaryExpression).operatorToken.kind;
+        //     //     if (pk===SyntaxKind.AmpersandAmpersandToken
+        //     //     || pk===SyntaxKind.AmpersandAmpersandEqualsToken
+        //     //     || pk===SyntaxKind.BarBarToken
+        //     //     || pk===SyntaxKind.BarBarEqualsToken){
+        //     //         setOfNodes.add(n.parent);
+        //     //     }
+        //     // }
+        //     // else if (n.parent.kind===SyntaxKind.ConditionalExpression){
+        //     //     setOfNodes.add(n.parent);
+        //     // }
+        // });
         // @ts-expect-error 2679
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
         const unorderedNodes = Array.from(setOfNodes.keys()) as Node[];
