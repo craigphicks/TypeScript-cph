@@ -16,6 +16,9 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+
+
+
 1. useConstraintsV2===true optimizations
 - `evalCoverPerSymbol` results could be cached on the constraint, but having a lot of caches could end up being expensive.
 - Check that branches that can be reverted to the original pre-branching, do so.
@@ -49,6 +52,12 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+1. Every call to `andSymbolTypeIntoConstraint` is now calling both `evalCoverForOneSymbol` and `evalTypeOverConstraint` to compare results with a Debug.assert(),
+all passing so far. `evalTypeOverConstraint` should be faster, but the tree must be in a good state or it can fail - `evalCoverForOneSymbol` is more robust.
+1. Removed V1 code.
+1.All tests passing
+
 
 0. Replaced a block of code in `andSymbolTypeIntoSymtabConstraintV2` with a call to `andSymbolTypeIntoConstraint`.  Tests passing.  However, `evalCovered` is now called on every occasion.
 

@@ -370,8 +370,7 @@ namespace ts {
             }
             else {
                 if (postIfConstraints[0] && postIfConstraints[1]) {
-                    if (useConstraintsV2()) return orConstraintsV2(postIfConstraints as ConstraintItem[]);
-                    else return createFlowConstraintNodeOr({ constraints: postIfConstraints as ConstraintItem[] });
+                    return orConstraintsV2(postIfConstraints as ConstraintItem[]);
                 }
                 else if (postIfConstraints[0]) return postIfConstraints[0];
                 else if (postIfConstraints[1]) return postIfConstraints[1];

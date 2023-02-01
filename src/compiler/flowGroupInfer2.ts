@@ -1716,7 +1716,7 @@ namespace ts {
                     const propSymbol = checker.getPropertyOfType(t, keystr);
                     if (propSymbol) {
                         if (myDebug) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
-                        if (useConstraintsV2() && propSymbol.flags & SymbolFlags.EnumMember){
+                        if (propSymbol.flags & SymbolFlags.EnumMember){
                             // treat it as a literal type, not a symbol
                             const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
                             // accessedTypes.push({ baseType: t, type:tstype, optional:false });
@@ -1855,7 +1855,7 @@ namespace ts {
                 ({type: _unusedType, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:{ symtab,constraintItem },
                     getDeclaredType: createGetDeclaredTypeFn(inferStatus),
                     mrNarrow}));
-                if (useConstraintsV2() && symbol){
+                if (symbol){
                     if (isconst){
                         const cover = evalCoverPerSymbol(constraintItem, createGetDeclaredTypeFn(inferStatus), mrNarrow);
                         Debug.assert(cover.has(rttr.symbol));
@@ -2100,11 +2100,11 @@ namespace ts {
                 consoleLog(`mrNarrowTypesInner[out] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}`);
                 consoleGroupEnd();
             }
-            if (!useConstraintsV2()) {
-                innerret.arrRefTypesTableReturn.forEach((rttr)=>{
-                    assertSymtabConstraintInvariance({ symtab:rttr.symtab, constraintItem:rttr.constraintItem }, createGetDeclaredTypeFn(inferStatus) ,mrNarrow);
-                });
-            }
+            // if (!useConstraintsV2()) {
+            //     innerret.arrRefTypesTableReturn.forEach((rttr)=>{
+            //         assertSymtabConstraintInvariance({ symtab:rttr.symtab, constraintItem:rttr.constraintItem }, createGetDeclaredTypeFn(inferStatus) ,mrNarrow);
+            //     });
+            // }
             return innerret;
         }
 
@@ -2172,18 +2172,18 @@ namespace ts {
                     if (leaf){
                         type = leaf.type;
                         isconst = leaf.isconst??false; // if useConstraintsV2() must be false
-                        if (useConstraintsV2()){
-                            Debug.assert(!isconst);
-                        }
+                        // if (useConstraintsV2()){
+                        Debug.assert(!isconst);
+                        // }
                     }
                     else {
                         leaf = inferStatus.declaredTypes.get(symbol);
                         if (leaf){
                             type = leaf.type;
                             isconst = leaf.isconst??false; // XXX if useConstraintsV2() must be true
-                            if (useConstraintsV2() && isconst){
-                                type = evalCoverForOneSymbol(symbol,constraintItemIn, createGetDeclaredTypeFn(inferStatus), mrNarrow);
-                            }
+                            //if (useConstraintsV2() && isconst){
+                            type = evalCoverForOneSymbol(symbol,constraintItemIn, createGetDeclaredTypeFn(inferStatus), mrNarrow);
+                            //}
                         }
                         else {
                             const tstype = getTypeOfSymbol(symbol); // Is it OK for Identifier, will it not result in error TS7022 ?
