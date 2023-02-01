@@ -494,15 +494,16 @@ namespace ts {
             // do nothing - an enum parent is not a real type
         }
         else if (isconst){
-            // TODO: change this section to call andSymbolTypeIntoConstraint which has a bug fix.
-            const symbolsInvolved = new Set<Symbol>(constraintItem.symbolsInvolved ?? []);
-            symbolsInvolved.add(symbol);
-            /////////////////////////
-            constraintItem = andDistributeDivide({symbol,type,cin:constraintItem,getDeclaredType,declaredType: getDeclaredType(symbol),
-                mrNarrow});
-            /////////////////////////
-            constraintItem = andIntoConstraintShallow({ symbol,type,constraintItem,mrNarrow });
-            constraintItem.symbolsInvolved = symbolsInvolved;
+            constraintItem = andSymbolTypeIntoConstraint({ symbol,type,constraintItem,getDeclaredType,mrNarrow });
+            // // TODO: change this section to call andSymbolTypeIntoConstraint which has a bug fix.
+            // const symbolsInvolved = new Set<Symbol>(constraintItem.symbolsInvolved ?? []);
+            // symbolsInvolved.add(symbol);
+            // /////////////////////////
+            // constraintItem = andDistributeDivide({symbol,type,cin:constraintItem,getDeclaredType,declaredType: getDeclaredType(symbol),
+            //     mrNarrow});
+            // /////////////////////////
+            // constraintItem = andIntoConstraintShallow({ symbol,type,constraintItem,mrNarrow });
+            // constraintItem.symbolsInvolved = symbolsInvolved;
         }
         else {
             const got = symtab.get(symbol);

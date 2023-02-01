@@ -50,6 +50,7 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
+0. Replaced a block of code in `andSymbolTypeIntoSymtabConstraintV2` with a call to `andSymbolTypeIntoConstraint`.  Tests passing.  However, `evalCovered` is now called on every occasion.
 
 1.1. Major rewrite of with `inferStatus` in `mrNarrowTypesByCallExpression`.
 1.2. Handle `SyntaxKind.SpreadElement` within `case SyntaxKind.ArrayLiteralExpression` of `mrNarrowTypesInner`.
