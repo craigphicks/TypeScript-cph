@@ -376,6 +376,9 @@ namespace ts {
         return { symtab: unionSymtab, constraintItem: oredConstraint };
     }
     // called from flowGroupInfer.ts when merging branches post-if
+    export function orSymtabs(asc: Readonly<RefTypesSymtab[]>,mrNarrow: MrNarrow): RefTypesSymtab {
+        return mrNarrow.unionArrRefTypesSymtab(asc);
+    }
     export function orConstraintsV2(asc: Readonly<ConstraintItem>[]): ConstraintItem{
         const symbolsInvolved = new Set<Symbol>();
         asc.forEach(x=>{

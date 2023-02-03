@@ -33,7 +33,7 @@ namespace ts {
         //     RefTypesTableReturn;
         createNodeToTypeMap(): NodeToTypeMap,
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
-        unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab,
+        unionArrRefTypesSymtab(arr: Readonly<Readonly<RefTypesSymtab>[]>): RefTypesSymtab,
         intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType,
         // intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean];
         // typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;

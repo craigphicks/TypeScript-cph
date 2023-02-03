@@ -1171,8 +1171,9 @@ namespace ts {
 
         function bindWhileStatement(node: WhileStatement): void {
             const preWhileLabel = setContinueTarget(node, createLoopLabel());
-            const preBodyLabel = createBranchLabel();
-            const postWhileLabel = createBranchLabel();
+            const preBodyLabel = createBranchLabel(BranchKind.then);
+            const postWhileLabel = createBranchLabel(BranchKind.postIf);
+            postWhileLabel.originatingExpression = node.expression; // to enable merging of unchanged then/else branch pairs
             addAntecedent(preWhileLabel, currentFlow);
             currentFlow = preWhileLabel;
             bindCondition(node.expression, preBodyLabel, postWhileLabel);

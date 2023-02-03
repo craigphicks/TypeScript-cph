@@ -3502,7 +3502,8 @@ namespace ts {
         else = "else",
         postIf = "postIf",
         block = "block",
-        postBlock = "postBlock"
+        postBlock = "postBlock",
+        continue= "continue",
     }
     export interface FlowLabel extends FlowNodeBase {
         antecedents: FlowNode[] | undefined;

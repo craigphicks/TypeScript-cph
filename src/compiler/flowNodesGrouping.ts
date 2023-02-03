@@ -152,6 +152,7 @@ namespace ts {
                     maximalIdx,
                     precOrdContainerIdx: findPrecOrdCIIdx(orderedNodes[maximalIdx]),
                     groupIdx: -1,
+                    anteGroupLabels:[], //referencingGroupIdxs:[],
                 };
                 groups.push(group);
                 idxb=fi;
@@ -182,7 +183,8 @@ namespace ts {
                 idxb, idxe:orderedNodes.length,
                 maximalIdx,
                 precOrdContainerIdx: precOrdCIIdx,
-                groupIdx: -1
+                groupIdx: -1,
+                anteGroupLabels:[], //referencingGroupIdxs:[]
             };
             groups.push(group);
         }
@@ -248,14 +250,16 @@ namespace ts {
                 checker.getFlowNodeId(fn);
             });
         }
+        //const setOfFlowLoop = new Set<FlowWithAntecedents>();
         const groupToAnteGroupMap = new Map< GroupForFlow, Set<GroupForFlow> >();
         orderedGroups.forEach(g=>{
             const origSetOfFlow = groupToSetOfFlowMap.get(g);
             if (!origSetOfFlow) return;
             const setOfGroup = new Set<GroupForFlow>();
+            const setOfAnteGroup = new Set<GroupForFlow>(); // determined through previousAnteGroupIdx and FlowGroupLabel's
             const filteredSetOfFlow = new Set<FlowNode>();
-            const anteLabels: GroupForFlow["anteLabels"] = {};
-            let hadAnteLabel = false;
+            // const anteLabels: GroupForFlow["anteLabels"] = {};
+            // let hadAnteLabel = false;
             origSetOfFlow.forEach(fn=>{
                 if (isFlowStart(fn)) return;
                 if (isFlowWithNode(fn)){
@@ -267,90 +271,245 @@ namespace ts {
                         Debug.fail();
                     }
                     setOfGroup.add(groupToAdd);
+                    Debug.assert(g.previousAnteGroupIdx===undefined);
+                    g.previousAnteGroupIdx = groupToAdd.groupIdx;
+                    setOfAnteGroup.add(groupToAdd);
                     filteredSetOfFlow.add(fn); // TODO: we need only the maximal node in flowGroupingInfer.ts
                 }
                 else {
                     // flow without node
-                    // branches can lead to branches
-                    if (isFlowBranch(fn)){
-                        const flowLabels: FlowLabel[] = [fn];
-                        while (flowLabels.length){
-                            const fnlab = flowLabels.pop()!;
-                            switch (fnlab.branchKind){
+                    // branches can lead to branches or flow with node.
+                    ////////////////////////////////////////////////////////////////////////////////////////
+                    if (isFlowLabel(fn)){
+                        const flowBranchThenElseToFlowGroupLabelThenElse = (fn: FlowLabel): FlowGroupLabelThen | FlowGroupLabelElse => {
+                            Debug.assert(fn.antecedents);
+                            Debug.assert(fn.antecedents.length>=1);
+                            Debug.assert(isFlowWithNode(fn.antecedents[0]));
+                            const anteg = nodeToGroupMap.get(fn.antecedents[0].node);
+                            Debug.assert(anteg && anteg!==g);
+                            const fglkind = fn.branchKind===BranchKind.then ? FlowGroupLabelKind.then : FlowGroupLabelKind.else;
+                            //Debug.assert(g.anteGroupLabels.length===0);
+                            setOfAnteGroup.add(anteg);
+                            return { kind: fglkind, ifGroupIdx: anteg.groupIdx };
+                        }; // flowBranchThenElseToFlowGroupLabelThenElse
+                        const flowBranchPostIfResolve = (fn: FlowLabel): FlowGroupLabelPostIf => {
+                            Debug.assert(fn.antecedents?.length===2);
+                            const originatingGroupIdx = nodeToGroupMap.get(fn.originatingExpression!)!.groupIdx;
+                            let anteThen: FlowGroupLabelRef | FlowGroupLabelThen | FlowGroupLabelPostIf;
+                            if (isFlowWithNode(fn.antecedents[0])){
+                                const anteg = nodeToGroupMap.get(fn.antecedents[0].node)!;
+                                setOfAnteGroup.add(anteg);
+                                anteThen = {
+                                    kind: FlowGroupLabelKind.ref,
+                                    groupIdx: anteg.groupIdx
+                                };
+                            }
+                            else {
+                                Debug.assert(isFlowLabel(fn.antecedents[0]));
+                                if (fn.antecedents[0].branchKind===BranchKind.then){
+                                    anteThen = flowBranchThenElseToFlowGroupLabelThenElse(fn.antecedents[0]) as FlowGroupLabelThen;
+                                }
+                                else if (fn.antecedents[0].branchKind===BranchKind.postIf){
+                                    anteThen = flowBranchPostIfResolve(fn.antecedents[0]);
+                                }
+                                else {
+                                    Debug.fail("not yet implemented");
+                                }
+                            }
+
+                            let anteElse: FlowGroupLabelRef | FlowGroupLabelElse | FlowGroupLabelPostIf;
+                            if (isFlowWithNode(fn.antecedents[1])){
+                                const anteg = nodeToGroupMap.get(fn.antecedents[1].node)!;
+                                setOfAnteGroup.add(anteg);
+                                anteElse = {
+                                    kind: FlowGroupLabelKind.ref,
+                                    groupIdx: anteg.groupIdx
+                                };
+                            }
+                            else {
+                                Debug.assert(isFlowLabel(fn.antecedents[1]));
+                                if (fn.antecedents[1].branchKind===BranchKind.else){
+                                    anteElse = flowBranchThenElseToFlowGroupLabelThenElse(fn.antecedents[1]) as FlowGroupLabelElse;
+                                }
+                                else if (fn.antecedents[1].branchKind===BranchKind.postIf){
+                                    anteElse = flowBranchPostIfResolve(fn.antecedents[1]);
+                                }
+                                else {
+                                    Debug.fail("not yet implemented");
+                                }
+                            }
+                            return {
+                                kind: FlowGroupLabelKind.postIf,
+                                anteThen, anteElse,
+                                originatingGroupIdx
+                            };
+                        }; // flowBranchPostIfResolve
+                        // const flowBranchBlockResolve = (fn: FlowLabel): FlowGroupLabelBlock => {
+                        //     const originatingGroupIdx = nodeToGroupMap.get(fn.originatingExpression!)!.groupIdx;
+                        //     Debug.assert(fn.antecedents?.length===1);
+                        //     Debug.assert(isFlowLabel(fn.antecedents[0]));
+                        //     const ante = flowBranchResolve(fn.antecedents[0]);
+                        //     return {
+                        //         kind: FlowGroupLabelKind.block,
+                        //         originatingGroupIdx,
+                        //         ante
+                        //     };
+                        // }; //flowBranchBlockResolve
+                        // const flowBranchPostBlockResolve = (fn: FlowLabel): FlowGroupLabelPostBlock => {
+                        //     const originatingGroupIdx = nodeToGroupMap.get(fn.originatingExpression!)!.groupIdx;
+                        //     Debug.assert(fn.antecedents?.length===1);
+                        //     Debug.assert(isFlowLabel(fn.antecedents[0]));
+                        //     const ante = flowBranchResolve(fn.antecedents[0]);
+                        //     return {
+                        //         kind: FlowGroupLabelKind.postBlock,
+                        //         originatingGroupIdx,
+                        //         ante
+                        //     };
+                        // }; //flowBranchBlockResolve
+                        const flowBranchResolve = (fn: FlowLabel): FlowGroupLabel => {
+                            if (isFlowStart(fn)) Debug.fail("FlowStart unexpected");
+                            if (isFlowWithNode(fn)){
+                                const groupToAdd = nodeToGroupMap.get(fn.node);
+                                Debug.assert(groupToAdd);
+                                setOfAnteGroup.add(groupToAdd);
+                                return {
+                                    kind: FlowGroupLabelKind.ref,
+                                    groupIdx: groupToAdd.groupIdx
+                                };
+                            }
+                            switch (fn.branchKind){
                                 case undefined:
+                                    Debug.fail("not yet implemented, branchKind is undefined");
+                                    break;
                                 case BranchKind.none:
-                                    continue;
-                                case BranchKind.then:
-                                    Debug.assert(!anteLabels.then);
-                                    anteLabels.then = fnlab;
-                                    hadAnteLabel = true;
+                                    Debug.fail(`not yet implemented, branchKind:${fn.branchKind}`);
                                     break;
                                 case BranchKind.else:
-                                    Debug.assert(!anteLabels.else);
-                                    anteLabels.else = fnlab;
-                                    hadAnteLabel = true;
+                                case BranchKind.then:
+                                    return flowBranchThenElseToFlowGroupLabelThenElse(fn);
                                     break;
                                 case BranchKind.postIf:
-                                    if (anteLabels.postIf) continue; // only the first one
-                                    anteLabels.postIf = fnlab;
-                                    hadAnteLabel = true;
+                                    return flowBranchPostIfResolve(fn);
                                     break;
-                                case BranchKind.block:
-                                    if (!anteLabels.arrBlock) {
-                                        anteLabels.arrBlock = [fnlab];
-                                    }
-                                    else anteLabels.arrBlock.push(fnlab);
-                                    hadAnteLabel = true;
-                                    break;
-                                case BranchKind.postBlock:
-                                    if (!anteLabels.arrPostBlock) {
-                                        anteLabels.arrPostBlock = [fnlab];
-                                    }
-                                    else anteLabels.arrPostBlock.push(fnlab);
-                                    hadAnteLabel = true;
-                                    break;
+                                // case BranchKind.block:
+                                //     return flowBranchBlockResolve(fn);
+                                //     break;
+                                // case BranchKind.postBlock:
+                                //     return flowBranchPostBlockResolve(fn);
+                                //     break;
                                 default:
-                                    Debug.fail(`${fnlab.branchKind}`);
+                                    Debug.fail(`fn.branchKind:${fn.branchKind} not yet implemented`);
                             }
-                            fnlab.antecedents?.forEach(antefn=>{
-                                if (isFlowStart(antefn)) return;
-                                if (isFlowWithNode(antefn)){
-                                    //g.branchMerger = true;
-                                    const groupToAdd = nodeToGroupMap.get(antefn.node);
-                                    if (!groupToAdd){
-                                        Debug.fail();
-                                    }
-                                    if (groupToAdd===g) {
-                                        return; //Debug.fail();
-                                    }
-                                    setOfGroup.add(groupToAdd);
-                                    filteredSetOfFlow.add(fn);  // TODO: we need only the maximal node in flowGroupingInfer.ts
-                                }
-                                else if (isFlowBranch(antefn)){
-                                    flowLabels.push(antefn);
-                                }
-                                else Debug.fail();
-                            });
+                        }; // flowBranchResolve
+                        if (fn.branchKind!==BranchKind.none) {
+                            g.anteGroupLabels.push(flowBranchResolve(fn));
                         }
                     }
-                    else Debug.fail();
+                        ////////////////////////////////////////////////////////////////////////////////////////
+                        ////////////////////////////////////////////////////////////////////////////////////////
+
+                    //     const flowLabels: FlowLabel[] = [fn];
+                    //     while (flowLabels.length){
+                    //         const fnlab = flowLabels.pop()!;
+                    //         switch (fnlab.branchKind){
+                    //             case undefined:
+                    //             case BranchKind.none:
+                    //                 continue;
+                    //             case BranchKind.then:
+                    //                 Debug.assert(!anteLabels.then);
+                    //                 anteLabels.then = fnlab;
+                    //                 hadAnteLabel = true;
+                    //                 break;
+                    //             case BranchKind.else:
+                    //                 Debug.assert(!anteLabels.else);
+                    //                 anteLabels.else = fnlab;
+                    //                 hadAnteLabel = true;
+                    //                 break;
+                    //             case BranchKind.postIf:
+                    //                 if (anteLabels.postIf) continue; // only the first one
+                    //                 anteLabels.postIf = fnlab;
+                    //                 hadAnteLabel = true;
+                    //                 break;
+                    //             case BranchKind.block:
+                    //                 if (!anteLabels.arrBlock) {
+                    //                     anteLabels.arrBlock = [fnlab];
+                    //                 }
+                    //                 else anteLabels.arrBlock.push(fnlab);
+                    //                 hadAnteLabel = true;
+                    //                 break;
+                    //             case BranchKind.postBlock:
+                    //                 if (!anteLabels.arrPostBlock) {
+                    //                     anteLabels.arrPostBlock = [fnlab];
+                    //                 }
+                    //                 else anteLabels.arrPostBlock.push(fnlab);
+                    //                 hadAnteLabel = true;
+                    //                 break;
+                    //             // case BranchKind.continue:
+                    //             //     Debug.assert(!anteLabels.continue);
+                    //             //     anteLabels.continue = fnlab;
+                    //             //     hadAnteLabel = true;
+                    //             //     break;
+                    //             default:
+                    //                 Debug.fail(`${fnlab.branchKind}`);
+                    //         }
+                    //         fnlab.antecedents?.forEach(antefn=>{
+                    //             if (isFlowStart(antefn)) return;
+                    //             if (isFlowWithNode(antefn)){
+                    //                 //g.branchMerger = true;
+                    //                 const groupToAdd = nodeToGroupMap.get(antefn.node);
+                    //                 if (!groupToAdd){
+                    //                     Debug.fail();
+                    //                 }
+                    //                 if (groupToAdd===g) {
+                    //                     return; //Debug.fail();
+                    //                 }
+                    //                 setOfGroup.add(groupToAdd);
+                    //                 filteredSetOfFlow.add(fn);  // TODO: we need only the maximal node in flowGroupingInfer.ts
+                    //             }
+                    //             else if (isFlowLabel(antefn)){
+                    //                 flowLabels.push(antefn);
+                    //             }
+                    //             else {
+                    //                 Debug.fail();
+                    //             }
+                    //         });
+                    //     }
+                    // }
+                    // else if (isFlowLoop(fn) && isFlowWithAntecedents(fn)){
+                    //     setOfFlowLoop.add(fn);
+                    // }
+                    // else {
+                    //     Debug.fail();
+                    // }
                 }
             });
-            if (hadAnteLabel) g.anteLabels = anteLabels;
-            if (setOfGroup.size) groupToAnteGroupMap.set(g,setOfGroup);
+            // if (hadAnteLabel) {
+            //     g.anteLabels = anteLabels;
+            //     // convert to g.anteGroups
+            // }
+            // check that setOfAnteGroup === setOfGroup, eventually kill setOfGroup
+            setOfGroup.forEach(g=>Debug.assert(setOfAnteGroup.has(g)));
+            // If turns out setOfGroup is a subset of setOfAnteGroup in case of postIf labels.
+            // setOfAnteGroups is the correct.
+            //setOfAnteGroup.forEach(g=>Debug.assert(setOfGroup.has(g)));
+
+            // if (setOfGroup.size) groupToAnteGroupMap.set(g,setOfGroup);
+            groupToAnteGroupMap.set(g,setOfAnteGroup);
             groupToSetOfFlowMap.set(g, filteredSetOfFlow);
 
         });
 
-        return {
+        const retval: GroupsForFlow =  {
             orderedGroups,
             posOrderedNodes: orderedNodes,
             precOrderContainerItems: precOrderCI,
-            groupToSetOfFlowMap,
+            //groupToSetOfFlowMap,
             groupToAnteGroupMap,
             nodeToGroupMap,
-            dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx
+            //dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx,
         };
+        if (getMyDebug()) retval.dbgFlowToOriginatingGroupIdx = flowToOriginatingGroupIdx;
+        return retval;
 
     }
 
@@ -367,6 +526,9 @@ namespace ts {
     }
     export function isFlowBranch(fn: FlowNode | undefined): fn is FlowLabel {
         return !!fn && !!(fn.flags & FlowFlags.BranchLabel);
+    }
+    export function isFlowLoop(fn: FlowNode | undefined): fn is FlowLabel {
+        return !!fn && !!(fn.flags & FlowFlags.LoopLabel);
     }
     export function isFlowAssignment(fn: FlowNode | undefined): fn is FlowAssignment {
         return !!fn &&  !!(fn.flags & FlowFlags.Assignment);
@@ -420,6 +582,36 @@ namespace ts {
         else return [];
     }
 
+    function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel): string[] {
+        const as: string[]=[`kind:${fglab.kind}`];
+        switch(fglab.kind){
+            case FlowGroupLabelKind.ref:
+                as.push(`groupIdx:${fglab.groupIdx}`);
+                break;
+            case FlowGroupLabelKind.then:
+            case FlowGroupLabelKind.else:
+                as.push(`ifGroupIdx:${fglab.ifGroupIdx}`);
+                break;
+            case FlowGroupLabelKind.postIf:
+                as.push(`originatingGroupIdx:${fglab.originatingGroupIdx}`);
+                as.push(`anteThen:`);
+                as.push(...dbgFlowGroupLabelToStrings(fglab.anteThen).map(s=>"    "+s));
+                as.push(`anteElse:`);
+                as.push(...dbgFlowGroupLabelToStrings(fglab.anteElse).map(s=>"    "+s));
+                break;
+            // case FlowGroupLabelKind.block:
+            // case FlowGroupLabelKind.postBlock:
+            //     as.push(`originatingGroupIdx:${fglab.originatingGroupIdx}`);
+            //     as.push(`ante:`);
+            //     as.push(...dbgFlowGroupLabelToStrings(fglab.ante).map(s=>"    "+s));
+            //     break;
+            default:
+                // @ts-ignore
+                Debug.fail(`fglab.kind:${fglab.kind}: not yet implemented`);
+        }
+        return as;
+    }
+
 
     export function dbgGroupsForFlowToStrings(
         gff: GroupsForFlow,
@@ -432,7 +624,7 @@ namespace ts {
         gff.orderedGroups.forEach((g,i)=>{
             const maxnode = gff.posOrderedNodes[g.maximalIdx];
             //const maxnodecont = gff.precOrderContainerItems[g.precOrdContainerIdx];
-            astr.push(`groups[${i}]: {maxnode: ${dbgNodeToString(maxnode)}}, contidx: ${
+            astr.push(`groups[${i}]: {kind, ${g.kind}, maxnode: ${dbgNodeToString(maxnode)}}, contidx: ${
                 g.precOrdContainerIdx
             }`);
             for (let idx = g.idxb; idx!==g.idxe; idx++){
@@ -441,13 +633,13 @@ namespace ts {
                 if (isNodeWithFlow(node)) str += `, flow: ${dbgFlowToString(node.flowNode)}`;
                 astr.push(str);
             }
-            const setOfFlow = gff.groupToSetOfFlowMap.get(g);
-            astr.push(`groups[${i}]:  setOfFlow.size===${setOfFlow?.size??0}`);
-            if (setOfFlow) {
-                setOfFlow.forEach(fn=>{
-                    astr.push(`groups[${i}]:    flow: ${dbgFlowToString(fn)}`);
-                });
-            }
+            // const setOfFlow = gff.groupToSetOfFlowMap.get(g);
+            // astr.push(`groups[${i}]:  setOfFlow.size===${setOfFlow?.size??0}`);
+            // if (setOfFlow) {
+            //     setOfFlow.forEach(fn=>{
+            //         astr.push(`groups[${i}]:    flow: ${dbgFlowToString(fn)}`);
+            //     });
+            // }
             const setOfAnteGroups = gff.groupToAnteGroupMap.get(g);
             astr.push(`groups[${i}]:  setOfAnteGroups.size===${setOfAnteGroups?.size??0}`);
             if (setOfAnteGroups) {
@@ -455,6 +647,19 @@ namespace ts {
                     astr.push(`groups[${i}]:    anteGroupIdx: ${anteg.groupIdx}`);
                 });
             }
+            // if (g.anteLabels){
+            //     for (const k in g.anteLabels){
+            //         astr.push(`groups[${i}]:    anteLabels[${k}]: ${dbgFlowToString(g.anteLabels[k as keyof GroupForFlow["anteLabels"]], /*withAntecedants*/ true)}`);
+            //     }
+            // }
+            if (g.previousAnteGroupIdx!==undefined){
+                astr.push(`groups[${i}]:    previousAnteGroupIdx:${g.previousAnteGroupIdx}`);
+            }
+            g.anteGroupLabels.forEach((fglab,idx) => {
+                dbgFlowGroupLabelToStrings(fglab).forEach(s=>{
+                    astr.push(`groups[${i}]:    anteGroupLabels[${idx}]: ${s}`);
+                });
+            });
         });
         gff.precOrderContainerItems.forEach((ci,i)=>{
             astr.push(`containerItems[${i}]: node:${dbgNodeToString(ci.node)}`);

@@ -4,23 +4,94 @@ namespace ts {
     export enum GroupForFlowKind {
         none="none",
         plain="plain",
-        ifexpr="ifexpr"
+        ifexpr="ifexpr",
+        loop="loop",
     };
+    export enum FlowGroupLabelKind {
+        // none="none",
+        ref="ref",
+        // trueCond="trueCond",
+        // falseCond="falseCond",
+        then="then",
+        else="else",
+        postIf="postIf",
+        // continue="continue",
+        // loop="loop",
+        // postLoop="postLoop",
+        // currently no block scopes processed - c.f.  binder.ts, const labelBlockScopes = false;
+
+        // block="block",
+        // postBlock="postBlock",
+    };
+    export interface FlowGroupLabelBase {
+        kind: FlowGroupLabelKind,
+    };
+    ///////////////////////////////////////////
+    /////////////////////////////////////////// not necessary?
+    // export type FlowGroupLabelTrueCond = & {
+    //     kind: FlowGroupLabelKind.trueCond;
+    //     groupIdx: number;
+    // };
+    // /////////////////////////////////////////// not necessary?
+    // export type FlowGroupLabelFalseCond = & {
+    //     kind: FlowGroupLabelKind.falseCond;
+    //     groupIdx: number;
+    // };
+    ///////////////////////////////////////////
+    ///////////////////////////////////////////
+    export type FlowGroupLabelRef = & {
+        kind: FlowGroupLabelKind.ref;
+        groupIdx: number;
+    };
+    // export type FlowGroupLabelBlock = & {
+    //     kind: FlowGroupLabelKind.block;
+    //     ante: FlowGroupLabel;
+    //     originatingGroupIdx: number;
+    // };
+    // export type FlowGroupLabelPostBlock = & {
+    //     kind: FlowGroupLabelKind.postBlock;
+    //     ante: FlowGroupLabel;
+    //     originatingGroupIdx: number;
+    // };
+    export type FlowGroupLabelThen = & {
+        kind: FlowGroupLabelKind.then;
+        //ante?: FlowGroupLabelTrueCond; // do we ever need this redirection
+        ifGroupIdx: number;
+    };
+    export type FlowGroupLabelElse = & {
+        kind: FlowGroupLabelKind.else;
+        ifGroupIdx: number;
+    };
+    export type FlowGroupLabelPostIf = & {
+        kind: FlowGroupLabelKind.postIf;
+        anteThen: FlowGroupLabelRef | FlowGroupLabelThen | FlowGroupLabelPostIf;
+        anteElse: FlowGroupLabelRef | FlowGroupLabelElse | FlowGroupLabelPostIf;
+        originatingGroupIdx: number;
+    };
+    // export type FlowGroupLabelLoop = & {
+    //     kind: FlowGroupLabelKind.loop;
+    //     anteLoopEnd: FlowGroupLabel;
+    // };
+    // export type FlowGroupLabelPostLoop = & {
+    //     kind: FlowGroupLabelKind.postLoop;
+    //     loopGroupIdx: number;
+    // };
+
+    export type FlowGroupLabel = FlowGroupLabelRef | FlowGroupLabelThen | FlowGroupLabelElse | FlowGroupLabelPostIf
+    // | FlowGroupLabelLoop | FlowGroupLabelPostLoop
+    // | FlowGroupLabelBlock | FlowGroupLabelPostBlock
+    ;
+
     export interface GroupForFlow {
         kind: GroupForFlowKind,
         maximalIdx: number,
         idxb: number,
         idxe: number,
-        precOrdContainerIdx: number,
+        precOrdContainerIdx: number, // used to determine GroupForFlow order.
         groupIdx: number,
-        anteLabels?: {
-            postIf?: FlowLabel;
-            then?: FlowLabel;
-            else?: FlowLabel;
-            arrBlock?: FlowLabel[];
-            arrPostBlock?: FlowLabel[];
-        },
-        //branchMerger?: boolean; // kill?
+        previousAnteGroupIdx?: number; // the previous statement
+        anteGroupLabels: FlowGroupLabel[];
+        //referencingGroupIdxs: number[];
     };
 
     export interface ContainerItem { node: Node, precOrderIdx: number };
@@ -28,10 +99,9 @@ namespace ts {
         orderedGroups: GroupForFlow[],
         precOrderContainerItems: ContainerItem[];
         posOrderedNodes: Node[];
-        groupToSetOfFlowMap: ESMap< GroupForFlow, Set<FlowNode> >;
-        groupToAnteGroupMap: ESMap< GroupForFlow, Set<GroupForFlow> >; // used in updateHeap... but could use flow instead.
+        groupToAnteGroupMap: ESMap< GroupForFlow, Set<GroupForFlow> >; // used in updateHeap
         nodeToGroupMap: ESMap< Node, GroupForFlow >;
-        dbgFlowToOriginatingGroupIdx: ESMap<FlowNode, number>;
+        dbgFlowToOriginatingGroupIdx?: ESMap<FlowNode, number>; // kill?
         dbgCreationTimeMs?: bigint;
     }
 
@@ -214,9 +284,11 @@ namespace ts {
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                     if (!cbe){
                         Debug.assert(!mrState.forFlow.dbgCurrentBranchesMapWasDeleted.has(anteg));
-                        tmpacc1.add(anteg);
-                        acc.add(anteg);
-                        change = true;
+                        if (!tmpacc1.has(anteg) && !acc.has(anteg)){
+                            tmpacc1.add(anteg);
+                            acc.add(anteg);
+                            change = true;
+                        }
                     }
                 });
             });
@@ -258,10 +330,12 @@ namespace ts {
             if (debugCheck) {
                 const setOfAnteGroups =groupsForFlow.groupToAnteGroupMap.get(groupForFlow);
                 if (setOfAnteGroups){
-                    setOfAnteGroups.forEach(ag=>{
-                        Debug.assert(!heap.has(ag.groupIdx));
-                        const cbe = mrState.forFlow.currentBranchesMap.get(ag);
-                        Debug.assert(cbe);
+                    setOfAnteGroups.forEach((ag)=>{
+                        if (false) {//(!(groupForFlow.anteLabels?.loop)) {
+                            Debug.assert(!heap.has(ag.groupIdx));
+                            const cbe = mrState.forFlow.currentBranchesMap.get(ag);
+                            Debug.assert(cbe);
+                        }
                     });
                 }
             }
@@ -273,203 +347,105 @@ namespace ts {
         const groupsForFlow = sourceFileMrState.groupsForFlow;
         const mrState = sourceFileMrState.mrState;
         const mrNarrow = sourceFileMrState.mrNarrow;
-        const firstAnteGroup = (()=>{
-            const setOfAnteGroups =groupsForFlow.groupToAnteGroupMap.get(groupForFlow);
-            if (setOfAnteGroups && setOfAnteGroups.size===1) return setOfAnteGroups.keys().next().value;
-            return undefined;
-        })();
-        const anteLabels: GroupForFlow["anteLabels"] | undefined = groupForFlow.anteLabels;
         const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
         if (getMyDebug()){
             consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, groupIndex:${groupForFlow.groupIdx}, kind:${groupForFlow.kind}, maximalNode.parent.kind:${Debug.formatSyntaxKind(maximalNode.parent.kind)}`);
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
             dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
-            if (!anteLabels) consoleLog(`resolveGroupForFlow[dbg:] anteLabels: undefined`);
-            else {
-                consoleLog(`resolveGroupForFlow[dbg:] anteLabels: {`);
-                consoleLog(`resolveGroupForFlow[dbg:]   then : ${dbgs!.dbgFlowToString(anteLabels.then)}`);
-                consoleLog(`resolveGroupForFlow[dbg:]   else: ${dbgs!.dbgFlowToString(anteLabels.else)}`);
-                consoleLog(`resolveGroupForFlow[dbg:]   postIf: ${dbgs!.dbgFlowToString(anteLabels.postIf)}`);
-                anteLabels.arrBlock?.forEach((block,i)=>{
-                    consoleLog(`resolveGroupForFlow[dbg:]   block[${i}]: ${dbgs!.dbgFlowToString(block)}`);
-                });
-                anteLabels.arrPostBlock?.forEach((block,i)=>{
-                    consoleLog(`resolveGroupForFlow[dbg:]   postBlock[${i}]: ${dbgs!.dbgFlowToString(block)}`);
-                });
-                consoleLog(`resolveGroupForFlow[dbg:] }`);
-            }
         }
-        function mergeInfoRefTypesSymtab(source: Readonly<RefTypesSymtab>, target: RefTypesSymtab): void {
-            source.forEach((x,symbol)=>{
-                const got = target.get(symbol);
-                if (got) mrNarrow.mergeToRefTypesType({ source:x.leaf.type, target:got.leaf.type });
-                else target.set(symbol, x);
-            });
-        }
-
-        // ensure that we don't attemp to delete the same item from mrState.forFlow.currentBranchesMap more than once,
-        // whcih can happen without this guard, e.g., in the situation of an empty "this" or "else" branch with a "postIf"
         const setOfKeysToDeleteFromCurrentBranchesMap: Set<GroupForFlow> = new Set<GroupForFlow>();
-        const doOnePostIf = (fnpi: Readonly<FlowLabel>, symtab: RefTypesSymtab): ConstraintItem => {
-            consoleGroup(`doOnePostIf[in] fnpi: ${dbgs?.dbgFlowToString(fnpi,/**/ true)}`);
-            Debug.assert(fnpi.branchKind===BranchKind.postIf);
-            Debug.assert(fnpi.antecedents!.length===2);
-            const postIfConstraints = fnpi.antecedents!.map(antefn=>{
-                Debug.assert(!isFlowStart(antefn));
-                if (isFlowBranch(antefn) && antefn.branchKind===BranchKind.postIf){
-                    return doOnePostIf(antefn,symtab);
-                }
-                else {
-                    let thenelse: FlowLabel | undefined;
-                    while (!isFlowWithNode(antefn)){
-                        Debug.assert(isFlowLabel(antefn));
-                        if (antefn.branchKind===BranchKind.then||antefn.branchKind===BranchKind.else){
-                            thenelse = antefn;
-                        }
-                        Debug.assert(antefn.antecedents && antefn.antecedents.length===1);
-                        antefn = antefn.antecedents[0];
-                    }
-                    const anteg = groupsForFlow.nodeToGroupMap.get(antefn.node)!;
+        const doOneFlowGroupLabelPostIf = (fglab: FlowGroupLabelPostIf): RefTypesSymtabConstraintItem => {
+            const helper = (x: FlowGroupLabelRef | FlowGroupLabelThen | FlowGroupLabelElse | FlowGroupLabelPostIf): RefTypesSymtabConstraintItem => {
+                if (x.kind===FlowGroupLabelKind.ref){
+                    const anteg = groupsForFlow.orderedGroups[x.groupIdx];
                     const cbe = mrState.forFlow.currentBranchesMap.get(anteg)!;
-                    // mrState.forFlow.currentBranchesMap.delete(anteg);
-                    // mrState.forFlow.dbgCurrentBranchesMapWasDeleted.set(anteg,true);
-                    setOfKeysToDeleteFromCurrentBranchesMap.add(anteg);
-                    if (cbe.kind===CurrentBranchesElementKind.tf){
-                        Debug.assert(thenelse);
-                        if (thenelse.branchKind===BranchKind.then) {
-                            if (!cbe.truthy) return undefined;
-                            mergeInfoRefTypesSymtab(cbe.truthy.refTypesTableReturn.symtab, symtab);
-                            return cbe.truthy.refTypesTableReturn.constraintItem;
-                        }
-                        else if (thenelse.branchKind===BranchKind.else) {
-                            if (!cbe.falsy) return undefined;
-                            mergeInfoRefTypesSymtab(cbe.falsy.refTypesTableReturn.symtab, symtab);
-                            return cbe.falsy.refTypesTableReturn.constraintItem;
-                        }
-                        else Debug.fail("unexpected");
-                    }
-                    else {
-                        mergeInfoRefTypesSymtab(cbe.item.refTypesTableReturn.symtab, symtab);
-                        return cbe.item.refTypesTableReturn.constraintItem;
-                    }
+                    Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
+                    const { symtab, constraintItem } = cbe.item.refTypesTableReturn;
+                    return { symtab, constraintItem };
                 }
-            });
-            Debug.assert(fnpi.originatingExpression);
-            consoleLog(`doOnePostIf[dbg] fnpi.originatingExpression: ${dbgs?.dbgNodeToString(fnpi.originatingExpression)})`);
-            const origGroup = groupsForFlow.nodeToGroupMap.get(fnpi.originatingExpression);
-            Debug.assert(origGroup);
-            const origCbe = mrState.forFlow.currentBranchesMap.get(origGroup);
-            Debug.assert(origCbe);
-            Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
-            setOfKeysToDeleteFromCurrentBranchesMap.add(origGroup);
-            consoleLog(`doOnePostIf[out] fnpi: ${dbgs?.dbgFlowToString(fnpi)}`);
-            consoleGroupEnd();
-            if (postIfConstraints[0]===origCbe.truthy?.refTypesTableReturn.constraintItem && postIfConstraints[1]===origCbe.falsy?.refTypesTableReturn.constraintItem){
-                return origCbe.originalConstraintIn;
-            }
-            else {
-                if (postIfConstraints[0] && postIfConstraints[1]) {
-                    return orConstraintsV2(postIfConstraints as ConstraintItem[]);
+                else if (x.kind===FlowGroupLabelKind.then || x.kind===FlowGroupLabelKind.else){
+                    const anteg = groupsForFlow.orderedGroups[x.ifGroupIdx];
+                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg)!;
+                    Debug.assert(cbe.kind===CurrentBranchesElementKind.tf);
+                    const { symtab, constraintItem } = x.kind===FlowGroupLabelKind.then ? cbe.truthy.refTypesTableReturn : cbe.falsy.refTypesTableReturn;
+                    return { symtab, constraintItem };
                 }
-                else if (postIfConstraints[0]) return postIfConstraints[0];
-                else if (postIfConstraints[1]) return postIfConstraints[1];
-                else return createFlowConstraintAlways();
-            }
-        };
+                else if (x.kind===FlowGroupLabelKind.postIf){
+                    return doOneFlowGroupLabelPostIf(x);
+                }
+                else Debug.fail("unexpected");
+            };
+            const thenSymtabConstraint = helper(fglab.anteThen);
+            const elseSymtabConstraint = helper(fglab.anteElse);
+            const origGroup = groupsForFlow.orderedGroups[fglab.originatingGroupIdx];
 
-        const getAnteConstraintItemAndSymtab = (): {constraintItem: ConstraintItem, symtab: RefTypesSymtab}=>{
-            if (anteLabels){
-                // "then" and "else" must come after "postIf" because "postIf" may lead to "then" or "else" anyway.
-                if (anteLabels.postIf){
-                    const symtabOut = mrNarrow.createRefTypesSymtab();
-                    const constraintItem = doOnePostIf(anteLabels.postIf, symtabOut);
-                    return { constraintItem, symtab:symtabOut };
+            setOfKeysToDeleteFromCurrentBranchesMap.add(origGroup);
+
+            const origCbe = mrState.forFlow.currentBranchesMap.get(origGroup)!;
+            Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
+            if (thenSymtabConstraint.constraintItem===origCbe.truthy.refTypesTableReturn.constraintItem
+                && elseSymtabConstraint.constraintItem===origCbe.falsy.refTypesTableReturn.constraintItem){
+                return {
+                    symtab: orSymtabs([ thenSymtabConstraint.symtab, elseSymtabConstraint.symtab ], mrNarrow),
+                    constraintItem: origCbe.originalConstraintIn
+                };
+            }
+            else return orSymtabConstraints([ thenSymtabConstraint, elseSymtabConstraint ], mrNarrow);
+        };
+        const getAnteConstraintItemAndSymtabV2 = (): RefTypesSymtabConstraintItem => {
+            let sc: RefTypesSymtabConstraintItem | undefined;
+            if (groupForFlow.anteGroupLabels.length){
+                Debug.assert(groupForFlow.anteGroupLabels.length===1);
+                const flowGroupLabel = groupForFlow.anteGroupLabels[0];
+                if (flowGroupLabel.kind===FlowGroupLabelKind.postIf){
+                    sc = doOneFlowGroupLabelPostIf(flowGroupLabel);
                 }
-                if (anteLabels.then){
-                    Debug.assert(firstAnteGroup);
-                    const cbe = mrState.forFlow.currentBranchesMap.get(firstAnteGroup);
+                else if (flowGroupLabel.kind===FlowGroupLabelKind.then){
+                    const anteg = groupsForFlow.orderedGroups[flowGroupLabel.ifGroupIdx];
+                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                     Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf && cbe.truthy);
                     const {constraintItem,symtab}=cbe.truthy.refTypesTableReturn;
-                    return { constraintItem,symtab };
+                    sc = { constraintItem,symtab };
                 }
-                if (anteLabels.else){
-                    Debug.assert(firstAnteGroup);
-                    const cbe = mrState.forFlow.currentBranchesMap.get(firstAnteGroup);
+                else if (flowGroupLabel.kind===FlowGroupLabelKind.else){
+                    const anteg = groupsForFlow.orderedGroups[flowGroupLabel.ifGroupIdx];
+                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
                     Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf && cbe.falsy);
                     const {constraintItem,symtab}=cbe.falsy.refTypesTableReturn;
-                    return { constraintItem,symtab };
+                    sc = { constraintItem,symtab };
+                }
+                else {
+                    Debug.fail("not yet implemented");
                 }
             }
-            if (firstAnteGroup){
-                const cbe = mrState.forFlow.currentBranchesMap.get(firstAnteGroup);
-                Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
+            if (groupForFlow.previousAnteGroupIdx!==undefined){
+                Debug.assert(!sc);
+                const prevAnteGroup = groupsForFlow.orderedGroups[groupForFlow.previousAnteGroupIdx];
+
+                setOfKeysToDeleteFromCurrentBranchesMap.add(prevAnteGroup);
+
+                const cbe = mrState.forFlow.currentBranchesMap.get(prevAnteGroup);
+                if (!(cbe && cbe.kind===CurrentBranchesElementKind.plain)){
+                    // @ts-ignore
+                    Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
+                }
                 const {constraintItem,symtab}=cbe.item.refTypesTableReturn;
-                setOfKeysToDeleteFromCurrentBranchesMap.add(firstAnteGroup);
-                return { constraintItem,symtab };
+                sc = { constraintItem,symtab };
             }
-            else {
-                const anteGroups = groupsForFlow.groupToAnteGroupMap.get(groupForFlow);
-                Debug.assert(!anteGroups || !anteGroups.size);
-                return { constraintItem: createFlowConstraintAlways(), symtab: mrNarrow.createRefTypesSymtab() };
+            if (!sc){
+                sc = { symtab: mrNarrow.createRefTypesSymtab(), constraintItem: createFlowConstraintAlways() };
             }
+            return sc;
         };
+
         // eslint-disable-next-line prefer-const
-        let {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
+        let {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtabV2();
         /**
          * Delete all the no-longer-needed CurrentBranchElements.  Note that unentangled lower scoped const variables will be
          * implicitly deleted with these deletions of their containing ConstraintItem-s.
          */
         setOfKeysToDeleteFromCurrentBranchesMap.forEach(gff=>mrState.forFlow.currentBranchesMap.delete(gff));
-        /**
-         * If it is a block start then add in all the new local variables: TODO - no longer necessary with unmodified constraints and evalCover
-         */
-        if (anteLabels?.arrBlock){
-            anteLabels?.arrBlock.forEach(block=>{
-                block.originatingExpression?.locals?.forEach((symbol)=>{
-                    const type = mrNarrow.createRefTypesType(mrNarrow.checker.getTypeOfSymbol(symbol));
-                    const isconst = mrNarrow.checker.isConstVariable(symbol);
-                    refTypesSymtabArg.set(symbol, { leaf: mrNarrow.createRefTypesTableLeaf(symbol, isconst, type) });
-                });
-            });
-        }
-        else if (anteLabels?.arrPostBlock){
-            /**
-             * Delete locally scoped variables from the symtab.
-             */
-            const localsSet = new Set<Symbol>();
-            anteLabels?.arrPostBlock.forEach(block=>{
-                const locals = block.originatingExpression?.locals;
-                if (locals){
-                    for (let iter = locals.values(), item = iter.next(); !item.done; item=iter.next()){
-                        localsSet.add(item.value);
-                    };
-                    locals.forEach((symbol)=>Debug.assert(refTypesSymtabArg.has(symbol)));
-                    locals.forEach((symbol)=>refTypesSymtabArg.delete(symbol));
-                }
-            });
-            /**
-             * Originally: clear the deleted variables from the constraint
-             * Update: (See comments on removeSomeVariablesFromConstraint) - in cases of inner returns or jumps
-             * lexically lower scoped variables may be acting
-             * as hidden variables that are entangled with higher scoped variables. Therefore those lower
-             * scoped variables cannot be removed.
-             * As a consequence, there may be no need for post block processing at all.
-             */
-            // if (localsSet.size) {
-            //     if (getMyDebug()){
-            //         mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
-            //             consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[before removal]: ${s}`);
-            //         });
-            //     }
-            //     constraintItemArg = removeSomeVariablesFromConstraint(constraintItemArg,localsSet,mrNarrow);
-            //     if (getMyDebug()){
-            //         mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
-            //             consoleLog(`resolveGroupForFlow[dbg:] constraintItemArg[after removal]: ${s}`);
-            //         });
-            //     }
-            // }
-        }
         const boolsplit = groupForFlow.kind===GroupForFlowKind.ifexpr;  //maximalNode.parent.kind===SyntaxKind.IfStatement;
         const crit: InferCrit = !boolsplit ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         const inferStatus: InferStatus = {
@@ -480,18 +456,8 @@ namespace ts {
             groupNodeToTypeMap: new Map<Node,Type>(),
             getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
                 return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
-
-                // mrState.dataForGetTypeOfExpressionShallowRecursive = { sc, expr, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
-                // try {
-                //    const tstype = mrState.checker.getTypeOfExpression(expr);
-                //    return tstype;
-                // }
-                // finally {
-                //     delete mrState.dataForGetTypeOfExpressionShallowRecursive;
-                // }
             },
             callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
-            //callCheckerFunctionWithShallowRecursion<FN extends CheckerNodeFn>(checkerFn: FN, expr: Expression): ReturnType<FN> {
                 mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
                 try {
                    const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
@@ -638,7 +604,7 @@ namespace ts {
 
     }
 
-    /* @ts-ignore */
+    /* @ ts-ignore */
     function dbgCurrentBranchesMap(sourceFileMrState: SourceFileMrState): string[]{
         const groupsForFlow = sourceFileMrState.groupsForFlow;
         const mrState = sourceFileMrState.mrState;

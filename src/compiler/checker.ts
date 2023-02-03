@@ -43167,20 +43167,22 @@ namespace ts {
                         const astr4: string[]=[];
                         node.allFlowNodes.forEach(fn=>{
                             let str = dbgFlowToString(fn);
-                            const originatingGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(fn) ?? -1;
-                            str += `, originatingGroupIdx: ${originatingGroupIdx}`;
-                            str += `, anteFlow:[`;
-                            const tmpas: string[]=[];
-                            getFlowAntecedents(fn).forEach(antefn=>{
-                                str += `${dbgFlowToString(antefn)}; `;
-                                const anteGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(antefn) ?? -1;
-                                tmpas.push(anteGroupIdx.toString());
-                            });
-                            str += "]";
-                            if (tmpas.length){
-                                str += `, anteGroups:[${tmpas.join(",")}]`;
+                            if (groupsForFlow.dbgFlowToOriginatingGroupIdx){
+                                const originatingGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(fn) ?? -1;
+                                str += `, originatingGroupIdx: ${originatingGroupIdx}`;
+                                str += `, anteFlow:[`;
+                                const tmpas: string[]=[];
+                                getFlowAntecedents(fn).forEach(antefn=>{
+                                    str += `${dbgFlowToString(antefn)}; `;
+                                    const anteGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx!.get(antefn) ?? -1;
+                                    tmpas.push(anteGroupIdx.toString());
+                                });
+                                str += "]";
+                                if (tmpas.length){
+                                    str += `, anteGroups:[${tmpas.join(",")}]`;
+                                }
+                                astr4.push(str);
                             }
-                            astr4.push(str);
                         });
                         const ofilename4 = `tmp.${getBaseFileName(node.originalFileName)}.afn.txt`;
                         sys.writeFile(ofilename4, astr4.join(sys.newLine));
