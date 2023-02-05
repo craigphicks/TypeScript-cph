@@ -881,9 +881,9 @@ namespace ts {
                 case SyntaxKind.Block:
                 case SyntaxKind.ModuleBlock:
                     if (labelBlockScopes){
-                        const blockLabel = createBranchLabel(BranchKind.block);
+                        const blockLabel = createBranchLabel(/*BranchKind.block*/);
                         blockLabel.originatingExpression = node;
-                        const postBlockLabel = createBranchLabel(BranchKind.postBlock);
+                        const postBlockLabel = createBranchLabel(/*BranchKind.postBlock*/);
                         postBlockLabel.originatingExpression = node;
                         addAntecedent(blockLabel, currentFlow);
                         currentFlow = finishFlowLabel(blockLabel);
@@ -1012,8 +1012,8 @@ namespace ts {
 
         }
 
-        function createLoopLabel(): FlowLabel {
-            return initFlowNode({ flags: FlowFlags.LoopLabel, antecedents: undefined });
+        function createLoopLabel(branchKind: BranchKind = BranchKind.none): FlowLabel {
+            return initFlowNode({ flags: FlowFlags.LoopLabel, antecedents: undefined, branchKind });
         }
 
         function createReduceLabel(target: FlowLabel, antecedents: FlowNode[], antecedent: FlowNode): FlowReduceLabel {
@@ -1170,9 +1170,9 @@ namespace ts {
         }
 
         function bindWhileStatement(node: WhileStatement): void {
-            const preWhileLabel = setContinueTarget(node, createLoopLabel());
-            const preBodyLabel = createBranchLabel(BranchKind.then);
-            const postWhileLabel = createBranchLabel(BranchKind.postIf);
+            const preWhileLabel = setContinueTarget(node, createLoopLabel(BranchKind.preWhileLoop));
+            const preBodyLabel = createBranchLabel(BranchKind.preWhileBody);
+            const postWhileLabel = createBranchLabel(BranchKind.postWhileLoop);
             postWhileLabel.originatingExpression = node.expression; // to enable merging of unchanged then/else branch pairs
             addAntecedent(preWhileLabel, currentFlow);
             currentFlow = preWhileLabel;

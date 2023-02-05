@@ -110,11 +110,11 @@ namespace ts {
             let str = "";
             //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
             str += `[f${checker.getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
-            if (isFlowBranch(flow)){
+            if (isFlowLabel(flow)){
                 str += `branchKind: ${flow.branchKind}, `;
             }
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
-            if (isFlowBranch(flow) && flow.originatingExpression){
+            if (isFlowLabel(flow) && flow.originatingExpression){
                 str += `originatingExpression: ${dbgNodeToString(flow.originatingExpression)},`;
             }
             // if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;aaaaaa
@@ -124,7 +124,7 @@ namespace ts {
                 str += `antecedents(${antefn.length}):[`;
                 antefn.forEach(fn=>{
                     str += "[";
-                    const withAntecedants2 = isFlowBranch(fn) /*&& fn.branchKind===BranchKind.postIf*/;
+                    const withAntecedants2 = isFlowLabel(fn) /*&& fn.branchKind===BranchKind.postIf*/;
                     str += dbgFlowToString(fn, withAntecedants2);
                     str += "]";
                 });

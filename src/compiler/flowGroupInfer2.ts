@@ -625,15 +625,15 @@ namespace ts {
             };
         }
 
-        function mrNarrowTypesByBinaryExpressionEquals({
+        function mrNarrowTypesByBinaryExpressionEqualsEquals({
             refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, /* qdotfallout: _qdotFalloutIn, */ inferStatus, constraintItem: constraintItemIn
         }: InferRefInnerArgs & {expr: BinaryExpression}): MrNarrowTypesInnerReturn {
             if (myDebug){
-                consoleGroup(`mrNarrowTypesByBinaryExpressionEquals[in] ${dbgNodeToString(binaryExpression)}`);
+                consoleGroup(`mrNarrowTypesByBinaryExpressionEqualsEquals[in] ${dbgNodeToString(binaryExpression)}`);
             }
             const ret = mrNarrowTypesByBinaryExpressionEquals_aux({ refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, inferStatus, constraintItem: constraintItemIn, qdotfallout:[] });
             if (myDebug){
-                consoleLog(`mrNarrowTypesByBinaryExpressionEquals[out] ${dbgNodeToString(binaryExpression)}`);
+                consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[out] ${dbgNodeToString(binaryExpression)}`);
                 consoleGroupEnd();
             }
             return ret;
@@ -657,7 +657,7 @@ namespace ts {
             const nomativeFalseType = negateEq ? trueType : falseType;
 
             if (myDebug){
-                consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] start left mrNarrowTypes`);
+                consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] start left mrNarrowTypes`);
             }
             const leftRet = mrNarrowTypes({
                 expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
@@ -665,7 +665,7 @@ namespace ts {
                 constraintItem: constraintItemIn
             });
             if (myDebug){
-                consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] end left mrNarrowTypes`);
+                consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] end left mrNarrowTypes`);
             }
             const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[] = [];
             leftRet.inferRefRtnType.unmerged?.forEach((rttrLeft, _leftIdx)=>{
@@ -675,7 +675,7 @@ namespace ts {
                 //     tmpSymtabConstraintLeft = mergeTypeIntoNewSymtabAndNewConstraint(rttrLeft, inferStatus);
                 // }
                 if (myDebug){
-                    consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] start right mrNarrowTypes for left#${_leftIdx} `);
+                    consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] start right mrNarrowTypes for left#${_leftIdx} `);
                 }
                  const rhs1 = mrNarrowTypes({
                     expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus:{ ...inferStatus, inCondition:true },
@@ -683,22 +683,22 @@ namespace ts {
                     constraintItem: tmpSymtabConstraintLeft.constraintItem,
                 });
                 if (myDebug){
-                    consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] end right mrNarrowTypes for left#${_leftIdx} `);
+                    consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] end right mrNarrowTypes for left#${_leftIdx} `);
                 }
                 rhs1.inferRefRtnType.unmerged?.forEach((rttrRight, _rightIdx)=>{
                     const isect = intersectionOfRefTypesType(rttrLeft.type, rttrRight.type);
                     if (myDebug){
-                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         +`rttrLeft.type:${dbgRefTypesTypeToString(rttrLeft.type)}, `
                         +`rttrRight.type:${dbgRefTypesTypeToString(rttrRight.type)}, `);
-                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         +`isect:${dbgRefTypesTypeToString(isect)} `);
                     }
                     const {singular,singularCount,nonSingular,nonSingularCount} = partitionIntoSingularAndNonSingularTypes(isect);
                     if (myDebug){
-                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         +`singular:${dbgRefTypesTypeToString(singular)}, singularCount:${singularCount}`);
-                        consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
+                        consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         +`nonSingular:${dbgRefTypesTypeToString(nonSingular)}, nonSingularCount:${nonSingularCount}`);
                         // consoleLog(`mrNarrowTypesByBinaryExpressionEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
                         // +`mismatchLeft:${dbgRefTypesTypeToString(mismatchLeft)}`);
@@ -863,6 +863,42 @@ namespace ts {
             };
         }
 
+        function mrNarrowTypesByBinaryExpresionAssign(args: InferRefInnerArgs): MrNarrowTypesInnerReturn {
+            const {left:leftExpr,right:rightExpr} = args.expr as BinaryExpression;
+            const {refTypesSymtab,constraintItem} = args;
+
+            const rhs = mrNarrowTypes({
+                refTypesSymtab,
+                crit: { kind:InferCritKind.none },
+                expr: rightExpr,
+                inferStatus: { ...args.inferStatus, inCondition: false }, // because the lhs is definitely not const
+                constraintItem,
+            });
+            if (leftExpr.kind===SyntaxKind.Identifier) {
+                assertType<Identifier>(leftExpr);
+                const symbol = getResolvedSymbol(leftExpr);
+                const isconst = isConstantReference(leftExpr);
+                Debug.assert(!isconst); // because const cannot be lhs of assign
+                let declared = args.inferStatus.declaredTypes.get(symbol);
+                if (!declared){
+                    const tsTypeDeclared = getTypeOfSymbol(symbol);
+                    declared = createRefTypesTableLeaf(symbol,isconst,createRefTypesType(tsTypeDeclared));
+                    args.inferStatus.declaredTypes.set(symbol,declared);
+                }
+                // do a type check against delared first? And if it fails, do what? set declared as the type?
+                const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,{ leaf: createRefTypesTableLeaf(symbol, isconst, rhs.inferRefRtnType.passing.type) });
+                // const got = rhs.inferRefRtnType.passing.symtab.get(symbol);
+                // if (!got){
+                //     // type check?
+                // }
+                return { arrRefTypesTableReturn: [{
+                    ...rhs.inferRefRtnType.passing, symtab
+                }] };
+            }
+            else {
+                Debug.fail("not yet implemented as lhs: "+ Debug.formatSyntaxKind(leftExpr.kind));
+            }
+        }
 
 
         function mrNarrowTypesByBinaryExpression({
@@ -871,6 +907,7 @@ namespace ts {
             const {left:leftExpr,operatorToken,right:rightExpr} = binaryExpression;
             switch (operatorToken.kind) {
                 case SyntaxKind.EqualsToken:
+                    return mrNarrowTypesByBinaryExpresionAssign({ refTypesSymtab:refTypesSymtabIn, expr:binaryExpression, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn });
                 case SyntaxKind.BarBarEqualsToken:
                 case SyntaxKind.AmpersandAmpersandEqualsToken:
                 case SyntaxKind.QuestionQuestionEqualsToken:
@@ -881,7 +918,7 @@ namespace ts {
                 case SyntaxKind.ExclamationEqualsEqualsToken:
                 case SyntaxKind.EqualsEqualsToken:
                 case SyntaxKind.EqualsEqualsEqualsToken:{
-                    return mrNarrowTypesByBinaryExpressionEquals(
+                    return mrNarrowTypesByBinaryExpressionEqualsEquals(
                         { refTypesSymtab:refTypesSymtabIn, constraintItem: constraintItemIn, expr:binaryExpression, inferStatus, qdotfallout:[] });
                 }
                 break;

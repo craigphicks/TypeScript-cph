@@ -16,8 +16,9 @@ namespace ts {
         else="else",
         postIf="postIf",
         // continue="continue",
-        // loop="loop",
-        // postLoop="postLoop",
+        loop="loop",
+        loopThen="loopThen",
+        loopElse="loopElse",
         // currently no block scopes processed - c.f.  binder.ts, const labelBlockScopes = false;
 
         // block="block",
@@ -68,17 +69,23 @@ namespace ts {
         anteElse: FlowGroupLabelRef | FlowGroupLabelElse | FlowGroupLabelPostIf;
         originatingGroupIdx: number;
     };
-    // export type FlowGroupLabelLoop = & {
-    //     kind: FlowGroupLabelKind.loop;
-    //     anteLoopEnd: FlowGroupLabel;
-    // };
-    // export type FlowGroupLabelPostLoop = & {
-    //     kind: FlowGroupLabelKind.postLoop;
-    //     loopGroupIdx: number;
-    // };
+    export type FlowGroupLabelLoop = & {
+        kind: FlowGroupLabelKind.loop;
+        antePrevious: FlowGroupLabel;
+        arrAnteContinue: FlowGroupLabel[];
+    };
+    export type FlowGroupLabelLoopThen = & {
+        kind: FlowGroupLabelKind.loopThen;
+        loopGroupIdx: number;
+    };
+    export type FlowGroupLabelLoopElse = & {
+        kind: FlowGroupLabelKind.loopElse;
+        loopGroupIdx: number;
+        arrAnteBreak: FlowGroupLabel[];
+    };
 
     export type FlowGroupLabel = FlowGroupLabelRef | FlowGroupLabelThen | FlowGroupLabelElse | FlowGroupLabelPostIf
-    // | FlowGroupLabelLoop | FlowGroupLabelPostLoop
+    | FlowGroupLabelLoop | FlowGroupLabelLoopThen | FlowGroupLabelLoopElse
     // | FlowGroupLabelBlock | FlowGroupLabelPostBlock
     ;
 
@@ -91,6 +98,7 @@ namespace ts {
         groupIdx: number,
         previousAnteGroupIdx?: number; // the previous statement
         anteGroupLabels: FlowGroupLabel[];
+        dbgSetOfUnhandledFlow?: Set<FlowLabel>;
         //referencingGroupIdxs: number[];
     };
 
@@ -101,7 +109,7 @@ namespace ts {
         posOrderedNodes: Node[];
         groupToAnteGroupMap: ESMap< GroupForFlow, Set<GroupForFlow> >; // used in updateHeap
         nodeToGroupMap: ESMap< Node, GroupForFlow >;
-        dbgFlowToOriginatingGroupIdx?: ESMap<FlowNode, number>; // kill?
+        dbgFlowToOriginatingGroupIdx?: ESMap<FlowNode, number>;
         dbgCreationTimeMs?: bigint;
     }
 
@@ -325,25 +333,44 @@ namespace ts {
             const groupIdx = heap.remove();
             // @ ts-expect-error
             const groupForFlow = groupsForFlow.orderedGroups[groupIdx];
-            let debugCheck = true;
-            debugCheck = true;
-            if (debugCheck) {
-                const setOfAnteGroups =groupsForFlow.groupToAnteGroupMap.get(groupForFlow);
-                if (setOfAnteGroups){
-                    setOfAnteGroups.forEach((ag)=>{
-                        if (false) {//(!(groupForFlow.anteLabels?.loop)) {
-                            Debug.assert(!heap.has(ag.groupIdx));
-                            const cbe = mrState.forFlow.currentBranchesMap.get(ag);
-                            Debug.assert(cbe);
-                        }
-                    });
+
+            const inferStatus: InferStatus = {
+                inCondition: groupForFlow.kind===GroupForFlowKind.ifexpr || groupForFlow.kind===GroupForFlowKind.loop,
+                currentReplayableItem: undefined,
+                replayables: sourceFileMrState.mrState.replayableItems,
+                declaredTypes: sourceFileMrState.mrState.declaredTypes,
+                groupNodeToTypeMap: new Map<Node,Type>(),
+                getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
+                    return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
+                },
+                callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
+                    mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+                    try {
+                       const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
+                       return ret;
+                    }
+                    finally {
+                        delete mrState.dataForGetTypeOfExpressionShallowRecursive;
+                    }
                 }
-            }
-            resolveGroupForFlow(groupForFlow, sourceFileMrState);
+            };
+
+
+
+            /**
+             * Use groupForFlow.anteGroupLabels[0].kind to check for loop.
+             * If it is a loop, put groupForFlow on the LIFO stack which will be run again when the heap is empty
+             * When the loop is run again it may have different inputs/ differnt results for the nodes.
+             * The loop is run until the node values converge. Convergence can be checked by comparing the before/after node maps,
+             * which are stored seperately per groupForFlow.  When no nodes union of types changes it has converged.
+             *
+             * There may be multiple embedded loops.
+             **/
+            resolveGroupForFlow(groupForFlow, inferStatus, sourceFileMrState);
         }
     }
 
-    function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, sourceFileMrState: SourceFileMrState): void {
+    function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: InferStatus, sourceFileMrState: SourceFileMrState): void {
         const groupsForFlow = sourceFileMrState.groupsForFlow;
         const mrState = sourceFileMrState.mrState;
         const mrNarrow = sourceFileMrState.mrNarrow;
@@ -393,31 +420,58 @@ namespace ts {
             }
             else return orSymtabConstraints([ thenSymtabConstraint, elseSymtabConstraint ], mrNarrow);
         };
+        const doThenElse = (groupIdx: number, truthy: boolean): RefTypesSymtabConstraintItem => {
+            const anteg = groupsForFlow.orderedGroups[groupIdx];
+            const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
+            Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
+            const {constraintItem,symtab}=(truthy?cbe.truthy:cbe.falsy).refTypesTableReturn;
+            return { constraintItem,symtab };
+        };
+        const doFlowGroupLabel = (fglab: FlowGroupLabel): RefTypesSymtabConstraintItem => {
+            switch (fglab.kind){
+                case FlowGroupLabelKind.ref:{
+                    const anteg = groupsForFlow.orderedGroups[fglab.groupIdx];
+                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
+                    if (!cbe){
+                        // This may happen if continues after a loop are not yet fulfilled.
+                        return { symtab: mrNarrow.createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
+                    }
+                    Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
+                    return {
+                        symtab: cbe.item.refTypesTableReturn.symtab,
+                        constraintItem: cbe.item.refTypesTableReturn.constraintItem,
+                    };
+                }
+                case FlowGroupLabelKind.then:
+                    return doThenElse(fglab.ifGroupIdx, /*truthy*/ true);
+                case FlowGroupLabelKind.else:
+                    return doThenElse(fglab.ifGroupIdx, /*truthy*/ false);
+                case FlowGroupLabelKind.postIf:
+                    return doOneFlowGroupLabelPostIf(fglab);
+                case FlowGroupLabelKind.loop:{
+                    const sc0 = doFlowGroupLabel(fglab.antePrevious);
+                    const asc = fglab.arrAnteContinue.map(x=>doFlowGroupLabel(x));
+                    return orSymtabConstraints([sc0, ...asc], mrNarrow);
+                }
+                case FlowGroupLabelKind.loopThen:
+                    return doThenElse(fglab.loopGroupIdx, /*truthy*/ true);
+                case FlowGroupLabelKind.loopElse:{
+                    const sc0 = doThenElse(fglab.loopGroupIdx, /*truthy*/ false);
+                    const asc = fglab.arrAnteBreak.map(x=>doFlowGroupLabel(x));
+                    return orSymtabConstraints([sc0, ...asc], mrNarrow);
+                }
+                default:
+                    // @ts-expect-error
+                    Debug.fail("not yet implemented: "+fglab.kind);
+
+            }
+        };
         const getAnteConstraintItemAndSymtabV2 = (): RefTypesSymtabConstraintItem => {
             let sc: RefTypesSymtabConstraintItem | undefined;
             if (groupForFlow.anteGroupLabels.length){
                 Debug.assert(groupForFlow.anteGroupLabels.length===1);
                 const flowGroupLabel = groupForFlow.anteGroupLabels[0];
-                if (flowGroupLabel.kind===FlowGroupLabelKind.postIf){
-                    sc = doOneFlowGroupLabelPostIf(flowGroupLabel);
-                }
-                else if (flowGroupLabel.kind===FlowGroupLabelKind.then){
-                    const anteg = groupsForFlow.orderedGroups[flowGroupLabel.ifGroupIdx];
-                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
-                    Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf && cbe.truthy);
-                    const {constraintItem,symtab}=cbe.truthy.refTypesTableReturn;
-                    sc = { constraintItem,symtab };
-                }
-                else if (flowGroupLabel.kind===FlowGroupLabelKind.else){
-                    const anteg = groupsForFlow.orderedGroups[flowGroupLabel.ifGroupIdx];
-                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
-                    Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf && cbe.falsy);
-                    const {constraintItem,symtab}=cbe.falsy.refTypesTableReturn;
-                    sc = { constraintItem,symtab };
-                }
-                else {
-                    Debug.fail("not yet implemented");
-                }
+                sc = doFlowGroupLabel(flowGroupLabel);
             }
             if (groupForFlow.previousAnteGroupIdx!==undefined){
                 Debug.assert(!sc);
@@ -446,30 +500,31 @@ namespace ts {
          * implicitly deleted with these deletions of their containing ConstraintItem-s.
          */
         setOfKeysToDeleteFromCurrentBranchesMap.forEach(gff=>mrState.forFlow.currentBranchesMap.delete(gff));
-        const boolsplit = groupForFlow.kind===GroupForFlowKind.ifexpr;  //maximalNode.parent.kind===SyntaxKind.IfStatement;
-        const crit: InferCrit = !boolsplit ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
-        const inferStatus: InferStatus = {
-            inCondition: !!boolsplit,
-            currentReplayableItem: undefined,
-            replayables: sourceFileMrState.mrState.replayableItems,
-            declaredTypes: sourceFileMrState.mrState.declaredTypes,
-            groupNodeToTypeMap: new Map<Node,Type>(),
-            getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
-                return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
-            },
-            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
-                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
-                try {
-                   const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
-                   return ret;
-                }
-                finally {
-                    delete mrState.dataForGetTypeOfExpressionShallowRecursive;
-                }
 
-            }
+        //const boolsplit = groupForFlow.kind===GroupForFlowKind.ifexpr;  //maximalNode.parent.kind===SyntaxKind.IfStatement;
+        const crit: InferCrit = !inferStatus.inCondition ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
+        // const inferStatus: InferStatus = {
+        //     inCondition: !!boolsplit,
+        //     currentReplayableItem: undefined,
+        //     replayables: sourceFileMrState.mrState.replayableItems,
+        //     declaredTypes: sourceFileMrState.mrState.declaredTypes,
+        //     groupNodeToTypeMap: new Map<Node,Type>(),
+        //     getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
+        //         return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
+        //     },
+        //     callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
+        //         mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+        //         try {
+        //            const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
+        //            return ret;
+        //         }
+        //         finally {
+        //             delete mrState.dataForGetTypeOfExpressionShallowRecursive;
+        //         }
 
-        };
+        //     }
+
+        // };
         /**
          * groupNodeToTypeMap may be set before calling checker.getTypeOfExpression(...) from beneath mrNarrowTypes, which will require those types in
          * groupNodeToTypeMap.
@@ -480,7 +535,7 @@ namespace ts {
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
             refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
 
-        if (boolsplit){
+        if (inferStatus.inCondition){
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
                 gff: groupForFlow,

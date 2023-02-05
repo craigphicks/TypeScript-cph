@@ -3501,9 +3501,15 @@ namespace ts {
         then = "then",
         else = "else",
         postIf = "postIf",
-        block = "block",
-        postBlock = "postBlock",
-        continue= "continue",
+        // block = "block",
+        // postBlock = "postBlock",
+        // while loop labels - these may change
+        preWhileLoop = "preWhileLoop",
+        preWhileBody = "preWhileBody",
+        postWhileLoop = "postWhileLoop"
+        // loop= "loop",
+        // loopConitinue= "loopContinue",
+        // postLoop= "postLoop",
     }
     export interface FlowLabel extends FlowNodeBase {
         antecedents: FlowNode[] | undefined;
