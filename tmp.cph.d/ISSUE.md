@@ -15,13 +15,14 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 ## TODO:
 
 ### Priority: High
-0. Modify `resolveHeap` to implement full loop implementation with multiple loop passes.
-1. Add in while-loop, modify `FLowGroupLabel` etc.
-1. Need to move onto hitting all the basic ops and structures as soon as possible. Huge job!
+0. Loops: `processLoop` to be called from `resolveHeap`.  Within `processLoop` the loop is processed to completion, using a `forFlow` context which is independent of `forFlowParent` context.  Then the final local `forFlow` nodeToType maps are merged into `forFlowParent`.
+
+0. Add a parameter to config: `useConstraintVariables`, default false.  Add that to each existing `_cax-*` test file: `@useConstraintVariables=true`. Make copies of each `_cax-*` file with a new name and `@useConstraintVariables` not set.  Compare results to to existing flow - they should be nearly the same.
+
+### Priority: Postponed
+
+1. In `processLoop` there is call to `createHeap` and it might be too expensive to do for every loop, and it is unnecessary, use heap prototype instead.
 1. The Map type members in InferStatus (`declaredTypes`, `replayables`, `groupNodeToTypeMap` could all be `WeakMap`s).
-
-### Priotity: Postponed
-
 1. With SyntaxKind.EqualsToken - what should be done if the rhs type is not a subset of the declared type?  Check existing behavior.
 1. measure the verbosity of and compare tree vs SOP reps (curious)
 1. [Implicit-not to economize memory use]  Implement `not` at the `RefTypesType` level for individual literal type elements. For any symbol with a finite literal type range, the type is represents by either positive() or negatative(not) items, but not both at once.  Whichever is less verbose.

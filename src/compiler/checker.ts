@@ -360,7 +360,7 @@ namespace ts {
          * required by infer
          */
 
-        let sourceFileInferState: SourceFileMrState | undefined;
+        let sourceFileMrState: SourceFileMrState | undefined;
         // const mapSourceFileToGroupedFlowNodes = new Map<SourceFile, GroupedFlowNodes>();
         // let currentSourceFile: undefined | SourceFile;
 
@@ -684,12 +684,12 @@ namespace ts {
             everyContainedType,
             getNarrowTypeExports,
             getSourceFileInferState(){
-                return sourceFileInferState!;
+                return sourceFileMrState!;
             },
             createAndSetSourceFileInferState(sourceFile: SourceFile){
-                sourceFileInferState = createSourceFileInferState(sourceFile, checker);
+                sourceFileMrState = createSourceFileMrState(sourceFile, checker);
             },
-            unsetSourceFileInferState(){ sourceFileInferState=undefined; },
+            unsetSourceFileInferState(){ sourceFileMrState=undefined; },
             getFlowNodeId,
             forEachType,
             getTypeFacts(type: Type, ignoreObjects = false): TypeFacts { return getTypeFacts(type, ignoreObjects); },

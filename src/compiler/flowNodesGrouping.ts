@@ -207,7 +207,13 @@ namespace ts {
          * @returns
          */
         const compareGroups = (a: number, b: number) => {
-            return groups[a].precOrdContainerIdx - groups[b].precOrdContainerIdx;
+            /**
+             * Use `pos` order of each groups maximal node.
+             */
+            const apos = orderedNodes[groups[a].maximalIdx].pos;
+            const bpos = orderedNodes[groups[b].maximalIdx].pos;
+            return apos - bpos;
+            //return groups[a].precOrdContainerIdx - groups[b].precOrdContainerIdx;
         };
         arefGroups.sort(compareGroups);
         const orderedGroups = arefGroups.map(idx=>groups[idx]);
@@ -377,16 +383,20 @@ namespace ts {
                             Debug.assert(fn.flags & FlowFlags.BranchLabel && fn.branchKind === BranchKind.preWhileBody);
                             Debug.assert(fn.antecedents && fn.antecedents.length===1);
                             Debug.assert(fn.antecedents[0].flags & FlowFlags.TrueCondition && isFlowWithNode(fn.antecedents[0]));
+                            const loopGroupIdx = nodeToGroupMap.get(fn.antecedents[0].node)!.groupIdx;
+                            setOfAnteGroup.add(orderedGroups[loopGroupIdx]);
                             return {
                                 kind: FlowGroupLabelKind.loopThen,
-                                loopGroupIdx: nodeToGroupMap.get(fn.antecedents[0].node)!.groupIdx
+                                loopGroupIdx
                             };
                         };
                         const flowBranchPostWhileLoopResolve = (fn: FlowLabel): FlowGroupLabelLoopElse => {
                             Debug.assert(fn.flags & FlowFlags.BranchLabel && fn.branchKind === BranchKind.postWhileLoop);
                             Debug.assert(fn.antecedents && fn.antecedents.length>=1);
                             Debug.assert(fn.antecedents[0].flags & FlowFlags.FalseCondition && isFlowWithNode(fn.antecedents[0]));
-                            const loopGroupIdx = nodeToGroupMap.get(fn.antecedents[0].node)!.groupIdx;
+                            const loopGroup = nodeToGroupMap.get(fn.antecedents[0].node)!;
+                            const loopGroupIdx = loopGroup.groupIdx;
+                            setOfAnteGroup.add(loopGroup);
                             const arrAnteBreak: FlowGroupLabel[] = fn.antecedents.slice(1).map(fna=>{
                                 const fglab = flowNodeResolve(fna)!;
                                 Debug.assert(fglab);
@@ -430,17 +440,20 @@ namespace ts {
                                 case BranchKind.preWhileBody:
                                     return flowBranchPreWhileBodyResolve(fn);
                                     break;
-                                case BranchKind.postWhileLoop:
-                                    return flowBranchPostWhileLoopResolve(fn);
+                                case BranchKind.postWhileLoop:{
+                                    const fglab = flowBranchPostWhileLoopResolve(fn);
+                                    /**
+                                     * Important side effect - set the postLoopGroupIdx within the loop group.
+                                     */
+                                    const loopGroup = orderedGroups[fglab.loopGroupIdx];
+                                    Debug.assert(loopGroup.anteGroupLabels.length===1);  //loopElseGroupIdx = g.groupIdx;
+                                    Debug.assert(loopGroup.anteGroupLabels[0].kind===FlowGroupLabelKind.loop);
+                                    loopGroup.anteGroupLabels[0].loopElseGroupIdx = g.groupIdx;
+                                    return fglab;
+                                }
                                     break;
-                                        // case BranchKind.block:
-                                //     return flowBranchBlockResolve(fn);
-                                //     break;
-                                // case BranchKind.postBlock:
-                                //     return flowBranchPostBlockResolve(fn);
-                                //     break;
                                 default:
-                                    dbgSetOfUnhandledFlowLabel.add(fn);
+                                    dbgSetOfUnhandledFlowLabel.add(fn); // TODO: remove this post dev
                                     return undefined;
                                     //Debug.fail(`fn.branchKind:${fn.branchKind} not yet implemented`);
                             }
@@ -579,7 +592,7 @@ namespace ts {
                 as.push(...dbgFlowGroupLabelToStrings(fglab.antePrevious).map(s=>"    "+s));
                 as.push(`arrAnteContinue:`);
                 fglab.arrAnteContinue.forEach((fgac,fgacidx)=>{
-                    dbgFlowGroupLabelToStrings(fgac).map(s=>`    [${fgacidx}]  ${s}`);
+                    as.push(...dbgFlowGroupLabelToStrings(fgac).map(s=>`    [${fgacidx}]  ${s}`));
                 });
                 break;
             case FlowGroupLabelKind.loopThen:
@@ -589,7 +602,7 @@ namespace ts {
                 as.push(`loopGroupIdx: ${fglab.loopGroupIdx}`);
                 as.push(`arrAnteBreak:`);
                 fglab.arrAnteBreak.forEach((fgac,fgacidx)=>{
-                    dbgFlowGroupLabelToStrings(fgac).map(s=>`    [${fgacidx}]  ${s}`);
+                    as.push(...dbgFlowGroupLabelToStrings(fgac).map(s=>`    [${fgacidx}]  ${s}`));
                 });
                 break;
             default:
@@ -616,8 +629,8 @@ namespace ts {
             }`);
             for (let idx = g.idxb; idx!==g.idxe; idx++){
                 const node = gff.posOrderedNodes[idx];
-                let str = `groups[${i}]:  [${idx}]: ${dbgNodeToString(node)}`;
-                if (isNodeWithFlow(node)) str += `, flow: ${dbgFlowToString(node.flowNode)}`;
+                let str = `groups[${i}]:  [${idx}]: node: ${dbgNodeToString(node)}`;
+                if (isNodeWithFlow(node)) str += `, flow: ${dbgFlowToString(node.flowNode, /**/ true)}`;
                 astr.push(str);
             }
             // const setOfFlow = gff.groupToSetOfFlowMap.get(g);
@@ -628,12 +641,16 @@ namespace ts {
             //     });
             // }
             const setOfAnteGroups = gff.groupToAnteGroupMap.get(g);
+            let str = `groups[${i}]:  setOfAnteGroups.size===${setOfAnteGroups?.size??0}, [`;
             astr.push(`groups[${i}]:  setOfAnteGroups.size===${setOfAnteGroups?.size??0}`);
             if (setOfAnteGroups) {
                 setOfAnteGroups.forEach(anteg=>{
-                    astr.push(`groups[${i}]:    anteGroupIdx: ${anteg.groupIdx}`);
+                    str += `${anteg.groupIdx},`;
+                    //astr.push(`groups[${i}]:    anteGroupIdx: ${anteg.groupIdx}`);
                 });
             }
+            str += "]";
+            astr.push(str);
             // if (g.anteLabels){
             //     for (const k in g.anteLabels){
             //         astr.push(`groups[${i}]:    anteLabels[${k}]: ${dbgFlowToString(g.anteLabels[k as keyof GroupForFlow["anteLabels"]], /*withAntecedants*/ true)}`);

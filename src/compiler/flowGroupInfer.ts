@@ -71,6 +71,7 @@ namespace ts {
     };
     export type FlowGroupLabelLoop = & {
         kind: FlowGroupLabelKind.loop;
+        loopElseGroupIdx?: number; // needed for loopGroup stack processing in resolveHeap
         antePrevious: FlowGroupLabel;
         arrAnteContinue: FlowGroupLabel[];
     };
@@ -155,16 +156,23 @@ namespace ts {
         createSortedCopy(): number[]; // for debug
     };
 
+    export interface ForFlow {
+        heap: Heap; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
+        currentBranchesMap: ESMap< Readonly<GroupForFlow>, CurrentBranchElement >;
+        dbgCurrentBranchesMapWasDeleted?: ESMap< Readonly<GroupForFlow>, boolean >;
+        groupToNodeToType?: ESMap< Readonly<GroupForFlow>, NodeToTypeMap >;
+    }
     export interface MrState {
         checker: TypeChecker;
         replayableItems: ESMap< Symbol, ReplayableItem >;
         declaredTypes: ESMap<Symbol,RefTypesTableLeaf>;
-        forFlow: {
-            heap: Heap; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
-            currentBranchesMap: ESMap< Readonly<GroupForFlow>, CurrentBranchElement >;
-            dbgCurrentBranchesMapWasDeleted: ESMap< Readonly<GroupForFlow>, boolean >;
-            groupToNodeToType?: ESMap< Readonly<GroupForFlow>, NodeToTypeMap >;
-        };
+        forFlowTop: ForFlow;
+        // {
+        //     heap: Heap; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
+        //     currentBranchesMap: ESMap< Readonly<GroupForFlow>, CurrentBranchElement >;
+        //     dbgCurrentBranchesMapWasDeleted: ESMap< Readonly<GroupForFlow>, boolean >;
+        //     groupToNodeToType?: ESMap< Readonly<GroupForFlow>, NodeToTypeMap >;
+        // };
         recursionLevel: number;
         dataForGetTypeOfExpressionShallowRecursive?: {
             sc: Readonly<RefTypesSymtabConstraintItem>,
@@ -220,7 +228,7 @@ namespace ts {
         };
     }
 
-    export function createSourceFileInferState(sourceFile: SourceFile, checker: TypeChecker): SourceFileMrState {
+    export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker): SourceFileMrState {
         const t0 = process.hrtime.bigint();
         const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
         if (getMyDebug()){
@@ -236,7 +244,7 @@ namespace ts {
             replayableItems: new Map<Symbol, ReplayableItem>(),
             declaredTypes: new Map<Symbol, RefTypesTableLeaf>(),
             recursionLevel: 0,
-            forFlow: {
+            forFlowTop: {
                 heap,
                 currentBranchesMap: new Map< GroupForFlow, CurrentBranchElement >(),
                 dbgCurrentBranchesMapWasDeleted: new Map< GroupForFlow,boolean >(),
@@ -261,15 +269,14 @@ namespace ts {
      * @param group
      * @param sourceFileMrState
      */
-    export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileMrState): void {
-        Debug.assert(sourceFileMrState.mrState.forFlow.heap.isEmpty());
-        // @ ts-expect-error
-        const mrState = sourceFileMrState.mrState;
+    export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileMrState, forFlow: ForFlow, options?: {minGroupIdxToAdd: number}): void {
+        // Debug.assert(sourceFileMrState.mrState.forFlow.heap.isEmpty()); no longer true with loop processing
+        const minGroupIdxToAdd = options?.minGroupIdxToAdd;
         // @ ts-expect-error
         const groupsForFlow = sourceFileMrState.groupsForFlow;
         if (getMyDebug()) {
             const maximalNode = groupsForFlow.posOrderedNodes[group.maximalIdx];
-            consoleGroup(`updateHeapWithGroupForFlow[in]: group: {maximalNode: ${dbgs?.dbgNodeToString(maximalNode)}}`);
+            consoleGroup(`updateHeapWithGroupForFlow[in]: group: {groupIdx: ${group.groupIdx}, maximalNode: ${dbgs?.dbgNodeToString(maximalNode)}}. minGroupIdxToAdd: ${minGroupIdxToAdd}`);
         }
         /**
          * Currently requiring heap to be empty - so a simple sort could be used instead.
@@ -278,7 +285,7 @@ namespace ts {
         const acc = new Set<GroupForFlow>();
         let tmpacc0 = new Set<GroupForFlow>();
         let change = true;
-        if (!mrState.forFlow.currentBranchesMap.get(group)){
+        if (!forFlow.currentBranchesMap.get(group)){
             tmpacc0.add(group);
             acc.add(group);
         }
@@ -289,9 +296,12 @@ namespace ts {
                 const setAnteg = groupsForFlow.groupToAnteGroupMap.get(g);
                 if (!setAnteg) return;
                 setAnteg.forEach(anteg=>{
-                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
+                    if (minGroupIdxToAdd!==undefined && anteg.groupIdx < minGroupIdxToAdd) return;
+                    const has = forFlow.heap.has(anteg.groupIdx);
+                    const cbe = forFlow.currentBranchesMap.get(anteg);
+                    Debug.assert(!has || has && cbe); // cbe may exist and be in use when the corresponding group index is already removed from the heap, but not visa versa
                     if (!cbe){
-                        Debug.assert(!mrState.forFlow.dbgCurrentBranchesMapWasDeleted.has(anteg));
+                        Debug.assert(!forFlow.dbgCurrentBranchesMapWasDeleted?.has(anteg));  // TODO: kill dbgCurrentBranchesMapWasDeleted, not used
                         if (!tmpacc1.has(anteg) && !acc.has(anteg)){
                             tmpacc1.add(anteg);
                             acc.add(anteg);
@@ -304,15 +314,15 @@ namespace ts {
             tmpacc1.clear();
         }
         acc.forEach(g=>{
-            mrState.forFlow.heap.insert(g.groupIdx);
+            forFlow.heap.insert(g.groupIdx);
         });
         if (getMyDebug()) {
-            const sortedHeap1Idx = mrState.forFlow.heap.createSortedCopy();
-            for (let idx = 1; idx< sortedHeap1Idx.length; idx++) {
+            const sortedHeap1Idx = forFlow.heap.createSortedCopy();
+            for (let idx = sortedHeap1Idx.length-1; idx!==0; idx--) {
                 const nidx = sortedHeap1Idx[idx];
                 const group = groupsForFlow.orderedGroups[nidx];
                 const maxnode = groupsForFlow.posOrderedNodes[group.maximalIdx];
-                const str = `updateHeapWithGroupForFlow[dbg] heap[${idx}=>${nidx}] ${dbgs?.dbgNodeToString(maxnode)}`;
+                const str = `updateHeapWithGroupForFlow[dbg] heap[${sortedHeap1Idx.length-idx}=>${nidx}] ${dbgs?.dbgNodeToString(maxnode)}`;
                 consoleLog("  "+str);
             }
             const maximalNode = groupsForFlow.posOrderedNodes[group.maximalIdx];
@@ -321,117 +331,110 @@ namespace ts {
         }
     }
 
+    function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileMrState): InferStatus {
+        const mrState = sourceFileMrState.mrState;
+        return {
+            inCondition: groupForFlow.kind===GroupForFlowKind.ifexpr || groupForFlow.kind===GroupForFlowKind.loop,
+            currentReplayableItem: undefined,
+            replayables: sourceFileMrState.mrState.replayableItems,
+            declaredTypes: sourceFileMrState.mrState.declaredTypes,
+            groupNodeToTypeMap: new Map<Node,Type>(),
+            getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
+                return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
+            },
+            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
+                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+                try {
+                   const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
+                   return ret;
+                }
+                finally {
+                    delete mrState.dataForGetTypeOfExpressionShallowRecursive;
+                }
+            }
+        };
+    }
+
+
+    // type LoopState = & {
+    //     groupIdx: number;
+    //     group: GroupForFlow;
+    //     loopElseGroupIndex?: number; // if not present, use heap empty condition instead
+    //     passCount: number;
+    //     symtabConstraint?: RefTypesSymtabConstraintItem
+    // };
+    // function dbgActiveLoopState(als: LoopState | undefined): string {
+    //     if (!als) return `<undefined>`;
+    //     return `{groupIndex:${als.groupIdx}, loopElseGroupIndex:${als.loopElseGroupIndex}, passCount:${als.passCount}`;
+    // }
+
+    // @ts-expect-error
+    function processLoop(group: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow) {
+        Debug.assert(group.kind===GroupForFlowKind.loop);
+        const anteGroupLabel: FlowGroupLabel = group.anteGroupLabels[0];
+        Debug.assert(anteGroupLabel.kind===FlowGroupLabelKind.loop);
+
+        //const mrState = sourceFileMrState.mrState;
+        // const groupsForFlow = sourceFileMrState.groupsForFlow;
+        // const heap = mrState.forFlow.heap;
+        const forFlow: ForFlow = {
+            heap: createHeap(sourceFileMrState.groupsForFlow), // TODO: This call to createHeap might be too expensive to do for every loop, and it is unnecessary, use prototype.
+            currentBranchesMap: new Map<Readonly<GroupForFlow>, CurrentBranchElement>(),
+            groupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
+        };
+        const setOfKeysToDeleteFromCurrentBranchesMap = new Set<GroupForFlow>();
+        // Cached for susequent iterations
+        const cachedSCForLoop = doFlowGroupLabel(anteGroupLabel.antePrevious, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlowParent);
+        setOfKeysToDeleteFromCurrentBranchesMap.forEach(gff=>forFlowParent.currentBranchesMap.delete(gff));
+
+
+        const inferStatus: InferStatus = createInferStatus(group, sourceFileMrState);
+        updateHeapWithGroupForFlow(group, sourceFileMrState, forFlow, { minGroupIdxToAdd:group.groupIdx });
+
+        do {
+            // single pass of loop.
+            Debug.assert(forFlow.heap.peek()===group.groupIdx);
+            forFlow.heap.remove();
+            resolveGroupForFlow(group, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop, loopGroupIdx:group.groupIdx });
+            // if the loop condition is always false then break
+
+            // do the rest of the loop
+            resolveHeap(sourceFileMrState,forFlow);
+
+            // if the nodeToType maps have converged, then break
+        } while (true);
+
+        // merge nodeToType maps into forFlowParent
+    }
+
+
     /**
      * Resolve the groups in the heap, which are in order of increasing dependence.
      * @param sourceFileMrState
      */
-    function resolveHeap(sourceFileMrState: SourceFileMrState): void {
-        const mrState = sourceFileMrState.mrState;
+    function resolveHeap(sourceFileMrState: SourceFileMrState, forFlow: ForFlow): void {
         const groupsForFlow = sourceFileMrState.groupsForFlow;
-        const heap = mrState.forFlow.heap;
+        const heap = forFlow.heap;
+
         while (!heap.isEmpty()){
             const groupIdx = heap.remove();
             // @ ts-expect-error
             const groupForFlow = groupsForFlow.orderedGroups[groupIdx];
-
-            const inferStatus: InferStatus = {
-                inCondition: groupForFlow.kind===GroupForFlowKind.ifexpr || groupForFlow.kind===GroupForFlowKind.loop,
-                currentReplayableItem: undefined,
-                replayables: sourceFileMrState.mrState.replayableItems,
-                declaredTypes: sourceFileMrState.mrState.declaredTypes,
-                groupNodeToTypeMap: new Map<Node,Type>(),
-                getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
-                    return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
-                },
-                callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
-                    mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
-                    try {
-                       const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
-                       return ret;
-                    }
-                    finally {
-                        delete mrState.dataForGetTypeOfExpressionShallowRecursive;
-                    }
-                }
-            };
-
-
-
-            /**
-             * Use groupForFlow.anteGroupLabels[0].kind to check for loop.
-             * If it is a loop, put groupForFlow on the LIFO stack which will be run again when the heap is empty
-             * When the loop is run again it may have different inputs/ differnt results for the nodes.
-             * The loop is run until the node values converge. Convergence can be checked by comparing the before/after node maps,
-             * which are stored seperately per groupForFlow.  When no nodes union of types changes it has converged.
-             *
-             * There may be multiple embedded loops.
-             **/
-            resolveGroupForFlow(groupForFlow, inferStatus, sourceFileMrState);
-        }
+            const inferStatus: InferStatus = createInferStatus(groupForFlow, sourceFileMrState);
+            resolveGroupForFlow(groupForFlow, inferStatus, sourceFileMrState, forFlow);
+        } // while (!heap.isEmpty())
     }
 
-    function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: InferStatus, sourceFileMrState: SourceFileMrState): void {
-        const groupsForFlow = sourceFileMrState.groupsForFlow;
-        const mrState = sourceFileMrState.mrState;
-        const mrNarrow = sourceFileMrState.mrNarrow;
-        const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
-        if (getMyDebug()){
-            consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, groupIndex:${groupForFlow.groupIdx}, kind:${groupForFlow.kind}, maximalNode.parent.kind:${Debug.formatSyntaxKind(maximalNode.parent.kind)}`);
-            consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
-            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`));
-            consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
-        }
-        const setOfKeysToDeleteFromCurrentBranchesMap: Set<GroupForFlow> = new Set<GroupForFlow>();
-        const doOneFlowGroupLabelPostIf = (fglab: FlowGroupLabelPostIf): RefTypesSymtabConstraintItem => {
-            const helper = (x: FlowGroupLabelRef | FlowGroupLabelThen | FlowGroupLabelElse | FlowGroupLabelPostIf): RefTypesSymtabConstraintItem => {
-                if (x.kind===FlowGroupLabelKind.ref){
-                    const anteg = groupsForFlow.orderedGroups[x.groupIdx];
-                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg)!;
-                    Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
-                    const { symtab, constraintItem } = cbe.item.refTypesTableReturn;
-                    return { symtab, constraintItem };
-                }
-                else if (x.kind===FlowGroupLabelKind.then || x.kind===FlowGroupLabelKind.else){
-                    const anteg = groupsForFlow.orderedGroups[x.ifGroupIdx];
-                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg)!;
-                    Debug.assert(cbe.kind===CurrentBranchesElementKind.tf);
-                    const { symtab, constraintItem } = x.kind===FlowGroupLabelKind.then ? cbe.truthy.refTypesTableReturn : cbe.falsy.refTypesTableReturn;
-                    return { symtab, constraintItem };
-                }
-                else if (x.kind===FlowGroupLabelKind.postIf){
-                    return doOneFlowGroupLabelPostIf(x);
-                }
-                else Debug.fail("unexpected");
-            };
-            const thenSymtabConstraint = helper(fglab.anteThen);
-            const elseSymtabConstraint = helper(fglab.anteElse);
-            const origGroup = groupsForFlow.orderedGroups[fglab.originatingGroupIdx];
 
-            setOfKeysToDeleteFromCurrentBranchesMap.add(origGroup);
+    function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap: Set<GroupForFlow>, sourceFileMrState: SourceFileMrState, forFlow: ForFlow): RefTypesSymtabConstraintItem {
+        const {groupsForFlow,mrNarrow} = sourceFileMrState;
+        return doFlowGroupLabelAux(fglabIn);
 
-            const origCbe = mrState.forFlow.currentBranchesMap.get(origGroup)!;
-            Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
-            if (thenSymtabConstraint.constraintItem===origCbe.truthy.refTypesTableReturn.constraintItem
-                && elseSymtabConstraint.constraintItem===origCbe.falsy.refTypesTableReturn.constraintItem){
-                return {
-                    symtab: orSymtabs([ thenSymtabConstraint.symtab, elseSymtabConstraint.symtab ], mrNarrow),
-                    constraintItem: origCbe.originalConstraintIn
-                };
-            }
-            else return orSymtabConstraints([ thenSymtabConstraint, elseSymtabConstraint ], mrNarrow);
-        };
-        const doThenElse = (groupIdx: number, truthy: boolean): RefTypesSymtabConstraintItem => {
-            const anteg = groupsForFlow.orderedGroups[groupIdx];
-            const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
-            Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
-            const {constraintItem,symtab}=(truthy?cbe.truthy:cbe.falsy).refTypesTableReturn;
-            return { constraintItem,symtab };
-        };
-        const doFlowGroupLabel = (fglab: FlowGroupLabel): RefTypesSymtabConstraintItem => {
+        function doFlowGroupLabelAux(fglab: FlowGroupLabel): RefTypesSymtabConstraintItem {
             switch (fglab.kind){
                 case FlowGroupLabelKind.ref:{
                     const anteg = groupsForFlow.orderedGroups[fglab.groupIdx];
-                    const cbe = mrState.forFlow.currentBranchesMap.get(anteg);
+                    const cbe = forFlow.currentBranchesMap.get(anteg);
                     if (!cbe){
                         // This may happen if continues after a loop are not yet fulfilled.
                         return { symtab: mrNarrow.createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
@@ -449,15 +452,17 @@ namespace ts {
                 case FlowGroupLabelKind.postIf:
                     return doOneFlowGroupLabelPostIf(fglab);
                 case FlowGroupLabelKind.loop:{
-                    const sc0 = doFlowGroupLabel(fglab.antePrevious);
-                    const asc = fglab.arrAnteContinue.map(x=>doFlowGroupLabel(x));
+                    const sc0 = doFlowGroupLabelAux(fglab.antePrevious);
+                    // const asc = activeLoopState?.groupIdx===groupForFlow.groupIdx ? [] as RefTypesSymtabConstraintItem[]
+                    // : fglab.arrAnteContinue.map(x=>doFlowGroupLabel(x));
+                    const asc = fglab.arrAnteContinue.map(x=>doFlowGroupLabelAux(x));
                     return orSymtabConstraints([sc0, ...asc], mrNarrow);
                 }
                 case FlowGroupLabelKind.loopThen:
                     return doThenElse(fglab.loopGroupIdx, /*truthy*/ true);
                 case FlowGroupLabelKind.loopElse:{
                     const sc0 = doThenElse(fglab.loopGroupIdx, /*truthy*/ false);
-                    const asc = fglab.arrAnteBreak.map(x=>doFlowGroupLabel(x));
+                    const asc = fglab.arrAnteBreak.map(x=>doFlowGroupLabelAux(x));
                     return orSymtabConstraints([sc0, ...asc], mrNarrow);
                 }
                 default:
@@ -465,21 +470,71 @@ namespace ts {
                     Debug.fail("not yet implemented: "+fglab.kind);
 
             }
+        }
+        function doThenElse(groupIdx: number, truthy: boolean): RefTypesSymtabConstraintItem {
+            //const {groupsForFlow,mrState} = sourceFileMrState;
+            const anteg = groupsForFlow.orderedGroups[groupIdx];
+            const cbe = forFlow.currentBranchesMap.get(anteg);
+            Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
+            const {constraintItem,symtab}=(truthy?cbe.truthy:cbe.falsy).refTypesTableReturn;
+            return { constraintItem,symtab };
         };
-        const getAnteConstraintItemAndSymtabV2 = (): RefTypesSymtabConstraintItem => {
+        function doOneFlowGroupLabelPostIf(fglab: FlowGroupLabelPostIf): RefTypesSymtabConstraintItem {
+            const thenSymtabConstraint = doFlowGroupLabelAux(fglab.anteThen);
+            const elseSymtabConstraint = doFlowGroupLabelAux(fglab.anteElse);
+            const origGroup = groupsForFlow.orderedGroups[fglab.originatingGroupIdx];
+
+            setOfKeysToDeleteFromCurrentBranchesMap.add(origGroup);
+
+            const origCbe = forFlow.currentBranchesMap.get(origGroup)!;
+            Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
+            if (thenSymtabConstraint.constraintItem===origCbe.truthy.refTypesTableReturn.constraintItem
+                && elseSymtabConstraint.constraintItem===origCbe.falsy.refTypesTableReturn.constraintItem){
+                return {
+                    symtab: orSymtabs([ thenSymtabConstraint.symtab, elseSymtabConstraint.symtab ], mrNarrow),
+                    constraintItem: origCbe.originalConstraintIn
+                };
+            }
+            else return orSymtabConstraints([ thenSymtabConstraint, elseSymtabConstraint ], mrNarrow);
+        };
+    }
+
+    function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: InferStatus, sourceFileMrState: SourceFileMrState, forFlow: ForFlow,
+        options?: {cachedSCForLoop: RefTypesSymtabConstraintItem, loopGroupIdx: number}): void {
+        const groupsForFlow = sourceFileMrState.groupsForFlow;
+//        const mrState = sourceFileMrState.mrState;
+        const mrNarrow = sourceFileMrState.mrNarrow;
+        const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+        if (getMyDebug()){
+            consoleGroup(`resolveGroupForFlow[in]: ${dbgs?.dbgNodeToString(maximalNode)}, `
+            +`groupIndex:${groupForFlow.groupIdx}, kind:${groupForFlow.kind}, `
+            +`maximalNode.parent.kind:${Debug.formatSyntaxKind(maximalNode.parent.kind)}, `
+            //+`activeLoopState:${dbgActiveLoopState(activeLoopState)}`
+            );
+            consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
+            dbgCurrentBranchesMap(sourceFileMrState, forFlow).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`));
+            consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
+        }
+        const setOfKeysToDeleteFromCurrentBranchesMap: Set<GroupForFlow> = new Set<GroupForFlow>();
+        const getAnteConstraintItemAndSymtab = (): RefTypesSymtabConstraintItem => {
             let sc: RefTypesSymtabConstraintItem | undefined;
             if (groupForFlow.anteGroupLabels.length){
                 Debug.assert(groupForFlow.anteGroupLabels.length===1);
-                const flowGroupLabel = groupForFlow.anteGroupLabels[0];
-                sc = doFlowGroupLabel(flowGroupLabel);
+                if (options && options.loopGroupIdx === groupForFlow.groupIdx){
+                    sc = options.cachedSCForLoop;
+                }
+                else {
+                    const flowGroupLabel = groupForFlow.anteGroupLabels[0];
+                    sc = doFlowGroupLabel(flowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
+                }
             }
             if (groupForFlow.previousAnteGroupIdx!==undefined){
-                Debug.assert(!sc);
+                Debug.assert(!sc);  // when previousAnteGroupIdx is present, anteGroupLabels.length must have been zero
                 const prevAnteGroup = groupsForFlow.orderedGroups[groupForFlow.previousAnteGroupIdx];
 
                 setOfKeysToDeleteFromCurrentBranchesMap.add(prevAnteGroup);
 
-                const cbe = mrState.forFlow.currentBranchesMap.get(prevAnteGroup);
+                const cbe = forFlow.currentBranchesMap.get(prevAnteGroup);
                 if (!(cbe && cbe.kind===CurrentBranchesElementKind.plain)){
                     // @ts-ignore
                     Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
@@ -493,44 +548,16 @@ namespace ts {
             return sc;
         };
 
-        // eslint-disable-next-line prefer-const
-        let {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtabV2();
+        const {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
         /**
          * Delete all the no-longer-needed CurrentBranchElements.  Note that unentangled lower scoped const variables will be
          * implicitly deleted with these deletions of their containing ConstraintItem-s.
          */
-        setOfKeysToDeleteFromCurrentBranchesMap.forEach(gff=>mrState.forFlow.currentBranchesMap.delete(gff));
+        setOfKeysToDeleteFromCurrentBranchesMap.forEach(gff=>forFlow.currentBranchesMap.delete(gff));
 
-        //const boolsplit = groupForFlow.kind===GroupForFlowKind.ifexpr;  //maximalNode.parent.kind===SyntaxKind.IfStatement;
         const crit: InferCrit = !inferStatus.inCondition ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
-        // const inferStatus: InferStatus = {
-        //     inCondition: !!boolsplit,
-        //     currentReplayableItem: undefined,
-        //     replayables: sourceFileMrState.mrState.replayableItems,
-        //     declaredTypes: sourceFileMrState.mrState.declaredTypes,
-        //     groupNodeToTypeMap: new Map<Node,Type>(),
-        //     getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
-        //         return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
-        //     },
-        //     callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
-        //         mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
-        //         try {
-        //            const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
-        //            return ret;
-        //         }
-        //         finally {
-        //             delete mrState.dataForGetTypeOfExpressionShallowRecursive;
-        //         }
-
-        //     }
-
-        // };
-        /**
-         * groupNodeToTypeMap may be set before calling checker.getTypeOfExpression(...) from beneath mrNarrowTypes, which will require those types in
-         * groupNodeToTypeMap.
-         */
-        if (!sourceFileMrState.mrState.forFlow.groupToNodeToType) sourceFileMrState.mrState.forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
-        sourceFileMrState.mrState.forFlow.groupToNodeToType.set(groupForFlow, inferStatus.groupNodeToTypeMap);
+        if (!forFlow.groupToNodeToType) forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
+        forFlow.groupToNodeToType.set(groupForFlow, inferStatus.groupNodeToTypeMap);
 
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
             refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
@@ -549,7 +576,7 @@ namespace ts {
                 },
                 originalConstraintIn: constraintItemArg
             };
-            sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
+            forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
         else {
             const cbe: CurrentBranchElementPlain = {
@@ -560,12 +587,12 @@ namespace ts {
                     //byNode: retval.byNode,
                 }
             };
-            sourceFileMrState.mrState.forFlow.currentBranchesMap.set(groupForFlow, cbe);
+            forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
 
         if (getMyDebug()){
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
-            dbgCurrentBranchesMap(sourceFileMrState).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`));
+            dbgCurrentBranchesMap(sourceFileMrState, forFlow).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
             consoleLog(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}, `);
             consoleGroupEnd();
@@ -644,14 +671,18 @@ namespace ts {
              * If the type for expr is already in groupToNodeToType?.get(groupForFlow)?.get(expr) then return that.
              * It is likely to be a recursive call via checker.getTypeOfExpression(...), e.g. from "case SyntaxKind.ArrayLiteralExpression"
              */
-            const cachedType = sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr);
+            const cachedType = sourceFileMrState.mrState.forFlowTop.groupToNodeToType?.get(groupForFlow)?.get(expr);
             if (cachedType) {
                 if (getMyDebug()) consoleLog(`getTypeByMrNarrowAux[dbg]: cache hit`);
                 return cachedType;
             }
-            updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState);
-            resolveHeap(sourceFileMrState);
-            return sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
+            /**
+             * There is a potentional anomoly here because sourceFileMrState.mrState.forFlowTop is passed to a group which may be somewhere inside a loop.
+             * However, normally resolve heap will not (*is not expected to) be called on an group in a loop - those should all be cache hits.
+             */
+            updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState, sourceFileMrState.mrState.forFlowTop);
+            resolveHeap(sourceFileMrState, sourceFileMrState.mrState.forFlowTop);
+            return sourceFileMrState.mrState.forFlowTop.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
         }
         finally {
             sourceFileMrState.mrState.recursionLevel--;
@@ -660,10 +691,10 @@ namespace ts {
     }
 
     /* @ ts-ignore */
-    function dbgCurrentBranchesMap(sourceFileMrState: SourceFileMrState): string[]{
+    function dbgCurrentBranchesMap(sourceFileMrState: SourceFileMrState, forFlow: ForFlow): string[]{
         const groupsForFlow = sourceFileMrState.groupsForFlow;
-        const mrState = sourceFileMrState.mrState;
-        const cbm = mrState.forFlow.currentBranchesMap;
+        //const mrState = sourceFileMrState.mrState;
+        const cbm = forFlow.currentBranchesMap;
         const astr: string[] = [];
         const doNodeToTypeMap = (m: Readonly<NodeToTypeMap>): string[]=>{
             const astr: string[] = [];
@@ -697,7 +728,7 @@ namespace ts {
                     astr.push(...doItem(cbe.falsy).map(s => "      "+s));
                 }
             }
-            const byNode = sourceFileMrState.mrState.forFlow.groupToNodeToType?.get(g)!;
+            const byNode = forFlow.groupToNodeToType?.get(g)!;
             if (byNode) astr.push(...doNodeToTypeMap(byNode).map(s => "  "+s));
         });
         return astr;
