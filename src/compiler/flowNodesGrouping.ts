@@ -403,7 +403,7 @@ namespace ts {
                                 return fglab;
                             });
                             return {
-                                kind: FlowGroupLabelKind.loopElse,
+                                kind: FlowGroupLabelKind.postLoop,
                                 loopGroupIdx,
                                 arrAnteBreak
                             };
@@ -598,7 +598,7 @@ namespace ts {
             case FlowGroupLabelKind.loopThen:
                 as.push(`loopGroupIdx: ${fglab.loopGroupIdx}`);
                 break;
-            case FlowGroupLabelKind.loopElse:
+            case FlowGroupLabelKind.postLoop:
                 as.push(`loopGroupIdx: ${fglab.loopGroupIdx}`);
                 as.push(`arrAnteBreak:`);
                 fglab.arrAnteBreak.forEach((fgac,fgacidx)=>{

@@ -15,7 +15,8 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 ## TODO:
 
 ### Priority: High
-0. Loops: `processLoop` to be called from `resolveHeap`.  Within `processLoop` the loop is processed to completion, using a `forFlow` context which is independent of `forFlowParent` context.  Then the final local `forFlow` nodeToType maps are merged into `forFlowParent`.
+0. Real loop convergence check.
+0. Should use block end to remove local symbols from symbol table.
 
 0. Add a parameter to config: `useConstraintVariables`, default false.  Add that to each existing `_cax-*` test file: `@useConstraintVariables=true`. Make copies of each `_cax-*` file with a new name and `@useConstraintVariables` not set.  Compare results to to existing flow - they should be nearly the same.
 
@@ -46,6 +47,12 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. Loop truthy and falsy condition check and exit loop only when truthy type is 'never'. (Convergence is a separate exit loop condition).
+0. Loops: `processLoop` to be called from `resolveHeap`.  Within `processLoop` the loop is processed to completion, using a `forFlow` context which is independent of `forFlowParent` context.  Then the final local `forFlow` nodeToType maps are merged into `forFlowParent`.  HOWEVER - using fake loop end condition `loopCout===1`. All `_cax-` tests passing.  `_cax2-whileLoop-0001` passing, despite using fake end loop condition.
+0. currentBranches key (of type group) not being removed before loop (and maybe if). Fixed for `loop`.  Still have to check `if`.
+
+
 0. Implemented SyntaxKind.EqualsToken - but type is not checked against declared type (TODO).
 0. Partialy implented while-loop, but only first pass.  Beyond first pass requires change to `resolveHeap`.
 
