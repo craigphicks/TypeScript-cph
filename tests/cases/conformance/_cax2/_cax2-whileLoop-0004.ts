@@ -1,18 +1,19 @@
 // @strict: true
 // @declaration: true
 
-function t1(){
-    let b = true;
-    if (b){
-        let c1 = !b;
-        let d1 = b;
-    } else {
-        if (b) {
-            let c2 = !b;
-        }
-    }
-    if (b){
-        let d2 = b;
+// loop finished due to truthy never, loopCount=2
+function t4(){
+    let b = false;
+    let c = true;
+    let d = true;
+    while (d){
+        d = c;
+        c = b;
+        b;
+        c;
+        d;
+        let x = d;
     }
     let e = b;
+    [b,c,d,e];
 }

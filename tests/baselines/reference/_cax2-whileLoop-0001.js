@@ -1,4 +1,6 @@
 //// [_cax2-whileLoop-0001.ts]
+// This loop terminates at 1 iteration
+// loop finished due to truthy never, loopCount=1
 function t1(){
     let b = true;
     b;
@@ -16,6 +18,8 @@ function t1(){
 
 //// [_cax2-whileLoop-0001.js]
 "use strict";
+// This loop terminates at 1 iteration
+// loop finished due to truthy never, loopCount=1
 function t1() {
     var b = true;
     b;

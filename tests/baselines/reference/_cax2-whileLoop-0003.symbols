@@ -1,0 +1,41 @@
+=== tests/cases/conformance/_cax2/_cax2-whileLoop-0003.ts ===
+// This loop converges after 1 iteration, but never terminates, so e is never
+function t3(){
+>t3 : Symbol(t3, Decl(_cax2-whileLoop-0003.ts, 0, 0))
+
+    let b = true;
+>b : Symbol(b, Decl(_cax2-whileLoop-0003.ts, 2, 7))
+
+    let c = true;
+>c : Symbol(c, Decl(_cax2-whileLoop-0003.ts, 3, 7))
+
+    let d = true;
+>d : Symbol(d, Decl(_cax2-whileLoop-0003.ts, 4, 7))
+
+    while (d){
+>d : Symbol(d, Decl(_cax2-whileLoop-0003.ts, 4, 7))
+
+        d = c;
+>d : Symbol(d, Decl(_cax2-whileLoop-0003.ts, 4, 7))
+>c : Symbol(c, Decl(_cax2-whileLoop-0003.ts, 3, 7))
+
+        c = b;
+>c : Symbol(c, Decl(_cax2-whileLoop-0003.ts, 3, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0003.ts, 2, 7))
+
+        [b,c,d];
+>b : Symbol(b, Decl(_cax2-whileLoop-0003.ts, 2, 7))
+>c : Symbol(c, Decl(_cax2-whileLoop-0003.ts, 3, 7))
+>d : Symbol(d, Decl(_cax2-whileLoop-0003.ts, 4, 7))
+    }
+    let e = b;
+>e : Symbol(e, Decl(_cax2-whileLoop-0003.ts, 10, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0003.ts, 2, 7))
+
+    [b,c,d,e];
+>b : Symbol(b, Decl(_cax2-whileLoop-0003.ts, 2, 7))
+>c : Symbol(c, Decl(_cax2-whileLoop-0003.ts, 3, 7))
+>d : Symbol(d, Decl(_cax2-whileLoop-0003.ts, 4, 7))
+>e : Symbol(e, Decl(_cax2-whileLoop-0003.ts, 10, 7))
+}
+

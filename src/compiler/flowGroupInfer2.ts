@@ -1179,13 +1179,6 @@ namespace ts {
             };
         }
 
-        // @ts-expect-error
-        function createRefDeltaInferState(sc: Readonly<RefTypesSymtabConstraintItem>, inferStatus: Readonly<InferStatus>): RefDeltaInferState {
-            const deltaNodeToTypeMap = new Map<Node,Type>();
-            return { ...sc, deltaNodeToTypeMap, inferStatus: { ...inferStatus, groupNodeToTypeMap: deltaNodeToTypeMap } };
-        }
-
-
         // @ ts-expect-error
         function getSigParamType(sig: Readonly<Signature>, idx: number): { type: Type, isRest?: boolean, optional?: boolean, symbol: Symbol } {
             if (idx>=sig.parameters.length-1){
@@ -2449,6 +2442,10 @@ namespace ts {
                     const initializer = expr.initializer;
                     const symbol = getSymbolOfNode(expr); // not condExpr.name
                     const isconstVar = isConstVariable(symbol);
+                    // if we are in a loop their may be an antry in the symbol table from the last loop iteration (even though declared here).  Remove it from hter symbol table.
+                    if (refTypesSymtabIn.get(symbol)){
+                        refTypesSymtabIn.delete(symbol); // should we make a new copy?
+                    }
 
                     const rhs = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn, expr:initializer, crit:{ kind: InferCritKind.none }, qdotfallout:undefined,

@@ -1,0 +1,46 @@
+=== tests/cases/conformance/_cax2/_cax2-whileLoop-0002.ts ===
+// This loop terminates at 0 iteration
+// loop finished due to truthy never, loopCount=0
+function t2(){
+>t2 : () => void
+
+    let b = false;
+>b : boolean
+>false : false
+
+    b;
+>b : false
+
+    while (b){
+>b : false
+
+        let c = !b;
+>c : boolean
+>!b : boolean
+>b : never
+
+        c;
+>c : never
+
+        let d = b;
+>d : never
+>b : never
+
+        d;
+>d : never
+
+        b = c;
+>b = c : never
+>b : boolean
+>c : never
+    }
+    let e = b;
+>e : false
+>b : false
+
+    e;
+>e : false
+
+    b;
+>b : false
+}

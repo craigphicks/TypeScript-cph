@@ -1,4 +1,6 @@
 === tests/cases/conformance/_cax2/_cax2-whileLoop-0001.ts ===
+// This loop terminates at 1 iteration
+// loop finished due to truthy never, loopCount=1
 function t1(){
 >t1 : () => void
 

@@ -15,8 +15,12 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 ## TODO:
 
 ### Priority: High
+0. Still need to purge out of scope symbols (which would allow temporary fix in VariableDeclaration to be removed.) In the case of loops, I don't think it can be done using PostBlock labels.
+0. `const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));` When `unwidenedTsType` is true, `checker.getWidenedType(unwidenedTsType)` is still true.
+0. When the forFlow.groupToNodeToType map is written new values override instead of becoming a union with previous values. C.f.`tests/cases/conformance/_cax2/_cax2-whileLoop-0004.ts`. That is because a new `NodeToTtypeMap` is created for each call to `resolveGroupToFlow` as a member of `InferStatus`.  That single `NodeToType` map is then `set` to the `forFlow.groupToNodeToTypeMap` at the end of `resolveGroupToFlow`.  The question now is which of the following is best?  (1) Instead of set, do a deep union operation into `forFlow.groupToNodeToTypeMap`, or (2) let each loop iteration have a fresh `GroupToNodeToType` map for it's inner compuations, and only at the `processLoop` function level keep a seperate union calculation to decide conversion and return at the end.  They are not equivalent - (1) has the possibility of changing the computed result because node-to-type values are used in const alias replays for non-const symbol values.  So do (2) I guess?  Less "blurring"?
+
 0. Real loop convergence check.
-0. Should use block end to remove local symbols from symbol table.
+0. Should use block end to remove local symbols from symbol table, especially because in loop, `let` declaraed variable can carried up to the loop top and back down.
 
 0. Add a parameter to config: `useConstraintVariables`, default false.  Add that to each existing `_cax-*` test file: `@useConstraintVariables=true`. Make copies of each `_cax-*` file with a new name and `@useConstraintVariables` not set.  Compare results to to existing flow - they should be nearly the same.
 
@@ -48,6 +52,7 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
+0. `tests/cases/conformance/_cax2/_cax2-whileLoop-000(1-5).ts` passing, tests all different loop paths.  Still need to purge out of scope symbols (which would allow temporary fix in VariableDeclaration to be removed.)
 0. Loop truthy and falsy condition check and exit loop only when truthy type is 'never'. (Convergence is a separate exit loop condition).
 0. Loops: `processLoop` to be called from `resolveHeap`.  Within `processLoop` the loop is processed to completion, using a `forFlow` context which is independent of `forFlowParent` context.  Then the final local `forFlow` nodeToType maps are merged into `forFlowParent`.  HOWEVER - using fake loop end condition `loopCout===1`. All `_cax-` tests passing.  `_cax2-whileLoop-0001` passing, despite using fake end loop condition.
 0. currentBranches key (of type group) not being removed before loop (and maybe if). Fixed for `loop`.  Still have to check `if`.

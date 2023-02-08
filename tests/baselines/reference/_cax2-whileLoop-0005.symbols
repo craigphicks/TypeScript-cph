@@ -1,0 +1,44 @@
+=== tests/cases/conformance/_cax2/_cax2-whileLoop-0005.ts ===
+// this loop never terminates reliably but converges
+// loop finished due to type map converged, loopCount=3
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_cax2-whileLoop-0005.ts, 0, 0))
+
+function t5(){
+>t5 : Symbol(t5, Decl(_cax2-whileLoop-0005.ts, 2, 34))
+
+    let b = true;
+>b : Symbol(b, Decl(_cax2-whileLoop-0005.ts, 4, 7))
+
+    let c = true;
+>c : Symbol(c, Decl(_cax2-whileLoop-0005.ts, 5, 7))
+
+    let d = true;
+>d : Symbol(d, Decl(_cax2-whileLoop-0005.ts, 6, 7))
+
+    while (d){
+>d : Symbol(d, Decl(_cax2-whileLoop-0005.ts, 6, 7))
+
+        d = c;
+>d : Symbol(d, Decl(_cax2-whileLoop-0005.ts, 6, 7))
+>c : Symbol(c, Decl(_cax2-whileLoop-0005.ts, 5, 7))
+
+        c = b;
+>c : Symbol(c, Decl(_cax2-whileLoop-0005.ts, 5, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0005.ts, 4, 7))
+
+        b = maybe();
+>b : Symbol(b, Decl(_cax2-whileLoop-0005.ts, 4, 7))
+>maybe : Symbol(maybe, Decl(_cax2-whileLoop-0005.ts, 0, 0))
+    }
+    let e = b;
+>e : Symbol(e, Decl(_cax2-whileLoop-0005.ts, 12, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0005.ts, 4, 7))
+
+    [b,c,d,e];
+>b : Symbol(b, Decl(_cax2-whileLoop-0005.ts, 4, 7))
+>c : Symbol(c, Decl(_cax2-whileLoop-0005.ts, 5, 7))
+>d : Symbol(d, Decl(_cax2-whileLoop-0005.ts, 6, 7))
+>e : Symbol(e, Decl(_cax2-whileLoop-0005.ts, 12, 7))
+}
+

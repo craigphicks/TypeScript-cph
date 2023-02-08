@@ -1,41 +1,43 @@
 === tests/cases/conformance/_cax2/_cax2-whileLoop-0001.ts ===
+// This loop terminates at 1 iteration
+// loop finished due to truthy never, loopCount=1
 function t1(){
 >t1 : Symbol(t1, Decl(_cax2-whileLoop-0001.ts, 0, 0))
 
     let b = true;
->b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 1, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 3, 7))
 
     b;
->b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 1, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 3, 7))
 
     while (b){
->b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 1, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 3, 7))
 
         let c = !b;
->c : Symbol(c, Decl(_cax2-whileLoop-0001.ts, 4, 11))
->b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 1, 7))
+>c : Symbol(c, Decl(_cax2-whileLoop-0001.ts, 6, 11))
+>b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 3, 7))
 
         c;
->c : Symbol(c, Decl(_cax2-whileLoop-0001.ts, 4, 11))
+>c : Symbol(c, Decl(_cax2-whileLoop-0001.ts, 6, 11))
 
         let d = b;
->d : Symbol(d, Decl(_cax2-whileLoop-0001.ts, 6, 11))
->b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 1, 7))
+>d : Symbol(d, Decl(_cax2-whileLoop-0001.ts, 8, 11))
+>b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 3, 7))
 
         d;
->d : Symbol(d, Decl(_cax2-whileLoop-0001.ts, 6, 11))
+>d : Symbol(d, Decl(_cax2-whileLoop-0001.ts, 8, 11))
 
         b = c;
->b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 1, 7))
->c : Symbol(c, Decl(_cax2-whileLoop-0001.ts, 4, 11))
+>b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 3, 7))
+>c : Symbol(c, Decl(_cax2-whileLoop-0001.ts, 6, 11))
     }
     let e = b;
->e : Symbol(e, Decl(_cax2-whileLoop-0001.ts, 10, 7))
->b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 1, 7))
+>e : Symbol(e, Decl(_cax2-whileLoop-0001.ts, 12, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 3, 7))
 
     e;
->e : Symbol(e, Decl(_cax2-whileLoop-0001.ts, 10, 7))
+>e : Symbol(e, Decl(_cax2-whileLoop-0001.ts, 12, 7))
 
     b;
->b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 1, 7))
+>b : Symbol(b, Decl(_cax2-whileLoop-0001.ts, 3, 7))
 }

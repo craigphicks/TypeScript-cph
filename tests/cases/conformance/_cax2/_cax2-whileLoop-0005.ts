@@ -1,15 +1,17 @@
 // @strict: true
 // @declaration: true
 
-// This loop converges after 1 iteration, but never terminates, so e is never
-function t3(){
+// this loop never terminates reliably but converges
+// loop finished due to type map converged, loopCount=3
+declare function maybe(): boolean;
+function t5(){
     let b = true;
     let c = true;
     let d = true;
     while (d){
         d = c;
         c = b;
-        [b,c,d];
+        b = maybe();
     }
     let e = b;
     [b,c,d,e];
