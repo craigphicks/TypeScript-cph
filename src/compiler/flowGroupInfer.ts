@@ -20,9 +20,9 @@ namespace ts {
         loopThen="loopThen",
         postLoop="postLoop",
         // currently no block scopes processed - c.f.  binder.ts, const labelBlockScopes = false;
-
-        // block="block",
-        // postBlock="postBlock",
+        start="start",
+        block="block",
+        postBlock="postBlock",
     };
     export interface FlowGroupLabelBase {
         kind: FlowGroupLabelKind,
@@ -44,16 +44,19 @@ namespace ts {
         kind: FlowGroupLabelKind.ref;
         groupIdx: number;
     };
-    // export type FlowGroupLabelBlock = & {
-    //     kind: FlowGroupLabelKind.block;
-    //     ante: FlowGroupLabel;
-    //     originatingGroupIdx: number;
-    // };
-    // export type FlowGroupLabelPostBlock = & {
-    //     kind: FlowGroupLabelKind.postBlock;
-    //     ante: FlowGroupLabel;
-    //     originatingGroupIdx: number;
-    // };
+    export type FlowGroupLabelStart = & {
+        kind: FlowGroupLabelKind.start;
+    };
+    export type FlowGroupLabelBlock = & {
+        kind: FlowGroupLabelKind.block;
+        ante: FlowGroupLabel;
+        originatingBlock: Node;
+    };
+    export type FlowGroupLabelPostBlock = & {
+        kind: FlowGroupLabelKind.postBlock;
+        ante: FlowGroupLabel;
+        originatingBlock: Node;
+    };
     export type FlowGroupLabelThen = & {
         kind: FlowGroupLabelKind.then;
         //ante?: FlowGroupLabelTrueCond; // do we ever need this redirection
@@ -87,7 +90,7 @@ namespace ts {
 
     export type FlowGroupLabel = FlowGroupLabelRef | FlowGroupLabelThen | FlowGroupLabelElse | FlowGroupLabelPostIf
     | FlowGroupLabelLoop | FlowGroupLabelLoopThen | FlowGroupLabelLoopElse
-    // | FlowGroupLabelBlock | FlowGroupLabelPostBlock
+    | FlowGroupLabelStart | FlowGroupLabelBlock | FlowGroupLabelPostBlock
     ;
 
     export interface GroupForFlow {
@@ -612,6 +615,14 @@ namespace ts {
                     const asc = fglab.arrAnteBreak.map(x=>doFlowGroupLabelAux(x));
                     return orSymtabConstraints([sc0, ...asc], mrNarrow);
                 }
+                case FlowGroupLabelKind.block:
+                    return doFlowGroupLabelAux(fglab.ante);
+                case FlowGroupLabelKind.postBlock:{
+                    return doPostBlock(fglab);
+                }
+                case FlowGroupLabelKind.start:{
+                    return { symtab:mrNarrow.createRefTypesSymtab(), constraintItem:createFlowConstraintAlways() };
+                }
                 default:
                     // @ts-expect-error
                     Debug.fail("not yet implemented: "+fglab.kind);
@@ -635,6 +646,17 @@ namespace ts {
             Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
             const {constraintItem,symtab}=cbe.falsy.refTypesTableReturn;
             return { constraintItem,symtab };
+        }
+        function doPostBlock(fglab: FlowGroupLabelPostBlock): RefTypesSymtabConstraintItem {
+            const sc = doFlowGroupLabelAux(fglab.ante);
+            // remove the going-out-of-scope symbols from thre symbol table.
+            const localSymbolSet = new Set<Symbol>();
+            fglab.originatingBlock.locals?.forEach((symbol)=>localSymbolSet.add(symbol));
+            const newsymtab = mrNarrow.createRefTypesSymtab();
+            sc.symtab.forEach((entry,symbol)=>{
+                if (!localSymbolSet.has(symbol)) newsymtab.set(symbol,entry);
+            });
+            return { symtab:newsymtab, constraintItem:sc.constraintItem };
         }
         function doOneFlowGroupLabelPostIf(fglab: FlowGroupLabelPostIf): RefTypesSymtabConstraintItem {
             const thenSymtabConstraint = doFlowGroupLabelAux(fglab.anteThen);

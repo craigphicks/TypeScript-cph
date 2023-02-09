@@ -15,7 +15,7 @@ namespace ts {
         referenced: boolean;
     }
 
-    const labelBlockScopes = false;
+    const labelBlockScopes = true;
 
     export function getModuleInstanceState(node: ModuleDeclaration, visited?: ESMap<number, ModuleInstanceState | undefined>): ModuleInstanceState {
         if (node.body && !node.body.parent) {
@@ -881,9 +881,9 @@ namespace ts {
                 case SyntaxKind.Block:
                 case SyntaxKind.ModuleBlock:
                     if (labelBlockScopes){
-                        const blockLabel = createBranchLabel(/*BranchKind.block*/);
+                        const blockLabel = createBranchLabel(BranchKind.block);
                         blockLabel.originatingExpression = node;
-                        const postBlockLabel = createBranchLabel(/*BranchKind.postBlock*/);
+                        const postBlockLabel = createBranchLabel(BranchKind.postBlock);
                         postBlockLabel.originatingExpression = node;
                         addAntecedent(blockLabel, currentFlow);
                         currentFlow = finishFlowLabel(blockLabel);

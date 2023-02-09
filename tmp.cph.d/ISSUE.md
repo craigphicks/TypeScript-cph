@@ -15,7 +15,8 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 ## TODO:
 
 ### Priority: High
-0. Still need to purge out of scope symbols (which would allow temporary fix in VariableDeclaration to be removed.) In the case of loops, I don't think it can be done using PostBlock labels.
+0. During `processLoop`, and the end of the loop, symbols going out of scope are removed from the symbol table.  However, this is not yet implemented for postIf - therefore not all tests are passing, and this is backup.
+
 0. `const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));` When `unwidenedTsType` is true, `checker.getWidenedType(unwidenedTsType)` is still true.
 0. When the forFlow.groupToNodeToType map is written new values override instead of becoming a union with previous values. C.f.`tests/cases/conformance/_cax2/_cax2-whileLoop-0004.ts`. That is because a new `NodeToTtypeMap` is created for each call to `resolveGroupToFlow` as a member of `InferStatus`.  That single `NodeToType` map is then `set` to the `forFlow.groupToNodeToTypeMap` at the end of `resolveGroupToFlow`.  The question now is which of the following is best?  (1) Instead of set, do a deep union operation into `forFlow.groupToNodeToTypeMap`, or (2) let each loop iteration have a fresh `GroupToNodeToType` map for it's inner compuations, and only at the `processLoop` function level keep a seperate union calculation to decide conversion and return at the end.  They are not equivalent - (1) has the possibility of changing the computed result because node-to-type values are used in const alias replays for non-const symbol values.  So do (2) I guess?  Less "blurring"?
 
@@ -51,6 +52,8 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. During `processLoop`, and the end of the loop, symbols going out of scope are removed from the symbol table.  However, this is not yet implemented for postIf - therefore not all tests are passing, and this is backup.
 
 0. `tests/cases/conformance/_cax2/_cax2-whileLoop-000(1-5).ts` passing, tests all different loop paths.  Still need to purge out of scope symbols (which would allow temporary fix in VariableDeclaration to be removed.)
 0. Loop truthy and falsy condition check and exit loop only when truthy type is 'never'. (Convergence is a separate exit loop condition).

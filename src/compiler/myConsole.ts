@@ -115,7 +115,8 @@ namespace ts {
             }
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
             if (isFlowLabel(flow) && flow.originatingExpression){
-                str += `originatingExpression: ${dbgNodeToString(flow.originatingExpression)},`;
+                str += `originatingExpression: [n${flow.originatingExpression.id}]{pos:${flow.originatingExpression.pos},end:${flow.originatingExpression.end}}`;
+                // str += `originatingExpression: ${dbgNodeToString(flow.originatingExpression)},`;
             }
             // if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;aaaaaa
             if (!withAntecedants) return str;

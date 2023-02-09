@@ -2442,9 +2442,10 @@ namespace ts {
                     const initializer = expr.initializer;
                     const symbol = getSymbolOfNode(expr); // not condExpr.name
                     const isconstVar = isConstVariable(symbol);
-                    // if we are in a loop their may be an antry in the symbol table from the last loop iteration (even though declared here).  Remove it from hter symbol table.
+                    // NOT ANY MORE: if we are in a loop their may be an antry in the symbol table from the last loop iteration (even though declared here).  Remove it from hter symbol table.
                     if (refTypesSymtabIn.get(symbol)){
-                        refTypesSymtabIn.delete(symbol); // should we make a new copy?
+                        Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
+                        //refTypesSymtabIn.delete(symbol); // should we make a new copy?
                     }
 
                     const rhs = mrNarrowTypes({
