@@ -314,55 +314,18 @@ namespace ts {
                         const flowBranchPostIfResolve = (fn: FlowLabel): FlowGroupLabelPostIf => {
                             Debug.assert(fn.antecedents?.length===2);
                             const originatingGroupIdx = nodeToGroupMap.get(fn.originatingExpression!)!.groupIdx;
-                            let anteThen: FlowGroupLabelRef | FlowGroupLabelThen | FlowGroupLabelPostIf;
-                            if (isFlowWithNode(fn.antecedents[0])){
-                                const anteg = nodeToGroupMap.get(fn.antecedents[0].node)!;
-                                setOfAnteGroup.add(anteg);
-                                anteThen = {
-                                    kind: FlowGroupLabelKind.ref,
-                                    groupIdx: anteg.groupIdx
-                                };
-                            }
-                            else {
-                                Debug.assert(isFlowLabel(fn.antecedents[0]));
-                                if (fn.antecedents[0].branchKind===BranchKind.then){
-                                    anteThen = flowBranchThenElseToFlowGroupLabelThenElse(fn.antecedents[0]) as FlowGroupLabelThen;
-                                }
-                                else if (fn.antecedents[0].branchKind===BranchKind.postIf){
-                                    anteThen = flowBranchPostIfResolve(fn.antecedents[0]);
-                                }
-                                else {
-                                    Debug.fail("not yet implemented");
-                                }
-                            }
-
-                            let anteElse: FlowGroupLabelRef | FlowGroupLabelElse | FlowGroupLabelPostIf;
-                            if (isFlowWithNode(fn.antecedents[1])){
-                                const anteg = nodeToGroupMap.get(fn.antecedents[1].node)!;
-                                setOfAnteGroup.add(anteg);
-                                anteElse = {
-                                    kind: FlowGroupLabelKind.ref,
-                                    groupIdx: anteg.groupIdx
-                                };
-                            }
-                            else {
-                                Debug.assert(isFlowLabel(fn.antecedents[1]));
-                                if (fn.antecedents[1].branchKind===BranchKind.else){
-                                    anteElse = flowBranchThenElseToFlowGroupLabelThenElse(fn.antecedents[1]) as FlowGroupLabelElse;
-                                }
-                                else if (fn.antecedents[1].branchKind===BranchKind.postIf){
-                                    anteElse = flowBranchPostIfResolve(fn.antecedents[1]);
-                                }
-                                else {
-                                    Debug.fail("not yet implemented");
-                                }
-                            }
+                            const anteThen = flowNodeResolve(fn.antecedents[0]);
+                            const anteElse = flowNodeResolve(fn.antecedents[1]);
+                            Debug.assert(anteThen && anteElse);
+                            Debug.assert(anteThen.kind!==FlowGroupLabelKind.else);
+                            Debug.assert(anteElse.kind!==FlowGroupLabelKind.then);
                             return {
                                 kind: FlowGroupLabelKind.postIf,
-                                anteThen, anteElse,
+                                anteThen: anteThen as FlowGroupLabelPostIf["anteThen"],
+                                anteElse: anteElse as FlowGroupLabelPostIf["anteElse"],
                                 originatingGroupIdx
                             };
-                        }; // flowBranchPostIfResolve
+                        };
                         const flowBranchPreWhileLoopResolve = (fn: FlowLabel): FlowGroupLabelLoop => {
                             Debug.assert(fn.flags & FlowFlags.LoopLabel && fn.branchKind === BranchKind.preWhileLoop);
                             Debug.assert(fn.antecedents && fn.antecedents.length>=1);
