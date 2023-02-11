@@ -1,0 +1,39 @@
+=== tests/cases/conformance/_caxyc/_caxyc-eqneq-0001.ts ===
+// declare function f(x:1,y:1): 1;
+// declare function f(x:2,y:2): 2;
+// declare function f(x:3,y:3): 2;
+
+declare const a: 1|2;
+>a : Symbol(a, Decl(_caxyc-eqneq-0001.ts, 4, 13))
+
+declare const b: 1|2;
+>b : Symbol(b, Decl(_caxyc-eqneq-0001.ts, 5, 13))
+
+declare const c: 1|2;
+>c : Symbol(c, Decl(_caxyc-eqneq-0001.ts, 6, 13))
+
+//if (a!==b||b!==c)
+if (a===b&&b===c)
+>a : Symbol(a, Decl(_caxyc-eqneq-0001.ts, 4, 13))
+>b : Symbol(b, Decl(_caxyc-eqneq-0001.ts, 5, 13))
+>b : Symbol(b, Decl(_caxyc-eqneq-0001.ts, 5, 13))
+>c : Symbol(c, Decl(_caxyc-eqneq-0001.ts, 6, 13))
+{
+    let x = a===c;
+>x : Symbol(x, Decl(_caxyc-eqneq-0001.ts, 10, 7))
+>a : Symbol(a, Decl(_caxyc-eqneq-0001.ts, 4, 13))
+>c : Symbol(c, Decl(_caxyc-eqneq-0001.ts, 6, 13))
+
+    x;
+>x : Symbol(x, Decl(_caxyc-eqneq-0001.ts, 10, 7))
+}
+else {
+    let y = a===c;
+>y : Symbol(y, Decl(_caxyc-eqneq-0001.ts, 14, 7))
+>a : Symbol(a, Decl(_caxyc-eqneq-0001.ts, 4, 13))
+>c : Symbol(c, Decl(_caxyc-eqneq-0001.ts, 6, 13))
+
+    y;
+>y : Symbol(y, Decl(_caxyc-eqneq-0001.ts, 14, 7))
+}
+

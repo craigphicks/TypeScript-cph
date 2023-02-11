@@ -1,0 +1,9 @@
+// @mrNarrowEnable: true
+// @mrNarrowConstraintsEnable: true
+// @strict: true
+// @declaration: true
+
+// flow is not engaged here
+declare function isTrue(b:true): true;
+declare function isTrue(b:false): false;
+isTrue(true);

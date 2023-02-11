@@ -1,0 +1,19 @@
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-003.ts ===
+declare const c: boolean;
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-003.ts, 0, 13))
+
+const x:[boolean,boolean] = c ? [c,c] : [c,c];
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-003.ts, 2, 5))
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-003.ts, 0, 13))
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-003.ts, 0, 13))
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-003.ts, 0, 13))
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-003.ts, 0, 13))
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-003.ts, 0, 13))
+
+if (c) x;
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-003.ts, 0, 13))
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-003.ts, 2, 5))
+
+else x;
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-003.ts, 2, 5))
+

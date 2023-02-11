@@ -1,0 +1,16 @@
+=== tests/cases/conformance/_caxyc/_caxyc-and-012.ts ===
+declare const b1: true;
+>b1 : true
+>true : true
+
+//declare const b2: true | false;
+const ba = b1 ? b1 : b1 ? b1 : b1; 
+>ba : true
+>b1 ? b1 : b1 ? b1 : b1 : true
+>b1 : true
+>b1 : true
+>b1 ? b1 : b1 : never
+>b1 : never
+>b1 : never
+>b1 : never
+

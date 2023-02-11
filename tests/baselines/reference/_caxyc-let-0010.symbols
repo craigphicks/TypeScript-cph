@@ -1,0 +1,49 @@
+=== tests/cases/conformance/_caxyc/_caxyc-let-0010.ts ===
+declare const c1: true | false;
+>c1 : Symbol(c1, Decl(_caxyc-let-0010.ts, 0, 13))
+
+declare const c2: true | false;
+>c2 : Symbol(c2, Decl(_caxyc-let-0010.ts, 1, 13))
+
+let b1 = c1;
+>b1 : Symbol(b1, Decl(_caxyc-let-0010.ts, 2, 3))
+>c1 : Symbol(c1, Decl(_caxyc-let-0010.ts, 0, 13))
+
+let b2 = c2;
+>b2 : Symbol(b2, Decl(_caxyc-let-0010.ts, 3, 3))
+>c2 : Symbol(c2, Decl(_caxyc-let-0010.ts, 1, 13))
+
+if (b1){
+>b1 : Symbol(b1, Decl(_caxyc-let-0010.ts, 2, 3))
+
+    b1;
+>b1 : Symbol(b1, Decl(_caxyc-let-0010.ts, 2, 3))
+
+    b2;
+>b2 : Symbol(b2, Decl(_caxyc-let-0010.ts, 3, 3))
+
+    if (b2){
+>b2 : Symbol(b2, Decl(_caxyc-let-0010.ts, 3, 3))
+
+        b1;
+>b1 : Symbol(b1, Decl(_caxyc-let-0010.ts, 2, 3))
+
+        b2;
+>b2 : Symbol(b2, Decl(_caxyc-let-0010.ts, 3, 3))
+    }
+    else {
+        b1;
+>b1 : Symbol(b1, Decl(_caxyc-let-0010.ts, 2, 3))
+
+        b2;
+>b2 : Symbol(b2, Decl(_caxyc-let-0010.ts, 3, 3))
+    }
+}
+else {
+    b1;
+>b1 : Symbol(b1, Decl(_caxyc-let-0010.ts, 2, 3))
+
+    b2;
+>b2 : Symbol(b2, Decl(_caxyc-let-0010.ts, 3, 3))
+}
+

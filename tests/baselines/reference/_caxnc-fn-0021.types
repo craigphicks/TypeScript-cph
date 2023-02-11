@@ -1,0 +1,28 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0021.ts ===
+declare function foo(x?:number):number[];
+>foo : { (x?: number): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>x : number | undefined
+
+declare function foo(x?:number,y?:string,z?:string):string[];
+>foo : { (x?: number | undefined): number[]; (x?: number, y?: string, z?: string): string[]; }
+>x : number | undefined
+>y : string | undefined
+>z : string | undefined
+
+declare const x: [string,...string[]];
+>x : [string, ...string[]]
+
+const a4 = foo(...[1,...x] as const);
+>a4 : string[]
+>foo(...[1,...x] as const) : string[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>...[1,...x] as const : string | 1
+>[1,...x] as const : readonly [1, string, ...string[]]
+>[1,...x] : readonly [1, string, ...string[]]
+>1 : 1
+>...x : string
+>x : [string, ...string[]]
+
+a4; // should be string[]
+>a4 : string[]
+

@@ -1,0 +1,17 @@
+=== tests/cases/conformance/_caxnc/_caxnc-rp-002.ts ===
+declare const b:0|1|2;
+>b : Symbol(b, Decl(_caxnc-rp-002.ts, 0, 13))
+
+const c = b;
+>c : Symbol(c, Decl(_caxnc-rp-002.ts, 1, 5))
+>b : Symbol(b, Decl(_caxnc-rp-002.ts, 0, 13))
+
+if (b){
+>b : Symbol(b, Decl(_caxnc-rp-002.ts, 0, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-rp-002.ts, 0, 13))
+
+    c;
+>c : Symbol(c, Decl(_caxnc-rp-002.ts, 1, 5))
+}

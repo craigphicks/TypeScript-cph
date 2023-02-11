@@ -1,0 +1,11 @@
+=== tests/cases/conformance/_caxyc/_caxyc-if-001.ts ===
+declare const c1: boolean;
+>c1 : Symbol(c1, Decl(_caxyc-if-001.ts, 0, 13))
+
+if (c1) {
+>c1 : Symbol(c1, Decl(_caxyc-if-001.ts, 0, 13))
+
+    c1; 
+>c1 : Symbol(c1, Decl(_caxyc-if-001.ts, 0, 13))
+}
+

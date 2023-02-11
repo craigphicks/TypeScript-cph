@@ -1,0 +1,26 @@
+=== tests/cases/conformance/_caxyc/_caxyc-ez0006.ts ===
+// Note that Foo1.foo1 is overwritable, but it shouldn't make a difference because the type must be the same.
+declare type Foo1 = { foo1: ()=> number[] };
+>Foo1 : { foo1: () => number[]; }
+>foo1 : () => number[]
+
+declare const obj1: undefined | Foo1;
+>obj1 : Foo1 | undefined
+
+const isFoo1 = obj1?.foo1();
+>isFoo1 : number[] | undefined
+>obj1?.foo1() : number[] | undefined
+>obj1?.foo1 : (() => number[]) | undefined
+>obj1 : Foo1 | undefined
+>foo1 : (() => number[]) | undefined
+
+if (isFoo1){
+>isFoo1 : number[] | undefined
+
+    const x2 = obj1.foo1();
+>x2 : number[]
+>obj1.foo1() : number[]
+>obj1.foo1 : () => number[]
+>obj1 : Foo1
+>foo1 : () => number[]
+}

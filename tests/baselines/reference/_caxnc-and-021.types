@@ -1,0 +1,47 @@
+=== tests/cases/conformance/_caxnc/_caxnc-and-021.ts ===
+declare const b1: true | false;
+>b1 : boolean
+>true : true
+>false : false
+
+declare const b2: true | false;
+>b2 : boolean
+>true : true
+>false : false
+
+if (b2 && b1){
+>b2 && b1 : boolean
+>b2 : boolean
+>b1 : boolean
+    
+}
+else if (b2 || b1){
+>b2 || b1 : boolean
+>b2 : boolean
+>b1 : boolean
+
+    if (b1){
+>b1 : boolean
+
+        b1;
+>b1 : true
+
+        b2; // b2 should be false
+>b2 : boolean
+    }
+    else {
+        b1;
+>b1 : false
+
+        b2; // b2 should be true
+>b2 : boolean
+    }
+}
+else {
+    b1;
+>b1 : false
+
+    b2;
+>b2 : false
+}
+

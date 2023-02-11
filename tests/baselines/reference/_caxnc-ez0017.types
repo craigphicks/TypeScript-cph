@@ -1,0 +1,65 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0017.ts ===
+declare interface FooA {
+    foo(b:string): "1",
+>foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
+>b : string
+
+    foo(b:number): undefined;
+>foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
+>b : number
+
+    foo(b:any): void;
+>foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
+>b : any
+
+};
+declare const obja: undefined | FooA;
+>obja : FooA | undefined
+
+declare const arg: string | number;
+>arg : string | number
+
+// checknig isFoo in combo with another condition argIsString
+const isFoo = obja?.foo(arg);
+>isFoo : void | undefined
+>obja?.foo(arg) : void | undefined
+>obja?.foo : { (b: string): "1"; (b: number): undefined; (b: any): void; } | undefined
+>obja : FooA | undefined
+>foo : { (b: string): "1"; (b: number): undefined; (b: any): void; } | undefined
+>arg : string | number
+
+const argIsString = typeof arg === "string";
+>argIsString : boolean
+>typeof arg === "string" : boolean
+>typeof arg : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>arg : string | number
+>"string" : "string"
+
+if (isFoo){
+>isFoo : "1" | undefined
+
+    const x = obja.foo(arg);
+>x : "1"
+>obja.foo(arg) : "1"
+>obja.foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
+>obja : FooA
+>foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
+>arg : string
+
+    argIsString;
+>argIsString : true
+}
+else if (obja) {
+>obja : FooA | undefined
+
+    const y = obja.foo(arg);
+>y : undefined
+>obja.foo(arg) : undefined
+>obja.foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
+>obja : FooA
+>foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
+>arg : number
+
+    argIsString;
+>argIsString : false
+}

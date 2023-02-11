@@ -1,0 +1,26 @@
+=== tests/cases/conformance/_caxnc/_caxnc-eqneq-0010.ts ===
+declare const a: 1|2;
+>a : 1 | 2
+
+declare const b: 1|2;
+>b : 1 | 2
+
+if (a===b)
+>a===b : boolean
+>a : 1 | 2
+>b : 1 | 2
+{
+    a;
+>a : 1 | 2
+
+    b;
+>b : 1 | 2
+}
+else {
+    a;
+>a : 1 | 2
+
+    b;
+>b : 1 | 2
+}
+

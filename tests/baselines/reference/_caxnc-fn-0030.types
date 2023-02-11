@@ -1,0 +1,107 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0030.ts ===
+declare function foo(x:string): number[];
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>x : string
+
+declare function foo(x?:string,y?:string,...z:string[]): string[];
+>foo : { (x: string): number[]; (x?: string, y?: string, ...z: string[]): string[]; (...args: any[]): unknown; }
+>x : string | undefined
+>y : string | undefined
+>z : string[]
+
+declare function foo(...args:any[]): unknown;
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>args : any[]
+
+const a0 = foo();
+>a0 : string[]
+>foo() : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+
+a0; // expect string
+>a0 : string[]
+
+const a1 = foo("");
+>a1 : number[]
+>foo("") : number[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>"" : ""
+
+a1; // expect  number
+>a1 : number[]
+
+const a2 = foo("","");
+>a2 : string[]
+>foo("","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>"" : ""
+>"" : ""
+
+a2; // expect string
+>a2 : string[]
+
+const a3 = foo("","","");
+>a3 : string[]
+>foo("","","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>"" : ""
+>"" : ""
+>"" : ""
+
+a3; // expect string
+>a3 : string[]
+
+const a4 = foo("","","","");
+>a4 : string[]
+>foo("","","","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>"" : ""
+>"" : ""
+>"" : ""
+>"" : ""
+
+a4; // expect string
+>a4 : string[]
+
+const b1 = foo(undefined);
+>b1 : string[]
+>foo(undefined) : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>undefined : undefined
+
+b1; // expect string
+>b1 : string[]
+
+const b2 = foo(undefined,undefined);
+>b2 : string[]
+>foo(undefined,undefined) : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>undefined : undefined
+>undefined : undefined
+
+b2; // expect string
+>b2 : string[]
+
+const b3 = foo(undefined,undefined,undefined);
+>b3 : unknown
+>foo(undefined,undefined,undefined) : unknown
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>undefined : undefined
+>undefined : undefined
+>undefined : undefined
+
+b3; // expect unknown
+>b3 : unknown
+
+[a0,a1,a2,a3,a4,b1,b2,b3];
+>[a0,a1,a2,a3,a4,b1,b2,b3] : unknown[]
+>a0 : string[]
+>a1 : number[]
+>a2 : string[]
+>a3 : string[]
+>a4 : string[]
+>b1 : string[]
+>b2 : string[]
+>b3 : unknown
+
+

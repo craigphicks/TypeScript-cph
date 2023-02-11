@@ -1,0 +1,26 @@
+=== tests/cases/conformance/_caxyc/_caxyc-parens-0010.ts ===
+declare const a: boolean;
+>a : Symbol(a, Decl(_caxyc-parens-0010.ts, 0, 13))
+
+declare const b: boolean;
+>b : Symbol(b, Decl(_caxyc-parens-0010.ts, 1, 13))
+
+declare const c: boolean;
+>c : Symbol(c, Decl(_caxyc-parens-0010.ts, 2, 13))
+
+declare const d: boolean;
+>d : Symbol(d, Decl(_caxyc-parens-0010.ts, 3, 13))
+
+if ((a&&b)||(c&&d)){
+>a : Symbol(a, Decl(_caxyc-parens-0010.ts, 0, 13))
+>b : Symbol(b, Decl(_caxyc-parens-0010.ts, 1, 13))
+>c : Symbol(c, Decl(_caxyc-parens-0010.ts, 2, 13))
+>d : Symbol(d, Decl(_caxyc-parens-0010.ts, 3, 13))
+
+    [a,b,c,d];
+>a : Symbol(a, Decl(_caxyc-parens-0010.ts, 0, 13))
+>b : Symbol(b, Decl(_caxyc-parens-0010.ts, 1, 13))
+>c : Symbol(c, Decl(_caxyc-parens-0010.ts, 2, 13))
+>d : Symbol(d, Decl(_caxyc-parens-0010.ts, 3, 13))
+}
+

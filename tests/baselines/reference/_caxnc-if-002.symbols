@@ -1,0 +1,22 @@
+=== tests/cases/conformance/_caxnc/_caxnc-if-002.ts ===
+declare const c1: 0 | 1;
+>c1 : Symbol(c1, Decl(_caxnc-if-002.ts, 0, 13))
+
+declare const c2: 0 | 1;
+>c2 : Symbol(c2, Decl(_caxnc-if-002.ts, 1, 13))
+
+if (c1 && c2) {
+>c1 : Symbol(c1, Decl(_caxnc-if-002.ts, 0, 13))
+>c2 : Symbol(c2, Decl(_caxnc-if-002.ts, 1, 13))
+
+    c1; 
+>c1 : Symbol(c1, Decl(_caxnc-if-002.ts, 0, 13))
+}
+else {
+    c1;
+>c1 : Symbol(c1, Decl(_caxnc-if-002.ts, 0, 13))
+}
+c1;
+>c1 : Symbol(c1, Decl(_caxnc-if-002.ts, 0, 13))
+
+

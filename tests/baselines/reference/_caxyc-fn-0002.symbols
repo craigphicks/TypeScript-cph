@@ -1,0 +1,39 @@
+=== tests/cases/conformance/_caxyc/_caxyc-fn-0002.ts ===
+declare interface FooA {
+>FooA : Symbol(FooA, Decl(_caxyc-fn-0002.ts, 0, 0))
+
+    foo(b:string): "1",
+>foo : Symbol(FooA.foo, Decl(_caxyc-fn-0002.ts, 0, 24), Decl(_caxyc-fn-0002.ts, 1, 23))
+>b : Symbol(b, Decl(_caxyc-fn-0002.ts, 1, 8))
+
+    foo(b:number): undefined;
+>foo : Symbol(FooA.foo, Decl(_caxyc-fn-0002.ts, 0, 24), Decl(_caxyc-fn-0002.ts, 1, 23))
+>b : Symbol(b, Decl(_caxyc-fn-0002.ts, 2, 8))
+
+};
+declare const obja: FooA | undefined;
+>obja : Symbol(obja, Decl(_caxyc-fn-0002.ts, 4, 13))
+>FooA : Symbol(FooA, Decl(_caxyc-fn-0002.ts, 0, 0))
+
+declare const arg: number | string;
+>arg : Symbol(arg, Decl(_caxyc-fn-0002.ts, 5, 13))
+
+if (typeof arg==="string" && obja){
+>arg : Symbol(arg, Decl(_caxyc-fn-0002.ts, 5, 13))
+>obja : Symbol(obja, Decl(_caxyc-fn-0002.ts, 4, 13))
+
+    arg;
+>arg : Symbol(arg, Decl(_caxyc-fn-0002.ts, 5, 13))
+
+    obja;
+>obja : Symbol(obja, Decl(_caxyc-fn-0002.ts, 4, 13))
+
+    const x = obja.foo(arg);
+>x : Symbol(x, Decl(_caxyc-fn-0002.ts, 9, 9))
+>obja.foo : Symbol(FooA.foo, Decl(_caxyc-fn-0002.ts, 0, 24), Decl(_caxyc-fn-0002.ts, 1, 23))
+>obja : Symbol(obja, Decl(_caxyc-fn-0002.ts, 4, 13))
+>foo : Symbol(FooA.foo, Decl(_caxyc-fn-0002.ts, 0, 24), Decl(_caxyc-fn-0002.ts, 1, 23))
+>arg : Symbol(arg, Decl(_caxyc-fn-0002.ts, 5, 13))
+}
+
+

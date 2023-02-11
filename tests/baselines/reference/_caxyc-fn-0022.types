@@ -1,0 +1,43 @@
+=== tests/cases/conformance/_caxyc/_caxyc-fn-0022.ts ===
+declare function foo(a:1,b:2,c:3,d:number):string[];
+>foo : (a: 1, b: 2, c: 3, d: number) => string[]
+>a : 1
+>b : 2
+>c : 3
+>d : number
+
+const z: [number] = [4];
+>z : [number]
+>[4] : [number]
+>4 : 4
+
+const y = [3,...z] as const;
+>y : readonly [3, number]
+>[3,...z] as const : readonly [3, number]
+>[3,...z] : readonly [3, number]
+>3 : 3
+>...z : number
+>z : [number]
+
+const x = [2,...y] as const;
+>x : readonly [2, 3, number]
+>[2,...y] as const : readonly [2, 3, number]
+>[2,...y] : readonly [2, 3, number]
+>2 : 2
+>...y : number
+>y : readonly [3, number]
+
+const a4 = foo(...[1,...x] as const);
+>a4 : string[]
+>foo(...[1,...x] as const) : string[]
+>foo : (a: 1, b: 2, c: 3, d: number) => string[]
+>...[1,...x] as const : number
+>[1,...x] as const : readonly [1, 2, 3, number]
+>[1,...x] : readonly [1, 2, 3, number]
+>1 : 1
+>...x : number
+>x : readonly [2, 3, number]
+
+a4; // should be string[]
+>a4 : string[]
+

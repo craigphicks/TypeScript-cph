@@ -1265,7 +1265,23 @@ namespace ts {
             description: Diagnostics.Control_what_method_is_used_to_detect_module_format_JS_files,
             category: Diagnostics.Language_and_Environment,
             defaultValueDescription: Diagnostics.auto_Colon_Treat_files_with_imports_exports_import_meta_jsx_with_jsx_Colon_react_jsx_or_esm_format_with_module_Colon_node16_as_modules,
-        }
+        },
+        {
+            name: "mrNarrowConstraintsEnable",
+            type: "boolean",
+            affectsSemanticDiagnostics: true,
+            category: Diagnostics.Type_Checking,
+            description: Diagnostics.Interpret_optional_property_types_as_written_rather_than_adding_undefined,
+            defaultValueDescription: false,
+        },
+        {
+            name: "mrNarrowEnable",
+            type: "boolean",
+            affectsSemanticDiagnostics: true,
+            category: Diagnostics.Type_Checking,
+            description: Diagnostics.Interpret_optional_property_types_as_written_rather_than_adding_undefined,
+            defaultValueDescription: false,
+        },
     ];
 
     /* @internal */

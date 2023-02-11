@@ -1,0 +1,11 @@
+=== tests/cases/conformance/_caxyc/_caxyc-lt-0001.ts ===
+declare const x: 0|1;
+>x : Symbol(x, Decl(_caxyc-lt-0001.ts, 0, 13))
+
+if (x){
+>x : Symbol(x, Decl(_caxyc-lt-0001.ts, 0, 13))
+
+    x;
+>x : Symbol(x, Decl(_caxyc-lt-0001.ts, 0, 13))
+}
+

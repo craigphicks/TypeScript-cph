@@ -1,0 +1,20 @@
+=== tests/cases/conformance/_caxnc/_caxnc-exclamation.ts ===
+declare const n: 0 | 1;
+>n : 0 | 1
+
+const b = !!n;
+>b : boolean
+>!!n : boolean
+>!n : boolean
+>n : 0 | 1
+
+if (b){
+>b : boolean
+
+    b;
+>b : true
+} 
+else {
+    b;
+>b : false
+}

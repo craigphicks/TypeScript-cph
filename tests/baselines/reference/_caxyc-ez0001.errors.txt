@@ -1,0 +1,15 @@
+tests/cases/conformance/_caxyc/_caxyc-ez0001.ts(8,5): error TS2532: Object is possibly 'undefined'.
+
+
+==== tests/cases/conformance/_caxyc/_caxyc-ez0001.ts (1 errors) ====
+    declare type Foo = { readonly foo: number[] };
+    
+    declare const obj: Foo | undefined;
+    const isObj = !!obj;
+    if (isObj) {
+        obj.foo;
+    } else {
+        obj.foo;
+        ~~~
+!!! error TS2532: Object is possibly 'undefined'.
+    }

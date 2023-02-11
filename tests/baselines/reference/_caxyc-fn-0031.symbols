@@ -1,0 +1,22 @@
+=== tests/cases/conformance/_caxyc/_caxyc-fn-0031.ts ===
+declare function foo(x:string): number[];
+>foo : Symbol(foo, Decl(_caxyc-fn-0031.ts, 0, 0), Decl(_caxyc-fn-0031.ts, 0, 41))
+>x : Symbol(x, Decl(_caxyc-fn-0031.ts, 0, 21))
+
+declare function foo(x?:string,y?:string,...z:string[]): string[];
+>foo : Symbol(foo, Decl(_caxyc-fn-0031.ts, 0, 0), Decl(_caxyc-fn-0031.ts, 0, 41))
+>x : Symbol(x, Decl(_caxyc-fn-0031.ts, 1, 21))
+>y : Symbol(y, Decl(_caxyc-fn-0031.ts, 1, 31))
+>z : Symbol(z, Decl(_caxyc-fn-0031.ts, 1, 41))
+
+const b3 = foo(undefined,undefined,undefined);
+>b3 : Symbol(b3, Decl(_caxyc-fn-0031.ts, 2, 5))
+>foo : Symbol(foo, Decl(_caxyc-fn-0031.ts, 0, 0), Decl(_caxyc-fn-0031.ts, 0, 41))
+>undefined : Symbol(undefined)
+>undefined : Symbol(undefined)
+>undefined : Symbol(undefined)
+
+b3; // expect unknown
+>b3 : Symbol(b3, Decl(_caxyc-fn-0031.ts, 2, 5))
+
+

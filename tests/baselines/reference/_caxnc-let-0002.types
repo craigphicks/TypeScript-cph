@@ -1,0 +1,21 @@
+=== tests/cases/conformance/_caxnc/_caxnc-let-0002.ts ===
+declare const c1: true | false;
+>c1 : boolean
+>true : true
+>false : false
+
+let b1 = c1;
+>b1 : boolean
+>c1 : boolean
+
+if (b1){
+>b1 : boolean
+
+    b1;
+>b1 : true
+}
+else {
+    b1;
+>b1 : false
+}
+

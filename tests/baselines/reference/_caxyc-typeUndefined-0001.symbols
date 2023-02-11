@@ -1,0 +1,11 @@
+=== tests/cases/conformance/_caxyc/_caxyc-typeUndefined-0001.ts ===
+let u = undefined;
+>u : Symbol(u, Decl(_caxyc-typeUndefined-0001.ts, 0, 3))
+>undefined : Symbol(undefined)
+
+u;
+>u : Symbol(u, Decl(_caxyc-typeUndefined-0001.ts, 0, 3))
+
+
+
+

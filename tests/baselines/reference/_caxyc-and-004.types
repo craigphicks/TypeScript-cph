@@ -1,0 +1,46 @@
+=== tests/cases/conformance/_caxyc/_caxyc-and-004.ts ===
+declare const b1: false;
+>b1 : false
+>false : false
+
+declare const b2: false;
+>b2 : false
+>false : false
+
+if (b1 && b2){
+>b1 && b2 : false
+>b1 : false
+>b2 : false
+
+    b1;
+>b1 : never
+
+    b2;
+>b2 : never
+}
+else if (b1){
+>b1 : false
+
+    b1;
+>b1 : never
+
+    b2;
+>b2 : never
+}
+else if (b2){
+>b2 : false
+
+    b1;
+>b1 : never
+
+    b2;
+>b2 : never
+}
+else {
+    b1;
+>b1 : false
+
+    b2;
+>b2 : false
+}
+

@@ -1,0 +1,39 @@
+=== tests/cases/conformance/_caxyc/_caxyc-fn-0020.ts ===
+declare type Foo = {
+>Foo : { foo(x?: number): number[]; foo(x?: number, y?: string): string[]; }
+
+    foo(x?:number):number[]
+>foo : { (x?: number): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
+>x : number | undefined
+
+    foo(x?:number,y?:string):string[]
+>foo : { (x?: number | undefined): number[]; (x?: number, y?: string): string[]; }
+>x : number | undefined
+>y : string | undefined
+
+};
+// declare type Boo = {
+//     foo(x?:bigint):bigint[]
+// };
+declare const obj: Readonly<Foo>;
+>obj : Readonly<Foo>
+
+// const a1 = obj.foo();
+// const a2 = obj.foo(1);
+// const a3 = obj.foo(1,"2");
+// const a4 = obj.foo(...[1,"2"] as const);
+const z: [number,string] = [1,"2"];
+>z : [number, string]
+>[1,"2"] : [number, string]
+>1 : 1
+>"2" : "2"
+
+const a5 = obj.foo(...z);
+>a5 : string[]
+>obj.foo(...z) : string[]
+>obj.foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
+>obj : Readonly<Foo>
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
+>...z : string | number
+>z : [number, string]
+

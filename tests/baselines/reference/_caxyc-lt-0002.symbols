@@ -1,0 +1,27 @@
+=== tests/cases/conformance/_caxyc/_caxyc-lt-0002.ts ===
+declare const x: 0|1;
+>x : Symbol(x, Decl(_caxyc-lt-0002.ts, 0, 13))
+
+declare const y: 0|1;
+>y : Symbol(y, Decl(_caxyc-lt-0002.ts, 1, 13))
+
+if (x && y){
+>x : Symbol(x, Decl(_caxyc-lt-0002.ts, 0, 13))
+>y : Symbol(y, Decl(_caxyc-lt-0002.ts, 1, 13))
+
+    x;
+>x : Symbol(x, Decl(_caxyc-lt-0002.ts, 0, 13))
+
+    y;
+>y : Symbol(y, Decl(_caxyc-lt-0002.ts, 1, 13))
+}
+else if (x) {
+>x : Symbol(x, Decl(_caxyc-lt-0002.ts, 0, 13))
+
+    x;
+>x : Symbol(x, Decl(_caxyc-lt-0002.ts, 0, 13))
+
+    y;
+>y : Symbol(y, Decl(_caxyc-lt-0002.ts, 1, 13))
+}
+

@@ -1,0 +1,66 @@
+=== tests/cases/conformance/_caxyc/_caxyc-ez0003.ts ===
+declare type Foo = {
+>Foo : { foo(x?: number): number[]; foo(x?: string, y?: string): string[]; }
+
+    foo(x?:number):number[]
+>foo : { (x?: number): number[]; (x?: string | undefined, y?: string | undefined): string[]; }
+>x : number | undefined
+
+    foo(x?:string,y?:string):string[]
+>foo : { (x?: number | undefined): number[]; (x?: string, y?: string): string[]; }
+>x : string | undefined
+>y : string | undefined
+
+};
+declare type Boo = {
+>Boo : { foo(x?: bigint): bigint[]; }
+
+    foo(x?:bigint):bigint[]
+>foo : (x?: bigint) => bigint[]
+>x : bigint | undefined
+
+};
+declare const obj: Readonly<Foo> | Readonly<Boo> | undefined;
+>obj : Readonly<Foo> | Readonly<Boo> | undefined
+
+const isFoo = obj?.foo(); // isFoo should be number[] | bigint[] | undefined, because string[] is shadowed in case of empty input
+>isFoo : number[] | bigint[] | undefined
+>obj?.foo() : number[] | bigint[] | undefined
+>obj?.foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[]) | undefined
+>obj : Readonly<Foo> | Readonly<Boo> | undefined
+>foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[]) | undefined
+
+isFoo; // isFoo should be number[] | bigint[] | undefined
+>isFoo : number[] | bigint[] | undefined
+
+if (isFoo) {
+>isFoo : number[] | bigint[] | undefined
+
+    isFoo; // isFoo should be number[] | bigint[]
+>isFoo : number[] | bigint[]
+
+    let x = obj; // x should be Readonly<Foo> | Readonly<Boo>
+>x : Readonly<Foo> | Readonly<Boo>
+>obj : Readonly<Foo> | Readonly<Boo>
+
+    let y = x.foo; // should be no error
+>y : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[])
+>x.foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[])
+>x : Readonly<Foo> | Readonly<Boo>
+>foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[])
+
+    let z = y(); // z should be number[] | bigint[]
+>z : number[] | bigint[]
+>y() : number[] | bigint[]
+>y : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[])
+
+    console.log(z); // again z should be number[] | bigint[]
+>console.log(z) : void
+>console.log : (...data: any[]) => void
+>console : Console
+>log : (...data: any[]) => void
+>z : number[] | bigint[]
+}
+isFoo; // isFoo should be number[] | bigint[] | undefined
+>isFoo : number[] | bigint[] | undefined
+

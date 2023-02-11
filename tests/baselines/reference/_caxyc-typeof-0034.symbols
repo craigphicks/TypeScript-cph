@@ -1,0 +1,25 @@
+=== tests/cases/conformance/_caxyc/_caxyc-typeof-0034.ts ===
+declare const a: number|string;
+>a : Symbol(a, Decl(_caxyc-typeof-0034.ts, 0, 13))
+
+const xa = typeof a;
+>xa : Symbol(xa, Decl(_caxyc-typeof-0034.ts, 1, 5))
+>a : Symbol(a, Decl(_caxyc-typeof-0034.ts, 0, 13))
+
+xa;
+>xa : Symbol(xa, Decl(_caxyc-typeof-0034.ts, 1, 5))
+
+if (a===0){
+>a : Symbol(a, Decl(_caxyc-typeof-0034.ts, 0, 13))
+}
+else if (a===0){
+>a : Symbol(a, Decl(_caxyc-typeof-0034.ts, 0, 13))
+
+    a;
+>a : Symbol(a, Decl(_caxyc-typeof-0034.ts, 0, 13))
+
+    xa;
+>xa : Symbol(xa, Decl(_caxyc-typeof-0034.ts, 1, 5))
+}
+
+

@@ -1,0 +1,98 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0024.ts ===
+declare function foo(x?:number):number[];
+>foo : { (x?: number): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>x : number | undefined
+
+declare function foo(x?:number,y?:string,z?:string):string[];
+>foo : { (x?: number | undefined): number[]; (x?: number, y?: string, z?: string): string[]; }
+>x : number | undefined
+>y : string | undefined
+>z : string | undefined
+
+const a1 = foo();
+>a1 : number[]
+>foo() : number[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+
+a1; // expect number[]
+>a1 : number[]
+
+const a2 = foo(1);
+>a2 : number[]
+>foo(1) : number[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>1 : 1
+
+a2; // expect number[]
+>a2 : number[]
+
+const a3 = foo(1,"2");
+>a3 : string[]
+>foo(1,"2") : string[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>1 : 1
+>"2" : "2"
+
+a3; // expect string[]
+>a3 : string[]
+
+declare const x: [string,...string[]];
+>x : [string, ...string[]]
+
+// a4 and a5 may be bugs
+const a4 = foo(...[1,...x] as const);
+>a4 : string[]
+>foo(...[1,...x] as const) : string[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>...[1,...x] as const : string | 1
+>[1,...x] as const : readonly [1, string, ...string[]]
+>[1,...x] : readonly [1, string, ...string[]]
+>1 : 1
+>...x : string
+>x : [string, ...string[]]
+
+a4; // expect string[] even though there may be too many args
+>a4 : string[]
+
+declare const y: [...string[]];
+>y : string[]
+
+const a5 = foo(...[1,...y] as const);
+>a5 : string[]
+>foo(...[1,...y] as const) : string[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>...[1,...y] as const : string | 1
+>[1,...y] as const : readonly [1, ...string[]]
+>[1,...y] : readonly [1, ...string[]]
+>1 : 1
+>...y : string
+>y : string[]
+
+a5; // expect number[] | string[] ???? but typescript says only string[]
+>a5 : string[]
+
+const z: [number,string] = [1,"2"];
+>z : [number, string]
+>[1,"2"] : [number, string]
+>1 : 1
+>"2" : "2"
+
+const a6 = foo(...z);
+>a6 : string[]
+>foo(...z) : string[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>...z : string | number
+>z : [number, string]
+
+a6; // expect string[]
+>a6 : string[]
+
+[a1,a2,a3,a4,a5,a6];
+>[a1,a2,a3,a4,a5,a6] : (number[] | string[])[]
+>a1 : number[]
+>a2 : number[]
+>a3 : string[]
+>a4 : string[]
+>a5 : string[]
+>a6 : string[]
+

@@ -1,0 +1,14 @@
+=== tests/cases/conformance/_caxyc/_caxyc-bi3.ts ===
+declare const bar: boolean;
+>bar : boolean
+
+const rab2 = bar ? !bar : bar;
+>rab2 : false
+>bar ? !bar : bar : false
+>bar : boolean
+>!bar : false
+>bar : true
+>bar : false
+
+//bar ? !bar : bar;
+

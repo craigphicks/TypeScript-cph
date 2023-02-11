@@ -16,16 +16,13 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+
 0. `const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));` When `unwidenedTsType` is true, `checker.getWidenedType(unwidenedTsType)` is still true.
-0. When the forFlow.groupToNodeToType map is written new values override instead of becoming a union with previous values. C.f.`tests/cases/conformance/_cax2/_cax2-whileLoop-0004.ts`. That is because a new `NodeToTtypeMap` is created for each call to `resolveGroupToFlow` as a member of `InferStatus`.  That single `NodeToType` map is then `set` to the `forFlow.groupToNodeToTypeMap` at the end of `resolveGroupToFlow`.  The question now is which of the following is best?  (1) Instead of set, do a deep union operation into `forFlow.groupToNodeToTypeMap`, or (2) let each loop iteration have a fresh `GroupToNodeToType` map for it's inner compuations, and only at the `processLoop` function level keep a seperate union calculation to decide conversion and return at the end.  They are not equivalent - (1) has the possibility of changing the computed result because node-to-type values are used in const alias replays for non-const symbol values.  So do (2) I guess?  Less "blurring"?
-
-0. Real loop convergence check.
-0. Should use block end to remove local symbols from symbol table, especially because in loop, `let` declaraed variable can carried up to the loop top and back down.
-
-0. Add a parameter to config: `useConstraintVariables`, default false.  Add that to each existing `_cax-*` test file: `@useConstraintVariables=true`. Make copies of each `_cax-*` file with a new name and `@useConstraintVariables` not set.  Compare results to to existing flow - they should be nearly the same.
+0. replayables (set to inferStatus.replayables) should not also change the symtabConstraint.
 
 ### Priority: Postponed
 
+1. The tests in `tests/cases/conformance/_caxyc`, e.g. the tests with `compilerOptions.mrNarrowConstraintsEnable:true`, should all pass.
 1. In `processLoop` there is call to `createHeap` and it might be too expensive to do for every loop, and it is unnecessary, use heap prototype instead.
 1. The Map type members in InferStatus (`declaredTypes`, `replayables`, `groupNodeToTypeMap` could all be `WeakMap`s).
 1. With SyntaxKind.EqualsToken - what should be done if the rhs type is not a subset of the declared type?  Check existing behavior.
@@ -51,6 +48,13 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. Confirm the behaviors of each of `tests/cases/conformance/_caxnc`. (Unfortunately`tests/cases/conformance/_caxyc` is no longer all passing but that will be left for later, as getting it working with `compilerOptions.mrNarrowConstraintsEnable:false` is a priority.)
+
+0. Add compileOption parameter `mrNarrowConstraintsEnable`, with default value false.  When off, constraints are not used, and constant variable are stored in the symbol tables.  This behavior (1) has less computational complexity, and (2) has basically the same end result logic as existing ts flow.
+0. Add another compileOption parameter `mrNarrowEnable`, but don't enforce it in code yet because the env switch using `myDisableInfer=0` intstead of `myNarrowEnable:true` is easier for development at the moment.
+0. From the tests dataset directory `tests/cases/conformance/_cax` create two copies `tests/cases/conformance/_caxnc` and `tests/cases/conformance/_caxyc` which have the compilerOptions directive set in the header `@mrNarrowConstraintsEnable: false` and `@mrNarrowConstraintsEnable: true` respectively.
+
 
 0. During `processLoop`, and the end of the loop, symbols going out of scope are removed from the symbol table.  Has also been extended to work for `PostIf` - all tests passing.
 

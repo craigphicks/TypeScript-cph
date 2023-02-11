@@ -1,0 +1,43 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0004.ts ===
+declare type Foo = {
+>Foo : { foo(x?: number): number[]; foo(x?: string, y?: string): string[]; }
+
+    foo(x?:number):number[]
+>foo : { (x?: number): number[]; (x?: string | undefined, y?: string | undefined): string[]; }
+>x : number | undefined
+
+    foo(x?:string,y?:string):string[]
+>foo : { (x?: number | undefined): number[]; (x?: string, y?: string): string[]; }
+>x : string | undefined
+>y : string | undefined
+
+};
+declare type Boo = {
+>Boo : { foo(x?: bigint): bigint[]; }
+
+    foo(x?:bigint):bigint[]
+>foo : (x?: bigint) => bigint[]
+>x : bigint | undefined
+
+};
+declare const obj: Readonly<Foo> | Readonly<Boo> | undefined;
+>obj : Readonly<Foo> | Readonly<Boo> | undefined
+
+const isFoo = obj?.foo();
+>isFoo : number[] | bigint[] | undefined
+>obj?.foo() : number[] | bigint[] | undefined
+>obj?.foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[]) | undefined
+>obj : Readonly<Foo> | Readonly<Boo> | undefined
+>foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[]) | undefined
+
+if (isFoo) {
+>isFoo : number[] | bigint[] | undefined
+
+    let x = obj;
+>x : Readonly<Foo> | Readonly<Boo>
+>obj : Readonly<Foo> | Readonly<Boo>
+}
+else {
+    obj;
+>obj : undefined
+}

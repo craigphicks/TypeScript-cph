@@ -1,0 +1,8 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeof-0010.ts ===
+const x = typeof 1 === "number";
+>x : Symbol(x, Decl(_caxnc-typeof-0010.ts, 0, 5))
+
+x;
+>x : Symbol(x, Decl(_caxnc-typeof-0010.ts, 0, 5))
+
+

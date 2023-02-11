@@ -1,0 +1,26 @@
+=== tests/cases/conformance/_caxyc/_caxyc-fn-0010.ts ===
+declare const bar: boolean;
+>bar : Symbol(bar, Decl(_caxyc-fn-0010.ts, 0, 13))
+
+declare function isTrue(b:true): true;
+>isTrue : Symbol(isTrue, Decl(_caxyc-fn-0010.ts, 0, 27), Decl(_caxyc-fn-0010.ts, 1, 38))
+>b : Symbol(b, Decl(_caxyc-fn-0010.ts, 1, 24))
+
+declare function isTrue(b:false): false;
+>isTrue : Symbol(isTrue, Decl(_caxyc-fn-0010.ts, 0, 27), Decl(_caxyc-fn-0010.ts, 1, 38))
+>b : Symbol(b, Decl(_caxyc-fn-0010.ts, 2, 24))
+
+const rab2 = bar ? !isTrue(bar) : isTrue(bar);
+>rab2 : Symbol(rab2, Decl(_caxyc-fn-0010.ts, 3, 5))
+>bar : Symbol(bar, Decl(_caxyc-fn-0010.ts, 0, 13))
+>isTrue : Symbol(isTrue, Decl(_caxyc-fn-0010.ts, 0, 27), Decl(_caxyc-fn-0010.ts, 1, 38))
+>bar : Symbol(bar, Decl(_caxyc-fn-0010.ts, 0, 13))
+>isTrue : Symbol(isTrue, Decl(_caxyc-fn-0010.ts, 0, 27), Decl(_caxyc-fn-0010.ts, 1, 38))
+>bar : Symbol(bar, Decl(_caxyc-fn-0010.ts, 0, 13))
+
+rab2;
+>rab2 : Symbol(rab2, Decl(_caxyc-fn-0010.ts, 3, 5))
+
+bar;
+>bar : Symbol(bar, Decl(_caxyc-fn-0010.ts, 0, 13))
+

@@ -1,0 +1,18 @@
+=== tests/cases/conformance/_caxyc/_caxyc-typeof-0011.ts ===
+const typeof1 = typeof 1;
+>typeof1 : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>typeof 1 : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>1 : 1
+
+typeof1;
+>typeof1 : "number"
+
+const x = typeof1==="number";
+>x : boolean
+>typeof1==="number" : boolean
+>typeof1 : "number"
+>"number" : "number"
+
+x;
+>x : true
+

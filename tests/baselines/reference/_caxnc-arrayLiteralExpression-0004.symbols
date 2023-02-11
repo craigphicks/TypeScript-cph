@@ -1,0 +1,9 @@
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-0004.ts ===
+const x = [1,"2"] as [number,string];
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-0004.ts, 0, 5))
+
+// This calls ArrayLiteralExpression with a spread element.
+let y = [...x];
+>y : Symbol(y, Decl(_caxnc-arrayLiteralExpression-0004.ts, 2, 3))
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-0004.ts, 0, 5))
+

@@ -1,0 +1,23 @@
+=== tests/cases/conformance/_caxyc/_caxyc-if-002.ts ===
+declare const c1: 0 | 1;
+>c1 : 0 | 1
+
+declare const c2: 0 | 1;
+>c2 : 0 | 1
+
+if (c1 && c2) {
+>c1 && c2 : 0 | 1
+>c1 : 0 | 1
+>c2 : 0 | 1
+
+    c1; 
+>c1 : 1
+}
+else {
+    c1;
+>c1 : 0 | 1
+}
+c1;
+>c1 : 0 | 1
+
+

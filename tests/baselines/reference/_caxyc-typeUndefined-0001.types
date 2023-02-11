@@ -1,0 +1,11 @@
+=== tests/cases/conformance/_caxyc/_caxyc-typeUndefined-0001.ts ===
+let u = undefined;
+>u : any
+>undefined : undefined
+
+u;
+>u : undefined
+
+
+
+

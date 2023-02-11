@@ -1,0 +1,13 @@
+=== tests/cases/conformance/_caxyc/_caxyc-arrayLiteralExpression-001.ts ===
+declare const c: boolean;
+>c : Symbol(c, Decl(_caxyc-arrayLiteralExpression-001.ts, 0, 13))
+
+const x = c ? [c,c] : [c,c];
+>x : Symbol(x, Decl(_caxyc-arrayLiteralExpression-001.ts, 1, 5))
+>c : Symbol(c, Decl(_caxyc-arrayLiteralExpression-001.ts, 0, 13))
+>c : Symbol(c, Decl(_caxyc-arrayLiteralExpression-001.ts, 0, 13))
+>c : Symbol(c, Decl(_caxyc-arrayLiteralExpression-001.ts, 0, 13))
+>c : Symbol(c, Decl(_caxyc-arrayLiteralExpression-001.ts, 0, 13))
+>c : Symbol(c, Decl(_caxyc-arrayLiteralExpression-001.ts, 0, 13))
+
+

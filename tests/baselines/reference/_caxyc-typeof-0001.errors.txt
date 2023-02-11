@@ -1,0 +1,18 @@
+tests/cases/conformance/_caxyc/_caxyc-typeof-0001.ts(7,7): error TS2322: Type '"string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"' is not assignable to type '"string" | "number"'.
+  Type '"bigint"' is not assignable to type '"string" | "number"'.
+
+
+==== tests/cases/conformance/_caxyc/_caxyc-typeof-0001.ts (1 errors) ====
+    const x = typeof 1;
+    x;
+    // the nominal type of the result of a typeof operator is widened to the union all 8 types,
+    // not by flow but by somewhere in checkExpression.  Therefore this gives an error:
+    // !!! error TS2322: Type '"string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"' is not assignable to type '"string" | "number"'.
+    // !!! error TS2322:   Type '"bigint"' is not assignable to type '"string" | "number"'.
+    const y: "number" | "string" = typeof 1;
+          ~
+!!! error TS2322: Type '"string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"' is not assignable to type '"string" | "number"'.
+!!! error TS2322:   Type '"bigint"' is not assignable to type '"string" | "number"'.
+    // However in the mrNarrow flow processing, the narrowed type is used.
+    y;
+    

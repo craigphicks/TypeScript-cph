@@ -1,0 +1,23 @@
+=== tests/cases/conformance/_caxyc/_caxyc-fn-0001.ts ===
+declare interface FooA {
+    foo(b:string): "1",
+>foo : { (b: string): "1"; (b: number): undefined; }
+>b : string
+
+    foo(b:number): undefined;
+>foo : { (b: string): "1"; (b: number): undefined; }
+>b : number
+
+};
+declare const obja: FooA;
+>obja : FooA
+
+const x = obja.foo("");
+>x : "1"
+>obja.foo("") : "1"
+>obja.foo : { (b: string): "1"; (b: number): undefined; }
+>obja : FooA
+>foo : { (b: string): "1"; (b: number): undefined; }
+>"" : ""
+
+

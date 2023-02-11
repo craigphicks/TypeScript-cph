@@ -1,0 +1,14 @@
+=== tests/cases/conformance/_caxyc/_caxyc-block-001.ts ===
+declare const c11: boolean;
+>c11 : boolean
+{
+    const c21 = c11 || c11;
+>c21 : boolean
+>c11 || c11 : boolean
+>c11 : boolean
+>c11 : boolean
+}
+const c31 = c11;
+>c31 : boolean
+>c11 : boolean
+

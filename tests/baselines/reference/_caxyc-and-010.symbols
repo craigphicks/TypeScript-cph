@@ -1,0 +1,15 @@
+=== tests/cases/conformance/_caxyc/_caxyc-and-010.ts ===
+declare const b1: true | false;
+>b1 : Symbol(b1, Decl(_caxyc-and-010.ts, 0, 13))
+
+const ba = b1 ? b1 : true; 
+>ba : Symbol(ba, Decl(_caxyc-and-010.ts, 1, 5))
+>b1 : Symbol(b1, Decl(_caxyc-and-010.ts, 0, 13))
+>b1 : Symbol(b1, Decl(_caxyc-and-010.ts, 0, 13))
+
+// Expecting:
+// >ba : true
+// >b1 ? b1 : true : true
+// >b1 : boolean
+// >b1 : true
+// >true : true

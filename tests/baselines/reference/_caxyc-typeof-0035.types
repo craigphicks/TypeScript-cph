@@ -1,0 +1,47 @@
+=== tests/cases/conformance/_caxyc/_caxyc-typeof-0035.ts ===
+declare const a: number|string;
+>a : string | number
+
+const xa = typeof a;
+>xa : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>typeof a : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>a : string | number
+
+xa;
+>xa : "string" | "number"
+
+if (a===0){
+>a===0 : boolean
+>a : string | number
+>0 : 0
+
+    a;
+>a : 0
+
+    xa;
+>xa : "number"
+}
+else if (a==="zero"){
+>a==="zero" : boolean
+>a : string | number
+>"zero" : "zero"
+
+    a;
+>a : "zero"
+
+    xa;
+>xa : "string"
+}
+else if (a===0){
+>a===0 : boolean
+>a : string | number
+>0 : 0
+
+    a;
+>a : 0
+
+    xa;
+>xa : "number"
+}
+
+

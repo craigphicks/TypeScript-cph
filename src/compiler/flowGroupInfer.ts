@@ -231,7 +231,8 @@ namespace ts {
         };
     }
 
-    export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker): SourceFileMrState {
+    export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
+        if (compilerOptions.mrNarrowConstraintsEnable===undefined) compilerOptions.mrNarrowConstraintsEnable = false;
         const t0 = process.hrtime.bigint();
         const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
         if (getMyDebug()){
@@ -255,7 +256,7 @@ namespace ts {
             }
         };
         const refTypesTypeModule = createRefTypesTypeModule(checker);
-        const mrNarrow = createMrNarrow(checker, mrState, refTypesTypeModule);
+        const mrNarrow = createMrNarrow(checker, mrState, refTypesTypeModule, compilerOptions);
         return {
             sourceFile,
             groupsForFlow,
@@ -728,6 +729,16 @@ namespace ts {
         };
 
         const {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
+        if (getMyDebug()){
+            consoleLog(`resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():`);
+            mrNarrow.dbgRefTypesSymtabToStrings(refTypesSymtabArg).forEach(s=>{
+                consoleLog(`resolveGroupForFlow[dbg] symtab: ${s}`);
+            });
+            mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
+                consoleLog(`resolveGroupForFlow[dbg] constraintItem: ${s}`);
+            });
+            consoleLog(`resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():`);
+        }
         /**
          * Delete all the no-longer-needed CurrentBranchElements.  Note that unentangled lower scoped const variables will be
          * implicitly deleted with these deletions of their containing ConstraintItem-s.

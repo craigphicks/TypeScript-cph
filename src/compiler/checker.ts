@@ -687,7 +687,7 @@ namespace ts {
                 return sourceFileMrState!;
             },
             createAndSetSourceFileInferState(sourceFile: SourceFile){
-                sourceFileMrState = createSourceFileMrState(sourceFile, checker);
+                sourceFileMrState = createSourceFileMrState(sourceFile, checker, compilerOptions);
             },
             unsetSourceFileInferState(){ sourceFileMrState=undefined; },
             getFlowNodeId,

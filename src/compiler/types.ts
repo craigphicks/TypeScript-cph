@@ -6422,7 +6422,8 @@ namespace ts {
         esModuleInterop?: boolean;
         /* @internal */ showConfig?: boolean;
         useDefineForClassFields?: boolean;
-
+        mrNarrowEnable?: boolean; // not used yet, done by env variable instead.
+        mrNarrowConstraintsEnable?: boolean;
         [option: string]: CompilerOptionsValue | TsConfigSourceFile | undefined;
     }
 

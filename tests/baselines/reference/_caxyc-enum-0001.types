@@ -1,0 +1,73 @@
+=== tests/cases/conformance/_caxyc/_caxyc-enum-0001.ts ===
+declare const enum E {
+>E : E
+
+    n1 = 1,
+>n1 : E.n1
+>1 : 1
+
+    n2 = 2,
+>n2 : E.n2
+>2 : 2
+
+    sa = "a",
+>sa : E.sa
+>"a" : "a"
+
+    sb = "b"
+>sb : E.sb
+>"b" : "b"
+
+};
+declare const enum F {
+>F : F
+
+    n1 = 1,
+>n1 : F.n1
+>1 : 1
+
+    n2 = 2,
+>n2 : F.n2
+>2 : 2
+
+    sa = "a",
+>sa : F.sa
+>"a" : "a"
+
+    sb = "b"
+>sb : F.sb
+>"b" : "b"
+
+};
+
+declare const e: E|F;
+>e : E | F
+
+// The "else" clause has an impossible inference.
+// Therefore, it would be proper to evaluate the "if" clause using the literal "1" on the rhs,
+// ignoring the leading "E", and not narrowing e to type E, but leaving it as E|F.
+
+if (e===E.n1){
+>e===E.n1 : boolean
+>e : 1 | 2 | "a" | "b"
+>E.n1 : E.n1
+>E : typeof E
+>n1 : E.n1
+
+    e; // E.n1
+>e : 1
+}
+// @ts-ignore to suppress TS2367
+else if (e===1){
+>e===1 : boolean
+>e : 2 | "a" | "b"
+>1 : 1
+
+    // Compile error TS2367 doesn't show up in the GUI, only compile time
+    // Error TS2367: This condition will always return 'false' since the types '2 | "a" | "b"' and '1' have no overlap.
+    e; // F.n1 !!!! This makes no "runtime" sense. Should be never.
+>e : never
+}
+
+
+

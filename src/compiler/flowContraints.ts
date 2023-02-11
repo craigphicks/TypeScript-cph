@@ -410,14 +410,23 @@ namespace ts {
         if (symbol.flags & (SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
             // do nothing - an enum parent is not a real type
         }
-        else if (isconst){
+        else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
             constraintItem = andSymbolTypeIntoConstraint({ symbol,type,constraintItem,getDeclaredType,mrNarrow });
         }
         else {
             const got = symtab.get(symbol);
-            if (!got) type = getDeclaredType(symbol);
-            else type = mrNarrow.intersectionOfRefTypesType(type, got.leaf.type);
-            symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,/*isconst*/ false,type) });
+            if (got) {
+                //const gottype = got.leaf.type;
+                const itype = mrNarrow.intersectionOfRefTypesType(type, got.leaf.type);
+                if (!mrNarrow.isASubsetOfB(itype, got.leaf.type) || !mrNarrow.isASubsetOfB(got.leaf.type, itype)){
+                    symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,isconst,itype) });
+                    type = itype;
+                }
+                // othwise the symtab remains unchanged
+            }
+            else {
+                symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,isconst,type) });
+            }
         }
         if (log && getMyDebug()){
             let str = "`andSymbolTypeIntoSymtabConstraint[out] symtab:";
@@ -431,6 +440,7 @@ namespace ts {
             consoleGroupEnd();
         }
         // when useConstraintsV2() is true, the returned type is a dummy, to prevent unnecessary computation.
+        // TODO: return real type not dummy type, because it has to be recomputed anyway
         return { type: null as any as RefTypesType, sc:{ symtab, constraintItem } };
     }
 
@@ -658,7 +668,7 @@ namespace ts {
         return evalCoverPerSymbolV2(...(args as Parameters<typeof evalCoverPerSymbolV2>));
     }
     // TODO: This can be optimized for one symbol instead of just calling evalCoverPerSymbolV2
-    export function evalCoverForOneSymbol(symbol: Symbol, ciTop: Readonly<ConstraintItem>,
+    function evalCoverForOneSymbol(symbol: Symbol, ciTop: Readonly<ConstraintItem>,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow):
     RefTypesType {
@@ -681,6 +691,18 @@ namespace ts {
         }
         ////////////////////////////////
         return type;
+    }
+    export function hasSymbol(symbol: Symbol, sc: Readonly<RefTypesSymtabConstraintItem>): boolean {
+        return sc.symtab.has(symbol) || !!sc.constraintItem.symbolsInvolved?.has(symbol);
+    }
+
+    export function evalSymbol(symbol: Symbol, sc: Readonly<RefTypesSymtabConstraintItem>, getDeclaredType: GetDeclaredTypeFn, mrNarrow: MrNarrow): RefTypesType {
+        if (!mrNarrow.compilerOptions.mrNarrowConstraintsEnable || !sc.constraintItem.symbolsInvolved?.has(symbol)){
+            const got = sc.symtab.get(symbol);
+            Debug.assert(got, `symbol not found: ${Debug.formatSymbol(symbol)}`);
+            return got.leaf.type;
+        }
+        return evalCoverForOneSymbol(symbol, sc.constraintItem, getDeclaredType, mrNarrow);
     }
 
     // @ ts-expect-error
