@@ -1,0 +1,35 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0011.ts ===
+// this loop never terminates because if always continues
+declare function maybe(x:boolean): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0011.ts, 0, 0))
+>x : Symbol(x, Decl(_caxnc-whileLoop-0011.ts, 1, 23))
+
+function t11(){
+>t11 : Symbol(t11, Decl(_caxnc-whileLoop-0011.ts, 1, 43))
+
+    let d = true;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0011.ts, 3, 7))
+
+    // @ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+    while (d){
+>d : Symbol(d, Decl(_caxnc-whileLoop-0011.ts, 3, 7))
+
+        d=false;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0011.ts, 3, 7))
+
+        if (maybe(d)) continue;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0011.ts, 0, 0))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0011.ts, 3, 7))
+
+        d=true;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0011.ts, 3, 7))
+
+        if (maybe(d)) continue;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0011.ts, 0, 0))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0011.ts, 3, 7))
+
+        d  =  false;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0011.ts, 3, 7))
+    }
+}
+

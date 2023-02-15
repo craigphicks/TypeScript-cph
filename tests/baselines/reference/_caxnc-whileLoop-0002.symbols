@@ -1,0 +1,44 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0002.ts ===
+// This loop terminates at 0 iteration
+// loop finished due to truthy never, loopCount=0
+function t2(){
+>t2 : Symbol(t2, Decl(_caxnc-whileLoop-0002.ts, 0, 0))
+
+    let b = false;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 3, 7))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 3, 7))
+
+    // @ts-dev-expect-string "loop finished due to truthy never, loopCount=0"
+    while (b){
+>b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 3, 7))
+
+        let c = !b;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0002.ts, 7, 11))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 3, 7))
+
+        c;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0002.ts, 7, 11))
+
+        let d = b;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0002.ts, 9, 11))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 3, 7))
+
+        d;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0002.ts, 9, 11))
+
+        b = c;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 3, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0002.ts, 7, 11))
+    }
+    let e = b;
+>e : Symbol(e, Decl(_caxnc-whileLoop-0002.ts, 13, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 3, 7))
+
+    e;
+>e : Symbol(e, Decl(_caxnc-whileLoop-0002.ts, 13, 7))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 3, 7))
+}

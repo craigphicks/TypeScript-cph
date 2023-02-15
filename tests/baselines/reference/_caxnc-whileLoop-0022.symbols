@@ -1,0 +1,46 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0022.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0022.ts, 0, 0))
+
+function t22(){
+>t22 : Symbol(t22, Decl(_caxnc-whileLoop-0022.ts, 0, 34))
+
+    let b = true;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0022.ts, 2, 7))
+
+    let c = true;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0022.ts, 3, 7))
+
+    let d = true;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0022.ts, 4, 7))
+
+    // @ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+    while (d){
+>d : Symbol(d, Decl(_caxnc-whileLoop-0022.ts, 4, 7))
+
+        d = c;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0022.ts, 4, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0022.ts, 3, 7))
+
+        c = b;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0022.ts, 3, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0022.ts, 2, 7))
+
+        b = maybe();
+>b : Symbol(b, Decl(_caxnc-whileLoop-0022.ts, 2, 7))
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0022.ts, 0, 0))
+
+        if (!b) break;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0022.ts, 2, 7))
+    }
+    let e = b;
+>e : Symbol(e, Decl(_caxnc-whileLoop-0022.ts, 12, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0022.ts, 2, 7))
+
+    [b,c,d,e];
+>b : Symbol(b, Decl(_caxnc-whileLoop-0022.ts, 2, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0022.ts, 3, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0022.ts, 4, 7))
+>e : Symbol(e, Decl(_caxnc-whileLoop-0022.ts, 12, 7))
+}
+

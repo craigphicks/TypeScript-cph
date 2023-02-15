@@ -1282,6 +1282,17 @@ namespace ts {
             description: Diagnostics.Interpret_optional_property_types_as_written_rather_than_adding_undefined,
             defaultValueDescription: false,
         },
+        {
+            name: "enableTSDevExpectString",
+            type: "boolean",
+            affectsSemanticDiagnostics: true,
+            category: Diagnostics.Type_Checking,
+            description: Diagnostics.Interpret_optional_property_types_as_written_rather_than_adding_undefined,
+            defaultValueDescription: false,
+            // category: Diagnostics.Compiler_Diagnostics,
+            // description: Diagnostics.Output_compiler_performance_information_after_building,
+            // defaultValueDescription: false,
+        },
     ];
 
     /* @internal */

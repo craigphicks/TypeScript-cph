@@ -1,0 +1,49 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0021.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0021.ts, 0, 0))
+
+function t21(){
+>t21 : Symbol(t21, Decl(_caxnc-whileLoop-0021.ts, 0, 34))
+
+    let b = true;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0021.ts, 2, 7))
+
+    let c = true;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0021.ts, 3, 7))
+
+    let d = true;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0021.ts, 4, 7))
+
+    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=2"
+    while (d){
+>d : Symbol(d, Decl(_caxnc-whileLoop-0021.ts, 4, 7))
+
+        d = c;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0021.ts, 4, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0021.ts, 3, 7))
+
+        c = b;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0021.ts, 3, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0021.ts, 2, 7))
+
+        if (!b) break;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0021.ts, 2, 7))
+
+        b = !b;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0021.ts, 2, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0021.ts, 2, 7))
+
+        b;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0021.ts, 2, 7))
+    }
+    let e = b;
+>e : Symbol(e, Decl(_caxnc-whileLoop-0021.ts, 13, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0021.ts, 2, 7))
+
+    [b,c,d,e];
+>b : Symbol(b, Decl(_caxnc-whileLoop-0021.ts, 2, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0021.ts, 3, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0021.ts, 4, 7))
+>e : Symbol(e, Decl(_caxnc-whileLoop-0021.ts, 13, 7))
+}
+

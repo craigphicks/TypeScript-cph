@@ -6424,6 +6424,7 @@ namespace ts {
         useDefineForClassFields?: boolean;
         mrNarrowEnable?: boolean; // not used yet, done by env variable instead.
         mrNarrowConstraintsEnable?: boolean;
+        enableTSDevExpectString?: boolean;
         [option: string]: CompilerOptionsValue | TsConfigSourceFile | undefined;
     }
 

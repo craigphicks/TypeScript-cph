@@ -1,0 +1,28 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0020.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0020.ts, 0, 0))
+
+function t20(){
+>t20 : Symbol(t20, Decl(_caxnc-whileLoop-0020.ts, 0, 34))
+
+    let b = true;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0020.ts, 2, 7))
+
+    // In the following case on loopCount:1 the b of while (b) has type never because the loop exists at break before that
+    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=1"
+    while (b){
+>b : Symbol(b, Decl(_caxnc-whileLoop-0020.ts, 2, 7))
+
+        if (b) break;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0020.ts, 2, 7))
+
+        b = false;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0020.ts, 2, 7))
+
+        b;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0020.ts, 2, 7))
+    }
+    b;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0020.ts, 2, 7))
+}
+

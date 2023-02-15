@@ -1,0 +1,55 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0022.ts ===
+declare function maybe(): boolean;
+>maybe : () => boolean
+
+function t22(){
+>t22 : () => void
+
+    let b = true;
+>b : boolean
+>true : true
+
+    let c = true;
+>c : boolean
+>true : true
+
+    let d = true;
+>d : boolean
+>true : true
+
+    // @ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+    while (d){
+>d : true
+
+        d = c;
+>d = c : true
+>d : boolean
+>c : true
+
+        c = b;
+>c = b : true
+>c : boolean
+>b : true
+
+        b = maybe();
+>b = maybe() : boolean
+>b : boolean
+>maybe() : boolean
+>maybe : () => boolean
+
+        if (!b) break;
+>!b : boolean
+>b : boolean
+    }
+    let e = b;
+>e : false
+>b : false
+
+    [b,c,d,e];
+>[b,c,d,e] : boolean[]
+>b : false
+>c : true
+>d : true
+>e : false
+}
+

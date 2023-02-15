@@ -312,17 +312,34 @@ namespace ts {
                             return { kind: fglkind, ifGroupIdx: anteg.groupIdx };
                         }; // flowBranchThenElseToFlowGroupLabelThenElse
                         const flowBranchPostIfResolve = (fn: FlowLabel): FlowGroupLabelPostIf => {
-                            Debug.assert(fn.antecedents?.length===2);
+                            //  fn.antecedents?.length may be less than 2, c.f., while(x){ if (x) continue; }
+                            Debug.assert(!fn.antecedents || fn.antecedents.length<=2);
                             const originatingGroupIdx = nodeToGroupMap.get(fn.originatingExpression!)!.groupIdx;
-                            const anteThen = flowNodeResolve(fn.antecedents[0]);
-                            const anteElse = flowNodeResolve(fn.antecedents[1]);
-                            Debug.assert(anteThen && anteElse);
-                            Debug.assert(anteThen.kind!==FlowGroupLabelKind.else);
-                            Debug.assert(anteElse.kind!==FlowGroupLabelKind.then);
+                            // let anteThen: FlowGroupLabel = { kind: FlowGroupLabelKind.none };
+                            // let anteElse: FlowGroupLabel = { kind: FlowGroupLabelKind.none };
+                            type ArrAnteElement = FlowGroupLabelPostIf["arrAnte"]["0"];
+                            const arrAnte: ArrAnteElement[] = [];
+                            if (fn.antecedents){
+                                for (const antecedent of fn.antecedents){
+                                    const x = flowNodeResolve(antecedent)!;
+                                    Debug.assert(x);
+                                    arrAnte.push(x as ArrAnteElement);
+                                    // Debug.assert(isFlowLabel(antecedent));
+                                    // if (antecedent.branchKind===BranchKind.then) anteThen = flowNodeResolve(antecedent)!;
+                                    // else if (antecedent.branchKind===BranchKind.else) anteElse = flowNodeResolve(antecedent)!;
+                                    // else Debug.fail("unexpected");
+                                }
+                            }
+                            // const anteThen = flowNodeResolve(fn.antecedents[0]);
+                            // const anteElse = flowNodeResolve(fn.antecedents[1]);
+                            // Debug.assert(anteThen && anteElse);
+                            // Debug.assert(anteThen.kind!==FlowGroupLabelKind.else);
+                            // Debug.assert(anteElse.kind!==FlowGroupLabelKind.then);
                             return {
                                 kind: FlowGroupLabelKind.postIf,
-                                anteThen: anteThen as FlowGroupLabelPostIf["anteThen"],
-                                anteElse: anteElse as FlowGroupLabelPostIf["anteElse"],
+                                arrAnte,
+                                // anteThen: anteThen as FlowGroupLabelPostIf["anteThen"],
+                                // anteElse: anteElse as FlowGroupLabelPostIf["anteElse"],
                                 originatingGroupIdx
                             };
                         };
@@ -578,10 +595,13 @@ namespace ts {
                 break;
             case FlowGroupLabelKind.postIf:
                 as.push(`originatingGroupIdx:${fglab.originatingGroupIdx}`);
-                as.push(`anteThen:`);
-                as.push(...dbgFlowGroupLabelToStrings(fglab.anteThen, dbgs, checker).map(s=>"    "+s));
-                as.push(`anteElse:`);
-                as.push(...dbgFlowGroupLabelToStrings(fglab.anteElse, dbgs, checker).map(s=>"    "+s));
+                fglab.arrAnte.forEach((ante,anteidx)=>{
+                    as.push(...dbgFlowGroupLabelToStrings(ante, dbgs, checker).map(s=>`    ante[${anteidx}]: `+s));
+                });
+                // as.push(`anteThen:`);
+                // as.push(...dbgFlowGroupLabelToStrings(fglab.anteThen, dbgs, checker).map(s=>"    "+s));
+                // as.push(`anteElse:`);
+                // as.push(...dbgFlowGroupLabelToStrings(fglab.anteElse, dbgs, checker).map(s=>"    "+s));
                 break;
             case FlowGroupLabelKind.loop:
                 as.push(`antePrevious:`);
@@ -607,6 +627,7 @@ namespace ts {
                 as.push(...dbgFlowGroupLabelToStrings(fglab.ante, dbgs, checker).map(s=>`ante: ${s}`));
                 break;
                 //as.push( fglab.originatingBlock
+            case FlowGroupLabelKind.none:
             case FlowGroupLabelKind.start:
                 break;
             default:

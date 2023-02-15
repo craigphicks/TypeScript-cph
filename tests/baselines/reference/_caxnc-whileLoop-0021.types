@@ -1,0 +1,58 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0021.ts ===
+declare function maybe(): boolean;
+>maybe : () => boolean
+
+function t21(){
+>t21 : () => void
+
+    let b = true;
+>b : boolean
+>true : true
+
+    let c = true;
+>c : boolean
+>true : true
+
+    let d = true;
+>d : boolean
+>true : true
+
+    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=2"
+    while (d){
+>d : true
+
+        d = c;
+>d = c : true
+>d : boolean
+>c : true
+
+        c = b;
+>c = b : boolean
+>c : boolean
+>b : boolean
+
+        if (!b) break;
+>!b : boolean
+>b : boolean
+
+        b = !b;
+>b = !b : false
+>b : boolean
+>!b : false
+>b : true
+
+        b;
+>b : false
+    }
+    let e = b;
+>e : false
+>b : false
+
+    [b,c,d,e];
+>[b,c,d,e] : boolean[]
+>b : false
+>c : false
+>d : true
+>e : false
+}
+

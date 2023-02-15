@@ -16,6 +16,12 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+0. Change first execution of loop control to be outside of the do-loop in `processLoop`.  It will result in cleaner code.
+0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
+0.  Embedded while loops.
+0.  `Do` loop
+0.  `For`,`ForOf`,`ForIn` loops
+0.  `Switch`
 
 0. `const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));` When `unwidenedTsType` is true, `checker.getWidenedType(unwidenedTsType)` is still true.
 0. replayables (set to inferStatus.replayables) should not also change the symtabConstraint.
@@ -48,6 +54,8 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases in plain while loop.  Tests passing, `break` in `_caxnc-whileLoop-002` series.
 
 0. Confirm the behaviors of each of `tests/cases/conformance/_caxnc`. (Unfortunately`tests/cases/conformance/_caxyc` is no longer all passing but that will be left for later, as getting it working with `compilerOptions.mrNarrowConstraintsEnable:false` is a priority.)
 
