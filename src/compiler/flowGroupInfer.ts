@@ -176,6 +176,7 @@ namespace ts {
         delete(group: GroupForFlow, thenElse?: Set<"then" | "else"> | undefined): void;
         clear(): void;
         has(group: GroupForFlow): boolean;
+        forEach(f: (cbe: CurrentBranchElement, g: GroupForFlow) => void): void;
     }
     let nextCurrentBranchesMapCId = 0;
     export class CurrentBranchesMapC implements CurrentBranchesMap {
@@ -227,6 +228,9 @@ namespace ts {
                 consoleLog(`CurrentBranchesMapC[${this.id}].clear(), size before clear:${this.data.size}`);
             }
             this.data.clear();
+        }
+        forEach(f: (cbe: CurrentBranchElement, g: GroupForFlow) => void): void {
+            this.data.forEach(f);
         }
     }
 
@@ -302,6 +306,15 @@ namespace ts {
         };
     }
 
+    function createForFlow(groupsForFlow: GroupsForFlow) {
+        return {
+            heap: createHeap(groupsForFlow), // TODO: This call to createHeap might be too expensive to do for every loop, and it is unnecessary, use prototype.
+            currentBranchesMap: new CurrentBranchesMapC(), //new Map<Readonly<GroupForFlow>, CurrentBranchElement>(),
+            groupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
+            dbgCurrentBranchesMapWasDeleted: new Map< GroupForFlow,boolean >(), // TODO: kill
+        };
+    }
+
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
         if (compilerOptions.mrNarrowConstraintsEnable===undefined) compilerOptions.mrNarrowConstraintsEnable = false;
         if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
@@ -314,18 +327,19 @@ namespace ts {
         const t1 = process.hrtime.bigint() - t0;
         groupsForFlow.dbgCreationTimeMs = t1/BigInt(1000000);
         dbgs = createDbgs(checker);
-        const heap = createHeap(groupsForFlow);
+        // const heap = createHeap(groupsForFlow);
         const mrState: MrState = {
             checker,
             replayableItems: new Map<Symbol, ReplayableItem>(),
             declaredTypes: new Map<Symbol, RefTypesTableLeaf>(),
             recursionLevel: 0,
-            forFlowTop: {
-                heap,
-                currentBranchesMap: new CurrentBranchesMapC(), //new Map< GroupForFlow, CurrentBranchElement >(),
-                dbgCurrentBranchesMapWasDeleted: new Map< GroupForFlow,boolean >(),
-                groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap >(),
-            }
+            forFlowTop: createForFlow(groupsForFlow),
+            // forFlowTop: {
+            //     heap,
+            //     currentBranchesMap: new CurrentBranchesMapC(), //new Map< GroupForFlow, CurrentBranchElement >(),
+            //     dbgCurrentBranchesMapWasDeleted: new Map< GroupForFlow,boolean >(),
+            //     groupToNodeToType: new Map< GroupForFlow, NodeToTypeMap >(),
+            // }
         };
         const refTypesTypeModule = createRefTypesTypeModule(checker);
         const mrNarrow = createMrNarrow(checker, mrState, refTypesTypeModule, compilerOptions);
@@ -458,6 +472,145 @@ namespace ts {
         return tmp;
     }
 
+    function copyCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): CurrentBranchesItem {
+        let { symtab,constraintItem } = cbi.refTypesTableReturn;
+        ({ symtab,constraintItem } = copySymtabConstraints({
+            symtab,constraintItem,
+        }, mrNarrow));
+        return {
+            refTypesTableReturn: {
+                ...cbi.refTypesTableReturn,
+                symtab, constraintItem
+            }
+        };
+    }
+    function copyCurrentBranchElement(cbe: CurrentBranchElement, mrNarrow: MrNarrow): CurrentBranchElement {
+        if (cbe.kind===CurrentBranchesElementKind.plain){
+            return { ...cbe, item: copyCurrentBranchesItem(cbe.item,mrNarrow) };
+        }
+        else {
+            return {
+                ...cbe,
+                truthy: copyCurrentBranchesItem(cbe.truthy,mrNarrow),
+                falsy: copyCurrentBranchesItem(cbe.truthy,mrNarrow),
+            };
+        }
+    }
+
+    interface ProcessLoopState {
+        //forFlow: ForFlow;
+        loopUnionGroupToNodeToType: ESMap<GroupForFlow, NodeToTypeMap>;
+        loopUnionCurrentBranchesMap: ESMap<GroupForFlow, CurrentBranchElement>;
+    }
+    function createProcessLoopState(): ProcessLoopState {
+        return {
+            //forFlow: createForFlow(groupsForFlow),
+            loopUnionGroupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
+            loopUnionCurrentBranchesMap: new Map<GroupForFlow, CurrentBranchElement>()
+        };
+    }
+    function copyProcessLoopState(loopState: ProcessLoopState, mrNarrow: MrNarrow): ProcessLoopState {
+        const loopUnionGroupToNodeToType = copyOfGroupToNodeToTypeMap(loopState.loopUnionGroupToNodeToType);
+        const loopUnionCurrentBranchesMap = new Map<GroupForFlow, CurrentBranchElement>();
+        loopState.loopUnionCurrentBranchesMap.forEach((cbe,g)=>{
+            loopUnionCurrentBranchesMap.set(g,copyCurrentBranchElement(cbe,mrNarrow));
+        });
+        return {
+            loopUnionGroupToNodeToType,
+            loopUnionCurrentBranchesMap
+        };
+    }
+    function upDateLoopUnionGroupToNodeToTypeV2(
+        groupToNodeToTypeMap: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>,
+        loopUnionGroupToNodeToType: ESMap<GroupForFlow,NodeToTypeMap>,
+        checker: Readonly<TypeChecker>
+    ): void {
+        groupToNodeToTypeMap.forEach((map,g)=>{
+            const unionmap = loopUnionGroupToNodeToType.get(g);
+            if (!unionmap) {
+                loopUnionGroupToNodeToType.set(g,map); // map is safe to use.
+                return;
+            }
+            map.forEach((type,node)=>{
+                let uniontype = unionmap.get(node);
+                if (!uniontype) {
+                    unionmap.set(node,type);
+                    return;
+                }
+                uniontype = checker.getUnionType([type,uniontype],UnionReduction.Literal);
+                unionmap.set(node, uniontype);
+            });
+        });
+    };
+    function upDateLoopUnionCurrentBranchesMap(
+        currentBranchesMap: Readonly<CurrentBranchesMap>,
+        loopUnionCurrentBranchesMap: ESMap<GroupForFlow,CurrentBranchElement>,
+        mrNarrow: MrNarrow,
+    ): void {
+        function updatedCurrentBranchesItem(cbi: Readonly<CurrentBranchesItem>, unioncbi: Readonly<CurrentBranchesItem>): CurrentBranchesItem {
+            const sc1: RefTypesSymtabConstraintItem  = {
+                symtab: cbi.refTypesTableReturn.symtab,
+                constraintItem: cbi.refTypesTableReturn.constraintItem
+            };
+            const scu: RefTypesSymtabConstraintItem  = {
+                symtab: unioncbi.refTypesTableReturn.symtab,
+                constraintItem: unioncbi.refTypesTableReturn.constraintItem
+            };
+            const {symtab,constraintItem} = orSymtabConstraints([sc1,scu],mrNarrow);
+            return {
+                refTypesTableReturn: {
+                    kind: RefTypesTableKind.return,
+                    type: undefined as any as RefTypesType,
+                    symtab, constraintItem
+                }
+            };
+        }
+
+        currentBranchesMap.forEach((cbe,g)=>{
+            const unioncbe = loopUnionCurrentBranchesMap.get(g);
+            if (!unioncbe) {
+                loopUnionCurrentBranchesMap.set(g,cbe);
+                return;
+            }
+            if (cbe.kind===CurrentBranchesElementKind.plain){
+                Debug.assert(unioncbe.kind===CurrentBranchesElementKind.plain);
+                unioncbe.item = updatedCurrentBranchesItem(cbe.item,unioncbe.item);
+            }
+            else if (cbe.kind===CurrentBranchesElementKind.tf){
+                Debug.assert(unioncbe.kind===CurrentBranchesElementKind.tf);
+                unioncbe.truthy = updatedCurrentBranchesItem(cbe.truthy,unioncbe.truthy);
+                unioncbe.falsy = updatedCurrentBranchesItem(cbe.falsy,unioncbe.falsy);
+            }
+        });
+    }
+    function updateProcessLoopState(forFlow: Readonly<ForFlow>, loopState: ProcessLoopState, mrNarrow: MrNarrow): void {
+        upDateLoopUnionGroupToNodeToTypeV2(forFlow.groupToNodeToType!, loopState.loopUnionGroupToNodeToType, mrNarrow.checker);
+        upDateLoopUnionCurrentBranchesMap(forFlow.currentBranchesMap, loopState.loopUnionCurrentBranchesMap, mrNarrow);
+    }
+    function isProcessLoopStateConverged(loopState: Readonly<ProcessLoopState>, lastLoopState: Readonly<ProcessLoopState>, checker: Readonly<TypeChecker>): boolean {
+        const loopUnionGroupToNodeToType = loopState.loopUnionGroupToNodeToType;
+        const lastLoopUnionGroupToNodeToType = lastLoopState.loopUnionGroupToNodeToType;
+        let notconverged = false;
+        for (let iter0 = loopUnionGroupToNodeToType.entries(), it0=iter0.next(); !notconverged && !it0.done; it0=iter0.next()){
+            const [gff,map] = it0.value;
+            const maplast = lastLoopUnionGroupToNodeToType.get(gff);
+            if (!maplast) {
+                notconverged = true;
+                break;
+            };
+            for (let iter1 = map.entries(), it1=iter1.next(); !it1.done; it1=iter1.next()){
+                const [node,type]=it1.value;
+                const typelast = maplast.get(node);
+                if (!typelast || !checker.isTypeRelatedTo(typelast,type, checker.getRelations().identityRelation)) {
+                    notconverged = true;
+                    break;
+                }
+            }
+        }
+        return !notconverged;
+    }
+
+
     // @ ts-expect-error
     function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow) {
         if (getMyDebug()){
@@ -474,33 +627,36 @@ namespace ts {
         let cachedSCForLoopContinue: RefTypesSymtabConstraintItem[] = [];
         setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff)=>forFlowParent.currentBranchesMap.delete(gff, set));
 
-        const checker = sourceFileMrState.mrState.checker;
+        // const checker = sourceFileMrState.mrState.checker;
 
         const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState);
-        const loopUnionGroupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
-        const upDateLoopUnionGroupToNodeToType = (groupToNodeToTypeMap: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>): void => {
-            groupToNodeToTypeMap.forEach((map,g)=>{
-                const unionmap = loopUnionGroupToNodeToType.get(g);
-                if (!unionmap) {
-                    loopUnionGroupToNodeToType.set(g,map); // map is safe to use.
-                    return;
-                }
-                map.forEach((type,node)=>{
-                    let uniontype = unionmap.get(node);
-                    if (!uniontype) {
-                        unionmap.set(node,type);
-                        return;
-                    }
-                    uniontype = checker.getUnionType([type,uniontype],UnionReduction.Literal);
-                    unionmap.set(node, uniontype);
-                });
-            });
-        };
+        const loopState = createProcessLoopState();
+        // const loopUnionGroupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
+        // const upDateLoopUnionGroupToNodeToType = (groupToNodeToTypeMap: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>): void => {
+        //     groupToNodeToTypeMap.forEach((map,g)=>{
+        //         const unionmap = loopUnionGroupToNodeToType.get(g);
+        //         if (!unionmap) {
+        //             loopUnionGroupToNodeToType.set(g,map); // map is safe to use.
+        //             return;
+        //         }
+        //         map.forEach((type,node)=>{
+        //             let uniontype = unionmap.get(node);
+        //             if (!uniontype) {
+        //                 unionmap.set(node,type);
+        //                 return;
+        //             }
+        //             uniontype = checker.getUnionType([type,uniontype],UnionReduction.Literal);
+        //             unionmap.set(node, uniontype);
+        //         });
+        //     });
+        // };
         let devExpectString = "";
-        let lastLoopUnionGroupToNodeToType: ESMap<GroupForFlow,NodeToTypeMap>;
+        // let lastLoopUnionGroupToNodeToType: ESMap<GroupForFlow,NodeToTypeMap>;
         let loopCount = 0;
         let forFlowFinal: ForFlow;
         let forFlowLast: ForFlow;
+        let lastLoopState: ProcessLoopState;
+        let loopExitedBecauseConverged = false;
         do {
             // single pass of loop.
             const forFlow: ForFlow = {
@@ -574,29 +730,33 @@ namespace ts {
                 });
             }
 
+            lastLoopState = copyProcessLoopState(loopState,mrNarrow);
+            updateProcessLoopState(forFlow,loopState,mrNarrow);
+            const converged = isProcessLoopStateConverged(loopState,lastLoopState,mrNarrow.checker);
 
-            lastLoopUnionGroupToNodeToType = copyOfGroupToNodeToTypeMap(loopUnionGroupToNodeToType);
-            // merge new in loopUnionGroupToNodeToType
-            // Note: forFlow.groupToNodeToType is disposable at this point.
-            upDateLoopUnionGroupToNodeToType(forFlow.groupToNodeToType!);
-            let notconverged = false;
-            for (let iter0 = loopUnionGroupToNodeToType.entries(), it0=iter0.next(); !notconverged && !it0.done; it0=iter0.next()){
-                const [gff,map] = it0.value;
-                const maplast = lastLoopUnionGroupToNodeToType.get(gff);
-                if (!maplast) {
-                    notconverged = true;
-                    break;
-                };
-                for (let iter1 = map.entries(), it1=iter1.next(); !it1.done; it1=iter1.next()){
-                    const [node,type]=it1.value;
-                    const typelast = maplast.get(node);
-                    if (!typelast || !checker.isTypeRelatedTo(typelast,type, checker.getRelations().identityRelation)) {
-                        notconverged = true;
-                        break;
-                    }
-                }
-            }
-            if (!notconverged){
+            // lastLoopUnionGroupToNodeToType = copyOfGroupToNodeToTypeMap(loopUnionGroupToNodeToType);
+            // // merge new in loopUnionGroupToNodeToType
+            // // Note: forFlow.groupToNodeToType is disposable at this point.
+            // upDateLoopUnionGroupToNodeToType(forFlow.groupToNodeToType!);
+            // let notconverged = false;
+            // for (let iter0 = loopUnionGroupToNodeToType.entries(), it0=iter0.next(); !notconverged && !it0.done; it0=iter0.next()){
+            //     const [gff,map] = it0.value;
+            //     const maplast = lastLoopUnionGroupToNodeToType.get(gff);
+            //     if (!maplast) {
+            //         notconverged = true;
+            //         break;
+            //     };
+            //     for (let iter1 = map.entries(), it1=iter1.next(); !it1.done; it1=iter1.next()){
+            //         const [node,type]=it1.value;
+            //         const typelast = maplast.get(node);
+            //         if (!typelast || !checker.isTypeRelatedTo(typelast,type, checker.getRelations().identityRelation)) {
+            //             notconverged = true;
+            //             break;
+            //         }
+            //     }
+            // }
+            // if (!notconverged){
+            if (converged) {
                 if (mrNarrow.compilerOptions.enableTSDevExpectString){
                     devExpectString = `loop finished due to type map converged, loopCount=${loopCount}`;
                 }
@@ -604,6 +764,7 @@ namespace ts {
                     consoleLog(`processLoop[dbg] loop finished due to type map converged, loopCount=${loopCount}`);
                 }
                 forFlowFinal = forFlow;
+                loopExitedBecauseConverged = true;
                 break;
             }
             forFlowLast = forFlow;
@@ -625,18 +786,32 @@ namespace ts {
             }
         }
         Debug.assert(forFlowFinal!);
-        upDateLoopUnionGroupToNodeToType(forFlowFinal.groupToNodeToType!);
-        // merge nodeToType maps into forFlowParent, copy cbe of loop group to forFlowParent.
-        loopUnionGroupToNodeToType.forEach((nodeToTypeMap,g)=>{
+
+        if (!loopExitedBecauseConverged) updateProcessLoopState(forFlowFinal,loopState,mrNarrow);
+        loopState.loopUnionGroupToNodeToType.forEach((nodeToTypeMap,g)=>{
             Debug.assert(forFlowParent.groupToNodeToType!.has(g)===false);
             forFlowParent.groupToNodeToType!.set(g,nodeToTypeMap);
         });
         Debug.assert(forFlowParent.currentBranchesMap.has(loopGroup)===false);
-        Debug.assert(forFlowFinal.currentBranchesMap.has(loopGroup)===true);
-        forFlowParent.currentBranchesMap.set(loopGroup, forFlowFinal.currentBranchesMap.get(loopGroup)!);
+        Debug.assert(loopState.loopUnionCurrentBranchesMap.has(loopGroup)===true);
+        loopState.loopUnionCurrentBranchesMap.forEach((cbe,g)=>{
+            forFlowParent.currentBranchesMap.set(g, cbe);
+        });
+
+
+        // upDateLoopUnionGroupToNodeToType(forFlowFinal.groupToNodeToType!);
+        // // merge nodeToType maps into forFlowParent, copy cbe of loop group to forFlowParent.
+        // loopUnionGroupToNodeToType.forEach((nodeToTypeMap,g)=>{
+        //     Debug.assert(forFlowParent.groupToNodeToType!.has(g)===false);
+        //     forFlowParent.groupToNodeToType!.set(g,nodeToTypeMap);
+        // });
+
+        // Debug.assert(forFlowParent.currentBranchesMap.has(loopGroup)===false);
+        // Debug.assert(forFlowFinal.currentBranchesMap.has(loopGroup)===true);
+        // forFlowParent.currentBranchesMap.set(loopGroup, forFlowFinal.currentBranchesMap.get(loopGroup)!);
         if (getMyDebug()){
             dbgCurrentBranchesMap(sourceFileMrState, forFlowFinal).forEach(s=>consoleLog(`processLoop[dbg] branches: ${s}`));
-            dbgGroupToNodeToTypeMap(loopUnionGroupToNodeToType).forEach(s=>consoleLog(`processLoop[dbg] loopUnionGroupToNodeToType: ${s}`));
+            dbgGroupToNodeToTypeMap(loopState.loopUnionGroupToNodeToType).forEach(s=>consoleLog(`processLoop[dbg] loopUnionGroupToNodeToType: ${s}`));
             consoleLog(`processLoop[out] loopGroup.groupIdx:${loopGroup.groupIdx}`);
             consoleGroupEnd();
         }

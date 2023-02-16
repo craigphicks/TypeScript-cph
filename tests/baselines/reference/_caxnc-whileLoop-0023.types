@@ -1,0 +1,64 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0023.ts ===
+declare function maybe(): boolean;
+>maybe : () => boolean
+
+function t23(){
+>t23 : () => void
+
+    let b = false;
+>b : boolean
+>false : false
+
+    let c = true;
+>c : boolean
+>true : true
+
+    let d = true;
+>d : boolean
+>true : true
+
+    let x = false;
+>x : boolean
+>false : false
+
+    // In the following case on loopCount:1 the b of while (b) has type never because the loop exists at break before that
+    // @ ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=1"
+    while (d){
+>d : boolean
+
+        if (c && maybe()){
+>c && maybe() : boolean
+>c : boolean
+>maybe() : boolean
+>maybe : () => boolean
+
+            x = true; // gets set on iteration #0 only
+>x = true : true
+>x : boolean
+>true : true
+
+            break;
+        }
+        d = c;
+>d = c : boolean
+>d : boolean
+>c : boolean
+
+        c = b;
+>c = b : false
+>c : boolean
+>b : false
+    }
+    x; // x should be boolean - if (c && maybe()) "then" branches for each iteration need to "union" joined
+>x : boolean
+
+    b; // b should be false
+>b : false
+
+    c; // c should be boolean - ditto
+>c : boolean
+
+    d; // d should be boolean - ditto
+>d : boolean
+}
+

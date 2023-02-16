@@ -55,8 +55,41 @@ namespace ts {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Revive for testing, comparing with evalCover.
 
+    function copyConstraintItem(ci: Readonly<ConstraintItem>, mrNarrow: MrNarrow): ConstraintItem {
+        switch (ci.kind){
+            case ConstraintItemKind.always:
+            case ConstraintItemKind.never:
+                return { ...ci };
+            case ConstraintItemKind.leaf:
+                return { ...ci, type: mrNarrow.cloneRefTypesType(ci.type) };
+            case ConstraintItemKind.node:{
+                const symbolsInvolved = ci.symbolsInvolved ? new Set<Symbol>(ci.symbolsInvolved) : undefined;
+                if (ci.op===ConstraintItemNodeOp.not){
+                    return {
+                        ...ci,
+                        symbolsInvolved,
+                        constraint: copyConstraintItem(ci.constraint, mrNarrow)
+                    };
+                }
+                else {
+                    return {
+                        ...ci,
+                        symbolsInvolved,
+                        constraints: ci.constraints.map(ci1=>copyConstraintItem(ci1,mrNarrow))
+                    };
+                }
+            }
+        }
+    }
+
+    export function copySymtabConstraints(sc: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow): RefTypesSymtabConstraintItem {
+        const symtab = mrNarrow.copyRefTypesSymtab(sc.symtab);
+        const constraintItem = copyConstraintItem(sc.constraintItem, mrNarrow);
+        return { symtab,constraintItem };
+    }
+
+    // Revive for testing, comparing with evalCover.
     export function evalTypeOverConstraint({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
         cin: Readonly<ConstraintItem>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {

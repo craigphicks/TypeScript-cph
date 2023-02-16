@@ -42,6 +42,7 @@ namespace ts {
         isNeverType(t: Readonly<RefTypesType>): boolean,
         isAnyType(t: Readonly<RefTypesType>): boolean,
         isUnknownType(t: Readonly<RefTypesType>): boolean,
+        cloneRefTypesType(type: Readonly<RefTypesType>): RefTypesType;
         //applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void,
         checker: TypeChecker,
         compilerOptions: CompilerOptions
@@ -161,6 +162,7 @@ namespace ts {
             createNodeToTypeMap,
             mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
             unionArrRefTypesSymtab,
+            cloneRefTypesType,
             // intersectRefTypesTypesImplies,
             // typeImplies,
             checker,
