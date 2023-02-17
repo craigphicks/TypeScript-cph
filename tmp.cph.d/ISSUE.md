@@ -54,6 +54,7 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+0. added `checkDevExpectString` function (previously was inline).
 
 0. `CurrentBranchItem` changed to be `{sc: RefTypesSymtabConstraint}` rather than `RefTypesTableReturn`. All tests passing.
 

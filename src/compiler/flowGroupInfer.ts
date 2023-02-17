@@ -572,6 +572,20 @@ namespace ts {
         return !notconverged;
     }
 
+    function checkDevExpectString(node: Node, devExpectString: string, sourceFile: SourceFile): {expected: string|undefined, pass?: boolean} {
+        const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
+        let cr: CommentRange | undefined;
+        if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
+        if (cr) {
+            const comment = sourceFile.text.slice(cr.pos, cr.end);
+            const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
+            if (matches && matches.length>=2){
+                return { expected: matches[1], pass:devExpectString===matches[1] };
+            }
+        }
+        return { expected: undefined};
+    }
+
 
     // @ ts-expect-error
     function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow) {
@@ -685,19 +699,26 @@ namespace ts {
         } while (++loopCount);
         if (mrNarrow.compilerOptions.enableTSDevExpectString){
             const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopGroup.maximalIdx];
-            const arrCommentRange = getLeadingCommentRangesOfNode(node.parent, sourceFileMrState.sourceFile);
-            let cr: CommentRange | undefined;
-            if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
-            if (cr) {
-                const comment = sourceFileMrState.sourceFile.text.slice(cr.pos, cr.end);
-                const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
-                if (matches && matches.length>=2){
-                    Debug.assertEqual(devExpectString, matches[1]);
-                    if (getMyDebug()){
-                        consoleLog(`processLoop[dbg] @ts-dev-expect-string "${matches[1]}" passed`);
-                    }
+            const {expected,pass} = checkDevExpectString(node.parent, devExpectString, sourceFileMrState.sourceFile);
+            if (expected!==undefined){
+                if (!pass) Debug.fail(`@ts-dev-expect-string "${expected}" !== actual "${devExpectString}"`);
+                if (getMyDebug()){
+                    consoleLog(`processLoop[dbg] @ts-dev-expect-string "${expected}" passed`);
                 }
             }
+            // const arrCommentRange = getLeadingCommentRangesOfNode(node.parent, sourceFileMrState.sourceFile);
+            // let cr: CommentRange | undefined;
+            // if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
+            // if (cr) {
+            //     const comment = sourceFileMrState.sourceFile.text.slice(cr.pos, cr.end);
+            //     const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
+            //     if (matches && matches.length>=2){
+            //         Debug.assertEqual(devExpectString, matches[1]);
+            //         if (getMyDebug()){
+            //             consoleLog(`processLoop[dbg] @ts-dev-expect-string "${matches[1]}" passed`);
+            //         }
+            //     }
+            // }
         }
         Debug.assert(forFlowFinal!);
 
