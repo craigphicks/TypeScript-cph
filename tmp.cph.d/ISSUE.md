@@ -16,9 +16,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. Change first execution of loop control to be outside of the do-loop in `processLoop`.  It will result in cleaner code.
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
-0.  Embedded while loops.
 0.  `Do` loop
 0.  `For`,`ForOf`,`ForIn` loops
 0.  `Switch`
@@ -54,6 +52,7 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+0.  Embedded while loops. (Without break or continue).  new tests `_caxnc-whileLoop-003(0|1|2)`. All tests passing.
 0. added `checkDevExpectString` function (previously was inline).
 
 0. `CurrentBranchItem` changed to be `{sc: RefTypesSymtabConstraint}` rather than `RefTypesTableReturn`. All tests passing.

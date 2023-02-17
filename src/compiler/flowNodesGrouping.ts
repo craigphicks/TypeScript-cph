@@ -427,9 +427,11 @@ namespace ts {
                                      * Important side effect - set the postLoopGroupIdx within the loop group.
                                      */
                                     const loopGroup = orderedGroups[fglab.loopGroupIdx];
-                                    Debug.assert(loopGroup.anteGroupLabels.length===1);  //loopElseGroupIdx = g.groupIdx;
-                                    Debug.assert(loopGroup.anteGroupLabels[0].kind===FlowGroupLabelKind.loop);
-                                    loopGroup.anteGroupLabels[0].loopElseGroupIdx = g.groupIdx;
+                                    if (loopGroup.anteGroupLabels.length){
+                                        Debug.assert(loopGroup.anteGroupLabels.length===1);  //loopElseGroupIdx = g.groupIdx;
+                                        Debug.assert(loopGroup.anteGroupLabels[0].kind===FlowGroupLabelKind.loop);
+                                        loopGroup.anteGroupLabels[0].loopElseGroupIdx = g.groupIdx;
+                                    }
                                     return fglab;
                                 }
                                     break;

@@ -1,0 +1,38 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0032.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0032.ts, 0, 0))
+
+function t32(){
+>t32 : Symbol(t32, Decl(_caxnc-whileLoop-0032.ts, 0, 34))
+
+    let b1 = true;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0032.ts, 2, 7))
+
+    let b2 = true;
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0032.ts, 3, 7))
+
+    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=1"
+    while (b1){
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0032.ts, 2, 7))
+
+        b1;b2;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0032.ts, 2, 7))
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0032.ts, 3, 7))
+
+        // @ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+        while (b2){
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0032.ts, 3, 7))
+
+            b1;b2;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0032.ts, 2, 7))
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0032.ts, 3, 7))
+        }
+        b1;b2;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0032.ts, 2, 7))
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0032.ts, 3, 7))
+    }
+    b1;b2;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0032.ts, 2, 7))
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0032.ts, 3, 7))
+}
+

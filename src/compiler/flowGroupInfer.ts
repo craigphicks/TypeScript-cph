@@ -348,27 +348,33 @@ namespace ts {
             change = false;
             let tmpacc1 = new Set<GroupForFlow>();
             tmpacc0.forEach(g=>{
+                if (!groupsForFlow.groupToAnteGroupMap.has(g)) return;
                 let setAnteg: Set<GroupForFlow> | undefined;
-                // if g.kind is loop (or iife?) only the loop external anteGroup is added
-                if (g.kind===GroupForFlowKind.loop){
-                    // if !options then only loop external dependencies should be added.  Those are exactly the groups with indices smaller than group.groupIndex,
-                    // eotherwise the opposite
+                if (options){
                     setAnteg = new Set<GroupForFlow>();
                     const tmp = groupsForFlow.groupToAnteGroupMap.get(g);
-                    tmp?.forEach(anteg=>{
-                        if (anteg.groupIdx < g.groupIdx) {
-                            if (!options) setAnteg?.add(anteg);
-                        }
-                        else {
-                            if (options) setAnteg?.add(anteg);
-                        }
+                    tmp!.forEach(anteg=>{
+                        if (anteg.groupIdx>=options.minGroupIdxToAdd) setAnteg!.add(anteg);
                     });
                 }
+                // if (g.kind===GroupForFlowKind.loop){
+                //     // if !options then only loop external dependencies should be added.  Those are exactly the groups with indices smaller than group.groupIndex,
+                //     // eotherwise the opposite
+                //     setAnteg = new Set<GroupForFlow>();
+                //     const tmp = groupsForFlow.groupToAnteGroupMap.get(g);
+                //     tmp?.forEach(anteg=>{
+                //         if (anteg.groupIdx < g.groupIdx) {
+                //             if (!options) setAnteg?.add(anteg);
+                //         }
+                //         else {
+                //             if (options) setAnteg?.add(anteg);
+                //         }
+                //     });
+                // }
                 else {
                     setAnteg = groupsForFlow.groupToAnteGroupMap.get(g);
                 }
-                if (!setAnteg) return;
-                setAnteg.forEach(anteg=>{
+                setAnteg!.forEach(anteg=>{
                     if (minGroupIdxToAdd!==undefined && anteg.groupIdx < minGroupIdxToAdd) return;
                     const has = forFlow.heap.has(anteg.groupIdx);
                     const cbe = forFlow.currentBranchesMap.get(anteg);
@@ -572,7 +578,7 @@ namespace ts {
         return !notconverged;
     }
 
-    function checkDevExpectString(node: Node, devExpectString: string, sourceFile: SourceFile): {expected: string|undefined, pass?: boolean} {
+    function checkDevExpectString(node: Node, devExpectString: string, sourceFile: SourceFile): {expected: string | undefined, pass?: boolean} {
         const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
         let cr: CommentRange | undefined;
         if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
@@ -583,12 +589,12 @@ namespace ts {
                 return { expected: matches[1], pass:devExpectString===matches[1] };
             }
         }
-        return { expected: undefined};
+        return { expected: undefined };
     }
 
 
     // @ ts-expect-error
-    function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow) {
+    function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow): number {
         if (getMyDebug()){
             consoleGroup(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}`);
         }
@@ -610,6 +616,7 @@ namespace ts {
         let forFlowLast: ForFlow;
         let lastLoopState: ProcessLoopState;
         let loopExitedBecauseConverged = false;
+        let maxGroupIdxProcessed = loopGroup.groupIdx;
         do {
             // single pass of loop.
             const forFlow: ForFlow = {
@@ -618,6 +625,9 @@ namespace ts {
                 groupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
             };
             updateHeapWithGroupForFlow(loopGroup, sourceFileMrState, forFlow, { minGroupIdxToAdd:loopGroup.groupIdx });
+            forFlow.heap._heapset.forEach(gi=>{
+                if (gi>maxGroupIdxProcessed) maxGroupIdxProcessed = gi;
+            });
 
             Debug.assert(forFlow.heap.peek()===loopGroup.groupIdx);
             forFlow.heap.remove();
@@ -660,7 +670,7 @@ namespace ts {
                     devExpectString = `loop finished due to truthy never, loopCount=${loopCount}`;
                 }
                 if (getMyDebug()){
-                    consoleLog(`processLoop[dbg] loop finished due to truthy never, loopCount=${loopCount}`);
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop finished due to truthy never, loopCount=${loopCount}`);
                 }
                 forFlowFinal = forFlow;
                 break;
@@ -677,7 +687,7 @@ namespace ts {
             // if the nodeToType maps have converged, then break
             if (getMyDebug()){
                 dbgGroupToNodeToTypeMap(forFlow.groupToNodeToType!).forEach(s=>{
-                    consoleLog(`processLoop[dbg] g2n2tmap loopCount=${loopCount}: ${s}`);
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, g2n2tmap loopCount=${loopCount}: ${s}`);
                 });
             }
 
@@ -689,7 +699,7 @@ namespace ts {
                     devExpectString = `loop finished due to type map converged, loopCount=${loopCount}`;
                 }
                 if (getMyDebug()){
-                    consoleLog(`processLoop[dbg] loop finished due to type map converged, loopCount=${loopCount}`);
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop finished due to type map converged, loopCount=${loopCount}`);
                 }
                 forFlowFinal = forFlow;
                 loopExitedBecauseConverged = true;
@@ -703,7 +713,7 @@ namespace ts {
             if (expected!==undefined){
                 if (!pass) Debug.fail(`@ts-dev-expect-string "${expected}" !== actual "${devExpectString}"`);
                 if (getMyDebug()){
-                    consoleLog(`processLoop[dbg] @ts-dev-expect-string "${expected}" passed`);
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, @ts-dev-expect-string "${expected}" passed`);
                 }
             }
             // const arrCommentRange = getLeadingCommentRangesOfNode(node.parent, sourceFileMrState.sourceFile);
@@ -733,11 +743,13 @@ namespace ts {
             forFlowParent.currentBranchesMap.set(g, cbe);
         });
         if (getMyDebug()){
-            dbgCurrentBranchesMap(sourceFileMrState, forFlowFinal).forEach(s=>consoleLog(`processLoop[dbg] branches: ${s}`));
+            dbgCurrentBranchesMap(loopState.loopUnionCurrentBranchesMap, sourceFileMrState).forEach(s=>consoleLog(`processLoop[dbg] loopUnionCurrentBranchesMap: ${s}`));
+            //dbgForFlow(sourceFileMrState, forFlowFinal).forEach(s=>consoleLog(`processLoop[dbg] branches: ${s}`));
             dbgGroupToNodeToTypeMap(loopState.loopUnionGroupToNodeToType).forEach(s=>consoleLog(`processLoop[dbg] loopUnionGroupToNodeToType: ${s}`));
-            consoleLog(`processLoop[out] loopGroup.groupIdx:${loopGroup.groupIdx}`);
+            consoleLog(`processLoop[out] loopGroup.groupIdx:${loopGroup.groupIdx}, maxGroupIdxProcessed:${maxGroupIdxProcessed}`);
             consoleGroupEnd();
         }
+        return maxGroupIdxProcessed;
     }
 
 
@@ -749,12 +761,13 @@ namespace ts {
         const groupsForFlow = sourceFileMrState.groupsForFlow;
         const heap = forFlow.heap;
 
+        let loopMaxProcessedGroupIdx = -1;
         while (!heap.isEmpty()){
             const groupIdx = heap.remove();
-            // @ ts-expect-error
+            if (groupIdx<=loopMaxProcessedGroupIdx) continue; // this group was already done inside loop
             const groupForFlow = groupsForFlow.orderedGroups[groupIdx];
             if (groupForFlow.kind===GroupForFlowKind.loop){
-                processLoop(groupForFlow,sourceFileMrState,forFlow);
+                loopMaxProcessedGroupIdx = processLoop(groupForFlow,sourceFileMrState,forFlow);
                 continue;
             }
             const inferStatus: InferStatus = createInferStatus(groupForFlow, sourceFileMrState);
@@ -884,7 +897,7 @@ namespace ts {
             +`maximalNode.parent.kind:${Debug.formatSyntaxKind(maximalNode.parent.kind)}, `
             );
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`);
-            dbgCurrentBranchesMap(sourceFileMrState, forFlow).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`));
+            dbgForFlow(sourceFileMrState, forFlow).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`);
         }
         const setOfKeysToDeleteFromCurrentBranchesMap = new Map<GroupForFlow, Set<"then" | "else"> | undefined>();
@@ -974,7 +987,7 @@ namespace ts {
 
         if (getMyDebug()){
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
-            dbgCurrentBranchesMap(sourceFileMrState, forFlow).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`));
+            dbgForFlow(sourceFileMrState, forFlow).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
             consoleLog(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}, `);
             consoleGroupEnd();
@@ -1085,39 +1098,46 @@ namespace ts {
         });
         return as;
     }
-
-    /* @ ts-ignore */
-    function dbgCurrentBranchesMap(sourceFileMrState: SourceFileMrState, forFlow: ForFlow): string[]{
-        const groupsForFlow = sourceFileMrState.groupsForFlow;
-        const cbm = forFlow.currentBranchesMap;
+    function dbgCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): string[]{
         const astr: string[] = [];
-        const doItem = (cbi: CurrentBranchesItem): string[]=>{
-            const astr: string[] = [];
-            //astr.push(`nodeToTypeMap:`);
-            astr.push(...sourceFileMrState.mrNarrow.dbgRefTypesSymtabToStrings(cbi.sc.symtab).map(s => `  symtab: ${s}`));
-            astr.push(...sourceFileMrState.mrNarrow.dbgConstraintItem(cbi.sc.constraintItem).map(s => `  constraintItem: ${s}`));
-            return astr;
-        };
-        (cbm as CurrentBranchesMapC).data.forEach((cbe,g)=>{
-            const maximalNode = groupsForFlow.posOrderedNodes[g.maximalIdx];
+        //astr.push(`nodeToTypeMap:`);
+        astr.push(...mrNarrow.dbgRefTypesSymtabToStrings(cbi.sc.symtab).map(s => `symtab:         ${s}`));
+        astr.push(...mrNarrow.dbgConstraintItem(cbi.sc.constraintItem).map(s  => `constraintItem: ${s}`));
+        return astr;
+    };
+
+    function dbgCurrentBranchesMap(currentBranchesMap: CurrentBranchesMap, sourceFileMrState: SourceFileMrState): string[]{
+        const astr: string[] = [];
+        currentBranchesMap.forEach((cbe,g)=>{
+            const maximalNode = sourceFileMrState.groupsForFlow.posOrderedNodes[g.maximalIdx];
             astr.push(`[${dbgs?.dbgNodeToString(maximalNode)}]:`);
             astr.push(`  groupIdx:${g.groupIdx}`);
             astr.push(`  cbe.kind:${cbe.kind}`);
             if (cbe.kind===CurrentBranchesElementKind.plain){
-                astr.push(...doItem(cbe.item).map(s => "    "+s));
+                astr.push(...dbgCurrentBranchesItem(cbe.item, sourceFileMrState.mrNarrow).map(s => "    "+s));
             }
             else if (cbe.kind===CurrentBranchesElementKind.tf){
                 if (cbe.truthy){
                     astr.push("    true:");
-                    astr.push(...doItem(cbe.truthy).map(s => "      "+s));
+                    astr.push(...dbgCurrentBranchesItem(cbe.truthy, sourceFileMrState.mrNarrow).map(s => "      "+s));
                 }
                 if (cbe.falsy){
                     astr.push("    false:");
-                    astr.push(...doItem(cbe.falsy).map(s => "      "+s));
+                    astr.push(...dbgCurrentBranchesItem(cbe.falsy, sourceFileMrState.mrNarrow).map(s => "      "+s));
                 }
             }
-            const byNode = forFlow.groupToNodeToType?.get(g)!;
-            if (byNode) astr.push(...dbgNodeToTypeMap(byNode).map(s => "  "+s));
+        });
+        return astr;
+    }
+
+    /* @ ts-ignore */
+    function dbgForFlow(sourceFileMrState: SourceFileMrState, forFlow: ForFlow): string[]{
+        //const groupsForFlow = sourceFileMrState.groupsForFlow;
+        //const cbm = forFlow.currentBranchesMap;
+        const astr: string[] = [];
+        dbgCurrentBranchesMap(forFlow.currentBranchesMap, sourceFileMrState).forEach(s=>`forFlow.currentBranchesMap: ${s}`);
+        forFlow.groupToNodeToType?.forEach((map, g)=>{
+            astr.push(...dbgNodeToTypeMap(map).map(s => `groupIdx:${g.groupIdx}: ${s}`));
         });
         return astr;
     }
