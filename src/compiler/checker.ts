@@ -5,7 +5,11 @@ namespace ts {
     const myDisable = (process.env.myDisable===undefined) ? true : !!Number(process.env.myDisable);
     const myNoAliasAction = (process.env.myNoAliasAction===undefined) ? true : !!Number(process.env.myNoAliasAction);
     const myDisableInfer = (process.env.myDisableInfer===undefined) ? false : !!Number(process.env.myDisableInfer);
-    const myNarrowTest = (process.env.myNarrowTest===undefined) ? false : !!Number(process.env.myNarrowTest);
+    // Tried to call this from createBinder but got error "ts.getMyDisableInfer is not a function"
+    // export function getMyDisableInfer(){
+    //     return myDisableInfer;
+    // }
+    // const myNarrowTest = (process.env.myNarrowTest===undefined) ? false : !!Number(process.env.myNarrowTest);
 
     const myMaxLinesOut = Number(process.env.myMaxLinesOut)?Number(process.env.myMaxLinesOut):50000;
     let myMaxDepth = 0; // introspection data
@@ -26228,7 +26232,7 @@ namespace ts {
                      * If the per node type results of that were written to checkExpressionCache,
                      * then they can be used as a basis for narrowing.
                      */
-                    if (!(myNarrowTest && type && type!==anyType && inlineLevel)) return;
+                    // if (!(myNarrowTest && type && type!==anyType && inlineLevel)) return;
                     /**
                      * The function `resolveCallExpression` is being used a guide for cases we expect to see.
                      * However, unlike `resolveCallExpression`, here we will never call out to `checkExpression`.
@@ -43137,7 +43141,7 @@ namespace ts {
             }
             myDebug = !!Number(process.env.myDebug);
             if (nameMatched && dbgFlowFileCnt++===0) {
-                consoleLog(`myDebug=${myDebug}, myNarrowTest=${myNarrowTest}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
+                consoleLog(`myDebug=${myDebug}, myDisableInfer=${myDisableInfer}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
                 if (!myDisableInfer && nameMatched && myDebug){
                     if (node.allFlowNodes?.length===2){
                         testOfEvalTypeOverConstraint(checker,checker.getSourceFileInferState().mrNarrow);

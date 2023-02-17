@@ -52,6 +52,8 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+0. Made a change to binder "labelAllFunctionCalls" because without it a conditional expression like `if (maybe()) ....` would not get labelled, and the "then" or "else" wouldn't match up properly.  (Caused `_caxnc-whileLoop-0033` to fail assert).  Small change with big implications.  All tests passing.
+
 0.  Embedded while loops. (Without break or continue).  new tests `_caxnc-whileLoop-003(0|1|2)`. All tests passing.
 0. added `checkDevExpectString` function (previously was inline).
 

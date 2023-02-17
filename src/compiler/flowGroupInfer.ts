@@ -832,20 +832,30 @@ namespace ts {
         function doThenElse(groupIdx: number, truthy: boolean): RefTypesSymtabConstraintItem {
             const anteg = groupsForFlow.orderedGroups[groupIdx];
             const cbe = forFlow.currentBranchesMap.get(anteg);
-            Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
+            Debug.assert(cbe);
+            // cbe.kind===CurrentBranchesElementKind.tf does not always hold.
+            // For example, is case of `x; if (maybe()) break;` the target of the break will reference `x` because `maybe()` is not in the flow train.  C.f. _caxnc-whileLoop-33
             let symtab: RefTypesSymtab;
             let constraintItem: ConstraintItem;
-            if (truthy){
-                const got = setOfKeysToDeleteFromCurrentBranchesMap.get(anteg);
-                if (!got) setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, new Set<"else" | "then">(["then"]));
-                else got.add("then");
-                ({constraintItem,symtab}=cbe.truthy.sc);
+
+            if (cbe.kind===CurrentBranchesElementKind.tf) {
+                if (truthy){
+                    const got = setOfKeysToDeleteFromCurrentBranchesMap.get(anteg);
+                    if (!got) setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, new Set<"else" | "then">(["then"]));
+                    else got.add("then");
+                    ({constraintItem,symtab}=cbe.truthy.sc);
+                }
+                else {
+                    const got = setOfKeysToDeleteFromCurrentBranchesMap.get(anteg);
+                    if (!got) setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, new Set<"else" | "then">(["else"]));
+                    else got.add("else");
+                    ({constraintItem,symtab}=cbe.falsy.sc);
+                }
             }
             else {
-                const got = setOfKeysToDeleteFromCurrentBranchesMap.get(anteg);
-                if (!got) setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, new Set<"else" | "then">(["else"]));
-                else got.add("else");
-                ({constraintItem,symtab}=cbe.falsy.sc);
+                Debug.fail("unexpected");
+                // ({constraintItem,symtab}=cbe.item.sc);
+                // setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, undefined);
             }
             return { constraintItem,symtab };
         };

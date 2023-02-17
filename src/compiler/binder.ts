@@ -15,7 +15,6 @@ namespace ts {
         referenced: boolean;
     }
 
-    const labelBlockScopes = true;
 
     export function getModuleInstanceState(node: ModuleDeclaration, visited?: ESMap<number, ModuleInstanceState | undefined>): ModuleInstanceState {
         if (node.body && !node.body.parent) {
@@ -214,6 +213,11 @@ namespace ts {
     }
 
     function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
+        const myDisableInfer = (process.env.myDisableInfer===undefined) ? false : !!Number(process.env.myDisableInfer);;
+        const labelBlockScopes = !myDisableInfer;
+        const labelAllFunctionCalls = !myDisableInfer;
+
+
         let file: SourceFile;
         let options: CompilerOptions;
         let languageVersion: ScriptTarget;
@@ -1865,6 +1869,9 @@ namespace ts {
                 else {
                     bindEachChild(node);
                     if (node.expression.kind === SyntaxKind.SuperKeyword) {
+                        currentFlow = createFlowCall(currentFlow, node);
+                    }
+                    else if (labelAllFunctionCalls){
                         currentFlow = createFlowCall(currentFlow, node);
                     }
                 }
