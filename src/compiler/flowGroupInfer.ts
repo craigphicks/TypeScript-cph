@@ -133,7 +133,8 @@ namespace ts {
         refTypesTypeModule: RefTypesTypeModule;
     };
     interface CurrentBranchesItem {
-        refTypesTableReturn: RefTypesTableReturnNoSymbol;
+        sc: RefTypesSymtabConstraintItem
+        //refTypesTableReturn: RefTypesTableReturnNoSymbol;
         //byNode: NodeToTypeMap;
     };
     enum CurrentBranchesElementKind {
@@ -473,13 +474,12 @@ namespace ts {
     }
 
     function copyCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): CurrentBranchesItem {
-        let { symtab,constraintItem } = cbi.refTypesTableReturn;
+        let { symtab,constraintItem } = cbi.sc;
         ({ symtab,constraintItem } = copySymtabConstraints({
             symtab,constraintItem,
         }, mrNarrow));
         return {
-            refTypesTableReturn: {
-                ...cbi.refTypesTableReturn,
+            sc: {
                 symtab, constraintItem
             }
         };
@@ -549,18 +549,16 @@ namespace ts {
     ): void {
         function updatedCurrentBranchesItem(cbi: Readonly<CurrentBranchesItem>, unioncbi: Readonly<CurrentBranchesItem>): CurrentBranchesItem {
             const sc1: RefTypesSymtabConstraintItem  = {
-                symtab: cbi.refTypesTableReturn.symtab,
-                constraintItem: cbi.refTypesTableReturn.constraintItem
+                symtab: cbi.sc.symtab,
+                constraintItem: cbi.sc.constraintItem
             };
             const scu: RefTypesSymtabConstraintItem  = {
-                symtab: unioncbi.refTypesTableReturn.symtab,
-                constraintItem: unioncbi.refTypesTableReturn.constraintItem
+                symtab: unioncbi.sc.symtab,
+                constraintItem: unioncbi.sc.constraintItem
             };
             const {symtab,constraintItem} = orSymtabConstraints([sc1,scu],mrNarrow);
             return {
-                refTypesTableReturn: {
-                    kind: RefTypesTableKind.return,
-                    type: undefined as any as RefTypesType,
+                sc: {
                     symtab, constraintItem
                 }
             };
@@ -683,9 +681,9 @@ namespace ts {
             // if the loop condition is always false then break
             const cbe = forFlow.currentBranchesMap.get(loopGroup);
             Debug.assert(cbe?.kind===CurrentBranchesElementKind.tf);
-            if (mrNarrow.isNeverType(cbe.truthy.refTypesTableReturn.type)||isNeverConstraint(cbe.truthy.refTypesTableReturn.constraintItem)) {
+            if (isNeverConstraint(cbe.truthy.sc.constraintItem)) {
 
-                if (mrNarrow.isNeverType(cbe.falsy.refTypesTableReturn.type)||isNeverConstraint(cbe.falsy.refTypesTableReturn.constraintItem)) {
+                if (isNeverConstraint(cbe.falsy.sc.constraintItem)) {
                     // Both truthy and falsy being never implies that the loop has exited without returning to the condition.
                     // This could be due to (at least or maybe exclusively) any of the following reasons (with the caveat that that
                     // there were no alternative paths)
@@ -856,8 +854,8 @@ namespace ts {
                     Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
                     setOfKeysToDeleteFromCurrentBranchesMap.set(anteg,undefined);
                     return {
-                        symtab: cbe.item.refTypesTableReturn.symtab,
-                        constraintItem: cbe.item.refTypesTableReturn.constraintItem,
+                        symtab: cbe.item.sc.symtab,
+                        constraintItem: cbe.item.sc.constraintItem,
                     };
                 }
                 case FlowGroupLabelKind.then:
@@ -906,13 +904,13 @@ namespace ts {
                 const got = setOfKeysToDeleteFromCurrentBranchesMap.get(anteg);
                 if (!got) setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, new Set<"else" | "then">(["then"]));
                 else got.add("then");
-                ({constraintItem,symtab}=cbe.truthy.refTypesTableReturn);
+                ({constraintItem,symtab}=cbe.truthy.sc);
             }
             else {
                 const got = setOfKeysToDeleteFromCurrentBranchesMap.get(anteg);
                 if (!got) setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, new Set<"else" | "then">(["else"]));
                 else got.add("else");
-                ({constraintItem,symtab}=cbe.falsy.refTypesTableReturn);
+                ({constraintItem,symtab}=cbe.falsy.sc);
             }
             return { constraintItem,symtab };
         };
@@ -923,7 +921,7 @@ namespace ts {
             //setOfKeysToDeleteFromCurrentBranchesMap.add(loopGroup);
 
             Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
-            const {constraintItem,symtab}=cbe.falsy.refTypesTableReturn;
+            const {constraintItem,symtab}=cbe.falsy.sc;
             return { constraintItem,symtab };
         }
         function doPostBlock(fglab: FlowGroupLabelPostBlock): RefTypesSymtabConstraintItem {
@@ -946,8 +944,8 @@ namespace ts {
                 const origCbe = forFlow.currentBranchesMap.get(origGroup)!;
                 Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
                 if (arrsc.length===2 &&
-                    arrsc[0].constraintItem===origCbe.truthy.refTypesTableReturn.constraintItem &&
-                    arrsc[1].constraintItem===origCbe.falsy.refTypesTableReturn.constraintItem){
+                    arrsc[0].constraintItem===origCbe.truthy.sc.constraintItem &&
+                    arrsc[1].constraintItem===origCbe.falsy.sc.constraintItem){
                     return {
                         symtab: orSymtabs(arrsc.map(x=>x.symtab), mrNarrow),
                         constraintItem: origCbe.originalConstraintIn
@@ -998,7 +996,7 @@ namespace ts {
                     // @ts-ignore
                     Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
                 }
-                const {constraintItem,symtab}=cbe.item.refTypesTableReturn;
+                const {constraintItem,symtab}=cbe.item.sc;
                 sc = { constraintItem,symtab };
             }
             if (!sc){
@@ -1036,11 +1034,11 @@ namespace ts {
                 kind: CurrentBranchesElementKind.tf,
                 gff: groupForFlow,
                 falsy: {
-                    refTypesTableReturn: retval.inferRefRtnType.failing!,
+                    sc: { ...retval.inferRefRtnType.failing! }
                     //byNode: retval.byNode,
                 },
                 truthy: {
-                    refTypesTableReturn: retval.inferRefRtnType.passing,
+                    sc: { ...retval.inferRefRtnType.passing }
                     //byNode: retval.byNode,
                 },
                 originalConstraintIn: constraintItemArg
@@ -1052,7 +1050,7 @@ namespace ts {
                 kind: CurrentBranchesElementKind.plain,
                 gff: groupForFlow,
                 item: {
-                    refTypesTableReturn: retval.inferRefRtnType.passing,
+                    sc: { ...retval.inferRefRtnType.passing }
                     //byNode: retval.byNode,
                 }
             };
@@ -1188,9 +1186,9 @@ namespace ts {
         // };
         const doItem = (cbi: CurrentBranchesItem): string[]=>{
             const astr: string[] = [];
-            astr.push(`nodeToTypeMap:`);
-            astr.push(`refTypesTableReturn:`);
-            astr.push(...sourceFileMrState.mrNarrow.dbgRefTypesTableToStrings(cbi.refTypesTableReturn).map(s => `  ${s}`));
+            //astr.push(`nodeToTypeMap:`);
+            astr.push(...sourceFileMrState.mrNarrow.dbgRefTypesSymtabToStrings(cbi.sc.symtab).map(s => `  symtab: ${s}`));
+            astr.push(...sourceFileMrState.mrNarrow.dbgConstraintItem(cbi.sc.constraintItem).map(s => `  constraintItem: ${s}`));
             return astr;
         };
         (cbm as CurrentBranchesMapC).data.forEach((cbe,g)=>{
