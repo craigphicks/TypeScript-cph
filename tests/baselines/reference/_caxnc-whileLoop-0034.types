@@ -1,0 +1,57 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0034.ts ===
+declare function maybe(): boolean;
+>maybe : () => boolean
+
+function t34(){
+>t34 : () => void
+
+    let b1 = true;
+>b1 : boolean
+>true : true
+
+    let b2 = true;
+>b2 : boolean
+>true : true
+
+    loop1:
+>loop1 : any
+
+    // @ ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+    while (b1){
+>b1 : true
+
+        b1;b2;
+>b1 : true
+>b2 : boolean
+
+        // @ ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+        while (b2){
+>b2 : boolean
+
+            b1;b2;
+>b1 : true
+>b2 : true
+
+            if (maybe()) {
+>maybe() : boolean
+>maybe : () => boolean
+
+                b2=false;
+>b2=false : false
+>b2 : boolean
+>false : false
+
+                break ;//loop1;
+            }
+        }
+        b1;b2;
+>b1 : true
+>b2 : false
+
+        //if (maybe()) break;
+    }
+    b1;b2;
+>b1 : never
+>b2 : never
+}
+

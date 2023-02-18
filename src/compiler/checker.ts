@@ -43117,9 +43117,6 @@ namespace ts {
             performance.enable();
             performance.mark("beforeCheck");
 
-            if (!myDisableInfer){
-                checker.createAndSetSourceFileInferState(node);
-            }
             // const hrtime = process.hrtime.bigint() - hrstart!;
             // consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
 
@@ -43138,6 +43135,9 @@ namespace ts {
             if (nameMatched) {
                 hrstart = process.hrtime.bigint();
                 currentTestFile = getBaseFileName(node.originalFileName);
+                if (!myDisableInfer){
+                    checker.createAndSetSourceFileInferState(node);
+                }
             }
             myDebug = !!Number(process.env.myDebug);
             if (nameMatched && dbgFlowFileCnt++===0) {

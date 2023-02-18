@@ -155,6 +155,7 @@ namespace ts {
         clear(): void;
         has(group: GroupForFlow): boolean;
         forEach(f: (cbe: CurrentBranchElement, g: GroupForFlow) => void): void;
+        readonly size: number;
     }
     let nextCurrentBranchesMapCId = 0;
     export class CurrentBranchesMapC implements CurrentBranchesMap {
@@ -210,6 +211,7 @@ namespace ts {
         forEach(f: (cbe: CurrentBranchElement, g: GroupForFlow) => void): void {
             this.data.forEach(f);
         }
+        get size(){ return this.data.size; }
     }
 
     export interface ForFlow {
@@ -289,7 +291,7 @@ namespace ts {
 
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
         if (compilerOptions.mrNarrowConstraintsEnable===undefined) compilerOptions.mrNarrowConstraintsEnable = false;
-        if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
+        /* if (compilerOptions.enableTSDevExpectString===undefined) */ compilerOptions.enableTSDevExpectString = false;
         const t0 = process.hrtime.bigint();
         const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
         if (getMyDebug()){
@@ -613,7 +615,7 @@ namespace ts {
         let devExpectString = "";
         let loopCount = 0;
         let forFlowFinal: ForFlow;
-        let forFlowLast: ForFlow;
+        //let forFlowLast: ForFlow;
         let lastLoopState: ProcessLoopState;
         let loopExitedBecauseConverged = false;
         let maxGroupIdxProcessed = loopGroup.groupIdx;
@@ -639,45 +641,57 @@ namespace ts {
                 cachedSCForLoop = orSymtabConstraints(cachedSCForLoopContinue, mrNarrow);
             }
             // do the condition part of the loop
+            if (getMyDebug()){
+                consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}`);
+            }
             resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop, loopGroupIdx:loopGroup.groupIdx });
+            if (getMyDebug()){
+                consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}`);
+            }
 
             // if the loop condition is always false then break
             const cbe = forFlow.currentBranchesMap.get(loopGroup);
             Debug.assert(cbe?.kind===CurrentBranchesElementKind.tf);
-            if (isNeverConstraint(cbe.truthy.sc.constraintItem)) {
+            // if (isNeverConstraint(cbe.truthy.sc.constraintItem)) {
 
-                if (isNeverConstraint(cbe.falsy.sc.constraintItem)) {
-                    // Both truthy and falsy being never implies that the loop has exited without returning to the condition.
-                    // This could be due to (at least or maybe exclusively) any of the following reasons (with the caveat that that
-                    // there were no alternative paths)
-                    // (1) a break statement
-                    // (2) a continue statement to an outer loop
-                    // (3) a return statement
-                    // (4) a failing assertion
-                    Debug.assert(forFlowLast!); // actually this could fail if an assertion fails in the loop control TODO:
-                    forFlowFinal = forFlowLast!;
-                    if (mrNarrow.compilerOptions.enableTSDevExpectString){
-                        devExpectString = `loop finished due to both truthy and falsy never (e.g. break), loopCount=${loopCount}`;
-                    }
-                    if (getMyDebug()){
-                        consoleLog(`processLoop[dbg] loop finished due to both truthy and falsy never (e.g. break), loopCount=${loopCount}`);
-                    }
+            //     if (isNeverConstraint(cbe.falsy.sc.constraintItem)) {
+            //         // Both truthy and falsy being never implies that the loop has exited without returning to the condition.
+            //         // This could be due to (at least or maybe exclusively) any of the following reasons (with the caveat that that
+            //         // there were no alternative paths)
+            //         // (1) a break statement
+            //         // (2) a continue statement to an outer loop
+            //         // (3) a return statement
+            //         // (4) a failing assertion
+            //         Debug.assert(forFlowLast!); // actually this could fail if an assertion fails in the loop control TODO:
+            //         forFlowFinal = forFlowLast!;
+            //         if (mrNarrow.compilerOptions.enableTSDevExpectString){
+            //             devExpectString = `loop finished due to both truthy and falsy never (e.g. break), loopCount=${loopCount}`;
+            //         }
+            //         if (getMyDebug()){
+            //             consoleLog(`processLoop[dbg] loop finished due to both truthy and falsy never (e.g. break), loopCount=${loopCount}`);
+            //         }
 
-                    break;
-                 }
+            //         break;
+            //      }
 
-                if (mrNarrow.compilerOptions.enableTSDevExpectString){
-                    devExpectString = `loop finished due to truthy never, loopCount=${loopCount}`;
-                }
-                if (getMyDebug()){
-                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop finished due to truthy never, loopCount=${loopCount}`);
-                }
-                forFlowFinal = forFlow;
-                break;
-            }
+            //     if (mrNarrow.compilerOptions.enableTSDevExpectString){
+            //         devExpectString = `loop finished due to truthy never, loopCount=${loopCount}`;
+            //     }
+            //     if (getMyDebug()){
+            //         consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop finished due to truthy never, loopCount=${loopCount}`);
+            //     }
+            //     forFlowFinal = forFlow;
+            //     break;
+            // }
 
             // do the rest of the loop
+            if (getMyDebug()){
+                consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}`);
+            }
             resolveHeap(sourceFileMrState,forFlow);
+            if (getMyDebug()){
+                consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}`);
+            }
 
             setOfKeysToDeleteFromCurrentBranchesMap.clear();
             cachedSCForLoopContinue = anteGroupLabel.arrAnteContinue.map(fglab=>{
@@ -705,7 +719,7 @@ namespace ts {
                 loopExitedBecauseConverged = true;
                 break;
             }
-            forFlowLast = forFlow;
+            //forFlowLast = forFlow;
         } while (++loopCount);
         if (mrNarrow.compilerOptions.enableTSDevExpectString){
             const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopGroup.maximalIdx];
@@ -1145,7 +1159,8 @@ namespace ts {
         //const groupsForFlow = sourceFileMrState.groupsForFlow;
         //const cbm = forFlow.currentBranchesMap;
         const astr: string[] = [];
-        dbgCurrentBranchesMap(forFlow.currentBranchesMap, sourceFileMrState).forEach(s=>`forFlow.currentBranchesMap: ${s}`);
+        astr.push(`forFlow.currentBranchesMap.size:${forFlow.currentBranchesMap.size}`);
+        dbgCurrentBranchesMap(forFlow.currentBranchesMap, sourceFileMrState).forEach(s=>astr.push(`forFlow.currentBranchesMap: ${s}`));
         forFlow.groupToNodeToType?.forEach((map, g)=>{
             astr.push(...dbgNodeToTypeMap(map).map(s => `groupIdx:${g.groupIdx}: ${s}`));
         });

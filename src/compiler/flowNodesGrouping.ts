@@ -247,11 +247,18 @@ namespace ts {
                     if (isFlowWithNode(fn)){
                         const nodeOfFlow = fn.node;
                         if (nodeOfFlow.pos >= gpos && nodeOfFlow.pos < gend) {
-                            return;  // filter in-group references
+                            continue;  // filter in-group references
                         }
                         set.add(fn); // nodeful flow
                     }
                     else {
+                        if (isFlowWithAntecedents(fn) && fn.antecedents.length===1){
+                            let tmpfn = fn.antecedents[0];
+                            while (!isFlowWithNode(tmpfn) && isFlowWithAntecedents(tmpfn) && tmpfn.antecedents.length===1) tmpfn = tmpfn.antecedents[0];
+                            if (isFlowWithNode(tmpfn) && tmpfn.node.pos >= gpos && tmpfn.node.pos < gend){
+                                continue; // a chain of flow that leads back to the same-group, i.e., a same group reference.
+                            }
+                        }
                         set.add(fn); // non-nodeful flow
                     }
                 }
@@ -406,7 +413,22 @@ namespace ts {
                                     Debug.fail("not yet implemented, branchKind is undefined");
                                     break;
                                 case BranchKind.none:
-                                    Debug.fail(`not yet implemented, branchKind:${fn.branchKind}`);
+                                    if (isFlowWithAntecedents(fn)){
+                                        if (fn.antecedents.length===0){
+                                            return undefined;
+                                            // ignore
+                                        }
+                                        else if (fn.antecedents.length===1){
+                                            // pass-through (c.f. _caxnc-whileLoop-0034, outer loop postLoop antecedent of a BranchKind.none)
+                                            return flowNodeResolve(fn.antecedents[0]);
+                                        }
+                                        else {
+                                            dbgSetOfUnhandledFlowLabel.add(fn);
+                                            return undefined;
+                                            // Debug.fail("unexpected");
+                                        }
+                                    }
+                                    Debug.fail(`unexpected, branch kind 'none' but no 'antecedencts' member`);
                                     break;
                                 case BranchKind.else:
                                 case BranchKind.then:
@@ -466,10 +488,10 @@ namespace ts {
                                     return undefined;
                             }
                         }; // flowBranchResolve
-                        if (fn.branchKind!==BranchKind.none) {
-                            const fglab: FlowGroupLabel | undefined = flowNodeResolve(fn);
-                            if (fglab) g.anteGroupLabels.push(fglab);
-                        }
+                        // if (fn.branchKind!==BranchKind.none) {
+                        const fglab: FlowGroupLabel | undefined = flowNodeResolve(fn);
+                        if (fglab) g.anteGroupLabels.push(fglab);
+                        // }
                     }
                 }
             });
