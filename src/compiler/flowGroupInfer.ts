@@ -220,6 +220,13 @@ namespace ts {
         dbgCurrentBranchesMapWasDeleted?: ESMap< Readonly<GroupForFlow>, boolean >;
         groupToNodeToType?: ESMap< Readonly<GroupForFlow>, NodeToTypeMap >;
     }
+    interface ProcessLoopState {
+        group: GroupForFlow;
+        loopCountWithoutFinals: number;
+        invocations: number;
+        loopUnionGroupToNodeToType: ESMap<GroupForFlow, NodeToTypeMap>;
+        loopUnionCurrentBranchesMap: ESMap<GroupForFlow, CurrentBranchElement>;
+    }
     export interface MrState {
         checker: TypeChecker;
         replayableItems: ESMap< Symbol, ReplayableItem >;
@@ -231,7 +238,12 @@ namespace ts {
             tmpExprNodeToTypeMap: Readonly<ESMap<Node,Type>>;
             expr: Expression | Node
         } | undefined;
+        loopGroupToProcessLoopStateMap: ESMap<GroupForFlow,ProcessLoopState>;
+        currentLoopDepth: number;
+        currentLoopsInLoopScope: Set<GroupForFlow>;
     };
+
+
 
     function createHeap(groupsForFlow: GroupsForFlow): Heap {
         const _heap: number[] = [NaN];
@@ -307,6 +319,9 @@ namespace ts {
             declaredTypes: new Map<Symbol, RefTypesTableLeaf>(),
             recursionLevel: 0,
             forFlowTop: createForFlow(groupsForFlow),
+            loopGroupToProcessLoopStateMap: new Map<GroupForFlow,ProcessLoopState>(),
+            currentLoopDepth: 0,
+            currentLoopsInLoopScope: new Set<GroupForFlow>(),
         };
         const refTypesTypeModule = createRefTypesTypeModule(checker);
         const mrNarrow = createMrNarrow(checker, mrState, refTypesTypeModule, compilerOptions);
@@ -437,82 +452,95 @@ namespace ts {
         };
     }
 
-    function copyOfGroupToNodeToTypeMap(source: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>): ESMap<GroupForFlow,NodeToTypeMap> {
-        const tmp = new Map<GroupForFlow,NodeToTypeMap>();
-        source.forEach((map,g)=>{
-            tmp.set(g, new Map<Node,Type>(map));
-        });
-        return tmp;
-    }
+    // function copyOfGroupToNodeToTypeMap(source: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>): ESMap<GroupForFlow,NodeToTypeMap> {
+    //     const tmp = new Map<GroupForFlow,NodeToTypeMap>();
+    //     source.forEach((map,g)=>{
+    //         tmp.set(g, new Map<Node,Type>(map));
+    //     });
+    //     return tmp;
+    // }
 
-    function copyCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): CurrentBranchesItem {
-        let { symtab,constraintItem } = cbi.sc;
-        ({ symtab,constraintItem } = copySymtabConstraints({
-            symtab,constraintItem,
-        }, mrNarrow));
-        return {
-            sc: {
-                symtab, constraintItem
-            }
-        };
-    }
-    function copyCurrentBranchElement(cbe: CurrentBranchElement, mrNarrow: MrNarrow): CurrentBranchElement {
-        if (cbe.kind===CurrentBranchesElementKind.plain){
-            return { ...cbe, item: copyCurrentBranchesItem(cbe.item,mrNarrow) };
-        }
-        else {
-            return {
-                ...cbe,
-                truthy: copyCurrentBranchesItem(cbe.truthy,mrNarrow),
-                falsy: copyCurrentBranchesItem(cbe.truthy,mrNarrow),
-            };
-        }
-    }
+    // function copyCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): CurrentBranchesItem {
+    //     let { symtab,constraintItem } = cbi.sc;
+    //     ({ symtab,constraintItem } = copySymtabConstraints({
+    //         symtab,constraintItem,
+    //     }, mrNarrow));
+    //     return {
+    //         sc: {
+    //             symtab, constraintItem
+    //         }
+    //     };
+    // }
+    // function copyCurrentBranchElement(cbe: CurrentBranchElement, mrNarrow: MrNarrow): CurrentBranchElement {
+    //     if (cbe.kind===CurrentBranchesElementKind.plain){
+    //         return { ...cbe, item: copyCurrentBranchesItem(cbe.item,mrNarrow) };
+    //     }
+    //     else {
+    //         return {
+    //             ...cbe,
+    //             truthy: copyCurrentBranchesItem(cbe.truthy,mrNarrow),
+    //             falsy: copyCurrentBranchesItem(cbe.truthy,mrNarrow),
+    //         };
+    //     }
+    // }
 
-    interface ProcessLoopState {
-        //forFlow: ForFlow;
-        loopUnionGroupToNodeToType: ESMap<GroupForFlow, NodeToTypeMap>;
-        loopUnionCurrentBranchesMap: ESMap<GroupForFlow, CurrentBranchElement>;
-    }
-    function createProcessLoopState(): ProcessLoopState {
+    function createProcessLoopState(group: GroupForFlow): ProcessLoopState {
         return {
-            //forFlow: createForFlow(groupsForFlow),
+            group,
+            invocations:0, loopCountWithoutFinals:0,
             loopUnionGroupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
             loopUnionCurrentBranchesMap: new Map<GroupForFlow, CurrentBranchElement>()
         };
     }
-    function copyProcessLoopState(loopState: ProcessLoopState, mrNarrow: MrNarrow): ProcessLoopState {
-        const loopUnionGroupToNodeToType = copyOfGroupToNodeToTypeMap(loopState.loopUnionGroupToNodeToType);
-        const loopUnionCurrentBranchesMap = new Map<GroupForFlow, CurrentBranchElement>();
-        loopState.loopUnionCurrentBranchesMap.forEach((cbe,g)=>{
-            loopUnionCurrentBranchesMap.set(g,copyCurrentBranchElement(cbe,mrNarrow));
-        });
-        return {
-            loopUnionGroupToNodeToType,
-            loopUnionCurrentBranchesMap
-        };
-    }
+    // function copyProcessLoopState(loopState: ProcessLoopState, mrNarrow: MrNarrow): ProcessLoopState {
+    //     const loopUnionGroupToNodeToType = copyOfGroupToNodeToTypeMap(loopState.loopUnionGroupToNodeToType);
+    //     const loopUnionCurrentBranchesMap = new Map<GroupForFlow, CurrentBranchElement>();
+    //     loopState.loopUnionCurrentBranchesMap.forEach((cbe,g)=>{
+    //         loopUnionCurrentBranchesMap.set(g,copyCurrentBranchElement(cbe,mrNarrow));
+    //     });
+    //     return {
+    //         ...loopState,
+    //         loopUnionGroupToNodeToType,
+    //         loopUnionCurrentBranchesMap
+    //     };
+    // }
+    /**
+     *
+     * @param groupToNodeToTypeMap
+     * @param loopUnionGroupToNodeToType
+     * @param checker
+     * @returns true is there is change, false if no change
+     */
     function upDateLoopUnionGroupToNodeToTypeV2(
         groupToNodeToTypeMap: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>,
         loopUnionGroupToNodeToType: ESMap<GroupForFlow,NodeToTypeMap>,
         checker: Readonly<TypeChecker>
-    ): void {
+    ): boolean {
+        let hadChange = false;
         groupToNodeToTypeMap.forEach((map,g)=>{
             const unionmap = loopUnionGroupToNodeToType.get(g);
             if (!unionmap) {
                 loopUnionGroupToNodeToType.set(g,map); // map is safe to use.
+                hadChange=true;
                 return;
             }
             map.forEach((type,node)=>{
                 let uniontype = unionmap.get(node);
                 if (!uniontype) {
                     unionmap.set(node,type);
+                    hadChange=true;
                     return;
                 }
+                if (checker.isTypeRelatedTo(type,uniontype,checker.getRelations().subtypeRelation)){
+                    // union getUnionType([type,uniontype]) would be the same as uniontype
+                    return;
+                }
+                hadChange = true;
                 uniontype = checker.getUnionType([type,uniontype],UnionReduction.Literal);
                 unionmap.set(node, uniontype);
             });
         });
+        return hadChange;
     };
     function upDateLoopUnionCurrentBranchesMap(
         currentBranchesMap: Readonly<CurrentBranchesMap>,
@@ -553,34 +581,48 @@ namespace ts {
             }
         });
     }
-    function updateProcessLoopState(forFlow: Readonly<ForFlow>, loopState: ProcessLoopState, mrNarrow: MrNarrow): void {
-        upDateLoopUnionGroupToNodeToTypeV2(forFlow.groupToNodeToType!, loopState.loopUnionGroupToNodeToType, mrNarrow.checker);
+    function updateProcessLoopState(forFlow: Readonly<ForFlow>, loopState: ProcessLoopState, mrNarrow: MrNarrow): boolean {
+        const hadChange = upDateLoopUnionGroupToNodeToTypeV2(forFlow.groupToNodeToType!, loopState.loopUnionGroupToNodeToType, mrNarrow.checker);
         upDateLoopUnionCurrentBranchesMap(forFlow.currentBranchesMap, loopState.loopUnionCurrentBranchesMap, mrNarrow);
+        return hadChange;
     }
-    function isProcessLoopStateConverged(loopState: Readonly<ProcessLoopState>, lastLoopState: Readonly<ProcessLoopState>, checker: Readonly<TypeChecker>): boolean {
-        const loopUnionGroupToNodeToType = loopState.loopUnionGroupToNodeToType;
-        const lastLoopUnionGroupToNodeToType = lastLoopState.loopUnionGroupToNodeToType;
-        let notconverged = false;
-        for (let iter0 = loopUnionGroupToNodeToType.entries(), it0=iter0.next(); !notconverged && !it0.done; it0=iter0.next()){
-            const [gff,map] = it0.value;
-            const maplast = lastLoopUnionGroupToNodeToType.get(gff);
-            if (!maplast) {
-                notconverged = true;
-                break;
-            };
-            for (let iter1 = map.entries(), it1=iter1.next(); !it1.done; it1=iter1.next()){
-                const [node,type]=it1.value;
-                const typelast = maplast.get(node);
-                if (!typelast || !checker.isTypeRelatedTo(typelast,type, checker.getRelations().identityRelation)) {
-                    notconverged = true;
-                    break;
-                }
-            }
-        }
-        return !notconverged;
-    }
+    // function isProcessLoopStateConverged(loopState: Readonly<ProcessLoopState>, lastLoopState: Readonly<ProcessLoopState>, checker: Readonly<TypeChecker>): boolean {
+    //     const loopUnionGroupToNodeToType = loopState.loopUnionGroupToNodeToType;
+    //     const lastLoopUnionGroupToNodeToType = lastLoopState.loopUnionGroupToNodeToType;
+    //     let notconverged = false;
+    //     for (let iter0 = loopUnionGroupToNodeToType.entries(), it0=iter0.next(); !notconverged && !it0.done; it0=iter0.next()){
+    //         const [gff,map] = it0.value;
+    //         const maplast = lastLoopUnionGroupToNodeToType.get(gff);
+    //         if (!maplast) {
+    //             notconverged = true;
+    //             break;
+    //         };
+    //         for (let iter1 = map.entries(), it1=iter1.next(); !it1.done; it1=iter1.next()){
+    //             const [node,type]=it1.value;
+    //             const typelast = maplast.get(node);
+    //             if (!typelast || !checker.isTypeRelatedTo(typelast,type, checker.getRelations().identityRelation)) {
+    //                 notconverged = true;
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     return !notconverged;
+    // }
 
-    function checkDevExpectString(node: Node, devExpectString: string, sourceFile: SourceFile): {expected: string | undefined, pass?: boolean} {
+    // function checkDevExpectString(node: Node, devExpectString: string, sourceFile: SourceFile): {expected: string | undefined, pass?: boolean} {
+    //     const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
+    //     let cr: CommentRange | undefined;
+    //     if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
+    //     if (cr) {
+    //         const comment = sourceFile.text.slice(cr.pos, cr.end);
+    //         const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
+    //         if (matches && matches.length>=2){
+    //             return { expected: matches[1], pass:devExpectString===matches[1] };
+    //         }
+    //     }
+    //     return { expected: undefined };
+    // }
+    function getDevExpectString(node: Node, sourceFile: SourceFile): string | undefined {
         const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
         let cr: CommentRange | undefined;
         if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
@@ -588,17 +630,20 @@ namespace ts {
             const comment = sourceFile.text.slice(cr.pos, cr.end);
             const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
             if (matches && matches.length>=2){
-                return { expected: matches[1], pass:devExpectString===matches[1] };
+                return matches[1];
             }
         }
-        return { expected: undefined };
+        return undefined;
     }
 
 
     // @ ts-expect-error
     function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow): number {
+        if (sourceFileMrState.mrState.currentLoopDepth===0) Debug.assert(sourceFileMrState.mrState.currentLoopsInLoopScope.size===0);
+        sourceFileMrState.mrState.currentLoopsInLoopScope.add(loopGroup);
+        sourceFileMrState.mrState.currentLoopDepth++;
         if (getMyDebug()){
-            consoleGroup(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}`);
+            consoleGroup(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}`);
         }
         Debug.assert(loopGroup.kind===GroupForFlowKind.loop);
         const anteGroupLabel: FlowGroupLabel = loopGroup.anteGroupLabels[0];
@@ -611,13 +656,21 @@ namespace ts {
         let cachedSCForLoopContinue: RefTypesSymtabConstraintItem[] = [];
         setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff)=>forFlowParent.currentBranchesMap.delete(gff, set));
         const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState);
-        const loopState = createProcessLoopState();
-        let devExpectString = "";
+        /**
+         * Using the global loop state rather local loop state potentially reduces resolution but also potentially reduces computation time.
+         * At loop depth 0, there is no difference.
+         * TODO: We might want to allow local loopState up to a given value for sourceFileMrState.mrState.currentLoopDepth
+         */
+        const useGlobalLoopState = sourceFileMrState.mrState.currentLoopDepth > 0;
+        const loopState = !useGlobalLoopState ? createProcessLoopState(loopGroup)
+            : sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopGroup) ?? createProcessLoopState(loopGroup);
+        loopState.invocations++;
+        //let devExpectString = "";
         let loopCount = 0;
         let forFlowFinal: ForFlow;
         //let forFlowLast: ForFlow;
-        let lastLoopState: ProcessLoopState;
-        let loopExitedBecauseConverged = false;
+        // let lastLoopState: ProcessLoopState;
+        //let loopExitedBecauseConverged = false; always true now
         let maxGroupIdxProcessed = loopGroup.groupIdx;
         do {
             // single pass of loop.
@@ -652,38 +705,6 @@ namespace ts {
             // if the loop condition is always false then break
             const cbe = forFlow.currentBranchesMap.get(loopGroup);
             Debug.assert(cbe?.kind===CurrentBranchesElementKind.tf);
-            // if (isNeverConstraint(cbe.truthy.sc.constraintItem)) {
-
-            //     if (isNeverConstraint(cbe.falsy.sc.constraintItem)) {
-            //         // Both truthy and falsy being never implies that the loop has exited without returning to the condition.
-            //         // This could be due to (at least or maybe exclusively) any of the following reasons (with the caveat that that
-            //         // there were no alternative paths)
-            //         // (1) a break statement
-            //         // (2) a continue statement to an outer loop
-            //         // (3) a return statement
-            //         // (4) a failing assertion
-            //         Debug.assert(forFlowLast!); // actually this could fail if an assertion fails in the loop control TODO:
-            //         forFlowFinal = forFlowLast!;
-            //         if (mrNarrow.compilerOptions.enableTSDevExpectString){
-            //             devExpectString = `loop finished due to both truthy and falsy never (e.g. break), loopCount=${loopCount}`;
-            //         }
-            //         if (getMyDebug()){
-            //             consoleLog(`processLoop[dbg] loop finished due to both truthy and falsy never (e.g. break), loopCount=${loopCount}`);
-            //         }
-
-            //         break;
-            //      }
-
-            //     if (mrNarrow.compilerOptions.enableTSDevExpectString){
-            //         devExpectString = `loop finished due to truthy never, loopCount=${loopCount}`;
-            //     }
-            //     if (getMyDebug()){
-            //         consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop finished due to truthy never, loopCount=${loopCount}`);
-            //     }
-            //     forFlowFinal = forFlow;
-            //     break;
-            // }
-
             // do the rest of the loop
             if (getMyDebug()){
                 consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}`);
@@ -705,48 +726,37 @@ namespace ts {
                 });
             }
 
-            lastLoopState = copyProcessLoopState(loopState,mrNarrow);
-            updateProcessLoopState(forFlow,loopState,mrNarrow);
-            const converged = isProcessLoopStateConverged(loopState,lastLoopState,mrNarrow.checker);
+            //lastLoopState = copyProcessLoopState(localLoopState,mrNarrow);
+            const converged = !updateProcessLoopState(forFlow,loopState,mrNarrow);
+            //const converged = isProcessLoopStateConverged(localLoopState,lastLoopState,mrNarrow.checker);
+            //Debug.assert(converged===!hadChange); // TODO: kill copyProcessLoopState and isProcessLoopStateConverged
             if (converged) {
-                if (mrNarrow.compilerOptions.enableTSDevExpectString){
-                    devExpectString = `loop finished due to type map converged, loopCount=${loopCount}`;
-                }
+                // if (mrNarrow.compilerOptions.enableTSDevExpectString){
+                //     devExpectString = `loop finished due to type map converged, loopCount=${loopCount}`;
+                // }
                 if (getMyDebug()){
                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop finished due to type map converged, loopCount=${loopCount}`);
                 }
                 forFlowFinal = forFlow;
-                loopExitedBecauseConverged = true;
+                //loopExitedBecauseConverged = true;
                 break;
             }
+            loopState.loopCountWithoutFinals++;
             //forFlowLast = forFlow;
         } while (++loopCount);
-        if (mrNarrow.compilerOptions.enableTSDevExpectString){
-            const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopGroup.maximalIdx];
-            const {expected,pass} = checkDevExpectString(node.parent, devExpectString, sourceFileMrState.sourceFile);
-            if (expected!==undefined){
-                if (!pass) Debug.fail(`@ts-dev-expect-string "${expected}" !== actual "${devExpectString}"`);
-                if (getMyDebug()){
-                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, @ts-dev-expect-string "${expected}" passed`);
-                }
-            }
-            // const arrCommentRange = getLeadingCommentRangesOfNode(node.parent, sourceFileMrState.sourceFile);
-            // let cr: CommentRange | undefined;
-            // if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
-            // if (cr) {
-            //     const comment = sourceFileMrState.sourceFile.text.slice(cr.pos, cr.end);
-            //     const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
-            //     if (matches && matches.length>=2){
-            //         Debug.assertEqual(devExpectString, matches[1]);
-            //         if (getMyDebug()){
-            //             consoleLog(`processLoop[dbg] @ts-dev-expect-string "${matches[1]}" passed`);
-            //         }
-            //     }
-            // }
-        }
+        // if (mrNarrow.compilerOptions.enableTSDevExpectString){
+        //     const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopGroup.maximalIdx];
+        //     const {expected,pass} = checkDevExpectString(node.parent, devExpectString, sourceFileMrState.sourceFile);
+        //     if (expected!==undefined){
+        //         if (!pass) Debug.fail(`@ts-dev-expect-string "${expected}" !== actual "${devExpectString}"`);
+        //         if (getMyDebug()){
+        //             consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, @ts-dev-expect-string "${expected}" passed`);
+        //         }
+        //     }
+        // }
         Debug.assert(forFlowFinal!);
 
-        if (!loopExitedBecauseConverged) updateProcessLoopState(forFlowFinal,loopState,mrNarrow);
+        // maybe the lhs should always be globalLoopState ?
         loopState.loopUnionGroupToNodeToType.forEach((nodeToTypeMap,g)=>{
             Debug.assert(forFlowParent.groupToNodeToType!.has(g)===false);
             forFlowParent.groupToNodeToType!.set(g,nodeToTypeMap);
@@ -756,13 +766,27 @@ namespace ts {
         loopState.loopUnionCurrentBranchesMap.forEach((cbe,g)=>{
             forFlowParent.currentBranchesMap.set(g, cbe);
         });
+        if (mrNarrow.compilerOptions.enableTSDevExpectString && sourceFileMrState.mrState.currentLoopDepth===1){
+            sourceFileMrState.mrState.currentLoopsInLoopScope.forEach(loopg=>{
+                const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopg.maximalIdx].parent;
+                const expected = getDevExpectString(node.parent, sourceFileMrState.sourceFile);
+                if (expected===undefined) return;
+                const lstate: ProcessLoopState = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopg)!;
+                const actual = `loopCount:${lstate.loopCountWithoutFinals}, invocations:${lstate.invocations}`;
+                if (actual!==expected){
+                    Debug.fail(`@ts-dev-expect-string expaced:"${expected}" !== actual:"${actual}"`);
+                }
+            });
+        }
         if (getMyDebug()){
             dbgCurrentBranchesMap(loopState.loopUnionCurrentBranchesMap, sourceFileMrState).forEach(s=>consoleLog(`processLoop[dbg] loopUnionCurrentBranchesMap: ${s}`));
             //dbgForFlow(sourceFileMrState, forFlowFinal).forEach(s=>consoleLog(`processLoop[dbg] branches: ${s}`));
             dbgGroupToNodeToTypeMap(loopState.loopUnionGroupToNodeToType).forEach(s=>consoleLog(`processLoop[dbg] loopUnionGroupToNodeToType: ${s}`));
-            consoleLog(`processLoop[out] loopGroup.groupIdx:${loopGroup.groupIdx}, maxGroupIdxProcessed:${maxGroupIdxProcessed}`);
+            consoleLog(`processLoop[out] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}, maxGroupIdxProcessed:${maxGroupIdxProcessed}`);
             consoleGroupEnd();
         }
+        sourceFileMrState.mrState.currentLoopDepth--;
+        if (sourceFileMrState.mrState.currentLoopDepth===0) sourceFileMrState.mrState.currentLoopsInLoopScope.clear();
         return maxGroupIdxProcessed;
     }
 
