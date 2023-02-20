@@ -4,7 +4,7 @@ function t21(){
     let b = true;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=2"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (d){
         d = c;
         c = b;
@@ -23,7 +23,7 @@ function t21() {
     var b = true;
     var c = true;
     var d = true;
-    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=2"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (d) {
         d = c;
         c = b;

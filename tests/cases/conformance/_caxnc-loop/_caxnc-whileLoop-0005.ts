@@ -11,7 +11,7 @@ function t5(){
     let b = true;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loop finished due to type map converged, loopCount=3"
+    // @ts-dev-expect-string "loopCount:3, invocations:1"
     while (d){
         d = c;
         c = b;

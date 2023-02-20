@@ -12,7 +12,7 @@ function t34(){
 >b2 : Symbol(b2, Decl(_caxnc-whileLoop-0034.ts, 3, 7))
 
     loop1:
-    // @ ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (b1){
 >b1 : Symbol(b1, Decl(_caxnc-whileLoop-0034.ts, 2, 7))
 
@@ -20,7 +20,7 @@ function t34(){
 >b1 : Symbol(b1, Decl(_caxnc-whileLoop-0034.ts, 2, 7))
 >b2 : Symbol(b2, Decl(_caxnc-whileLoop-0034.ts, 3, 7))
 
-        // @ ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+        // @ts-dev-expect-string "loopCount:2, invocations:3"
         while (b2){
 >b2 : Symbol(b2, Decl(_caxnc-whileLoop-0034.ts, 3, 7))
 

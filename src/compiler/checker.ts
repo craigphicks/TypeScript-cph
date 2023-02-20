@@ -2,6 +2,7 @@
 namespace ts {
     let dbgFlowFileCnt = 0;
     let myDebug = false;
+    const myDebugLevel = (process.env.myDebugLevel===undefined) ? 0 : Number(process.env.myDebugLevel);
     const myDisable = (process.env.myDisable===undefined) ? true : !!Number(process.env.myDisable);
     const myNoAliasAction = (process.env.myNoAliasAction===undefined) ? true : !!Number(process.env.myNoAliasAction);
     const myDisableInfer = (process.env.myDisableInfer===undefined) ? false : !!Number(process.env.myDisableInfer);
@@ -30,8 +31,8 @@ namespace ts {
         setMyDebug: (b: false)=> myDebug=b,
         getMyDisableInfer: ()=>myDisableInfer
     });
-    export function getMyDebug(){
-        return myDebug;
+    export function getMyDebug(level=0){
+        return myDebug && level>=myDebugLevel;
     }
     export function consoleGroup(sIn: string){
         //const s = sIn.slice(0,Math.min(80,sIn.length));

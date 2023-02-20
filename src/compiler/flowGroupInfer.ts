@@ -303,7 +303,7 @@ namespace ts {
 
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
         if (compilerOptions.mrNarrowConstraintsEnable===undefined) compilerOptions.mrNarrowConstraintsEnable = false;
-        /* if (compilerOptions.enableTSDevExpectString===undefined) */ compilerOptions.enableTSDevExpectString = false;
+        if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
         const t0 = process.hrtime.bigint();
         const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
         if (getMyDebug()){
@@ -639,10 +639,11 @@ namespace ts {
 
     // @ ts-expect-error
     function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow): number {
+        const dbgLevel=1;
         if (sourceFileMrState.mrState.currentLoopDepth===0) Debug.assert(sourceFileMrState.mrState.currentLoopsInLoopScope.size===0);
         sourceFileMrState.mrState.currentLoopsInLoopScope.add(loopGroup);
         sourceFileMrState.mrState.currentLoopDepth++;
-        if (getMyDebug()){
+        if (getMyDebug(dbgLevel)){
             consoleGroup(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}`);
         }
         Debug.assert(loopGroup.kind===GroupForFlowKind.loop);
@@ -662,10 +663,22 @@ namespace ts {
          * TODO: We might want to allow local loopState up to a given value for sourceFileMrState.mrState.currentLoopDepth
          */
         const useGlobalLoopState = sourceFileMrState.mrState.currentLoopDepth > 0;
-        const loopState = !useGlobalLoopState ? createProcessLoopState(loopGroup)
-            : sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopGroup) ?? createProcessLoopState(loopGroup);
+
+        const loopState = (()=>{
+            if (useGlobalLoopState){
+                let got = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopGroup);
+                if (!got) {
+                    got = createProcessLoopState(loopGroup);
+                    sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.set(loopGroup,got);
+                }
+                return got;
+            }
+            else{
+                return createProcessLoopState(loopGroup);
+            }
+        })();
+
         loopState.invocations++;
-        //let devExpectString = "";
         let loopCount = 0;
         let forFlowFinal: ForFlow;
         //let forFlowLast: ForFlow;
@@ -694,24 +707,24 @@ namespace ts {
                 cachedSCForLoop = orSymtabConstraints(cachedSCForLoopContinue, mrNarrow);
             }
             // do the condition part of the loop
-            if (getMyDebug()){
-                consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}`);
+            if (getMyDebug(dbgLevel)){
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}`);
             }
             resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop, loopGroupIdx:loopGroup.groupIdx });
-            if (getMyDebug()){
-                consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}`);
+            if (getMyDebug(dbgLevel)){
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}`);
             }
 
             // if the loop condition is always false then break
             const cbe = forFlow.currentBranchesMap.get(loopGroup);
             Debug.assert(cbe?.kind===CurrentBranchesElementKind.tf);
             // do the rest of the loop
-            if (getMyDebug()){
-                consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}`);
+            if (getMyDebug(dbgLevel)){
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}`);
             }
             resolveHeap(sourceFileMrState,forFlow);
-            if (getMyDebug()){
-                consoleLog(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}`);
+            if (getMyDebug(dbgLevel)){
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}`);
             }
 
             setOfKeysToDeleteFromCurrentBranchesMap.clear();
@@ -720,7 +733,7 @@ namespace ts {
             });
             setOfKeysToDeleteFromCurrentBranchesMap.forEach((set,gff)=>forFlow.currentBranchesMap.delete(gff,set));
             // if the nodeToType maps have converged, then break
-            if (getMyDebug()){
+            if (getMyDebug(dbgLevel)){
                 dbgGroupToNodeToTypeMap(forFlow.groupToNodeToType!).forEach(s=>{
                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, g2n2tmap loopCount=${loopCount}: ${s}`);
                 });
@@ -734,7 +747,7 @@ namespace ts {
                 // if (mrNarrow.compilerOptions.enableTSDevExpectString){
                 //     devExpectString = `loop finished due to type map converged, loopCount=${loopCount}`;
                 // }
-                if (getMyDebug()){
+                if (getMyDebug(dbgLevel)){
                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop finished due to type map converged, loopCount=${loopCount}`);
                 }
                 forFlowFinal = forFlow;
@@ -768,17 +781,17 @@ namespace ts {
         });
         if (mrNarrow.compilerOptions.enableTSDevExpectString && sourceFileMrState.mrState.currentLoopDepth===1){
             sourceFileMrState.mrState.currentLoopsInLoopScope.forEach(loopg=>{
-                const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopg.maximalIdx].parent;
+                const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopg.maximalIdx];
                 const expected = getDevExpectString(node.parent, sourceFileMrState.sourceFile);
                 if (expected===undefined) return;
                 const lstate: ProcessLoopState = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopg)!;
                 const actual = `loopCount:${lstate.loopCountWithoutFinals}, invocations:${lstate.invocations}`;
                 if (actual!==expected){
-                    Debug.fail(`@ts-dev-expect-string expaced:"${expected}" !== actual:"${actual}"`);
+                    Debug.fail(`@ts-dev-expect-string expected:"${expected}" !== actual:"${actual}" ; node:${dbgs!.dbgNodeToString(node)}`);
                 }
             });
         }
-        if (getMyDebug()){
+        if (getMyDebug(dbgLevel)){
             dbgCurrentBranchesMap(loopState.loopUnionCurrentBranchesMap, sourceFileMrState).forEach(s=>consoleLog(`processLoop[dbg] loopUnionCurrentBranchesMap: ${s}`));
             //dbgForFlow(sourceFileMrState, forFlowFinal).forEach(s=>consoleLog(`processLoop[dbg] branches: ${s}`));
             dbgGroupToNodeToTypeMap(loopState.loopUnionGroupToNodeToType).forEach(s=>consoleLog(`processLoop[dbg] loopUnionGroupToNodeToType: ${s}`));

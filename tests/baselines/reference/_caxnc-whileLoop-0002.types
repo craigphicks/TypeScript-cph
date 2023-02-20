@@ -1,6 +1,4 @@
 === tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0002.ts ===
-// This loop terminates at 0 iteration
-// loop finished due to truthy never, loopCount=0
 function t2(){
 >t2 : () => void
 
@@ -11,7 +9,7 @@ function t2(){
     b;
 >b : false
 
-    // @ts-dev-expect-string "loop finished due to truthy never, loopCount=0"
+    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b){
 >b : false
 

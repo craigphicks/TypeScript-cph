@@ -13,7 +13,7 @@ function t32(){
 >b2 : boolean
 >true : true
 
-    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=1"
+    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b1){
 >b1 : true
 
@@ -21,7 +21,7 @@ function t32(){
 >b1 : true
 >b2 : true
 
-        // @ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+        // @ts-dev-expect-string "loopCount:1, invocations:2"
         while (b2){
 >b2 : true
 

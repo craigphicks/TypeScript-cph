@@ -16,11 +16,6 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. Switch `devExpectStringEnable` on and enter correct values for whileLoop tests cases.
-
-0. Had to change the `processLoop` to not break on loop conditions of never - because otherwise some cbe are not setup for postcessers.  Therefore also had to turn off `devExpectStringEnable` because many of those are expecting loop to quit on never conditions.  However, the loop count is still important, so `devExpectStringEnable` might be switched on later .... but there is another problem - when the loop antecesser conditions change the loop will be recalculated and the loopCount may differ.  Which leads to another issue - preserving the union state of inner loops so that subsequent calls to processLoop do less work or possibly no work at all, not to mention convergence and being accurate.  Keeping in mind the aforementioned major change required, all tests are passing.
-
-
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
 0.  `Do` loop
 0.  `For`,`ForOf`,`ForIn` loops
@@ -57,6 +52,9 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. Switch `devExpectStringEnable` is back on. `sourceFileMrState.mrState.loopGroupToProcessLoopStateMap`, working properly. None of the existing tests result types were changed.
+
 
 0. `processLoop` setup to use `sourceFileMrState.mrState.loopGroupToProcessLoopStateMap`, and also setup to check loopCount and invocations of each `ProcessLoopState` in that map, although the `devExpectStringEnable` switch is still forced off.  Will have to go back and determine the expect values for each test case.  All tests passing.
 

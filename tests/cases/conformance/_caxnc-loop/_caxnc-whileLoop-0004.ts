@@ -5,12 +5,11 @@
 // @enableTSDevExpectString: true
 
 
-// loop finished due to truthy never, loopCount=2
 function t4(){
     let b = false;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loop finished due to truthy never, loopCount=2"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (d){
         d = c;
         c = b;

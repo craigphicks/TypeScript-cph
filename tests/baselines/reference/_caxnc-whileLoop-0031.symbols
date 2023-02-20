@@ -11,14 +11,14 @@ function t31(){
     let b2 = true;
 >b2 : Symbol(b2, Decl(_caxnc-whileLoop-0031.ts, 3, 7))
 
-    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=1"
+    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b1){
 >b1 : Symbol(b1, Decl(_caxnc-whileLoop-0031.ts, 2, 7))
 
         b1;
 >b1 : Symbol(b1, Decl(_caxnc-whileLoop-0031.ts, 2, 7))
 
-        // @ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+        // @ts-dev-expect-string "loopCount:1, invocations:2"
         while (b2){
 >b2 : Symbol(b2, Decl(_caxnc-whileLoop-0031.ts, 3, 7))
         }

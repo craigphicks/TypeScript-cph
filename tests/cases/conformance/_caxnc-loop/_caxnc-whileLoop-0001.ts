@@ -8,7 +8,7 @@
 function t1(){
     let b = true;
     b;
-    // @ts-dev-expect-string "loop finished due to truthy never, loopCount=1"
+    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b){
         let c = !b;
         c;

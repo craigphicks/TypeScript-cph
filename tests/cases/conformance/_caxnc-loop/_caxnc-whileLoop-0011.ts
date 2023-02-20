@@ -8,7 +8,7 @@
 declare function maybe(x:boolean): boolean;
 function t11(){
     let d = true;
-    // @ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (d){
         d=false;
         if (maybe(d)) continue;

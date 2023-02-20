@@ -16,7 +16,7 @@ function t5(){
     let d = true;
 >d : Symbol(d, Decl(_caxnc-whileLoop-0005.ts, 6, 7))
 
-    // @ts-dev-expect-string "loop finished due to type map converged, loopCount=3"
+    // @ts-dev-expect-string "loopCount:3, invocations:1"
     while (d){
 >d : Symbol(d, Decl(_caxnc-whileLoop-0005.ts, 6, 7))
 

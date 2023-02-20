@@ -15,7 +15,7 @@ function t3(){
 >d : boolean
 >true : true
 
-    // @ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (d){
 >d : true
 

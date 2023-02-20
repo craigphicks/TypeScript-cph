@@ -14,7 +14,7 @@ function t21(){
     let d = true;
 >d : Symbol(d, Decl(_caxnc-whileLoop-0021.ts, 4, 7))
 
-    // @ts-dev-expect-string "loop finished due to both truthy and falsy never (e.g. break), loopCount=2"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (d){
 >d : Symbol(d, Decl(_caxnc-whileLoop-0021.ts, 4, 7))
 

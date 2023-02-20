@@ -16,7 +16,7 @@ function t34(){
     loop1:
 >loop1 : any
 
-    // @ ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (b1){
 >b1 : true
 
@@ -24,7 +24,7 @@ function t34(){
 >b1 : true
 >b2 : boolean
 
-        // @ ts-dev-expect-string "loop finished due to type map converged, loopCount=1"
+        // @ts-dev-expect-string "loopCount:2, invocations:3"
         while (b2){
 >b2 : boolean
 
