@@ -47,6 +47,7 @@
         "checker.ts",
         "heaper.ts",
         "flowNodesGrouping.ts",
+        "flowNodesDebugWrite.ts",
         "flowGroupInfer.ts",
         "flowGroupInfer2.ts",
         "flowGroupInferRefTypesType.ts",

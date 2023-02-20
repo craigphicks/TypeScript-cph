@@ -216,6 +216,7 @@ namespace ts {
         const myDisableInfer = (process.env.myDisableInfer===undefined) ? false : !!Number(process.env.myDisableInfer);;
         const labelBlockScopes = !myDisableInfer;
         const labelAllFunctionCalls = !myDisableInfer;
+        const alwaysAddFlowToConditionNode = !myDisableInfer;
 
 
         let file: SourceFile;
@@ -1043,13 +1044,15 @@ namespace ts {
             if (!expression) {
                 return flags & FlowFlags.TrueCondition ? antecedent : unreachableFlow;
             }
-            if ((expression.kind === SyntaxKind.TrueKeyword && flags & FlowFlags.FalseCondition ||
-                expression.kind === SyntaxKind.FalseKeyword && flags & FlowFlags.TrueCondition) &&
-                !isExpressionOfOptionalChainRoot(expression) && !isNullishCoalesce(expression.parent)) {
-                return unreachableFlow;
-            }
-            if (!isNarrowingExpression(expression)) {
-                return antecedent;
+            if (!alwaysAddFlowToConditionNode){
+                if ((expression.kind === SyntaxKind.TrueKeyword && flags & FlowFlags.FalseCondition ||
+                    expression.kind === SyntaxKind.FalseKeyword && flags & FlowFlags.TrueCondition) &&
+                    !isExpressionOfOptionalChainRoot(expression) && !isNullishCoalesce(expression.parent)) {
+                    return unreachableFlow;
+                }
+                if (!isNarrowingExpression(expression)) {
+                    return antecedent;
+                }
             }
             setFlowNodeReferenced(antecedent);
             return initFlowNode({ flags, antecedent, node: expression });
@@ -1146,6 +1149,9 @@ namespace ts {
         }
 
         function bindCondition(node: Expression | undefined, trueTarget: FlowLabel, falseTarget: FlowLabel) {
+            if (node && alwaysAddFlowToConditionNode){
+                setNodeFlow(node, currentFlow); // This might get set again (overwritten) in `bind`, but that's ok.
+            }
             doWithConditionalBranches(bind, node, trueTarget, falseTarget);
             if (!node || !isLogicalAssignmentExpression(node) && !isLogicalExpression(node) && !(isOptionalChain(node) && isOutermostOptionalChain(node))) {
                 addAntecedent(trueTarget, createFlowCondition(FlowFlags.TrueCondition, currentFlow, node));

@@ -16,6 +16,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+0. Deeper embedded while loop tests to demonstrate exactly what is the looping complexity.
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
 0.  `Do` loop
 0.  `For`,`ForOf`,`ForIn` loops
@@ -52,6 +53,8 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. A `while(true)` loop was getting prematurely optimized in binder, causing an assert failure in flow node grouping.  That's now fixed with `alwaysAddFlowToConditionNode` in binder - `_caxnc-whileLoop-0040` now passes with this fix.  All `_caxnc-` tests passing.
 
 0. Switch `devExpectStringEnable` is back on. `sourceFileMrState.mrState.loopGroupToProcessLoopStateMap`, working properly. None of the existing tests result types were changed.
 

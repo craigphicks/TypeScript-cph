@@ -323,7 +323,9 @@ namespace Harness {
             const sourceFile = this.result.program!.getSourceFile(this.fileName);
             if (!sourceFile) throw new Error(`this.result.program!.getSourceFile(${this.fileName}) failed`);
             //Debug.assert(sourceFile);
-            this.result.program!.getTypeChecker().createAndSetSourceFileInferState(sourceFile);
+            if (process.env.myDisableInfer===undefined || Number(process.env.myDisableInfer)===0){
+                this.result.program!.getTypeChecker().createAndSetSourceFileInferState(sourceFile);
+            }
             Compiler.doTypeAndSymbolBaseline(
                 this.configuredName,
                 this.result.program!,
