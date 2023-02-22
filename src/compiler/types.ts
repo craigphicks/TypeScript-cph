@@ -3517,6 +3517,7 @@ namespace ts {
         // In case of branchKind===BranchKind.postIf originatingExpression refers to the condtion of the corresponding if statement.
         // In case of branchKind===BranchKind.postBlock originatingExpression refers to the ???
         originatingExpression?: Node; // currently only present when branchKind===BranchKind.postIf
+        controlExits?: FlowNode[];
     }
 
     // FlowAssignment represents a node that assigns a value to a narrowable reference,

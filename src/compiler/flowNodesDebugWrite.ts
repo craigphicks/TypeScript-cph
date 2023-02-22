@@ -85,6 +85,10 @@ namespace ts {
                 write(indent()+`antecedents:[${((fn as any).antecedents as FlowNode[]).length}]`);
                 ((fn as any).antecedents as Readonly<FlowNode[]>).forEach(a => doOne(a));
             }
+            if ((fn as FlowLabel).controlExits) {
+                write(indent()+`controlExits:[${((fn as FlowLabel).controlExits as FlowNode[]).length}]`);
+                ((fn as FlowLabel).controlExits as Readonly<FlowNode[]>).forEach(a => doOne(a));
+            }
             if ((fn as any).antecedent) {
                 write(indent()+"antecedent:");
                 doOne((fn as any).antecedent);

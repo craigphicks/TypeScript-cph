@@ -217,7 +217,7 @@ namespace ts {
         const labelBlockScopes = !myDisableInfer;
         const labelAllFunctionCalls = !myDisableInfer;
         const alwaysAddFlowToConditionNode = !myDisableInfer;
-
+        const recordBreakAndReturnOnControlLoop = !myDisableInfer;
 
         let file: SourceFile;
         let options: CompilerOptions;
@@ -1036,6 +1036,13 @@ namespace ts {
                 setFlowNodeReferenced(antecedent);
             }
         }
+        function addControlExit(label: FlowLabel, controlExit: FlowNode): void {
+            Debug.assert(recordBreakAndReturnOnControlLoop);
+            if (!contains(label.controlExits, controlExit)) {
+                (label.controlExits || (label.controlExits = [])).push(controlExit);
+                setFlowNodeReferenced(controlExit);
+            }
+        }
 
         function createFlowCondition(flags: FlowFlags, antecedent: FlowNode, expression: Expression | undefined): FlowNode {
             if (antecedent.flags & FlowFlags.Unreachable) {
@@ -1284,6 +1291,16 @@ namespace ts {
         }
 
         function bindBreakOrContinueStatement(node: BreakOrContinueStatement): void {
+            /**
+             * Because mrNarrow needs to know the groups (not within subloops) upon which a loop depends, the loop `break` and `return` statement must be used
+             * to record the `currentFlow` as a dependency leaf relative to the `currentContinueTarget`.  No need to do so with `continue`,
+             * because that is already noted as a dependecy on the `currentContinueTarget`.
+             */
+            if (recordBreakAndReturnOnControlLoop){
+                if (node.kind === SyntaxKind.BreakStatement && currentContinueTarget){
+                    addControlExit(currentContinueTarget, currentFlow);
+                }
+            }
             bind(node.label);
             if (node.label) {
                 const activeLabel = findActiveLabel(node.label.escapedText);

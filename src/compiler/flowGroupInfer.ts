@@ -64,6 +64,7 @@ namespace ts {
         loopElseGroupIdx?: number; // needed for loopGroup stack processing in resolveHeap
         antePrevious: FlowGroupLabel;
         arrAnteContinue: FlowGroupLabel[];
+        arrControlExit?: FlowGroupLabel[]; // In fact this member is not required as long as the control exits groups are inserted into setOfAnteGroups in flowNodeGrouping
     };
     export type FlowGroupLabelLoopThen = & {
         kind: FlowGroupLabelKind.loopThen;
@@ -86,12 +87,13 @@ namespace ts {
         maximalIdx: number,
         idxb: number,
         idxe: number,
-        precOrdContainerIdx: number, // used to determine GroupForFlow order.
+        precOrdContainerIdx: number,
         groupIdx: number,
-        previousAnteGroupIdx?: number; // the previous statement
+        previousAnteGroupIdx?: number; // the previous statement, sometimes
         anteGroupLabels: FlowGroupLabel[];
         dbgSetOfUnhandledFlow?: Set<FlowLabel>;
-        //referencingGroupIdxs: number[];
+        postLoopGroupIdx?: number; // only present for a loop control group - required for processLoop updateHeap
+        arrPreLoopGroupsIdx?: number[]; // only present for a postLoop group - required for processLoop updateHeap
     };
 
     export interface ContainerItem { node: Node, precOrderIdx: number };
@@ -435,7 +437,7 @@ namespace ts {
             currentReplayableItem: undefined,
             replayables: sourceFileMrState.mrState.replayableItems,
             declaredTypes: sourceFileMrState.mrState.declaredTypes,
-            groupNodeToTypeMap: new Map<Node,Type>(),
+            groupNodeToTypeMap: new Map<Node,Type>(), // IWOZERE
             getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
                 return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
             },
@@ -636,6 +638,7 @@ namespace ts {
         return undefined;
     }
 
+    //function calculateLoop
 
     // @ ts-expect-error
     function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow): number {
@@ -1012,7 +1015,8 @@ namespace ts {
         setOfKeysToDeleteFromCurrentBranchesMap.forEach((set,gff)=>forFlow.currentBranchesMap.delete(gff,set));
 
         const crit: InferCrit = !inferStatus.inCondition ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
-        if (!forFlow.groupToNodeToType) forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
+        Debug.assert(forFlow.groupToNodeToType);
+//        if (!forFlow.groupToNodeToType) forFlow.groupToNodeToType = new Map<GroupForFlow, NodeToTypeMap>();
         forFlow.groupToNodeToType.set(groupForFlow, inferStatus.groupNodeToTypeMap); // not this is an assign not a merge even if hte map is already set (loop)
 
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({

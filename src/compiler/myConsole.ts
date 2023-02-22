@@ -115,7 +115,7 @@ namespace ts {
             }
             if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
             if (isFlowLabel(flow) && flow.originatingExpression){
-                str += `originatingExpression: [n${flow.originatingExpression.id}]{pos:${flow.originatingExpression.pos},end:${flow.originatingExpression.end}}`;
+                str += `originatingExpression: [n${flow.originatingExpression.id}]{pos:${flow.originatingExpression.pos},end:${flow.originatingExpression.end}}, `;
                 // str += `originatingExpression: ${dbgNodeToString(flow.originatingExpression)},`;
             }
             // if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;aaaaaa
@@ -130,6 +130,10 @@ namespace ts {
                     str += "]";
                 });
                 str += "]";
+            }
+            if (isFlowLabel(flow) && flow.controlExits){
+                str += `controlExits:`;
+                str += "["+flow.controlExits.map(fn=>`${fn.id}`).join(",")+"]";
             }
             return str;
         };

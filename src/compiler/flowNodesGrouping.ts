@@ -357,11 +357,16 @@ namespace ts {
                                 Debug.assert(fglab);
                                 return fglab;
                             });//.filter(x=>!!x);
-                            return {
+                            const ret: FlowGroupLabelLoop = {
                                 kind: FlowGroupLabelKind.loop,
                                 antePrevious,
-                                arrAnteContinue
+                                arrAnteContinue,
                             };
+                            if (fn.controlExits){
+                                const arrControlExit: FlowGroupLabel[] = fn.controlExits?.map(fnce=>flowNodeResolve(fnce)).filter(x=>!!x) as FlowGroupLabel[];
+                                ret.arrControlExit = arrControlExit;
+                            }
+                            return ret;
                         };
                         const flowBranchPreWhileBodyResolve = (fn: FlowLabel): FlowGroupLabelLoopThen => {
                             Debug.assert(fn.flags & FlowFlags.BranchLabel && fn.branchKind === BranchKind.preWhileBody);
@@ -386,6 +391,10 @@ namespace ts {
                                 Debug.assert(fglab);
                                 return fglab;
                             });
+                            Debug.assert(orderedGroups[loopGroupIdx].postLoopGroupIdx===undefined);
+                            orderedGroups[loopGroupIdx].postLoopGroupIdx = g.groupIdx;
+                            if (g.arrPreLoopGroupsIdx===undefined) g.arrPreLoopGroupsIdx = [loopGroupIdx];
+                            else g.arrPreLoopGroupsIdx.push(loopGroupIdx);
                             return {
                                 kind: FlowGroupLabelKind.postLoop,
                                 loopGroupIdx,
@@ -623,6 +632,12 @@ namespace ts {
                 fglab.arrAnteContinue.forEach((fgac,fgacidx)=>{
                     as.push(...dbgFlowGroupLabelToStrings(fgac, dbgs, checker).map(s=>`    [${fgacidx}]  ${s}`));
                 });
+                if (fglab.arrControlExit){
+                    as.push(`arrControlExits:`);
+                    fglab.arrControlExit.forEach((fgac,fgacidx)=>{
+                        as.push(...dbgFlowGroupLabelToStrings(fgac, dbgs, checker).map(s=>`    [${fgacidx}]  ${s}`));
+                    });
+                }
                 break;
             case FlowGroupLabelKind.loopThen:
                 as.push(`loopGroupIdx: ${fglab.loopGroupIdx}`);
@@ -702,12 +717,15 @@ namespace ts {
                     astr.push(`groups[${i}]:    anteGroupLabels[${idx}]: ${s}`);
                 });
             });
+            if (g.postLoopGroupIdx) astr.push(`groups[${i}]:    postLoopGroupIdx:${g.postLoopGroupIdx}`);
+            if (g.arrPreLoopGroupsIdx) astr.push(`groups[${i}]:    arrPreLoopGroupIdx:[${g.arrPreLoopGroupsIdx.map(idx=>`${idx}`).join(",")}]`);
             if (g.dbgSetOfUnhandledFlow){
                 g.dbgSetOfUnhandledFlow.forEach((fnlab,fnlabidx)=>{
                     astr.push(`groups[${i}]:    dbgSetOfUnhandledFlow[${fnlabidx}]: ${dbgFlowToString(fnlab,/*withAntecedents*/ true)}`);
                 });
             }
         });
+
         gff.precOrderContainerItems.forEach((ci,i)=>{
             astr.push(`containerItems[${i}]: node:${dbgNodeToString(ci.node)}`);
         });

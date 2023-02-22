@@ -16,6 +16,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+0. Loop-convergence-fix1: `_caxnc-whileLoop-0042.ts` not passing because inner loop is converging and finishing without propogating out the new inputs.  Chosen solution is (1) to use the nodeToTypeMap cummulative result and feed it back into every r.h.s. identifier.  L.h.s. of assignments is union of cummulative with r.h.s. of assignment.  This includes variable declarations (const and non-const) as well as assignments. (2) Detecting convergence: Instead of comparing to a copy of the previous iteration, set a flag when when update to node to type map makes a change.  However, for the time being keep the copy compare action to ensure the flag action is working correctly - i.e., keep them both. (3) Symtab/Constraints: should follow from (1) with no special action required.
 0. Deeper embedded while loop tests to demonstrate exactly what is the looping complexity.
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
 0.  `Do` loop
@@ -53,6 +54,11 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. `recordBreakAndReturnOnControlLoop` directive variable added to `createBinder` in `binder.ts` and optional member `controlExits` to `FlowLabel` - these allows `break` statements to be accesses from loop control, the utility of which is to be able to include all such exits from the loop when calculating dependencies in the `GroupsForFlow["groupsToAnteGroupMap"]` map.   `arrControlExit` member added to `FlowGroupLabelLoop` in `flowGroupInfer.ts`, but is not currently used.
+All `_caxnc` tests passing.
+
+0. `flowNodesDebugWrite.ts`, code moved out of `checker.ts` and `flowNodesToString` called before `createAndSetSourceFileInferState` so that if an assertion fails in `createAndSetSourceFileInferState` we can still analyze the flow nodes graph.
 
 0. A `while(true)` loop was getting prematurely optimized in binder, causing an assert failure in flow node grouping.  That's now fixed with `alwaysAddFlowToConditionNode` in binder - `_caxnc-whileLoop-0040` now passes with this fix.  All `_caxnc-` tests passing.
 
