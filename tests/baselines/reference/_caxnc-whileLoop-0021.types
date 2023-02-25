@@ -17,14 +17,14 @@ function t21(){
 >d : boolean
 >true : true
 
-    // @ts-dev-expect-string "loopCount:2, invocations:1"
+    // @ts-dev-expect-string "loopCount:4, invocations:1"
     while (d){
->d : true
+>d : boolean
 
         d = c;
->d = c : true
+>d = c : boolean
 >d : boolean
->c : true
+>c : boolean
 
         c = b;
 >c = b : boolean
@@ -51,8 +51,8 @@ function t21(){
     [b,c,d,e];
 >[b,c,d,e] : boolean[]
 >b : false
->c : false
->d : true
+>c : boolean
+>d : boolean
 >e : false
 }
 

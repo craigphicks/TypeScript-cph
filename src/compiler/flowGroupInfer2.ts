@@ -2686,12 +2686,12 @@ namespace ts {
                         case SyntaxKind.NumericLiteral:
                             type = checker.getNumberLiteralType(Number(getSourceTextOfNodeFromSourceFile(sourceFile,expr)));
                             break;
-                        case SyntaxKind.StringLiteral:
-                            type = checker.getStringLiteralType(getSourceTextOfNodeFromSourceFile(sourceFile,expr));
-                            break;
+                        // case SyntaxKind.StringLiteral:
+                        //     type = checker.getStringLiteralType(getSourceTextOfNodeFromSourceFile(sourceFile,expr));
+                        //     break;
+                        default:
+                            type = checker.getTypeAtLocation(expr);
                     }
-                    //const type: Type = checker.getTypeAtLocation(expr);
-                    //mergeOneIntoNodeToTypeMaps(expr, type,inferStatus.groupNodeToTypeMap);
                     return {
                         arrRefTypesTableReturn: [{
                             kind: RefTypesTableKind.return,
