@@ -171,7 +171,8 @@ namespace ts {
         replayables: ESMap< Symbol, ReplayableItem >;
         declaredTypes: ESMap<Symbol, RefTypesTableLeaf>; // note: symbol entries are (should be) deleted when symbol goes out of scope (postBlock trigger).
         groupNodeToTypeMap: ESMap<Node,Type>;
-        withinLoop: boolean,
+        //accumNodeTypes: boolean,
+        accumBranches: boolean,
         /**
          * This allows checker.getTypeOfExpression(expr) to be called on any node in groupNodeToTypeMap, which may be conputed deep within a speculative branch,
          * e.g., mrNarrowTypesByCallExpression.  (In test _cax-fn-0020.ts it is called in SpreadElement deep under mrNarrowTypesByCallExpression)

@@ -16,7 +16,6 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. Seperate `withinLoop` to `accumulateNodeTypes` and `accumulateCbe`.  While it is certain the `accumulateNodeTypes` alone is insufficient, the result of `accumulateNodeTypes` alone has not been tested.
 0. In `mrNarrowTypesInnerAux` for `case SyntaxKind.StringLiteral` substituting `checker.getStringLiteralType(getSourceTextOfNodeFromSourceFile(sourceFile,expr))` for `checker.getTypeAtLocation(expr)` failed (test type results failing) although it worked for `TrueKeyword`, `FalseKeyword`, and `NumericLiteral`.  Perhaps extra quotes.  Fix it.
 0. Deeper embedded while loop tests to demonstrate exactly what is the looping complexity.
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
@@ -58,7 +57,10 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
-0. Any cbe left at the end of a loop correpond either to (1) the antecedents of the loop control or (2) the antecedents external to loop control.  The (1) antecedents of the loop control will be consumed on the next loop iteration, unless the loop converges, in which case they are not needed. The (2) antecedents external to loop control are not consumed on each iteration so must be accumulated until they are read.  The obvious place to do this is withing the global currentBranchMap.
+0. Seperated `withinLoop` to `accumulateNodeTypes` and `accumulateBranches`.  Confirmed that `accumulateBranches` alone, without `accumulateNodeTypes`, is sufficient to pass all tests - absolutely no change in results.  (`accumulateNodeTypes` without `accumulateBranches` does not pass all tests.) The `accumulateNodeTypes` member was removed and `function maybeUnionOfTypeOverLoop` is commented out.
+- All `_caxnc-` tests passing.
+
+0. Any cbe left at the end of a loop correpond either to (1) the antecedents of the loop control or (2) the antecedents external to loop control.  The (1) antecedents of the loop control will be consumed on the next loop iteration, unless the loop converges, in which case they are not needed. The (2) antecedents external to loop control are not consumed on each iteration so must be accumulated until they are read.  The obvious place to do this is within the global currentBranchMap.
 0. Loop-convergence-fix1: `_caxnc-whileLoop-0042.ts` not passing because inner loop is converging and finishing without propogating out the new inputs.  Chosen solution is (1) to use the nodeToTypeMap cummulative result and feed it back into every r.h.s. identifier.  L.h.s. of assignments is union of cummulative with r.h.s. of assignment.  This includes variable declarations (const and non-const) as well as assignments. (2) Detecting convergence: Instead of comparing to a copy of the previous iteration, set a flag when when update to node to type map makes a change.  However, for the time being keep the copy compare action to ensure the flag action is working correctly - i.e., keep them both. (3) Symtab/Constraints: should follow from (1) with no special action required.
 - All `_caxnc-` tests passing.
 

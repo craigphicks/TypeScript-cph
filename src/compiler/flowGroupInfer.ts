@@ -507,7 +507,8 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems,
             declaredTypes: sourceFileMrState.mrState.declaredTypes,
             groupNodeToTypeMap,
-            withinLoop,
+            //accumNodeTypes: false, //withinLoop,
+            accumBranches: withinLoop,
             getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
                 return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
             },
@@ -808,7 +809,7 @@ namespace ts {
 
         //let cachedSCForLoop0: RefTypesSymtabConstraintItem;
         if (getMyDebug(dbgLevel)){
-            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withingLoop:${withinLoop}`);
+            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
         }
         {
             const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, withinLoop);
@@ -817,7 +818,7 @@ namespace ts {
             resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { loopGroupIdx:loopGroup.groupIdx,cachedSCForLoop: cachedSCForLoop0 });
         }
         if (getMyDebug(dbgLevel)){
-            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withingLoop:${withinLoop}`);
+            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
         }
 
 
@@ -854,14 +855,14 @@ namespace ts {
                 // const cachedSCForLoop = orSymtabConstraints([ cachedSCForLoop0, ...cachedSCForLoopContinue ], mrNarrow);
                 const cachedSCForLoop = orSymtabConstraints(cachedSCForLoopContinue, mrNarrow);
                 if (getMyDebug(dbgLevel)){
-                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withingLoop:${withinLoop}`);
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
                 }
                 Debug.assert(forFlow.heap.peek()===loopGroup.groupIdx);
                 forFlow.heap.remove();
                 const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, withinLoop);
                     resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop, loopGroupIdx:loopGroup.groupIdx });
                 if (getMyDebug(dbgLevel)){
-                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withingLoop:${withinLoop}`);
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
                 }
             }
             // do the condition part of the loop
@@ -871,11 +872,11 @@ namespace ts {
             Debug.assert(cbe?.kind===CurrentBranchesElementKind.tf);
             // do the rest of the loop
             if (getMyDebug(dbgLevel)){
-                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withingLoop:${withinLoop}`);
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
             }
             resolveHeap(sourceFileMrState,forFlow, withinLoop, maxGroupIdxProcessed);
             if (getMyDebug(dbgLevel)){
-                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withingLoop:${withinLoop}`);
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
             }
 
             setOfKeysToDeleteFromCurrentBranchesMap.clear();
@@ -1168,7 +1169,7 @@ namespace ts {
                 },
                 originalConstraintIn: constraintItemArg
             };
-            if (!inferStatus.withinLoop){
+            if (!inferStatus.accumBranches){
                 Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
                 forFlow.currentBranchesMap.set(groupForFlow, cbe);
             }
@@ -1191,7 +1192,7 @@ namespace ts {
                     //byNode: retval.byNode,
                 }
             };
-            if (!inferStatus.withinLoop){
+            if (!inferStatus.accumBranches){
                 Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
                 forFlow.currentBranchesMap.set(groupForFlow, cbe);
             }
