@@ -16,7 +16,6 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. In `mrNarrowTypesInnerAux` for `case SyntaxKind.StringLiteral` substituting `checker.getStringLiteralType(getSourceTextOfNodeFromSourceFile(sourceFile,expr))` for `checker.getTypeAtLocation(expr)` failed (test type results failing) although it worked for `TrueKeyword`, `FalseKeyword`, and `NumericLiteral`.  Perhaps extra quotes.  Fix it.
 0. Deeper embedded while loop tests to demonstrate exactly what is the looping complexity.
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
 0.  `Do` loop
@@ -56,6 +55,9 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. In `mrNarrowTypesInnerAux` for `case SyntaxKind.StringLiteral` substituting `checker.getStringLiteralType(getSourceTextOfNodeFromSourceFile(sourceFile,expr))` for `checker.getTypeAtLocation(expr)` failed (test type results failing) although it worked for `TrueKeyword`, `FalseKeyword`, and `NumericLiteral`.  Perhaps extra quotes.  Fixed.
+- All `_caxnc-` tests passing.
 
 0. Seperated `withinLoop` to `accumulateNodeTypes` and `accumulateBranches`.  Confirmed that `accumulateBranches` alone, without `accumulateNodeTypes`, is sufficient to pass all tests - absolutely no change in results.  (`accumulateNodeTypes` without `accumulateBranches` does not pass all tests.) The `accumulateNodeTypes` member was removed and `function maybeUnionOfTypeOverLoop` is commented out.
 - All `_caxnc-` tests passing.

@@ -2681,12 +2681,20 @@ namespace ts {
                         case SyntaxKind.NumericLiteral:
                             type = checker.getNumberLiteralType(Number(getSourceTextOfNodeFromSourceFile(sourceFile,expr)));
                             break;
-                        // case SyntaxKind.StringLiteral:
-                        //     type = checker.getStringLiteralType(getSourceTextOfNodeFromSourceFile(sourceFile,expr));
-                        //     break;
+                        case SyntaxKind.StringLiteral:{
+                            let str = getSourceTextOfNodeFromSourceFile(sourceFile,expr);
+                            Debug.assert(str.length>=2);
+                            str = str.slice(1,-1);
+                            type = checker.getStringLiteralType(str);
+                        }
+                            break;
                         default:
-                            type = checker.getTypeAtLocation(expr);
+                            Debug.fail("unexpected");
                     }
+                    // const typeCheck = checker.getTypeAtLocation(expr);
+                    // if (type!==typeCheck){
+                    //     Debug.fail(`type!==typeCheck, type:${typeToString(type)}, typeCheck:${typeToString(typeCheck)}, ${dbgNodeToString(expr)}`);
+                    // }
                     return {
                         arrRefTypesTableReturn: [{
                             kind: RefTypesTableKind.return,
