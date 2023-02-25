@@ -11,7 +11,7 @@ function t11(){
 >d : boolean
 >true : true
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (d){
 >d : boolean
 

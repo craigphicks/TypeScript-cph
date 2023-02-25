@@ -48,9 +48,7 @@ namespace ts {
         compilerOptions: CompilerOptions
     };
 
-    export function createMrNarrow(checker: TypeChecker, _mrState: MrState, refTypesTypeModule: RefTypesTypeModule, compilerOptions: CompilerOptions): MrNarrow {
-
-
+    export function createMrNarrow(checker: TypeChecker, sourceFile: Readonly<SourceFile>, _mrState: MrState, refTypesTypeModule: RefTypesTypeModule, compilerOptions: CompilerOptions): MrNarrow {
         const {
             // @ts-ignore-error
             subtypeRelation,
@@ -864,6 +862,23 @@ namespace ts {
             };
         }
 
+        function maybeUnionOfTypeOverLoop(symbol: Symbol, isconst: boolean, type: RefTypesType, node: Node, sc: RefTypesSymtabConstraintItem, inferStatus: InferStatus, _dgbString: string):
+        { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+            if (inferStatus.withinLoop && !inferStatus.currentReplayableItem){
+                const cumTsType = inferStatus.groupNodeToTypeMap.get(node);
+                if (cumTsType && checker.getNeverType()!==cumTsType){
+                    type = unionOfRefTypesType([type, createRefTypesType(cumTsType)]);
+                    const getDeclaredType = createGetDeclaredTypeFn(inferStatus);
+                    const {type:typeOut, sc:scOut} = orSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc, getDeclaredType, mrNarrow });
+                    return {
+                        type: typeOut,
+                        sc: scOut
+                    };
+                }
+            }
+            return { type, sc };
+        }
+
         function mrNarrowTypesByBinaryExpresionAssign(args: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             const {left:leftExpr,right:rightExpr} = args.expr as BinaryExpression;
             const {refTypesSymtab,constraintItem} = args;
@@ -886,15 +901,21 @@ namespace ts {
                     declared = createRefTypesTableLeaf(symbol,isconst,createRefTypesType(tsTypeDeclared));
                     args.inferStatus.declaredTypes.set(symbol,declared);
                 }
-                // do a type check against delared first? And if it fails, do what? set declared as the type?
-                const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,{ leaf: createRefTypesTableLeaf(symbol, isconst, rhs.inferRefRtnType.passing.type) });
-                // const got = rhs.inferRefRtnType.passing.symtab.get(symbol);
-                // if (!got){
-                //     // type check?
+                // eslint-disable-next-line prefer-const
+                // let type = rhs.inferRefRtnType.passing.type;
+                // eslint-disable-next-line prefer-const
+                //let scout: RefTypesSymtabConstraintItem = { symtab: rhs.inferRefRtnType.passing.symtab, constraintItem: rhs.inferRefRtnType.passing.constraintItem };
+                //({type,sc:scout} = maybeUnionOfTypeOverLoop(symbol,isconst,type,leftExpr,scout,args.inferStatus, "assignIdentifier"));
+                // if (args.inferStatus.withinLoop && !args.inferStatus.currentReplayableItem){
+                //     // merge type with accumulated history
+                //     const cumTsType = args.inferStatus.groupNodeToTypeMap.get(leftExpr);
+                //     Debug.assert(cumTsType);
+                //     type = unionOfRefTypesType([type, createRefTypesType(cumTsType)]);
                 // }
+                const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,{ leaf:createRefTypesTableLeaf(symbol,isconst,rhs.inferRefRtnType.passing.type) });
                 return { arrRefTypesTableReturn: [{
-                    ...rhs.inferRefRtnType.passing, symtab
-                }] };
+                    ...rhs.inferRefRtnType.passing, symbol, symtab, /*type, symtab: scout.symtab, constraintItem: scout.constraintItem*/
+                }]};
             }
             else {
                 Debug.fail("not yet implemented as lhs: "+ Debug.formatSyntaxKind(leftExpr.kind));
@@ -2284,10 +2305,31 @@ namespace ts {
                         Debug.assert(!rhs.inferRefRtnType.failing);
                         Debug.assert(rhs.inferRefRtnType.unmerged);
                         //mergeOneIntoNodeToTypeMaps(expr, getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type),inferStatus.groupNodeToTypeMap);
-                        const arrRefTypesTableReturn = inferStatus.inCondition ? rhs.inferRefRtnType.unmerged : [rhs.inferRefRtnType.passing];
-                        return {
-                            arrRefTypesTableReturn
-                        };
+                        if (inferStatus.inCondition && !inferStatus.withinLoop) return { arrRefTypesTableReturn: rhs.inferRefRtnType.unmerged };
+                        else {
+                            let type = rhs.inferRefRtnType.passing.type;
+                            let scout: RefTypesSymtabConstraintItem = { symtab:rhs.inferRefRtnType.passing.symtab, constraintItem:rhs.inferRefRtnType.passing.constraintItem };
+                            const isconst = true;
+                            ({type,sc:scout} = maybeUnionOfTypeOverLoop(symbol, isconst, type, expr, scout, inferStatus, "replayableIdentifier"));
+                            // if (inferStatus.withinLoop && !inferStatus.currentReplayableItem){
+                            //     // merge type with accumulated history
+                            //     const cumTsType = inferStatus.groupNodeToTypeMap.get(expr);
+                            //     Debug.assert(cumTsType);
+                            //     type = unionOfRefTypesType([type, createRefTypesType(cumTsType)]);
+                            // }
+                            return {
+                                arrRefTypesTableReturn: [{
+                                    ...rhs.inferRefRtnType.passing,
+                                    type,
+                                    symtab:scout.symtab,
+                                    constraintItem: scout.constraintItem
+                                }]
+                            };
+                        }
+                        // const arrRefTypesTableReturn = inferStatus.inCondition ? rhs.inferRefRtnType.unmerged : [rhs.inferRefRtnType.passing];
+                        // return {
+                        //     arrRefTypesTableReturn
+                        // };
                     } // endof if (inferStatus.replayables.has(symbol))
                     let type: RefTypesType | undefined;
                     let isconst: boolean | undefined;
@@ -2312,33 +2354,6 @@ namespace ts {
                             type = evalSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn }, getDeclaredType, mrNarrow);
                         }
                     }
-                    // let leaf = refTypesSymtabIn.get(symbol)?.leaf;
-                    // if (leaf){
-                    //     type = leaf.type;
-                    //     isconst = leaf.isconst??false; // if useConstraintsV2() must be false
-                    //     Debug.assert(!isconst || !compilerOptions.mrNarrowConstraintsEnable);
-                    // }
-                    // else {
-                    //     leaf = inferStatus.declaredTypes.get(symbol);
-                    //     if (leaf){
-                    //         type = leaf.type;
-                    //         isconst = leaf.isconst??false; // XXX if useConstraintsV2() must be true
-                    //         //Debug.assert(isconst && compilerOptions.mrNarrowEnableConstraints);
-                    //         if (isconst && compilerOptions.mrNarrowConstraintsEnable) {
-                    //             type = evalSymbol(symbol,constraintItemIn, createGetDeclaredTypeFn(inferStatus), mrNarrow);
-                    //         }
-                    //     }
-                    //     else {
-                    //         const tstype = getTypeOfSymbol(symbol); // Is it OK for Identifier, will it not result in error TS7022 ?
-                    //         if (tstype===errorType){
-                    //             Debug.assert(false);
-                    //         }
-                    //         type = createRefTypesType(tstype);
-                    //         isconst = isConstantReference(expr);
-                    //         leaf = createRefTypesTableLeaf(symbol,isconst,type);
-                    //         inferStatus.declaredTypes.set(symbol, leaf);
-                    //     }
-                    // }
                     if (inferStatus.currentReplayableItem){
                         // If the value of the symbol has definitely NOT changed since the defintion of the replayable.
                         // then we can continue on below to find the value via constraints.  Otherwise, we must use the value of the symbol
@@ -2361,13 +2376,24 @@ namespace ts {
                             };
                         }
                     }
+                    let scout: RefTypesSymtabConstraintItem = {
+                        symtab: refTypesSymtabIn,
+                        constraintItem: constraintItemIn
+                    };
+                    ({type,sc:scout} = maybeUnionOfTypeOverLoop(symbol,isconst??false,type,expr,scout,inferStatus, "identifier"));
+                    // if (inferStatus.withinLoop && !inferStatus.currentReplayableItem){
+                    //     // merge type with accumulated history
+                    //     const cumTsType = inferStatus.groupNodeToTypeMap.get(expr);
+                    //     Debug.assert(cumTsType);
+                    //     type = unionOfRefTypesType([type, createRefTypesType(cumTsType)]);
+                    // }
                     const rttr: RefTypesTableReturn = {
                         kind: RefTypesTableKind.return,
                         symbol,
                         isconst,
                         type,
-                        symtab: refTypesSymtabIn,
-                        constraintItem: constraintItemIn
+                        symtab: scout.symtab,
+                        constraintItem: scout.constraintItem
                     };
                     const mrNarrowTypesInnerReturn: MrNarrowTypesInnerReturn = {
                         arrRefTypesTableReturn: [rttr],
@@ -2551,10 +2577,8 @@ namespace ts {
                     const initializer = expr.initializer;
                     const symbol = getSymbolOfNode(expr); // not condExpr.name
                     const isconstVar = isConstVariable(symbol);
-                    // NOT ANY MORE: if we are in a loop their may be an antry in the symbol table from the last loop iteration (even though declared here).  Remove it from hter symbol table.
                     if (refTypesSymtabIn.get(symbol)){
                         Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
-                        //refTypesSymtabIn.delete(symbol); // should we make a new copy?
                     }
 
                     const rhs = mrNarrowTypes({
@@ -2562,6 +2586,7 @@ namespace ts {
                         inferStatus: { ...inferStatus, inCondition: false },
                         constraintItem: constraintItemIn
                     });
+                    // NOTE: in case of inferStatus.withinLoop, no action should be required here because the effect is already incorporated on the rhs
                     Debug.assert(!rhs.inferRefRtnType.failing);
                     Debug.assert(rhs.inferRefRtnType.unmerged);
                     if (isIdentifier(expr.name)){
@@ -2583,7 +2608,8 @@ namespace ts {
                             };
                             //mergeOneIntoNodeToTypeMaps(expr,getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type),inferStatus.groupNodeToTypeMap);
                             return {arrRefTypesTableReturn:[{
-                                kind:RefTypesTableKind.return, type:rhs.inferRefRtnType.passing.type,
+                                kind:RefTypesTableKind.return,
+                                type:rhs.inferRefRtnType.passing.type,
                                 symtab: refTypesSymtabIn,
                                 constraintItem: constraintItemIn
                             }]};
@@ -2615,7 +2641,7 @@ namespace ts {
                              */
                             const unwidenedTsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
                             // isconstVar is always false here
-                            const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType)); // this is not always widening as expected, true=>true
+                            const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType)); // TODO:!!! this is not always widening as expected, true=>true
                             inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,widenedType));
                         }
                         const retval: MrNarrowTypesInnerReturn = {
@@ -2649,7 +2675,22 @@ namespace ts {
                 case SyntaxKind.FalseKeyword:
                 case SyntaxKind.NumericLiteral:
                 case SyntaxKind.StringLiteral:{
-                    const type: Type = checker.getTypeAtLocation(expr);
+                    let type: Type;
+                    switch (expr.kind){
+                        case SyntaxKind.TrueKeyword:
+                            type = checker.getTrueType();
+                            break;
+                        case SyntaxKind.FalseKeyword:
+                            type = checker.getFalseType();
+                            break;
+                        case SyntaxKind.NumericLiteral:
+                            type = checker.getNumberLiteralType(Number(getSourceTextOfNodeFromSourceFile(sourceFile,expr)));
+                            break;
+                        case SyntaxKind.StringLiteral:
+                            type = checker.getStringLiteralType(getSourceTextOfNodeFromSourceFile(sourceFile,expr));
+                            break;
+                    }
+                    //const type: Type = checker.getTypeAtLocation(expr);
                     //mergeOneIntoNodeToTypeMaps(expr, type,inferStatus.groupNodeToTypeMap);
                     return {
                         arrRefTypesTableReturn: [{

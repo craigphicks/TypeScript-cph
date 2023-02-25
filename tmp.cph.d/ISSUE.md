@@ -16,6 +16,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+0. Any cbe left at the end of a loop correpond either to (1) the antecedents of the loop control or (2) the antecedents external to loop control.  The (1) antecedents of the loop control will be consumed on the next loop iteration, unless the loop converges, in which case they are not needed. The (2) antecedents external to loop control are not consumed on each iteration so must be accumulated until they are read.  The obvious place to do this is withing the global currentBranchMap.
 0. Loop-convergence-fix1: `_caxnc-whileLoop-0042.ts` not passing because inner loop is converging and finishing without propogating out the new inputs.  Chosen solution is (1) to use the nodeToTypeMap cummulative result and feed it back into every r.h.s. identifier.  L.h.s. of assignments is union of cummulative with r.h.s. of assignment.  This includes variable declarations (const and non-const) as well as assignments. (2) Detecting convergence: Instead of comparing to a copy of the previous iteration, set a flag when when update to node to type map makes a change.  However, for the time being keep the copy compare action to ensure the flag action is working correctly - i.e., keep them both. (3) Symtab/Constraints: should follow from (1) with no special action required.
 0. Deeper embedded while loop tests to demonstrate exactly what is the looping complexity.
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
@@ -28,6 +29,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: Postponed
 
+1. In a `while (condtion){ body }` loop, if the body convergence and condition covergence were calculated seperately, the final body pass could be skipped if the body converged before the condition.  Because the body the body can be very long in comparison to the condition that could be worthwhile.
 1. The tests in `tests/cases/conformance/_caxyc`, e.g. the tests with `compilerOptions.mrNarrowConstraintsEnable:true`, should all pass.
 1. In `processLoop` there is call to `createHeap` and it might be too expensive to do for every loop, and it is unnecessary, use heap prototype instead.
 1. The Map type members in InferStatus (`declaredTypes`, `replayables`, `groupNodeToTypeMap` could all be `WeakMap`s).

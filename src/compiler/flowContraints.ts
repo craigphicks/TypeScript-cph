@@ -522,6 +522,48 @@ namespace ts {
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
         return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType });
     }
+    /**
+     * Same interface as andSymbolTypeIntoSymtabConstraint,
+     * orSymbolTypeIntoSymtabConstraint is required because loop processing widens symbol types with cumulative history.
+     * @param param0
+     */
+    // @ ts-ignore
+    export function orSymbolTypeIntoSymtabConstraint({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType:_getDeclaredType}: Readonly<{
+        symbol: Readonly<Symbol>,
+        readonly isconst: undefined | boolean,
+        type: Readonly<RefTypesType>,
+        sc: RefTypesSymtabConstraintItem,
+        getDeclaredType: GetDeclaredTypeFn,
+        mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+
+        //let constraintItem = sc.constraintItem;
+        let symtab = sc.symtab;
+        const type = typeIn;
+        if (symbol.flags & (SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
+            // do nothing - an enum parent is not a real type
+            return { type,sc };
+        }
+        else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
+            Debug.fail("not yet implemented: orSymbolTypeIntoSymtabConstraint for isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable");
+            //constraintItem = andSymbolTypeIntoConstraint({ symbol,type,constraintItem,getDeclaredType,mrNarrow });
+        }
+        else {
+            const got = symtab.get(symbol);
+            if (!got || mrNarrow.isNeverType(got.leaf.type) ||
+            (mrNarrow.isASubsetOfB(type, got.leaf.type) && mrNarrow.isASubsetOfB(got.leaf.type, type))){
+                return { type,sc };
+            }
+            const utype = mrNarrow.unionOfRefTypesType([type, got.leaf.type]);
+            symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,isconst,utype) });
+            return {
+                type: utype,
+                sc: {
+                    symtab,
+                    constraintItem: createFlowConstraintAlways()
+                }
+            };
+        }
+    }
 
     /**
      * This replaces "evaluateTypeOverConstraint" which could give overly large cover values.

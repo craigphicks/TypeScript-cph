@@ -9,7 +9,7 @@ function t21(){
     let b = true;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loopCount:2, invocations:1"
+    // @ts-dev-expect-string "loopCount:4, invocations:1"
     while (d){
         d = c;
         c = b;

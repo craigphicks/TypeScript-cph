@@ -10,7 +10,7 @@ function t1(){
     b;
 >b : true
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (b){
 >b : boolean
 
