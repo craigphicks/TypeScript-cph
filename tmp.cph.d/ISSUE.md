@@ -27,7 +27,8 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: Postponed
 
-1. In case of loop depth 0, we might be able to avoid accumulating the node types because there is only one invocation anyway.  Alternatively, create a cruel test case where that would fail!
+0. The nodes of lhs of declarations and assignments are not included in node to type maps.  Could they be?
+1. During grouping, collect the symbol involved in every group.  That can used to
 1. In a `while (condtion){ body }` loop, if the body convergence and condition covergence were calculated seperately, the final body pass could be skipped if the body converged before the condition.  Because the body the body can be very long in comparison to the condition that could be worthwhile.
 1. The tests in `tests/cases/conformance/_caxyc`, e.g. the tests with `compilerOptions.mrNarrowConstraintsEnable:true`, should all pass.
 1. In `processLoop` there is call to `createHeap` and it might be too expensive to do for every loop, and it is unnecessary, use heap prototype instead.

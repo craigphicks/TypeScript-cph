@@ -1,0 +1,2 @@
+Unable to read v8-version from log file.
+Statistical profiling result from .prfile, (0 ticks, 0 unaccounted, 0 excluded).

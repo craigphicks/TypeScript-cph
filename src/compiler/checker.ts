@@ -24676,7 +24676,7 @@ namespace ts {
             if (myDebug) {
                 consoleGroup(`getFlowTypeOfReference[in]: ` + dbgstr);
             }
-            if (!myDisableInfer){
+            if (!myDisableInfer && checker.getSourceFileInferState()){
                 const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
                 //let inFlowGroup = false;
                 if (!insideGetFlowTypeOfReference){
@@ -43115,41 +43115,61 @@ namespace ts {
             tracing?.pop();
         }
 
+        function dbgTestFilenameMatched(node: SourceFile): boolean {
+            const re = /^tests\/cases\/.*\/_cax/;
+            const myTestFilename = process.env.myTestFilename?? "";
+            const nameMatched = getBaseFileName(node.originalFileName) === (myTestFilename+".ts") ||
+                (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts");
+            return !!nameMatched;
+        }
         function checkSourceFile(node: SourceFile) {
+            if (!dbgTestFilenameMatched(node)) return checkSourceFileAux(node);
+            else {
+                let numLoopCheckSourceFile = Number(process.env.numLoopCheckSourceFile??0);
+                if (isNaN(numLoopCheckSourceFile)) numLoopCheckSourceFile = 0;
+                if (dbgFlowFileCnt>0 || numLoopCheckSourceFile===0) {
+                    return checkSourceFileAux(node);
+                }
+
+                const origNodeLinks = nodeLinks.slice(0, nodeLinks.length);
+                checkSourceFileAux(node);
+
+                for (let i = 0; i<numLoopCheckSourceFile; i++){
+                    nodeLinks.splice(0, nodeLinks.length, ...origNodeLinks);
+                    checkSourceFileAux(node);
+                }
+            }
+        }
+        function checkSourceFileAux(node: SourceFile) {
             tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
             performance.enable();
             performance.mark("beforeCheck");
 
-            // const hrtime = process.hrtime.bigint() - hrstart!;
-            // consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
-
-
-            //const re = /^tests\/cases\/compiler\/_cax/;
-            const re = /^tests\/cases\/.*\/_cax/;
             myCurrentSourceFilename = node.originalFileName;
             myCurrentSourceFile = node;
-            let ofilenameRoot="";
             myMaxDepth = 0;
             const myTestFilename = process.env.myTestFilename?? "";
-            const nameMatched = getBaseFileName(node.originalFileName) === (myTestFilename+".ts") ||
-                (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts");
+            const nameMatched = dbgTestFilenameMatched(node);
+            // const nameMatched_ = getBaseFileName(node.originalFileName) === (myTestFilename+".ts") ||
+            //     (node.originalFileName.match(re) && node.originalFileName.slice(-5)!==".d.ts");
+
+
             let hrstart: bigint | undefined;
-            let currentTestFile: string | undefined;
-            myDebug = !!Number(process.env.myDebug);
+            myDebug = !!Number(process.env.myDebug) && !!nameMatched;
             if (nameMatched) {
                 if (!myDisableInfer && myDebug && dbgFlowFileCnt===0){
                     // must write flowNodesToString before createAndSetSourceFileInferState because an assert might happen in createAndSetSourceFileInferState
+                    let ofilenameRoot="";
                     ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisableInfer?1:0}.${dbgFlowFileCnt}.flow`;
                     sys.writeFile(ofilenameRoot, flowNodesToString(node,getFlowNodeId,checker));
                 }
                 if (!myDisableInfer){
                     checker.createAndSetSourceFileInferState(node);
                 }
-                hrstart = process.hrtime.bigint();
-                currentTestFile = getBaseFileName(node.originalFileName);
             }
             if (nameMatched && dbgFlowFileCnt++===0) {
-                consoleLog(`myDebug=${myDebug}, myDisableInfer=${myDisableInfer}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFile}`);
+                const currentTestFileBasename = getBaseFileName(node.originalFileName);
+                consoleLog(`myDebug=${myDebug}, myDisableInfer=${myDisableInfer}, myDisable=${myDisable}, myNoAliasAction=${myNoAliasAction}, myTestFilename=${myTestFilename}, currentTestFile=${currentTestFileBasename}`);
                 if (!myDisableInfer && nameMatched && myDebug){
                     if (node.allFlowNodes?.length===2){
                         testOfEvalTypeOverConstraint(checker,checker.getSourceFileInferState().mrNarrow);
@@ -43185,104 +43205,13 @@ namespace ts {
                     }
 
                 }
-                // if (nameMatched && myDebug){//(myDebug && node.endFlowNode) {
-                //     //writingFlowTxt = true;
-                //     let contents = "";
-                //     let write = (s: string)=>{
-                //         contents+=s;
-                //     };
-                //     let False = false;
-                //     False = false;
-                //     if (False) write = console.log;
-                //     //const write = (s: string)=>contents+=s;
-                //     const endFlowNodes: FlowNode[]=[];
-                //     // @ts-ignore
-                //     const flowNodes: FlowNode[]=[];
-                //     // endFlowNodes is at least not always easy to find, might not even exist in any container?
-                //     const setv = new Set<FlowNode>();
-                //     const visitorEfn = (n: Node) => {
-                //         //if ((n as any).endFlowNode) endFlowNodes.push((n as any).endFlowNode);
-                //         if ((n as any).flowNode){
-                //             const fn = (n as any).flowNode as FlowNode;
-                //             if (!setv.has(fn) && !isFlowStart(fn)){
-                //                 flowNodes.push(fn);
-                //                 setv.add(fn);
-                //             }
-                //         }
-                //         if ((n as any).endFlowNode){
-                //             const fn = (n as any).endFlowNode as FlowNode;
-                //             if (!setv.has(fn) && !isFlowStart(fn)){
-                //                 flowNodes.push(fn);
-                //                 setv.add(fn);
-                //             }
-                //         }
-                //         forEachChild(n, visitorEfn);
-                //     };
-                //     visitorEfn(node);
-                //     const setAnte = new Set<FlowNode>();
-                //     //const setNotAnte = new Set<FlowNode>();
-                //     // some flow nodes are not referenced by any node
-                //     const addAntesToSet = (f: FlowNode) => {
-                //         if ((f as any).antecedent) {
-                //             if (!setAnte.has((f as any).antecedent)) setAnte.add((f as any).antecedent);
-                //         }
-                //         if ((f as any).antecedents) {
-                //             (f as any).antecedents.forEach((a: FlowNode)=>{
-                //                 if (!setAnte.has(a)) setAnte.add(a);
-                //             });
-                //         }
-                //     };
-                //     flowNodes.forEach(f=>addAntesToSet(f));
-                //     // get antecedents of antecedents until no change
-                //     let change = true;
-                //     while (change) {
-                //         const size = setAnte.size;
-                //         setAnte.forEach(a=>addAntesToSet(a));
-                //         change = setAnte.size!==size;
-                //     }
-                //     setv.clear();
-                //     const visitMark=(f: FlowNode) => {
-                //         if (setv.has(f)) return;
-                //         setv.add(f);
-                //         if ((f as any).antecedent) {
-                //             const a: FlowNode = (f as any).antecedent;
-                //             getFlowNodeId(a);
-                //             visitMark(a);
-                //         }
-                //         else if ((f as any).antecedents) {
-                //             (f as any).antecedents.forEach((a: FlowNode)=>{
-                //                 getFlowNodeId(a);
-                //                 visitMark(a);
-                //             });
-                //         }
-                //     };
-                //     flowNodes.forEach(f=>{
-                //         if (!setAnte.has(f)) {
-                //             (f as any).isEndFlowNode = true;
-                //             getFlowNodeId(f);
-                //             endFlowNodes.push(f);
-                //             visitMark(f);
-                //         }
-                //     });
-                //     //endFlowNodes.forEach(f=>)
-                //     // let n = node as ReadonlyTextRange & SourceFile;
-                //     // while (true){
-                //     //     if (n.endFlowNode && !isFlowStart(n.endFlowNode)){
-                //     //         endFlowNodes.push(n.endFlowNode);
-                //     //     }
-                //     //     if (n.nextContainer) n = n.nextContainer as ReadonlyTextRange & SourceFile;
-                //     //     else break;
-                //     // }
-                //     writeFlowNodesUp(write, endFlowNodes);
-                //     ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisableInfer?1:0}.${dbgFlowFileCnt}.flow`;
-                //     sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
-                // }
             }
+            if (nameMatched) hrstart = process.hrtime.bigint();
             checkSourceFileWorker(node);
             if (nameMatched){
                 const hrtime = process.hrtime.bigint() - hrstart!;
                 //consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}, myNumLinesOut: ${myNumLinesOut}`);
-                consoleLog(`${currentTestFile}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}`);
+                consoleLog(`${getBaseFileName(node.originalFileName)}, time(ms): ${hrtime/BigInt(1000000)}, myMaxDepth: ${myMaxDepth}`);
                 if (!myDisableInfer){
                     if (checker.getSourceFileInferState()) checker.unsetSourceFileInferState();
                 }

@@ -1,5 +1,7 @@
 namespace ts {
 
+    const extraAsserts = true;
+
     // function castType<X>(x: any): x is X {
     //     return true;
     // };
@@ -188,18 +190,12 @@ namespace ts {
         /* @ ts-expect-error */
         function createGetDeclaredTypeFn(inferStatus: InferStatus): GetDeclaredTypeFn {
             return (symbol: Symbol) => {
-                // if (symbol.flags & (SymbolFlags.EnumMember|SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
-                    if (symbol.flags & SymbolFlags.EnumMember){
-                        const litValue = (getTypeOfSymbol(symbol) as LiteralType).value;
-                        if (typeof litValue==="string") return createRefTypesType(checker.getStringLiteralType(litValue));
-                        else if (typeof litValue==="number") return createRefTypesType(checker.getNumberLiteralType(litValue));
-                        Debug.fail("unexpected");
-                    }
-                //     else if (symbol.flags & SymbolFlags.ConstEnum){
-                //         return mrNarrow.checker.getTypeOfSymbol(symbol);
-                //     }
-                //     Debug.fail("not yet implemented");
-                // }
+                if (symbol.flags & SymbolFlags.EnumMember){
+                    const litValue = (getTypeOfSymbol(symbol) as LiteralType).value;
+                    if (typeof litValue==="string") return createRefTypesType(checker.getStringLiteralType(litValue));
+                    else if (typeof litValue==="number") return createRefTypesType(checker.getNumberLiteralType(litValue));
+                    Debug.fail("unexpected");
+                }
                 const type = inferStatus.declaredTypes.get(symbol)?.type;
                 Debug.assert(type);
                 return type;
@@ -645,11 +641,13 @@ namespace ts {
         }: InferRefInnerArgs & {expr: BinaryExpression}): MrNarrowTypesInnerReturn {
 
             const {left:leftExpr,operatorToken,right:rightExpr} = binaryExpression;
-            Debug.assert([
+            if (![
                 SyntaxKind.EqualsEqualsEqualsToken,
                 SyntaxKind.EqualsEqualsToken,
                 SyntaxKind.ExclamationEqualsEqualsToken,
-                SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind));
+                SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind)){
+                Debug.fail("unexpected");
+            }
             const negateEq = [
                 SyntaxKind.ExclamationEqualsEqualsToken,
                 SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind);
@@ -902,24 +900,13 @@ namespace ts {
                     declared = createRefTypesTableLeaf(symbol,isconst,createRefTypesType(tsTypeDeclared));
                     args.inferStatus.declaredTypes.set(symbol,declared);
                 }
-                // eslint-disable-next-line prefer-const
-                // let type = rhs.inferRefRtnType.passing.type;
-                // eslint-disable-next-line prefer-const
-                //let scout: RefTypesSymtabConstraintItem = { symtab: rhs.inferRefRtnType.passing.symtab, constraintItem: rhs.inferRefRtnType.passing.constraintItem };
-                //({type,sc:scout} = maybeUnionOfTypeOverLoop(symbol,isconst,type,leftExpr,scout,args.inferStatus, "assignIdentifier"));
-                // if (args.inferStatus.withinLoop && !args.inferStatus.currentReplayableItem){
-                //     // merge type with accumulated history
-                //     const cumTsType = args.inferStatus.groupNodeToTypeMap.get(leftExpr);
-                //     Debug.assert(cumTsType);
-                //     type = unionOfRefTypesType([type, createRefTypesType(cumTsType)]);
-                // }
                 const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,{ leaf:createRefTypesTableLeaf(symbol,isconst,rhs.inferRefRtnType.passing.type) });
                 return { arrRefTypesTableReturn: [{
                     ...rhs.inferRefRtnType.passing, symbol, symtab, /*type, symtab: scout.symtab, constraintItem: scout.constraintItem*/
                 }]};
             }
             else {
-                Debug.fail("not yet implemented as lhs: "+ Debug.formatSyntaxKind(leftExpr.kind));
+                Debug.fail("not yet implemented");
             }
         }
 
@@ -934,9 +921,8 @@ namespace ts {
                 case SyntaxKind.BarBarEqualsToken:
                 case SyntaxKind.AmpersandAmpersandEqualsToken:
                 case SyntaxKind.QuestionQuestionEqualsToken:
-                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    Debug.fail("not yet implemented");
                     break;
-                    //return narrowTypeByTruthiness(narrowType(type, expr.right, assumeTrue), expr.left, assumeTrue);
                 case SyntaxKind.ExclamationEqualsToken:
                 case SyntaxKind.ExclamationEqualsEqualsToken:
                 case SyntaxKind.EqualsEqualsToken:
@@ -946,13 +932,13 @@ namespace ts {
                 }
                 break;
                 case SyntaxKind.InstanceOfKeyword:
-                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    Debug.fail("not yet implemented");
                     break;
                 case SyntaxKind.InKeyword:
-                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    Debug.fail("not yet implemented");
                     break;
                 case SyntaxKind.CommaToken:
-                    Debug.fail("not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    Debug.fail("not yet implemented");
                     break;
                 case SyntaxKind.BarBarToken:
                 case SyntaxKind.AmpersandAmpersandToken:{
@@ -1000,7 +986,7 @@ namespace ts {
                             leftFalseRightRet.inferRefRtnType.failing!
                         ];
                     }
-                    else Debug.fail();
+                    else Debug.fail("unexpected");
                     arrRefTypesTableReturn.forEach(rttr=>{
                         rttr.symbol=undefined;
                         rttr.isconst=undefined;
@@ -1011,7 +997,7 @@ namespace ts {
                 }
                     break;
                 default:
-                    Debug.fail("mrNarrowTypesByBinaryExpression, token kind not yet implemented: "+Debug.formatSyntaxKind(binaryExpression.operatorToken.kind));
+                    Debug.fail("unexpected");
 
             }
         }
@@ -1230,11 +1216,6 @@ namespace ts {
                 Debug.assert(symbol.valueDeclaration.kind===SyntaxKind.Parameter);
                 optional = checker.isOptionalParameter(symbol.valueDeclaration as ParameterDeclaration);
             }
-            // if (!optional && symbol.valueDeclaration) {
-            //     Debug.assert(symbol.valueDeclaration.kind===SyntaxKind.Parameter);
-            //     const pdecl = (symbol.valueDeclaration as ParameterDeclaration);
-            //     optional = (!!pdecl.questionToken || !!pdecl.initializer);
-            // }
             return { type, optional, symbol };
         }
         // @ ts-expect-error
@@ -1799,7 +1780,6 @@ namespace ts {
                  */
                 forEachRefTypesTypeType(prePassing.type, t => {
                     if (t===undefinedType||t===nullType) {
-                        //Debug.assert(false);
                         return;
                     }
 
@@ -1833,7 +1813,7 @@ namespace ts {
                         else {
                             // accessedTypes.push({ baseType: t, type:undefinedType, lookupFail: true, optional:false });
                             //arrTypeSymtab.push([createRefTypesType(undefinedType), preRefTypesSymtab]);
-                            Debug.fail("not yet implemented "+keystr);
+                            Debug.fail("not yet implemented ");
                             arrRttr.push({
                                 kind: RefTypesTableKind.return,
                                 symbol: undefined,
@@ -1863,31 +1843,12 @@ namespace ts {
                             });
                             return;
                         }
-                        // let readonlyProp = isReadonlyProperty(propSymbol);
-                        // const optionalProp = !!(propSymbol.flags & SymbolFlags.Optional);
                         const declaredType = getTypeOfSymbol(propSymbol);
-                        //let narrowable = optionalProp || declaredType===anyType || !!(declaredType.flags & TypeFlags.Union);
-                        // if (propSymbol.declarations){
-                        //     const declarations = propSymbol.declarations;
-                        //     const kind: SyntaxKind = declarations[0].kind;
-                        //     readonlyProp ||= !!(kind===SyntaxKind.MethodSignature); // e.g. { foo():number[]; }, foo cannot be changed
-                        //     //narrowable &&= (kind!==SyntaxKind.MethodSignature); // MethodSignature are invariant, including overloads.
-                        //     if (declarations.length>1){
-                        //         Debug.assert(declarations.every(d=>d.kind===SyntaxKind.MethodSignature)); // could only be overloads?
-                        //     }
-                        // }
                         let isconst = false;
                         {
                             const readonlyProp = isReadonlyProperty(propSymbol);
                             const optionalProp = !!(propSymbol.flags & SymbolFlags.Optional);
-                            // isFunctionOrMethod not working as expected
-                            // const isFunctionOrMethod = declaredType.flags & TypeFlags.Object && propSymbol.flags & (SymbolFlags.Function | SymbolFlags.Method);
-                            // if (isFunctionOrMethod){
-                            //     isconst = !optionalProp;
-                            // }
-                            // else {
-                                isconst = readonlyProp && !optionalProp;
-                            // }
+                            isconst = readonlyProp && !optionalProp;
                         }
 
                         if (!inferStatus.declaredTypes.has(propSymbol)){
@@ -1946,7 +1907,7 @@ namespace ts {
                         });
                         return;
                     }
-                    Debug.assert(false);
+                    Debug.fail("unexpected");
                 });
             });
 
@@ -2003,7 +1964,9 @@ namespace ts {
                 if (symbol){
                     if (isconst && compilerOptions.mrNarrowConstraintsEnable){
                         const cover = evalCoverPerSymbol(constraintItem, createGetDeclaredTypeFn(inferStatus), mrNarrow);
-                        Debug.assert(cover.has(rttr.symbol));
+                        if (extraAsserts){
+                            Debug.assert(cover.has(rttr.symbol));
+                        }
                         type = cover.get(symbol)!;
                     }
                     else {
@@ -2123,7 +2086,7 @@ namespace ts {
                 rtn.unmerged = arrRttr;
                 return rtn;
             }
-            Debug.fail(`crit.kind:${crit.kind}`);
+            Debug.fail("unexpected");
         };
 
         /**
@@ -2564,7 +2527,7 @@ namespace ts {
                             arrRefTypesTableReturn: [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!]
                         };
                     }
-                    Debug.assert(false);
+                    Debug.fail("unexpected");
                     break;
                 case SyntaxKind.VariableDeclaration: {
                     Debug.assert(isVariableDeclaration(expr));
@@ -2650,7 +2613,7 @@ namespace ts {
                     }
                     else {
                         // could be binding, or could a proeprty access on the lhs
-                        Debug.fail(`not yet implemented: `+Debug.formatSyntaxKind(expr.name.kind));
+                        Debug.fail("not yet implemented");
                     }
                 }
                 break;
@@ -2691,10 +2654,6 @@ namespace ts {
                         default:
                             Debug.fail("unexpected");
                     }
-                    // const typeCheck = checker.getTypeAtLocation(expr);
-                    // if (type!==typeCheck){
-                    //     Debug.fail(`type!==typeCheck, type:${typeToString(type)}, typeCheck:${typeToString(typeCheck)}, ${dbgNodeToString(expr)}`);
-                    // }
                     return {
                         arrRefTypesTableReturn: [{
                             kind: RefTypesTableKind.return,
@@ -2793,36 +2752,14 @@ namespace ts {
                 }
                 break;
                 case SyntaxKind.SpreadElement:{
-                    Debug.fail("mrNarrowTypesInner[dbg] context off caller is important, getTypeOfExpressionShallowRecursion ignore type.target.readonly");
-                    // assertType<SpreadElement>(expr);
-                    // const spreadTargetResult = mrNarrowTypes({
-                    //     expr: expr.expression,
-                    //     crit:{ kind: InferCritKind.none },
-                    //     qdotfallout: undefined, inferStatus,
-                    //     refTypesSymtab: refTypesSymtabIn,
-                    //     constraintItem: constraintItemIn
-                    // });
-                    // const spreadElementType = inferStatus.getTypeOfExpressionShallowRecursion(expr);
-                    // return {
-                    //     arrRefTypesTableReturn: [{
-                    //         kind: RefTypesTableKind.return,
-                    //         symbol: undefined,
-                    //         type: createRefTypesType(spreadElementType),
-                    //         symtab: spreadTargetResult.inferRefRtnType.passing.symtab,
-                    //         constraintItem: spreadTargetResult.inferRefRtnType.passing.constraintItem
-                    //     }]
-                    // };
+                    Debug.fail("mrNarrowTypesInner[dbg] context of caller is important, getTypeOfExpressionShallowRecursion ignore type.target.readonly");
                 }
                 break;
 
-                default: Debug.assert(false, "", ()=>`${Debug.formatSyntaxKind(expr.kind)}, ${dbgNodeToString(expr)}`);
+                default: Debug.fail("unexpected");
             }
         }
 
         return mrNarrow;
     } // createMrNarrow
-
-
-
-
 }

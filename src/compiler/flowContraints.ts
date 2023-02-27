@@ -1,11 +1,13 @@
 /* eslint-disable no-null/no-null */
 namespace ts {
 
+    const extraAsserts = true; // not suitable for release
+
     // @ ts-expect-error
     export type GetDeclaredTypeFn = (symbol: Symbol) => RefTypesType;
 
     export function createFlowConstraintNodeAnd({negate, constraints}: {negate?: boolean, constraints: ConstraintItem[]}): ConstraintItemNode {
-        if (constraints.length<=1) Debug.fail("unexpected constraints.length<=1");
+        if (constraints.length<=1) Debug.fail("unexpected");
         const c: ConstraintItemNodeAnd = {
             kind: ConstraintItemKind.node,
             op: ConstraintItemNodeOp.and,
@@ -14,7 +16,7 @@ namespace ts {
         return negate ? createFlowConstraintNodeNot(c) : c;
     }
     export function createFlowConstraintNodeOr({negate, constraints}: {negate?: boolean, constraints: (ConstraintItem)[]}): ConstraintItemNode {
-        if (constraints.length<=1) Debug.fail("unexpected constraints.length<=1");
+        if (constraints.length<=1) Debug.fail("unexpected");
         const c: ConstraintItemNodeOr = {
             kind: ConstraintItemKind.node,
             op: ConstraintItemNodeOp.or,
@@ -119,7 +121,6 @@ namespace ts {
         }
         if (mrNarrow.isAnyType(typeRange) || mrNarrow.isUnknownType(typeRange)){
             typeRange = mrNarrow.createRefTypesType(mrNarrow.checker.getAnyType());
-            //Debug.fail("TODO: mrNarrow.isAnyType(type) || mrNarrow.isUnknownType(type)");
         }
 
         if (cin.kind===ConstraintItemKind.always) return !negate ? typeRange : mrNarrow.createRefTypesType();
@@ -138,7 +139,6 @@ namespace ts {
             }
         }
         else if (cin.kind===ConstraintItemKind.node){
-            //Debug.assert(cin.kind===ConstraintItemKind.node);
             if (cin.op===ConstraintItemNodeOp.not){
                 return evalTypeOverConstraint({ cin:cin.constraint, symbol, typeRange, negate:!negate, mrNarrow, depth:depth+1 });
             }
@@ -161,7 +161,7 @@ namespace ts {
                 return unionType;
             }
         }
-        Debug.fail();
+        Debug.fail("unexpected");
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,13 +214,9 @@ namespace ts {
             mrNarrow: MrNarrow, refCountIn: [number], refCountOut: [number], depth?: number
     }): ConstraintItem {
         if (mrNarrow.isAnyType(type)) {
-            //Debug.fail("not yet implemented");
-            // return createFlowConstraintAlways();
             return cin;
         }
         if (mrNarrow.isUnknownType(type)) {
-            //Debug.fail("not yet implemented");
-            // return createFlowConstraintAlways();
             return cin;
         }
         depth = depth??0;
@@ -237,7 +233,6 @@ namespace ts {
         if (cin.kind===ConstraintItemKind.leaf){
             if (symbol===cin.symbol){
                 if (mrNarrow.isNeverType(cin.type)) Debug.fail("unexpected");
-                //if (mrNarrow.isASubsetOfB(typeRange,cin.type)) Debug.fail("unexpected, cin should be always");
                 if (mrNarrow.isAnyType(cin.type)) Debug.fail("not yet implemented");
                 if (mrNarrow.isUnknownType(cin.type)) Debug.fail("not yet implemented");
             }
@@ -267,7 +262,7 @@ namespace ts {
             }
         }
         else {
-            Debug.assert(cin.kind===ConstraintItemKind.node);
+            if (cin.kind!==ConstraintItemKind.node) Debug.fail("unexpected");
             if (cin.op===ConstraintItemNodeOp.not){
                 return andDistributeDivide({ symbol, type, declaredType, cin:cin.constraint, negate:!negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth: depth+1 });
             }
@@ -346,7 +341,7 @@ namespace ts {
                 if (constraints.length===1) return constraints[0];
                 return createFlowConstraintNodeOr({ constraints });
             }
-            Debug.fail();
+            Debug.fail("unexpected");
         }
     }
 
@@ -488,24 +483,15 @@ namespace ts {
         symbolsInvolved.add(symbol);
         /////////////////////////
         const evaledType = evalCoverForOneSymbol(symbol,constraintItem,getDeclaredType,mrNarrow);
-        // The comparison test is now inside evalCoverForOneSymbol
-        // if (true){
-        //     // compare to evalTypeOverConstraint
-        //     const compareType = evalTypeOverConstraint({ cin: constraintItem, symbol, typeRange:getDeclaredType(symbol),mrNarrow });
-        //     if (mrNarrow.isASubsetOfB(compareType, evaledType)){
-        //         Debug.assert("unexpected1");
-        //     }
-        //     if (mrNarrow.isASubsetOfB(evaledType,compareType)){
-        //         Debug.assert("unexpected2");
-        //     }
-        // }
-
         if (!mrNarrow.isASubsetOfB(evaledType,type)){
             constraintItem = andDistributeDivide({symbol,type,cin:constraintItem,getDeclaredType,declaredType: getDeclaredType(symbol),
                 mrNarrow});
             /////////////////////////
-            if (constraintItem.kind===ConstraintItemKind.node && constraintItem.op===ConstraintItemNodeOp.and){
-                Debug.assert(!constraintItem.constraints.some(subci=>subci.kind===ConstraintItemKind.leaf && subci.symbol===symbol));
+            if (extraAsserts){
+                if (constraintItem.kind===ConstraintItemKind.node && constraintItem.op===ConstraintItemNodeOp.and){
+                    // not suitable for release
+                    Debug.assert(!constraintItem.constraints.some(subci=>subci.kind===ConstraintItemKind.leaf && subci.symbol===symbol));
+                }
             }
             constraintItem = andIntoConstraintShallow({ symbol,type,constraintItem,mrNarrow });
         }
@@ -544,7 +530,7 @@ namespace ts {
             return { type,sc };
         }
         else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
-            Debug.fail("not yet implemented: orSymbolTypeIntoSymtabConstraint for isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable");
+            Debug.fail("not yet implemented"); // orSymbolTypeIntoSymtabConstraint for isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable
             //constraintItem = andSymbolTypeIntoConstraint({ symbol,type,constraintItem,getDeclaredType,mrNarrow });
         }
         else {
@@ -609,12 +595,10 @@ namespace ts {
                 }
                 else if ((ciLeft.kind===ConstraintItemKind.always && negate) || (ciLeft.kind===ConstraintItemKind.never && !negate)){
                     // Just return the same as if a never type was encountered
-                    // Debug.fail("case never not yet implemented");
                     return;
                 }
                 else {
                     // Continue working but without making any modification to mapref[0]
-                    //Debug.fail("case always not yet implemented");
                     if (aciRight.length) worker(mapref, aciRight[0], /*negate*/ false, aciRight.slice(1));
                     else visitor(mapref[0]);
                 }
@@ -707,27 +691,18 @@ namespace ts {
                 });
                 prodnum++;
             }
-            // if (true){
-                if (!ciTop.symbolsInvolved){
-                    Debug.assert(ciTop.symbolsInvolved);
-                }
+            if (extraAsserts) {
+                Debug.assert(ciTop.symbolsInvolved);
                 for (let iter = mapSymbolType.keys(), it = iter.next(); !it.done; it = iter.next()){
                     Debug.assert(ciTop.symbolsInvolved.has(it.value));
                 }
-                ciTop.symbolsInvolved.forEach((dsymbol)=>{
-                    const type = mapSymbolType.get(dsymbol) ?? getDeclaredType(dsymbol);
-                    const got = map.get(dsymbol);
-                    if (!got) map.set(dsymbol,type);
-                    else map.set(dsymbol, mrNarrow.unionOfRefTypesType([got,type]));
-                });
-            // }
-            // else {
-            //     mapSymbolType.forEach((type,symbol)=>{
-            //         const got = map.get(symbol);
-            //         if (!got) map.set(symbol,type);
-            //         else map.set(symbol, mrNarrow.unionOfRefTypesType([got,type]));
-            //     });
-            // }
+            }
+            ciTop.symbolsInvolved!.forEach((dsymbol)=>{
+                const type = mapSymbolType.get(dsymbol) ?? getDeclaredType(dsymbol);
+                const got = map.get(dsymbol);
+                if (!got) map.set(dsymbol,type);
+                else map.set(dsymbol, mrNarrow.unionOfRefTypesType([got,type]));
+            });
         }
         visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
         if (log && getMyDebug()){
@@ -752,16 +727,16 @@ namespace ts {
         let type = cover.get(symbol);
         if (!type) type=getDeclaredType(symbol);
         ////////////////////////////////
-        if (true){
+        if (extraAsserts){
             /**
              * Running a comparison test here to condifm results match.
              */
             const compareType = evalTypeOverConstraint({ cin: ciTop, symbol, typeRange:getDeclaredType(symbol),mrNarrow });
             if (mrNarrow.isASubsetOfB(compareType, type)){
-                Debug.assert("unexpected1");
+                Debug.fail("unexpected");
             }
             if (mrNarrow.isASubsetOfB(type,compareType)){
-                Debug.assert("unexpected2");
+                Debug.fail("unexpected");
             }
         }
         ////////////////////////////////
@@ -774,7 +749,7 @@ namespace ts {
     export function evalSymbol(symbol: Symbol, sc: Readonly<RefTypesSymtabConstraintItem>, getDeclaredType: GetDeclaredTypeFn, mrNarrow: MrNarrow): RefTypesType {
         if (!mrNarrow.compilerOptions.mrNarrowConstraintsEnable || !sc.constraintItem.symbolsInvolved?.has(symbol)){
             const got = sc.symtab.get(symbol);
-            Debug.assert(got, `symbol not found: ${Debug.formatSymbol(symbol)}`);
+            if (!got) Debug.fail("unexpected");
             return got.leaf.type;
         }
         return evalCoverForOneSymbol(symbol, sc.constraintItem, getDeclaredType, mrNarrow);
@@ -1036,44 +1011,20 @@ namespace ts {
                 setOfInvolvedSymbols.add(it.value);
             }
             const coverMap = evalCoverPerSymbol(data.in.cin, getDeclaredType, mrNarrow);
-            coverMap.forEach((_type,symbol)=>{
-                Debug.assert(data.out.has(symbol), `data[${_iter}].out missing symbol ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
-                // const expectedType = data.out.get(symbol)!;
-                // Debug.assert(mrNarrow.isASubsetOfB(expectedType,type));
-                // Debug.assert(mrNarrow.isASubsetOfB(type, expectedType));
-            });
-            data.out.forEach((type,symbol)=>{
-                const actualType = coverMap.get(symbol) ?? mrNarrow.createRefTypesType(); // never
-                Debug.assert(mrNarrow.isASubsetOfB(actualType,type),
-                    `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(actualType:${mrNarrow.dbgRefTypesTypeToString(actualType)}, expectedType:${mrNarrow.dbgRefTypesTypeToString(type)})`);
-                Debug.assert(mrNarrow.isASubsetOfB(type, actualType),
-                    `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(expectedType:${mrNarrow.dbgRefTypesTypeToString(type)}, actualType:${mrNarrow.dbgRefTypesTypeToString(actualType)})`);
-            });
-
-            // const type = evalTypeOverConstraint(data.in);
-            // Debug.assert(mrNarrow.equalRefTypesTypes(data.out,type),
-            //     `expected ${mrNarrow.dbgRefTypesTypeToString(data.out)}, actual: ${mrNarrow.dbgRefTypesTypeToString(type)}}`);
+            if (true){
+                coverMap.forEach((_type,symbol)=>{
+                    Debug.assert(data.out.has(symbol), `data[${_iter}].out missing symbol ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+                });
+                data.out.forEach((type,symbol)=>{
+                    const actualType = coverMap.get(symbol) ?? mrNarrow.createRefTypesType(); // never
+                    Debug.assert(mrNarrow.isASubsetOfB(actualType,type),
+                        `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(actualType:${mrNarrow.dbgRefTypesTypeToString(actualType)}, expectedType:${mrNarrow.dbgRefTypesTypeToString(type)})`);
+                    Debug.assert(mrNarrow.isASubsetOfB(type, actualType),
+                        `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(expectedType:${mrNarrow.dbgRefTypesTypeToString(type)}, actualType:${mrNarrow.dbgRefTypesTypeToString(actualType)})`);
+                });
+            }
         });
 
-        // Have to remove this test until the new arg "getDeclaredType" is provided
-        //andDistributeDivide
-        // type DDArgs = Parameters<typeof andDistributeDivide>["0"];
-        // const dddata: { in: DDArgs, out: (cout: ConstraintItem) => void }[] = [
-        //     {
-        //         in: {
-        //             symbol:symx, type:rttLitNum0, declaredType: rttNumStr,
-        //             cin: createFlowConstraintLeaf(symx, rttNumStr),
-        //             mrNarrow, refCountIn:[0], refCountOut:[0]
-        //         },
-        //         out: (cout: ConstraintItem) => {
-        //             Debug.assert(isAlwaysConstraint(cout));
-        //         }
-        //     }
-        // ];
-        // dddata.forEach(dda=>{
-        //     // @ts-expect-error
-        //     const r = andDistributeDivide(dda.in);
-        // });
 
     }
 
