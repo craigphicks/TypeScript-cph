@@ -37,7 +37,9 @@ namespace ts {
             }
             if ((fn as any).node) {
                 node = (fn as any).node as Node;
-                if (!map_nID.get(node)) map_nID.set(node, nextNID++);
+                const nid = getNodeId(node);
+                nextNID++; // now only counting nodes
+                if (!map_nID.get(node)) map_nID.set(node, nid);
                 pekey = `${node.pos},${node.end}`;
                 if (!map_peID.has(pekey)) map_peID.set(pekey, nextTID++);
                 //tIDmap = map_peID.get(pekey);
@@ -47,7 +49,7 @@ namespace ts {
             let idstr = `id: ${fn.id}, `;
             if ((fn as FlowLabel).branchKind) idstr += ` branchKind: ${(fn as FlowLabel).branchKind}, `;
             idstr += `FID: ${map_fID.get(fn)!}`;
-            if (node && map_nID.has(node)) idstr += `, NID: ${map_nID.get(node)}`;
+            if (node && map_nID.has(node)) idstr += `, NID: [n${map_nID.get(node)}]`;
             if (pekey && map_peID.has(pekey)) idstr += `, TID: ${map_peID.get(pekey)}`;
             idstr += `, flags: ${Debug.formatFlowFlags(fn.flags)}`;
             if (recursiveReference) idstr += `, REPEAT REFERENCE!!!`;

@@ -4334,7 +4334,7 @@ namespace ts {
         /* @internal */ getNumberLiteralType(value: number): NumberLiteralType;
         /* @internal */ getBigIntLiteralType(value: PseudoBigInt): BigIntLiteralType;
         /* @internal */ everyContainedType(type: Type, f: (t: Type) => boolean): void;
-        /* @internal */ getNarrowTypeExports(): NarrowTypeExports;
+        // /* @internal */ getNarrowTypeExports(): NarrowTypeExports;
         /* @internal */ getSourceFileInferState(): SourceFileMrState;
         /* @internal */ createAndSetSourceFileInferState(sourceFile?: SourceFile): void;
         /* @internal */ unsetSourceFileInferState(): void;

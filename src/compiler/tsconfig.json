@@ -51,7 +51,7 @@
         "flowGroupInfer.ts",
         "flowGroupInfer2.ts",
         "flowGroupInferRefTypesType.ts",
-        "flowContraints.ts",
+        "flowConstraints.ts",
         "foobar.ts",
         "visitorPublic.ts",
         "sourcemap.ts",

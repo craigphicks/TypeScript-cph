@@ -1,0 +1,111 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0053.ts ===
+// declare function next(x:0): 1;
+// declare function next(x:1): 2;
+// declare function next(x:2): 3;
+// declare function next(x:3): 0;
+// declare function next(d:D): D;
+
+function t53(){
+>t53 : () => void
+
+    let d1 = 0;
+>d1 : number
+>0 : 0
+
+    // @ ts-dev-expect-string "loopCount:4, invocations:1"
+    while (true){
+>true : true
+
+        let d2 = 0;
+>d2 : number
+>0 : 0
+
+        // @ts-dev-expect-string "loopCount:7, invocations:5"
+        while (true){
+>true : true
+
+            d1;
+>d1 : 0 | 1 | 2 | 3
+
+            if (d2===0) d2=1;
+>d2===0 : boolean
+>d2 : 0 | 1 | 2 | 3
+>0 : 0
+>d2=1 : 1
+>d2 : number
+>1 : 1
+
+            else if (d2===1) d2=2;
+>d2===1 : boolean
+>d2 : 1 | 2 | 3
+>1 : 1
+>d2=2 : 2
+>d2 : number
+>2 : 2
+
+            else if (d2===2) d2=3;
+>d2===2 : boolean
+>d2 : 2 | 3
+>2 : 2
+>d2=3 : 3
+>d2 : number
+>3 : 3
+
+            else if (d2===3) {
+>d2===3 : boolean
+>d2 : 3
+>3 : 3
+
+                d2=0; break;
+>d2=0 : 0
+>d2 : number
+>0 : 0
+            }
+        }
+        d2;
+>d2 : 0
+
+        d1;
+>d1 : 0 | 1 | 2 | 3
+
+        if (d1===0) d1=1;
+>d1===0 : boolean
+>d1 : 0 | 1 | 2 | 3
+>0 : 0
+>d1=1 : 1
+>d1 : number
+>1 : 1
+
+        else if (d1===1) d1=2;
+>d1===1 : boolean
+>d1 : 1 | 2 | 3
+>1 : 1
+>d1=2 : 2
+>d1 : number
+>2 : 2
+
+        else if (d1===2) d1=3;
+>d1===2 : boolean
+>d1 : 2 | 3
+>2 : 2
+>d1=3 : 3
+>d1 : number
+>3 : 3
+
+        else if (d1===3) {
+>d1===3 : boolean
+>d1 : 3
+>3 : 3
+
+            d1=0;
+>d1=0 : 0
+>d1 : number
+>0 : 0
+
+            break;
+        }
+    }
+    d1;
+>d1 : 0
+}
+

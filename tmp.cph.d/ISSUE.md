@@ -16,6 +16,17 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+0. A plan to limit unnecesary re-computations without buffering whole copies of the symbol table per group.
+
+    0. For each group, in the grouping stage construct a symbol to type map: `rhsSymbolToTypeMap` for the input types, with initial type value set to never.  Before re-computing the group, check input symbol table against `rhsSymbolToTypeMap`, and if for each symbol in `rhsSymbolToTypeMap` the types in the input symbol table are equal, the re-computation can be skipped.  Otherwise, update the value of `rhsSymbolToTypeMap` to union the input type before recomputation.
+
+    0. For each group, in the grouping stage construct a symbol to node map: `lhsSymbolToTypeMap` for the output types, with intial type value set to never.  In case the re-computation of the group is skipped, then the group re-computation effect can be replaced by, for each `lhsSymbolToTypeMap` symbol, update the value in the symbol table by the value in `lhsSymbolToTypeMap`.
+
+    0. This plan does not decrease the number of times a group is accessed, so it does not decrease e.g., the number of loop iterations, or prevent descending an if statement, even if all the enclosed groups will not be re-computed.  In order to achieve that level of efficiency, the enclosed groups maps could be merged a single map for the enclosing group. This is a separate dev step.
+
+
+
+
 0. Deeper embedded while loop tests to demonstrate exactly what is the looping complexity.
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
 0.  `Do` loop
@@ -56,6 +67,12 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. "Bonk" went away - was it an environment problem?
+0. Modifications to enable calling `checkSourceFile` in a loop for timing purposes, with environment variable `numLoopCheckSourceFile=<number of extra loops>`.
+0. Fixes to remove debug formatting statements in `Debug.XXX` calls.
+- All `_caxnc-` tests passing.
+
 
 0. In `mrNarrowTypesInnerAux` for `case SyntaxKind.StringLiteral` substituting `checker.getStringLiteralType(getSourceTextOfNodeFromSourceFile(sourceFile,expr))` for `checker.getTypeAtLocation(expr)` failed (test type results failing) although it worked for `TrueKeyword`, `FalseKeyword`, and `NumericLiteral`.  Perhaps extra quotes.  Fixed.
 - All `_caxnc-` tests passing.
@@ -253,3 +270,11 @@ const r = foo(a);
 ```
 
 A consequence is that `case SyntaxKind.CallExpression` currently has a narrow constraint making it easier to code.
+
+## command line snippets
+
+- `myMaxLinesOut=300000 myDebug=0 myDebugLevel=1 myDisableInfer=0 gulp runtests --tests="_caxnc-"`
+- `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
+- `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  --prof built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
+- `node --prof-process isolate- > isolate.txt`
+

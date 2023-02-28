@@ -687,7 +687,7 @@ namespace ts {
             getNumberLiteralType,
             getBigIntLiteralType,
             everyContainedType,
-            getNarrowTypeExports,
+            // getNarrowTypeExports,
             getSourceFileInferState(){
                 return sourceFileMrState!;
             },
@@ -24631,23 +24631,23 @@ namespace ts {
         //     }
         // }
 
-        function getNarrowTypeExports(): NarrowTypeExports {
-            const x = getFlowTypeOfReference(
-                /*reference*/{ flowNode: undefined as any as FlowNode } as any as Node,
-                /*declaredType*/undefined as any as Type) as any as NarrowTypeExports;
-            //     /*initialType*/undefined as any as Type,
-            //     /*flowContainer*/undefined,
-            //     /*flowNode*/
-            // );
-            return x;
-        }
+        // function getNarrowTypeExports(): NarrowTypeExports {
+        //     const x = getFlowTypeOfReference(
+        //         /*reference*/{ flowNode: undefined as any as FlowNode } as any as Node,
+        //         /*declaredType*/undefined as any as Type) as any as NarrowTypeExports;
+        //     //     /*initialType*/undefined as any as Type,
+        //     //     /*flowContainer*/undefined,
+        //     //     /*flowNode*/
+        //     // );
+        //     return x;
+        // }
 
         function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = reference.flowNode,
             joinMap: JoinMap | undefined=undefined): Type {
 
-            if (!declaredType){
-                return ((getFlowTypeOfReference_aux as any as () => Type)());
-            }
+            // if (!declaredType){
+            //     return ((getFlowTypeOfReference_aux as any as () => Type)());
+            // }
 
             flowTypeQueryState.disable = myDisable;
 
@@ -25836,9 +25836,10 @@ namespace ts {
                 }
                 const retType = narrowTypeByEquality_aux(type, operator, value, assumeTrue);
                 if (myDebug) {
-                    consoleGroup(`narrowTypeByEquality[in](type:${typeToString(type)}, operator:${
+                    consoleLog(`narrowTypeByEquality[in](type:${typeToString(type)}, operator:${
                         Debug.formatSyntaxKind(operator)
                     }, value:${dbgNodeToString(value)}, assumeTrue:${assumeTrue}) -> ${typeToString(retType)}`);
+                    consoleGroupEnd();
                 }
                 return retType;
             }
@@ -43157,7 +43158,7 @@ namespace ts {
             let hrstart: bigint | undefined;
             myDebug = !!Number(process.env.myDebug) && !!nameMatched;
             if (nameMatched) {
-                if (!myDisableInfer && myDebug && dbgFlowFileCnt===0){
+                if (myDebug && dbgFlowFileCnt===0){
                     // must write flowNodesToString before createAndSetSourceFileInferState because an assert might happen in createAndSetSourceFileInferState
                     let ofilenameRoot="";
                     ofilenameRoot = `tmp.${getBaseFileName(node.originalFileName)}.di${myDisableInfer?1:0}.${dbgFlowFileCnt}.flow`;
