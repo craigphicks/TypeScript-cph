@@ -230,17 +230,13 @@ namespace ts {
         // loopUnionCurrentBranchesMap: ESMap<GroupForFlow, CurrentBranchElement>;
     }
     export type SymbolFlowInfo = & {
+        passCount: number;
         isconst: boolean;
         replayableItem?: ReplayableItem;
-        declaredType: RefTypesType; // this is currently (<initializer result type> || <actual declared type>) ; might want to separate later
-        /**
-         * actualDeclaredType will only be set during VariableDeclaration when the type is explivit there, e.g.
-         * - let x: boolean = true;
-         * Otherwise, a call to `getTypeOfSymbol(expr)` *might* result in a recurrent call to `getFlowTypeOfReference` (which triggers Debug.fail(), e.g.
-         * - let x = true;
-         * However, we *should* be able do it after the initializer was called, via the infer status cache.
-         */
-        actualDeclaredType?: RefTypesType; // will be <actual declared type> or nothing is no declaration
+        typeNodeTsType?: Type;
+        initializerType?: RefTypesType;
+        effectiveDeclaredTsType: Type; // <actual declared type> || <widened initial type>
+        //effectiveDeclaredType?: RefTypesType; // ~ actualDeclaredTsType
     };
     export interface MrState {
         checker: TypeChecker;
@@ -708,7 +704,7 @@ namespace ts {
     //     }
     //     return { expected: undefined };
     // }
-    function getDevExpectString(node: Node, sourceFile: SourceFile): string | undefined {
+    export function getDevExpectString(node: Node, sourceFile: SourceFile): string | undefined {
         const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
         let cr: CommentRange | undefined;
         if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
@@ -720,6 +716,19 @@ namespace ts {
             }
         }
         return undefined;
+    }
+    export function getDevExpectStrings(node: Node, sourceFile: SourceFile): string[] | undefined {
+        const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
+        const arrstr: string[]=[];
+        if (!arrCommentRange) return undefined;
+        arrCommentRange.forEach(cr=>{
+            const comment = sourceFile.text.slice(cr.pos, cr.end);
+            const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
+            if (matches && matches.length>=2){
+                arrstr.push(matches[1]);
+            }
+        });
+        return arrstr.length ? arrstr : undefined;
     }
 
     function isGroupToNodeToMapConverged(

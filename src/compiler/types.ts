@@ -4328,7 +4328,10 @@ namespace ts {
         narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     }
     export interface TypeChecker {
-        /* @internal */ getReducedType(type: Type): Type; // KILL
+        ///* @internal */ getTypeFromTypeNode(node: TypeNode): Type;
+        /* @internal */ getFreshTypeOfLiteralType(type: Type): Type;
+        /* @internal */ widenTypeInferredFromInitializer(declaration: HasExpressionInitializer, type: Type): Type;
+        // /* @internal */ getReducedType(type: Type): Type; // KILL
         /* @internal */ resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode?: number, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type}): {hadError: boolean, signature: Signature};
         /* @internal */ getStringLiteralType(value: string): StringLiteralType;
         /* @internal */ getNumberLiteralType(value: number): NumberLiteralType;

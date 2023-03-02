@@ -676,7 +676,10 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
-            getReducedType,
+            //getTypeFromTypeNode,
+            getFreshTypeOfLiteralType,
+            widenTypeInferredFromInitializer,
+            // getReducedType,
             resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode?: number, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type}): {hadError: boolean, signature: Signature} {
                 // eslint-disable-next-line prefer-const
                 let hadErrorRef: [boolean] = [false];

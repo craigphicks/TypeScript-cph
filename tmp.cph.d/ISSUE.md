@@ -16,14 +16,26 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+0. "symbolFlowInfo"
+
+    0. Will eventually replace `mrState.declaredTypes`, `inferStatus.declareTypes` `refTypesType.leaf.declaredTypes` with `symbolFlowInfo.effectiveDeclaredType`.  This will be used in loops to maintain complexity parity with existing code loop behavior.
+
+    0.  Have already added to `VariableDeclaration` (but not using).  Still need to add to `mrNarrowTypesByBinaryExpresionAssign` and `mrNarrowTypesByPropertyAccessExpression`,
+
+0. "actualDeclaredType"
+
+    0. See Done/"actualDeclaredType".  Add "actualDeclaredType" to `symbolFlowInfoMap`.
+    0. When inside a loop, flow type should be widened instead of becoming union of literals.  Outside of loops, might be OK to remain a literal.
+
 0. A plan to limit unnecesary re-computations without buffering whole copies of the symbol table per group.
 
     0. For each group, in the grouping stage construct a symbol to type map: `rhsSymbolToTypeMap` for the input types, with initial type value set to never.  Before re-computing the group, check input symbol table against `rhsSymbolToTypeMap`, and if for each symbol in `rhsSymbolToTypeMap` the types in the input symbol table are equal, the re-computation can be skipped.  Otherwise, update the value of `rhsSymbolToTypeMap` to union the input type before recomputation.
 
-    0. For each group, in the grouping stage construct a symbol to node map: `lhsSymbolToTypeMap` for the output types, with intial type value set to never.  In case the re-computation of the group is skipped, then the group re-computation effect can be replaced by, for each `lhsSymbolToTypeMap` symbol, update the value in the symbol table by the value in `lhsSymbolToTypeMap`.
+    0. For each group, in the grouping stage construct a symbol to node map: `lhsSymbolToTypeMap` for the output types, with intial type value set to never.  In case the re-computation of the group is skipped, then the group re-computation effect can be replaced by, for each `lhsSymbolToTypeMap` symbol, update the value in the symbol table by the value in `lhsSymbolToTypeMap`. Output types occur under 'truthy' and 'falsy' members for if and loop groups.
 
     0. This plan does not decrease the number of times a group is accessed, so it does not decrease e.g., the number of loop iterations, or prevent descending an if statement, even if all the enclosed groups will not be re-computed.  In order to achieve that level of efficiency, the enclosed groups maps could be merged a single map for the enclosing group. This is a separate dev step.
 
+    0. If more symbols than are actually involved get extracted during grouping that's ok.  Just have to make sure all those involved are gotten.
 
 
 
@@ -67,6 +79,29 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. "symbolFlowInfo", setting it in VariableDeclaration
+
+0. "actualDeclaredType": Now working under VaraibleDeclararation using `checker.getTypeOfTypeNode` and `checker.widenTypeInferredFromInitializer`.  Using "ts-dev-expect-string" to check the "actualDeclaredType" against expected described in test files `_caxcn-decl-`. Not yet added to `SymbolFlowInfo`  All `_caxnc-` tests passing.
+
+0. "actualDeclaredType (older)"
+
+    0. Knowing the "actualDeclaredType" for a declaration is required to achieve equal standing with existing code on type resolution - e.g., explicit types 1|2|3 vs. "number".  If the type is declared explicilty (i.e., variable declaration with a `type` member), that should be easy to achieve (barring difficult template types).  Otherwise, it depends on the initializer, and widening of the initializer.  The widening depends upon the rhs type, whether the declaration itself is `const` or not, and whether the rhs is `as const` or readonly.  Notably, in a loop situation, the declaration itself may be recomputed multiple times.
+
+    0. "Existing Code": I tried to leverage existing checker functions first:
+
+        0. To get the type of the initializer, after its value had been successfully computed, used `callCheckerFunctionWithShallowRecursion` function to call `checker.getTypeOfSymbol`.  The `callCheckerFunctionWithShallowRecursion` function sets up a node type cache for the next call through existing code to `getFlowTypeOfReference`, so that can be called exactly once without true recursion.  Unfortunately, that resulted in `reportCircularityError` being called (from inside `getTypeOfVariableOrParameterOrPropertyWorker`).  Obiously this was not because a true recusive circularity occured, because `callCheckerFunctionWithShallowRecursion` prevents that. Instead it is called because the existing code *predicts* that if the existing flow were used it would not be computable.  I then tried bypassing the clauses with `reportCircularityError` - the code was able to complete but some `_caxnc-` tests failed in strange ways - I think it may be because the existing code is not happy about recalculating declaration types - perhaps it expects only the one final result.
+
+        0. Tried using `checker.widenTypeInferredFromInitializer(...)`.  That failed to widen the type, e.g., `let x=true` resulted in `true`, not boolean.  It might be the cause that argument types need to have flag set with `TypeFlag.RequiresWidening`?.
+
+        0."getTypeFromTypeNode": This is a checker function.  It is surely already called in the special case where a declaration has an explicit type declared.  Perhaps we can assumed that if a type member is present on a declaration, then this function has been called.
+
+    0. "Stubs for new code":  I added some function stubs `mrNarrowWidenLiteralType`,`mrNarrowWidenLiteralObjectType`,`mrNarrowWidenLiteralObjectType`.  However, really don't want to reinvent the wheel.
+
+
+0. Added function stubs, `mrNarrowGetActualDeclaredType`, `mrNarrowWidenLiteralType`, `mrNarrowWidenLiteralObjectType` for use in determining the "actualDeclaredType" when it is a widened initializer result.  However, in case of objects which are not tuple or array, I'm not sure how an object should set up - I think it would be best to debug a simple test case and see what is happening already.
+Dev notes:  However, maybe it would be easier to try supressing `reportCircularityError`. Oops - this creates "circularity errors" that make no sense.  Try "Dev notes: denTypeInferredFromInitializer" instead - doesn't widen as expected. true->true not boolean. Tried avoiding "circularity errors" by commenting out section with `` in `checker.getTypeOfVariableOrParameterOrPropertyWorker`, but it caused subtle side effects that made just a couple of tests fail, so that is no good.  Looks like "mrNarrowGetActualDeclaredType" is the only way forward.
+
 
 0. "Bonk" went away - was it an environment problem?
 0. Modifications to enable calling `checkSourceFile` in a loop for timing purposes, with environment variable `numLoopCheckSourceFile=<number of extra loops>`.

@@ -1,0 +1,8 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0004.ts ===
+// @ts-dev-expect-string "count: 0, actualDeclaredTsType: string | number"
+let x: number|string = 1;
+>x : Symbol(x, Decl(_caxnc-decl-0004.ts, 1, 3))
+
+x;
+>x : Symbol(x, Decl(_caxnc-decl-0004.ts, 1, 3))
+

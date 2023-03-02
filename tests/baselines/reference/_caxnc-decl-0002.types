@@ -1,0 +1,15 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0002.ts ===
+declare const b: boolean;
+>b : boolean
+
+// @ts-dev-expect-string "count: 0, actualDeclaredTsType: number"
+let x = b?1:1;
+>x : number
+>b?1:1 : 1
+>b : boolean
+>1 : 1
+>1 : 1
+
+x;
+>x : 1
+
