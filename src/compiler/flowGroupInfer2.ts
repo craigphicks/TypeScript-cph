@@ -323,6 +323,39 @@ namespace ts {
             return as;
         }
 
+        /**
+         * This does not work when called on `propertyAccessExpression.name`, at least when
+         * `propertyAccessExpression.expression` has multiple incompatible types
+         * @param expr : Identifier
+         * @param mrState
+         * @returns
+         */
+        function getSymbolFlowInfoForIdentifier(expr: Identifier, mrState: MrState): {symbol: Symbol, symbolFlowInfo: SymbolFlowInfo}{
+            const symbol = getResolvedSymbol(expr);
+            let symbolFlowInfo = mrState.symbolFlowInfoMap.get(symbol);
+            if (symbolFlowInfo) return { symbol, symbolFlowInfo };
+            const isconst = isConstantReference(expr);
+            // would have copied following from isConstantReference(expr) case Identifier, but have to export isSymbolAssigned from checker
+            // const isconst = isConstVariable(symbol) || isParameterOrCatchClauseVariable(symbol) && !checker.isSymbolAssigned(symbol);
+            const tsDeclaredType: Type = getTypeOfSymbol(symbol);
+            //if (symbol.flags && SymbolFlags.Optional) tsDeclaredTypes.push(undefinedType);
+            const declaredType = createRefTypesType(tsDeclaredType);
+            symbolFlowInfo = { isconst,declaredType };
+            mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
+            return { symbol, symbolFlowInfo };
+        }
+
+        // function getSymbolFlowInfoForProperty(expr: Identifier, mrState: MrState): {symbol: Symbol, symbolFlowInfo: SymbolFlowInfo}{
+        //     const symbol = getResolvedSymbol(expr);
+        //     let symbolFlowInfo = mrState.symbolFlowInfoMap.get(symbol);
+        //     if (symbolFlowInfo) return { symbol, symbolFlowInfo };
+        //     const isconst = isConstantReference(expr);
+        //     const tsDeclaredType: Type = getTypeOfSymbol(symbol);
+        //     const declaredType = createRefTypesType(tsDeclaredType);
+        //     symbolFlowInfo = { isconst,declaredType };
+        //     mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
+        //     return { symbol, symbolFlowInfo };
+        // }
 
 
 
@@ -1774,6 +1807,11 @@ namespace ts {
             const keystr = expr.name.escapedText as string;
             //const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = []; //
             const arrRttr: RefTypesTableReturn[]=[];
+
+            // nope
+            //const {symbol: sfiPropSymbol, symbolFlowInfo } = getSymbolFlowInfoForIdentifier(expr.name,_mrState);
+
+
             pre.unmergedPassing.forEach(prePassing=>{
                 /**
                  * Each prePassing.type is a potential compound type.  For each primitive type of that compound type, a new branch is generated.
@@ -1796,7 +1834,7 @@ namespace ts {
                             {symbol:prePassing.symbol, type:createRefTypesType(t), isconst:prePassing.isconst, sc:{ symtab,constraintItem },
                             getDeclaredType: createGetDeclaredTypeFn(inferStatus), mrNarrow }));
                     }
-                    dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`XXX2 prePassing.constraintItem ${s}`));
+                    //dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`XXX2 prePassing.constraintItem ${s}`));
 
 
                     if (isArrayOrTupleType(t)||t===stringType) {
@@ -1831,6 +1869,7 @@ namespace ts {
                      *
                      */
                     const propSymbol = checker.getPropertyOfType(t, keystr);
+                    // Debug.assert(propSymbol===sfiPropSymbol); nope
                     if (propSymbol) {
                         if (getMyDebug()) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
                         if (propSymbol.flags & SymbolFlags.EnumMember){
@@ -2230,6 +2269,7 @@ namespace ts {
                 case SyntaxKind.Identifier:{
                     if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.Identifier`);
                     Debug.assert(isIdentifier(expr));
+
                     const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
 
                     // There is a unique symbol for the type undefined - that gets converted directly to the undefined type here.
@@ -2243,6 +2283,10 @@ namespace ts {
                             }]
                         };
                     }
+
+                    // @ts-expect-error
+                    const {symbol: sfiSymbol, symbolFlowInfo } = getSymbolFlowInfoForIdentifier(expr,_mrState);
+                    Debug.assert(symbol===sfiSymbol);
 
                     if (inferStatus.replayables.has(symbol)){
                         if (getMyDebug()){
@@ -2304,10 +2348,14 @@ namespace ts {
                         isconst = isConstantReference(expr);
                         const leaf = createRefTypesTableLeaf(symbol,isconst,type);
                         inferStatus.declaredTypes.set(symbol, leaf);
+//                        Debug.assert((isconst??false)===symbolFlowInfo.isconst);
+//                        Debug.assert(equalRefTypesTypes(type, symbolFlowInfo.declaredType));
                     }
                     else {
                         const declaredLeaf = inferStatus.declaredTypes.get(symbol)!;
                         ({isconst}=declaredLeaf);
+//                        Debug.assert((isconst??false)===symbolFlowInfo.isconst);
+//                        Debug.assert(equalRefTypesTypes(declaredLeaf.type, symbolFlowInfo.declaredType));
                         if (!hasSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn })){
                             ({type}=declaredLeaf);
                         }

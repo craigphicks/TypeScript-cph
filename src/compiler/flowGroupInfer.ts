@@ -229,6 +229,11 @@ namespace ts {
         // loopUnionGroupToNodeToType: ESMap<GroupForFlow, NodeToTypeMap>;
         // loopUnionCurrentBranchesMap: ESMap<GroupForFlow, CurrentBranchElement>;
     }
+    export type SymbolFlowInfo = & {
+        isconst: boolean;
+        replayableItem?: ReplayableItem;
+        declaredType: RefTypesType;
+    };
     export interface MrState {
         checker: TypeChecker;
         replayableItems: ESMap< Symbol, ReplayableItem >;
@@ -243,6 +248,7 @@ namespace ts {
         loopGroupToProcessLoopStateMap: ESMap<GroupForFlow,ProcessLoopState>;
         currentLoopDepth: number;
         currentLoopsInLoopScope: Set<GroupForFlow>;
+        symbolFlowInfoMap: WeakMap<Symbol,SymbolFlowInfo | undefined>;
     };
 
 
@@ -324,6 +330,7 @@ namespace ts {
             loopGroupToProcessLoopStateMap: new Map<GroupForFlow,ProcessLoopState>(),
             currentLoopDepth: 0,
             currentLoopsInLoopScope: new Set<GroupForFlow>(),
+            symbolFlowInfoMap: new WeakMap<Symbol,SymbolFlowInfo | undefined>()
         };
         const refTypesTypeModule = createRefTypesTypeModule(checker);
         const mrNarrow = createMrNarrow(checker, sourceFile, mrState, refTypesTypeModule, compilerOptions);

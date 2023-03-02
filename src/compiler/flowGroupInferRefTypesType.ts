@@ -453,22 +453,24 @@ namespace ts {
          * @returns
          */
         function equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean{
-            if (a._flags===RefTypesTypeFlags.any && b._flags===RefTypesTypeFlags.any) return true;
-            if (a._flags===RefTypesTypeFlags.unknown && b._flags===RefTypesTypeFlags.unknown) return false;
-            if (a._flags !== b._flags) return false;
-            Debug.assert(!a._flags && !b._flags);
+            if (a===b) return true;
+            if (a._flags || b._flags) return a._flags===b._flags;
             if (a._set.size !== b._set.size) return false;
             if (a._mapLiteral.size !== b._mapLiteral.size) return false;
-            for (let iter=a._mapLiteral.entries(), it=iter.next(); !it.done; it=iter.next()){
-                const [tstype, altset] = it.value;
-                const bltset = b._mapLiteral.get(tstype);
-                if (!bltset || bltset.size!==altset.size) return false;
-                for (let iter2=altset.values(),it2=iter2.next(); !it2.done; it2=iter2.next()){
-                    if (!bltset.has(it2.value)) return false;
+            if (a._set.size){
+                for (let iter=a._set.values(), it=iter.next(); !it.done; it=iter.next()){
+                    if (!b._set.has(it.value)) return false;
                 }
             }
-            for (let iter=a._set.values(), it=iter.next(); !it.done; it=iter.next()){
-                if (!b._set.has(it.value)) return false;
+            if (a._mapLiteral.size){
+                for (let iter=a._mapLiteral.entries(), it=iter.next(); !it.done; it=iter.next()){
+                    const [tstype, altset] = it.value;
+                    const bltset = b._mapLiteral.get(tstype);
+                    if (!bltset || bltset.size!==altset.size) return false;
+                    for (let iter2=altset.values(),it2=iter2.next(); !it2.done; it2=iter2.next()){
+                        if (!bltset.has(it2.value)) return false;
+                    }
+                }
             }
             return true;
         }
