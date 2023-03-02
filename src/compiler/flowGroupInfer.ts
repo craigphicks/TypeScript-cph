@@ -232,7 +232,15 @@ namespace ts {
     export type SymbolFlowInfo = & {
         isconst: boolean;
         replayableItem?: ReplayableItem;
-        declaredType: RefTypesType;
+        declaredType: RefTypesType; // this is currently (<initializer result type> || <actual declared type>) ; might want to separate later
+        /**
+         * actualDeclaredType will only be set during VariableDeclaration when the type is explivit there, e.g.
+         * - let x: boolean = true;
+         * Otherwise, a call to `getTypeOfSymbol(expr)` *might* result in a recurrent call to `getFlowTypeOfReference` (which triggers Debug.fail(), e.g.
+         * - let x = true;
+         * However, we *should* be able do it after the initializer was called, via the infer status cache.
+         */
+        actualDeclaredType?: RefTypesType; // will be <actual declared type> or nothing is no declaration
     };
     export interface MrState {
         checker: TypeChecker;
@@ -517,10 +525,10 @@ namespace ts {
             //accumNodeTypes: false, //withinLoop,
             accumBranches: withinLoop,
             getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
-                return this.callCheckerFunctionWithShallowRecursion(sc, mrState.checker.getTypeOfExpression, expr);
+                return this.callCheckerFunctionWithShallowRecursion(expr, sc, mrState.checker.getTypeOfExpression, expr);
             },
-            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
-                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr:args[0], sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
+                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr, sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
                 try {
                    const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
                    return ret;

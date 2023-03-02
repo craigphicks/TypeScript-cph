@@ -2583,21 +2583,45 @@ namespace ts {
                     Debug.assert(isVariableDeclaration(expr));
                     Debug.assert(expr.initializer);
                     const initializer = expr.initializer;
-                    const symbol = getSymbolOfNode(expr); // not condExpr.name
-                    const isconstVar = isConstVariable(symbol);
-                    if (refTypesSymtabIn.get(symbol)){
-                        Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
-                    }
 
                     const rhs = mrNarrowTypes({
                         refTypesSymtab: refTypesSymtabIn, expr:initializer, crit:{ kind: InferCritKind.none }, qdotfallout:undefined,
                         inferStatus: { ...inferStatus, inCondition: false },
                         constraintItem: constraintItemIn
                     });
+
                     // NOTE: in case of inferStatus.withinLoop, no action should be required here because the effect is already incorporated on the rhs
                     Debug.assert(!rhs.inferRefRtnType.failing);
                     Debug.assert(rhs.inferRefRtnType.unmerged);
                     if (isIdentifier(expr.name)){
+
+                        const symbol = getSymbolOfNode(expr); // not condExpr.name
+                        let symbolFlowInfo: SymbolFlowInfo | undefined= _mrState.symbolFlowInfoMap.get(symbol);
+                        if (!symbolFlowInfo){
+                            /** by the time we get the type for expr.initializer has already been merged into groupNodeToTypeMap, so
+                             * we couls be able to call inferStatus.callCheckerFunctionWithShallowRecursion(...) here.
+                             * Oops - this creates "circularity errors" that make no sense.  Try
+                             * "widenTypeInferredFromInitializer" instead.
+                             */
+                            // const actualDeclaredTsType = inferStatus.callCheckerFunctionWithShallowRecursion(
+                            //     initializer,
+                            //     { symtab:rhs.inferRefRtnType.passing.symtab,constraintItem:rhs.inferRefRtnType.passing.constraintItem },
+                            //     checker.getTypeOfSymbol, symbol);
+
+                            symbolFlowInfo = {
+                                isconst: isConstVariable(symbol),
+                                // actualDeclaredType: createRefTypesType(actualDeclaredTsType),
+                                declaredType: rhs.inferRefRtnType.passing.type
+                            };
+                            _mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
+                        }
+                        const isconstVar = isConstVariable(symbol);
+                        // let declaredTsType: undefined | Type;
+                        //if (expr.type) declaredTsType = getTypeOfSymbol(symbol);
+                        if (refTypesSymtabIn.get(symbol)){
+                            Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
+                        }
+
                         if (isconstVar){
                             const replayableItem: ReplayableItem = {
                                 expr: expr.initializer,
@@ -2605,6 +2629,7 @@ namespace ts {
                                 isconst: isconstVar,
                                 nodeToTypeMap: new Map<Node,Type>(inferStatus.groupNodeToTypeMap)
                             };
+                            symbolFlowInfo.replayableItem = replayableItem;
                             inferStatus.replayables.set(symbol,replayableItem);
                             if (getMyDebug()){
                                 const shdr = `mrNarrowTypesInner[dbg] case SyntaxKind.VariableDeclaration +replayable `;
@@ -2618,8 +2643,8 @@ namespace ts {
                             return {arrRefTypesTableReturn:[{
                                 kind:RefTypesTableKind.return,
                                 type:rhs.inferRefRtnType.passing.type,
-                                symtab: refTypesSymtabIn,
-                                constraintItem: constraintItemIn
+                                symtab: refTypesSymtabIn,// TODO: -> rhs.inferRefRtnType.passing.symtab
+                                constraintItem: constraintItemIn// TODO: -> rhs.inferRefRtnType.passing.constraintItem
                             }]};
                         }
                         let arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]> = inferStatus.inCondition ? rhs.inferRefRtnType.unmerged : [rhs.inferRefRtnType.passing];
