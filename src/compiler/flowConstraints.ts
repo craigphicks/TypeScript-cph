@@ -434,32 +434,34 @@ namespace ts {
         }
         let constraintItem = sc.constraintItem;
         let symtab = sc.symtab;
-        let type = typeIn;
+        //let type = typeIn;
         if (symbol.flags & (SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
             // do nothing - an enum parent is not a real type
         }
         else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
-            constraintItem = andSymbolTypeIntoConstraint({ symbol,type,constraintItem,getDeclaredType,mrNarrow });
+            constraintItem = andSymbolTypeIntoConstraint({ symbol,type:typeIn,constraintItem,getDeclaredType,mrNarrow });
         }
         else {
-            const got = symtab.get(symbol);
-            if (got) {
+            let type = symtab.get(symbol);
+            if (type) {
                 //const gottype = got.leaf.type;
-                const itype = mrNarrow.intersectionOfRefTypesType(type, got.leaf.type);
-                if (!mrNarrow.isASubsetOfB(itype, got.leaf.type) || !mrNarrow.isASubsetOfB(got.leaf.type, itype)){
-                    symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,isconst,itype) });
+                const itype = mrNarrow.intersectionOfRefTypesType(type, typeIn);
+                // TODO: replace with mrNarrow.equalRefTypesType
+                if (!mrNarrow.isASubsetOfB(itype, type) || !mrNarrow.isASubsetOfB(type, itype)){
+                    symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,itype);
                     type = itype;
                 }
                 // othwise the symtab remains unchanged
             }
             else {
-                symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,isconst,type) });
+                symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeIn);
             }
         }
         if (log && getMyDebug()){
             let str = "`andSymbolTypeIntoSymtabConstraint[out] symtab:";
-            symtab.forEach(({leaf})=>{
-                str += ` {symbol:${leaf.symbol!.escapedName}, isconst:${leaf.isconst}, type:${mrNarrow.dbgRefTypesTypeToString(leaf.type)}},`;
+            symtab.forEach((type,symbol)=>{
+                const isconst = mrNarrow.mrState.symbolFlowInfoMap.get(symbol)!.isconst;
+                str += ` {symbol:${symbol.escapedName}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(type)}},`;
             });
             consoleLog(str);
             mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>{
@@ -524,23 +526,23 @@ namespace ts {
 
         //let constraintItem = sc.constraintItem;
         let symtab = sc.symtab;
-        const type = typeIn;
+        //const type = typeIn;
         if (symbol.flags & (SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
             // do nothing - an enum parent is not a real type
-            return { type,sc };
+            return { type:typeIn,sc };
         }
         else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
             Debug.fail("not yet implemented"); // orSymbolTypeIntoSymtabConstraint for isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable
             //constraintItem = andSymbolTypeIntoConstraint({ symbol,type,constraintItem,getDeclaredType,mrNarrow });
         }
         else {
-            const got = symtab.get(symbol);
-            if (!got || mrNarrow.isNeverType(got.leaf.type) ||
-            (mrNarrow.isASubsetOfB(type, got.leaf.type) && mrNarrow.isASubsetOfB(got.leaf.type, type))){
-                return { type,sc };
+            const gotType = symtab.get(symbol);
+            if (!gotType || mrNarrow.isNeverType(gotType) ||
+            (mrNarrow.isASubsetOfB(typeIn, gotType) && mrNarrow.isASubsetOfB(gotType, typeIn))){
+                return { type:typeIn,sc };
             }
-            const utype = mrNarrow.unionOfRefTypesType([type, got.leaf.type]);
-            symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,{ leaf: mrNarrow.createRefTypesTableLeaf(symbol,isconst,utype) });
+            const utype = mrNarrow.unionOfRefTypesType([typeIn, gotType]);
+            symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,utype);
             return {
                 type: utype,
                 sc: {
@@ -748,9 +750,9 @@ namespace ts {
 
     export function evalSymbol(symbol: Symbol, sc: Readonly<RefTypesSymtabConstraintItem>, getDeclaredType: GetDeclaredTypeFn, mrNarrow: MrNarrow): RefTypesType {
         if (!mrNarrow.compilerOptions.mrNarrowConstraintsEnable || !sc.constraintItem.symbolsInvolved?.has(symbol)){
-            const got = sc.symtab.get(symbol);
-            if (!got) Debug.fail("unexpected");
-            return got.leaf.type;
+            const gotType = sc.symtab.get(symbol);
+            if (!gotType) Debug.fail("unexpected");
+            return gotType;
         }
         return evalCoverForOneSymbol(symbol, sc.constraintItem, getDeclaredType, mrNarrow);
     }

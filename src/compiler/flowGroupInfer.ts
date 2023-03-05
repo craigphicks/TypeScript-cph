@@ -231,6 +231,7 @@ namespace ts {
     }
     export type SymbolFlowInfo = & {
         passCount: number;
+        initializedInAssignment?: boolean;
         isconst: boolean;
         replayableItem?: ReplayableItem;
         typeNodeTsType?: Type;
@@ -241,7 +242,7 @@ namespace ts {
     export interface MrState {
         checker: TypeChecker;
         replayableItems: ESMap< Symbol, ReplayableItem >;
-        declaredTypes: ESMap<Symbol,RefTypesTableLeaf>;
+        declaredTypes: ESMap<Symbol,RefTypesType>;
         forFlowTop: ForFlow;
         recursionLevel: number;
         dataForGetTypeOfExpressionShallowRecursive?: {
@@ -328,7 +329,7 @@ namespace ts {
         const mrState: MrState = {
             checker,
             replayableItems: new Map<Symbol, ReplayableItem>(),
-            declaredTypes: new Map<Symbol, RefTypesTableLeaf>(),
+            declaredTypes: new Map<Symbol, RefTypesType>(),
             recursionLevel: 0,
             forFlowTop: createForFlow(groupsForFlow),
             loopGroupToProcessLoopStateMap: new Map<GroupForFlow,ProcessLoopState>(),
@@ -516,7 +517,7 @@ namespace ts {
             inCondition: groupForFlow.kind===GroupForFlowKind.ifexpr || groupForFlow.kind===GroupForFlowKind.loop,
             currentReplayableItem: undefined,
             replayables: sourceFileMrState.mrState.replayableItems,
-            declaredTypes: sourceFileMrState.mrState.declaredTypes,
+            //declaredTypes: sourceFileMrState.mrState.declaredTypes,
             groupNodeToTypeMap,
             //accumNodeTypes: false, //withinLoop,
             accumBranches: withinLoop,

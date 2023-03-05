@@ -18,9 +18,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 0. "symbolFlowInfo"
 
-    0. Will eventually replace `mrState.declaredTypes`, `inferStatus.declareTypes` `refTypesType.leaf.declaredTypes` with `symbolFlowInfo.effectiveDeclaredType`.  This will be used in loops to maintain complexity parity with existing code loop behavior.
-
-    0.  Have already added to `VariableDeclaration` (but not using).  Still need to add to `mrNarrowTypesByBinaryExpresionAssign` and `mrNarrowTypesByPropertyAccessExpression`,
+0.  Currently always returning type `symbolFlowInfo.effectiveDeclaredType` in `mrNarrowTypesByPropertyAccessExpression`, but should be referencing symbol table if it is there, so the properties can be narrowed.
 
 0. "actualDeclaredType"
 
@@ -80,7 +78,19 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
-0. "symbolFlowInfo", setting it in VariableDeclaration
+0. "symbolFlowInfo"
+
+    0. replaced `mrState.declaredTypes`, `inferStatus.declareTypes`, `refTypesTable.leaf.declaredType` with `symbolFlowInfo.initializerType ?? symbolFlowInfo.effectiveDeclaredType`.
+
+    0. replaced `leaf.isconst` with `symbolFlowInfo.isconst`.
+
+    0. New functions: `createRefTypesTableLeafFromSymbolFlowInfo`, `getDeclaredTypeAsRefTypesTableLeaf`, `getDeclareType(symbol)`
+
+    0. Removed `createGetDeclaredType(inferStatus)`.
+
+    0. All `_caxnc-` tests passing.
+
+0. "symbolFlowInfo", setting in places:  `VariableDeclaration`, `mrNarrowTypesByBinaryExpresionAssign` and `mrNarrowTypesByPropertyAccessExpression`.  All `_caxnc-` tests passing.
 
 0. "actualDeclaredType": Now working under VaraibleDeclararation using `checker.getTypeOfTypeNode` and `checker.widenTypeInferredFromInitializer`.  Using "ts-dev-expect-string" to check the "actualDeclaredType" against expected described in test files `_caxcn-decl-`. Not yet added to `SymbolFlowInfo`  All `_caxnc-` tests passing.
 

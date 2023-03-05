@@ -1,0 +1,33 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0013.ts ===
+declare const b: boolean;
+>b : Symbol(b, Decl(_caxnc-decl-0013.ts, 0, 13))
+
+function decl0013(){
+>decl0013 : Symbol(decl0013, Decl(_caxnc-decl-0013.ts, 0, 25))
+
+    let x;
+>x : Symbol(x, Decl(_caxnc-decl-0013.ts, 2, 7))
+
+    if (b) {
+>b : Symbol(b, Decl(_caxnc-decl-0013.ts, 0, 13))
+
+        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: any"
+        x = [0];
+>x : Symbol(x, Decl(_caxnc-decl-0013.ts, 2, 7))
+    }
+    else {
+        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: any"
+        x = "1";
+>x : Symbol(x, Decl(_caxnc-decl-0013.ts, 2, 7))
+    }
+    x; // flow not trigger without x here
+>x : Symbol(x, Decl(_caxnc-decl-0013.ts, 2, 7))
+
+    let y = x;
+>y : Symbol(y, Decl(_caxnc-decl-0013.ts, 12, 7))
+>x : Symbol(x, Decl(_caxnc-decl-0013.ts, 2, 7))
+
+    y;
+>y : Symbol(y, Decl(_caxnc-decl-0013.ts, 12, 7))
+}
+

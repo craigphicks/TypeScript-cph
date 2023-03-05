@@ -8,9 +8,9 @@ namespace ts {
     // @ts-ignore TS6133: 'x' is declared but its value is never read.
     function assertType<X>(x: any): asserts x is X {};
 
-    export function isRefTypesTableLeaf(x: RefTypesTable): x is RefTypesTableLeaf {
-        return x.kind===RefTypesTableKind.leaf;
-    }
+    // export function isRefTypesTableLeaf(x: RefTypesTable): x is RefTypesTableLeaf {
+    //     return x.kind===RefTypesTableKind.leaf;
+    // }
     export function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn {
         return x.kind===RefTypesTableKind.return;
     }
@@ -20,7 +20,6 @@ namespace ts {
         createRefTypesSymtab(): RefTypesSymtab;
         copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
         createRefTypesType(type?: Readonly<Type> | Readonly<Type[]>): RefTypesType;
-        createRefTypesTableLeaf(symbol: Symbol | undefined , isconst: boolean | undefined, type?: RefTypesType): RefTypesTableLeaf;
         dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string;
         dbgRefTypesTableToStrings(t: RefTypesTable): string[],
         dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[],
@@ -47,7 +46,8 @@ namespace ts {
         cloneRefTypesType(type: Readonly<RefTypesType>): RefTypesType;
         //applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void,
         checker: TypeChecker,
-        compilerOptions: CompilerOptions
+        compilerOptions: CompilerOptions,
+        mrState: MrState,
     };
 
     export function createMrNarrow(checker: TypeChecker, sourceFile: Readonly<SourceFile>, _mrState: MrState, refTypesTypeModule: RefTypesTypeModule, compilerOptions: CompilerOptions): MrNarrow {
@@ -89,12 +89,12 @@ namespace ts {
         const isArrayOrTupleType = checker.isArrayOrTupleType;
         const getElementTypeOfArrayType = checker.getElementTypeOfArrayType;
         const getReturnTypeOfSignature = checker.getReturnTypeOfSignature;
-        const isReadonlyProperty = checker.isReadonlyProperty;
+        //const isReadonlyProperty = checker.isReadonlyProperty;
         const isConstVariable = checker.isConstVariable;
-        // @ts-ignore-error
-        const isConstantReference = checker.isConstantReference;
-        // @ts-ignore-error
-        const getNodeLinks = checker.getNodeLinks;
+        // @ ts-ignore-error
+        //const isConstantReference = checker.isConstantReference;
+        // @ ts-ignore-error
+        // const getNodeLinks = checker.getNodeLinks;
         const getUnionType = checker.getUnionType;
         const getResolvedSymbol = checker.getResolvedSymbol; // for Identifiers only
         const getSymbolOfNode = checker.getSymbolOfNode;
@@ -150,7 +150,6 @@ namespace ts {
             mrNarrowTypes,
             createRefTypesSymtab,
             copyRefTypesSymtab,
-            createRefTypesTableLeaf,
             dbgRefTypesTypeToString,
             dbgRefTypesTableToStrings,
             dbgRefTypesSymtabToStrings,
@@ -164,7 +163,8 @@ namespace ts {
             // intersectRefTypesTypesImplies,
             // typeImplies,
             checker,
-            compilerOptions
+            compilerOptions,
+            mrState: _mrState,
         };
 
 
@@ -187,35 +187,36 @@ namespace ts {
             Debug.fail("unexpected");
         }
 
-        /* @ ts-expect-error */
-        function createGetDeclaredTypeFn(inferStatus: InferStatus): GetDeclaredTypeFn {
-            return (symbol: Symbol) => {
-                if (symbol.flags & SymbolFlags.EnumMember){
-                    const litValue = (getTypeOfSymbol(symbol) as LiteralType).value;
-                    if (typeof litValue==="string") return createRefTypesType(checker.getStringLiteralType(litValue));
-                    else if (typeof litValue==="number") return createRefTypesType(checker.getNumberLiteralType(litValue));
-                    Debug.fail("unexpected");
-                }
-                const type = inferStatus.declaredTypes.get(symbol)?.type;
-                Debug.assert(type);
-                return type;
-            };
+        function getSymbolFlowInfoInitializerOrDeclaredType(symbol: Symbol): RefTypesType {
+            if (symbol.flags & SymbolFlags.EnumMember){
+                const litValue = (getTypeOfSymbol(symbol) as LiteralType).value;
+                if (typeof litValue==="string") return createRefTypesType(checker.getStringLiteralType(litValue));
+                else if (typeof litValue==="number") return createRefTypesType(checker.getNumberLiteralType(litValue));
+                Debug.fail("unexpected");
+            }
+            const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
+            Debug.assert(symbolFlowInfo);
+            return symbolFlowInfo.initializerType ?? createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType);
+        }
+        /**
+         *
+         * @param symbol This is a temporary solution - TODO: don't use RefTypesTableLeaf
+         * @returns
+         */
+        function getDeclaredType(symbol: Symbol): RefTypesType {
+            return getSymbolFlowInfoInitializerOrDeclaredType(symbol);
         }
 
-
-        function createRefTypesTableLeaf(symbol: Symbol | undefined , isconst: boolean | undefined, type?: RefTypesType): RefTypesTableLeaf {
-            return {
-                kind:RefTypesTableKind.leaf,
-                symbol, isconst, type: type ?? createRefTypesType()
-            };
-        }
         function createRefTypesSymtab(): RefTypesSymtab {
-            return new Map<Symbol, RefTypesSymtabValue>();
+            return new Map<Symbol, RefTypesType>();
         }
+
+        // TODO: copyRefTypesSymtab might be more efficient using new Map<Symbol, RefTypesType>(symtab)
         function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
-            const out = new Map<Symbol, RefTypesSymtabValue>();
-            symtab.forEach(({leaf:{kind,symbol,isconst,type}})=>out.set(symbol!,{ leaf:{ kind,symbol,isconst,type } }));
-            return out;
+            return new Map<Symbol, RefTypesType>(symtab);
+            // const out = new Map<Symbol, RefTypesType>();
+            // symtab.forEach((type,symbol)=>out.set(symbol,type));
+            // return out;
         }
         /**
          * Should be the most efficient way to get union of symtabs
@@ -225,27 +226,23 @@ namespace ts {
         function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
             const target = createRefTypesSymtab();
             if (arr.length===0) return target;
-            const mapSymToType = new Map<Symbol,{isconst: boolean, set: Set<Type>}>();
+            const mapSymToType = new Map<Symbol,{set: Set<Type>}>();
             arr.forEach(rts=>{
-                rts.forEach(({leaf},symbol)=>{
+                rts.forEach((type,symbol)=>{
                     let got = mapSymToType.get(symbol);
                     if (!got) {
-                        got = { isconst:leaf.isconst??false, set:new Set<Type>() };
+                        got = { set:new Set<Type>() };
                         mapSymToType.set(symbol, got);
                     }
-                    forEachRefTypesTypeType(leaf.type, t=>got!.set.add(t));
+                    forEachRefTypesTypeType(type, t=>got!.set.add(t));
                 });
             });
-            mapSymToType.forEach(({isconst,set},symbol)=>{
+            mapSymToType.forEach(({set},symbol)=>{
+                // const isconst = _mrState.symbolFlowInfoMap.get(symbol)!.isconst;
                 const atype: Type[]=[];
                 set.forEach(t=>atype.push(t));
                 const type = createRefTypesType(atype);
-                target.set(symbol,{leaf:{
-                    kind:RefTypesTableKind.leaf,
-                    symbol,
-                    isconst,
-                    type
-                }});
+                target.set(symbol,type);
             });
             return target;
         }
@@ -291,15 +288,15 @@ namespace ts {
             as.push("},");
             return as;
         }
+        function dbgRefTypesTableLeafToString(symbol: Symbol, rtt: RefTypesType): string {
+            return `{symbol:${dbgSymbolToStringSimple(symbol)},type:${dbgRefTypesTypeToString(rtt)}}`;
+        };
         function dbgRefTypesTableToStrings(rtt: RefTypesTable | undefined): string[] {
             if (!rtt) return ["undefined"];
             const as: string[]=["{"];
             as.push(`  kind: ${rtt.kind},`);
           if ((rtt as any).symbol) as.push(`  symbol: ${dbgSymbolToStringSimple((rtt as any).symbol)},`);
             if ((rtt as any).isconst) as.push(`  isconst: ${(rtt as any).isconst},`);
-            if (isRefTypesTableLeaf(rtt)||isRefTypesTableReturn(rtt)){
-                as.push(`  type: ${dbgRefTypesTypeToString(rtt.type)},`);
-            }
             if (isRefTypesTableReturn(rtt)){
                 dbgRefTypesSymtabToStrings(rtt.symtab).forEach((str,i)=>as.push(((i===0)?"  symtab: ":"  ")+str));
                 if (!rtt.constraintItem){
@@ -316,48 +313,12 @@ namespace ts {
         }
         function dbgRefTypesSymtabToStrings(x: RefTypesSymtab): string[] {
             const as: string[]=["["];
-            x.forEach((t,_s)=>{
-                as.push("  "+dbgRefTypesTableToStrings(t.leaf).join(""));
+            x.forEach((t,s)=>{
+                as.push("  "+dbgRefTypesTableLeafToString(s,t));
             });
             as.push("]");
             return as;
         }
-
-        /**
-         * This does not work when called on `propertyAccessExpression.name`, at least when
-         * `propertyAccessExpression.expression` has multiple incompatible types
-         * @param expr : Identifier
-         * @param mrState
-         * @returns
-         */
-        // function getSymbolFlowInfoForIdentifier(expr: Identifier, mrState: MrState): {symbol: Symbol, symbolFlowInfo: SymbolFlowInfo}{
-        //     const symbol = getResolvedSymbol(expr);
-        //     let symbolFlowInfo = mrState.symbolFlowInfoMap.get(symbol);
-        //     if (symbolFlowInfo) return { symbol, symbolFlowInfo };
-        //     const isconst = isConstantReference(expr);
-        //     // would have copied following from isConstantReference(expr) case Identifier, but have to export isSymbolAssigned from checker
-        //     // const isconst = isConstVariable(symbol) || isParameterOrCatchClauseVariable(symbol) && !checker.isSymbolAssigned(symbol);
-        //     const tsDeclaredType: Type = getTypeOfSymbol(symbol);
-        //     //if (symbol.flags && SymbolFlags.Optional) tsDeclaredTypes.push(undefinedType);
-        //     const declaredType = createRefTypesType(tsDeclaredType);
-        //     symbolFlowInfo = { isconst,initializerType: declaredType };
-        //     mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
-        //     return { symbol, symbolFlowInfo };
-        // }
-
-        // function getSymbolFlowInfoForProperty(expr: Identifier, mrState: MrState): {symbol: Symbol, symbolFlowInfo: SymbolFlowInfo}{
-        //     const symbol = getResolvedSymbol(expr);
-        //     let symbolFlowInfo = mrState.symbolFlowInfoMap.get(symbol);
-        //     if (symbolFlowInfo) return { symbol, symbolFlowInfo };
-        //     const isconst = isConstantReference(expr);
-        //     const tsDeclaredType: Type = getTypeOfSymbol(symbol);
-        //     const declaredType = createRefTypesType(tsDeclaredType);
-        //     symbolFlowInfo = { isconst,declaredType };
-        //     mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
-        //     return { symbol, symbolFlowInfo };
-        // }
-
-
 
         function createNodeToTypeMap(): NodeToTypeMap {
             return new Map<Node,Type>();
@@ -604,9 +565,9 @@ namespace ts {
         }
 
         function mrNarrowTypesByBinaryExpressionEqualsHelper({
-            asym, partitionedType, passType, rttrRight, inferStatus}:
+            asym, partitionedType, passType, rttrRight, inferStatus: _inferStatus}:
             Readonly<{
-                asym: {symbol: Symbol, declared: RefTypesTableLeaf}[], partitionedType: RefTypesType, passType: RefTypesType,
+                asym: {symbol: Symbol, declared: RefTypesType}[], partitionedType: RefTypesType, passType: RefTypesType,
                 rttrRight: RefTypesTableReturn, inferStatus: InferStatus
             }
             >): RefTypesTableReturnNoSymbol {
@@ -614,8 +575,10 @@ namespace ts {
                 consoleGroup(`mrNarrowTypesByBinaryExpressionEqualsHelper [in]`);
                 asym.forEach(({symbol},i)=>consoleLog(
                     `mrNarrowTypesByBinaryExpressionEqualsHelper [in] asym[${i}] {symbol:${dbgSymbolToStringSimple(symbol)}, `));
-                asym.forEach(({declared},i)=>dbgRefTypesTableToStrings(declared).forEach(s=>
-                    `mrNarrowTypesByBinaryExpressionEqualsHelper [in] asym[${i}] declared: ${s}`));
+                asym.forEach((x,i)=>{
+                    const str = dbgRefTypesTableLeafToString(x.symbol, x.declared);
+                    consoleLog(`mrNarrowTypesByBinaryExpressionEqualsHelper [in] asym[${i}] declared: ${str}`);
+                });
                 consoleLog(`mrNarrowTypesByBinaryExpressionEqualsHelper [in] partitionedType: ${dbgRefTypesTypeToString(partitionedType)}`);
                 consoleLog(`mrNarrowTypesByBinaryExpressionEqualsHelper [in] passType: ${dbgRefTypesTypeToString(passType)}`);
                 dbgRefTypesTableToStrings(rttrRight).forEach(s=>consoleLog(`mrNarrowTypesByBinaryExpressionEqualsHelper [in] rttrRight: ${s}`));
@@ -628,12 +591,13 @@ namespace ts {
                 let _type: RefTypesType;
                 // eslint-disable-next-line @typescript-eslint/prefer-for-of
                 for (let i=0; i<asym.length; i++){
+                    //const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(asym[i].symbol);
                     ({type:_type, sc} = andSymbolTypeIntoSymtabConstraint({
                         symbol: asym[i].symbol,
-                        isconst: asym[i].declared.isconst as true,
+                        isconst: _mrState.symbolFlowInfoMap.get(asym[i].symbol)!.isconst,
                         type: createRefTypesType(tstype),
                         sc,
-                        getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                        getDeclaredType,
                         mrNarrow,
                     }));
                 }
@@ -737,12 +701,12 @@ namespace ts {
                         // +`mismatchRight:${dbgRefTypesTypeToString(mismatchRight)}`);
                     }
 
-                    const asym: {symbol: Symbol,declared: RefTypesTableLeaf}[] = [];
+                    const asym: {symbol: Symbol,declared: RefTypesType}[] = [];
                     if (rttrLeft.symbol && rttrLeft.isconst /* && compilerOptions.mrNarrowConstraintsEnable */) {
-                        asym.push({ symbol:rttrLeft.symbol, declared: inferStatus.declaredTypes.get(rttrLeft.symbol)! });
+                        asym.push({ symbol:rttrLeft.symbol, declared: getSymbolFlowInfoInitializerOrDeclaredType(rttrLeft.symbol)! });
                     }
                     if (rttrRight.symbol && rttrRight.isconst /* && compilerOptions.mrNarrowConstraintsEnable */) {
-                        asym.push({ symbol:rttrRight.symbol, declared: inferStatus.declaredTypes.get(rttrRight.symbol)! });
+                        asym.push({ symbol:rttrRight.symbol, declared: getSymbolFlowInfoInitializerOrDeclaredType(rttrRight.symbol)! });
                     }
                     if (singularCount){
                         const passRttr = mrNarrowTypesByBinaryExpressionEqualsHelper(
@@ -794,14 +758,14 @@ namespace ts {
                                 ({type:_unusedType, sc:scLeftTmp } = andSymbolTypeIntoSymtabConstraint({
                                     symbol:rttrLeft.symbol, isconst: rttrLeft.isconst, type: mismatchLeft,
                                     sc: scTmp,
-                                    getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                    getDeclaredType,
                                     mrNarrow}));
                             }
                             if (rttrRight.symbol){
                                 ({type:_unusedType, sc:scRightTmp } = andSymbolTypeIntoSymtabConstraint({
                                     symbol:rttrRight.symbol, isconst: rttrRight.isconst, type: mismatchRight,
                                     sc: scTmp,
-                                    getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                    getDeclaredType,
                                     mrNarrow}));
                             }
                             if (scLeftTmp && scRightTmp){
@@ -854,7 +818,7 @@ namespace ts {
                                             symbol:rttrLeft.symbol, isconst: rttrLeft.isconst,
                                             type:mismatchLeft,
                                             sc: scTmp,
-                                            getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                            getDeclaredType,
                                             mrNarrow}));
                                     }
                                     if (rttrRight.symbol){
@@ -862,7 +826,7 @@ namespace ts {
                                             symbol:rttrRight.symbol, isconst: rttrRight.isconst,
                                             type: mismatchRight,
                                             sc: scTmp,
-                                            getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                                            getDeclaredType,
                                             mrNarrow}));
                                     }
                                     if (scLeftTmp && scRightTmp){
@@ -911,6 +875,25 @@ namespace ts {
         //     return { type, sc };
         // }
 
+        function debugDevExpectEffectiveDeclaredType(node: Node, symbolFlowInfo: Readonly<SymbolFlowInfo>): void {
+            const arrexpected = getDevExpectStrings(node,sourceFile);
+            if (arrexpected) {
+                const actual = `count: ${symbolFlowInfo.passCount}, actualDeclaredTsType: ${typeToString(symbolFlowInfo.effectiveDeclaredTsType)}`;
+                const pass = arrexpected.some(expected=>{
+                    return actual===expected;
+                });
+                if (!pass) {
+                    Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}"`);
+                }
+                if (getMyDebug()){
+                    consoleLog(`SyntaxKind.VariableDeclaration, passed ts-dev-expect-string "${actual}"`);
+                }
+            }
+        }
+
+
+
+
         function mrNarrowTypesByBinaryExpresionAssign(args: InferRefInnerArgs): MrNarrowTypesInnerReturn {
             const {left:leftExpr,right:rightExpr} = args.expr as BinaryExpression;
             const {refTypesSymtab,constraintItem} = args;
@@ -925,15 +908,45 @@ namespace ts {
             if (leftExpr.kind===SyntaxKind.Identifier) {
                 assertType<Identifier>(leftExpr);
                 const symbol = getResolvedSymbol(leftExpr);
-                const isconst = isConstantReference(leftExpr);
-                Debug.assert(!isconst); // because const cannot be lhs of assign
-                let declared = args.inferStatus.declaredTypes.get(symbol);
-                if (!declared){
-                    const tsTypeDeclared = getTypeOfSymbol(symbol);
-                    declared = createRefTypesTableLeaf(symbol,isconst,createRefTypesType(tsTypeDeclared));
-                    args.inferStatus.declaredTypes.set(symbol,declared);
+                let symbolFlowInfo: SymbolFlowInfo | undefined = _mrState.symbolFlowInfoMap.get(symbol);
+                if (!symbolFlowInfo){
+                    // this must correspond to a declaration without an initializer, or a variable with no type spec at all (default: any).
+                    let typeNodeTsType: Type;
+                    if ((symbol.valueDeclaration as VariableDeclaration).type){
+                        typeNodeTsType = checker.getTypeFromTypeNode((symbol.valueDeclaration as VariableDeclaration).type!);
+                    }
+                    else {
+                        typeNodeTsType = anyType;
+                    }
+                    const effectiveDeclaredTsType = typeNodeTsType;// ??
+                        // checker.widenTypeInferredFromInitializer(
+                        //     (symbol.valueDeclaration as VariableDeclaration)!, getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type));
+                    symbolFlowInfo = {
+                        passCount: 0,
+                        initializedInAssignment: true,
+                        isconst: checker.isConstantReference(leftExpr),
+                        effectiveDeclaredTsType,
+                    };
+                    if (typeNodeTsType) symbolFlowInfo.typeNodeTsType = typeNodeTsType;
+
                 }
-                const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,{ leaf:createRefTypesTableLeaf(symbol,isconst,rhs.inferRefRtnType.passing.type) });
+                else {
+                    symbolFlowInfo.passCount++;
+                }
+                if (extraAsserts) {
+                    debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
+                }
+
+                //const isconst = symbolFlowInfo.isconst; // isConstantReference(leftExpr);
+                // Debug.assert(!isconst); // because const cannot be lhs of assign
+                // let declared = getDeclaredTypeAsRefTypesTableLeaf(symbol);
+                // if (!declared){
+                //     const tsTypeDeclared = getTypeOfSymbol(symbol);
+                //     Debug.assert(checker.isTypeRelatedTo(tsTypeDeclared,symbolFlowInfo.effectiveDeclaredTsType,checker.getRelations().identityRelation));
+                //     declared = createRefTypesTableLeaf(symbol,isconst,createRefTypesType(tsTypeDeclared));
+                //     args.inferStatus.declaredTypes.set(symbol,declared);
+                // }
+                const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,rhs.inferRefRtnType.passing.type);
                 return { arrRefTypesTableReturn: [{
                     ...rhs.inferRefRtnType.passing, symbol, symtab, /*type, symtab: scout.symtab, constraintItem: scout.constraintItem*/
                 }]};
@@ -1278,7 +1291,8 @@ namespace ts {
          */
         function mrNarrowTypesByCallExpressionProcessCallArguments(args: {
             callExpr: Readonly<CallExpression>,
-            sc: RefTypesSymtabConstraintItem, inferStatus: InferStatus
+            sc: RefTypesSymtabConstraintItem, inferStatus: InferStatus,
+            setOfTransientCallArgumentSymbol: Set<TransientCallArgumentSymbol>
         }): {
             sc: RefTypesSymtabConstraintItem,
             resolvedCallArguments: CallExpressionResolvedArg[]
@@ -1298,10 +1312,15 @@ namespace ts {
                 let name = `idx:${idx},cargidx:${cargidx}`;
                 if (tupleMember) name += `indexInTuple:${tupleMember.indexInTuple}`;
                 const symbol: CallArgumentSymbol = { ... checker.createSymbol(0, name as __String), cargidx };
-                inferStatus.declaredTypes.set(symbol,createRefTypesTableLeaf(symbol,/**/ true, type));
+                _mrState.symbolFlowInfoMap.set(symbol,{
+                    effectiveDeclaredTsType:getTypeFromRefTypesType(type),
+                    isconst: true,
+                    passCount: 0,
+                });
+                args.setOfTransientCallArgumentSymbol.add(symbol);
+                //inferStatus.declaredTypes.set(symbol,createRefTypesTableLeaf(symbol,/**/ true, type));
                 return symbol;
             }
-            const getDeclaredType = createGetDeclaredTypeFn(inferStatus);
 
             const resolvedCallArguments: CallExpressionResolvedArg[] = [];
             let sctmp: RefTypesSymtabConstraintItem = scIn;
@@ -1433,13 +1452,13 @@ namespace ts {
                 consoleGroup(`mrNarrowTypesByCallExpression[in]`);
             }
             Debug.assert(qdotfallout);
-            const getDeclaredType = createGetDeclaredTypeFn(inferStatus);
             // First duty is to call the pre-chain, if any.
             const pre = InferRefTypesPreAccess({ refTypesSymtab:symtabIn, constraintItem: constraintItemIn, expr:callExpr, /*crit,*/ qdotfallout, inferStatus });
             if (pre.kind==="immediateReturn") return pre.retval;
             assertType<CallExpression>(callExpr);
             const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[]=[];
             let sigGroupFailedCount = 0;
+            const setOfTransientCallArgumentSymbol = new Set<TransientCallArgumentSymbol>();
             pre.unmergedPassing.forEach((umrttr,rttridx)=>{
                 /**
                  * In the case where multiple functions with the same name but different symbols are coincide on this CallExpression
@@ -1464,7 +1483,7 @@ namespace ts {
                 }
 
                 const {sc: scResolvedArgs, resolvedCallArguments} = mrNarrowTypesByCallExpressionProcessCallArguments({
-                    callExpr, sc:{ symtab:scIsolated.symtab, constraintItem: scIsolated.constraintItem },inferStatus });
+                    callExpr, sc:{ symtab:scIsolated.symtab, constraintItem: scIsolated.constraintItem },inferStatus, setOfTransientCallArgumentSymbol });
 
                 const tstype = getTypeFromRefTypesType(umrttr.type);
                 const arrsig = checker.getSignaturesOfType(tstype, SignatureKind.Call);
@@ -1608,8 +1627,12 @@ namespace ts {
                                     const leftoverType = oneLeftoverMapping[cargidx];
                                     const got = nextSymtab.get(carg.symbol);
                                     if (got) {
-                                        got.leaf.type = leftoverType; // might be never.
+                                        nextSymtab.set(carg.symbol, leftoverType);
+                                        //got.type = leftoverType; // might be never.
                                         if (!isNeverType(leftoverType)) hadNonNeverInSymtab = true;
+                                    }
+                                    else {
+                                        Debug.fail("unexpected"); // ???
                                     }
                                 });
                                 //nextSymtab;
@@ -1669,6 +1692,7 @@ namespace ts {
                     consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, finished:${finished}`);
                 }
             });
+            setOfTransientCallArgumentSymbol.forEach(symbol=>_mrState.symbolFlowInfoMap.delete(symbol));
             if (getMyDebug()){
                 consoleLog(`mrNarrowTypesByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${pre.unmergedPassing.length}`);
                 consoleGroupEnd();
@@ -1832,7 +1856,7 @@ namespace ts {
                     if (prePassing.symbol) {
                         ({sc:{symtab,constraintItem}}=andSymbolTypeIntoSymtabConstraint(
                             {symbol:prePassing.symbol, type:createRefTypesType(t), isconst:prePassing.isconst, sc:{ symtab,constraintItem },
-                            getDeclaredType: createGetDeclaredTypeFn(inferStatus), mrNarrow }));
+                            getDeclaredType, mrNarrow }));
                     }
                     //dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`XXX2 prePassing.constraintItem ${s}`));
 
@@ -1884,43 +1908,49 @@ namespace ts {
                             });
                             return;
                         }
-                        const declaredType = getTypeOfSymbol(propSymbol);
-                        let isconst = false;
-                        {
-                            const readonlyProp = isReadonlyProperty(propSymbol);
-                            const optionalProp = !!(propSymbol.flags & SymbolFlags.Optional);
-                            isconst = readonlyProp && !optionalProp;
+                        let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(propSymbol);
+                        // const isconst1 = checker.isConstantReference(expr);
+                        // const isconst2 = isReadonlyProperty(propSymbol);
+                        // if (isconst1!==isconst2){
+                        //     consoleLog(`checker.isConstantReference(${dbgNodeToString(expr)})===${isconst1}, isReadonlyProperty(${dbgSymbolToStringSimple(propSymbol)}===${isconst2}`);
+                        // }
+                        if (!symbolFlowInfo){
+                            symbolFlowInfo = {
+                                passCount: 0,
+                                isconst: checker.isConstantReference(expr),
+                                effectiveDeclaredTsType: getTypeOfSymbol(propSymbol)
+                            };
+                            _mrState.symbolFlowInfoMap.set(propSymbol,symbolFlowInfo);
                         }
-
-                        if (!inferStatus.declaredTypes.has(propSymbol)){
-                            if (getMyDebug()){
-                                consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg]: adding new symbol to declaredTypes, {symbol:<${
-                                    propSymbol.escapedName},${getSymbolId(propSymbol)}>, type ${typeToString(declaredType)}, isconst:${isconst}`);
+                        else {
+                            //symbolFlowInfo.passCount
+                            if (extraAsserts){
+                               Debug.assert(symbolFlowInfo.effectiveDeclaredTsType===getTypeOfSymbol(propSymbol));
                             }
-                            // added because propSymbol might get involved in constraintItem, so it would be needed
-                            inferStatus.declaredTypes.set(propSymbol, createRefTypesTableLeaf(propSymbol,isconst,createRefTypesType(declaredType)));
                         }
+                        if (extraAsserts){
+                            debugDevExpectEffectiveDeclaredType(expr,symbolFlowInfo);
+                        }
+                        const declaredType = getTypeOfSymbol(propSymbol);
+                        const isconst = symbolFlowInfo.isconst;
+                        Debug.assert(isconst===symbolFlowInfo.isconst);
+                        Debug.assert(checker.isTypeRelatedTo(symbolFlowInfo.effectiveDeclaredTsType, declaredType, checker.getRelations().identityRelation));
 
+                        // property may already be in symbol table - narrowed by if, etc.
+
+                        // if (!inferStatus.declaredTypes.has(propSymbol)){
+                        //     if (getMyDebug()){
+                        //         consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg]: adding new symbol to declaredTypes, {symbol:<${
+                        //             propSymbol.escapedName},${getSymbolId(propSymbol)}>, type ${typeToString(declaredType)}, isconst:${isconst}`);
+                        //     }
+                        //     // added because propSymbol might get involved in constraintItem, so it would be needed
+                        //     inferStatus.declaredTypes.set(propSymbol, createRefTypesTableLeaf(propSymbol,isconst,createRefTypesType(declaredType)));
+                        // }
                         const propType = createRefTypesType(declaredType);
-                        // let propSC: RefTypesSymtabConstraintItem;
-                        // eslint-disable-next-line prefer-const
                         let propSC = { symtab,constraintItem };
-                        if (prePassing.symbol){
-                            ({sc:propSC} = andSymbolTypeIntoSymtabConstraint(
-                                {symbol :prePassing.symbol, isconst: prePassing.isconst, type:createRefTypesType(t), sc:{ symtab,constraintItem },
-                                getDeclaredType: createGetDeclaredTypeFn(inferStatus), mrNarrow }));
-                        }
                         ({sc:propSC} = andSymbolTypeIntoSymtabConstraint(
                             {symbol:propSymbol, type:propType, isconst, sc:propSC,
-                            getDeclaredType: createGetDeclaredTypeFn(inferStatus), mrNarrow }));
-
-                        // consoleLog(`XXX2 ${typeToString(t)}`);
-                        // dbgConstraintItem(prePassing.constraintItem).forEach(s=>consoleLog(`XXX2 prePassing.constraintItem ${s}`));
-                        // dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`constraintItem XXX2 ${s}`));
-                        // dbgConstraintItem(propSC.constraintItem).forEach(s=>consoleLog(`propSC.constraintItem XXX2 ${s}`));
-
-
-                        // accessedTypes.push({ baseType: t, type: getTypeFromRefTypesType(propType), declaredType, optional: optionalProp, readonlyProp, narrowable:true });
+                            getDeclaredType, mrNarrow }));
                         arrRttr.push({
                             kind: RefTypesTableKind.return,
                             symbol: propSymbol,
@@ -1990,7 +2020,7 @@ namespace ts {
          * @param rttr
          * @returns type RefTypesTableReturnCritOut which has no "symbol" or "isconst" members.
          */
-        function andRttrSymbolTypeIntoSymtabConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
+        function andRttrSymbolTypeIntoSymtabConstraint(rttr: Readonly<RefTypesTableReturn /* & {symbol: Symbol}*/ >, _inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
             Debug.assert(rttr.symbol);
             // eslint-disable-next-line prefer-const
             let { type, symtab, constraintItem } = rttr;
@@ -2000,18 +2030,18 @@ namespace ts {
                 let _unusedType: RefTypesType;
                 // eslint-disable-next-line prefer-const
                 ({type: _unusedType, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:{ symtab,constraintItem },
-                    getDeclaredType: createGetDeclaredTypeFn(inferStatus),
+                    getDeclaredType,
                     mrNarrow}));
                 if (symbol){
                     if (isconst && compilerOptions.mrNarrowConstraintsEnable){
-                        const cover = evalCoverPerSymbol(constraintItem, createGetDeclaredTypeFn(inferStatus), mrNarrow);
+                        const cover = evalCoverPerSymbol(constraintItem, getDeclaredType, mrNarrow);
                         if (extraAsserts){
                             Debug.assert(cover.has(rttr.symbol));
                         }
                         type = cover.get(symbol)!;
                     }
                     else {
-                        type = symtab.get(symbol)?.leaf.type!;
+                        type = symtab.get(symbol)!;
                         Debug.assert(type);
                     }
                 }
@@ -2283,6 +2313,18 @@ namespace ts {
                             }]
                         };
                     }
+                    let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
+                    //Debug.assert(symbolFlowInfo);
+                    if (!symbolFlowInfo){
+                        const effectiveDeclaredTsType = getTypeOfSymbol(symbol);
+                        const isconst = checker.isConstantReference(expr);
+                        symbolFlowInfo = {
+                            passCount:0,
+                            effectiveDeclaredTsType,
+                            isconst
+                        };
+                        _mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
+                    }
 
                     // @ ts-expect-error
                     //const {symbol: sfiSymbol, symbolFlowInfo } = getSymbolFlowInfoForIdentifier(expr,_mrState);
@@ -2339,28 +2381,24 @@ namespace ts {
                     } // endof if (inferStatus.replayables.has(symbol))
                     let type: RefTypesType | undefined;
                     let isconst: boolean | undefined;
-                    if (!inferStatus.declaredTypes.has(symbol)){
-                        const tstype = getTypeOfSymbol(symbol); // Is it OK for Identifier, will it not result in error TS7022 ?
-                        if (tstype===errorType){
-                            Debug.assert(false);
-                        }
-                        type = createRefTypesType(tstype);
-                        isconst = isConstantReference(expr);
-                        const leaf = createRefTypesTableLeaf(symbol,isconst,type);
-                        inferStatus.declaredTypes.set(symbol, leaf);
-//                        Debug.assert((isconst??false)===symbolFlowInfo.isconst);
-//                        Debug.assert(equalRefTypesTypes(type, symbolFlowInfo.declaredType));
-                    }
-                    else {
-                        const declaredLeaf = inferStatus.declaredTypes.get(symbol)!;
-                        ({isconst}=declaredLeaf);
-//                        Debug.assert((isconst??false)===symbolFlowInfo.isconst);
-//                        Debug.assert(equalRefTypesTypes(declaredLeaf.type, symbolFlowInfo.declaredType));
+                    // if (!inferStatus.declaredTypes.has(symbol)){
+                    //     const tstype = getTypeOfSymbol(symbol); // Is it OK for Identifier, will it not result in error TS7022 ?
+                    //     if (tstype===errorType){
+                    //         Debug.assert(false);
+                    //     }
+                    //     type = createRefTypesType(tstype);
+                    //     isconst = checker.isConstantReference(expr);
+                    //     const leaf = createRefTypesTableLeaf(symbol,isconst,type);
+                    //     inferStatus.declaredTypes.set(symbol, leaf);
+                    // }
+                    // else
+                    {
+                        //const declaredLeaf = createRefTypesTableLeafFromSymbolFlowInfo(symbol,symbolFlowInfo)!;
+                        isconst = symbolFlowInfo.isconst;
                         if (!hasSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn })){
-                            ({type}=declaredLeaf);
+                            type = symbolFlowInfo.initializerType ?? createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType);
                         }
                         else {
-                            const getDeclaredType = createGetDeclaredTypeFn(inferStatus);
                             type = evalSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn }, getDeclaredType, mrNarrow);
                         }
                     }
@@ -2638,22 +2676,25 @@ namespace ts {
                                 const unionWidenedInitializerTsType = checker.getUnionType([nextWidenedInitializerTsType, symbolFlowInfo.effectiveDeclaredTsType]);
                                 symbolFlowInfo.effectiveDeclaredTsType = unionWidenedInitializerTsType;
                             }
+                            // Literals->NonLiteral ?
                             symbolFlowInfo.initializerType = unionOfRefTypesType([symbolFlowInfo.initializerType!,rhs.inferRefRtnType.passing.type]);
                         }
                         if (extraAsserts){
-                            const arrexpected = getDevExpectStrings(expr.parent,sourceFile);
-                            if (arrexpected) {
-                                const actual = `count: ${symbolFlowInfo.passCount}, actualDeclaredTsType: ${typeToString(symbolFlowInfo.effectiveDeclaredTsType)}`;
-                                const pass = arrexpected.some(expected=>{
-                                    return actual===expected;
-                                });
-                                if (!pass) {
-                                    Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}"`);
-                                }
-                                if (getMyDebug()){
-                                    consoleLog(`SyntaxKind.VariableDeclaration, passed ts-dev-expect-string "${actual}"`);
-                                }
-                            }
+                            debugDevExpectEffectiveDeclaredType(expr.parent,symbolFlowInfo);
+
+                            // const arrexpected = getDevExpectStrings(expr.parent,sourceFile);
+                            // if (arrexpected) {
+                            //     const actual = `count: ${symbolFlowInfo.passCount}, actualDeclaredTsType: ${typeToString(symbolFlowInfo.effectiveDeclaredTsType)}`;
+                            //     const pass = arrexpected.some(expected=>{
+                            //         return actual===expected;
+                            //     });
+                            //     if (!pass) {
+                            //         Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}"`);
+                            //     }
+                            //     if (getMyDebug()){
+                            //         consoleLog(`SyntaxKind.VariableDeclaration, passed ts-dev-expect-string "${actual}"`);
+                            //     }
+                            // }
                         }
                         const isconstVar = symbolFlowInfo.isconst; // isConstVariable(symbol);
                         // let declaredTsType: undefined | Type;
@@ -2697,13 +2738,13 @@ namespace ts {
                             rttr.symbol = symbol;
                             return rttr;
                         });
-                        {
-                            // TODO - will be replaced by symbolFlowInfo
-                            const unwidenedTsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
-                            // isconstVar is always false here
-                            const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType)); // TODO:!!! this is not always widening as expected, true=>true
-                            inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,widenedType));
-                        }
+                        // {
+                        //     // TODO - will be replaced by symbolFlowInfo
+                        //     const unwidenedTsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
+                        //     // isconstVar is always false here
+                        //     const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType)); // TODO:!!! this is not always widening as expected, true=>true
+                        //     inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,widenedType));
+                        // }
                         const retval: MrNarrowTypesInnerReturn = {
                             arrRefTypesTableReturn,
                             assignmentData: {

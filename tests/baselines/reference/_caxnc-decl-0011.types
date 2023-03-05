@@ -1,0 +1,32 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0011.ts ===
+declare const b: boolean;
+>b : boolean
+
+function decl0011(){
+>decl0011 : () => void
+
+    let x: [number];
+>x : [number]
+
+    if (b) {
+>b : boolean
+
+        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: [number]"
+        x = [0];
+>x = [0] : [number]
+>x : [number]
+>[0] : [number]
+>0 : 0
+    }
+    else {
+        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: [number]"
+        x = [1];
+>x = [1] : [number]
+>x : [number]
+>[1] : [number]
+>1 : 1
+    }
+    x; // flow not trigger without x here
+>x : [number]
+}
+

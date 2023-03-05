@@ -17,10 +17,7 @@ namespace ts {
         nonLeaf = "nonLeaf",
         return = "return"
     };
-    declare function isRefTypesTableLeaf(x: RefTypesTable): x is RefTypesTableLeaf;
     declare function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn;
-//    declare function isRefTypesTableReturn(x: RefTypesTableNonLeaf): x is RefTypesTableNonLeaf;
-    //export type RefTypesType = & { type: Type }; // keep it abstact for now - may want to opimize later
     export enum RefTypesTypeFlags {
         none=0,
         any=1,
@@ -43,26 +40,11 @@ namespace ts {
     };
     export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
 
-    export type MakeRequired<Type, Key extends keyof Type> = Omit<Type, Key> & Required<Pick<Type, Key>>;
-    // export type RefTypesSymtabValue = MakeRequired<RefTypesTableLeaf, "symbol">;
-    export type RefTypesSymtabValue = & {
-        leaf: MakeRequired<RefTypesTableLeaf, "symbol">;
-    };
+//    export type MakeRequired<Type, Key extends keyof Type> = Omit<Type, Key> & Required<Pick<Type, Key>>;
 
-    export type RefTypesSymtab = ESMap<Symbol, RefTypesSymtabValue>;
-    // export type RefTypesTableNonLeaf = & {
-    //     kind: RefTypesTableKind.nonLeaf;
-    //     symbol: Symbol | undefined; // undefined because some expressions have no symbol - will never be included in RefTypesSymTab
-    //     isconst?: boolean;
-    //     preReqByType?: ESMap<RefTypesType, RefTypesSymtab>;
-    // };
-    export type RefTypesTableLeaf = & {
-        kind: RefTypesTableKind.leaf;
-        symbol: Symbol | undefined;
-        isconst?: boolean;
-        type: RefTypesType;
-    };
-    export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol | RefTypesTableLeaf;
+    export type RefTypesSymtab = ESMap<Symbol, RefTypesType>;
+
+    export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
         kind: RefTypesTableKind.return;
@@ -169,7 +151,6 @@ namespace ts {
         inCondition: boolean;
         currentReplayableItem?: undefined | ReplayableItem;
         replayables: ESMap< Symbol, ReplayableItem >;
-        declaredTypes: ESMap<Symbol, RefTypesTableLeaf>; // note: symbol entries are (should be) deleted when symbol goes out of scope (postBlock trigger).
         groupNodeToTypeMap: ESMap<Node,Type>;
         //accumNodeTypes: boolean,
         accumBranches: boolean,
