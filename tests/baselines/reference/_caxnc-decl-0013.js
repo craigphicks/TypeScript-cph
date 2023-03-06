@@ -3,11 +3,11 @@ declare const b: boolean;
 function decl0013(){
     let x;
     if (b) {
-        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: any"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any"
         x = [0];
     }
     else {
-        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: any"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any"
         x = "1";
     }
     x; // flow not trigger without x here
@@ -21,11 +21,11 @@ function decl0013(){
 function decl0013() {
     var x;
     if (b) {
-        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: any"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any"
         x = [0];
     }
     else {
-        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: any"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any"
         x = "1";
     }
     x; // flow not trigger without x here

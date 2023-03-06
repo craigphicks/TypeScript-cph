@@ -394,7 +394,7 @@ namespace ts {
     }
     function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow): RefTypesSymtabConstraintItem{
         const unionSymtab = mrNarrow.unionArrRefTypesSymtab(asc.map(x=>x.symtab));
-        const oredConstraint = orConstraintsV2(asc.map(x=>x.constraintItem));
+        const oredConstraint = orConstraints(asc.map(x=>x.constraintItem));
         // const symbolsInvolved = new Set<Symbol>();
         // asc.forEach(x=>{
         //     if (x.constraintItem.symbolsInvolved) x.constraintItem.symbolsInvolved.forEach(s=>symbolsInvolved.add(s));
@@ -407,7 +407,7 @@ namespace ts {
     export function orSymtabs(asc: Readonly<RefTypesSymtab[]>,mrNarrow: MrNarrow): RefTypesSymtab {
         return mrNarrow.unionArrRefTypesSymtab(asc);
     }
-    export function orConstraintsV2(asc: Readonly<ConstraintItem>[]): ConstraintItem{
+    export function orConstraints(asc: Readonly<ConstraintItem>[]): ConstraintItem{
         const symbolsInvolved = new Set<Symbol>();
         asc.forEach(x=>{
             if (x.symbolsInvolved) x.symbolsInvolved.forEach(s=>symbolsInvolved.add(s));

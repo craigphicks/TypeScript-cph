@@ -1,5 +1,7 @@
 namespace ts {
 
+    const extraAsserts = true;
+
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
         none="none",
@@ -237,7 +239,7 @@ namespace ts {
         typeNodeTsType?: Type;
         initializerType?: RefTypesType;
         effectiveDeclaredTsType: Type; // <actual declared type> || <widened initial type>
-        //effectiveDeclaredType?: RefTypesType; // ~ actualDeclaredTsType
+        effectiveDeclaredType?: RefTypesType; // = createRefTypesType(effectiveDeclaredTsType), createWhenNeeded
     };
     export interface MrState {
         checker: TypeChecker;
@@ -255,7 +257,6 @@ namespace ts {
         currentLoopsInLoopScope: Set<GroupForFlow>;
         symbolFlowInfoMap: WeakMap<Symbol,SymbolFlowInfo | undefined>;
     };
-
 
 
     function createHeap(groupsForFlow: GroupsForFlow): Heap {
@@ -312,6 +313,9 @@ namespace ts {
             groupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
             dbgCurrentBranchesMapWasDeleted: new Map< GroupForFlow,boolean >(), // TODO: kill
         };
+    }
+    function getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo, mrNarrow: MrNarrow): RefTypesType {
+        return symbolFlowInfo.effectiveDeclaredType ?? (symbolFlowInfo.effectiveDeclaredType=mrNarrow.createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
     }
 
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
@@ -629,6 +633,70 @@ namespace ts {
     //     return hadChange;
     // };
 
+    // @ ts-expect-error
+    function accumulateSymtabs(stacc: Readonly<RefTypesSymtab>, stnew: Readonly<RefTypesSymtab>, mrNarrow: MrNarrow, options: {
+        literalWidening?: boolean
+    }): { equal: boolean, symtab: RefTypesSymtab } {
+        let firstStbSymbolNeq: Symbol | undefined;
+        const equal = everyForMap(stnew,(tb,s)=>{
+            const ta = stacc.get(s);
+            if (!ta || !mrNarrow.equalRefTypesTypes(tb,ta)){
+                firstStbSymbolNeq = s;
+                return false;
+            }
+            return true;
+        });
+        if (equal) {
+            if (everyForMap(stacc,(_ta,s)=>stnew.has(s))) return { equal:true, symtab:stacc };
+            return { equal:false, symtab:stnew };
+        }
+        const symtab = mrNarrow.copyRefTypesSymtab(stnew);
+
+        let foundFirst = false;
+        stnew.forEach((tb,s)=>{
+            if (!foundFirst && s!==firstStbSymbolNeq) return;
+            foundFirst = true;
+            const ta = stacc.get(s);
+            if (!ta) return;
+            if (!mrNarrow.equalRefTypesTypes(tb,ta)){
+                const tunion = mrNarrow.unionOfRefTypesType([tb,ta]);
+                if (!options.literalWidening){
+                    symtab.set(s,tunion);
+                }
+                else {
+                    const sif = mrNarrow.mrState.symbolFlowInfoMap.get(s)!;
+                    Debug.assert(sif);
+                    const effectDeclaredType = getEffectiveDeclaredType(sif, mrNarrow);
+                    const msif = mrNarrow.refTypesTypeModule.getMapLiteralOfRefTypesType(effectDeclaredType);
+                    const mu = mrNarrow.refTypesTypeModule.getMapLiteralOfRefTypesType(tunion);
+                    let ltcount = 0;
+                    const aktype: Type[] = [];
+                    mu?.forEach((set,ktype)=>{
+                        const msifset = msif?.get(ktype);
+                        if (!msifset) {
+                            aktype.push(ktype);
+                            ltcount += set.size;
+                            return;
+                        }
+                        // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+                        if (extraAsserts){
+                            set.forEach(lt=>Debug.assert(msifset.has(lt)));
+                        }
+                    });
+                    let tunion2 = tunion;
+                    if (ltcount>=2){
+                        tunion2 = mrNarrow.refTypesTypeModule.addTypesToRefTypesType({ source:aktype, target:tunion });
+                    }
+                    symtab.set(s,tunion2);
+                }
+            }
+        });
+        stacc.forEach((ta,s)=>{
+            if (stnew.has(s)) return;
+            symtab.set(s,ta);
+        });
+        return { equal:false, symtab };
+    }
 
     // @ ts-expect-error
     function updatedCurrentBranchesItem(cbi: Readonly<CurrentBranchesItem>, unioncbi: Readonly<CurrentBranchesItem>, mrNarrow: MrNarrow): CurrentBranchesItem {
@@ -640,7 +708,9 @@ namespace ts {
             symtab: unioncbi.sc.symtab,
             constraintItem: unioncbi.sc.constraintItem
         };
-        const {symtab,constraintItem} = orSymtabConstraints([sc1,scu],mrNarrow);
+        const constraintItem = orConstraints([scu.constraintItem,sc1.constraintItem]);
+        const {equal:_equal,symtab} = accumulateSymtabs(scu.symtab,sc1.symtab,mrNarrow,{ literalWidening:false });
+        //const {symtab,constraintItem} = orSymtabConstraints([sc1,scu],mrNarrow);
         return {
             sc: {
                 symtab, constraintItem

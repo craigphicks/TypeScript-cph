@@ -1,5 +1,5 @@
 === tests/cases/conformance/_caxnc-decl/_caxnc-decl-0001.ts ===
-// @ts-dev-expect-string "count: 0, actualDeclaredTsType: number"
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
 let x = 1;
 >x : number
 >1 : 1

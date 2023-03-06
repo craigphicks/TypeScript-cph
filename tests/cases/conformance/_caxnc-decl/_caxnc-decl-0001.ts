@@ -4,6 +4,6 @@
 // @declaration: true
 // @enableTSDevExpectString: true
 
-// @ts-dev-expect-string "count: 0, actualDeclaredTsType: number"
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
 let x = 1;
 x;

@@ -11,12 +11,12 @@ function decl0010(){
     if (b) {
 >b : Symbol(b, Decl(_caxnc-decl-0010.ts, 0, 13))
 
-        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: number"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
         x = 0;
 >x : Symbol(x, Decl(_caxnc-decl-0010.ts, 2, 7))
     }
     else {
-        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: number"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
         x = 1;
 >x : Symbol(x, Decl(_caxnc-decl-0010.ts, 2, 7))
     }

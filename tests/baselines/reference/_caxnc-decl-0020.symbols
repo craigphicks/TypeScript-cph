@@ -1,0 +1,18 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0020.ts ===
+function decl0020(){
+>decl0020 : Symbol(decl0020, Decl(_caxnc-decl-0020.ts, 0, 0))
+
+    type X = 0|1|2;
+>X : Symbol(X, Decl(_caxnc-decl-0020.ts, 0, 20))
+
+    // the Type assigned to symbolFlowInfo.effectiveDeclaredTsType has a member "aliasSymbol" with name "X",
+    // as well as a member "types" containting the 3 literal types.  "checker.typeToString" prints "X".
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: X"
+    let x: X = 0;
+>x : Symbol(x, Decl(_caxnc-decl-0020.ts, 6, 7))
+>X : Symbol(X, Decl(_caxnc-decl-0020.ts, 0, 20))
+
+    x;
+>x : Symbol(x, Decl(_caxnc-decl-0020.ts, 6, 7))
+
+}

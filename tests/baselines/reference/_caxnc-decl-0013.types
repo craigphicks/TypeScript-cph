@@ -11,7 +11,7 @@ function decl0013(){
     if (b) {
 >b : boolean
 
-        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: any"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any"
         x = [0];
 >x = [0] : number[]
 >x : any
@@ -19,7 +19,7 @@ function decl0013(){
 >0 : 0
     }
     else {
-        // @ts-dev-expect-string "count: 0, actualDeclaredTsType: any"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any"
         x = "1";
 >x = "1" : "1"
 >x : any

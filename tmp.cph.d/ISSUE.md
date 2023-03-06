@@ -16,14 +16,11 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. "symbolFlowInfo"
 
-0.  Currently always returning type `symbolFlowInfo.effectiveDeclaredType` in `mrNarrowTypesByPropertyAccessExpression`, but should be referencing symbol table if it is there, so the properties can be narrowed.
+0. "loop convergence speedup"
+    0. When inside a loop, flow type should be widened instead of becoming union of literals (excepting explicit literal union types, which can be discerned from `symbolFlowInfo.typeNodeTsType` and sometimes from `symbolFlowInfo.initializerType`).  Outside of loops, might be OK to remain a union of literals - not much cost involved, often free.
 
-0. "actualDeclaredType"
-
-    0. See Done/"actualDeclaredType".  Add "actualDeclaredType" to `symbolFlowInfoMap`.
-    0. When inside a loop, flow type should be widened instead of becoming union of literals.  Outside of loops, might be OK to remain a literal.
+0. There exists code where `isASubsetOfB(x,y) && isASubsetOfB(y,x)` should be replaced by `equalRefTypesRef(x,y)`.
 
 0. A plan to limit unnecesary re-computations without buffering whole copies of the symbol table per group.
 
@@ -78,15 +75,27 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
+0. New function `accumulateSymtabs` with option `{widenLiterals:boolean}`. Currently running with `{widenLiterals:false}`, all `_caxnc-` tests passing. The plan is to change to `{widenLiterals:true}` and see some loops change to less complex convergence.
+
+0.  ~~Currently always returning type `symbolFlowInfo.effectiveDeclaredType` in `mrNarrowTypesByPropertyAccessExpression`, but should be referencing symbol table if it is there, so the properties can be narrowed~~. Not a problem because the passed back type is intersected with the symtab type above in the calling function.  C.f. _caxnc-prop-0001.ts.
+
 0. "symbolFlowInfo"
 
-    0. replaced `mrState.declaredTypes`, `inferStatus.declareTypes`, `refTypesTable.leaf.declaredType` with `symbolFlowInfo.initializerType ?? symbolFlowInfo.effectiveDeclaredType`.
-
-    0. replaced `leaf.isconst` with `symbolFlowInfo.isconst`.
+    0. replaced `mrState.declaredTypes`, `inferStatus.declareTypes` with `symbolFlowInfo.effectiveDeclaredType`.
 
     0. New functions: `createRefTypesTableLeafFromSymbolFlowInfo`, `getDeclaredTypeAsRefTypesTableLeaf`, `getDeclareType(symbol)`
 
     0. Removed `createGetDeclaredType(inferStatus)`.
+
+    0. RefTypesSymtab is now just a Map<Symbol,RefTypesType>
+
+    0. member leaf removed, symtab simpolified, all _caxnc- tests passing
+
+    0. cleanup getDeclaredTypes, all _caxnc- tests passing
+
+    0. copyRefTypesSymtab now alias of new Map<...>(symtab)
+
+    0. added _caxnc-decl-001*.ts tests
 
     0. All `_caxnc-` tests passing.
 

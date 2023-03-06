@@ -1,0 +1,39 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0001.ts ===
+declare type X = {
+>X : { foo: boolean; }
+
+    foo: boolean;
+>foo : boolean
+
+};
+declare const x:X;
+>x : X
+
+function prop0001(){
+>prop0001 : () => void
+
+    if (x.foo){
+>x.foo : boolean
+>x : X
+>foo : boolean
+
+        let y = x.foo;
+>y : true
+>x.foo : true
+>x : X
+>foo : true
+
+        y;
+>y : true
+    }
+    else {
+        let z = x.foo;
+>z : false
+>x.foo : false
+>x : X
+>foo : false
+
+        z;
+>z : false
+    }
+}
