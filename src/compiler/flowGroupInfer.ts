@@ -709,7 +709,7 @@ namespace ts {
             constraintItem: unioncbi.sc.constraintItem
         };
         const constraintItem = orConstraints([scu.constraintItem,sc1.constraintItem]);
-        const {equal:_equal,symtab} = accumulateSymtabs(scu.symtab,sc1.symtab,mrNarrow,{ literalWidening:false });
+        const {equal:_equal,symtab} = accumulateSymtabs(scu.symtab,sc1.symtab,mrNarrow,{ literalWidening:true });
         //const {symtab,constraintItem} = orSymtabConstraints([sc1,scu],mrNarrow);
         return {
             sc: {
