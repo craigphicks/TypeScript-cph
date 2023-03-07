@@ -76,6 +76,8 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
+0. `(mrNarrow.isASubsetOfB(typeIn, gotType) && mrNarrow.isASubsetOfB(gotType, typeIn))` replace with `mrNarrow.equalRefTypesTypes(typeIn,gotType)` in 2 places.
+
 0. Optimization `applyCritToArrRefTypesTableReturn` for case `crit.none` and `length===1`.
 
 0. New function `accumulateSymtabs` with option `{widenLiterals:boolean}`. Currently running with `{widenLiterals:false}`, all `_caxnc-` tests passing. The plan is to change to `{widenLiterals:true}` and see some loops change to less complex convergence.

@@ -446,7 +446,7 @@ namespace ts {
                 //const gottype = got.leaf.type;
                 typeOut = mrNarrow.intersectionOfRefTypesType(type, typeIn);
                 // TODO: replace with mrNarrow.equalRefTypesType
-                if (!mrNarrow.isASubsetOfB(typeOut, type) || !mrNarrow.isASubsetOfB(type, typeOut)){
+                if (!mrNarrow.equalRefTypesTypes(typeOut,type)){
                     symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeOut);
                 }
             }
@@ -535,7 +535,9 @@ namespace ts {
         else {
             const gotType = symtab.get(symbol);
             if (!gotType || mrNarrow.isNeverType(gotType) ||
-            (mrNarrow.isASubsetOfB(typeIn, gotType) && mrNarrow.isASubsetOfB(gotType, typeIn))){
+            mrNarrow.equalRefTypesTypes(typeIn,gotType)
+//            (mrNarrow.isASubsetOfB(typeIn, gotType) && mrNarrow.isASubsetOfB(gotType, typeIn))
+            ){
                 return { type:typeIn,sc };
             }
             const utype = mrNarrow.unionOfRefTypesType([typeIn, gotType]);
