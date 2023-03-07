@@ -20,7 +20,7 @@ function t55(){
 >d2 : number
 >0 : 0
 
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
+        // @ts-dev-expect-string "loopCount:3, invocations:3"
         while (true){
 >true : true
 
@@ -28,7 +28,7 @@ function t55(){
 >d3 : number
 >0 : 0
 
-            // @ts-dev-expect-string "loopCount:10, invocations:12"
+            // @ts-dev-expect-string "loopCount:4, invocations:6"
             while (true){
 >true : true
 
@@ -36,18 +36,18 @@ function t55(){
 >d4 : number
 >0 : 0
 
-                // @ts-dev-expect-string "loopCount:13, invocations:22"
+                // @ts-dev-expect-string "loopCount:5, invocations:10"
                 while (true){
 >true : true
 
                     d1; d2; d3;
->d1 : 0 | 1 | 2 | 3
->d2 : 0 | 1 | 2 | 3
->d3 : 0 | 1 | 2 | 3
+>d1 : number
+>d2 : number
+>d3 : number
 
                     if (d4===0) d4=1;
 >d4===0 : boolean
->d4 : 0 | 1 | 2 | 3
+>d4 : number
 >0 : 0
 >d4=1 : 1
 >d4 : number
@@ -55,7 +55,7 @@ function t55(){
 
                     else if (d4===1) d4=2;
 >d4===1 : boolean
->d4 : 1 | 2 | 3
+>d4 : number
 >1 : 1
 >d4=2 : 2
 >d4 : number
@@ -63,7 +63,7 @@ function t55(){
 
                     else if (d4===2) d4=3;
 >d4===2 : boolean
->d4 : 2 | 3
+>d4 : number
 >2 : 2
 >d4=3 : 3
 >d4 : number
@@ -71,7 +71,7 @@ function t55(){
 
                     else if (d4===3) {
 >d4===3 : boolean
->d4 : 3
+>d4 : number
 >3 : 3
 
                         d4=0; break;
@@ -81,14 +81,14 @@ function t55(){
                     }
                 }
                 d1; d2; d3; d4;
->d1 : 0 | 1 | 2 | 3
->d2 : 0 | 1 | 2 | 3
->d3 : 0 | 1 | 2 | 3
+>d1 : number
+>d2 : number
+>d3 : number
 >d4 : 0
 
                 if (d3===0) d3=1;
 >d3===0 : boolean
->d3 : 0 | 1 | 2 | 3
+>d3 : number
 >0 : 0
 >d3=1 : 1
 >d3 : number
@@ -96,7 +96,7 @@ function t55(){
 
                 else if (d3===1) d3=2;
 >d3===1 : boolean
->d3 : 1 | 2 | 3
+>d3 : number
 >1 : 1
 >d3=2 : 2
 >d3 : number
@@ -104,7 +104,7 @@ function t55(){
 
                 else if (d3===2) d3=3;
 >d3===2 : boolean
->d3 : 2 | 3
+>d3 : number
 >2 : 2
 >d3=3 : 3
 >d3 : number
@@ -112,7 +112,7 @@ function t55(){
 
                 else if (d3===3) {
 >d3===3 : boolean
->d3 : 3
+>d3 : number
 >3 : 3
 
                     d3=0; break;
@@ -122,13 +122,13 @@ function t55(){
                 }
             }
             d1; d2; d3;
->d1 : 0 | 1 | 2 | 3
->d2 : 0 | 1 | 2 | 3
+>d1 : number
+>d2 : number
 >d3 : 0
 
             if (d2===0) d2=1;
 >d2===0 : boolean
->d2 : 0 | 1 | 2 | 3
+>d2 : number
 >0 : 0
 >d2=1 : 1
 >d2 : number
@@ -136,7 +136,7 @@ function t55(){
 
             else if (d2===1) d2=2;
 >d2===1 : boolean
->d2 : 1 | 2 | 3
+>d2 : number
 >1 : 1
 >d2=2 : 2
 >d2 : number
@@ -144,7 +144,7 @@ function t55(){
 
             else if (d2===2) d2=3;
 >d2===2 : boolean
->d2 : 2 | 3
+>d2 : number
 >2 : 2
 >d2=3 : 3
 >d2 : number
@@ -152,7 +152,7 @@ function t55(){
 
             else if (d2===3) {
 >d2===3 : boolean
->d2 : 3
+>d2 : number
 >3 : 3
 
                 d2=0; break;
@@ -162,12 +162,12 @@ function t55(){
             }
         }
         d1; d2;
->d1 : 0 | 1 | 2 | 3
+>d1 : number
 >d2 : 0
 
         if (d1===0) d1=1;
 >d1===0 : boolean
->d1 : 0 | 1 | 2 | 3
+>d1 : number
 >0 : 0
 >d1=1 : 1
 >d1 : number
@@ -175,7 +175,7 @@ function t55(){
 
         else if (d1===1) d1=2;
 >d1===1 : boolean
->d1 : 1 | 2 | 3
+>d1 : number
 >1 : 1
 >d1=2 : 2
 >d1 : number
@@ -183,7 +183,7 @@ function t55(){
 
         else if (d1===2) d1=3;
 >d1===2 : boolean
->d1 : 2 | 3
+>d1 : number
 >2 : 2
 >d1=3 : 3
 >d1 : number
@@ -191,7 +191,7 @@ function t55(){
 
         else if (d1===3) {
 >d1===3 : boolean
->d1 : 3
+>d1 : number
 >3 : 3
 
             d1=0;

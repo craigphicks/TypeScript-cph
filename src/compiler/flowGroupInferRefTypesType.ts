@@ -1,5 +1,6 @@
 namespace ts {
-    const extraAsserts = true;
+    // @ ts-expect-error
+    //const extraAsserts = true;
     //function assertType<X>(x: any): asserts x is X {};
     export function debugAssert(
         _expression: unknown, _message?: string /*, _verboseDebugInfo?: string | (() => string), _stackCrawlMark?: AnyFunction*/
@@ -27,8 +28,8 @@ namespace ts {
         forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void ;
         partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number};
         getMapLiteralOfRefTypesType(t: RefTypesType): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
-        getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
-        refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean;
+        //getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
+        //refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean;
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
     };
 
@@ -43,6 +44,11 @@ namespace ts {
         // const undefinedType = checker.getUndefinedType();
         // const errorType = checker.getErrorType();
         // const nullType = checker.getNullType();
+        // const refTypesRefNeverType: RefTypesType = {
+        //     _flags: RefTypesTypeFlags.none,
+        //     _set: new Set<Type>(),
+        //     _mapLiteral: new Map<Type, Set<LiteralType>>()
+        // };
 
         const {
             // dbgNodeToString,
@@ -73,8 +79,8 @@ namespace ts {
             forEachRefTypesTypeType,
             partitionIntoSingularAndNonSingularTypes,
             getMapLiteralOfRefTypesType,
-            getLiteralsOfANotInB,
-            refTypesTypeNormalHasType,
+            //getLiteralsOfANotInB,
+            //refTypesTypeNormalHasType,
             equalRefTypesTypes,
         };
 
@@ -164,6 +170,7 @@ namespace ts {
         }
 
         function createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType {
+            // if (!tstype) return refTypesRefNeverType;
             if (Array.isArray(tstype)){
                 return addTypesToRefTypesType({ source:tstype.slice(1), target:createRefTypesType(tstype[0]) });
             }
@@ -429,41 +436,41 @@ namespace ts {
          * @param ta
          * @param tb
          */
-        function getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined {
-            let m: ESMap<Type,Set<LiteralType>> | undefined; // = new Map<Type,Set<LiteralType>>();
-            ta._mapLiteral?.forEach((set,ktype)=>{
-                if (tb._set?.has(ktype)){
-                    // then it cannot be under tb._mapLiterals
-                    if (!m) m = new Map<Type,Set<LiteralType>>();
-                    m.set(ktype,new Set<LiteralType>(set));
-                }
-                else {
-                    if (extraAsserts){
-                        Debug.assert(tb._mapLiteral?.has(ktype)); // because tb is assumed to be superset of ta
-                        set.forEach(lt=>Debug.assert(tb._mapLiteral!.get(ktype)!.has(lt))); // ditto
-                    }
-                }
-            });
-            return m;
-        }
-        function refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean {
-            Debug.assert(type._flags===RefTypesTypeFlags.none);
-            if (tstype.flags && !!(tstype.flags & TypeFlags.Literal) && !(tstype.flags & TypeFlags.Boolean)){
-                if (tstype.flags & TypeFlags.Number){
-                    return type._mapLiteral?.get(numberType)?.has(tstype as LiteralType) ?? false;
-                }
-                else if (tstype.flags & TypeFlags.String){
-                    return type._mapLiteral?.get(stringType)?.has(tstype as LiteralType) ?? false;
-                }
-                else if (tstype.flags & TypeFlags.BigInt){
-                    return type._mapLiteral?.get(bigintType)?.has(tstype as LiteralType) ?? false;
-                }
-                else Debug.fail("unexpected");
-            }
-            else {
-                return type._set.has(tstype);
-            }
-        }
+        // function getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined {
+        //     let m: ESMap<Type,Set<LiteralType>> | undefined; // = new Map<Type,Set<LiteralType>>();
+        //     ta._mapLiteral?.forEach((set,ktype)=>{
+        //         if (tb._set?.has(ktype)){
+        //             // then it cannot be under tb._mapLiterals
+        //             if (!m) m = new Map<Type,Set<LiteralType>>();
+        //             m.set(ktype,new Set<LiteralType>(set));
+        //         }
+        //         else {
+        //             if (extraAsserts){
+        //                 Debug.assert(tb._mapLiteral?.has(ktype)); // because tb is assumed to be superset of ta
+        //                 set.forEach(lt=>Debug.assert(tb._mapLiteral!.get(ktype)!.has(lt))); // ditto
+        //             }
+        //         }
+        //     });
+        //     return m;
+        // }
+        // function refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean {
+        //     Debug.assert(type._flags===RefTypesTypeFlags.none);
+        //     if (tstype.flags && !!(tstype.flags & TypeFlags.Literal) && !(tstype.flags & TypeFlags.Boolean)){
+        //         if (tstype.flags & TypeFlags.Number){
+        //             return type._mapLiteral?.get(numberType)?.has(tstype as LiteralType) ?? false;
+        //         }
+        //         else if (tstype.flags & TypeFlags.String){
+        //             return type._mapLiteral?.get(stringType)?.has(tstype as LiteralType) ?? false;
+        //         }
+        //         else if (tstype.flags & TypeFlags.BigInt){
+        //             return type._mapLiteral?.get(bigintType)?.has(tstype as LiteralType) ?? false;
+        //         }
+        //         else Debug.fail("unexpected");
+        //     }
+        //     else {
+        //         return type._set.has(tstype);
+        //     }
+        // }
 
         function partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {
             singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number

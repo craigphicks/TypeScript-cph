@@ -1,7 +1,6 @@
 /* eslint-disable no-null/no-null */
 namespace ts {
 
-    const extraAsserts = true; // not suitable for release
 
     // @ ts-expect-error
     export type GetDeclaredTypeFn = (symbol: Symbol) => RefTypesType;
@@ -434,7 +433,7 @@ namespace ts {
         }
         let constraintItem = sc.constraintItem;
         let symtab = sc.symtab;
-        //let type = typeIn;
+        let typeOut = typeIn;
         if (symbol.flags & (SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
             // do nothing - an enum parent is not a real type
         }
@@ -442,14 +441,14 @@ namespace ts {
             constraintItem = andSymbolTypeIntoConstraint({ symbol,type:typeIn,constraintItem,getDeclaredType,mrNarrow });
         }
         else {
-            let type = symtab.get(symbol);
+            const type = symtab.get(symbol);
             if (type) {
                 //const gottype = got.leaf.type;
                 const itype = mrNarrow.intersectionOfRefTypesType(type, typeIn);
                 // TODO: replace with mrNarrow.equalRefTypesType
                 if (!mrNarrow.isASubsetOfB(itype, type) || !mrNarrow.isASubsetOfB(type, itype)){
                     symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,itype);
-                    type = itype;
+                    typeOut = itype;
                 }
                 // othwise the symtab remains unchanged
             }
@@ -471,7 +470,7 @@ namespace ts {
         }
         // when useConstraintsV2() is true, the returned type is a dummy, to prevent unnecessary computation.
         // TODO: return real type not dummy type, because it has to be recomputed anyway
-        return { type: null as any as RefTypesType, sc:{ symtab, constraintItem } };
+        return { type: typeOut, sc:{ symtab, constraintItem } };
     }
 
     export function andSymbolTypeIntoConstraint({symbol,type,constraintItem, getDeclaredType, mrNarrow}: Readonly<{

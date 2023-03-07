@@ -15,13 +15,13 @@ function t55(){
     // @ ts-dev-expect-string "loopCount:4, invocations:1"
     while (true){
         let d2 = 0;
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
+        // @ts-dev-expect-string "loopCount:3, invocations:3"
         while (true){
             let d3 = 0;
-            // @ts-dev-expect-string "loopCount:10, invocations:12"
+            // @ts-dev-expect-string "loopCount:4, invocations:6"
             while (true){
                 let d4 = 0;
-                // @ts-dev-expect-string "loopCount:13, invocations:22"
+                // @ts-dev-expect-string "loopCount:5, invocations:10"
                 while (true){
                     d1; d2; d3;
                     if (d4===0) d4=1;

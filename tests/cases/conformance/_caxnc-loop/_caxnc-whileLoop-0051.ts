@@ -7,7 +7,7 @@
 function t51(){
     // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
     let d1 = 0;
-    // @ts-dev-expect-string "loopCount:4, invocations:1"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (true){
         // let d2: D = 0;
         // // // @ts-dev-expect-string "????"

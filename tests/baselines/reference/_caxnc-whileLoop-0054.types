@@ -20,13 +20,13 @@ function t54(){
 >d2 : number
 >0 : 0
 
-        // @ts-dev-expect-string "loopCount:4, invocations:5"
+        // @ts-dev-expect-string "loopCount:2, invocations:3"
         while (true){
 >true : true
 
             if (d2===0) d2=1;
 >d2===0 : boolean
->d2 : 0 | 1 | 2 | 3
+>d2 : number
 >0 : 0
 >d2=1 : 1
 >d2 : number
@@ -34,7 +34,7 @@ function t54(){
 
             else if (d2===1) d2=2;
 >d2===1 : boolean
->d2 : 1 | 2 | 3
+>d2 : number
 >1 : 1
 >d2=2 : 2
 >d2 : number
@@ -42,7 +42,7 @@ function t54(){
 
             else if (d2===2) d2=3;
 >d2===2 : boolean
->d2 : 2 | 3
+>d2 : number
 >2 : 2
 >d2=3 : 3
 >d2 : number
@@ -50,7 +50,7 @@ function t54(){
 
             else if (d2===3) {
 >d2===3 : boolean
->d2 : 3
+>d2 : number
 >3 : 3
 
                 d2=0; break;
@@ -63,11 +63,11 @@ function t54(){
 >d2 : 0
 
         d1;
->d1 : 0 | 1 | 2 | 3
+>d1 : number
 
         if (d1===0) d1=1;
 >d1===0 : boolean
->d1 : 0 | 1 | 2 | 3
+>d1 : number
 >0 : 0
 >d1=1 : 1
 >d1 : number
@@ -75,7 +75,7 @@ function t54(){
 
         else if (d1===1) d1=2;
 >d1===1 : boolean
->d1 : 1 | 2 | 3
+>d1 : number
 >1 : 1
 >d1=2 : 2
 >d1 : number
@@ -83,7 +83,7 @@ function t54(){
 
         else if (d1===2) d1=3;
 >d1===2 : boolean
->d1 : 2 | 3
+>d1 : number
 >2 : 2
 >d1=3 : 3
 >d1 : number
@@ -91,7 +91,7 @@ function t54(){
 
         else if (d1===3) {
 >d1===3 : boolean
->d1 : 3
+>d1 : number
 >3 : 3
 
             d1=0;

@@ -6,7 +6,7 @@ function t51(){
     let d1 = 0;
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0051.ts, 2, 7))
 
-    // @ts-dev-expect-string "loopCount:4, invocations:1"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (true){
         // let d2: D = 0;
         // // // @ts-dev-expect-string "????"

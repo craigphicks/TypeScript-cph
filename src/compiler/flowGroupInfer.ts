@@ -1,6 +1,6 @@
 namespace ts {
 
-    const extraAsserts = true;
+    export const extraAsserts = false; // not suitable for release
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {

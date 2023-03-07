@@ -75,6 +75,11 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
+0. Fix for `mrNarrowTypesByBinaryExpressionEquals_aux` (symbols were not passed to helper).
+0. Passing type out from `andSymbolTypeIntoSymtabConstraintV2` (but it is not being used yet).
+0. Optimization `if (arr.length===1) return arr[0]` for `unionArrRefTypesSymtab`.
+0. `_caxnc-` tests passing (with reduced resolution/complexity for `_caxnc-whileLoop-005*`).
+
 0. New function `accumulateSymtabs` with option `{widenLiterals:boolean}`. Currently running with `{widenLiterals:false}`, all `_caxnc-` tests passing. The plan is to change to `{widenLiterals:true}` and see some loops change to less complex convergence.
 
 0.  ~~Currently always returning type `symbolFlowInfo.effectiveDeclaredType` in `mrNarrowTypesByPropertyAccessExpression`, but should be referencing symbol table if it is there, so the properties can be narrowed~~. Not a problem because the passed back type is intersected with the symtab type above in the calling function.  C.f. _caxnc-prop-0001.ts.

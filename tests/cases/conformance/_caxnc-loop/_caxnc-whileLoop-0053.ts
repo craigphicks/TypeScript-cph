@@ -15,7 +15,7 @@ function t53(){
     // @ ts-dev-expect-string "loopCount:4, invocations:1"
     while (true){
         let d2 = 0;
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
+        // @ts-dev-expect-string "loopCount:3, invocations:3"
         while (true){
             d1;
             if (d2===0) d2=1;
