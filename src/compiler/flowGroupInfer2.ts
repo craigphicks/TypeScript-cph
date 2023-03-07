@@ -1737,7 +1737,9 @@ namespace ts {
          * @returns
          */
         function InferRefTypesPreAccess({refTypesSymtab: refTypes, expr: condExpr, /*crit,*/ qdotfallout, inferStatus, constraintItem}: InferRefInnerArgs & {expr: {expression: Expression}}): InferRefTypesPreAccessRtnType{
-        consoleGroup(`InferRefTypesPreAccess[in] expr: ${dbgNodeToString(condExpr)}`);
+        if (getMyDebug()){
+            consoleGroup(`InferRefTypesPreAccess[in] expr: ${dbgNodeToString(condExpr)}`);
+        }
         try{
             const { inferRefRtnType:{ passing, failing, unmerged } } = mrNarrowTypes(
                 { refTypesSymtab: refTypes, expr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus,constraintItem });
@@ -1787,8 +1789,10 @@ namespace ts {
             return { kind:"normal", passing, unmergedPassing };
         }
         finally {
-            consoleLog(`InferRefTypesPreAccess[out]`);
-            consoleGroupEnd();
+            if (getMyDebug()){
+                consoleLog(`InferRefTypesPreAccess[out]`);
+                consoleGroupEnd();
+            }
         }
         }
 
@@ -2071,38 +2075,46 @@ namespace ts {
             passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol, unmerged?: Readonly<RefTypesTableReturn[]>
         }{
             Debug.assert(!(crit.kind===InferCritKind.none && crit.negate));
-            // if (crit.kind===InferCritKind.none){
-            //     if (arrRttr.length===1){
-            //         const rttr = arrRttr[0];
-            //         //const rtn: ReturnType<typeof applyCritToArrRefTypesTableReturn>;
-            //         let passing: RefTypesTableReturnNoSymbol;
-            //         // rtn.passing = { ...rttr };
-            //         // delete (rtn as any).symbol;
-            //         // delete (rtn as any).isconst;
-            //         if (rttr.symbol && !isNeverType(arrRttr[0].type) && !isNeverConstraint(arrRttr[0].constraintItem)){
-            //             const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,type:rttr.type, getDeclaredType,
-            //                 sc:{ symtab: rttr.symtab, constraintItem: rttr.constraintItem }, mrNarrow});
-            //             passing = {
-            //                 kind: RefTypesTableKind.return,
-            //                 type,
-            //                 symtab: sc.symtab,
-            //                 constraintItem: sc.constraintItem
-            //             };
-            //         }
-            //         else {
-            //             passing = {
-            //                 kind: RefTypesTableKind.return,
-            //                 type: rttr.type,
-            //                 symtab: rttr.symtab,
-            //                 constraintItem: rttr.constraintItem
-            //             };
-            //         }
-            //         return {
-            //             passing,
-            //             unmerged: [rttr]
-            //         };
-            //     }
-            // }
+            if (crit.kind===InferCritKind.none){
+                if (arrRttr.length===1){
+                    const rttr = arrRttr[0];
+                    //const rtn: ReturnType<typeof applyCritToArrRefTypesTableReturn>;
+                    let passing: RefTypesTableReturnNoSymbol;
+                    // rtn.passing = { ...rttr };
+                    // delete (rtn as any).symbol;
+                        // delete (rtn as any).isconst;
+                    if (isNeverType(rttr.type) || isNeverConstraint(rttr.constraintItem)){
+                        passing = {
+                            kind: RefTypesTableKind.return,
+                            type: createRefTypesType(), // never
+                            symtab: createRefTypesSymtab(),
+                            constraintItem: createFlowConstraintNever()
+                        };
+                    }
+                    else if (rttr.symbol){
+                        const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,type:rttr.type, getDeclaredType,
+                            sc:{ symtab: rttr.symtab, constraintItem: rttr.constraintItem }, mrNarrow});
+                        passing = {
+                            kind: RefTypesTableKind.return,
+                            type,
+                            symtab: sc.symtab,
+                            constraintItem: sc.constraintItem
+                        };
+                    }
+                    else {
+                        passing = {
+                            kind: RefTypesTableKind.return,
+                            type: rttr.type,
+                            symtab: rttr.symtab,
+                            constraintItem: rttr.constraintItem
+                        };
+                    }
+                    return {
+                        passing,
+                        unmerged: [rttr]
+                    };
+                }
+            }
 
 
             {

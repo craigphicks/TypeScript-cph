@@ -16,6 +16,7 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+0. Trying to optimize `applyCritToArrRefTypesTableReturn` for case `crit.none` and `length===1`, got some unexpected results.  Investigate.
 
 0. "loop convergence speedup"
     0. When inside a loop, flow type should be widened instead of becoming union of literals (excepting explicit literal union types, which can be discerned from `symbolFlowInfo.typeNodeTsType` and sometimes from `symbolFlowInfo.initializerType`).  Outside of loops, might be OK to remain a union of literals - not much cost involved, often free.
@@ -75,10 +76,7 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
-0. Fix for `mrNarrowTypesByBinaryExpressionEquals_aux` (symbols were not passed to helper).
-0. Passing type out from `andSymbolTypeIntoSymtabConstraintV2` (but it is not being used yet).
-0. Optimization `if (arr.length===1) return arr[0]` for `unionArrRefTypesSymtab`.
-0. `_caxnc-` tests passing (with reduced resolution/complexity for `_caxnc-whileLoop-005*`).
+0. Optimization `applyCritToArrRefTypesTableReturn` for case `crit.none` and `length===1`.
 
 0. New function `accumulateSymtabs` with option `{widenLiterals:boolean}`. Currently running with `{widenLiterals:false}`, all `_caxnc-` tests passing. The plan is to change to `{widenLiterals:true}` and see some loops change to less complex convergence.
 

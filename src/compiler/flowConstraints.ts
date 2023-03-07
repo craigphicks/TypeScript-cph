@@ -444,13 +444,11 @@ namespace ts {
             const type = symtab.get(symbol);
             if (type) {
                 //const gottype = got.leaf.type;
-                const itype = mrNarrow.intersectionOfRefTypesType(type, typeIn);
+                typeOut = mrNarrow.intersectionOfRefTypesType(type, typeIn);
                 // TODO: replace with mrNarrow.equalRefTypesType
-                if (!mrNarrow.isASubsetOfB(itype, type) || !mrNarrow.isASubsetOfB(type, itype)){
-                    symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,itype);
-                    typeOut = itype;
+                if (!mrNarrow.isASubsetOfB(typeOut, type) || !mrNarrow.isASubsetOfB(type, typeOut)){
+                    symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeOut);
                 }
-                // othwise the symtab remains unchanged
             }
             else {
                 symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeIn);
