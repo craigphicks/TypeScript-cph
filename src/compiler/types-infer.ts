@@ -150,7 +150,7 @@ namespace ts {
     export type InferStatus = & {
         inCondition: boolean;
         currentReplayableItem?: undefined | ReplayableItem;
-        replayables: ESMap< Symbol, ReplayableItem >;
+        replayables: WeakMap< Symbol, ReplayableItem >;
         groupNodeToTypeMap: ESMap<Node,Type>;
         //accumNodeTypes: boolean,
         accumBranches: boolean,

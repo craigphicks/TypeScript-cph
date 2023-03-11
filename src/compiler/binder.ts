@@ -167,10 +167,18 @@ namespace ts {
         IsObjectLiteralOrClassExpressionMethodOrAccessor = 1 << 7,
     }
 
-
+    let labelBlockScopes = false;
     let allNodesWithFlowOneSourceFile: Node[] | undefined;
     function setNodeFlow(node: Node, flow: FlowNode): void {
         if (!flow) return;
+        if (labelBlockScopes){
+            const branchKind = (flow as FlowLabel).branchKind;
+            if (branchKind && (branchKind===BranchKind.block || branchKind===BranchKind.postBlock)){
+                Debug.assert((flow as FlowLabel).antecedents?.length===1);
+                setNodeFlow(node,(flow as FlowLabel).antecedents![0]);
+                return;
+            }
+        }
         node.flowNode = flow;
         allNodesWithFlowOneSourceFile?.push(node);
     }
@@ -214,7 +222,7 @@ namespace ts {
 
     function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
         const myDisableInfer = (process.env.myDisableInfer===undefined) ? false : !!Number(process.env.myDisableInfer);;
-        const labelBlockScopes = !myDisableInfer;
+        labelBlockScopes = !myDisableInfer;
         const labelAllFunctionCalls = !myDisableInfer;
         const alwaysAddFlowToConditionNode = !myDisableInfer;
         const recordBreakAndReturnOnControlLoop = !myDisableInfer;
@@ -791,7 +799,6 @@ namespace ts {
                 return;
             }
             if (node.kind >= SyntaxKind.FirstStatement && node.kind <= SyntaxKind.LastStatement && !options.allowUnreachableCode) {
-                //node.flowNode = currentFlow;
                 setNodeFlow(node, currentFlow);
             }
             switch (node.kind) {
@@ -1862,16 +1869,7 @@ namespace ts {
                 bindOptionalChainFlow(node);
             }
             else {
-                // IWOZERE
-                // setFlowNodeReferenced(currentFlow);
-                // currentFlow = initFlowNode({ flags:FlowFlags.Other1, antecedent: currentFlow});
                 bindEachChild(node);
-                // const dotLhsFlow = currentFlow;
-                // (dotLhsFlow as FlowOther1).node = node.expression;
-                // const dotRhsFlow = initFlowNode({ flags:FlowFlags.Other2, antecedent: dotLhsFlow}) as FlowOther2;
-                // setFlowNodeReferenced(dotLhsFlow);
-                // dotRhsFlow.node = node;
-                // node.flowNode = dotRhsFlow;
             }
         }
 
@@ -2628,19 +2626,16 @@ namespace ts {
                     // falls through
                 case SyntaxKind.ThisKeyword:
                     if (currentFlow && (isExpression(node) || parent.kind === SyntaxKind.ShorthandPropertyAssignment)) {
-                        //node.flowNode = currentFlow;
                         setNodeFlow(node, currentFlow);
                     }
                     return checkContextualIdentifier(node as Identifier);
                 case SyntaxKind.QualifiedName:
                     if (currentFlow && isPartOfTypeQuery(node)) {
-                        //node.flowNode = currentFlow;
                         setNodeFlow(node, currentFlow);
                     }
                     break;
                 case SyntaxKind.MetaProperty:
                 case SyntaxKind.SuperKeyword:
-                    //node.flowNode = currentFlow;
                     setNodeFlow(node, currentFlow);
                     break;
                 case SyntaxKind.PrivateIdentifier:
@@ -2726,7 +2721,6 @@ namespace ts {
                     return bindVariableDeclarationOrBindingElement(node as VariableDeclaration);
                 case SyntaxKind.BindingElement:
                     setNodeFlow(node, currentFlow);
-                    // node.flowNode = currentFlow;
                     return bindVariableDeclarationOrBindingElement(node as BindingElement);
                 case SyntaxKind.PropertyDeclaration:
                 case SyntaxKind.PropertySignature:
@@ -3481,7 +3475,6 @@ namespace ts {
             }
             if (currentFlow) {
                 setNodeFlow(node, currentFlow);
-                // node.flowNode = currentFlow;
             }
             checkStrictModeFunctionName(node);
             const bindingName = node.name ? node.name.escapedText : InternalSymbolName.Function;
@@ -3495,7 +3488,6 @@ namespace ts {
 
             if (currentFlow && isObjectLiteralOrClassExpressionMethodOrAccessor(node)) {
                 setNodeFlow(node, currentFlow);
-                // node.flowNode = currentFlow;
             }
 
             return hasDynamicName(node)

@@ -1,0 +1,47 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0002.ts ===
+declare type X = {
+>X : Symbol(X, Decl(_caxnc-prop-0002.ts, 0, 0))
+
+    foo?: { bar: boolean };
+>foo : Symbol(foo, Decl(_caxnc-prop-0002.ts, 0, 18))
+>bar : Symbol(bar, Decl(_caxnc-prop-0002.ts, 1, 11))
+
+};
+declare const x:X|undefined;
+>x : Symbol(x, Decl(_caxnc-prop-0002.ts, 3, 13))
+>X : Symbol(X, Decl(_caxnc-prop-0002.ts, 0, 0))
+
+function prop0002(){
+>prop0002 : Symbol(prop0002, Decl(_caxnc-prop-0002.ts, 3, 28))
+
+    if (x?.foo?.bar){
+>x?.foo?.bar : Symbol(bar, Decl(_caxnc-prop-0002.ts, 1, 11))
+>x?.foo : Symbol(foo, Decl(_caxnc-prop-0002.ts, 0, 18))
+>x : Symbol(x, Decl(_caxnc-prop-0002.ts, 3, 13))
+>foo : Symbol(foo, Decl(_caxnc-prop-0002.ts, 0, 18))
+>bar : Symbol(bar, Decl(_caxnc-prop-0002.ts, 1, 11))
+
+        let y = x.foo.bar;
+>y : Symbol(y, Decl(_caxnc-prop-0002.ts, 7, 11))
+>x.foo.bar : Symbol(bar, Decl(_caxnc-prop-0002.ts, 1, 11))
+>x.foo : Symbol(foo, Decl(_caxnc-prop-0002.ts, 0, 18))
+>x : Symbol(x, Decl(_caxnc-prop-0002.ts, 3, 13))
+>foo : Symbol(foo, Decl(_caxnc-prop-0002.ts, 0, 18))
+>bar : Symbol(bar, Decl(_caxnc-prop-0002.ts, 1, 11))
+
+        y;
+>y : Symbol(y, Decl(_caxnc-prop-0002.ts, 7, 11))
+    }
+    else {
+        let z = x?.foo?.bar;
+>z : Symbol(z, Decl(_caxnc-prop-0002.ts, 11, 11))
+>x?.foo?.bar : Symbol(bar, Decl(_caxnc-prop-0002.ts, 1, 11))
+>x?.foo : Symbol(foo, Decl(_caxnc-prop-0002.ts, 0, 18))
+>x : Symbol(x, Decl(_caxnc-prop-0002.ts, 3, 13))
+>foo : Symbol(foo, Decl(_caxnc-prop-0002.ts, 0, 18))
+>bar : Symbol(bar, Decl(_caxnc-prop-0002.ts, 1, 11))
+
+        z;
+>z : Symbol(z, Decl(_caxnc-prop-0002.ts, 11, 11))
+    }
+}

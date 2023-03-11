@@ -1,0 +1,29 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0003.ts ===
+declare enum X {one="1",two="2"};
+>X : X
+>one : X.one
+>"1" : "1"
+>two : X.two
+>"2" : "2"
+
+declare const x:X;
+>x : X
+
+function prop0003(){
+>prop0003 : () => void
+
+    if (x===X.one){
+>x===X.one : boolean
+>x : "1" | "2"
+>X.one : X.one
+>X : typeof X
+>one : X.one
+
+        x;
+>x : "1"
+    }
+    else {
+        x;
+>x : "2"
+    }
+}

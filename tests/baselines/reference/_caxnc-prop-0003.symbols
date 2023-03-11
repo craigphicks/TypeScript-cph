@@ -1,0 +1,27 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0003.ts ===
+declare enum X {one="1",two="2"};
+>X : Symbol(X, Decl(_caxnc-prop-0003.ts, 0, 0))
+>one : Symbol(X.one, Decl(_caxnc-prop-0003.ts, 0, 16))
+>two : Symbol(X.two, Decl(_caxnc-prop-0003.ts, 0, 24))
+
+declare const x:X;
+>x : Symbol(x, Decl(_caxnc-prop-0003.ts, 1, 13))
+>X : Symbol(X, Decl(_caxnc-prop-0003.ts, 0, 0))
+
+function prop0003(){
+>prop0003 : Symbol(prop0003, Decl(_caxnc-prop-0003.ts, 1, 18))
+
+    if (x===X.one){
+>x : Symbol(x, Decl(_caxnc-prop-0003.ts, 1, 13))
+>X.one : Symbol(X.one, Decl(_caxnc-prop-0003.ts, 0, 16))
+>X : Symbol(X, Decl(_caxnc-prop-0003.ts, 0, 0))
+>one : Symbol(X.one, Decl(_caxnc-prop-0003.ts, 0, 16))
+
+        x;
+>x : Symbol(x, Decl(_caxnc-prop-0003.ts, 1, 13))
+    }
+    else {
+        x;
+>x : Symbol(x, Decl(_caxnc-prop-0003.ts, 1, 13))
+    }
+}

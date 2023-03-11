@@ -1,6 +1,6 @@
 namespace ts {
 
-    export const extraAsserts = false; // not suitable for release
+    export const extraAsserts = true; // not suitable for release
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
@@ -217,15 +217,25 @@ namespace ts {
         }
         get size(){ return this.data.size; }
     }
+    // @ts-expect-error
+    type InvolvedData = & {
+        initial: {
+            identifierMap?: ESMap<Symbol,RefTypesType>;
+            propertyAccessMap?: ESMap<Node,ESMap<Symbol,RefTypesType>>;
+        },
+    };
 
     export interface ForFlow {
         heap: Heap; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
         currentBranchesMap: CurrentBranchesMap;
         //dbgCurrentBranchesMapWasDeleted?: ESMap< Readonly<GroupForFlow>, boolean >;
         groupToNodeToType?: ESMap<GroupForFlow,NodeToTypeMap >;
+        loopState?: ProcessLoopState; // only present in loops
+        //TODO: loopGroupToProcessLoopStateMap: WeakMap<GroupForFlow,ProcessLoopState>;
+
     }
     interface ProcessLoopState {
-        group: GroupForFlow;
+        loopGroup: GroupForFlow;
         loopCountWithoutFinals: number;
         invocations: number;
         // loopUnionGroupToNodeToType: ESMap<GroupForFlow, NodeToTypeMap>;
@@ -243,8 +253,8 @@ namespace ts {
     };
     export interface MrState {
         checker: TypeChecker;
-        replayableItems: ESMap< Symbol, ReplayableItem >;
-        declaredTypes: ESMap<Symbol,RefTypesType>;
+        replayableItems: WeakMap< Symbol, ReplayableItem >;
+        //declaredTypes: ESMap<Symbol,RefTypesType>;
         forFlowTop: ForFlow;
         recursionLevel: number;
         dataForGetTypeOfExpressionShallowRecursive?: {
@@ -252,7 +262,7 @@ namespace ts {
             tmpExprNodeToTypeMap: Readonly<ESMap<Node,Type>>;
             expr: Expression | Node
         } | undefined;
-        loopGroupToProcessLoopStateMap: ESMap<GroupForFlow,ProcessLoopState>;
+        loopGroupToProcessLoopStateMap: WeakMap<GroupForFlow,ProcessLoopState>; // TODO: move to ProcessLoopState
         currentLoopDepth: number;
         currentLoopsInLoopScope: Set<GroupForFlow>;
         symbolFlowInfoMap: WeakMap<Symbol,SymbolFlowInfo | undefined>;
@@ -332,11 +342,11 @@ namespace ts {
         dbgs = createDbgs(checker);
         const mrState: MrState = {
             checker,
-            replayableItems: new Map<Symbol, ReplayableItem>(),
-            declaredTypes: new Map<Symbol, RefTypesType>(),
+            replayableItems: new WeakMap<Symbol, ReplayableItem>(),
+            //declaredTypes: new Map<Symbol, RefTypesType>(),
             recursionLevel: 0,
             forFlowTop: createForFlow(groupsForFlow),
-            loopGroupToProcessLoopStateMap: new Map<GroupForFlow,ProcessLoopState>(),
+            loopGroupToProcessLoopStateMap: new WeakMap<GroupForFlow,ProcessLoopState>(),
             currentLoopDepth: 0,
             currentLoopsInLoopScope: new Set<GroupForFlow>(),
             symbolFlowInfoMap: new WeakMap<Symbol,SymbolFlowInfo | undefined>()
@@ -509,7 +519,7 @@ namespace ts {
         }
     }
 
-    function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileMrState, withinLoop: boolean): InferStatus {
+    function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileMrState, accumBranches: boolean): InferStatus {
         const mrState = sourceFileMrState.mrState;
         Debug.assert(sourceFileMrState.mrState.forFlowTop.groupToNodeToType);
         let groupNodeToTypeMap = mrState.forFlowTop.groupToNodeToType!.get(groupForFlow);
@@ -524,7 +534,7 @@ namespace ts {
             //declaredTypes: sourceFileMrState.mrState.declaredTypes,
             groupNodeToTypeMap,
             //accumNodeTypes: false, //withinLoop,
-            accumBranches: withinLoop,
+            accumBranches,
             getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
                 return this.callCheckerFunctionWithShallowRecursion(expr, sc, mrState.checker.getTypeOfExpression, expr);
             },
@@ -573,13 +583,15 @@ namespace ts {
     //         };
     //     }
     // }
-
-    function createProcessLoopState(group: GroupForFlow): ProcessLoopState {
+    function createProcessLoopState(loopGroup: Readonly<GroupForFlow>, _setOfLoopDeps: Readonly<Set<GroupForFlow>>): ProcessLoopState {
+        // const groupToInvolvedData = new WeakMap<GroupForFlow,InvolvedData | undefined>();
+        // setOfLoopDeps.forEach(g=>{
+        //     groupToInvolvedData.set(g,undefined);
+        // });
         return {
-            group,
+            loopGroup,
             invocations:0, loopCountWithoutFinals:0,
-            // loopUnionGroupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
-            // loopUnionCurrentBranchesMap: new Map<GroupForFlow, CurrentBranchElement>()
+            // groupToInvolvedData
         };
     }
     // function copyProcessLoopState(loopState: ProcessLoopState, mrNarrow: MrNarrow): ProcessLoopState {
@@ -864,9 +876,9 @@ namespace ts {
 
 
         /**
-         * Using the global loop state rather local loop state potentially reduces resolution but also potentially reduces computation time.
-         * At loop depth 0, there is no difference.
-         * TODO: We might want to allow local loopState up to a given value for sourceFileMrState.mrState.currentLoopDepth
+         * TODO: When the outer loopGroup is complete, the loopState of each inner loopGroup-s should also become unreferenced.
+         * Therefore the loopGroupToProcessLoopStateMap could and should be attached to the forFlowParent.loopGroup rather than mrState.
+         *
          */
         const useGlobalLoopState = sourceFileMrState.mrState.currentLoopDepth > 0;
 
@@ -874,13 +886,13 @@ namespace ts {
             if (useGlobalLoopState){
                 let got = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopGroup);
                 if (!got) {
-                    got = createProcessLoopState(loopGroup);
+                    got = createProcessLoopState(loopGroup,setOfLoopDeps);
                     sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.set(loopGroup,got);
                 }
                 return got;
             }
             else{
-                return createProcessLoopState(loopGroup);
+                return createProcessLoopState(loopGroup,setOfLoopDeps);
             }
         })();
 
@@ -888,58 +900,33 @@ namespace ts {
         let loopCount = 0;
         let forFlowFinal: ForFlow;
 
-        // loopGroup.groupIdx was already removed from the heap from inisde resolveHeap before calling processLoop
-        // Debug.assert(forFlowParent.heap.peek()===loopGroup.groupIdx);
-        // forFlowParent.heap.remove();
-
         // Cached for susequent iterations
         let cachedSCForLoopContinue: RefTypesSymtabConstraintItem[] = [];
-        let withinLoop = loopState.invocations>1 || loopCount>0;
-        // Currently forFlow is exactly a shallow copy of forFlowParent.
+        let accumBranches = loopState.invocations>1 || loopCount>0;
+        // Exactly a shallow copy of forFlowParent, but with loopState added
         const forFlow: ForFlow = {
-            currentBranchesMap: forFlowParent.currentBranchesMap, // might want a empty copy of this
-            heap: forFlowParent.heap, // createHeap(sourceFileMrState.groupsForFlow), // local heap for loop
-            groupToNodeToType: forFlowParent.groupToNodeToType!
+            currentBranchesMap: forFlowParent.currentBranchesMap,
+            heap: forFlowParent.heap,
+            groupToNodeToType: forFlowParent.groupToNodeToType!,
+            loopState,
+            // loopGroupToProcessLoopStateMap goes here (instead of mrState) TODO
         };
 
         //let cachedSCForLoop0: RefTypesSymtabConstraintItem;
         if (getMyDebug(dbgLevel)){
-            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
+            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
         }
         {
-            const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, withinLoop);
+            const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, accumBranches);
             const cachedSCForLoop0 = doFlowGroupLabel(anteGroupLabel.antePrevious, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
             setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff)=>forFlow.currentBranchesMap.delete(gff, set));
             resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { loopGroupIdx:loopGroup.groupIdx,cachedSCForLoop: cachedSCForLoop0 });
         }
         if (getMyDebug(dbgLevel)){
-            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
+            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
         }
-
-
-
-        //let forFlowLast: ForFlow;
-        // let lastLoopState: ProcessLoopState;
-        //let loopExitedBecauseConverged = false; always true now
         do {
-            withinLoop = loopState.invocations>1 || loopCount>0;
-            // single pass of loop.
-            // const forFlow: ForFlow = {
-            //     currentBranchesMap: forFlowParent.currentBranchesMap, // might want a empty copy of this
-            //     heap: forFlowParent.heap,
-            //     groupToNodeToType: forFlowParent.groupToNodeToType!
-            // };
-            // const forFlow: ForFlow = {
-            //     heap: createHeap(sourceFileMrState.groupsForFlow), // TODO: This call to createHeap might be too expensive to do for every loop, and it is unnecessary, use prototype.
-            //     currentBranchesMap: new CurrentBranchesMapC(), //new Map<Readonly<GroupForFlow>, CurrentBranchElement>(),
-            //     groupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
-            // };
-            // updateHeapWithGroupForFlow(loopGroup, sourceFileMrState, forFlow, { minGroupIdxToAdd:loopGroup.groupIdx });
-            // forFlow.heap._heapset.forEach(gi=>{
-            //     if (gi>maxGroupIdxProcessed) maxGroupIdxProcessed = gi;
-            // });
-
-            // let cachedSCForLoop: RefTypesSymtabConstraintItem;
+            accumBranches = loopState.invocations>1 || loopCount>0;
             if (loopCount===0){
                 // initial call to control done outside loop
             }
@@ -950,28 +937,25 @@ namespace ts {
                 // const cachedSCForLoop = orSymtabConstraints([ cachedSCForLoop0, ...cachedSCForLoopContinue ], mrNarrow);
                 const cachedSCForLoop = orSymtabConstraints(cachedSCForLoopContinue, mrNarrow);
                 if (getMyDebug(dbgLevel)){
-                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
                 }
                 Debug.assert(forFlow.heap.peek()===loopGroup.groupIdx);
                 forFlow.heap.remove();
-                const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, withinLoop);
+                const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, accumBranches);
                     resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop, loopGroupIdx:loopGroup.groupIdx });
                 if (getMyDebug(dbgLevel)){
-                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
                 }
             }
-            // do the condition part of the loop
-
-            // if the loop condition is always false then break
             const cbe = forFlow.currentBranchesMap.get(loopGroup);
             Debug.assert(cbe?.kind===CurrentBranchesElementKind.tf);
             // do the rest of the loop
             if (getMyDebug(dbgLevel)){
-                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
             }
-            resolveHeap(sourceFileMrState,forFlow, withinLoop, maxGroupIdxProcessed);
+            resolveHeap(sourceFileMrState,forFlow, accumBranches, maxGroupIdxProcessed);
             if (getMyDebug(dbgLevel)){
-                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${withinLoop}`);
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
             }
 
             setOfKeysToDeleteFromCurrentBranchesMap.clear();
@@ -1179,6 +1163,7 @@ namespace ts {
         };
     }
 
+
     function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: InferStatus, sourceFileMrState: SourceFileMrState, forFlow: ForFlow,
         options?: {cachedSCForLoop: RefTypesSymtabConstraintItem, loopGroupIdx: number}): void {
         const groupsForFlow = sourceFileMrState.groupsForFlow;
@@ -1214,8 +1199,7 @@ namespace ts {
 
                 const cbe = forFlow.currentBranchesMap.get(prevAnteGroup);
                 if (!(cbe && cbe.kind===CurrentBranchesElementKind.plain)){
-                    // @ts-ignore
-                    Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.plain);
+                    Debug.fail("unexpected");
                 }
                 const {constraintItem,symtab}=cbe.item.sc;
                 sc = { constraintItem,symtab };
@@ -1227,6 +1211,11 @@ namespace ts {
         };
 
         const {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
+        /**
+         * Delete all the no-longer-needed CurrentBranchElements.  Note that unentangled lower scoped const variables will be
+         * implicitly deleted with these deletions of their containing ConstraintItem-s.
+         */
+        setOfKeysToDeleteFromCurrentBranchesMap.forEach((set,gff)=>forFlow.currentBranchesMap.delete(gff,set));
         if (getMyDebug()){
             consoleLog(`resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():`);
             mrNarrow.dbgRefTypesSymtabToStrings(refTypesSymtabArg).forEach(s=>{
@@ -1237,15 +1226,10 @@ namespace ts {
             });
             consoleLog(`resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():`);
         }
-        /**
-         * Delete all the no-longer-needed CurrentBranchElements.  Note that unentangled lower scoped const variables will be
-         * implicitly deleted with these deletions of their containing ConstraintItem-s.
-         */
-        setOfKeysToDeleteFromCurrentBranchesMap.forEach((set,gff)=>forFlow.currentBranchesMap.delete(gff,set));
 
         const crit: InferCrit = !inferStatus.inCondition ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         Debug.assert(forFlow.groupToNodeToType);
-        forFlow.groupToNodeToType.set(groupForFlow, inferStatus.groupNodeToTypeMap); // not this is an assign not a merge even if hte map is already set (loop)
+        //forFlow.groupToNodeToType.set(groupForFlow, inferStatus.groupNodeToTypeMap); // not this is an assign not a merge even if hte map is already set (loop)
 
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
             refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
