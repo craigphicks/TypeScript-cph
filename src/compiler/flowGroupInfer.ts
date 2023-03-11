@@ -228,18 +228,15 @@ namespace ts {
     export interface ForFlow {
         heap: Heap; // heap sorted indices into SourceFileMrState.groupsForFlow.orderedGroups
         currentBranchesMap: CurrentBranchesMap;
-        //dbgCurrentBranchesMapWasDeleted?: ESMap< Readonly<GroupForFlow>, boolean >;
         groupToNodeToType?: ESMap<GroupForFlow,NodeToTypeMap >;
         loopState?: ProcessLoopState; // only present in loops
-        //TODO: loopGroupToProcessLoopStateMap: WeakMap<GroupForFlow,ProcessLoopState>;
+        loopGroupToProcessLoopStateMap?: WeakMap<GroupForFlow,ProcessLoopState>;
 
     }
     interface ProcessLoopState {
         loopGroup: GroupForFlow;
         loopCountWithoutFinals: number;
         invocations: number;
-        // loopUnionGroupToNodeToType: ESMap<GroupForFlow, NodeToTypeMap>;
-        // loopUnionCurrentBranchesMap: ESMap<GroupForFlow, CurrentBranchElement>;
     }
     export type SymbolFlowInfo = & {
         passCount: number;
@@ -262,7 +259,7 @@ namespace ts {
             tmpExprNodeToTypeMap: Readonly<ESMap<Node,Type>>;
             expr: Expression | Node
         } | undefined;
-        loopGroupToProcessLoopStateMap: WeakMap<GroupForFlow,ProcessLoopState>; // TODO: move to ProcessLoopState
+        //loopGroupToProcessLoopStateMap: WeakMap<GroupForFlow,ProcessLoopState>; // TODO: move to ProcessLoopState
         currentLoopDepth: number;
         currentLoopsInLoopScope: Set<GroupForFlow>;
         symbolFlowInfoMap: WeakMap<Symbol,SymbolFlowInfo | undefined>;
@@ -346,7 +343,7 @@ namespace ts {
             //declaredTypes: new Map<Symbol, RefTypesType>(),
             recursionLevel: 0,
             forFlowTop: createForFlow(groupsForFlow),
-            loopGroupToProcessLoopStateMap: new WeakMap<GroupForFlow,ProcessLoopState>(),
+            //loopGroupToProcessLoopStateMap: new WeakMap<GroupForFlow,ProcessLoopState>(),
             currentLoopDepth: 0,
             currentLoopsInLoopScope: new Set<GroupForFlow>(),
             symbolFlowInfoMap: new WeakMap<Symbol,SymbolFlowInfo | undefined>()
@@ -880,21 +877,31 @@ namespace ts {
          * Therefore the loopGroupToProcessLoopStateMap could and should be attached to the forFlowParent.loopGroup rather than mrState.
          *
          */
-        const useGlobalLoopState = sourceFileMrState.mrState.currentLoopDepth > 0;
+        //const useGlobalLoopState = sourceFileMrState.mrState.currentLoopDepth > 0;
 
+        const loopGroupToProcessLoopStateMap = forFlowParent.loopGroupToProcessLoopStateMap ?? new WeakMap<GroupForFlow,ProcessLoopState>();
         const loopState = (()=>{
-            if (useGlobalLoopState){
-                let got = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopGroup);
-                if (!got) {
-                    got = createProcessLoopState(loopGroup,setOfLoopDeps);
-                    sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.set(loopGroup,got);
-                }
-                return got;
+            let got = loopGroupToProcessLoopStateMap.get(loopGroup);
+            if (!got) {
+                got = createProcessLoopState(loopGroup,setOfLoopDeps);
+                loopGroupToProcessLoopStateMap.set(loopGroup,got);
             }
-            else{
-                return createProcessLoopState(loopGroup,setOfLoopDeps);
-            }
+            return got;
         })();
+        // forFlowParent.loopGroupToProcessLoopStateMap
+        // const loopState = (()=>{
+        //     if (useGlobalLoopState){
+        //         let got = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopGroup);
+        //         if (!got) {
+        //             got = createProcessLoopState(loopGroup,setOfLoopDeps);
+        //             sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.set(loopGroup,got);
+        //         }
+        //         return got;
+        //     }
+        //     else{
+        //         return createProcessLoopState(loopGroup,setOfLoopDeps);
+        //     }
+        // })();
 
         loopState.invocations++;
         let loopCount = 0;
@@ -909,6 +916,7 @@ namespace ts {
             heap: forFlowParent.heap,
             groupToNodeToType: forFlowParent.groupToNodeToType!,
             loopState,
+            loopGroupToProcessLoopStateMap
             // loopGroupToProcessLoopStateMap goes here (instead of mrState) TODO
         };
 
@@ -995,7 +1003,8 @@ namespace ts {
                 const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopg.maximalIdx];
                 const expected = getDevExpectString(node.parent, sourceFileMrState.sourceFile);
                 if (expected===undefined) return;
-                const lstate: ProcessLoopState = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopg)!;
+//                const lstate: ProcessLoopState = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopg)!;
+                const lstate: ProcessLoopState = loopGroupToProcessLoopStateMap.get(loopg)!;
                 const actual = `loopCount:${lstate.loopCountWithoutFinals}, invocations:${lstate.invocations}`;
                 if (actual!==expected){
                     Debug.fail(`@ts-dev-expect-string expected:"${expected}" !== actual:"${actual}" ; node:${dbgs!.dbgNodeToString(node)}`);
