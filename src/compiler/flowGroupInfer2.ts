@@ -28,25 +28,17 @@ namespace ts {
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void,
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType,
-        //getLiteralTsTypesOfRefTypesType(t: RefTypesType): Readonly<ESMap<Type, Readonly<Set<LiteralType>>>> | undefined,
-        //getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
-        // mergeArrRefTypesTableReturnToRefTypesTableReturn({
-        //     symbol, isconst, type:typeIn, arr, stripSymbols}: {
-        //     symbol?: Symbol | undefined, isconst?: boolean | undefined, type?: RefTypesType, arr: Readonly<RefTypesTableReturn[]>, stripSymbols?: boolean}):
-        //     RefTypesTableReturn;
         createNodeToTypeMap(): NodeToTypeMap,
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
         unionArrRefTypesSymtab(arr: Readonly<Readonly<RefTypesSymtab>[]>): RefTypesSymtab,
         intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType,
-        // intersectRefTypesTypesImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): [RefTypesType, boolean];
-        // typeImplies(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>): RefTypesType;
         isNeverType(t: Readonly<RefTypesType>): boolean,
         isAnyType(t: Readonly<RefTypesType>): boolean,
         isUnknownType(t: Readonly<RefTypesType>): boolean,
         cloneRefTypesType(type: Readonly<RefTypesType>): RefTypesType;
-        //applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void,
+        getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo): RefTypesType;
         checker: TypeChecker,
         compilerOptions: CompilerOptions,
         mrState: MrState,
@@ -113,14 +105,9 @@ namespace ts {
 
         const {
             getTypeMemberCount,
-            // isBooleanFalseType,
-            // isBooleanTrueType,
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
-            // createRefTypesTypeAny,
-            // createRefTypesTypeUnknown,
             createRefTypesType,
             cloneRefTypesType,
-            // addTypesToRefTypesType,
             addTypeToRefTypesType,
             mergeToRefTypesType,
             unionOfRefTypesType,
@@ -133,7 +120,6 @@ namespace ts {
             isUnknownType,
             forEachRefTypesTypeType,
             partitionIntoSingularAndNonSingularTypes,
-            //getLiteralsOfANotInB,
             equalRefTypesTypes,
         } = refTypesTypeModule; //createRefTypesTypeModule(checker);
 
@@ -165,8 +151,7 @@ namespace ts {
             mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
             unionArrRefTypesSymtab,
             cloneRefTypesType,
-            // intersectRefTypesTypesImplies,
-            // typeImplies,
+            getEffectiveDeclaredType,
             checker,
             compilerOptions,
             mrState: _mrState,
@@ -183,6 +168,11 @@ namespace ts {
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        function getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo): RefTypesType {
+            return symbolFlowInfo.effectiveDeclaredType ?? (symbolFlowInfo.effectiveDeclaredType=mrNarrow.createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
+        }
+
 
         // @ts-ignore
         function enumMemberSymbolToLiteralTsType(symbol: Symbol): Type {
@@ -1853,7 +1843,6 @@ namespace ts {
             // nope
             //const {symbol: sfiPropSymbol, symbolFlowInfo } = getSymbolFlowInfoForIdentifier(expr.name,_mrState);
 
-
             pre.unmergedPassing.forEach(prePassing=>{
                 /**
                  * Each prePassing.type is a potential compound type.  For each primitive type of that compound type, a new branch is generated.
@@ -1867,23 +1856,14 @@ namespace ts {
 
                     let symtab = prePassing.symtab;
                     let constraintItem = prePassing.constraintItem;
-
-                    // consoleLog(`XXX1 ${typeToString(t)}`);
-                    // dbgConstraintItem(prePassing.constraintItem).forEach(s=>consoleLog(`XXX1 prePassing.constraintItem ${s}`));
-
                     if (prePassing.symbol) {
                         ({sc:{symtab,constraintItem}}=andSymbolTypeIntoSymtabConstraint(
                             {symbol:prePassing.symbol, type:createRefTypesType(t), isconst:prePassing.isconst, sc:{ symtab,constraintItem },
                             getDeclaredType, mrNarrow }));
                     }
-                    //dbgConstraintItem(constraintItem).forEach(s=>consoleLog(`XXX2 prePassing.constraintItem ${s}`));
-
-
                     if (isArrayOrTupleType(t)||t===stringType) {
                         if (getMyDebug()) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
                         if (keystr==="length") {
-                            // accessedTypes.push({ baseType: t, type:numberType, optional:false });
-                            //arrTypeSymtab.push([createRefTypesType(numberType), preRefTypesSymtab]);
                             arrRttr.push({
                                 kind: RefTypesTableKind.return,
                                 symbol: undefined,
@@ -1893,16 +1873,14 @@ namespace ts {
                             });
                         }
                         else {
-                            // accessedTypes.push({ baseType: t, type:undefinedType, lookupFail: true, optional:false });
-                            //arrTypeSymtab.push([createRefTypesType(undefinedType), preRefTypesSymtab]);
                             Debug.fail("not yet implemented ");
-                            arrRttr.push({
-                                kind: RefTypesTableKind.return,
-                                symbol: undefined,
-                                type: createRefTypesType(undefinedType),
-                                symtab,
-                                constraintItem
-                            });
+                            // arrRttr.push({
+                            //     kind: RefTypesTableKind.return,
+                            //     symbol: undefined,
+                            //     type: createRefTypesType(undefinedType),
+                            //     symtab,
+                            //     constraintItem
+                            // });
                         };
                         return;
                     }
@@ -1911,13 +1889,11 @@ namespace ts {
                      *
                      */
                     const propSymbol = checker.getPropertyOfType(t, keystr);
-                    // Debug.assert(propSymbol===sfiPropSymbol); nope
                     if (propSymbol) {
                         if (getMyDebug()) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
                         if (propSymbol.flags & SymbolFlags.EnumMember){
                             // treat it as a literal type, not a symbol
                             const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
-                            // accessedTypes.push({ baseType: t, type:tstype, optional:false });
                             arrRttr.push({
                                 kind: RefTypesTableKind.return,
                                 type: createRefTypesType(tstype),
@@ -1927,16 +1903,11 @@ namespace ts {
                             return;
                         }
                         let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(propSymbol);
-                        // const isconst1 = checker.isConstantReference(expr);
-                        // const isconst2 = isReadonlyProperty(propSymbol);
-                        // if (isconst1!==isconst2){
-                        //     consoleLog(`checker.isConstantReference(${dbgNodeToString(expr)})===${isconst1}, isReadonlyProperty(${dbgSymbolToStringSimple(propSymbol)}===${isconst2}`);
-                        // }
                         if (!symbolFlowInfo){
                             const effectiveDeclaredTsType = getTypeOfSymbol(propSymbol);
                             symbolFlowInfo = {
                                 passCount: 0,
-                                isconst: checker.isConstantReference(expr),
+                                isconst: checker.isReadonlyProperty(propSymbol),
                                 effectiveDeclaredTsType,
                                 effectiveDeclaredType: createRefTypesType(effectiveDeclaredTsType),
                             };
@@ -1944,38 +1915,37 @@ namespace ts {
                         }
                         else {
                             if (extraAsserts){
-                               Debug.assert(symbolFlowInfo.effectiveDeclaredTsType===getTypeOfSymbol(propSymbol));
+                                Debug.assert(symbolFlowInfo.effectiveDeclaredTsType===getTypeOfSymbol(propSymbol));
                             }
                         }
                         if (extraAsserts){
                             debugDevExpectEffectiveDeclaredType(expr,symbolFlowInfo);
                         }
-                        const isconst = symbolFlowInfo.isconst;
-                        // if (extraAsserts) {
-                        //     const declaredType = getTypeOfSymbol(propSymbol);
-                        //     Debug.assert(checker.isTypeRelatedTo(symbolFlowInfo.effectiveDeclaredTsType, declaredType, checker.getRelations().identityRelation));
-                        // }
+                        const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
+                            {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc:{ symtab,constraintItem },
+                            getDeclaredType, mrNarrow });
+                        if (inferStatus.involved){
+                            /**
+                             * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
+                             * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
+                             * (2) Only the first occurence of a symbol in the group is used to initialize.
+                             * (3) Cannot use initialize here because (unlike identifiers) propSymbols may change, so we have to be prepared to add new ones.
+                             */
+                            const involved = inferStatus.involved;
+                            if (!involved.alreadyHitInThisPass.has(propSymbol)) {
+                                if (!involved.involvedSymbolTypeCache.in.propertyAccessMap){
+                                    involved.involvedSymbolTypeCache.in.propertyAccessMap = new Map<Symbol,RefTypesType>();
+                                    involved.involvedSymbolTypeCache.in.propertyAccessMap.set(propSymbol,type);
+                                }
+                                involved.alreadyHitInThisPass.add(propSymbol);
+                            }
+                        }
 
-                        // property may already be in symbol table - narrowed by if, etc.
-
-                        // if (!inferStatus.declaredTypes.has(propSymbol)){
-                        //     if (getMyDebug()){
-                        //         consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg]: adding new symbol to declaredTypes, {symbol:<${
-                        //             propSymbol.escapedName},${getSymbolId(propSymbol)}>, type ${typeToString(declaredType)}, isconst:${isconst}`);
-                        //     }
-                        //     // added because propSymbol might get involved in constraintItem, so it would be needed
-                        //     inferStatus.declaredTypes.set(propSymbol, createRefTypesTableLeaf(propSymbol,isconst,createRefTypesType(declaredType)));
-                        // }
-                        //const propType = createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType);
-                        let propSC = { symtab,constraintItem };
-                        ({sc:propSC} = andSymbolTypeIntoSymtabConstraint(
-                            {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst, sc:propSC,
-                            getDeclaredType, mrNarrow }));
                         arrRttr.push({
                             kind: RefTypesTableKind.return,
                             symbol: propSymbol,
-                            isconst,
-                            type: symbolFlowInfo.effectiveDeclaredType!,
+                            isconst: symbolFlowInfo.isconst,
+                            type, //symbolFlowInfo.effectiveDeclaredType!,
                             symtab: propSC.symtab,
                             constraintItem: propSC.constraintItem
                         });
@@ -2264,8 +2234,8 @@ namespace ts {
             /**
              * Apply the crit before handling the replayResult (if any)
              */
-            const crit = { ...critIn };
-            const critret = applyCritToArrRefTypesTableReturn(finalArrRefTypesTableReturn, crit, inferStatus);
+            //const crit = { ...critIn };
+            const critret = applyCritToArrRefTypesTableReturn(finalArrRefTypesTableReturn, critIn, inferStatus);
 
             const nodeType = cloneRefTypesType(critret.passing.type);
             if (critret.failing) mergeToRefTypesType({ source:critret.failing.type, target:nodeType });
@@ -2456,10 +2426,27 @@ namespace ts {
                         //const declaredLeaf = createRefTypesTableLeafFromSymbolFlowInfo(symbol,symbolFlowInfo)!;
                         isconst = symbolFlowInfo.isconst;
                         if (!hasSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn })){
-                            type = symbolFlowInfo.initializerType ?? createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType);
+                            type = symbolFlowInfo.initializerType ?? symbolFlowInfo.effectiveDeclaredType
+                            ?? (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
                         }
                         else {
                             type = evalSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn }, getDeclaredType, mrNarrow);
+                        }
+                    }
+                    if (inferStatus.involved){
+                        /**
+                         * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
+                         * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
+                         * (2) Only the first occurence of a symbol in the group is used to initialize.
+                         */
+                        const involved = inferStatus.involved;
+                        if (extraAsserts){
+                            if (!involved.initializing) {
+                                Debug.assert(involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol));
+                            }
+                        }
+                        if (involved.initializing && involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol)){
+                            involved.involvedSymbolTypeCache.in.identifierMap?.set(symbol,type);
                         }
                     }
                     if (inferStatus.currentReplayableItem){

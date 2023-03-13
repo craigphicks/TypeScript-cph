@@ -217,11 +217,11 @@ namespace ts {
         }
         get size(){ return this.data.size; }
     }
-    // @ts-expect-error
-    type InvolvedData = & {
-        initial: {
+    // @ ts-expect-error
+    export type InvolvedSymbolTypeCache = & {
+        in: {
             identifierMap?: ESMap<Symbol,RefTypesType>;
-            propertyAccessMap?: ESMap<Node,ESMap<Symbol,RefTypesType>>;
+            propertyAccessMap?: ESMap<Symbol,RefTypesType>;
         },
     };
 
@@ -237,6 +237,7 @@ namespace ts {
         loopGroup: GroupForFlow;
         loopCountWithoutFinals: number;
         invocations: number;
+        groupToInvolvedSymbolTypeCache: WeakMap<GroupForFlow,InvolvedSymbolTypeCache>;
     }
     export type SymbolFlowInfo = & {
         passCount: number;
@@ -320,9 +321,6 @@ namespace ts {
             groupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
             dbgCurrentBranchesMapWasDeleted: new Map< GroupForFlow,boolean >(), // TODO: kill
         };
-    }
-    function getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo, mrNarrow: MrNarrow): RefTypesType {
-        return symbolFlowInfo.effectiveDeclaredType ?? (symbolFlowInfo.effectiveDeclaredType=mrNarrow.createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
     }
 
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
@@ -588,7 +586,7 @@ namespace ts {
         return {
             loopGroup,
             invocations:0, loopCountWithoutFinals:0,
-            // groupToInvolvedData
+            groupToInvolvedSymbolTypeCache: new WeakMap<GroupForFlow,InvolvedSymbolTypeCache>()
         };
     }
     // function copyProcessLoopState(loopState: ProcessLoopState, mrNarrow: MrNarrow): ProcessLoopState {
@@ -675,27 +673,28 @@ namespace ts {
                 else {
                     const sif = mrNarrow.mrState.symbolFlowInfoMap.get(s)!;
                     Debug.assert(sif);
-                    const effectDeclaredType = getEffectiveDeclaredType(sif, mrNarrow);
-                    const msif = mrNarrow.refTypesTypeModule.getMapLiteralOfRefTypesType(effectDeclaredType);
-                    const mu = mrNarrow.refTypesTypeModule.getMapLiteralOfRefTypesType(tunion);
-                    let ltcount = 0;
-                    const aktype: Type[] = [];
-                    mu?.forEach((set,ktype)=>{
-                        const msifset = msif?.get(ktype);
-                        if (!msifset) {
-                            aktype.push(ktype);
-                            ltcount += set.size;
-                            return;
-                        }
-                        // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
-                        if (extraAsserts){
-                            set.forEach(lt=>Debug.assert(msifset.has(lt)));
-                        }
-                    });
-                    let tunion2 = tunion;
-                    if (ltcount>=2){
-                        tunion2 = mrNarrow.refTypesTypeModule.addTypesToRefTypesType({ source:aktype, target:tunion });
-                    }
+                    const tunion2 = mrNarrow.refTypesTypeModule.literalWideningUnion(tunion,mrNarrow.getEffectiveDeclaredType(sif));
+                    // const effectDeclaredType = getEffectiveDeclaredType(sif, mrNarrow);
+                    // const msif = mrNarrow.refTypesTypeModule.getMapLiteralOfRefTypesType(effectDeclaredType);
+                    // const mu = mrNarrow.refTypesTypeModule.getMapLiteralOfRefTypesType(tunion);
+                    // let ltcount = 0;
+                    // const aktype: Type[] = [];
+                    // mu?.forEach((set,ktype)=>{
+                    //     const msifset = msif?.get(ktype);
+                    //     if (!msifset) {
+                    //         aktype.push(ktype);
+                    //         ltcount += set.size;
+                    //         return;
+                    //     }
+                    //     // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+                    //     if (extraAsserts){
+                    //         set.forEach(lt=>Debug.assert(msifset.has(lt)));
+                    //     }
+                    // });
+                    // let tunion2 = tunion;
+                    // if (ltcount>=2){
+                    //     tunion2 = mrNarrow.refTypesTypeModule.addTypesToRefTypesType({ source:aktype, target:tunion });
+                    // }
                     symtab.set(s,tunion2);
                 }
             }
@@ -873,11 +872,10 @@ namespace ts {
 
 
         /**
-         * TODO: When the outer loopGroup is complete, the loopState of each inner loopGroup-s should also become unreferenced.
-         * Therefore the loopGroupToProcessLoopStateMap could and should be attached to the forFlowParent.loopGroup rather than mrState.
+         * When the outer loopGroup is complete, the loopState of each inner loopGroup-s should also become unreferenced.
+         * Therefore the loopGroupToProcessLoopStateMap exists in the outer loop scope.
          *
          */
-        //const useGlobalLoopState = sourceFileMrState.mrState.currentLoopDepth > 0;
 
         const loopGroupToProcessLoopStateMap = forFlowParent.loopGroupToProcessLoopStateMap ?? new WeakMap<GroupForFlow,ProcessLoopState>();
         const loopState = (()=>{
@@ -888,20 +886,6 @@ namespace ts {
             }
             return got;
         })();
-        // forFlowParent.loopGroupToProcessLoopStateMap
-        // const loopState = (()=>{
-        //     if (useGlobalLoopState){
-        //         let got = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopGroup);
-        //         if (!got) {
-        //             got = createProcessLoopState(loopGroup,setOfLoopDeps);
-        //             sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.set(loopGroup,got);
-        //         }
-        //         return got;
-        //     }
-        //     else{
-        //         return createProcessLoopState(loopGroup,setOfLoopDeps);
-        //     }
-        // })();
 
         loopState.invocations++;
         let loopCount = 0;
@@ -910,17 +894,14 @@ namespace ts {
         // Cached for susequent iterations
         let cachedSCForLoopContinue: RefTypesSymtabConstraintItem[] = [];
         let accumBranches = loopState.invocations>1 || loopCount>0;
-        // Exactly a shallow copy of forFlowParent, but with loopState added
         const forFlow: ForFlow = {
             currentBranchesMap: forFlowParent.currentBranchesMap,
             heap: forFlowParent.heap,
             groupToNodeToType: forFlowParent.groupToNodeToType!,
             loopState,
             loopGroupToProcessLoopStateMap
-            // loopGroupToProcessLoopStateMap goes here (instead of mrState) TODO
         };
 
-        //let cachedSCForLoop0: RefTypesSymtabConstraintItem;
         if (getMyDebug(dbgLevel)){
             consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
         }
@@ -1238,10 +1219,32 @@ namespace ts {
 
         const crit: InferCrit = !inferStatus.inCondition ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         Debug.assert(forFlow.groupToNodeToType);
-        //forFlow.groupToNodeToType.set(groupForFlow, inferStatus.groupNodeToTypeMap); // not this is an assign not a merge even if hte map is already set (loop)
+
+        if (forFlow.loopState){
+            let involvedSymbolTypeCache = forFlow.loopState.groupToInvolvedSymbolTypeCache.get(groupForFlow);
+            if (!involvedSymbolTypeCache){
+                involvedSymbolTypeCache = { in:{} };
+                inferStatus.involved = {
+                    initializing:true,
+                    alreadyHitInThisPass: new WeakSet<Symbol>(),
+                    involvedSymbolTypeCache,
+                };
+            }
+            else {
+                inferStatus.involved = {
+                    initializing:false,
+                    alreadyHitInThisPass: new WeakSet<Symbol>(),
+                    involvedSymbolTypeCache,
+                };
+            }
+        }
 
         const retval = sourceFileMrState.mrNarrow.mrNarrowTypes({
             refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
+
+        if (inferStatus.involved && inferStatus.involved.initializing){
+            inferStatus.involved.initializing = false;
+        }
 
         if (inferStatus.inCondition){
             const cbe: CurrentBranchElementTF = {

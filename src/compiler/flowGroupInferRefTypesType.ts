@@ -31,6 +31,8 @@ namespace ts {
         //getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
         //refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean;
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
+        literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
+        getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
     };
 
     export function createRefTypesTypeModule(checker: TypeChecker): RefTypesTypeModule {
@@ -82,6 +84,8 @@ namespace ts {
             //getLiteralsOfANotInB,
             //refTypesTypeNormalHasType,
             equalRefTypesTypes,
+            literalWideningUnion,
+            getUnionOrWidenedType,
         };
 
         // function isBooleanTrueType(type: Readonly<RefTypesType>): boolean {
@@ -531,6 +535,68 @@ namespace ts {
                 }
             }
             return true;
+        }
+
+        // TODO: use getUnionOrWidenedType instead of literalWideningUnion
+        function literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
+            const mu = getMapLiteralOfRefTypesType(tunion);
+            if (!mu) return tunion;
+            const msif = getMapLiteralOfRefTypesType(effectiveDeclaredType);
+            let ltcount = 0;
+            const aktype: Type[] = [];
+            mu.forEach((set,ktype)=>{
+                const msifset = msif?.get(ktype);
+                if (!msifset) {
+                    aktype.push(ktype);
+                    ltcount += set.size;
+                    return;
+                }
+                // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+                if (extraAsserts){
+                    set.forEach(lt=>Debug.assert(msifset.has(lt)));
+                }
+            });
+            if (ltcount>=2){
+                return addTypesToRefTypesType({ source:aktype, target:tunion });
+            }
+            return tunion;
+        }
+        function getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
+            const mnew = getMapLiteralOfRefTypesType(tnew);
+            if (!mnew) return unionOfRefTypesType([tnew,told]);
+            const msif = getMapLiteralOfRefTypesType(effectiveDeclaredType);
+            if (!msif) return unionOfRefTypesType([tnew,told]);
+            const mold = getMapLiteralOfRefTypesType(told);
+            let ltcount = 0;
+            const aktype: Type[] = [];
+            mnew.forEach((set,ktype)=>{
+                const msifset = msif?.get(ktype);
+                if (!msifset) {
+                    aktype.push(ktype);
+                    ltcount += set.size;
+                    return;
+                }
+                // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+                if (extraAsserts){
+                    set.forEach(lt=>Debug.assert(msifset.has(lt)));
+                }
+            });
+            mold?.forEach((set,ktype)=>{
+                const msifset = msif?.get(ktype);
+                if (!msifset) {
+                    aktype.push(ktype);
+                    ltcount += set.size;
+                    return;
+                }
+                // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+                if (extraAsserts){
+                    set.forEach(lt=>Debug.assert(msifset.has(lt)));
+                }
+            });
+            if (ltcount>=2){
+                return addTypesToRefTypesType({ source:aktype, target:unionOfRefTypesType([tnew,told]) });
+            }
+            return unionOfRefTypesType([tnew,told]);
         }
 
     }
