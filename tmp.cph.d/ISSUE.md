@@ -16,6 +16,8 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
+0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.
+
 0. Trying to optimize `applyCritToArrRefTypesTableReturn` for case `crit.none` and `length===1`, got some unexpected results.  Investigate.
 
 0. "loop convergence speedup"

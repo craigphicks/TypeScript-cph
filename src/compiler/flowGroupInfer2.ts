@@ -930,7 +930,6 @@ namespace ts {
                         effectiveDeclaredTsType,
                     };
                     if (typeNodeTsType) symbolFlowInfo.typeNodeTsType = typeNodeTsType;
-
                 }
                 else {
                     if (extraAsserts && (symbol.valueDeclaration as VariableDeclaration).type){
@@ -940,16 +939,12 @@ namespace ts {
                 if (extraAsserts) {
                     debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                 }
-
-                //const isconst = symbolFlowInfo.isconst; // isConstantReference(leftExpr);
-                // Debug.assert(!isconst); // because const cannot be lhs of assign
-                // let declared = getDeclaredTypeAsRefTypesTableLeaf(symbol);
-                // if (!declared){
-                //     const tsTypeDeclared = getTypeOfSymbol(symbol);
-                //     Debug.assert(checker.isTypeRelatedTo(tsTypeDeclared,symbolFlowInfo.effectiveDeclaredTsType,checker.getRelations().identityRelation));
-                //     declared = createRefTypesTableLeaf(symbol,isconst,createRefTypesType(tsTypeDeclared));
-                //     args.inferStatus.declaredTypes.set(symbol,declared);
-                // }
+                if (args.inferStatus.involved){
+                    // const assignmentMap = args.inferStatus.involved.involvedSymbolTypeCache.out.assignmentMap ??
+                    //     (args.inferStatus.involved.involvedSymbolTypeCache.out.assignmentMap = new Map<Symbol,RefTypesType>());
+                    // assignmentMap.set(symbol,rhs.inferRefRtnType.passing.type);
+                    (args.inferStatus.involved.outEncountered ?? (args.inferStatus.involved.outEncountered=new Set<Symbol>())).add(symbol);
+                }
                 const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,rhs.inferRefRtnType.passing.type);
                 return { arrRefTypesTableReturn: [{
                     ...rhs.inferRefRtnType.passing, symbol, symtab, /*type, symtab: scout.symtab, constraintItem: scout.constraintItem*/
@@ -1932,12 +1927,11 @@ namespace ts {
                              * (3) Cannot use initialize here because (unlike identifiers) propSymbols may change, so we have to be prepared to add new ones.
                              */
                             const involved = inferStatus.involved;
-                            if (!involved.alreadyHitInThisPass.has(propSymbol)) {
-                                if (!involved.involvedSymbolTypeCache.in.propertyAccessMap){
-                                    involved.involvedSymbolTypeCache.in.propertyAccessMap = new Map<Symbol,RefTypesType>();
-                                    involved.involvedSymbolTypeCache.in.propertyAccessMap.set(propSymbol,type);
-                                }
-                                involved.alreadyHitInThisPass.add(propSymbol);
+                            if (!involved.inEncountered.has(propSymbol)) {
+                                (involved.involvedSymbolTypeCache.in.propertyAccessMap
+                                    ?? (involved.involvedSymbolTypeCache.in.propertyAccessMap = new Map<Symbol,RefTypesType>()))
+                                        .set(propSymbol,type);
+                                involved.inEncountered.add(propSymbol);
                             }
                         }
 
@@ -2343,6 +2337,16 @@ namespace ts {
                             }]
                         };
                     }
+                    if (symbol.flags & SymbolFlags.Function){
+                        return {
+                            arrRefTypesTableReturn:[{
+                                kind: RefTypesTableKind.return,
+                                type: createRefTypesType(getTypeOfSymbol(symbol)),
+                                symtab: refTypesSymtabIn,
+                                constraintItem: constraintItemIn
+                            }]
+                        };
+                    }
                     let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
                     //Debug.assert(symbolFlowInfo);
                     if (!symbolFlowInfo){
@@ -2445,8 +2449,10 @@ namespace ts {
                                 Debug.assert(involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol));
                             }
                         }
-                        if (involved.initializing && involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol)){
-                            involved.involvedSymbolTypeCache.in.identifierMap?.set(symbol,type);
+                        if (involved.initializing && !involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol)){
+                            (involved.involvedSymbolTypeCache.in.identifierMap
+                                ?? (involved.involvedSymbolTypeCache.in.identifierMap = new Map<Symbol,RefTypesType>()))
+                                    .set(symbol,type);
                         }
                     }
                     if (inferStatus.currentReplayableItem){

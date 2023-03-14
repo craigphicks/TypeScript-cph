@@ -156,7 +156,8 @@ namespace ts {
         accumBranches: boolean,
         involved?: {
             initializing: boolean;
-            alreadyHitInThisPass: WeakSet<Symbol>;
+            inEncountered: WeakSet<Symbol>;
+            outEncountered?: Set<Symbol>;
             involvedSymbolTypeCache: InvolvedSymbolTypeCache;
         };
         /**
