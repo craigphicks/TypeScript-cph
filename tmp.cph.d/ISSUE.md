@@ -16,9 +16,22 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.
+0. Check loop timing with `doNotTraverseNever` true.
 
-0. Trying to optimize `applyCritToArrRefTypesTableReturn` for case `crit.none` and `length===1`, got some unexpected results.  Investigate.
+0. [doNotTraverseNever] Save time by not traversing never paths.  As a result so expected cbe's will not be there - default to `never` constraint in such case.
+
+0. [alwaysWidenInitializers] Optionally mimic the pre-existing flow behavior of assigment using declared or widened initializer type, rather than the un-widened initializer type.  Keep the option of un-widened initializer type for future upgrade.
+
+0. (Not required if `alwaysWidenInitializers` is used). In loops, accumulate types by "type of symbol at node" *for lhs of assignments only*.  Those type values should be fed back into the flow.  (The same cannot always be done with accumulated node values because node values may contain types from multiple symbols, or the optional 'undefined' of a lhs value in a property chain.)  Following should exist in `loopState` because it is not needed beyond loop existence.
+
+  0. `accumulatedLhsTypes`
+
+      0. `indentiferNodeToAccumulatedType` - In this case the nodeToType map would suffice, so not needed?  Just add the feedback
+
+      0. `propertyAccessNodeToSymbolToAccumulatedType`
+
+
+0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
 
 0. "loop convergence speedup"
     0. When inside a loop, flow type should be widened instead of becoming union of literals (excepting explicit literal union types, which can be discerned from `symbolFlowInfo.typeNodeTsType` and sometimes from `symbolFlowInfo.initializerType`).  Outside of loops, might be OK to remain a union of literals - not much cost involved, often free.
@@ -77,6 +90,20 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. [doNotTraverseNever] Added global control variables `doNotTraverseNever` (currently `true`), `alwaysWidenInitializers` (currently `false`), and `doInvolved` (currently `false`) at top of `flowGroupInfer.ts`, to test changes in a modular way.  Currently `doNotTraverseNever` is only affecting at the inter-group level, from withing `resolveGroupForFlow`.  However, it should ultilmately be extended to intra-group processing.   All _caxnc- tests passing.
+
+0.  Setting of `involved`, both in and out.  However it is NOT used yet.  Just that uncovered some bugs (1) accumulateSymtab bug (2) for function Identifiers, return type without symbol. All _caxnc- test passing.
+
+0.
+    0. loopGroupToProcessLoopStateMap moved into ProcessLoopState from MrState.
+
+    0. Redundant line "forFlow.groupToNodeToType.set(groupForFlow, inferStatus.groupNodeToTypeMap); " removed from resolveGroupForFlow
+
+    0. all _caxnc- test passing
+
+0.  included some features from origin/condalias-49075-work-2-lg-involvedSymbols-old branch, esp. binder.ts `labelBlockScopes` and new tests tests/cases/conformance/_caxnc-prop/_caxnc-prop-000(2|3).ts. all _caxnc- test passing
+
 
 0. `(mrNarrow.isASubsetOfB(typeIn, gotType) && mrNarrow.isASubsetOfB(gotType, typeIn))` replace with `mrNarrow.equalRefTypesTypes(typeIn,gotType)` in 2 places.
 

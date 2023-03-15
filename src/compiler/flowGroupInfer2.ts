@@ -192,9 +192,15 @@ namespace ts {
             }
             const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
             Debug.assert(symbolFlowInfo);
-            return symbolFlowInfo.initializerType ??
+            if (alwaysWidenInitializers){
+                return symbolFlowInfo.effectiveDeclaredType ??
+                    (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
+            }
+            else {
+                return symbolFlowInfo.initializerType ??
                 symbolFlowInfo.effectiveDeclaredType ??
                     (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
+            }
         }
         /**
          *
@@ -1919,7 +1925,7 @@ namespace ts {
                         const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
                             {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc:{ symtab,constraintItem },
                             getDeclaredType, mrNarrow });
-                        if (inferStatus.involved){
+                        if (doInvolved && inferStatus.involved){
                             /**
                              * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
                              * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
@@ -2430,31 +2436,41 @@ namespace ts {
                         //const declaredLeaf = createRefTypesTableLeafFromSymbolFlowInfo(symbol,symbolFlowInfo)!;
                         isconst = symbolFlowInfo.isconst;
                         if (!hasSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn })){
-                            type = symbolFlowInfo.initializerType ?? symbolFlowInfo.effectiveDeclaredType
-                            ?? (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
+                            type = getSymbolFlowInfoInitializerOrDeclaredType(symbol);
+                            // type = symbolFlowInfo.initializerType ?? symbolFlowInfo.effectiveDeclaredType
+                            // ?? (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
                         }
                         else {
                             type = evalSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn }, getDeclaredType, mrNarrow);
                         }
                     }
-                    if (inferStatus.involved){
-                        /**
-                         * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
-                         * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
-                         * (2) Only the first occurence of a symbol in the group is used to initialize.
-                         */
+                    if (doInvolved && inferStatus.involved){
                         const involved = inferStatus.involved;
-                        if (extraAsserts){
-                            if (!involved.initializing) {
-                                Debug.assert(involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol));
-                            }
-                        }
-                        if (involved.initializing && !involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol)){
+                        if (!involved.inEncountered.has(symbol)){
                             (involved.involvedSymbolTypeCache.in.identifierMap
                                 ?? (involved.involvedSymbolTypeCache.in.identifierMap = new Map<Symbol,RefTypesType>()))
                                     .set(symbol,type);
+                            involved.inEncountered.add(symbol);
                         }
                     }
+                    // if (inferStatus.involved){
+                    //     /**
+                    //      * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
+                    //      * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
+                    //      * (2) Only the first occurence of a symbol in the group is used to initialize.
+                    //      */
+                    //     const involved = inferStatus.involved;
+                    //     if (extraAsserts){
+                    //         if (!involved.initializing) {
+                    //             Debug.assert(involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol));
+                    //         }
+                    //     }
+                    //     if (involved.initializing && !involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol)){
+                    //         (involved.involvedSymbolTypeCache.in.identifierMap
+                    //             ?? (involved.involvedSymbolTypeCache.in.identifierMap = new Map<Symbol,RefTypesType>()))
+                    //                 .set(symbol,type);
+                    //     }
+                    // }
                     if (inferStatus.currentReplayableItem){
                         // If the value of the symbol has definitely NOT changed since the defintion of the replayable.
                         // then we can continue on below to find the value via constraints.  Otherwise, we must use the value of the symbol

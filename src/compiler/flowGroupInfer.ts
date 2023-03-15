@@ -1,6 +1,10 @@
 namespace ts {
 
     export const extraAsserts = true; // not suitable for release
+    export const doNotTraverseNever = true;
+    export const alwaysWidenInitializers = false;
+    export const doInvolved = false;
+
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
@@ -841,7 +845,13 @@ namespace ts {
             Debug.assert(priormap&&postmap);
             priormap.forEach((_type,node)=>Debug.assert(postmap.has(node)));
             postmap.forEach((postType,node)=>{
-                const priorType = priormap.get(node)!;
+                let priorType: Type;
+                if (!doNotTraverseNever) {
+                    priorType = priormap.get(node)!;
+                }
+                else {
+                    priorType = priormap.get(node)! ?? checker.getNeverType();
+                }
                 Debug.assert(priorType);
                 if (checker.isTypeRelatedTo(postType,priorType,checker.getRelations().subtypeRelation)){
                     return;
@@ -1230,7 +1240,7 @@ namespace ts {
 
         let involvedSymbolTypeCache: InvolvedSymbolTypeCache | undefined;
         let allInvolvedSymbolTypesMatch = false;
-        if (forFlow.loopState){
+        if (doInvolved && forFlow.loopState){
             involvedSymbolTypeCache = forFlow.loopState.groupToInvolvedSymbolTypeCache.get(groupForFlow);
             if (!involvedSymbolTypeCache){
                 involvedSymbolTypeCache = {
@@ -1279,12 +1289,32 @@ namespace ts {
             }
         }
 
-        const {inferRefRtnType:{ passing,failing } } = sourceFileMrState.mrNarrow.mrNarrowTypes({
-            refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg });
+        let passing: RefTypesTableReturn;
+        let failing: RefTypesTableReturn | undefined;
 
+        if (doNotTraverseNever && isNeverConstraint(constraintItemArg)){
+            passing = {
+                kind:RefTypesTableKind.return,
+                type: mrNarrow.createRefTypesType(), // never
+                symtab: mrNarrow.createRefTypesSymtab(),
+                constraintItem: constraintItemArg
+            };
+            if (inferStatus.inCondition){
+                failing = {
+                    kind:RefTypesTableKind.return,
+                    type: mrNarrow.createRefTypesType(), // never
+                    symtab: mrNarrow.createRefTypesSymtab(),
+                    constraintItem: constraintItemArg
+                };
+            }
+        }
+        else {
+            ({inferRefRtnType:{ passing,failing } } = sourceFileMrState.mrNarrow.mrNarrowTypes({
+                refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg }));
+        }
 
         if (inferStatus.inCondition){
-            if (forFlow.loopState){
+            if (doInvolved && forFlow.loopState){
 
                 //const outTruthy: InvolvedSymbolTypeCacheOut | undefined = involvedSymbolTypeCache!.outThruthy;
                 //outTruthy.constraintItem = passing.constraintItem;
@@ -1336,7 +1366,7 @@ namespace ts {
             }
         }
         else {
-            if (forFlow.loopState){
+            if (doInvolved && forFlow.loopState){
                 // const outEncountered = inferStatus.involved!.outEncountered;
                 // if (outEncountered){
 
