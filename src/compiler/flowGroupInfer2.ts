@@ -185,14 +185,14 @@ namespace ts {
 
         function getSymbolFlowInfoInitializerOrDeclaredType(symbol: Symbol): RefTypesType {
             if (symbol.flags & SymbolFlags.EnumMember){
-                const litValue = (getTypeOfSymbol(symbol) as LiteralType).value;
-                if (typeof litValue==="string") return createRefTypesType(checker.getStringLiteralType(litValue));
-                else if (typeof litValue==="number") return createRefTypesType(checker.getNumberLiteralType(litValue));
+                // const litValue = (getTypeOfSymbol(symbol) as LiteralType).value;
+                // if (typeof litValue==="string") return createRefTypesType(checker.getStringLiteralType(litValue));
+                // else if (typeof litValue==="number") return createRefTypesType(checker.getNumberLiteralType(litValue));
                 Debug.fail("unexpected");
             }
             const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
             Debug.assert(symbolFlowInfo);
-            if (alwaysWidenInitializers){
+            if (widenLiteralInitializersInLoop){
                 return symbolFlowInfo.effectiveDeclaredType ??
                     (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
             }
@@ -926,7 +926,7 @@ namespace ts {
                     else {
                         typeNodeTsType = anyType;
                     }
-                    const effectiveDeclaredTsType = typeNodeTsType;// ??
+                    const effectiveDeclaredTsType = typeNodeTsType;
                         // checker.widenTypeInferredFromInitializer(
                         //     (symbol.valueDeclaration as VariableDeclaration)!, getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type));
                     symbolFlowInfo = {
@@ -934,10 +934,16 @@ namespace ts {
                         initializedInAssignment: true,
                         isconst: checker.isConstantReference(leftExpr),
                         effectiveDeclaredTsType,
+                        effectiveDeclaredType: createRefTypesType(effectiveDeclaredTsType),
                     };
                     if (typeNodeTsType) symbolFlowInfo.typeNodeTsType = typeNodeTsType;
+                    _mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
                 }
                 else {
+                    if (symbolFlowInfo.initializedInAssignment){
+                        // then all assignments must contribute to the effectiveDeclaredType
+
+                    }
                     if (extraAsserts && (symbol.valueDeclaration as VariableDeclaration).type){
                         Debug.assert(checker.getTypeFromTypeNode((symbol.valueDeclaration as VariableDeclaration).type!)===symbolFlowInfo.effectiveDeclaredTsType);
                     }
@@ -945,16 +951,36 @@ namespace ts {
                 if (extraAsserts) {
                     debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                 }
-                if (args.inferStatus.involved){
+                if (doInvolved && args.inferStatus.involved){
                     // const assignmentMap = args.inferStatus.involved.involvedSymbolTypeCache.out.assignmentMap ??
                     //     (args.inferStatus.involved.involvedSymbolTypeCache.out.assignmentMap = new Map<Symbol,RefTypesType>());
                     // assignmentMap.set(symbol,rhs.inferRefRtnType.passing.type);
                     (args.inferStatus.involved.outEncountered ?? (args.inferStatus.involved.outEncountered=new Set<Symbol>())).add(symbol);
                 }
+
+                // if (!widenLiteralAssignmentsInLoop || !args.inferStatus.isInLoop){
                 const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,rhs.inferRefRtnType.passing.type);
                 return { arrRefTypesTableReturn: [{
                     ...rhs.inferRefRtnType.passing, symbol, symtab, /*type, symtab: scout.symtab, constraintItem: scout.constraintItem*/
                 }]};
+                // }
+                // else {
+                //     let effectiveTypeOut: RefTypesType | undefined;
+                //     if (!args.inferStatus.currentReplayableItem){
+                //         const tsType = args.inferStatus.groupNodeToTypeMap.get(rightExpr);
+                //         if (tsType) effectiveTypeOut = createRefTypesType(tsType);
+                //     }
+                //     if (!effectiveTypeOut) effectiveTypeOut = rhs.inferRefRtnType.passing.type;
+                //     else {
+                //         effectiveTypeOut = refTypesTypeModule.getUnionOrWidenedType(
+                //             effectiveTypeOut, rhs.inferRefRtnType.passing.type,
+                //             getSymbolFlowInfoInitializerOrDeclaredType(symbol));
+                //     }
+                //     const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,effectiveTypeOut);
+                //     return { arrRefTypesTableReturn: [{
+                //         ...rhs.inferRefRtnType.passing, type: effectiveTypeOut, symbol, symtab, /*type, symtab: scout.symtab, constraintItem: scout.constraintItem*/
+                //     }]};
+                // }
             }
             else {
                 Debug.fail("not yet implemented");
@@ -2705,6 +2731,7 @@ namespace ts {
                         const symbol = getSymbolOfNode(expr); // not condExpr.name
                         let symbolFlowInfo: SymbolFlowInfo | undefined= _mrState.symbolFlowInfoMap.get(symbol);
                         if (!symbolFlowInfo){
+                            let effectiveDeclaredType: RefTypesType | undefined = rhs.inferRefRtnType.passing.type;
                             let effectiveDeclaredTsType: Type;
                             let typeNodeTsType: Type | undefined;
                             if (symbol.valueDeclaration===expr) {
@@ -2712,10 +2739,17 @@ namespace ts {
                                 if (expr.type) {
                                     typeNodeTsType = checker.getTypeFromTypeNode(expr.type);
                                     effectiveDeclaredTsType = typeNodeTsType;
+                                    effectiveDeclaredType = undefined;
                                 }
                                 else {
+                                    /**
+                                     * The effectiveDeclaredTsType is always a widened type.
+                                     * widenLiteralInitializersInLoop is used inside `` to control whether `initializerType` type is
+                                     * used in preference to `effectiveDeclaredType`.
+                                     */
                                     const tsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
                                     effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr,checker.getFreshTypeOfLiteralType(tsType));
+                                    effectiveDeclaredType = undefined;
                                 }
                             }
                             else {
@@ -2728,47 +2762,29 @@ namespace ts {
                                 effectiveDeclaredTsType, //: createRefTypesType(actualDeclaredTsType),
                                 initializerType: rhs.inferRefRtnType.passing.type,
                             };
-                            if (typeNodeTsType) symbolFlowInfo.typeNodeTsType = typeNodeTsType;
+                            if (effectiveDeclaredType) symbolFlowInfo.effectiveDeclaredType = effectiveDeclaredType;
+                            if (typeNodeTsType) symbolFlowInfo.typeNodeTsType = typeNodeTsType; // TODO KILL
                             _mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
                         }
                         else {
                             // if called more than once, must be in a loop,
                             symbolFlowInfo.passCount++;
+                            symbolFlowInfo.initializerType = unionOfRefTypesType([symbolFlowInfo.initializerType!,rhs.inferRefRtnType.passing.type]);
                             if (extraAsserts && expr.type){
                                 Debug.assert(symbolFlowInfo.typeNodeTsType);
                                 const typeNodeTsType = checker.getTypeFromTypeNode(expr.type);
                                 Debug.assert(checker.isTypeRelatedTo(typeNodeTsType,symbolFlowInfo.typeNodeTsType, checker.getRelations().identityRelation));
                             }
                             if (!expr.type){
-                                const tsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
-                                const nextWidenedInitializerTsType = checker.widenTypeInferredFromInitializer(expr,checker.getFreshTypeOfLiteralType(tsType));
-                                const unionWidenedInitializerTsType = checker.getUnionType([nextWidenedInitializerTsType, symbolFlowInfo.effectiveDeclaredTsType]);
-                                symbolFlowInfo.effectiveDeclaredTsType = unionWidenedInitializerTsType;
+                                const tsType = getTypeFromRefTypesType(symbolFlowInfo.initializerType);
+                                symbolFlowInfo.effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr,checker.getFreshTypeOfLiteralType(tsType));
                                 delete symbolFlowInfo.effectiveDeclaredType; // will be created on demand if necessary
                             }
-                            // Literals->NonLiteral ?
-                            symbolFlowInfo.initializerType = unionOfRefTypesType([symbolFlowInfo.initializerType!,rhs.inferRefRtnType.passing.type]);
                         }
                         if (extraAsserts){
                             debugDevExpectEffectiveDeclaredType(expr.parent,symbolFlowInfo);
-
-                            // const arrexpected = getDevExpectStrings(expr.parent,sourceFile);
-                            // if (arrexpected) {
-                            //     const actual = `count: ${symbolFlowInfo.passCount}, actualDeclaredTsType: ${typeToString(symbolFlowInfo.effectiveDeclaredTsType)}`;
-                            //     const pass = arrexpected.some(expected=>{
-                            //         return actual===expected;
-                            //     });
-                            //     if (!pass) {
-                            //         Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}"`);
-                            //     }
-                            //     if (getMyDebug()){
-                            //         consoleLog(`SyntaxKind.VariableDeclaration, passed ts-dev-expect-string "${actual}"`);
-                            //     }
-                            // }
                         }
                         const isconstVar = symbolFlowInfo.isconst; // isConstVariable(symbol);
-                        // let declaredTsType: undefined | Type;
-                        //if (expr.type) declaredTsType = getTypeOfSymbol(symbol);
                         if (refTypesSymtabIn.get(symbol)){
                             Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
                         }
@@ -2799,30 +2815,38 @@ namespace ts {
                                 constraintItem: constraintItemIn
                             }]};
                         }
-                        let arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]> = inferStatus.inCondition ? rhs.inferRefRtnType.unmerged : [rhs.inferRefRtnType.passing];
-                        Debug.assert(isconstVar===false);
-                        arrRefTypesTableReturn = arrRefTypesTableReturn.map(rttr=>{
-                            if (rttr.symbol){
-                                rttr = andRttrSymbolTypeIntoSymtabConstraint(rttr, inferStatus);
+                        const returnPassingOnlyFromVariableDeclaration = true;
+                        if (returnPassingOnlyFromVariableDeclaration){
+                            const passing = rhs.inferRefRtnType.passing as RefTypesTableReturn;
+                            passing.symbol = symbol;
+                            passing.isconst = isconstVar;
+                            if (widenLiteralInitializersInLoop && inferStatus.isInLoop){
+                                if (!symbolFlowInfo.typeNodeTsType) passing.type = getEffectiveDeclaredType(symbolFlowInfo);
+                                else {
+                                    passing.type = refTypesTypeModule.widenLiteralsAccordingToEffectiveDeclaredType(passing.type,getEffectiveDeclaredType(symbolFlowInfo));
+                                }
                             }
-                            rttr.symbol = symbol;
-                            return rttr;
-                        });
-                        // {
-                        //     // TODO - will be replaced by symbolFlowInfo
-                        //     const unwidenedTsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
-                        //     // isconstVar is always false here
-                        //     const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType)); // TODO:!!! this is not always widening as expected, true=>true
-                        //     inferStatus.declaredTypes.set(symbol, createRefTypesTableLeaf(symbol,isconstVar,widenedType));
-                        // }
-                        const retval: MrNarrowTypesInnerReturn = {
-                            arrRefTypesTableReturn,
-                            assignmentData: {
-                                symbol,
-                                isconst: isconstVar,
-                            },
-                        };
-                        return retval;
+                            return { arrRefTypesTableReturn:[passing] };
+                        }
+                        else {
+                            let arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]> = inferStatus.inCondition ? rhs.inferRefRtnType.unmerged : [rhs.inferRefRtnType.passing];
+                            Debug.assert(isconstVar===false);
+                            arrRefTypesTableReturn = arrRefTypesTableReturn.map(rttr=>{
+                                if (rttr.symbol){
+                                    rttr = andRttrSymbolTypeIntoSymtabConstraint(rttr, inferStatus);
+                                }
+                                rttr.symbol = symbol;
+                                return rttr;
+                            });
+                            const retval: MrNarrowTypesInnerReturn = {
+                                arrRefTypesTableReturn,
+                                assignmentData: {
+                                    symbol,
+                                    isconst: isconstVar,
+                                },
+                            };
+                            return retval;
+                        }
                     }
                     else {
                         // could be binding, or could a proeprty access on the lhs

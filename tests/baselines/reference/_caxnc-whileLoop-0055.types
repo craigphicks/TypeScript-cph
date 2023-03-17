@@ -12,7 +12,7 @@ function t55(){
 >d1 : number
 >0 : 0
 
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (true){
 >true : true
 
@@ -20,7 +20,7 @@ function t55(){
 >d2 : number
 >0 : 0
 
-        // @ts-dev-expect-string "loopCount:3, invocations:3"
+        // @ts-dev-expect-string "loopCount:2, invocations:3"
         while (true){
 >true : true
 
@@ -28,7 +28,7 @@ function t55(){
 >d3 : number
 >0 : 0
 
-            // @ts-dev-expect-string "loopCount:4, invocations:6"
+            // @ts-dev-expect-string "loopCount:2, invocations:5"
             while (true){
 >true : true
 
@@ -36,7 +36,7 @@ function t55(){
 >d4 : number
 >0 : 0
 
-                // @ts-dev-expect-string "loopCount:5, invocations:10"
+                // @ts-dev-expect-string "loopCount:2, invocations:7"
                 while (true){
 >true : true
 

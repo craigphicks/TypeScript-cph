@@ -33,7 +33,8 @@ namespace ts {
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
-    };
+        widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
+        };
 
     export function createRefTypesTypeModule(checker: TypeChecker): RefTypesTypeModule {
 
@@ -86,6 +87,7 @@ namespace ts {
             equalRefTypesTypes,
             literalWideningUnion,
             getUnionOrWidenedType,
+            widenLiteralsAccordingToEffectiveDeclaredType,
         };
 
         // function isBooleanTrueType(type: Readonly<RefTypesType>): boolean {
@@ -598,7 +600,30 @@ namespace ts {
             }
             return unionOfRefTypesType([tnew,told]);
         }
-
+        function widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
+            if (type._flags) return type;
+            const ml = type._mapLiteral;
+            if (!ml) return type;
+            const akt: Type[] = [];
+            if (effectiveDeclaredType._flags){
+                ml.forEach((_,kt)=>akt.push(kt));
+            }
+            const eset = effectiveDeclaredType._set;
+            const aktrem: [Type,Set<LiteralType>][] = [];
+            ml.forEach((sl,kt)=>{
+                if (eset?.has(kt)) akt.push(kt);
+                else aktrem.push([kt,sl]);
+            });
+            if (akt.length===0) return type;
+            let _set: Set<Type> | undefined;
+            if (!type._set) _set = new Set<Type>(akt);
+            else {
+                _set = new Set<Type>(type._set);
+                akt.forEach(kt=>_set!.add(kt));
+            }
+            const _mapLiteral = new Map<Type,Set<LiteralType>>(aktrem);
+            return { _flags:RefTypesTypeFlags.none,_set,_mapLiteral };
+        }
     }
 
 }

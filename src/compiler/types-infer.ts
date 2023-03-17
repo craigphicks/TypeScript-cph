@@ -154,6 +154,7 @@ namespace ts {
         groupNodeToTypeMap: ESMap<Node,Type>;
         //accumNodeTypes: boolean,
         accumBranches: boolean,
+        isInLoop?: boolean;
         involved?: {
             initializing: boolean;
             inEncountered: WeakSet<Symbol>;

@@ -1,8 +1,10 @@
 namespace ts {
 
-    export const extraAsserts = true; // not suitable for release
-    export const doNotTraverseNever = true;
-    export const alwaysWidenInitializers = false;
+    export const extraAsserts = false; // not suitable for release
+    export const doNotTraverseNever = false;
+    export const widenLiteralInitializersInLoop = true;
+    export const widenLiteralAssignmentsInLoop = false;
+    const hardCodeEnableTSDevExpectStringFalse = true;
     export const doInvolved = false;
 
 
@@ -338,6 +340,9 @@ namespace ts {
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
         if (compilerOptions.mrNarrowConstraintsEnable===undefined) compilerOptions.mrNarrowConstraintsEnable = false;
         if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
+        if (hardCodeEnableTSDevExpectStringFalse){
+            compilerOptions.enableTSDevExpectString = false;
+        }
         const t0 = process.hrtime.bigint();
         const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
         if (getMyDebug()){
@@ -1292,6 +1297,7 @@ namespace ts {
         let passing: RefTypesTableReturn;
         let failing: RefTypesTableReturn | undefined;
 
+        inferStatus.isInLoop = !!forFlow.loopState;
         if (doNotTraverseNever && isNeverConstraint(constraintItemArg)){
             passing = {
                 kind:RefTypesTableKind.return,

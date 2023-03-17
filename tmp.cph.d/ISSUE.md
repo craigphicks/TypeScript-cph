@@ -16,19 +16,10 @@ That invariance is preserved by using only these functions to modify a RefTypesS
 
 ### Priority: High
 
-0. Check loop timing with `doNotTraverseNever` true.
-
-0. [doNotTraverseNever] Save time by not traversing never paths.  As a result so expected cbe's will not be there - default to `never` constraint in such case.
-
-0. [alwaysWidenInitializers] Optionally mimic the pre-existing flow behavior of assigment using declared or widened initializer type, rather than the un-widened initializer type.  Keep the option of un-widened initializer type for future upgrade.
-
-0. (Not required if `alwaysWidenInitializers` is used). In loops, accumulate types by "type of symbol at node" *for lhs of assignments only*.  Those type values should be fed back into the flow.  (The same cannot always be done with accumulated node values because node values may contain types from multiple symbols, or the optional 'undefined' of a lhs value in a property chain.)  Following should exist in `loopState` because it is not needed beyond loop existence.
-
-  0. `accumulatedLhsTypes`
-
-      0. `indentiferNodeToAccumulatedType` - In this case the nodeToType map would suffice, so not needed?  Just add the feedback
-
-      0. `propertyAccessNodeToSymbolToAccumulatedType`
+0. [proxySymtabSqueezing]  In reponse to precision loss of pure in-single-loop precision when using `widenLiteralInitializersInLoop=true`.  C.f. `_caxnc-whileLoop-0001` DONE/[widenLiteralInitializersInLoop] below.
+In this strategy empty (except for const vars) symtab proxy object is passed to new loop.  All loop external lookup should therefore result in `symbolFlowInfo.effectiveType` being used for type value of all loop external variables. However, let variables declared in the loop maintain their precision - only within that loop level.  The loop symtab proxy interface also require info about whether symbols entered through being assigned, or being only read.  For every symbol which had been assigned, the assigned loop output types are written to the loop-calling symtab.
+With this, for the case of loop external non-const non-enumerated types such as `number`, `string`, etc., the loop is guaranteed to finish in a single pass.  However, for loop external non-const explicitly enumerated types and union, e.g. (`0 | 1 | 2 | 3`), or (`{} | undefined`), precision would be lost inside the loop.  Yes - this is downgrade from pre-existing flow, but perhaps it not a serious shortcoming.
+Note that prior lexical analysis to identify intervals where a non-const variable behaves as a const variable could be used to ameliorate this problem, by treating a const as a const, at least for each of those intervals.
 
 
 0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
@@ -90,6 +81,21 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. [widenLiteralInitializersInLoop]  With this setup was able to achieve a ~25% speedup but still O(N^2) loop behavior.
+However, ugly side effect loss of precision for pure single pass logic of a variable defined inside a loop, c.f. `_caxnc-whileLoop-0001`.
+    ```
+        export const doNotTraverseNever = false;
+        export const widenLiteralInitializersInLoop = true;
+        export const widenLiteralAssignmentsInLoop = false;
+        const hardCodeEnableTSDevExpectStringFalse = true;
+        export const doInvolved = false;
+    ```
+1. (cont)... It seems `doNotTraverseNever` makes almost no difference in timing, at least currently (inter-group only, no intra-group).
+Executed `gulp baseline-accept` for `_caxnc-whileLoop-00(01|55|56)` just for the record to show the shorter iterations.
+But didn't change `@ts-dev-expect-string` iteration count values for other while loops because have a new plan anyway.
+For the next step `widenLiteralInitializersInLoop`,`widenLiteralAssignmentsInLoop`,`doInvolved`, will be all be false (and ultimately removed) - see [proxySymtabSqueezing] in [TODO].
+
 
 0. [doNotTraverseNever] Added global control variables `doNotTraverseNever` (currently `true`), `alwaysWidenInitializers` (currently `false`), and `doInvolved` (currently `false`) at top of `flowGroupInfer.ts`, to test changes in a modular way.  Currently `doNotTraverseNever` is only affecting at the inter-group level, from withing `resolveGroupForFlow`.  However, it should ultilmately be extended to intra-group processing.   All _caxnc- tests passing.
 
