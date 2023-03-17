@@ -20,19 +20,19 @@ function t1(){
 >b : true
 
         c;
->c : boolean
+>c : false
 
         let d = b;
 >d : true
 >b : true
 
         d;
->d : boolean
+>d : true
 
         b = c;
->b = c : boolean
+>b = c : false
 >b : boolean
->c : boolean
+>c : false
     }
     let e = b;
 >e : false

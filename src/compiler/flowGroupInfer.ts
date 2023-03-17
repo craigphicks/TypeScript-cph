@@ -2,10 +2,10 @@ namespace ts {
 
     export const extraAsserts = false; // not suitable for release
     export const doNotTraverseNever = false;
-    export const widenLiteralInitializersInLoop = true;
-    export const widenLiteralAssignmentsInLoop = false;
+    //export const widenLiteralInitializersInLoop = true;
+    // export const widenLiteralAssignmentsInLoop = false;
     const hardCodeEnableTSDevExpectStringFalse = true;
-    export const doInvolved = false;
+    //export const doInvolved = false;
 
 
     let dbgs: Dbgs | undefined;
@@ -1243,56 +1243,56 @@ namespace ts {
         const crit: InferCrit = !inferStatus.inCondition ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         Debug.assert(forFlow.groupToNodeToType);
 
-        let involvedSymbolTypeCache: InvolvedSymbolTypeCache | undefined;
-        let allInvolvedSymbolTypesMatch = false;
-        if (doInvolved && forFlow.loopState){
-            involvedSymbolTypeCache = forFlow.loopState.groupToInvolvedSymbolTypeCache.get(groupForFlow);
-            if (!involvedSymbolTypeCache){
-                involvedSymbolTypeCache = {
-                    in:{
-                        constraintItem: constraintItemArg
-                    },
+        // let involvedSymbolTypeCache: InvolvedSymbolTypeCache | undefined;
+        // let allInvolvedSymbolTypesMatch = false;
+        // if (doInvolved && forFlow.loopState){
+        //     involvedSymbolTypeCache = forFlow.loopState.groupToInvolvedSymbolTypeCache.get(groupForFlow);
+        //     if (!involvedSymbolTypeCache){
+        //         involvedSymbolTypeCache = {
+        //             in:{
+        //                 constraintItem: constraintItemArg
+        //             },
 
-                };
-                inferStatus.involved = {
-                    initializing:true,
-                    inEncountered: new WeakSet<Symbol>(),
-                    //outEncountered: new WeakSet<Symbol>(),
-                    involvedSymbolTypeCache,
-                };
-                forFlow.loopState.groupToInvolvedSymbolTypeCache.set(groupForFlow,involvedSymbolTypeCache);
-            }
-            else {
-                // check whether the input symbols-types ALL match current symbol table input
-                allInvolvedSymbolTypesMatch = true;
-                const {identifierMap,propertyAccessMap,constraintItem} = involvedSymbolTypeCache.in;
-                allInvolvedSymbolTypesMatch &&= constraintItem.kind === constraintItemArg.kind
-                    && (
-                        constraintItem?.kind === ConstraintItemKind.never
-                    ||
-                        (!!identifierMap && everyForMap(identifierMap, (tprev,s)=>{
-                            const tcurr=refTypesSymtabArg.get(s);
-                            Debug.assert(tcurr);
-                            return mrNarrow.equalRefTypesTypes(tprev,tcurr);
-                        })
-                        && !!propertyAccessMap && everyForMap(propertyAccessMap, (tprev,s)=>{
-                            const tcurr=refTypesSymtabArg.get(s);
-                            Debug.assert(tcurr);
-                            return mrNarrow.equalRefTypesTypes(tprev,tcurr);
-                        }))
-                    );
+        //         };
+        //         inferStatus.involved = {
+        //             initializing:true,
+        //             inEncountered: new WeakSet<Symbol>(),
+        //             //outEncountered: new WeakSet<Symbol>(),
+        //             involvedSymbolTypeCache,
+        //         };
+        //         forFlow.loopState.groupToInvolvedSymbolTypeCache.set(groupForFlow,involvedSymbolTypeCache);
+        //     }
+        //     else {
+        //         // check whether the input symbols-types ALL match current symbol table input
+        //         allInvolvedSymbolTypesMatch = true;
+        //         const {identifierMap,propertyAccessMap,constraintItem} = involvedSymbolTypeCache.in;
+        //         allInvolvedSymbolTypesMatch &&= constraintItem.kind === constraintItemArg.kind
+        //             && (
+        //                 constraintItem?.kind === ConstraintItemKind.never
+        //             ||
+        //                 (!!identifierMap && everyForMap(identifierMap, (tprev,s)=>{
+        //                     const tcurr=refTypesSymtabArg.get(s);
+        //                     Debug.assert(tcurr);
+        //                     return mrNarrow.equalRefTypesTypes(tprev,tcurr);
+        //                 })
+        //                 && !!propertyAccessMap && everyForMap(propertyAccessMap, (tprev,s)=>{
+        //                     const tcurr=refTypesSymtabArg.get(s);
+        //                     Debug.assert(tcurr);
+        //                     return mrNarrow.equalRefTypesTypes(tprev,tcurr);
+        //                 }))
+        //             );
 
-                if (getMyDebug()){
-                    consoleLog(`resolveGroupForFlow[involved] group:${groupForFlow.groupIdx}, loopGroup:${forFlow.loopState.loopGroup.groupIdx}, allInvolvedSymbolTypesMatch:${allInvolvedSymbolTypesMatch}, loopCount:${forFlow.loopState.loopCountWithoutFinals}, loopInvocations:${forFlow.loopState.invocations}`);
-                }
-                inferStatus.involved = {
-                    initializing:false,
-                    inEncountered: new WeakSet<Symbol>(),
-                    //outEncountered?: new WeakSet<Symbol>(),
-                    involvedSymbolTypeCache,
-                };
-            }
-        }
+        //         if (getMyDebug()){
+        //             consoleLog(`resolveGroupForFlow[involved] group:${groupForFlow.groupIdx}, loopGroup:${forFlow.loopState.loopGroup.groupIdx}, allInvolvedSymbolTypesMatch:${allInvolvedSymbolTypesMatch}, loopCount:${forFlow.loopState.loopCountWithoutFinals}, loopInvocations:${forFlow.loopState.invocations}`);
+        //         }
+        //         inferStatus.involved = {
+        //             initializing:false,
+        //             inEncountered: new WeakSet<Symbol>(),
+        //             //outEncountered?: new WeakSet<Symbol>(),
+        //             involvedSymbolTypeCache,
+        //         };
+        //     }
+        // }
 
         let passing: RefTypesTableReturn;
         let failing: RefTypesTableReturn | undefined;
@@ -1320,30 +1320,6 @@ namespace ts {
         }
 
         if (inferStatus.inCondition){
-            if (doInvolved && forFlow.loopState){
-
-                //const outTruthy: InvolvedSymbolTypeCacheOut | undefined = involvedSymbolTypeCache!.outThruthy;
-                //outTruthy.constraintItem = passing.constraintItem;
-                // if (isNever(passing.constraintItem)){
-
-                // }
-                //     const outEncountered = inferStatus.involved!.outEncountered;
-                //     if (outEncountered){
-                //         if (!involvedSymbolTypeCache!.outThruthy) {
-                //             involvedSymbolTypeCache!.outThruthy = {
-                //                 symtab: new Map<Symbol,RefTypesType>(),
-                //                 constraintItem: passing.constraintItem
-                //             };
-                //         }
-                //         if (!involvedSymbolTypeCache!.outThruthy.symtab) involvedSymbolTypeCache!.outThruthy.symtab = new Map<Symbol,RefTypesType>();
-                //         outEncountered?.forEach(s=>{
-                //             involvedSymbolTypeCache!.outThruthy!.set(s,passing.symtab.get(s)!);
-                //         });
-                //     }
-                // }
-            }
-            // const passing = retval.inferRefRtnType.passing;
-            // const failing = retval.inferRefRtnType.failing!;
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
                 gff: groupForFlow,
@@ -1372,17 +1348,6 @@ namespace ts {
             }
         }
         else {
-            if (doInvolved && forFlow.loopState){
-                // const outEncountered = inferStatus.involved!.outEncountered;
-                // if (outEncountered){
-
-                //     if (!involvedSymbolTypeCache!.outThruthy) involvedSymbolTypeCache!.outThruthy = new Map<Symbol,RefTypesType>();
-                //     outEncountered?.forEach(s=>{
-                //         involvedSymbolTypeCache!.outThruthy!.set(s,retval.inferRefRtnType.passing.symtab.get(s)!);
-                //     });
-                // }
-            }
-
             const cbe: CurrentBranchElementPlain = {
                 kind: CurrentBranchesElementKind.plain,
                 gff: groupForFlow,

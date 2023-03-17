@@ -192,15 +192,15 @@ namespace ts {
             }
             const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
             Debug.assert(symbolFlowInfo);
-            if (widenLiteralInitializersInLoop){
-                return symbolFlowInfo.effectiveDeclaredType ??
-                    (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
-            }
-            else {
-                return symbolFlowInfo.initializerType ??
+            // if (widenLiteralInitializersInLoop){
+            //     return symbolFlowInfo.effectiveDeclaredType ??
+            //         (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
+            // }
+            // else {
+            return symbolFlowInfo.initializerType ??
                 symbolFlowInfo.effectiveDeclaredType ??
                     (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
-            }
+            // }
         }
         /**
          *
@@ -951,12 +951,12 @@ namespace ts {
                 if (extraAsserts) {
                     debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                 }
-                if (doInvolved && args.inferStatus.involved){
-                    // const assignmentMap = args.inferStatus.involved.involvedSymbolTypeCache.out.assignmentMap ??
-                    //     (args.inferStatus.involved.involvedSymbolTypeCache.out.assignmentMap = new Map<Symbol,RefTypesType>());
-                    // assignmentMap.set(symbol,rhs.inferRefRtnType.passing.type);
-                    (args.inferStatus.involved.outEncountered ?? (args.inferStatus.involved.outEncountered=new Set<Symbol>())).add(symbol);
-                }
+                // if (doInvolved && args.inferStatus.involved){
+                //     // const assignmentMap = args.inferStatus.involved.involvedSymbolTypeCache.out.assignmentMap ??
+                //     //     (args.inferStatus.involved.involvedSymbolTypeCache.out.assignmentMap = new Map<Symbol,RefTypesType>());
+                //     // assignmentMap.set(symbol,rhs.inferRefRtnType.passing.type);
+                //     (args.inferStatus.involved.outEncountered ?? (args.inferStatus.involved.outEncountered=new Set<Symbol>())).add(symbol);
+                // }
 
                 // if (!widenLiteralAssignmentsInLoop || !args.inferStatus.isInLoop){
                 const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.symtab).set(symbol,rhs.inferRefRtnType.passing.type);
@@ -1951,21 +1951,21 @@ namespace ts {
                         const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
                             {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc:{ symtab,constraintItem },
                             getDeclaredType, mrNarrow });
-                        if (doInvolved && inferStatus.involved){
-                            /**
-                             * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
-                             * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
-                             * (2) Only the first occurence of a symbol in the group is used to initialize.
-                             * (3) Cannot use initialize here because (unlike identifiers) propSymbols may change, so we have to be prepared to add new ones.
-                             */
-                            const involved = inferStatus.involved;
-                            if (!involved.inEncountered.has(propSymbol)) {
-                                (involved.involvedSymbolTypeCache.in.propertyAccessMap
-                                    ?? (involved.involvedSymbolTypeCache.in.propertyAccessMap = new Map<Symbol,RefTypesType>()))
-                                        .set(propSymbol,type);
-                                involved.inEncountered.add(propSymbol);
-                            }
-                        }
+                        // if (doInvolved && inferStatus.involved){
+                        //     /**
+                        //      * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
+                        //      * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
+                        //      * (2) Only the first occurence of a symbol in the group is used to initialize.
+                        //      * (3) Cannot use initialize here because (unlike identifiers) propSymbols may change, so we have to be prepared to add new ones.
+                        //      */
+                        //     const involved = inferStatus.involved;
+                        //     if (!involved.inEncountered.has(propSymbol)) {
+                        //         (involved.involvedSymbolTypeCache.in.propertyAccessMap
+                        //             ?? (involved.involvedSymbolTypeCache.in.propertyAccessMap = new Map<Symbol,RefTypesType>()))
+                        //                 .set(propSymbol,type);
+                        //         involved.inEncountered.add(propSymbol);
+                        //     }
+                        // }
 
                         arrRttr.push({
                             kind: RefTypesTableKind.return,
@@ -2470,15 +2470,15 @@ namespace ts {
                             type = evalSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn }, getDeclaredType, mrNarrow);
                         }
                     }
-                    if (doInvolved && inferStatus.involved){
-                        const involved = inferStatus.involved;
-                        if (!involved.inEncountered.has(symbol)){
-                            (involved.involvedSymbolTypeCache.in.identifierMap
-                                ?? (involved.involvedSymbolTypeCache.in.identifierMap = new Map<Symbol,RefTypesType>()))
-                                    .set(symbol,type);
-                            involved.inEncountered.add(symbol);
-                        }
-                    }
+                    // if (doInvolved && inferStatus.involved){
+                    //     const involved = inferStatus.involved;
+                    //     if (!involved.inEncountered.has(symbol)){
+                    //         (involved.involvedSymbolTypeCache.in.identifierMap
+                    //             ?? (involved.involvedSymbolTypeCache.in.identifierMap = new Map<Symbol,RefTypesType>()))
+                    //                 .set(symbol,type);
+                    //         involved.inEncountered.add(symbol);
+                    //     }
+                    // }
                     // if (inferStatus.involved){
                     //     /**
                     //      * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
@@ -2820,12 +2820,12 @@ namespace ts {
                             const passing = rhs.inferRefRtnType.passing as RefTypesTableReturn;
                             passing.symbol = symbol;
                             passing.isconst = isconstVar;
-                            if (widenLiteralInitializersInLoop && inferStatus.isInLoop){
-                                if (!symbolFlowInfo.typeNodeTsType) passing.type = getEffectiveDeclaredType(symbolFlowInfo);
-                                else {
-                                    passing.type = refTypesTypeModule.widenLiteralsAccordingToEffectiveDeclaredType(passing.type,getEffectiveDeclaredType(symbolFlowInfo));
-                                }
-                            }
+                            // if (widenLiteralInitializersInLoop && inferStatus.isInLoop){
+                            //     if (!symbolFlowInfo.typeNodeTsType) passing.type = getEffectiveDeclaredType(symbolFlowInfo);
+                            //     else {
+                            //         passing.type = refTypesTypeModule.widenLiteralsAccordingToEffectiveDeclaredType(passing.type,getEffectiveDeclaredType(symbolFlowInfo));
+                            //     }
+                            // }
                             return { arrRefTypesTableReturn:[passing] };
                         }
                         else {

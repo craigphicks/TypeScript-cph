@@ -2,25 +2,20 @@
 
 ## Document:
 
-### `RefTypesSymtabConstraintItem` invariance
-
-The `RefTypesSymtabConstraintItem` with members `{symtab: ,constraintItem}` is a unit with an invariance as follows:
-For each symbol in symtab, the type:RefTypesType given by symtab.get(type) is the minimal cover of symbol
-over the constraintItem.  That is the result type:RefTypesType that would be returned by calling evalOverConstraint(symbol, constraintItem): RefTypesType.
-
-That invariance is preserved by using only these functions to modify a RefTypesSymtabConstraintItem unit from any function in `flowGroupInfer2.ts`
-- `andSymbolTypeIntoSymtabConstraint`
-- `orSymtabConstraints`
-
 ## TODO:
 
 ### Priority: High
 
 0. [proxySymtabSqueezing]  In reponse to precision loss of pure in-single-loop precision when using `widenLiteralInitializersInLoop=true`.  C.f. `_caxnc-whileLoop-0001` DONE/[widenLiteralInitializersInLoop] below.
-In this strategy empty (except for const vars) symtab proxy object is passed to new loop.  All loop external lookup should therefore result in `symbolFlowInfo.effectiveType` being used for type value of all loop external variables. However, let variables declared in the loop maintain their precision - only within that loop level.  The loop symtab proxy interface also require info about whether symbols entered through being assigned, or being only read.  For every symbol which had been assigned, the assigned loop output types are written to the loop-calling symtab.
-With this, for the case of loop external non-const non-enumerated types such as `number`, `string`, etc., the loop is guaranteed to finish in a single pass.  However, for loop external non-const explicitly enumerated types and union, e.g. (`0 | 1 | 2 | 3`), or (`{} | undefined`), precision would be lost inside the loop.  Yes - this is downgrade from pre-existing flow, but perhaps it not a serious shortcoming.
-Note that prior lexical analysis to identify intervals where a non-const variable behaves as a const variable could be used to ameliorate this problem, by treating a const as a const, at least for each of those intervals.
+In this `proxySymtabSqueezing` strategy empty (except for const vars) symtab proxy object is passed to each sub loop.  All loop external lookup should therefore result in `symbolFlowInfo.effectiveType` being used for type value of all loop external variables. However, it allows variables declared in the loop maintain the precision of usign their initializers to decide their flow type - only within that loop level.  The loop symtab proxy interface also require info about whether symbols entered are being assigned, or being only read.
 
+    0. For every symbol in the loop output, check if the symbol was assigned at least once (otherwise it must have been only-read).
+
+    0. If the symbol was assigned, then the subloop output type should be (a) the output as is, or (b) actually can be refined to union of assignments.
+
+    0. If the symbol was only-read, then intersection of input type and output type is one upper limit. Furthermore, if the calling loop is converged, then the subloop can rerun with known inputs. Perhaps then a safe two-pass is possible - first pass as described above using `effectiveDeclaredType` in sequential subloops, and then a second pass using constrained inputs for each subloop on the read-onlys.   This amounts to identifying intervals where a non-const variable behaves as a const variable ,at least for each of those intervals.
+
+    0. With this, for the case of loop external non-const non-enumerated types such as `number`, `string`, etc., the loop is guaranteed to finish in a single pass.  However, for loop external non-const explicitly enumerated types and union, e.g. (`0 | 1 | 2 | 3`), or (`{} | undefined`), precision would be lost inside the loop.  Yes - this is downgrade from pre-existing flow, but perhaps it not a serious shortcoming.
 
 0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
 
@@ -81,6 +76,14 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0.  Removed these hard code controls and associated code.  That changed results for `_caxnc-whileLoop-00(01|52)` so baseline-accept; now all `_caxnc-` tests passing.
+  ```
+      //export const widenLiteralInitializersInLoop = true;
+      //export const widenLiteralAssignmentsInLoop = false;
+      //export const doInvolved = false;
+  ```
+
 
 0. [widenLiteralInitializersInLoop]  With this setup was able to achieve a ~25% speedup but still O(N^2) loop behavior.
 However, ugly side effect loss of precision for pure single pass logic of a variable defined inside a loop, c.f. `_caxnc-whileLoop-0001`.
