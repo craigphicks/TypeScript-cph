@@ -42,8 +42,11 @@ namespace ts {
     }
 
     // @ts-ignore
-    export function isNeverConstraint(c: ConstraintItem): boolean {
+    export function isNeverConstraint(c: ConstraintItem): c is ConstraintItemNever {
         return (c.kind===ConstraintItemKind.never);
+    }
+    export function isNotNeverConstraint(c: ConstraintItem): c is ConstraintItemNotNever {
+        return (c.kind!==ConstraintItemKind.never);
     }
     export function createFlowConstraintAlways(): ConstraintItemAlways {
         return { kind:ConstraintItemKind.always, symbolsInvolved: new Set<Symbol>() };
@@ -57,6 +60,7 @@ namespace ts {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // @ts-expect-error
     function copyConstraintItem(ci: Readonly<ConstraintItem>, mrNarrow: MrNarrow): ConstraintItem {
         switch (ci.kind){
             case ConstraintItemKind.always:
@@ -84,11 +88,11 @@ namespace ts {
         }
     }
 
-    export function copySymtabConstraints(sc: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow): RefTypesSymtabConstraintItem {
-        const symtab = mrNarrow.copyRefTypesSymtab(sc.symtab);
-        const constraintItem = copyConstraintItem(sc.constraintItem, mrNarrow);
-        return { symtab,constraintItem };
-    }
+    // export function copySymtabConstraint(sc: Readonly<RefTypesSymtabConstraintItem>, mrNarrow: MrNarrow): RefTypesSymtabConstraintItem {
+    //     const symtab = mrNarrow.copyRefTypesSymtab(sc.symtab);
+    //     const constraintItem = copyConstraintItem(sc.constraintItem, mrNarrow);
+    //     return { symtab,constraintItem };
+    // }
 
     // Revive for testing, comparing with evalCover.
     export function evalTypeOverConstraint({cin, symbol, typeRange, negate, /*refDfltTypeOfSymbol,*/ mrNarrow, depth}: {
@@ -392,8 +396,13 @@ namespace ts {
         return createFlowConstraintNodeOr({ constraints:ac });
     }
     function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow): RefTypesSymtabConstraintItem{
-        const unionSymtab = mrNarrow.unionArrRefTypesSymtab(asc.map(x=>x.symtab));
-        const oredConstraint = orConstraints(asc.map(x=>x.constraintItem));
+        if (asc.length===0) Debug.fail("unexpected"); //return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
+        if (asc.length===1) return asc[0];
+        const asc1 = asc.filter(sc=>!isNeverConstraint(sc.constraintItem));
+        if (asc1.length===0) return createRefTypesSymtabConstraintItemNever(); // assuming or of nevers is never
+        if (asc1.length===1) return asc1[0];
+        const unionSymtab = mrNarrow.unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x=>x.symtab));
+        const oredConstraint = createFlowConstraintAlways(); // orConstraints(asc.map(x=>x.constraintItem));
         // const symbolsInvolved = new Set<Symbol>();
         // asc.forEach(x=>{
         //     if (x.constraintItem.symbolsInvolved) x.constraintItem.symbolsInvolved.forEach(s=>symbolsInvolved.add(s));
@@ -419,7 +428,7 @@ namespace ts {
         return orSymtabConstraintsV2(asc, mrNarrow);
     }
 
-    function andSymbolTypeIntoSymtabConstraintV2({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType}: Readonly<{
+    function andSymbolTypeIntoSymtabConstraintV2({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType:_}: Readonly<{
         symbol: Readonly<Symbol>,
         readonly isconst: undefined | boolean,
         type: Readonly<RefTypesType>,
@@ -431,15 +440,20 @@ namespace ts {
             consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
             +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(typeIn)}}`);
         }
-        let constraintItem = sc.constraintItem;
+        const constraintItem = sc.constraintItem;
+        Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
         let symtab = sc.symtab;
         let typeOut = typeIn;
+        //let scOut = sc;
         if (symbol.flags & (SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
             // do nothing - an enum parent is not a real type
         }
-        else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
-            constraintItem = andSymbolTypeIntoConstraint({ symbol,type:typeIn,constraintItem,getDeclaredType,mrNarrow });
+        else if (!symtab){
+            Debug.assert(isRefTypesSymtabConstraintItemNever(sc));
         }
+        // else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
+        //     constraintItem = andSymbolTypeIntoConstraint({ symbol,type:typeIn,constraintItem,getDeclaredType,mrNarrow });
+        // }
         else {
             const type = symtab.get(symbol);
             if (type) {
@@ -456,10 +470,13 @@ namespace ts {
         }
         if (log && getMyDebug()){
             let str = "`andSymbolTypeIntoSymtabConstraint[out] symtab:";
-            symtab.forEach((type,symbol)=>{
-                const isconst = mrNarrow.mrState.symbolFlowInfoMap.get(symbol)!.isconst;
-                str += ` {symbol:${symbol.escapedName}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(type)}},`;
-            });
+            if (!symtab) str+="<undef>";
+            else {
+                symtab.forEach((type,symbol)=>{
+                    const isconst = mrNarrow.mrState.symbolFlowInfoMap.get(symbol)!.isconst;
+                    str += ` {symbol:${symbol.escapedName}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(type)}},`;
+                });
+            }
             consoleLog(str);
             mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>{
                 consoleLog("andSymbolTypeIntoSymtabConstraint[out] constraints: "+s);
@@ -505,6 +522,8 @@ namespace ts {
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+        //Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
+        if (isRefTypesSymtabConstraintItemNever(sc)) return { type: mrNarrow.createRefTypesType(), sc };
         return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType });
     }
     /**
@@ -522,7 +541,8 @@ namespace ts {
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
 
         //let constraintItem = sc.constraintItem;
-        let symtab = sc.symtab;
+        Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
+        let symtab = sc.symtab!;
         //const type = typeIn;
         if (symbol.flags & (SymbolFlags.ConstEnum|SymbolFlags.RegularEnum)){
             // do nothing - an enum parent is not a real type
@@ -536,7 +556,6 @@ namespace ts {
             const gotType = symtab.get(symbol);
             if (!gotType || mrNarrow.isNeverType(gotType) ||
             mrNarrow.equalRefTypesTypes(typeIn,gotType)
-//            (mrNarrow.isASubsetOfB(typeIn, gotType) && mrNarrow.isASubsetOfB(gotType, typeIn))
             ){
                 return { type:typeIn,sc };
             }
@@ -743,13 +762,15 @@ namespace ts {
         ////////////////////////////////
         return type;
     }
-    export function hasSymbol(symbol: Symbol, sc: Readonly<RefTypesSymtabConstraintItem>): boolean {
+    export function hasSymbol(symbol: Symbol, sc: Readonly<RefTypesSymtabConstraintItemNotNever>): boolean {
+        Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
         return sc.symtab.has(symbol) || !!sc.constraintItem.symbolsInvolved?.has(symbol);
     }
 
     export function evalSymbol(symbol: Symbol, sc: Readonly<RefTypesSymtabConstraintItem>, getDeclaredType: GetDeclaredTypeFn, mrNarrow: MrNarrow): RefTypesType {
+        Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
         if (!mrNarrow.compilerOptions.mrNarrowConstraintsEnable || !sc.constraintItem.symbolsInvolved?.has(symbol)){
-            const gotType = sc.symtab.get(symbol);
+            const gotType = sc.symtab!.get(symbol);
             if (!gotType) Debug.fail("unexpected");
             return gotType;
         }

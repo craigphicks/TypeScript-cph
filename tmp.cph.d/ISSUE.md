@@ -6,16 +6,20 @@
 
 ### Priority: High
 
-0. [proxySymtabSqueezing]  In reponse to precision loss of pure in-single-loop precision when using `widenLiteralInitializersInLoop=true`.  C.f. `_caxnc-whileLoop-0001` DONE/[widenLiteralInitializersInLoop] below.
-In this `proxySymtabSqueezing` strategy empty (except for const vars) symtab proxy object is passed to each sub loop.  All loop external lookup should therefore result in `symbolFlowInfo.effectiveType` being used for type value of all loop external variables. However, it allows variables declared in the loop maintain the precision of usign their initializers to decide their flow type - only within that loop level.  The loop symtab proxy interface also require info about whether symbols entered are being assigned, or being only read.
+0. [proxySymtabSqueezing] Dev todo's:
 
-    0. For every symbol in the loop output, check if the symbol was assigned at least once (otherwise it must have been only-read).
+    0. The `_caxnc-whileLoop-005*` series of tests use literal assigments without explcit typing.  These are currently automatically accumulated as unions of literals at no extra cost in terms of statement complexity, although of course it makes the types larger.  The could be seen as a feature, but it is probably better to enable with a compiler option and make the default a merger to the corresponding non-literal types.
 
-    0. If the symbol was assigned, then the subloop output type should be (a) the output as is, or (b) actually can be refined to union of assignments.
+    0. The test file `_fixme-whileLoop-0007` is failing probably because the flow linkages are not including the final literal array in the body as depend statement in the loop.
 
-    0. If the symbol was only-read, then intersection of input type and output type is one upper limit. Furthermore, if the calling loop is converged, then the subloop can rerun with known inputs. Perhaps then a safe two-pass is possible - first pass as described above using `effectiveDeclaredType` in sequential subloops, and then a second pass using constrained inputs for each subloop on the read-onlys.   This amounts to identifying intervals where a non-const variable behaves as a const variable ,at least for each of those intervals.
+    0. `isAssign`, and various other dead fields need to be cleaned up.
 
-    0. With this, for the case of loop external non-const non-enumerated types such as `number`, `string`, etc., the loop is guaranteed to finish in a single pass.  However, for loop external non-const explicitly enumerated types and union, e.g. (`0 | 1 | 2 | 3`), or (`{} | undefined`), precision would be lost inside the loop.  Yes - this is downgrade from pre-existing flow, but perhaps it not a serious shortcoming.
+    0. All the different flavors of conditions need to be implemented - DoStatement, WhileStatement, ForStatement, ForInStatement, ForOfStatement,
+
+    0. Accuracy can be improved by utilizing logical constraints - but that is a priority lower than being able to compile all tests and build tsc.
+
+    0. Need to check timing - overhead is likely to be higher than existing flow algorithm, but the strict O(N) complexity is a plus.
+
 
 0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
 
@@ -76,6 +80,24 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. [proxySymtabSqueezing] Description: The name refers to a O(#statements) 2-pass top-down algorithm for processing types in loops.
+
+    0. The problem in solving types in loops is the feed from loop end to loop top, resulting in self-referencing.  Any solution must be a cover of the actual types. A naive but relatively accurate solution is to run through the loops growing the types until convergence.  However the worst case complexity is
+    O(#statements^2), which is not acceptable.
+
+    0. In 2-pass, the first pass assumes the widest types possible, while gathering information about each symbols assigned range within the loop (including not being assigned at all).  This information is fed back into the second loop, to give a narrower result, which is guaranteed to be a cover of the actual types.
+
+    0. The top-town means each loop and embedded loop bodies (\*) are traversed exactly twice.  Not twice per parent loop, but twice in total. (\*) A while loop condition is actually processed twice - it processes as CONDITION, BODY, CONDITION.
+
+    0. Type results are comparable to the existing flow algorithm.
+
+    0. Much remains to be done still with loop - see TODO.
+
+
+0. `src/compiler/flowGroupRefTypesSymtab.ts` file added, `RefTypesSymtab` now aliased to `RefTypesSymtabProxyI`.
+Currently working exactly as before except for that change. O(N) loop processing not yet implemented.  That's next.
+All `_caxnc-` tests passing.
 
 0.  Removed these hard code controls and associated code.  That changed results for `_caxnc-whileLoop-00(01|52)` so baseline-accept; now all `_caxnc-` tests passing.
   ```

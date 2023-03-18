@@ -1,0 +1,62 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0024.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0024.ts, 0, 0))
+
+function t24(){
+>t24 : Symbol(t24, Decl(_caxnc-whileLoop-0024.ts, 0, 34))
+
+    let b = true;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+
+    let c = true;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0024.ts, 3, 7))
+
+    let d = true;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0024.ts, 4, 7))
+
+    // @ts-dev-expect-string "loopCount:1, invocations:1"
+    while (d){
+>d : Symbol(d, Decl(_caxnc-whileLoop-0024.ts, 4, 7))
+
+        c = b;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0024.ts, 3, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+
+        d = c;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0024.ts, 4, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0024.ts, 3, 7))
+
+        b;c;d;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0024.ts, 3, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0024.ts, 4, 7))
+
+        b = maybe();
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0024.ts, 0, 0))
+
+        if (!b) break;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+
+        b;c;d;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0024.ts, 3, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0024.ts, 4, 7))
+    }
+    let e = b;
+>e : Symbol(e, Decl(_caxnc-whileLoop-0024.ts, 14, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+
+    b;c;d;e;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0024.ts, 3, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0024.ts, 4, 7))
+>e : Symbol(e, Decl(_caxnc-whileLoop-0024.ts, 14, 7))
+
+    [b,c,d,e];
+>b : Symbol(b, Decl(_caxnc-whileLoop-0024.ts, 2, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0024.ts, 3, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0024.ts, 4, 7))
+>e : Symbol(e, Decl(_caxnc-whileLoop-0024.ts, 14, 7))
+}
+

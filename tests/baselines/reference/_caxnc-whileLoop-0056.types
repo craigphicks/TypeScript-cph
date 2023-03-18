@@ -15,11 +15,11 @@ function t56(){
 >true : true
 
         d1;
->d1 : number
+>d1 : 0 | 1
 
         if (d1===0){
 >d1===0 : boolean
->d1 : number
+>d1 : 0 | 1
 >0 : 0
 
             d1 ;
@@ -35,7 +35,7 @@ function t56(){
         }
         else if (d1===1) {
 >d1===1 : boolean
->d1 : number
+>d1 : 1
 >1 : 1
 
             d1   ;
@@ -45,11 +45,11 @@ function t56(){
         }
         else if (d1===999){
 >d1===999 : boolean
->d1 : number
+>d1 : never
 >999 : 999
 
             d1    ;
->d1 : 999
+>d1 : never
         }
     }
     d1;

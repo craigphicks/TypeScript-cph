@@ -22,11 +22,11 @@ function t52(){
 >true : true
 
             d1;
->d1 : number
+>d1 : 0 | 1 | 2 | 3
 
             if (d2===0) d2=1;
 >d2===0 : boolean
->d2 : number
+>d2 : 0 | 1 | 2 | 3
 >0 : 0
 >d2=1 : 1
 >d2 : number
@@ -34,7 +34,7 @@ function t52(){
 
             else if (d2===1) d2=2;
 >d2===1 : boolean
->d2 : number
+>d2 : 1 | 2 | 3
 >1 : 1
 >d2=2 : 2
 >d2 : number
@@ -42,7 +42,7 @@ function t52(){
 
             else if (d2===2) d2=3;
 >d2===2 : boolean
->d2 : number
+>d2 : 2 | 3
 >2 : 2
 >d2=3 : 3
 >d2 : number
@@ -50,7 +50,7 @@ function t52(){
 
             else if (d2===3) {
 >d2===3 : boolean
->d2 : number
+>d2 : 3
 >3 : 3
 
                 d2=0; break;
@@ -63,11 +63,11 @@ function t52(){
 >d2 : 0
 
         d1;
->d1 : number
+>d1 : 0 | 1 | 2 | 3
 
         if (d1===0) d1=1;
 >d1===0 : boolean
->d1 : number
+>d1 : 0 | 1 | 2 | 3
 >0 : 0
 >d1=1 : 1
 >d1 : number
@@ -75,7 +75,7 @@ function t52(){
 
         else if (d1===1) d1=2;
 >d1===1 : boolean
->d1 : number
+>d1 : 1 | 2 | 3
 >1 : 1
 >d1=2 : 2
 >d1 : number
@@ -83,7 +83,7 @@ function t52(){
 
         else if (d1===2) d1=3;
 >d1===2 : boolean
->d1 : number
+>d1 : 2 | 3
 >2 : 2
 >d1=3 : 3
 >d1 : number
@@ -91,7 +91,7 @@ function t52(){
 
         else if (d1===3) {
 >d1===3 : boolean
->d1 : number
+>d1 : 3
 >3 : 3
 
             d1=0;

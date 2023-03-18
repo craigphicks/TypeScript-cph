@@ -45,14 +45,14 @@ function t21(){
 >b : false
     }
     let e = b;
->e : false
->b : false
+>e : boolean
+>b : boolean
 
     [b,c,d,e];
 >[b,c,d,e] : boolean[]
->b : false
+>b : boolean
 >c : boolean
 >d : boolean
->e : false
+>e : boolean
 }
 

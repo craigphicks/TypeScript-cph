@@ -1,0 +1,69 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0043.ts ===
+function t43(){
+>t43 : () => void
+
+    type D = 0 | 1 | 2 | 3 ;
+>D : 0 | 1 | 2 | 3
+
+    let d1: D = 0;
+>d1 : 0 | 1 | 2 | 3
+>0 : 0
+
+    d1; // expect 0
+>d1 : 0
+
+    while (true){
+>true : true
+
+        let d2: D = 0;
+>d2 : 0 | 1 | 2 | 3
+>0 : 0
+
+        d1; // expect 0
+>d1 : 0
+
+        d2; // expect 0
+>d2 : 0
+
+        while (true){
+>true : true
+
+            if (d2===0) {
+>d2===0 : boolean
+>d2 : 0
+>0 : 0
+
+                d2=1; break;
+>d2=1 : 1
+>d2 : 0 | 1 | 2 | 3
+>1 : 1
+            }
+        }
+        d1; // expect 0
+>d1 : 0
+
+        d2; // expect 1
+>d2 : 1
+
+        if (d1===0) {
+>d1===0 : boolean
+>d1 : 0
+>0 : 0
+
+            d1=1;
+>d1=1 : 1
+>d1 : 0 | 1 | 2 | 3
+>1 : 1
+
+            break;
+        }
+        d1; // expect never
+>d1 : never
+
+        d2; // expect never
+>d2 : never
+    }
+    d1; // expect 1
+>d1 : 1
+}
+

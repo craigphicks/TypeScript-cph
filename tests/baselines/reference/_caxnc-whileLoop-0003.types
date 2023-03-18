@@ -1,5 +1,4 @@
 === tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0003.ts ===
-// This loop converges after 1 iteration, but never terminates, so e is never
 function t3(){
 >t3 : () => void
 
@@ -15,35 +14,33 @@ function t3(){
 >d : boolean
 >true : true
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (d){
->d : true
+>d : boolean
 
         d = c;
->d = c : true
+>d = c : boolean
 >d : boolean
->c : true
+>c : boolean
 
         c = b;
 >c = b : true
 >c : boolean
 >b : true
 
-        [b,c,d];
->[b,c,d] : true[]
+        b;c;d; // expecting true,true,boolean
 >b : true
 >c : true
->d : true
+>d : boolean
     }
     let e = b;
->e : never
->b : never
+>e : true
+>b : true
 
-    [b,c,d,e];
->[b,c,d,e] : never[]
->b : never
->c : never
->d : never
->e : never
+    b;c;d;e; // expecting true,true,false,true
+>b : true
+>c : true
+>d : false
+>e : true
+
 }
 

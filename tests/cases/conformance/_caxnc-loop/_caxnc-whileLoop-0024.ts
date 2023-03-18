@@ -4,16 +4,21 @@
 // @declaration: true
 // @enableTSDevExpectString: true
 
-function t3(){
+declare function maybe(): boolean;
+function t24(){
     let b = true;
     let c = true;
     let d = true;
+    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (d){
-        d = c;
         c = b;
-        b;c;d; // expecting true,true,boolean
+        d = c;
+        b;c;d;
+        b = maybe();
+        if (!b) break;
+        b;c;d;
     }
     let e = b;
-    b;c;d;e; // expecting true,true,false,true
-
+    b;c;d;e;
+    [b,c,d,e];
 }

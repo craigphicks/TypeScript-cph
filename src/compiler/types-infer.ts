@@ -42,25 +42,27 @@ namespace ts {
 
 //    export type MakeRequired<Type, Key extends keyof Type> = Omit<Type, Key> & Required<Pick<Type, Key>>;
 
-    export type RefTypesSymtab = ESMap<Symbol, RefTypesType>;
-
+    //export type RefTypesSymtab = ESMap<Symbol, RefTypesType>;
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
         kind: RefTypesTableKind.return;
         type: RefTypesType;
         //typeConstraintItem?: ConstraintItem;
-        symtab: RefTypesSymtab;
-        constraintItem: ConstraintItem;
+        // symtab: RefTypesSymtab;
+        // constraintItem: ConstraintItem;
+        sci: RefTypesSymtabConstraintItem
     };
     export type RefTypesTableReturn = & {
         kind: RefTypesTableKind.return;
         symbol?: Symbol | undefined;
         isconst?: boolean;
+        //isAssign?: boolean;
         type: RefTypesType;
         //typeConstraintItem: ConstraintItem;
-        symtab: RefTypesSymtab;
-        constraintItem: ConstraintItem;
+        // symtab?: RefTypesSymtab;
+        // constraintItem: ConstraintItem;
+        sci: RefTypesSymtabConstraintItem
     };
     export enum InferCritKind {
         none= "none",
@@ -119,11 +121,18 @@ namespace ts {
         nodeToTypeMap: NodeToTypeMap
     };
 
-    export type RefTypesSymtabConstraintItem = & {
+    export type RefTypesSymtabConstraintItemNotNever = & {
         symtab: RefTypesSymtab;
-        constraintItem: ConstraintItem;
+        constraintItem: ConstraintItemNotNever;
+    };
+    export type RefTypesSymtabConstraintItemNever = & {
+        constraintItem: ConstraintItemNever;
     };
 
+    export interface RefTypesSymtabConstraintItem {
+        symtab?: RefTypesSymtab | undefined;
+        constraintItem: ConstraintItem;
+    };
 
     export type RefDeltaInferState = & {
         symtab: RefTypesSymtab;
@@ -171,9 +180,16 @@ namespace ts {
         callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
     };
 
-    export type InferRefArgs = & {
+    export type InferRefArgs1 = & {
         refTypesSymtab: RefTypesSymtab,
         constraintItem: ConstraintItem,
+        expr: Readonly<Node>,
+        qdotfallout?: RefTypesTableReturn[],
+        inferStatus: InferStatus,
+        crit: InferCrit,
+    };
+    export type InferRefArgs = & {
+        sci: RefTypesSymtabConstraintItem,
         expr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
         inferStatus: InferStatus,
@@ -249,6 +265,7 @@ namespace ts {
     export type ConstraintItemAlways = ConstraintItemBase & {
         kind: ConstraintItemKind.always;
     };
+    export type ConstraintItemNotNever = ConstraintItemLeaf | ConstraintItemNode | ConstraintItemAlways;
     export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ConstraintItemNever | ConstraintItemAlways;
 
     export function everyForMap<K,V>(m: ESMap<K,V>, f: (v: V,k: K) => boolean): boolean {
@@ -257,4 +274,7 @@ namespace ts {
         }
         return true;
     };
+
+    export function castType<T>(_x: any): asserts _x is T {}
+
 }

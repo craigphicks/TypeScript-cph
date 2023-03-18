@@ -1,10 +1,9 @@
-=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0012.ts ===
-// this loop never terminates because it always continues at `if (b)`
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0024.ts ===
 declare function maybe(): boolean;
 >maybe : () => boolean
 
-function t12(){
->t12 : () => void
+function t24(){
+>t24 : () => void
 
     let b = true;
 >b : boolean
@@ -22,36 +21,51 @@ function t12(){
     while (d){
 >d : boolean
 
-        d = c;
->d = c : boolean
->d : boolean
->c : boolean
-
         c = b;
->c = b : boolean
+>c = b : true
 >c : boolean
->b : boolean
+>b : true
 
-        if (b) {
->b : boolean
+        d = c;
+>d = c : true
+>d : boolean
+>c : true
 
-            continue;
-        }
+        b;c;d;
+>b : true
+>c : true
+>d : true
+
         b = maybe();
 >b = maybe() : boolean
 >b : boolean
 >maybe() : boolean
 >maybe : () => boolean
+
+        if (!b) break;
+>!b : boolean
+>b : boolean
+
+        b;c;d;
+>b : true
+>c : true
+>d : true
     }
     let e = b;
->e : boolean
->b : boolean
+>e : false
+>b : false
+
+    b;c;d;e;
+>b : false
+>c : true
+>d : true
+>e : false
 
     [b,c,d,e];
 >[b,c,d,e] : boolean[]
->b : boolean
->c : boolean
->d : false
->e : boolean
+>b : false
+>c : true
+>d : true
+>e : false
 }
 

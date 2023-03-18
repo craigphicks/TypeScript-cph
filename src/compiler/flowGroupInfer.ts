@@ -1,11 +1,16 @@
 namespace ts {
 
     export const extraAsserts = false; // not suitable for release
-    export const doNotTraverseNever = false;
+    /**
+     * Note: doNotTraverseNever is currently implemented at the inter-group level,
+     * but not at the intra-group level.
+     */
+    export const doNotTraverseNever = true;
     //export const widenLiteralInitializersInLoop = true;
     // export const widenLiteralAssignmentsInLoop = false;
     const hardCodeEnableTSDevExpectStringFalse = true;
     //export const doInvolved = false;
+    export const doProxySymtabSqueezing = true;
 
 
     let dbgs: Dbgs | undefined;
@@ -244,14 +249,16 @@ namespace ts {
         currentBranchesMap: CurrentBranchesMap;
         groupToNodeToType?: ESMap<GroupForFlow,NodeToTypeMap >;
         loopState?: ProcessLoopState; // only present in loops
-        loopGroupToProcessLoopStateMap?: WeakMap<GroupForFlow,ProcessLoopState>;
-
     }
-    interface ProcessLoopState {
+    export interface ProcessLoopState {
         loopGroup: GroupForFlow;
         loopCountWithoutFinals: number;
         invocations: number;
         groupToInvolvedSymbolTypeCache: WeakMap<GroupForFlow,InvolvedSymbolTypeCache>;
+        //symbolsReadNotAssigned?: Set<Symbol>;
+        symbolsAssigned?: Set<Symbol>;
+        symbolsAssignedRange?: WeakMap<Symbol,RefTypesType>;
+        scForLoop0?: RefTypesSymtabConstraintItem;
     }
     export type SymbolFlowInfo = & {
         passCount: number;
@@ -263,6 +270,7 @@ namespace ts {
         effectiveDeclaredTsType: Type; // <actual declared type> || <widened initial type>
         effectiveDeclaredType?: RefTypesType; // = createRefTypesType(effectiveDeclaredTsType), createWhenNeeded
     };
+    export type SymbolFlowInfoMap = WeakMap<Symbol,SymbolFlowInfo | undefined>;
     export interface MrState {
         checker: TypeChecker;
         replayableItems: WeakMap< Symbol, ReplayableItem >;
@@ -277,7 +285,8 @@ namespace ts {
         //loopGroupToProcessLoopStateMap: WeakMap<GroupForFlow,ProcessLoopState>; // TODO: move to ProcessLoopState
         currentLoopDepth: number;
         currentLoopsInLoopScope: Set<GroupForFlow>;
-        symbolFlowInfoMap: WeakMap<Symbol,SymbolFlowInfo | undefined>;
+        loopGroupToProcessLoopStateMap?: WeakMap<GroupForFlow,ProcessLoopState>;
+        symbolFlowInfoMap: SymbolFlowInfoMap;
     };
 
 
@@ -328,6 +337,8 @@ namespace ts {
         };
     }
 
+
+
     function createForFlow(groupsForFlow: GroupsForFlow) {
         return {
             heap: createHeap(groupsForFlow), // TODO: This call to createHeap might be too expensive to do for every loop, and it is unnecessary, use prototype.
@@ -365,6 +376,7 @@ namespace ts {
         };
         const refTypesTypeModule = createRefTypesTypeModule(checker);
         const mrNarrow = createMrNarrow(checker, sourceFile, mrState, refTypesTypeModule, compilerOptions);
+        initializeFlowGroupRefTypesSymtabModule(mrNarrow);
         return {
             sourceFile,
             groupsForFlow,
@@ -426,6 +438,7 @@ namespace ts {
         }
         return acc;
     }
+    // @ts-ignore
     function updateHeapWithGroupForFlowV2(groups: Readonly<Set<GroupForFlow>>, heap: Heap, returnSortedGroupIdxs?: boolean): number[] | undefined {
         if (getMyDebug()) {
             const gidx: number[]=[];
@@ -531,7 +544,7 @@ namespace ts {
         }
     }
 
-    function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileMrState, accumBranches: boolean): InferStatus {
+    function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileMrState, accumBranches: false): InferStatus {
         const mrState = sourceFileMrState.mrState;
         Debug.assert(sourceFileMrState.mrState.forFlowTop.groupToNodeToType);
         let groupNodeToTypeMap = mrState.forFlowTop.groupToNodeToType!.get(groupForFlow);
@@ -563,6 +576,7 @@ namespace ts {
         };
     }
 
+    // @ts-ignore
     function createCopyOfGroupToNodeToTypeMap(source: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>, groups: Readonly<Set<GroupForFlow>>): ESMap<GroupForFlow,NodeToTypeMap> {
         const tmp = new Map<GroupForFlow,NodeToTypeMap>();
         groups.forEach(g=>{
@@ -658,148 +672,110 @@ namespace ts {
     // };
 
     // @ ts-expect-error
-    function accumulateSymtabs(stacc: Readonly<RefTypesSymtab>, stnew: Readonly<RefTypesSymtab>, mrNarrow: MrNarrow, options: {
-        literalWidening?: boolean
-    }): { equal: boolean, symtab: RefTypesSymtab } {
-        let firstStbSymbolNeq: Symbol | undefined;
-        const equal = stacc.size === stnew.size && everyForMap(stnew,(tb,s)=>{
-            const ta = stacc.get(s);
-            if (!ta || !mrNarrow.equalRefTypesTypes(tb,ta)){
-                firstStbSymbolNeq = s;
-                return false;
-            }
-            return true;
-        });
-        if (equal) {
-            if (everyForMap(stacc,(_ta,s)=>stnew.has(s))) return { equal:true, symtab:stacc };
-            return { equal:false, symtab:stnew };
-        }
-        const symtab = mrNarrow.copyRefTypesSymtab(stnew);
-
-        let foundFirst = false;
-        stnew.forEach((tb,s)=>{
-            if (!foundFirst && s!==firstStbSymbolNeq) return;
-            foundFirst = true;
-            const ta = stacc.get(s);
-            if (!ta) return;
-            if (!mrNarrow.equalRefTypesTypes(tb,ta)){
-                const tunion = mrNarrow.unionOfRefTypesType([tb,ta]);
-                if (!options.literalWidening){
-                    symtab.set(s,tunion);
-                }
-                else {
-                    const sif = mrNarrow.mrState.symbolFlowInfoMap.get(s)!;
-                    Debug.assert(sif);
-                    const tunion2 = mrNarrow.refTypesTypeModule.literalWideningUnion(tunion,mrNarrow.getEffectiveDeclaredType(sif));
-                    // const effectDeclaredType = getEffectiveDeclaredType(sif, mrNarrow);
-                    // const msif = mrNarrow.refTypesTypeModule.getMapLiteralOfRefTypesType(effectDeclaredType);
-                    // const mu = mrNarrow.refTypesTypeModule.getMapLiteralOfRefTypesType(tunion);
-                    // let ltcount = 0;
-                    // const aktype: Type[] = [];
-                    // mu?.forEach((set,ktype)=>{
-                    //     const msifset = msif?.get(ktype);
-                    //     if (!msifset) {
-                    //         aktype.push(ktype);
-                    //         ltcount += set.size;
-                    //         return;
-                    //     }
-                    //     // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
-                    //     if (extraAsserts){
-                    //         set.forEach(lt=>Debug.assert(msifset.has(lt)));
-                    //     }
-                    // });
-                    // let tunion2 = tunion;
-                    // if (ltcount>=2){
-                    //     tunion2 = mrNarrow.refTypesTypeModule.addTypesToRefTypesType({ source:aktype, target:tunion });
-                    // }
-                    symtab.set(s,tunion2);
-                }
-            }
-        });
-        stacc.forEach((ta,s)=>{
-            if (stnew.has(s)) return;
-            symtab.set(s,ta);
-        });
-        return { equal:false, symtab };
-    }
-
-    // @ ts-expect-error
-    function updatedCurrentBranchesItem(cbi: Readonly<CurrentBranchesItem>, unioncbi: Readonly<CurrentBranchesItem>, mrNarrow: MrNarrow): CurrentBranchesItem {
-        const sc1: RefTypesSymtabConstraintItem  = {
-            symtab: cbi.sc.symtab,
-            constraintItem: cbi.sc.constraintItem
-        };
-        const scu: RefTypesSymtabConstraintItem  = {
-            symtab: unioncbi.sc.symtab,
-            constraintItem: unioncbi.sc.constraintItem
-        };
-        const constraintItem = orConstraints([scu.constraintItem,sc1.constraintItem]);
-        const {equal:_equal,symtab} = accumulateSymtabs(scu.symtab,sc1.symtab,mrNarrow,{ literalWidening:true });
-        //const {symtab,constraintItem} = orSymtabConstraints([sc1,scu],mrNarrow);
-        return {
-            sc: {
-                symtab, constraintItem
-            }
-        };
-    }
-
-
-    // function upDateLoopUnionCurrentBranchesMap(
-    //     currentBranchesMap: Readonly<CurrentBranchesMap>,
-    //     loopUnionCurrentBranchesMap: ESMap<GroupForFlow,CurrentBranchElement>,
-    //     mrNarrow: MrNarrow,
-    // ): void {
-    //     function updatedCurrentBranchesItem(cbi: Readonly<CurrentBranchesItem>, unioncbi: Readonly<CurrentBranchesItem>): CurrentBranchesItem {
-    //         const sc1: RefTypesSymtabConstraintItem  = {
-    //             symtab: cbi.sc.symtab,
-    //             constraintItem: cbi.sc.constraintItem
-    //         };
-    //         const scu: RefTypesSymtabConstraintItem  = {
-    //             symtab: unioncbi.sc.symtab,
-    //             constraintItem: unioncbi.sc.constraintItem
-    //         };
-    //         const {symtab,constraintItem} = orSymtabConstraints([sc1,scu],mrNarrow);
-    //         return {
-    //             sc: {
-    //                 symtab, constraintItem
-    //             }
-    //         };
+    // function accumulateSymtabs_old(stacc: Readonly<RefTypesSymtab>, stnew: Readonly<RefTypesSymtab>, mrNarrow: MrNarrow, options: {
+    //     literalWidening?: boolean
+    // }): { equal: boolean, symtab: RefTypesSymtab } {
+    //     let firstStbSymbolNeq: Symbol | undefined;
+    //     const equal = stacc.size === stnew.size && everyForMap(stnew,(tb,s)=>{
+    //         const ta = stacc.get(s);
+    //         if (!ta || !mrNarrow.equalRefTypesTypes(tb,ta)){
+    //             firstStbSymbolNeq = s;
+    //             return false;
+    //         }
+    //         return true;
+    //     });
+    //     if (equal) {
+    //         if (everyForMap(stacc,(_ta,s)=>stnew.has(s))) return { equal:true, symtab:stacc };
+    //         return { equal:false, symtab:stnew };
     //     }
-    //     currentBranchesMap.forEach((cbe,g)=>{
-    //         const unioncbe = loopUnionCurrentBranchesMap.get(g);
-    //         if (!unioncbe) {
-    //             loopUnionCurrentBranchesMap.set(g,cbe);
-    //             return;
-    //         }
-    //         if (cbe.kind===CurrentBranchesElementKind.plain){
-    //             Debug.assert(unioncbe.kind===CurrentBranchesElementKind.plain);
-    //             unioncbe.item = updatedCurrentBranchesItem(cbe.item,unioncbe.item);
-    //         }
-    //         else if (cbe.kind===CurrentBranchesElementKind.tf){
-    //             Debug.assert(unioncbe.kind===CurrentBranchesElementKind.tf);
-    //             unioncbe.truthy = updatedCurrentBranchesItem(cbe.truthy,unioncbe.truthy);
-    //             unioncbe.falsy = updatedCurrentBranchesItem(cbe.falsy,unioncbe.falsy);
+    //     const symtab = mrNarrow.copyRefTypesSymtab(stnew);
+
+    //     let foundFirst = false;
+    //     stnew.forEach((tb,s)=>{
+    //         if (!foundFirst && s!==firstStbSymbolNeq) return;
+    //         foundFirst = true;
+    //         const ta = stacc.get(s);
+    //         if (!ta) return;
+    //         if (!mrNarrow.equalRefTypesTypes(tb,ta)){
+    //             const tunion = mrNarrow.unionOfRefTypesType([tb,ta]);
+    //             if (!options.literalWidening){
+    //                 symtab.set(s,tunion);
+    //             }
+    //             else {
+    //                 const sif = mrNarrow.mrState.symbolFlowInfoMap.get(s)!;
+    //                 Debug.assert(sif);
+    //                 const tunion2 = mrNarrow.refTypesTypeModule.literalWideningUnion(tunion,mrNarrow.getEffectiveDeclaredType(sif));
+    //                 symtab.set(s,tunion2);
+    //             }
     //         }
     //     });
+    //     stacc.forEach((ta,s)=>{
+    //         if (stnew.has(s)) return;
+    //         symtab.set(s,ta);
+    //     });
+    //     return { equal:false, symtab };
     // }
-    // function updateProcessLoopState(forFlow: Readonly<ForFlow>, loopState: ProcessLoopState, mrNarrow: MrNarrow): boolean {
-    //     const hadChange = upDateLoopUnionGroupToNodeToTypeV2(forFlow.groupToNodeToType!, loopState.loopUnionGroupToNodeToType, mrNarrow.checker);
-    //     upDateLoopUnionCurrentBranchesMap(forFlow.currentBranchesMap, loopState.loopUnionCurrentBranchesMap, mrNarrow);
-    //     return hadChange;
-    // }
-    // function checkDevExpectString(node: Node, devExpectString: string, sourceFile: SourceFile): {expected: string | undefined, pass?: boolean} {
-    //     const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
-    //     let cr: CommentRange | undefined;
-    //     if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
-    //     if (cr) {
-    //         const comment = sourceFile.text.slice(cr.pos, cr.end);
-    //         const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
-    //         if (matches && matches.length>=2){
-    //             return { expected: matches[1], pass:devExpectString===matches[1] };
+
+    /**
+     * Keeping this temporarily until loops become single pass.
+     * Just want to make sure the new RefTypesSymtab works as before.
+     * "isAssign" ignore because not need until 1-pass deployment anyway.
+     *
+     * @param stacc
+     * @param stnew
+     * @param mrNarrow
+     * @param options
+     */
+    // function accumulateSymtabs(stacc: Readonly<RefTypesSymtab>, stnew: Readonly<RefTypesSymtab>, mrNarrow: MrNarrow, options: {
+    //     literalWidening?: boolean
+    // }): { /*equal: boolean, */ symtab: RefTypesSymtab } {
+    //     Debug.assert(getOuterSymtab(stacc)===getOuterSymtab(stnew));
+    //     const symtab = copyRefTypesSymtab(stnew);
+    //     stnew.forEach((tb,s)=>{
+    //         const ta = stacc.get(s);
+    //         if (!ta) return;
+    //         if (!mrNarrow.equalRefTypesTypes(tb,ta)){
+    //             const tunion = mrNarrow.unionOfRefTypesType([tb,ta]);
+    //             if (!options.literalWidening){
+    //                 symtab.set(s,tunion);
+    //             }
+    //             else {
+    //                 const sif = mrNarrow.mrState.symbolFlowInfoMap.get(s)!;
+    //                 Debug.assert(sif);
+    //                 const tunion2 = mrNarrow.refTypesTypeModule.literalWideningUnion(tunion,mrNarrow.getEffectiveDeclaredType(sif));
+    //                 symtab.set(s,tunion2);
+    //             }
     //         }
-    //     }
-    //     return { expected: undefined };
+    //     });
+    //     stacc.forEach((ta,s)=>{
+    //         if (stnew.has(s)) return;
+    //         symtab.set(s,ta);
+    //     });
+    //     return { symtab };
+
     // }
+
+    // @ ts-expect-error
+    // function updatedCurrentBranchesItem(cbi: Readonly<CurrentBranchesItem>, unioncbi: Readonly<CurrentBranchesItem>, mrNarrow: MrNarrow): CurrentBranchesItem {
+    //     const sc1: RefTypesSymtabConstraintItem  = {
+    //         symtab: cbi.sc.symtab,
+    //         constraintItem: cbi.sc.constraintItem
+    //     };
+    //     const scu: RefTypesSymtabConstraintItem  = {
+    //         symtab: unioncbi.sc.symtab,
+    //         constraintItem: unioncbi.sc.constraintItem
+    //     };
+    //     const constraintItem = orConstraints([scu.constraintItem,sc1.constraintItem]);
+    //     const {symtab} = accumulateSymtabs(scu.symtab,sc1.symtab,mrNarrow,{ literalWidening:true });
+    //     //const {symtab,constraintItem} = orSymtabConstraints([sc1,scu],mrNarrow);
+    //     return {
+    //         sc: {
+    //             symtab, constraintItem
+    //         }
+    //     };
+    // }
+
+
     export function getDevExpectString(node: Node, sourceFile: SourceFile): string | undefined {
         const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
         let cr: CommentRange | undefined;
@@ -827,6 +803,7 @@ namespace ts {
         return arrstr.length ? arrstr : undefined;
     }
 
+    // @ts-ignore
     function isGroupToNodeToMapConverged(
         groups: Readonly<Set<GroupForFlow>>,
         prior: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>,
@@ -867,12 +844,219 @@ namespace ts {
         return !hadChange;
     };
 
-    // @ ts-expect-error
-    function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow): number {
-        const dbgLevel=1;
-        if (sourceFileMrState.mrState.currentLoopDepth===0) Debug.assert(sourceFileMrState.mrState.currentLoopsInLoopScope.size===0);
+//     function processLoopOLD(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow): number {
+//         const dbgLevel=1;
+//         if (sourceFileMrState.mrState.currentLoopDepth===0) Debug.assert(sourceFileMrState.mrState.currentLoopsInLoopScope.size===0);
+//         sourceFileMrState.mrState.currentLoopsInLoopScope.add(loopGroup);
+//         sourceFileMrState.mrState.currentLoopDepth++;
+//         if (getMyDebug(dbgLevel)){
+//             consoleGroup(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}`);
+//         }
+//         Debug.assert(loopGroup.kind===GroupForFlowKind.loop);
+//         const anteGroupLabel: FlowGroupLabel = loopGroup.anteGroupLabels[0];
+//         Debug.assert(anteGroupLabel.kind===FlowGroupLabelKind.loop);
+//         const mrNarrow = sourceFileMrState.mrNarrow;
+
+//         const setOfKeysToDeleteFromCurrentBranchesMap = new Map<GroupForFlow,Set<"then" | "else"> | undefined>();
+
+//         let maxGroupIdxProcessed: number;
+//         const setOfLoopDeps = getGroupDependencies(loopGroup,sourceFileMrState, /*forFlow*/ undefined, { minGroupIdxToAdd: loopGroup.groupIdx });
+//         {
+//             maxGroupIdxProcessed = loopGroup.groupIdx;
+//             setOfLoopDeps.forEach(g=>maxGroupIdxProcessed=Math.max(maxGroupIdxProcessed, g.groupIdx));
+//         }
+//         //maxGroupIdxProcessed
+
+//         let copyOfGroupToNodeToTypeMap = createCopyOfGroupToNodeToTypeMap(forFlowParent.groupToNodeToType!, setOfLoopDeps);
+
+
+//         /**
+//          * When the outer loopGroup is complete, the loopState of each inner loopGroup-s should also become unreferenced.
+//          * Therefore the loopGroupToProcessLoopStateMap exists in the outer loop scope.
+//          *
+//          */
+
+//         const loopGroupToProcessLoopStateMap = forFlowParent.loopGroupToProcessLoopStateMap ?? new WeakMap<GroupForFlow,ProcessLoopState>();
+//         const loopState = (()=>{
+//             let got = loopGroupToProcessLoopStateMap.get(loopGroup);
+//             if (!got) {
+//                 got = createProcessLoopState(loopGroup,setOfLoopDeps);
+//                 loopGroupToProcessLoopStateMap.set(loopGroup,got);
+//             }
+//             return got;
+//         })();
+
+//         loopState.invocations++;
+//         let loopCount = 0;
+//         let forFlowFinal: ForFlow;
+
+//         // Cached for susequent iterations
+//         let cachedSCForLoopContinue: RefTypesSymtabConstraintItem[] = [];
+//         let accumBranches = loopState.invocations>1 || loopCount>0;
+//         const forFlow: ForFlow = {
+//             currentBranchesMap: forFlowParent.currentBranchesMap,
+//             heap: forFlowParent.heap,
+//             groupToNodeToType: forFlowParent.groupToNodeToType!,
+//             loopState,
+//             loopGroupToProcessLoopStateMap
+//         };
+
+//         if (getMyDebug(dbgLevel)){
+//             consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+//         }
+//         {
+//             const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, accumBranches);
+//             const scForLoop0 = doFlowGroupLabel(anteGroupLabel.antePrevious, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
+//             setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff)=>forFlow.currentBranchesMap.delete(gff, set));
+//             if (doProxySymtabSqueezing){
+//                 /**
+//                  * We don't need to make an original copy of scForLoop0.symtab because
+//                  * that is stored read-only in scForLoop0.symtab.outerLoop
+//                  */
+//                 scForLoop0.symtab = createSubloopRefTypesSymtab(scForLoop0.symtab);
+//             }
+//             resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { loopGroupIdx:loopGroup.groupIdx,cachedSCForLoop: scForLoop0 });
+//         }
+//         if (getMyDebug(dbgLevel)){
+//             consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+//         }
+//         do {
+//             accumBranches = loopState.invocations>1 || loopCount>0;
+//             if (loopCount===0){
+//                 // initial call to control done outside loop
+//             }
+//             else {
+//                 copyOfGroupToNodeToTypeMap = createCopyOfGroupToNodeToTypeMap(forFlow.groupToNodeToType!, setOfLoopDeps);
+
+//                 updateHeapWithGroupForFlowV2(setOfLoopDeps,forFlow.heap);
+//                 // const cachedSCForLoop = orSymtabConstraints([ cachedSCForLoop0, ...cachedSCForLoopContinue ], mrNarrow);
+//                 const cachedSCForLoop = orSymtabConstraints(cachedSCForLoopContinue, mrNarrow);
+//                 if (getMyDebug(dbgLevel)){
+//                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+//                 }
+//                 Debug.assert(forFlow.heap.peek()===loopGroup.groupIdx);
+//                 forFlow.heap.remove();
+//                 const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, accumBranches);
+//                     resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop, loopGroupIdx:loopGroup.groupIdx });
+//                 if (getMyDebug(dbgLevel)){
+//                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+//                 }
+//             }
+//             const cbe = forFlow.currentBranchesMap.get(loopGroup);
+//             Debug.assert(cbe?.kind===CurrentBranchesElementKind.tf);
+//             // do the rest of the loop
+//             if (getMyDebug(dbgLevel)){
+//                 consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+//             }
+//             resolveHeap(sourceFileMrState,forFlow, accumBranches, maxGroupIdxProcessed);
+//             if (getMyDebug(dbgLevel)){
+//                 consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+//             }
+
+//             setOfKeysToDeleteFromCurrentBranchesMap.clear();
+//             cachedSCForLoopContinue = anteGroupLabel.arrAnteContinue.map(fglab=>{
+//                 return doFlowGroupLabel(fglab, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
+//             });
+//             setOfKeysToDeleteFromCurrentBranchesMap.forEach((set,gff)=>forFlow.currentBranchesMap.delete(gff,set));
+//             let converged = false;
+//             if (doProxySymtabSqueezing){
+//                 converged = true;
+//             }
+//             else {
+//                 converged = isGroupToNodeToMapConverged(setOfLoopDeps,copyOfGroupToNodeToTypeMap,forFlow.groupToNodeToType!, mrNarrow.checker);
+//             }
+//             if (converged) {
+//                 if (getMyDebug(dbgLevel)){
+//                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop converged, loopCount=${loopCount}, loopState.invocations:${loopState.invocations}`);
+//                 }
+//                 forFlowFinal = forFlow;
+//                 break;
+//             }
+//             if (getMyDebug(dbgLevel)){
+//                 setOfLoopDeps.forEach(g=>{
+//                     const cbe = forFlow.currentBranchesMap.get(g); // some will have been deleted already, only those referenced externally should be present
+//                     if (cbe) {
+//                         dbgCurrentBranchElement(cbe, sourceFileMrState).forEach(s=>consoleLog(`processLoop[dbg lc:${loopCount}] li:${loopGroup.groupIdx}, gi:${g.groupIdx}]: ${s}`));
+//                     }
+//                     const nodeToTypeMap = forFlow.groupToNodeToType!.get(g);
+//                     if (nodeToTypeMap) {
+//                         dbgNodeToTypeMap(nodeToTypeMap).forEach(s=>consoleLog(`processLoop[dbg lc:${loopCount}] li:${loopGroup.groupIdx}, gi:${g.groupIdx}]: ${s}`));
+//                     }
+//                 });
+//             }
+
+//             loopState.loopCountWithoutFinals++;
+//         } while (++loopCount);
+//         Debug.assert(forFlowFinal!);
+
+//         // maybe the lhs should always be globalLoopState ?
+//         if (mrNarrow.compilerOptions.enableTSDevExpectString && sourceFileMrState.mrState.currentLoopDepth===1){
+//             sourceFileMrState.mrState.currentLoopsInLoopScope.forEach(loopg=>{
+//                 const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopg.maximalIdx];
+//                 const expected = getDevExpectString(node.parent, sourceFileMrState.sourceFile);
+//                 if (expected===undefined) return;
+// //                const lstate: ProcessLoopState = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopg)!;
+//                 const lstate: ProcessLoopState = loopGroupToProcessLoopStateMap.get(loopg)!;
+//                 const actual = `loopCount:${lstate.loopCountWithoutFinals}, invocations:${lstate.invocations}`;
+//                 if (actual!==expected){
+//                     Debug.fail(`@ts-dev-expect-string expected:"${expected}" !== actual:"${actual}" ; node:${dbgs!.dbgNodeToString(node)}`);
+//                 }
+//             });
+//         }
+//         /**
+//          *
+//          */
+//         if (getMyDebug(dbgLevel)){
+//             setOfLoopDeps.forEach(g=>{
+//                 const cbe = forFlowFinal.currentBranchesMap.get(g); // some will have been deleted already, only those referenced externally should be present
+//                 if (cbe) {
+//                     dbgCurrentBranchElement(cbe, sourceFileMrState).forEach(s=>consoleLog(`processLoop[dbg out] loopIdx:${loopGroup.groupIdx}, gIdx:${g.groupIdx}: ${s}`));
+//                 }
+//                 dbgNodeToTypeMap(forFlowFinal.groupToNodeToType!.get(g)!).forEach(s=>consoleLog(`processLoop[dbg out] loopIdx:${loopGroup.groupIdx}, gIdx:${g.groupIdx}: ${s}`));
+//             });
+//             consoleLog(`processLoop[out] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}, maxGroupIdxProcessed:${maxGroupIdxProcessed}, loopState.invocations:${loopState.invocations}`);
+//             consoleGroupEnd();
+//         }
+//         sourceFileMrState.mrState.currentLoopDepth--;
+//         if (sourceFileMrState.mrState.currentLoopDepth===0) sourceFileMrState.mrState.currentLoopsInLoopScope.clear();
+//         return maxGroupIdxProcessed;
+//     }
+
+    function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow): void {
         sourceFileMrState.mrState.currentLoopsInLoopScope.add(loopGroup);
         sourceFileMrState.mrState.currentLoopDepth++;
+        let maxGroupIdxProcessed: number;
+        const setOfLoopDeps = getGroupDependencies(loopGroup,sourceFileMrState, /*forFlow*/ undefined, { minGroupIdxToAdd: loopGroup.groupIdx });
+        {
+            maxGroupIdxProcessed = loopGroup.groupIdx;
+            setOfLoopDeps.forEach(g=>maxGroupIdxProcessed=Math.max(maxGroupIdxProcessed, g.groupIdx));
+        }
+
+        if (sourceFileMrState.mrState.currentLoopDepth===1) {
+            Debug.assert(sourceFileMrState.mrState.currentLoopsInLoopScope.size===1);
+            Debug.assert(!sourceFileMrState.mrState.loopGroupToProcessLoopStateMap);
+            sourceFileMrState.mrState.loopGroupToProcessLoopStateMap = new WeakMap<GroupForFlow,ProcessLoopState>();
+            processLoop(loopGroup, sourceFileMrState, forFlowParent, setOfLoopDeps, maxGroupIdxProcessed);
+
+            // before calling the loop the second time, we must know the "symbolsReadNotAssigned".
+
+            updateHeapWithGroupForFlowV2(setOfLoopDeps,forFlowParent.heap);
+            Debug.assert(forFlowParent.heap.peek()===loopGroup.groupIdx);
+            forFlowParent.heap.remove();
+            processLoop(loopGroup, sourceFileMrState, forFlowParent, setOfLoopDeps, maxGroupIdxProcessed);
+            delete sourceFileMrState.mrState.loopGroupToProcessLoopStateMap;
+        }
+        else {
+            Debug.assert(sourceFileMrState.mrState.loopGroupToProcessLoopStateMap);
+            processLoop(loopGroup, sourceFileMrState, forFlowParent, setOfLoopDeps, maxGroupIdxProcessed);
+        }
+        sourceFileMrState.mrState.currentLoopDepth--;
+        if (sourceFileMrState.mrState.currentLoopDepth===0) sourceFileMrState.mrState.currentLoopsInLoopScope.clear();
+    }
+
+    function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow,
+        setOfLoopDeps: Readonly<Set<GroupForFlow>>, maxGroupIdxProcessed: number): void {
+        const dbgLevel=1;
         if (getMyDebug(dbgLevel)){
             consoleGroup(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}`);
         }
@@ -883,24 +1067,13 @@ namespace ts {
 
         const setOfKeysToDeleteFromCurrentBranchesMap = new Map<GroupForFlow,Set<"then" | "else"> | undefined>();
 
-        let maxGroupIdxProcessed: number;
-        const setOfLoopDeps = getGroupDependencies(loopGroup,sourceFileMrState, /*forFlow*/ undefined, { minGroupIdxToAdd: loopGroup.groupIdx });
-        {
-            maxGroupIdxProcessed = loopGroup.groupIdx;
-            setOfLoopDeps.forEach(g=>maxGroupIdxProcessed=Math.max(maxGroupIdxProcessed, g.groupIdx));
-        }
-        //maxGroupIdxProcessed
-
-        let copyOfGroupToNodeToTypeMap = createCopyOfGroupToNodeToTypeMap(forFlowParent.groupToNodeToType!, setOfLoopDeps);
-
-
         /**
          * When the outer loopGroup is complete, the loopState of each inner loopGroup-s should also become unreferenced.
          * Therefore the loopGroupToProcessLoopStateMap exists in the outer loop scope.
          *
          */
 
-        const loopGroupToProcessLoopStateMap = forFlowParent.loopGroupToProcessLoopStateMap ?? new WeakMap<GroupForFlow,ProcessLoopState>();
+        const loopGroupToProcessLoopStateMap = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap!;
         const loopState = (()=>{
             let got = loopGroupToProcessLoopStateMap.get(loopGroup);
             if (!got) {
@@ -910,73 +1083,107 @@ namespace ts {
             return got;
         })();
 
-        loopState.invocations++;
         let loopCount = 0;
         let forFlowFinal: ForFlow;
 
-        // Cached for susequent iterations
-        let cachedSCForLoopContinue: RefTypesSymtabConstraintItem[] = [];
-        let accumBranches = loopState.invocations>1 || loopCount>0;
+        if (loopState.invocations>=1){
+            setOfLoopDeps.forEach(gff=>{
+                if (forFlowParent.currentBranchesMap.has(gff)) forFlowParent.currentBranchesMap.delete(gff);
+                if (forFlowParent.groupToNodeToType!.has(gff)) forFlowParent.groupToNodeToType!.delete(gff);
+            });
+        }
         const forFlow: ForFlow = {
             currentBranchesMap: forFlowParent.currentBranchesMap,
             heap: forFlowParent.heap,
             groupToNodeToType: forFlowParent.groupToNodeToType!,
             loopState,
-            loopGroupToProcessLoopStateMap
+            //loopGroupToProcessLoopStateMap
         };
 
         if (getMyDebug(dbgLevel)){
-            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
         }
+        //let cachedSubloopSCForLoopConditionIn: RefTypesSymtabConstraintItem;
+        let outerSCForLoopConditionIn: RefTypesSymtabConstraintItem;
         {
-            const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, accumBranches);
-            const cachedSCForLoop0 = doFlowGroupLabel(anteGroupLabel.antePrevious, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
-            setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff)=>forFlow.currentBranchesMap.delete(gff, set));
-            resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { loopGroupIdx:loopGroup.groupIdx,cachedSCForLoop: cachedSCForLoop0 });
-        }
-        if (getMyDebug(dbgLevel)){
-            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
-        }
-        do {
-            accumBranches = loopState.invocations>1 || loopCount>0;
-            if (loopCount===0){
-                // initial call to control done outside loop
+            const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
+            // Caching of scForLoop0 is only required for the outermost, depth===1, loop
+            if (sourceFileMrState.mrState.currentLoopDepth===1){
+                if (loopState.invocations===0){
+                    Debug.assert(!loopState.scForLoop0);
+                    outerSCForLoopConditionIn = doFlowGroupLabel(anteGroupLabel.antePrevious, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
+                    setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff)=>forFlow.currentBranchesMap.delete(gff, set));
+                    setOfKeysToDeleteFromCurrentBranchesMap.clear();
+                    loopState.scForLoop0 = outerSCForLoopConditionIn;
+                }
+                else {
+                    Debug.assert(loopState.scForLoop0);
+                    outerSCForLoopConditionIn = loopState.scForLoop0;
+                    // delete loopState.scForLoop0;
+                }
             }
             else {
-                copyOfGroupToNodeToTypeMap = createCopyOfGroupToNodeToTypeMap(forFlow.groupToNodeToType!, setOfLoopDeps);
-
-                updateHeapWithGroupForFlowV2(setOfLoopDeps,forFlow.heap);
-                // const cachedSCForLoop = orSymtabConstraints([ cachedSCForLoop0, ...cachedSCForLoopContinue ], mrNarrow);
-                const cachedSCForLoop = orSymtabConstraints(cachedSCForLoopContinue, mrNarrow);
-                if (getMyDebug(dbgLevel)){
-                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
-                }
-                Debug.assert(forFlow.heap.peek()===loopGroup.groupIdx);
-                forFlow.heap.remove();
-                const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, accumBranches);
-                    resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop, loopGroupIdx:loopGroup.groupIdx });
-                if (getMyDebug(dbgLevel)){
-                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
-                }
+                Debug.assert(!loopState.scForLoop0);
+                outerSCForLoopConditionIn = doFlowGroupLabel(anteGroupLabel.antePrevious, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
+                setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff)=>forFlow.currentBranchesMap.delete(gff, set));
+                setOfKeysToDeleteFromCurrentBranchesMap.clear();
             }
+            // cachedSubloopSCForLoopConditionIn = {
+            //     symtab: createSubloopRefTypesSymtab(outerSCForLoopConditionIn.symtab, loopState, loopGroup),
+            //     constraintItem: outerSCForLoopConditionIn.constraintItem
+            // };
+            const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
+
+            resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow,
+                { loopGroupIdx:loopGroup.groupIdx,cachedSCForLoop: subloopSCForLoopConditionIn });
+        }
+        if (getMyDebug(dbgLevel)){
+            consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
+        }
+        do {
             const cbe = forFlow.currentBranchesMap.get(loopGroup);
             Debug.assert(cbe?.kind===CurrentBranchesElementKind.tf);
             // do the rest of the loop
             if (getMyDebug(dbgLevel)){
-                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
             }
-            resolveHeap(sourceFileMrState,forFlow, accumBranches, maxGroupIdxProcessed);
+            resolveHeap(sourceFileMrState,forFlow, /*accumBranches*/ false, maxGroupIdxProcessed);
             if (getMyDebug(dbgLevel)){
-                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}, withinLoop:${accumBranches}`);
+                consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the rest of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
             }
 
             setOfKeysToDeleteFromCurrentBranchesMap.clear();
-            cachedSCForLoopContinue = anteGroupLabel.arrAnteContinue.map(fglab=>{
+            let arrSCForLoopContinue: RefTypesSymtabConstraintItem[] = [];
+            arrSCForLoopContinue = anteGroupLabel.arrAnteContinue.map(fglab=>{
                 return doFlowGroupLabel(fglab, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
             });
             setOfKeysToDeleteFromCurrentBranchesMap.forEach((set,gff)=>forFlow.currentBranchesMap.delete(gff,set));
-            // TODO: Convergence could be done more cheaply by setting flags at a deeper level during nodeToType updates.
-            const converged = isGroupToNodeToMapConverged(setOfLoopDeps,copyOfGroupToNodeToTypeMap,forFlow.groupToNodeToType!, mrNarrow.checker);
+            setOfKeysToDeleteFromCurrentBranchesMap.clear();
+
+            if (true) {
+                const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
+                const scForConditionUnionOfInAndContinue = orSymtabConstraints([subloopSCForLoopConditionIn, ...arrSCForLoopContinue], mrNarrow);
+                // at this point, can we set loopState.symbolsAssignedRange
+                if (loopState.invocations===0){
+                    loopState.symbolsAssignedRange = scForConditionUnionOfInAndContinue.symtab
+                        ? getSymbolsAssignedRange(scForConditionUnionOfInAndContinue.symtab) : undefined;
+                }
+                else if (loopState.invocations===1){
+                    loopState.symbolsAssignedRange = undefined;
+                }
+                else Debug.fail("unexpected");
+                if (getMyDebug(dbgLevel)){
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
+                }
+                forFlow.currentBranchesMap.delete(loopGroup);
+                const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
+                    resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop: scForConditionUnionOfInAndContinue, loopGroupIdx:loopGroup.groupIdx });
+                if (getMyDebug(dbgLevel)){
+                    consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
+                }
+            }
+
+            const converged = true;
             if (converged) {
                 if (getMyDebug(dbgLevel)){
                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, loop converged, loopCount=${loopCount}, loopState.invocations:${loopState.invocations}`);
@@ -1001,13 +1208,11 @@ namespace ts {
         } while (++loopCount);
         Debug.assert(forFlowFinal!);
 
-        // maybe the lhs should always be globalLoopState ?
         if (mrNarrow.compilerOptions.enableTSDevExpectString && sourceFileMrState.mrState.currentLoopDepth===1){
             sourceFileMrState.mrState.currentLoopsInLoopScope.forEach(loopg=>{
                 const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopg.maximalIdx];
                 const expected = getDevExpectString(node.parent, sourceFileMrState.sourceFile);
                 if (expected===undefined) return;
-//                const lstate: ProcessLoopState = sourceFileMrState.mrState.loopGroupToProcessLoopStateMap.get(loopg)!;
                 const lstate: ProcessLoopState = loopGroupToProcessLoopStateMap.get(loopg)!;
                 const actual = `loopCount:${lstate.loopCountWithoutFinals}, invocations:${lstate.invocations}`;
                 if (actual!==expected){
@@ -1015,6 +1220,9 @@ namespace ts {
                 }
             });
         }
+        /**
+         *
+         */
         if (getMyDebug(dbgLevel)){
             setOfLoopDeps.forEach(g=>{
                 const cbe = forFlowFinal.currentBranchesMap.get(g); // some will have been deleted already, only those referenced externally should be present
@@ -1026,9 +1234,7 @@ namespace ts {
             consoleLog(`processLoop[out] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}, maxGroupIdxProcessed:${maxGroupIdxProcessed}, loopState.invocations:${loopState.invocations}`);
             consoleGroupEnd();
         }
-        sourceFileMrState.mrState.currentLoopDepth--;
-        if (sourceFileMrState.mrState.currentLoopDepth===0) sourceFileMrState.mrState.currentLoopsInLoopScope.clear();
-        return maxGroupIdxProcessed;
+        loopState.invocations++;
     }
 
 
@@ -1036,18 +1242,15 @@ namespace ts {
      * Resolve the groups in the heap, which are in order of increasing dependence.
      * @param sourceFileMrState
      */
-    function resolveHeap(sourceFileMrState: SourceFileMrState, forFlow: ForFlow, withinLoop: boolean, maxGroupIdxToResolve?: number): void {
+    function resolveHeap(sourceFileMrState: SourceFileMrState, forFlow: ForFlow, withinLoop: false, maxGroupIdxToResolve?: number): void {
         const groupsForFlow = sourceFileMrState.groupsForFlow;
         const heap = forFlow.heap;
-
-        //let loopMaxProcessedGroupIdx = -1;
         while (!heap.isEmpty()){
             if (maxGroupIdxToResolve!==undefined && heap.peek()>maxGroupIdxToResolve) break;
             const groupIdx = heap.remove();
-//            if (groupIdx<=loopMaxProcessedGroupIdx) continue; // this group was already done inside loop
             const groupForFlow = groupsForFlow.orderedGroups[groupIdx];
             if (groupForFlow.kind===GroupForFlowKind.loop){
-                /*loopMaxProcessedGroupIdx = */ processLoop(groupForFlow,sourceFileMrState,forFlow);
+                processLoopOuter(groupForFlow,sourceFileMrState,forFlow);
                 continue;
             }
             const inferStatus: InferStatus = createInferStatus(groupForFlow, sourceFileMrState, withinLoop);
@@ -1060,21 +1263,44 @@ namespace ts {
         const {groupsForFlow,mrNarrow} = sourceFileMrState;
         return doFlowGroupLabelAux(fglabIn);
 
+        function getLoopLocals(loopGroup: Readonly<GroupForFlow>): Readonly<SymbolTable> | undefined {
+            const loopGroupMaximalNode = sourceFileMrState.groupsForFlow.posOrderedNodes[loopGroup.maximalIdx];
+            const locals: SymbolTable | undefined = ((loopGroupMaximalNode.parent as IterationStatement).statement as Block).locals;
+            return locals?.size ? locals : undefined;
+        }
+
+        function filterSymtabBySymbolTable(symtab: Readonly<RefTypesSymtab>, locals: Readonly<SymbolTable>, dbgCaller: string): RefTypesSymtab {
+            let newsymtab: RefTypesSymtab | undefined;
+            locals.forEach(s=>{
+                if (getMyDebug() && symtab.has(s)){
+                    consoleLog(`${dbgCaller}: descoping symbol ${mrNarrow.dbgSymbolToStringSimple(s)}`);
+                }
+                if (!newsymtab){
+                    if (symtab.has(s)) {
+                        (newsymtab = copyRefTypesSymtab(symtab)).delete(s);
+                    }
+                }
+                else newsymtab.delete(s);
+            });
+            return newsymtab ?? symtab;
+        }
+
         function doFlowGroupLabelAux(fglab: FlowGroupLabel): RefTypesSymtabConstraintItem {
             switch (fglab.kind){
                 case FlowGroupLabelKind.ref:{
                     const anteg = groupsForFlow.orderedGroups[fglab.groupIdx];
                     const cbe = forFlow.currentBranchesMap.get(anteg);
-                    if (!cbe){
+                    Debug.assert(!cbe || cbe.kind===CurrentBranchesElementKind.plain);
+                    if (!cbe || !((cbe as CurrentBranchElementPlain).item.sc as RefTypesSymtabConstraintItemNotNever).symtab){
                         // This may happen if continues after a loop are not yet fulfilled.
-                        return { symtab: mrNarrow.createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
+                        return { constraintItem: createFlowConstraintNever() };
                     }
+                    castType<CurrentBranchElementPlain>(cbe);
                     Debug.assert(cbe.kind===CurrentBranchesElementKind.plain);
                     setOfKeysToDeleteFromCurrentBranchesMap.set(anteg,undefined);
-                    return {
-                        symtab: cbe.item.sc.symtab,
-                        constraintItem: cbe.item.sc.constraintItem,
-                    };
+                    const ret: Partial<RefTypesSymtabConstraintItemNotNever> = { constraintItem: cbe.item.sc.constraintItem as ConstraintItemNotNever };
+                    if ((cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab) ret.symtab = (cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab;
+                    return ret as RefTypesSymtabConstraintItemNotNever;
                 }
                 case FlowGroupLabelKind.then:
                     return doThenElse(fglab.ifGroupIdx, /*truthy*/ true);
@@ -1090,9 +1316,23 @@ namespace ts {
                 case FlowGroupLabelKind.loopThen:
                     return doThenElse(fglab.loopGroupIdx, /*truthy*/ true);
                 case FlowGroupLabelKind.postLoop:{
-                    const sc0 = doPostLoop(fglab.loopGroupIdx);
-                    const asc = fglab.arrAnteBreak.map(x=>doFlowGroupLabelAux(x));
-                    return orSymtabConstraints([sc0, ...asc], mrNarrow);
+                    // let sc0 = doPostLoop(fglab.loopGroupIdx);
+                    let sc0: RefTypesSymtabConstraintItem | undefined = doThenElse(fglab.loopGroupIdx,/**/ false);
+                    if (isRefTypesSymtabConstraintItemNever(sc0)) sc0 = undefined;
+                    let asc: RefTypesSymtabConstraintItemNotNever[]
+                        = fglab.arrAnteBreak.map(x=>doFlowGroupLabelAux(x)).filter(sc=>!isRefTypesSymtabConstraintItemNever(sc)) as RefTypesSymtabConstraintItemNotNever[];
+
+                    const locals = getLoopLocals(sourceFileMrState.groupsForFlow.orderedGroups[fglab.loopGroupIdx]);
+                    if (locals){
+                        if (sc0) sc0 = { symtab: filterSymtabBySymbolTable(sc0.symtab!,locals, "postLoop-main"), constraintItem:sc0.constraintItem };
+                        asc = asc.map(sc=>({ symtab: filterSymtabBySymbolTable(sc.symtab,locals, "postLoop-break"), constraintItem: sc.constraintItem }));
+                    }
+                    if (sc0) asc.push(sc0 as RefTypesSymtabConstraintItemNotNever);
+
+                    // if (!doProxySymtabSqueezing) return orSymtabConstraints([sc0, ...asc], mrNarrow);
+                    if (asc.length===0) return { constraintItem: createFlowConstraintNever() };
+                    const oredsc = orSymtabConstraints(asc, mrNarrow);
+                    return createSuperloopRefTypesSymtabConstraintItem(oredsc);
                 }
                 case FlowGroupLabelKind.block:
                     return doFlowGroupLabelAux(fglab.ante);
@@ -1112,66 +1352,73 @@ namespace ts {
         function doThenElse(groupIdx: number, truthy: boolean): RefTypesSymtabConstraintItem {
             const anteg = groupsForFlow.orderedGroups[groupIdx];
             const cbe = forFlow.currentBranchesMap.get(anteg);
-            Debug.assert(cbe);
-            // cbe.kind===CurrentBranchesElementKind.tf does not always hold.
-            // For example, is case of `x; if (maybe()) break;` the target of the break will reference `x` because `maybe()` is not in the flow train.  C.f. _caxnc-whileLoop-33
-            let symtab: RefTypesSymtab;
-            let constraintItem: ConstraintItem;
-
+            if (true){
+                if (!cbe) return { constraintItem: createFlowConstraintNever() };
+            }
+            else {
+                // Perhaps this could imply that the path was untraversed because it was never
+                Debug.assert(cbe);
+            }
             if (cbe.kind===CurrentBranchesElementKind.tf) {
                 if (truthy){
                     const got = setOfKeysToDeleteFromCurrentBranchesMap.get(anteg);
                     if (!got) setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, new Set<"else" | "then">(["then"]));
                     else got.add("then");
-                    ({constraintItem,symtab}=cbe.truthy.sc);
+                    return cbe.truthy.sc;
                 }
                 else {
                     const got = setOfKeysToDeleteFromCurrentBranchesMap.get(anteg);
                     if (!got) setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, new Set<"else" | "then">(["else"]));
                     else got.add("else");
-                    ({constraintItem,symtab}=cbe.falsy.sc);
+                    return cbe.falsy.sc;
                 }
             }
             else {
                 Debug.fail("unexpected");
-                // ({constraintItem,symtab}=cbe.item.sc);
-                // setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, undefined);
             }
-            return { constraintItem,symtab };
         };
-        function doPostLoop(loopGroupIdx: number): RefTypesSymtabConstraintItem {
-            const loopGroup = groupsForFlow.orderedGroups[loopGroupIdx];
-            const cbe = forFlow.currentBranchesMap.get(loopGroup);
-            Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
-            const {constraintItem,symtab}=cbe.falsy.sc;
-            return { constraintItem,symtab };
-        }
+        // function doPostLoop(loopGroupIdx: number): RefTypesSymtabConstraintItem {
+        //     const loopGroup = groupsForFlow.orderedGroups[loopGroupIdx];
+        //     // if (loopGroup.postLoopGroupIdx!==undefined){
+        //     //     const postLoopGroup = groupsForFlow.orderedGroups[loopGroup.postLoopGroupIdx];
+        //     // }
+        //     const cbe = forFlow.currentBranchesMap.get(loopGroup);
+        //     Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
+        //     const {constraintItem,symtab}=cbe.falsy.sc;
+        //     return { constraintItem,symtab };
+        // }
         function doPostBlock(fglab: FlowGroupLabelPostBlock): RefTypesSymtabConstraintItem {
             const sc = doFlowGroupLabelAux(fglab.ante);
+            if (isRefTypesSymtabConstraintItemNever(sc)) return sc;
+            if (fglab.originatingBlock.locals?.size){
+                sc.symtab = filterSymtabBySymbolTable(sc.symtab!,fglab.originatingBlock.locals, "postBlock");
+            }
+            return sc;
             // remove the going-out-of-scope symbols from thre symbol table.
-            const localSymbolSet = new Set<Symbol>();
-            fglab.originatingBlock.locals?.forEach((symbol)=>localSymbolSet.add(symbol));
-            const newsymtab = mrNarrow.createRefTypesSymtab();
-            sc.symtab.forEach((entry,symbol)=>{
-                if (!localSymbolSet.has(symbol)) newsymtab.set(symbol,entry);
-            });
-            return { symtab:newsymtab, constraintItem:sc.constraintItem };
+            // const newsymtab = copyRefTypesSymtab(sc.symtab);
+            // fglab.originatingBlock.locals?.forEach((symbol)=>{
+            //     if (getMyDebug()){
+            //         consoleLog(`doPostBlock: descoping symbol ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+            //     }
+            //     newsymtab.delete(symbol);
+            // });
+            // return { symtab:newsymtab, constraintItem:sc.constraintItem };
         }
         function doOneFlowGroupLabelPostIf(fglab: FlowGroupLabelPostIf): RefTypesSymtabConstraintItem {
             const arrsc = fglab.arrAnte.map(ante=>doFlowGroupLabelAux(ante));
-            if (mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
-                const origGroup = groupsForFlow.orderedGroups[fglab.originatingGroupIdx];
-                const origCbe = forFlow.currentBranchesMap.get(origGroup)!;
-                Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
-                if (arrsc.length===2 &&
-                    arrsc[0].constraintItem===origCbe.truthy.sc.constraintItem &&
-                    arrsc[1].constraintItem===origCbe.falsy.sc.constraintItem){
-                    return {
-                        symtab: orSymtabs(arrsc.map(x=>x.symtab), mrNarrow),
-                        constraintItem: origCbe.originalConstraintIn
-                    };
-                }
-            }
+            // if (mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
+            //     const origGroup = groupsForFlow.orderedGroups[fglab.originatingGroupIdx];
+            //     const origCbe = forFlow.currentBranchesMap.get(origGroup)!;
+            //     Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
+            //     if (arrsc.length===2 &&
+            //         arrsc[0].constraintItem===origCbe.truthy.sc.constraintItem &&
+            //         arrsc[1].constraintItem===origCbe.falsy.sc.constraintItem){
+            //         return {
+            //             symtab: orSymtabs(arrsc.map(x=>x.symtab), mrNarrow),
+            //             constraintItem: origCbe.originalConstraintIn
+            //         };
+            //     }
+            // }
             return orSymtabConstraints(arrsc, mrNarrow);
         };
     }
@@ -1203,6 +1450,7 @@ namespace ts {
                     const flowGroupLabel = groupForFlow.anteGroupLabels[0];
                     sc = doFlowGroupLabel(flowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
                 }
+                return sc;
             }
             if (groupForFlow.previousAnteGroupIdx!==undefined){
                 Debug.assert(!sc);  // when previousAnteGroupIdx is present, anteGroupLabels.length must have been zero
@@ -1214,16 +1462,17 @@ namespace ts {
                 if (!(cbe && cbe.kind===CurrentBranchesElementKind.plain)){
                     Debug.fail("unexpected");
                 }
-                const {constraintItem,symtab}=cbe.item.sc;
-                sc = { constraintItem,symtab };
+                return { ...cbe.item.sc };
+                // const {constraintItem,symtab}=cbe.item.sc;
+                // sc = { constraintItem,symtab };
             }
-            if (!sc){
-                sc = { symtab: mrNarrow.createRefTypesSymtab(), constraintItem: createFlowConstraintAlways() };
-            }
-            return sc;
+            return { symtab:createRefTypesSymtab(), constraintItem: createFlowConstraintAlways() };
         };
 
-        const {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
+        //const {constraintItem:constraintItemArg , symtab:refTypesSymtabArg} = getAnteConstraintItemAndSymtab();
+        const anteSCArg = getAnteConstraintItemAndSymtab();
+        // const constraintItemArg = anteSCArg.constraintItem;
+        // const refTypesSymtabArg: RefTypesSymtab | undefined = (anteSCArg as RefTypesSymtabConstraintItemNotNever).symtab;
         /**
          * Delete all the no-longer-needed CurrentBranchElements.  Note that unentangled lower scoped const variables will be
          * implicitly deleted with these deletions of their containing ConstraintItem-s.
@@ -1231,10 +1480,12 @@ namespace ts {
         setOfKeysToDeleteFromCurrentBranchesMap.forEach((set,gff)=>forFlow.currentBranchesMap.delete(gff,set));
         if (getMyDebug()){
             consoleLog(`resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():`);
-            mrNarrow.dbgRefTypesSymtabToStrings(refTypesSymtabArg).forEach(s=>{
-                consoleLog(`resolveGroupForFlow[dbg] symtab: ${s}`);
-            });
-            mrNarrow.dbgConstraintItem(constraintItemArg).forEach(s=>{
+            if (!isRefTypesSymtabConstraintItemNever(anteSCArg)){
+                mrNarrow.dbgRefTypesSymtabToStrings(anteSCArg.symtab!).forEach(s=>{
+                    consoleLog(`resolveGroupForFlow[dbg] symtab: ${s}`);
+                });
+            }
+            mrNarrow.dbgConstraintItem(anteSCArg.constraintItem).forEach(s=>{
                 consoleLog(`resolveGroupForFlow[dbg] constraintItem: ${s}`);
             });
             consoleLog(`resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():`);
@@ -1243,116 +1494,73 @@ namespace ts {
         const crit: InferCrit = !inferStatus.inCondition ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
         Debug.assert(forFlow.groupToNodeToType);
 
-        // let involvedSymbolTypeCache: InvolvedSymbolTypeCache | undefined;
-        // let allInvolvedSymbolTypesMatch = false;
-        // if (doInvolved && forFlow.loopState){
-        //     involvedSymbolTypeCache = forFlow.loopState.groupToInvolvedSymbolTypeCache.get(groupForFlow);
-        //     if (!involvedSymbolTypeCache){
-        //         involvedSymbolTypeCache = {
-        //             in:{
-        //                 constraintItem: constraintItemArg
-        //             },
-
-        //         };
-        //         inferStatus.involved = {
-        //             initializing:true,
-        //             inEncountered: new WeakSet<Symbol>(),
-        //             //outEncountered: new WeakSet<Symbol>(),
-        //             involvedSymbolTypeCache,
-        //         };
-        //         forFlow.loopState.groupToInvolvedSymbolTypeCache.set(groupForFlow,involvedSymbolTypeCache);
-        //     }
-        //     else {
-        //         // check whether the input symbols-types ALL match current symbol table input
-        //         allInvolvedSymbolTypesMatch = true;
-        //         const {identifierMap,propertyAccessMap,constraintItem} = involvedSymbolTypeCache.in;
-        //         allInvolvedSymbolTypesMatch &&= constraintItem.kind === constraintItemArg.kind
-        //             && (
-        //                 constraintItem?.kind === ConstraintItemKind.never
-        //             ||
-        //                 (!!identifierMap && everyForMap(identifierMap, (tprev,s)=>{
-        //                     const tcurr=refTypesSymtabArg.get(s);
-        //                     Debug.assert(tcurr);
-        //                     return mrNarrow.equalRefTypesTypes(tprev,tcurr);
-        //                 })
-        //                 && !!propertyAccessMap && everyForMap(propertyAccessMap, (tprev,s)=>{
-        //                     const tcurr=refTypesSymtabArg.get(s);
-        //                     Debug.assert(tcurr);
-        //                     return mrNarrow.equalRefTypesTypes(tprev,tcurr);
-        //                 }))
-        //             );
-
-        //         if (getMyDebug()){
-        //             consoleLog(`resolveGroupForFlow[involved] group:${groupForFlow.groupIdx}, loopGroup:${forFlow.loopState.loopGroup.groupIdx}, allInvolvedSymbolTypesMatch:${allInvolvedSymbolTypesMatch}, loopCount:${forFlow.loopState.loopCountWithoutFinals}, loopInvocations:${forFlow.loopState.invocations}`);
-        //         }
-        //         inferStatus.involved = {
-        //             initializing:false,
-        //             inEncountered: new WeakSet<Symbol>(),
-        //             //outEncountered?: new WeakSet<Symbol>(),
-        //             involvedSymbolTypeCache,
-        //         };
-        //     }
-        // }
-
-        let passing: RefTypesTableReturn;
-        let failing: RefTypesTableReturn | undefined;
+        let scpassing: RefTypesSymtabConstraintItem;
+        let scfailing: RefTypesSymtabConstraintItem | undefined;
 
         inferStatus.isInLoop = !!forFlow.loopState;
-        if (doNotTraverseNever && isNeverConstraint(constraintItemArg)){
-            passing = {
-                kind:RefTypesTableKind.return,
-                type: mrNarrow.createRefTypesType(), // never
-                symtab: mrNarrow.createRefTypesSymtab(),
-                constraintItem: constraintItemArg
-            };
-            if (inferStatus.inCondition){
-                failing = {
-                    kind:RefTypesTableKind.return,
-                    type: mrNarrow.createRefTypesType(), // never
-                    symtab: mrNarrow.createRefTypesSymtab(),
-                    constraintItem: constraintItemArg
-                };
-            }
+        {
+        const {inferRefRtnType:{passing,failing}} = sourceFileMrState.mrNarrow.mrNarrowTypes({
+            sci: anteSCArg,
+            expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
+            scpassing = passing.sci;
+            scfailing = failing?.sci;
         }
-        else {
-            ({inferRefRtnType:{ passing,failing } } = sourceFileMrState.mrNarrow.mrNarrowTypes({
-                refTypesSymtab: refTypesSymtabArg, expr:maximalNode, crit, qdotfallout: undefined, inferStatus, constraintItem: constraintItemArg }));
-        }
+        /**
+         * doNotTraverseNever is now hardcoded into mrNarrowTypes at the top, so not needed here
+         */
+
+        // if (doNotTraverseNever && isRefTypesSymtabConstraintItemNever(anteSCArg)){
+        //     scpassing = { constraintItem: createFlowConstraintNever() };
+        //     if (inferStatus.inCondition){
+        //         scfailing = { constraintItem: createFlowConstraintNever() };
+        //     }
+        // }
+        // else {
+        //     const {inferRefRtnType} = sourceFileMrState.mrNarrow.mrNarrowTypes({
+        //         sci: anteSCArg,
+        //         expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
+
+        //     if (isNeverConstraint(inferRefRtnType.passing.constraintItem)) scpassing = { constraintItem: inferRefRtnType.passing.constraintItem };
+        //     else scpassing = { symtab:inferRefRtnType.passing.symtab, constraintItem: inferRefRtnType.passing.constraintItem as ConstraintItemNotNever };
+        // }
 
         if (inferStatus.inCondition){
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
                 gff: groupForFlow,
                 falsy: {
-                    sc: { symtab: failing!.symtab, constraintItem: failing!.constraintItem }
+                    sc: { symtab: scfailing!.symtab, constraintItem: scfailing!.constraintItem }
                     //byNode: retval.byNode,
                 },
                 truthy: {
-                    sc: { symtab: passing.symtab, constraintItem: passing.constraintItem }
+                    sc: { symtab: scpassing.symtab, constraintItem: scpassing.constraintItem }
                     //byNode: retval.byNode,
                 },
-                originalConstraintIn: constraintItemArg
+                originalConstraintIn: anteSCArg.constraintItem // TODO: is this ever used? I don't think so.
             };
             if (!inferStatus.accumBranches){
                 Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
                 forFlow.currentBranchesMap.set(groupForFlow, cbe);
             }
             else {
-                const unioncbe = forFlow.currentBranchesMap.get(groupForFlow);
-                if (!unioncbe) forFlow.currentBranchesMap.set(groupForFlow, cbe);
-                else {
-                    Debug.assert(unioncbe.kind===CurrentBranchesElementKind.tf);
-                    unioncbe.truthy = updatedCurrentBranchesItem(cbe.truthy,unioncbe.truthy,mrNarrow);
-                    unioncbe.falsy = updatedCurrentBranchesItem(cbe.falsy,unioncbe.falsy,mrNarrow);
-                }
+                Debug.fail("unexpected");
             }
+            // else {
+            //     const unioncbe = forFlow.currentBranchesMap.get(groupForFlow);
+            //     if (!unioncbe) forFlow.currentBranchesMap.set(groupForFlow, cbe);
+            //     else {
+            //         Debug.assert(unioncbe.kind===CurrentBranchesElementKind.tf);
+            //         unioncbe.truthy = updatedCurrentBranchesItem(cbe.truthy,unioncbe.truthy,mrNarrow);
+            //         unioncbe.falsy = updatedCurrentBranchesItem(cbe.falsy,unioncbe.falsy,mrNarrow);
+            //     }
+            // }
         }
         else {
             const cbe: CurrentBranchElementPlain = {
                 kind: CurrentBranchesElementKind.plain,
                 gff: groupForFlow,
                 item: {
-                    sc: { symtab:passing.symtab, constraintItem:passing.constraintItem }
+                    sc: { symtab:scpassing.symtab, constraintItem:scpassing.constraintItem }
                     //byNode: retval.byNode,
                 }
             };
@@ -1360,14 +1568,14 @@ namespace ts {
                 Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
                 forFlow.currentBranchesMap.set(groupForFlow, cbe);
             }
-            else {
-                const unioncbe = forFlow.currentBranchesMap.get(groupForFlow);
-                if (!unioncbe) forFlow.currentBranchesMap.set(groupForFlow, cbe);
-                else {
-                    Debug.assert(unioncbe.kind===CurrentBranchesElementKind.plain);
-                    unioncbe.item = updatedCurrentBranchesItem(cbe.item,unioncbe.item,mrNarrow);
-                }
-            }
+            // else {
+            //     const unioncbe = forFlow.currentBranchesMap.get(groupForFlow);
+            //     if (!unioncbe) forFlow.currentBranchesMap.set(groupForFlow, cbe);
+            //     else {
+            //         Debug.assert(unioncbe.kind===CurrentBranchesElementKind.plain);
+            //         unioncbe.item = updatedCurrentBranchesItem(cbe.item,unioncbe.item,mrNarrow);
+            //     }
+            // }
         }
 
         if (getMyDebug()){
@@ -1474,7 +1682,8 @@ namespace ts {
     function dbgCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): string[]{
         const astr: string[] = [];
         //astr.push(`nodeToTypeMap:`);
-        astr.push(...mrNarrow.dbgRefTypesSymtabToStrings(cbi.sc.symtab).map(s => `symtab:         ${s}`));
+        if (!cbi.sc.symtab) astr.push("symtab: <undef>");
+        else astr.push(...mrNarrow.dbgRefTypesSymtabToStrings(cbi.sc.symtab).map(s => `symtab:         ${s}`));
         astr.push(...mrNarrow.dbgConstraintItem(cbi.sc.constraintItem).map(s  => `constraintItem: ${s}`));
         return astr;
     };
@@ -1511,11 +1720,11 @@ namespace ts {
             }
             else if (cbe.kind===CurrentBranchesElementKind.tf){
                 if (cbe.truthy){
-                    astr.push("    true:");
+                    astr.push("    true:" + (cbe.truthyDone? "[deleted]" : ""));
                     astr.push(...dbgCurrentBranchesItem(cbe.truthy, sourceFileMrState.mrNarrow).map(s => "      "+s));
                 }
                 if (cbe.falsy){
-                    astr.push("    false:");
+                    astr.push("    false:" + (cbe.falsyDone? "[deleted]" : ""));
                     astr.push(...dbgCurrentBranchesItem(cbe.falsy, sourceFileMrState.mrNarrow).map(s => "      "+s));
                 }
             }
