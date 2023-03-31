@@ -9649,14 +9649,14 @@ myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTest
                 createSuperloopRefTypesSymtab[in] stin:   outer:]
                 createSuperloopRefTypesSymtab[in] stin: ]
                 createSuperloopRefTypesSymtab[out] stout: [
-                createSuperloopRefTypesSymtab[out] stout:   symbol:{d1,16}, { type:0, assignedType:0, isAssign:true }
+                createSuperloopRefTypesSymtab[out] stout:   symbol:{d1,16}, { type:1, assignedType:1, isAssign:true }
                 createSuperloopRefTypesSymtab[out] stout: ]
                 createSuperloopRefTypesSymtab[out]
               CurrentBranchesMapC[0].delete(groupIdx:2,[else,]),  size before delete:6
               CurrentBranchesMapC[0].delete(groupIdx:9,<undefined>),  size before delete:5
               resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
               resolveGroupForFlow[dbg] symtab: [
-              resolveGroupForFlow[dbg] symtab:   symbol:{d1,16}, { type:0, assignedType:0, isAssign:true }
+              resolveGroupForFlow[dbg] symtab:   symbol:{d1,16}, { type:1, assignedType:1, isAssign:true }
               resolveGroupForFlow[dbg] symtab: ]
               resolveGroupForFlow[dbg] constraintItem: {
               resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled:
@@ -9666,7 +9666,7 @@ myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTest
                 mrNarrowTypes[in] expr:[n11] d1, [423,430], Identifier, crit:{kind:none,negate:undefined}, inferStatus:{inCondition:false, currentReplayable:undefined}, qdotfalloutIn: <undef>
                 mrNarrowTypes[in] refTypesSymtab:
                   [
-                    symbol:{d1,16}, { type:0, assignedType:0, isAssign:true }
+                    symbol:{d1,16}, { type:1, assignedType:1, isAssign:true }
                   ]
                 mrNarrowTypes[in] constraintItemIn:
                   {
@@ -9676,7 +9676,7 @@ myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTest
                   mrNarrowTypesInner[in] expr:[n11] d1, [423,430], Identifier, inferStatus:{inCondition:false, currentReplayableItem:undefined
                   mrNarrowTypesInner[in] refTypesSymtab:
                   mrNarrowTypesInner[in] refTypesSymtab:  [
-                  mrNarrowTypesInner[in] refTypesSymtab:    symbol:{d1,16}, { type:0, assignedType:0, isAssign:true }
+                  mrNarrowTypesInner[in] refTypesSymtab:    symbol:{d1,16}, { type:1, assignedType:1, isAssign:true }
                   mrNarrowTypesInner[in] refTypesSymtab:  ]
                   mrNarrowTypesInner[in] constraintItemIn:
                   mrNarrowTypesInner[in] constraintItemIn:  {
@@ -9687,9 +9687,9 @@ myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTest
                   mrNarrowTypesInner[out]:  innerret.arttr[0]: {
                   mrNarrowTypesInner[out]:  innerret.arttr[0]:   kind: return,
                   mrNarrowTypesInner[out]:  innerret.arttr[0]:   symbol: { id:16, ename: d1 },
-                  mrNarrowTypesInner[out]:  innerret.arttr[0]:   type: 0
+                  mrNarrowTypesInner[out]:  innerret.arttr[0]:   type: 1
                   mrNarrowTypesInner[out]:  innerret.arttr[0]:   symtab: [
-                  mrNarrowTypesInner[out]:  innerret.arttr[0]:     symbol:{d1,16}, { type:0, assignedType:0, isAssign:true }
+                  mrNarrowTypesInner[out]:  innerret.arttr[0]:     symbol:{d1,16}, { type:1, assignedType:1, isAssign:true }
                   mrNarrowTypesInner[out]:  innerret.arttr[0]:   ]
                   mrNarrowTypesInner[out]:  innerret.arttr[0]:   constraintItem: {
                   mrNarrowTypesInner[out]:  innerret.arttr[0]:      symbolsInvoled:
@@ -9703,9 +9703,9 @@ myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTest
                 mrNarrowTypes[out]: mrNarrowTypesReturn.inferRefRtnType.passing:
                   mrNarrowTypes[dbg]: passing:  {
                   mrNarrowTypes[dbg]: passing:    kind: return,
-                  mrNarrowTypes[dbg]: passing:    type: 0
+                  mrNarrowTypes[dbg]: passing:    type: 1
                   mrNarrowTypes[dbg]: passing:    symtab: [
-                  mrNarrowTypes[dbg]: passing:      symbol:{d1,16}, { type:0, assignedType:0, isAssign:true }
+                  mrNarrowTypes[dbg]: passing:      symbol:{d1,16}, { type:1, assignedType:1, isAssign:true }
                   mrNarrowTypes[dbg]: passing:    ]
                   mrNarrowTypes[dbg]: passing:    constraintItem: {
                   mrNarrowTypes[dbg]: passing:       symbolsInvoled:
@@ -9717,16 +9717,16 @@ myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTest
                   mrNarrowTypes[dbg]: unmerged[0]: {
                   mrNarrowTypes[dbg]: unmerged[0]:   kind: return,
                   mrNarrowTypes[dbg]: unmerged[0]:   symbol: { id:16, ename: d1 },
-                  mrNarrowTypes[dbg]: unmerged[0]:   type: 0
+                  mrNarrowTypes[dbg]: unmerged[0]:   type: 1
                   mrNarrowTypes[dbg]: unmerged[0]:   symtab: [
-                  mrNarrowTypes[dbg]: unmerged[0]:     symbol:{d1,16}, { type:0, assignedType:0, isAssign:true }
+                  mrNarrowTypes[dbg]: unmerged[0]:     symbol:{d1,16}, { type:1, assignedType:1, isAssign:true }
                   mrNarrowTypes[dbg]: unmerged[0]:   ]
                   mrNarrowTypes[dbg]: unmerged[0]:   constraintItem: {
                   mrNarrowTypes[dbg]: unmerged[0]:      symbolsInvoled:
                   mrNarrowTypes[dbg]: unmerged[0]:      kind: always,
                   mrNarrowTypes[dbg]: unmerged[0]:     },
                   mrNarrowTypes[dbg]: unmerged[0]: }
-                mrNarrowTypes[out] byNode: node: [n11] d1, [423,430], Identifier, type: 0
+                mrNarrowTypes[out] byNode: node: [n11] d1, [423,430], Identifier, type: 1
                 mrNarrowTypes[out] [n11] d1, [423,430], Identifier
               resolveGroupForFlow[dbg:] currentBranchesMap[after]:
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap.size:5
@@ -9811,7 +9811,7 @@ myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTest
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:12
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:1
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:         [
-              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:           symbol:{d1,16}, { type:0, assignedType:0, isAssign:true }
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:           symbol:{d1,16}, { type:1, assignedType:1, isAssign:true }
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:         ]
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: {
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled:
@@ -9833,16 +9833,16 @@ myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTest
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:8: [node:[n39] 1, [307,308], NumericLiteral] -> type:1
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:8: [node:[n23] d1===1, [302,308], BinaryExpression] -> type:true
               resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:9: [node:[n24] d1, [311,326], Identifier] -> type:1
-              resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:12: [node:[n11] d1, [423,430], Identifier] -> type:0
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:12: [node:[n11] d1, [423,430], Identifier] -> type:1
               resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:
               resolveGroupForFlow[out]: [n11] d1, [423,430], Identifier, 
-            getTypeByMrNarrow[out] expr: [n11] d1, [423,430], Identifier -> 0
-          getFlowTypeOfReference[out]: reference [n11] d1, [423,430], Identifier, declaredType: number, initialType: number | undefined, flowContainer: 29, flowNode: [f3], BranchLabel|Label|Referenced, branchKind:postWhileLoop, [gftor call depth:0, return: 0
-        In getIdentifier(), getFlowTypeOfReference returned 0
-        checkExpression[out]: [n11] d1, [423,430], Identifier -> 0
+            getTypeByMrNarrow[out] expr: [n11] d1, [423,430], Identifier -> 1
+          getFlowTypeOfReference[out]: reference [n11] d1, [423,430], Identifier, declaredType: number, initialType: number | undefined, flowContainer: 29, flowNode: [f3], BranchLabel|Label|Referenced, branchKind:postWhileLoop, [gftor call depth:0, return: 1
+        In getIdentifier(), getFlowTypeOfReference returned 1
+        checkExpression[out]: [n11] d1, [423,430], Identifier -> 1
       checkSourceElement[out]: nodeid: 53
     checkSourceElement[out]: nodeid: 30
   checkSourceElement[out]: nodeid: 29
   checkSourceElement[in] node: [n54] , [433,434], EndOfFileToken
   checkSourceElement[out]: nodeid: 54
-_caxnc-whileLoop-0056.ts, time(ms): 493, myMaxDepth: 0
+_caxnc-whileLoop-0056.ts, time(ms): 477, myMaxDepth: 0

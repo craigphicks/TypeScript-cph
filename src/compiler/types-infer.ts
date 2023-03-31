@@ -275,6 +275,6 @@ namespace ts {
         return true;
     };
 
-    export function castType<T>(_x: any): asserts _x is T {}
+    export function assertCastType<T>(_x: any): asserts _x is T {}
 
 }

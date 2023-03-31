@@ -1,7 +1,4 @@
 namespace ts {
-    // @ ts-expect-error
-    //const extraAsserts = true;
-    //function assertType<X>(x: any): asserts x is X {};
     export function debugAssert(
         _expression: unknown, _message?: string /*, _verboseDebugInfo?: string | (() => string), _stackCrawlMark?: AnyFunction*/
     ): asserts _expression {

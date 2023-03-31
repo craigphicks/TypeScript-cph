@@ -1,17 +1,6 @@
 /* eslint-disable no-double-space */
 namespace ts {
 
-    //export const extraAsserts = true;
-
-    // function castType<X>(x: any): x is X {
-    //     return true;
-    // };
-    // @ts-ignore TS6133: 'x' is declared but its value is never read.
-    function assertType<X>(x: any): asserts x is X {};
-
-    // export function isRefTypesTableLeaf(x: RefTypesTable): x is RefTypesTableLeaf {
-    //     return x.kind===RefTypesTableKind.leaf;
-    // }
     export function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn {
         return x.kind===RefTypesTableKind.return;
     }
@@ -492,7 +481,7 @@ namespace ts {
             // Object          = 1 << 19,  // Object type
             if (flags & (TypeFlags.Object)) {
                 if (checker.isArrayType(tstype)||checker.isTupleType(tstype)) return ["object"];
-                assertType<ObjectType>(tstype);
+                assertCastType<ObjectType>(tstype);
                 if (tstype.callSignatures?.length || tstype.constructSignatures?.length) return ["function"];
                 return ["object"];
             }
@@ -910,7 +899,7 @@ namespace ts {
                 inferStatus: { ...args.inferStatus, inCondition: false }, // because the lhs is definitely not const
             });
             if (leftExpr.kind===SyntaxKind.Identifier) {
-                assertType<Identifier>(leftExpr);
+                assertCastType<Identifier>(leftExpr);
                 const symbol = getResolvedSymbol(leftExpr);
                 let symbolFlowInfo: SymbolFlowInfo | undefined = _mrState.symbolFlowInfoMap.get(symbol);
                 if (!symbolFlowInfo){
@@ -1460,7 +1449,7 @@ namespace ts {
             // First duty is to call the pre-chain, if any.
             const pre = InferRefTypesPreAccess({ refTypesSymtab:symtabIn, constraintItem: constraintItemIn, expr:callExpr, /*crit,*/ qdotfallout, inferStatus });
             if (pre.kind==="immediateReturn") return pre.retval;
-            assertType<CallExpression>(callExpr);
+            assertCastType<CallExpression>(callExpr);
             const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[]=[];
             let sigGroupFailedCount = 0;
             const setOfTransientCallArgumentSymbol = new Set<TransientCallArgumentSymbol>();
@@ -2446,45 +2435,8 @@ namespace ts {
                     } // endof if (inferStatus.replayables.has(symbol))
                     let type: RefTypesType | undefined;
                     const isconst = symbolFlowInfo.isconst;
-                    if (doProxySymtabSqueezing){
-                        type = refTypesSymtabIn.get(symbol) ?? getSymbolFlowInfoInitializerOrDeclaredTypeFromSymbolFlowInfo(symbolFlowInfo);
-                        Debug.assert(type);
-                    }
-                    else {
-                        if (!hasSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn })){
-                            type = getSymbolFlowInfoInitializerOrDeclaredType(symbol);
-                        }
-                        else {
-                            type = evalSymbol(symbol, { symtab:refTypesSymtabIn,constraintItem:constraintItemIn }, getDeclaredType, mrNarrow);
-                        }
-                    }
-                    // if (doInvolved && inferStatus.involved){
-                    //     const involved = inferStatus.involved;
-                    //     if (!involved.inEncountered.has(symbol)){
-                    //         (involved.involvedSymbolTypeCache.in.identifierMap
-                    //             ?? (involved.involvedSymbolTypeCache.in.identifierMap = new Map<Symbol,RefTypesType>()))
-                    //                 .set(symbol,type);
-                    //         involved.inEncountered.add(symbol);
-                    //     }
-                    // }
-                    // if (inferStatus.involved){
-                    //     /**
-                    //      * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
-                    //      * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
-                    //      * (2) Only the first occurence of a symbol in the group is used to initialize.
-                    //      */
-                    //     const involved = inferStatus.involved;
-                    //     if (extraAsserts){
-                    //         if (!involved.initializing) {
-                    //             Debug.assert(involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol));
-                    //         }
-                    //     }
-                    //     if (involved.initializing && !involved.involvedSymbolTypeCache.in.identifierMap?.get(symbol)){
-                    //         (involved.involvedSymbolTypeCache.in.identifierMap
-                    //             ?? (involved.involvedSymbolTypeCache.in.identifierMap = new Map<Symbol,RefTypesType>()))
-                    //                 .set(symbol,type);
-                    //     }
-                    // }
+                    type = refTypesSymtabIn.get(symbol) ?? getSymbolFlowInfoInitializerOrDeclaredTypeFromSymbolFlowInfo(symbolFlowInfo);
+                    Debug.assert(type);
                     if (inferStatus.currentReplayableItem){
                         // If the value of the symbol has definitely NOT changed since the defintion of the replayable.
                         // then we can continue on below to find the value via constraints.  Otherwise, we must use the value of the symbol
@@ -2492,7 +2444,6 @@ namespace ts {
                         // Currently `isconst` is equivalent to "definitely NOT changed".
                         if (!isconst){
                             const tstype = inferStatus.currentReplayableItem.nodeToTypeMap.get(expr)!;
-                            //mergeOneIntoNodeToTypeMaps(expr,tstype,inferStatus.groupNodeToTypeMap); // TODO: comment out and test
                             Debug.assert(type);
                             type = createRefTypesType(tstype);
                             return {
@@ -2509,11 +2460,6 @@ namespace ts {
                             };
                         }
                     }
-                    // let scout: RefTypesSymtabConstraintItem = {
-                    //     symtab: refTypesSymtabIn,
-                    //     constraintItem: constraintItemIn
-                    // };
-                    // ({type,sc:scout} = maybeUnionOfTypeOverLoop(symbol,isconst??false,type,expr,scout,inferStatus, "identifier"));
                     const scout: RefTypesSymtabConstraintItem = {
                         symtab: refTypesSymtabIn,
                         constraintItem: constraintItemIn
@@ -2524,8 +2470,6 @@ namespace ts {
                         isconst,
                         type,
                         sci: scout
-                        // symtab: scout.symtab,
-                        // constraintItem: scout.constraintItem
                     };
                     const mrNarrowTypesInnerReturn: MrNarrowTypesInnerReturn = {
                         arrRefTypesTableReturn: [rttr],
@@ -2589,7 +2533,6 @@ namespace ts {
                     };
                     return {
                         arrRefTypesTableReturn: applyNotNullUndefCritToRefTypesTableReturn(innerret.arrRefTypesTableReturn),
-                        //arrTypeAndConstraint: innerret.arrTypeAndConstraint
                     };
                 }
                 case SyntaxKind.ParenthesizedExpression:{
@@ -2887,11 +2830,11 @@ namespace ts {
                      * So we don't set the byNode entry for expr.
                      * However, the variable types within the literal array must be set herein.
                      */
-                    assertType<Readonly<ArrayLiteralExpression>>(expr);
+                    assertCastType<Readonly<ArrayLiteralExpression>>(expr);
                     let sci: RefTypesSymtabConstraintItem = { symtab:refTypesSymtabIn,constraintItem:constraintItemIn };
                     for (const e of expr.elements){
                         if (e.kind ===SyntaxKind.SpreadElement){
-                            assertType<SpreadElement>(e);
+                            assertCastType<SpreadElement>(e);
                             ({inferRefRtnType:{ passing:{sci}}}= mrNarrowTypes({
                                 sci,
                                 expr:e.expression,
@@ -2921,7 +2864,7 @@ namespace ts {
                 }
                 break;
                 case SyntaxKind.AsExpression:{
-                    assertType<Readonly<AsExpression>>(expr);
+                    assertCastType<Readonly<AsExpression>>(expr);
                     const {expression:lhs,type:typeNode} = expr;
                     const rhs = mrNarrowTypes({
                         sci:{

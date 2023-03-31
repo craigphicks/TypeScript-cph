@@ -20,6 +20,7 @@
 
     0. Need to check timing - overhead is likely to be higher than existing flow algorithm, but the strict O(N) complexity is a plus.
 
+    0. existing test file `controlFlowIterationErrors` contains only `while` loop syntax, try it out.
 
 0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
 
@@ -80,6 +81,14 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. Bug fix in RefTypeSymtabProxy.get
+```
+    // TODO: changed becaused isAssign:true && assignedType: undefined causes _caxnc-whileLoop-0056 to fail.
+    //this.symtabInner.set(symbol,{ type, isAssign:true, assignedType: undefined });
+    this.symtabInner.set(symbol,{ type, isAssign:true, assignedType: range });
+```
+All _caxnc- passing (fixme moved in FIXME folder )
 
 0. [proxySymtabSqueezing] Description: The name refers to a O(#statements) 2-pass top-down algorithm for processing types in loops.
 

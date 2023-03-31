@@ -87,7 +87,9 @@ namespace ts {
                     const outer = this.symtabOuter?.get(symbol);
                     Debug.assert(outer);
                     const type = mrNarrow.unionOfRefTypesType([range,outer]);
-                    this.symtabInner.set(symbol,{ type, isAssign:true, assignedType: undefined });
+                    // TODO: changed becaused isAssign:true && assignedType: undefined causes _caxnc-whileLoop-0056 to fail.
+                    //this.symtabInner.set(symbol,{ type, isAssign:true, assignedType: undefined });
+                    this.symtabInner.set(symbol,{ type, isAssign:true, assignedType: range });
                     return type;
                 }
             }
@@ -105,6 +107,9 @@ namespace ts {
         set(symbol: Symbol, type: Readonly<RefTypesType>): RefTypesSymtabProxy {
             // NOTE: do NOT try to set pt elements - it is unsafe because someone else could be using the pt object.
             const pt = this.symtabInner.get(symbol);
+            if (extraAsserts){
+                Debug.assert(!!pt?.isAssign===!!pt?.assignedType);
+            }
             this.symtabInner.set(symbol,{ type, isAssign: pt?.isAssign, assignedType: pt?.assignedType ? type : undefined });
             return this;
         }
@@ -153,7 +158,7 @@ namespace ts {
     // }
 
     function createSubloopRefTypesSymtab(outer: Readonly<RefTypesSymtab>, loopState: ProcessLoopState, loopGroup: Readonly<GroupForFlow>): RefTypesSymtab {
-        castType<Readonly<RefTypesSymtabProxy>>(outer);
+        assertCastType<Readonly<RefTypesSymtabProxy>>(outer);
         return new RefTypesSymtabProxy(outer,undefined,/*isSubloop*/true, loopState, loopGroup);
     }
     export function createSubLoopRefTypesSymtabConstraint(outerSC: Readonly<RefTypesSymtabConstraintItem>, loopState: ProcessLoopState, loopGroup: Readonly<GroupForFlow>): RefTypesSymtabConstraintItem {
@@ -169,7 +174,7 @@ namespace ts {
         // function getProxyType(symbol: Symbol, st: Readonly<RefTypesSymtabProxy>): RefTypesSymtabProxyType | undefined {
         //     return st.symtabInner.get(symbol) ?? (st.symtabOuter ? getProxyType(symbol, st.symtabOuter) : undefined);
         //  }
-        castType<Readonly<RefTypesSymtabProxy>>(stin);
+        assertCastType<Readonly<RefTypesSymtabProxy>>(stin);
         Debug.assert(!stin.isSubloop || stin.loopState);
         if (getMyDebug()){
             consoleGroup(`createSuperloopRefTypesSymtab[in]`);
@@ -182,7 +187,8 @@ namespace ts {
         //let symbolsReadNotAssigned: undefined | Set<Symbol>;
         stin.symtabInner.forEach((pt,symbol)=>{
             let type = pt.type;
-            if (!pt.isAssign){
+            // IWOZERE TODO: changing !pt.isAssign to !pt.assignedType makes _caxnc-whileLoop-0056 fail.
+            if (/*!pt.isAssign*/!pt.assignedType){
                 const outerType = stin.symtabOuter?.get(symbol);
                 if (outerType) type = mrNarrow.intersectionOfRefTypesType(type,outerType);
                 //if (outerIsAssign) stout.setAsAssigned(symbol, type);
@@ -214,7 +220,7 @@ namespace ts {
 
 
     export function getSymbolsAssignedRange(that: Readonly<RefTypesSymtab>): WeakMap<Symbol,RefTypesType> | undefined {
-        castType<Readonly<RefTypesSymtabProxy>>(that);
+        assertCastType<Readonly<RefTypesSymtabProxy>>(that);
         let sar: WeakMap<Symbol,RefTypesType> | undefined;
         that.symtabInner.forEach((pt,s)=>{
             if (pt.assignedType) (sar ?? (sar=new WeakMap<Symbol,RefTypesType>())).set(s,pt.assignedType);
@@ -227,7 +233,7 @@ namespace ts {
     }
     export function createRefTypesSymtabWithEmptyInnerSymtab(templateSymtab: Readonly<RefTypesSymtab> | undefined): RefTypesSymtab {
         Debug.assert(templateSymtab instanceof RefTypesSymtabProxy);
-        castType<Readonly<RefTypesSymtabProxy>>(templateSymtab);
+        assertCastType<Readonly<RefTypesSymtabProxy>>(templateSymtab);
         return new RefTypesSymtabProxy(templateSymtab.symtabOuter,undefined,templateSymtab.isSubloop, templateSymtab.loopState, templateSymtab.loopGroup);
     }
     export function createRefTypesSymtabConstraintWithEmptyInnerSymtab(templatesc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
@@ -241,7 +247,7 @@ namespace ts {
 
     export function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
         Debug.assert(symtab instanceof RefTypesSymtabProxy);
-        castType<Readonly<RefTypesSymtabProxy>>(symtab);
+        assertCastType<Readonly<RefTypesSymtabProxy>>(symtab);
         return new RefTypesSymtabProxy(symtab.symtabOuter,symtab.symtabInner,symtab.isSubloop, symtab.loopState, symtab.loopGroup);
     }
     export function copyRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
@@ -264,7 +270,7 @@ namespace ts {
         }
         let target: RefTypesSymtabProxy;
         try {
-            castType<Readonly<RefTypesSymtabProxy>[]>(arr);
+            assertCastType<Readonly<RefTypesSymtabProxy>[]>(arr);
             if (arr.length===0) Debug.fail("unexpected");
             if (arr.length===1) return (target=arr[0]);
             for (let i=1; i<arr.length; i++){
@@ -285,7 +291,7 @@ namespace ts {
             });
 
             target = createRefTypesSymtabWithEmptyInnerSymtab(arr[0]) as RefTypesSymtabProxy;
-            castType<Readonly<RefTypesSymtabProxy>>(target);
+            assertCastType<Readonly<RefTypesSymtabProxy>>(target);
 
             //const target = new RefTypesSymtabProxy(arr[0].symtabOuter,undefined,arr[0].);
             mapSymToPType.forEach(({set, isAssign:_isAssign, setAssigned},symbol)=>{
@@ -330,7 +336,7 @@ namespace ts {
 
 
     export function dbgRefTypesSymtabToStrings(x: RefTypesSymtab): string[] {
-        castType<RefTypesSymtabProxy>(x);
+        assertCastType<RefTypesSymtabProxy>(x);
         const as: string[]=["["];
         if (x.isSubloop){
             as.push(`loopGroup?.groupIdx:${x.loopGroup?.groupIdx}, x.loopState?.invocations:${x.loopState?.invocations}`);
