@@ -1,10 +1,6 @@
 namespace ts {
 
-    export const extraAsserts = true; // not suitable for release
-    /**
-     * Note: doNotTraverseNever is currently implemented at the inter-group level,
-     * but not at the intra-group level.
-     */
+    export const extraAsserts = false; // not suitable for release
     const hardCodeEnableTSDevExpectStringFalse = true;
 
     let dbgs: Dbgs | undefined;
