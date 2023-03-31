@@ -22,7 +22,7 @@ namespace ts {
      * RefTypesSymtabProxyType and RefTypesSymtabProxyInnerSymtab need to be exported because getInnerSymtab is exported.
      */
     // TODO: get rid of the 'isAssign' member.
-    export type RefTypesSymtabProxyType = & {isAssign?: boolean, type: RefTypesType, assignedType: RefTypesType | undefined};
+    export type RefTypesSymtabProxyType = & {/*isAssign?: boolean*/ type: RefTypesType, assignedType: RefTypesType | undefined};
     export type RefTypesSymtabProxyInnerSymtab = ESMap<Symbol,RefTypesSymtabProxyType>;
 
     class RefTypesSymtabProxy implements RefTypesSymtabProxyI {
@@ -89,7 +89,7 @@ namespace ts {
                     const type = mrNarrow.unionOfRefTypesType([range,outer]);
                     // TODO: changed becaused isAssign:true && assignedType: undefined causes _caxnc-whileLoop-0056 to fail.
                     //this.symtabInner.set(symbol,{ type, isAssign:true, assignedType: undefined });
-                    this.symtabInner.set(symbol,{ type, isAssign:true, assignedType: range });
+                    this.symtabInner.set(symbol,{ type, assignedType: range });
                     return type;
                 }
             }
@@ -107,15 +107,12 @@ namespace ts {
         set(symbol: Symbol, type: Readonly<RefTypesType>): RefTypesSymtabProxy {
             // NOTE: do NOT try to set pt elements - it is unsafe because someone else could be using the pt object.
             const pt = this.symtabInner.get(symbol);
-            if (extraAsserts){
-                Debug.assert(!!pt?.isAssign===!!pt?.assignedType);
-            }
-            this.symtabInner.set(symbol,{ type, isAssign: pt?.isAssign, assignedType: pt?.assignedType ? type : undefined });
+            this.symtabInner.set(symbol,{ type, assignedType: pt?.assignedType ? type : undefined });
             return this;
         }
         setAsAssigned(symbol: Symbol, type: Readonly<RefTypesType>): RefTypesSymtabProxy {
             // NOTE: do NOT try to set pt elements - it is unsafe because someone else could be using the pt object.
-            this.symtabInner.set(symbol,{ type, isAssign: true, assignedType: type });
+            this.symtabInner.set(symbol,{ type, assignedType: type });
             // if (this.loopState?.invocations === 0){
             //     (this.loopState.symbolsAssigned
             //         ?? (this.loopState.symbolsAssigned = new Set<Symbol>())).add(symbol);
@@ -286,7 +283,6 @@ namespace ts {
                     }
                     mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(pt.type, tstype=>ptypeGot!.set.add(tstype));
                     if (pt.assignedType) mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(pt.assignedType, tstype=>ptypeGot!.setAssigned.add(tstype));
-                    ptypeGot.isAssign ||= pt.isAssign;
                 });
             });
 
@@ -314,7 +310,7 @@ namespace ts {
                 setAssigned.forEach(t=>aAssignedType.push(t));
                 let assignedType: RefTypesType | undefined;
                 if (setAssigned.size) assignedType = mrNarrow.refTypesTypeModule.createRefTypesType(aAssignedType);
-                target.symtabInner.set(symbol,{ type, assignedType, isAssign: !!assignedType });
+                target.symtabInner.set(symbol,{ type, assignedType });
                 // if (isAssign) target.setAsAssigned(symbol,type);
                 // else target.set(symbol,type);
             });
@@ -366,9 +362,9 @@ namespace ts {
             str+=`]`;
             as.push(str);
         }
-        x.symtabInner.forEach(({type,isAssign,assignedType},s)=>{
+        x.symtabInner.forEach(({type,assignedType},s)=>{
             as.push(`  symbol:{${s.escapedName},${s.id}}, `
-             + `{ type:${mrNarrow.dbgRefTypesTypeToString(type)}, assignedType:${assignedType?mrNarrow.dbgRefTypesTypeToString(type):"<undef>"}, isAssign:${isAssign??false} }`);
+             + `{ type:${mrNarrow.dbgRefTypesTypeToString(type)}, assignedType:${assignedType?mrNarrow.dbgRefTypesTypeToString(type):"<undef>"}}`);
         });
         if (x.symtabOuter){
             as.push(...dbgRefTypesSymtabToStrings(x.symtabOuter).map(str=>`  outer:${str}`));

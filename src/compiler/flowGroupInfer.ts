@@ -1,13 +1,11 @@
 namespace ts {
 
-    export const extraAsserts = false; // not suitable for release
+    export const extraAsserts = true; // not suitable for release
     /**
      * Note: doNotTraverseNever is currently implemented at the inter-group level,
      * but not at the intra-group level.
      */
     const hardCodeEnableTSDevExpectStringFalse = true;
-    export const doProxySymtabSqueezing = true;
-
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
@@ -141,7 +139,7 @@ namespace ts {
         gff: GroupForFlow;
         truthy: CurrentBranchesItem;
         falsy: CurrentBranchesItem;
-        originalConstraintIn: ConstraintItem;
+        //originalConstraintIn: ConstraintItem;
         done?: boolean;
         truthyDone?: boolean;
         falsyDone?: boolean;
@@ -278,7 +276,6 @@ namespace ts {
             tmpExprNodeToTypeMap: Readonly<ESMap<Node,Type>>;
             expr: Expression | Node
         } | undefined;
-        //loopGroupToProcessLoopStateMap: WeakMap<GroupForFlow,ProcessLoopState>; // TODO: move to ProcessLoopState
         currentLoopDepth: number;
         currentLoopsInLoopScope: Set<GroupForFlow>;
         loopGroupToProcessLoopStateMap?: WeakMap<GroupForFlow,ProcessLoopState>;
@@ -337,7 +334,7 @@ namespace ts {
 
     function createForFlow(groupsForFlow: GroupsForFlow) {
         return {
-            heap: createHeap(groupsForFlow), // TODO: This call to createHeap might be too expensive to do for every loop, and it is unnecessary, use prototype.
+            heap: createHeap(groupsForFlow),
             currentBranchesMap: new CurrentBranchesMapC(), //new Map<Readonly<GroupForFlow>, CurrentBranchElement>(),
             groupToNodeToType: new Map<GroupForFlow, NodeToTypeMap>(),
         };
@@ -1082,38 +1079,16 @@ namespace ts {
             scpassing = passing.sci;
             scfailing = failing?.sci;
         }
-        /**
-         * doNotTraverseNever is now hardcoded into mrNarrowTypes at the top, so not needed here
-         */
-
-        // if (doNotTraverseNever && isRefTypesSymtabConstraintItemNever(anteSCArg)){
-        //     scpassing = { constraintItem: createFlowConstraintNever() };
-        //     if (inferStatus.inCondition){
-        //         scfailing = { constraintItem: createFlowConstraintNever() };
-        //     }
-        // }
-        // else {
-        //     const {inferRefRtnType} = sourceFileMrState.mrNarrow.mrNarrowTypes({
-        //         sci: anteSCArg,
-        //         expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
-
-        //     if (isNeverConstraint(inferRefRtnType.passing.constraintItem)) scpassing = { constraintItem: inferRefRtnType.passing.constraintItem };
-        //     else scpassing = { symtab:inferRefRtnType.passing.symtab, constraintItem: inferRefRtnType.passing.constraintItem as ConstraintItemNotNever };
-        // }
-
         if (inferStatus.inCondition){
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
                 gff: groupForFlow,
                 falsy: {
                     sc: { symtab: scfailing!.symtab, constraintItem: scfailing!.constraintItem }
-                    //byNode: retval.byNode,
                 },
                 truthy: {
                     sc: { symtab: scpassing.symtab, constraintItem: scpassing.constraintItem }
-                    //byNode: retval.byNode,
                 },
-                originalConstraintIn: anteSCArg.constraintItem // TODO: is this ever used? I don't think so.
             };
             if (!inferStatus.accumBranches){
                 Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
@@ -1122,15 +1097,6 @@ namespace ts {
             else {
                 Debug.fail("unexpected");
             }
-            // else {
-            //     const unioncbe = forFlow.currentBranchesMap.get(groupForFlow);
-            //     if (!unioncbe) forFlow.currentBranchesMap.set(groupForFlow, cbe);
-            //     else {
-            //         Debug.assert(unioncbe.kind===CurrentBranchesElementKind.tf);
-            //         unioncbe.truthy = updatedCurrentBranchesItem(cbe.truthy,unioncbe.truthy,mrNarrow);
-            //         unioncbe.falsy = updatedCurrentBranchesItem(cbe.falsy,unioncbe.falsy,mrNarrow);
-            //     }
-            // }
         }
         else {
             const cbe: CurrentBranchElementPlain = {
@@ -1138,21 +1104,12 @@ namespace ts {
                 gff: groupForFlow,
                 item: {
                     sc: { symtab:scpassing.symtab, constraintItem:scpassing.constraintItem }
-                    //byNode: retval.byNode,
                 }
             };
             if (!inferStatus.accumBranches){
                 Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
                 forFlow.currentBranchesMap.set(groupForFlow, cbe);
             }
-            // else {
-            //     const unioncbe = forFlow.currentBranchesMap.get(groupForFlow);
-            //     if (!unioncbe) forFlow.currentBranchesMap.set(groupForFlow, cbe);
-            //     else {
-            //         Debug.assert(unioncbe.kind===CurrentBranchesElementKind.plain);
-            //         unioncbe.item = updatedCurrentBranchesItem(cbe.item,unioncbe.item,mrNarrow);
-            //     }
-            // }
         }
 
         if (getMyDebug()){
@@ -1249,13 +1206,6 @@ namespace ts {
         });
         return astr;
     }
-    // function dbgGroupToNodeToTypeMap(mmap: Readonly<ESMap<GroupForFlow,NodeToTypeMap>>): string[] {
-    //     const as: string[] = [];
-    //     mmap.forEach((map,g)=>{
-    //         dbgNodeToTypeMap(map).forEach(s=>as.push(`[groupIdx:${g.groupIdx}]: ${s}`));
-    //     });
-    //     return as;
-    // }
     function dbgCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): string[]{
         const astr: string[] = [];
         //astr.push(`nodeToTypeMap:`);
@@ -1311,8 +1261,6 @@ namespace ts {
 
     /* @ ts-ignore */
     function dbgForFlow(sourceFileMrState: SourceFileMrState, forFlow: ForFlow): string[]{
-        //const groupsForFlow = sourceFileMrState.groupsForFlow;
-        //const cbm = forFlow.currentBranchesMap;
         const astr: string[] = [];
         astr.push(`forFlow.currentBranchesMap.size:${forFlow.currentBranchesMap.size}`);
         dbgCurrentBranchesMap(forFlow.currentBranchesMap, sourceFileMrState).forEach(s=>astr.push(`forFlow.currentBranchesMap: ${s}`));

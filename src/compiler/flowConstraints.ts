@@ -183,8 +183,6 @@ namespace ts {
      * (B+C) => ((AB)/A+(AC)/A)
      * !(BC) => (A!B/A + A!C/A)
      * !(B+C) => (A!B)/A(A!C)/A
-     *
-     * TODO: change parameter name from typeRange to declaredType
      */
     export function andDistributeDivide({
         symbol, type, declaredType, cin, negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth}:
