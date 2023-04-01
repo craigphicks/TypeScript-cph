@@ -238,17 +238,17 @@ namespace ts {
     }
 
     export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
-        if (getMyDebug()){
+        const dolog = false;
+        if (dolog && getMyDebug()){
             consoleGroup(`unionArrRefTypesSymtab[in]`);
             arr.forEach((rts,i)=>{
                 dbgRefTypesSymtabToStrings(rts).forEach(str=>consoleLog(`unionArrRefTypesSymtab[in] symtab[${i}] ${str}`));
             });
         }
-        let target: RefTypesSymtabProxy;
-        try {
+        function unionArrRefTypesSymtab1(): RefTypesSymtab {
             assertCastType<Readonly<RefTypesSymtabProxy>[]>(arr);
             if (arr.length===0) Debug.fail("unexpected");
-            if (arr.length===1) return (target=arr[0]);
+            if (arr.length===1) return arr[0];
             for (let i=1; i<arr.length; i++){
                 Debug.assert(arr[i-1].symtabOuter === arr[i].symtabOuter);
             }
@@ -265,23 +265,23 @@ namespace ts {
                 });
             });
 
-            target = createRefTypesSymtabWithEmptyInnerSymtab(arr[0]) as RefTypesSymtabProxy;
+            const target = createRefTypesSymtabWithEmptyInnerSymtab(arr[0]) as RefTypesSymtabProxy;
             assertCastType<Readonly<RefTypesSymtabProxy>>(target);
 
             //const target = new RefTypesSymtabProxy(arr[0].symtabOuter,undefined,arr[0].);
             mapSymToPType.forEach(({set, setAssigned},symbol)=>{
                 // c.f. _caxnc-whileLoop-0023 - for all i, s.t. arr[i].symbtabInner does not have symbol, must lookup in symtabOuter
-                let addedOuterTypeForSymbol = false;
-                arr.forEach(rts=>{
-                    if (addedOuterTypeForSymbol) return;
-                    if (!rts.symtabInner.has(symbol)){
-                        const otype = rts.symtabOuter?.get(symbol);
-                        if (otype){
-                            mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
-                            addedOuterTypeForSymbol=true;
-                        }
-                    }
-                });
+                // let addedOuterTypeForSymbol = false;
+                // arr.forEach(rts=>{
+                //     if (addedOuterTypeForSymbol) return;
+                //     if (!rts.symtabInner.has(symbol)){
+                //         const otype = rts.symtabOuter?.get(symbol);
+                //         if (otype){
+                //             mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
+                //             addedOuterTypeForSymbol=true;
+                //         }
+                //     }
+                // });
                 const atype: Type[]=[];
                 set.forEach(t=>atype.push(t));
                 const type = mrNarrow.refTypesTypeModule.createRefTypesType(atype);
@@ -293,12 +293,44 @@ namespace ts {
             });
             return target;
         }
-        finally {
-            if (getMyDebug()){
-                dbgRefTypesSymtabToStrings(target!).forEach(str=>consoleLog(`unionArrRefTypesSymtab[out] return: ${str}`));
+        const target = unionArrRefTypesSymtab1();
+        {
+            if (dolog && getMyDebug()){
+                dbgRefTypesSymtabToStrings(target).forEach(str=>consoleLog(`unionArrRefTypesSymtab[out] return: ${str}`));
                 consoleGroupEnd();
             }
         }
+        return target;
+    }
+    export function modifiedInnerSymtabUsingOuterForFinalCondition(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
+        assertCastType<Readonly<RefTypesSymtabProxy>>(symtab);
+        const updates: [Symbol,RefTypesType][] = [];
+        symtab.symtabInner.forEach((pt,symbol)=>{
+            let otype: RefTypesType | undefined;
+            if (otype=symtab.symtabOuter!.get(symbol)){
+                if (!symtab.loopState?.symbolsAssignedRange?.has(symbol)){
+                    // a priori the inner type can only be a subset of the outer type.
+                    if (!mrNarrow.isASubsetOfB(otype,pt.type)){
+                        // pt.type is a strict subset of otype
+                        updates.push([symbol,otype]);
+                    } // else they are equal, do nothing
+                }
+                else {
+                    if (mrNarrow.isASubsetOfB(pt.type,otype)){
+                        if (!mrNarrow.isASubsetOfB(otype, pt.type)) {
+                            updates.push([symbol,otype]);
+                        }
+                    }
+                    else if (!mrNarrow.isASubsetOfB(otype, pt.type)){
+                        updates.push([symbol,mrNarrow.unionOfRefTypesType([pt.type,otype])]);
+                    }
+                }
+            }
+        });
+        if (!updates.length) return symtab;
+        const symtab1 = copyRefTypesSymtab(symtab) as RefTypesSymtabProxy;
+        updates.forEach(([symbol,type])=>symtab1.symtabInner.set(symbol,{ type,assignedType:undefined }));
+        return symtab1;
     }
     export function getOuterSymtab(symtab: Readonly<RefTypesSymtab>): Readonly<RefTypesSymtab> | undefined {
         return (symtab as RefTypesSymtabProxy).symtabOuter;

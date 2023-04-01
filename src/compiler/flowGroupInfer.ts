@@ -731,17 +731,22 @@ namespace ts {
             setOfKeysToDeleteFromCurrentBranchesMap.clear();
 
             if (true) {
-                const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
-                const scForConditionUnionOfInAndContinue = orSymtabConstraints([subloopSCForLoopConditionIn, ...arrSCForLoopContinue], mrNarrow);
-                // at this point, can we set loopState.symbolsAssignedRange
+                const scForConditionContinue = orSymtabConstraints(arrSCForLoopContinue, mrNarrow);
                 if (loopState.invocations===0){
-                    loopState.symbolsAssignedRange = scForConditionUnionOfInAndContinue.symtab
-                        ? getSymbolsAssignedRange(scForConditionUnionOfInAndContinue.symtab) : undefined;
+                    loopState.symbolsAssignedRange = scForConditionContinue.symtab
+                        ? getSymbolsAssignedRange(scForConditionContinue.symtab) : undefined;
                 }
                 else if (loopState.invocations===1){
                     loopState.symbolsAssignedRange = undefined;
                 }
                 else Debug.fail("unexpected");
+                const scForConditionUnionOfInAndContinue: RefTypesSymtabConstraintItem = isRefTypesSymtabConstraintItemNever(scForConditionContinue)
+                    ? createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup)
+                    : { symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!), constraintItem: scForConditionContinue.constraintItem };
+
+                // const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
+                // const scForConditionUnionOfInAndContinue = orSymtabConstraints([subloopSCForLoopConditionIn, ...arrSCForLoopContinue], mrNarrow);
+                // at this point, can we set loopState.symbolsAssignedRange
                 if (getMyDebug(dbgLevel)){
                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
                 }
