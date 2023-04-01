@@ -1,0 +1,1447 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0061.ts ===
+function t61(){
+>t61 : Symbol(t61, Decl(_caxnc-whileLoop-0061.ts, 0, 0))
+
+    type D = 0 | 1 | 2 | 3 ;
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+    let d1: D = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 8, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 6, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 4, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 50, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 48, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 46, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 92, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 90, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 88, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 134, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 132, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 130, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 176, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 174, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 172, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 218, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 216, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 214, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 260, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 258, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 256, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 302, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 300, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 298, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 344, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 342, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 340, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 386, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 384, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 382, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 428, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 426, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 424, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+    while (true){
+        let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+        while (true){
+            let d3: D = 0;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+            while (true){
+                let d4: D = 0;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0061.ts, 0, 15))
+
+                while (true){
+                    d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+
+                    if (d4===0) d4=1;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+
+                    else if (d4===1) d4=2;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+
+                    else if (d4===2) d4=3;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+
+                    else if (d4===3) {
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+
+                        d4=0; break;
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+                    }
+                }
+                d1; d2; d3; d4;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+>d4 : Symbol(d4, Decl(_caxnc-whileLoop-0061.ts, 470, 19))
+
+                if (d3===0) d3=1;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+
+                else if (d3===1) d3=2;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+
+                else if (d3===2) d3=3;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+
+                else if (d3===3) {
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+
+                    d3=0; break;
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+                }
+            }
+            d1; d2; d3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+>d3 : Symbol(d3, Decl(_caxnc-whileLoop-0061.ts, 468, 15))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+            }
+        }
+        d1; d2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0061.ts, 466, 11))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0061.ts, 2, 7))
+
+            break;
+        }
+    }
+}
+

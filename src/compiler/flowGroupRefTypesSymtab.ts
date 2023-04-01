@@ -85,10 +85,9 @@ namespace ts {
                 }
                 else {
                     const outer = this.symtabOuter?.get(symbol);
-                    Debug.assert(outer);
-                    const type = mrNarrow.unionOfRefTypesType([range,outer]);
-                    // TODO: changed becaused isAssign:true && assignedType: undefined causes _caxnc-whileLoop-0056 to fail.
-                    //this.symtabInner.set(symbol,{ type, isAssign:true, assignedType: undefined });
+                    // Debug.assert(outer);
+                    //const type = mrNarrow.unionOfRefTypesType([range,outer]);
+                    const type = outer ? mrNarrow.unionOfRefTypesType([range,outer]) : range;
                     this.symtabInner.set(symbol,{ type, assignedType: range });
                     return type;
                 }
