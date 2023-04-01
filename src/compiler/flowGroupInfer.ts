@@ -736,15 +736,14 @@ namespace ts {
                     loopState.symbolsAssignedRange = scForConditionContinue.symtab
                         ? getSymbolsAssignedRange(scForConditionContinue.symtab) : undefined;
                 }
-                else if (loopState.invocations===1){
-                    loopState.symbolsAssignedRange = undefined;
-                }
-                else Debug.fail("unexpected");
                 const scForConditionUnionOfInAndContinue: RefTypesSymtabConstraintItem = isRefTypesSymtabConstraintItemNever(scForConditionContinue)
                     ? createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup)
                     : { symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!), constraintItem: scForConditionContinue.constraintItem };
 
-                // const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
+                if (loopState.invocations===1){
+                    loopState.symbolsAssignedRange = undefined;
+                }
+                    // const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
                 // const scForConditionUnionOfInAndContinue = orSymtabConstraints([subloopSCForLoopConditionIn, ...arrSCForLoopContinue], mrNarrow);
                 // at this point, can we set loopState.symbolsAssignedRange
                 if (getMyDebug(dbgLevel)){

@@ -303,6 +303,11 @@ namespace ts {
         return target;
     }
     export function modifiedInnerSymtabUsingOuterForFinalCondition(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
+        const dolog = true;
+        if (dolog && getMyDebug()){
+            consoleGroup(`modifiedInnerSymtabUsingOuterForFinalCondition[in]`);
+            dbgRefTypesSymtabToStrings(symtab).forEach(str=>consoleLog(`modifiedInnerSymtabUsingOuterForFinalCondition[in] symtab: ${str}`));
+        }
         assertCastType<Readonly<RefTypesSymtabProxy>>(symtab);
         const updates: [Symbol,RefTypesType][] = [];
         symtab.symtabInner.forEach((pt,symbol)=>{
@@ -327,9 +332,16 @@ namespace ts {
                 }
             }
         });
-        if (!updates.length) return symtab;
-        const symtab1 = copyRefTypesSymtab(symtab) as RefTypesSymtabProxy;
-        updates.forEach(([symbol,type])=>symtab1.symtabInner.set(symbol,{ type,assignedType:undefined }));
+        let symtab1: RefTypesSymtabProxy;
+        if (!updates.length) symtab1 = symtab;
+        else {
+            symtab1 = copyRefTypesSymtab(symtab) as RefTypesSymtabProxy;
+            updates.forEach(([symbol,type])=>symtab1.symtabInner.set(symbol,{ type,assignedType:undefined }));
+        }
+        if (dolog && getMyDebug()){
+            dbgRefTypesSymtabToStrings(symtab1).forEach(str=>consoleLog(`modifiedInnerSymtabUsingOuterForFinalCondition[out] symtab: ${str}`));
+            consoleGroupEnd();
+        }
         return symtab1;
     }
     export function getOuterSymtab(symtab: Readonly<RefTypesSymtab>): Readonly<RefTypesSymtab> | undefined {
