@@ -21,8 +21,7 @@ namespace ts {
     /**
      * RefTypesSymtabProxyType and RefTypesSymtabProxyInnerSymtab need to be exported because getInnerSymtab is exported.
      */
-    // TODO: get rid of the 'isAssign' member.
-    export type RefTypesSymtabProxyType = & {/*isAssign?: boolean*/ type: RefTypesType, assignedType: RefTypesType | undefined};
+    export type RefTypesSymtabProxyType = & {type: RefTypesType, assignedType: RefTypesType | undefined};
     export type RefTypesSymtabProxyInnerSymtab = ESMap<Symbol,RefTypesSymtabProxyType>;
 
     class RefTypesSymtabProxy implements RefTypesSymtabProxyI {
@@ -84,11 +83,10 @@ namespace ts {
                     return type;
                 }
                 else {
+                    // symbol was assigned in invocation 0, and the range of that assignment is reflected in the type here
                     const outer = this.symtabOuter?.get(symbol);
-                    // Debug.assert(outer);
-                    //const type = mrNarrow.unionOfRefTypesType([range,outer]);
                     const type = outer ? mrNarrow.unionOfRefTypesType([range,outer]) : range;
-                    this.symtabInner.set(symbol,{ type, assignedType: range });
+                    this.symtabInner.set(symbol,{ type, assignedType: undefined });
                     return type;
                 }
             }
@@ -100,7 +98,6 @@ namespace ts {
          *
          * @param symbol
          * @param type
-         * @param isAssign - should be true when inside a loop and set is incurred by an lhs assignment.
          * @returns
          */
         set(symbol: Symbol, type: Readonly<RefTypesType>): RefTypesSymtabProxy {
@@ -112,20 +109,6 @@ namespace ts {
         setAsAssigned(symbol: Symbol, type: Readonly<RefTypesType>): RefTypesSymtabProxy {
             // NOTE: do NOT try to set pt elements - it is unsafe because someone else could be using the pt object.
             this.symtabInner.set(symbol,{ type, assignedType: type });
-            // if (this.loopState?.invocations === 0){
-            //     (this.loopState.symbolsAssigned
-            //         ?? (this.loopState.symbolsAssigned = new Set<Symbol>())).add(symbol);
-            // }
-            // if (this.loopState?.invocations === 0){
-            //     if (!this.loopState.symbolsAssignedRange){
-            //         this.loopState.symbolsAssignedRange = new WeakMap<Symbol,RefTypesType>([[symbol,type]]);
-            //     }
-            //     else {
-            //         const range = this.loopState.symbolsAssignedRange.get(symbol);
-            //         if (!range) this.loopState.symbolsAssignedRange.set(symbol,type);
-            //         else this.loopState.symbolsAssignedRange.set(symbol,mrNarrow.unionOfRefTypesType([range,type]));
-            //     }
-            // }
             return this;
         }
         delete(symbol: Symbol): boolean {
@@ -182,17 +165,14 @@ namespace ts {
         const stout = copyRefTypesSymtab(stin.symtabOuter!);
         //let symbolsReadNotAssigned: undefined | Set<Symbol>;
         stin.symtabInner.forEach((pt,symbol)=>{
+            // eslint-disable-next-line prefer-const
             let type = pt.type;
-            // IWOZERE TODO: changing !pt.isAssign to !pt.assignedType makes _caxnc-whileLoop-0056 fail.
-            if (/*!pt.isAssign*/!pt.assignedType){
-                const outerType = stin.symtabOuter?.get(symbol);
-                if (outerType) type = mrNarrow.intersectionOfRefTypesType(type,outerType);
-                //if (outerIsAssign) stout.setAsAssigned(symbol, type);
-                else stout.set(symbol, type);
-                // const { type: outerType, isAssign: outerIsAssign } = getProxyType(symbol,stin.symtabOuter!)??{};
+            if (!pt.assignedType){
+                // After changing to simple `stout.set(symbol, type);` is there any need for pt.assignedType
+                // const outerType = stin.symtabOuter?.get(symbol);
                 // if (outerType) type = mrNarrow.intersectionOfRefTypesType(type,outerType);
-                // if (outerIsAssign) stout.setAsAssigned(symbol, type);
                 // else stout.set(symbol, type);
+                stout.set(symbol, type);
             }
             else {
                 stout.setAsAssigned(symbol, type);
@@ -272,7 +252,7 @@ namespace ts {
             for (let i=1; i<arr.length; i++){
                 Debug.assert(arr[i-1].symtabOuter === arr[i].symtabOuter);
             }
-            const mapSymToPType = new Map<Symbol,{set: Set<Type>, setAssigned: Set<Type>, isAssign?: boolean}>();
+            const mapSymToPType = new Map<Symbol,{set: Set<Type>, setAssigned: Set<Type>}>();
             arr.forEach(rts=>{
                 rts.symtabInner.forEach((pt,symbol)=>{
                     let ptypeGot = mapSymToPType.get(symbol);
@@ -289,7 +269,7 @@ namespace ts {
             assertCastType<Readonly<RefTypesSymtabProxy>>(target);
 
             //const target = new RefTypesSymtabProxy(arr[0].symtabOuter,undefined,arr[0].);
-            mapSymToPType.forEach(({set, isAssign:_isAssign, setAssigned},symbol)=>{
+            mapSymToPType.forEach(({set, setAssigned},symbol)=>{
                 // c.f. _caxnc-whileLoop-0023 - for all i, s.t. arr[i].symbtabInner does not have symbol, must lookup in symtabOuter
                 let addedOuterTypeForSymbol = false;
                 arr.forEach(rts=>{
@@ -310,8 +290,6 @@ namespace ts {
                 let assignedType: RefTypesType | undefined;
                 if (setAssigned.size) assignedType = mrNarrow.refTypesTypeModule.createRefTypesType(aAssignedType);
                 target.symtabInner.set(symbol,{ type, assignedType });
-                // if (isAssign) target.setAsAssigned(symbol,type);
-                // else target.set(symbol,type);
             });
             return target;
         }

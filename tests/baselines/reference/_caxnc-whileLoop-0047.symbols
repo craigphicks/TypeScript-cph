@@ -1,0 +1,47 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0047.ts ===
+function t47(){
+>t47 : Symbol(t47, Decl(_caxnc-whileLoop-0047.ts, 0, 0))
+
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
+    let d1: 0 | 1 | 2 | 999 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+    // @ts-dev-expect-string "loopCount:2, invocations:1"
+    while (true){
+        d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+        if (d1===0){
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+            d1 ;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+            d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+            d1  ;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+        }
+        else if (d1===1) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+            d1   ;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+            break;
+        }
+        else if (d1===999){
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+
+            d1    ;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0047.ts, 2, 7))
+}
+

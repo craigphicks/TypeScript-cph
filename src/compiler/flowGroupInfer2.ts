@@ -2187,27 +2187,6 @@ namespace ts {
             if (!sci.symtab){
                 Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
                 return { inferRefRtnType: createNeverPassingFailingUnmerged(!!crit.alsoFailing) };
-                // const ret: MrNarrowTypesReturn = {
-                //     inferRefRtnType: {
-                //         passing: {
-                //             kind: RefTypesTableKind.return,
-                //             type: createRefTypesType(), // never
-                //             sci
-                //         }
-                //     }
-                // }
-                // if (crit.alsoFailing){
-                //     ret.inferRefRtnType.failing = {
-                //         kind: RefTypesTableKind.return,
-                //         type: createRefTypesType(), // never
-                //         sci
-                //     };
-                // }
-                // ret.inferRefRtnType.unmerged = [{
-                //     kind: RefTypesTableKind.return,
-                //     type: createRefTypesType(), // never
-                //     sci
-                // }];
             }
             return mrNarrowTypesAux({
                 expr,crit,qdotfallout,refTypesSymtab:sci.symtab, constraintItem: sci.constraintItem, inferStatus
@@ -2797,12 +2776,15 @@ namespace ts {
                             type = checker.getFalseType();
                             break;
                         case SyntaxKind.NumericLiteral:
-                            type = checker.getNumberLiteralType(Number(getSourceTextOfNodeFromSourceFile(sourceFile,expr)));
+                            type = checker.getNumberLiteralType(Number((expr as any).text ?? getSourceTextOfNodeFromSourceFile(sourceFile,expr)));
                             break;
                         case SyntaxKind.StringLiteral:{
-                            let str = getSourceTextOfNodeFromSourceFile(sourceFile,expr);
-                            Debug.assert(str.length>=2);
-                            str = str.slice(1,-1);
+                            let str = (expr as any).text;
+                            if (!str) {
+                                str = getSourceTextOfNodeFromSourceFile(sourceFile,expr);
+                                Debug.assert(str.length>=2);
+                                str = str.slice(1,-1);
+                            }
                             type = checker.getStringLiteralType(str);
                         }
                             break;
