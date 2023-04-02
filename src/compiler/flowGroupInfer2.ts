@@ -2742,7 +2742,8 @@ namespace ts {
                         const passing = rhs.inferRefRtnType.passing as RefTypesTableReturn;
                         passing.symbol = symbol;
                         passing.isconst = isconstVar;
-                        passing.sci.symtab!.setAsAssigned(symbol,passing.type);
+                        passing.sci.symtab!.set(symbol,passing.type);
+                        //passing.sci.symtab!.setAsAssigned(symbol,passing.type);
                         return { arrRefTypesTableReturn:[passing] };
                     }
                     else {

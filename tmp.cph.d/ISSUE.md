@@ -82,6 +82,8 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 ### Done (reverse order)
 
+0. A minor optimization before last condition in loop using `modifiedInnerSymtabUsingOuterForFinalCondition`
+
 0. Bug fix in RefTypeSymtabProxy.get
 ```
     // TODO: changed becaused isAssign:true && assignedType: undefined causes _caxnc-whileLoop-0056 to fail.
