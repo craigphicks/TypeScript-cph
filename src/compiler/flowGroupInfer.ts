@@ -874,7 +874,7 @@ namespace ts {
                     setOfKeysToDeleteFromCurrentBranchesMap.set(anteg,undefined);
                     const ret: Partial<RefTypesSymtabConstraintItemNotNever> = { constraintItem: cbe.item.sc.constraintItem as ConstraintItemNotNever };
                     if ((cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab) ret.symtab = (cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab;
-                    return ret as RefTypesSymtabConstraintItemNotNever;
+                    return ret as RefTypesSymtabConstraintItem;
                 }
                 case FlowGroupLabelKind.then:
                     return doThenElse(fglab.ifGroupIdx, /*truthy*/ true);

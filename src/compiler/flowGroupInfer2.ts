@@ -935,6 +935,7 @@ namespace ts {
                     debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                 }
                 const sci = copyRefTypesSymtabConstraintItem(rhs.inferRefRtnType.passing.sci);
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                 sci.symtab = sci.symtab!.setAsAssigned(symbol,rhs.inferRefRtnType.passing.type);
                 // const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.sci.symtab!)
                 //     .setAsAssigned(symbol,rhs.inferRefRtnType.passing.type);
@@ -1941,29 +1942,6 @@ namespace ts {
                     Debug.fail("unexpected");
                 });
             });
-
-
-
-            // if (getMyDebug()){
-            //     consoleLog(`propertyTypes:`);
-            //     accessedTypes.forEach(t=> {
-            //         consoleLog(`baseType:${typeToString(t.baseType)}, propType:${typeToString(t.type)}, optional:${t.optional}, lookupFail:${t.lookupFail}, readonlyProp: ${t.readonlyProp}, narrowable: ${t.narrowable} `);
-            //     });
-            //     consoleLog(`end propertyTypes:`);
-            // }
-            // const hasFailedLookup = accessedTypes.some(x=>x.lookupFail);
-            // const hasSuccessLookup = accessedTypes.some(x=>!x.lookupFail);
-            // let requirePropertyDefinedForEachSubtype = false;
-            // requirePropertyDefinedForEachSubtype = false;
-            // if (requirePropertyDefinedForEachSubtype && hasFailedLookup){
-            //     if (getMyDebug()) consoleLog(`inferTypesByPropertyAccessExpression[dbg]: Error: some lookup(s) were unsuccessful`);
-            // }
-            // else if (!hasSuccessLookup){
-            //     if (getMyDebug()) consoleLog(`inferTypesByPropertyAccessExpression[dbg]: Error: no lookups were successful`);
-            // }
-            // const totalType = createRefTypesType();
-            // arrRttr.forEach(rttr=>mergeToRefTypesType({ source: rttr.type, target: totalType }));
-            //mergeOneIntoNodeToTypeMaps(expr, getTypeFromRefTypesType(totalType), inferStatus.groupNodeToTypeMap);
             return { arrRefTypesTableReturn: arrRttr };
         }
 
@@ -1999,7 +1977,7 @@ namespace ts {
                         getDeclaredType,
                         mrNarrow}));
                     if (symbol){
-                        // if (isconst && compilerOptions.mrNarrowConstraintsEnable){
+// if (isconst && compilerOptions.mrNarrowConstraintsEnable){
                         //     const cover = evalCoverPerSymbol(constraintItem, getDeclaredType, mrNarrow);
                         //     if (extraAsserts){
                         //         Debug.assert(cover.has(rttr.symbol));
@@ -2007,6 +1985,7 @@ namespace ts {
                         //     type = cover.get(symbol)!;
                         // }
                         // else {
+                        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                         type = symtab!.get(symbol)!;
                         Debug.assert(type);
                         // }
@@ -2023,12 +2002,8 @@ namespace ts {
         function applyCritToArrRefTypesTableReturn(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, inferStatus: InferStatus): {
             passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol, unmerged?: Readonly<RefTypesTableReturn[]>
         }{
-            //Debug.assert(arrRttr.length);
             arrRttr = arrRttr.filter(rttr=>!isRefTypesSymtabConstraintItemNever(rttr.sci));
             if (arrRttr.length===0) return createNeverPassingFailingUnmerged(!!crit.alsoFailing);
-            //Debug.assert(arrRttr.every(rttr=>!isRefTypesSymtabConstraintItemNever(rttr.sci)));
-            //const templateSymtab = arrRttr[0].sci.symtab!;
-            //const outerSymtab = getOuterSymtab(arrRttr[0].symtab);
             Debug.assert(!(crit.kind===InferCritKind.none && crit.negate));
             if (crit.kind===InferCritKind.none){
                 if (arrRttr.length===1){
@@ -2701,6 +2676,8 @@ namespace ts {
                                 symbolFlowInfo.effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr,checker.getFreshTypeOfLiteralType(tsType));
                                 delete symbolFlowInfo.effectiveDeclaredType; // will be created on demand if necessary
                             }
+                            // In _caxnc-rp-003 this happens because a statement get thrown into the heap on multiple occasions. See ISSUE.md
+                            // Debug.fail("unexpected: VariableDeclaration symbolFlowInfo already exists");
                         }
                         if (extraAsserts){
                             debugDevExpectEffectiveDeclaredType(expr.parent,symbolFlowInfo);

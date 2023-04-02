@@ -6,6 +6,8 @@
 
 ### Priority: High
 
+0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFLow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least.
+
 0. [proxySymtabSqueezing] Dev todo's:
 
     0. The `_caxnc-whileLoop-005*` series of tests use literal assigments without explcit typing.  These are currently automatically accumulated as unions of literals at no extra cost in terms of statement complexity, although of course it makes the types larger.  The could be seen as a feature, but it is probably better to enable with a compiler option and make the default a merger to the corresponding non-literal types.
