@@ -905,7 +905,7 @@ namespace ts {
                 // Also, could be part of a const expression rhs.
                 inferStatus: { ...args.inferStatus, inCondition: false },
             });
-            const passing = useNewApplyCrit? applyCritNone(rhs.inferRefRtnType.unmerged) : rhs.inferRefRtnType.passing;
+            const passing = applyCritNone(rhs.inferRefRtnType.unmerged);
             if (leftExpr.kind===SyntaxKind.Identifier) {
                 assertCastType<Identifier>(leftExpr);
                 const symbol = getResolvedSymbol(leftExpr);
@@ -989,44 +989,48 @@ namespace ts {
                     if (getMyDebug()) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token START`);
                     //const {left:leftExpr,right:rightExpr}=binaryExpression;
                     if (getMyDebug()) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`);
-                    const leftRet = mrNarrowTypes({
+                    const leftRet0 = mrNarrowTypes({
                         sci: { symtab: refTypesSymtabIn, constraintItem: constraintItemIn },
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
                         expr: leftExpr,
                         inferStatus,
                     });
+                    const leftRet = applyCrit(leftRet0.inferRefRtnType.unmerged,{ kind:InferCritKind.truthy, alsoFailing:true });
 
                     let arrRefTypesTableReturn: RefTypesTableReturn[];
                     if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
-                    const leftTrueRightRet = mrNarrowTypes({
-                        sci: leftRet.inferRefRtnType.passing.sci,
+                    const leftTrueRightRet0 = mrNarrowTypes({
+                        sci: leftRet.passing.sci,// leftRet.inferRefRtnType.passing.sci,
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
                         expr: rightExpr,
                         inferStatus,
                     });
+                    const leftTrueRightRet = applyCrit(leftTrueRightRet0.inferRefRtnType.unmerged,{ kind:InferCritKind.truthy, alsoFailing:true });
                     if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
-                    const leftFalseRightRet = mrNarrowTypes({
-                        sci: leftRet.inferRefRtnType.failing!.sci,
+                    const leftFalseRightRet0 = mrNarrowTypes({
+                        sci: leftRet.failing!.sci,
                         // refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
                         expr: rightExpr,
                         inferStatus,
                         // constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
                     });
+                    const leftFalseRightRet = applyCrit(leftFalseRightRet0.inferRefRtnType.unmerged,{ kind:InferCritKind.truthy, alsoFailing:true });
+
                     if (operatorToken.kind===SyntaxKind.AmpersandAmpersandToken){
                         arrRefTypesTableReturn = [
-                            leftTrueRightRet.inferRefRtnType.passing,
-                            leftTrueRightRet.inferRefRtnType.failing!,
-                            { ...leftFalseRightRet.inferRefRtnType.passing, type:leftRet.inferRefRtnType.failing!.type },
-                            { ...leftFalseRightRet.inferRefRtnType.failing!, type:leftRet.inferRefRtnType.failing!.type }
+                            leftTrueRightRet.passing,
+                            leftTrueRightRet.failing!,
+                            { ...leftFalseRightRet.passing, type:leftRet.failing!.type },
+                            { ...leftFalseRightRet.failing!, type:leftRet.failing!.type }
                         ];
                     }
                     else if (operatorToken.kind===SyntaxKind.BarBarToken){
                         arrRefTypesTableReturn = [
-                            { ...leftTrueRightRet.inferRefRtnType.passing, type:leftRet.inferRefRtnType.passing.type },
-                            { ...leftTrueRightRet.inferRefRtnType.failing!, type:leftRet.inferRefRtnType.passing.type },
-                            leftFalseRightRet.inferRefRtnType.passing,
-                            leftFalseRightRet.inferRefRtnType.failing!
+                            { ...leftTrueRightRet.passing, type:leftRet.passing.type },
+                            { ...leftTrueRightRet.failing!, type:leftRet.passing.type },
+                            leftFalseRightRet.passing,
+                            leftFalseRightRet.failing!
                         ];
                     }
                     else Debug.fail("unexpected");
@@ -1171,20 +1175,41 @@ namespace ts {
                      * Check the result is assignable to the signature
                      */
                     const qdotfallout: RefTypesTableReturn[]=[];
-                    const { inferRefRtnType: {passing, failing} } = mrNarrowTypes({
-                        sci:sctmp,
-                        // refTypesSymtab: sctmp.symtab,
-                        // constraintItem: sctmp.constraintItem, // this is the constraintItem from mrNarrowTypesByCallExpression arguments
-                        expr: carg,
-                        crit: {
+                    // const { inferRefRtnType: {passing, failing} } = mrNarrowTypes({
+                    //     sci:sctmp,
+                    //     // refTypesSymtab: sctmp.symtab,
+                    //     // constraintItem: sctmp.constraintItem, // this is the constraintItem from mrNarrowTypesByCallExpression arguments
+                    //     expr: carg,
+                    //     crit: {
+                    //         kind: InferCritKind.assignable,
+                    //         target: targetType,
+                    //         // negate: false,
+                    //         alsoFailing:true,
+                    //     },
+                    //     qdotfallout,
+                    //     inferStatus: inferStatusTmp
+                    // });
+                    const { passing, failing } = applyCrit(mrNarrowTypes({
+                            sci:sctmp,
+                            // refTypesSymtab: sctmp.symtab,
+                            // constraintItem: sctmp.constraintItem, // this is the constraintItem from mrNarrowTypesByCallExpression arguments
+                            expr: carg,
+                            crit: {
+                                kind: InferCritKind.assignable,
+                                target: targetType,
+                                // negate: false,
+                                alsoFailing:true,
+                            },
+                            qdotfallout,
+                            inferStatus: inferStatusTmp
+                        }).inferRefRtnType.unmerged,
+                        {
                             kind: InferCritKind.assignable,
                             target: targetType,
                             // negate: false,
                             alsoFailing:true,
                         },
-                        qdotfallout,
-                        inferStatus: inferStatusTmp
-                    });
+                    );
                     if (qdotfallout.length && !targetTypeIncludesUndefined){
                         if (getMyDebug()) {
                             consoleLog(
@@ -1328,7 +1353,7 @@ namespace ts {
                 // do something about spreads "...", don't pass "..." to getTypeOfExpressionShallowRec because it doesn't honor "as const"
                 if (carg.kind===SyntaxKind.SpreadElement){
                     //
-                    const { inferRefRtnType: {passing, unmerged} } = mrNarrowTypes({
+                    const unmerged = mrNarrowTypes({
                         sci:sctmp,
                         // refTypesSymtab: sctmp.symtab,
                         // constraintItem: sctmp.constraintItem,
@@ -1338,9 +1363,10 @@ namespace ts {
                         },
                         qdotfallout:undefined,
                         inferStatus,
-                    });
+                    }).inferRefRtnType.unmerged;
+                    //const rttr = applyCritNone(r1.inferRefRtnType.unmerged);
 
-                    const rttr: RefTypesTableReturn = unmerged?.length===1 ? unmerged[0] : passing;
+                    const rttr: RefTypesTableReturn = unmerged?.length===1 ? unmerged[0] : applyCritNone(unmerged);
                     sctmp = rttr.sci; //{ symtab: rttr.symtab, constraintItem: rttr.constraintItem };
                     // The type ought to be a tuple or an array
                     const tstype1 = getTypeFromRefTypesType(rttr.type);
@@ -1385,7 +1411,7 @@ namespace ts {
                     }
                 }
                 else {
-                    const { inferRefRtnType: {passing,unmerged} } = mrNarrowTypes({
+                    const unmerged = mrNarrowTypes({
                         sci:sctmp,
                         // refTypesSymtab: sctmp.symtab,
                         // constraintItem: sctmp.constraintItem, // this is the constraintItem from mrNarrowTypesByCallExpression arguments
@@ -1395,8 +1421,8 @@ namespace ts {
                         },
                         qdotfallout:undefined,
                         inferStatus,
-                    });
-                    const rttr: RefTypesTableReturn = unmerged?.length===1 ? unmerged[0] : passing;
+                    }).inferRefRtnType.unmerged;
+                    const rttr: RefTypesTableReturn = unmerged?.length===1 ? unmerged[0] : applyCritNone(unmerged);
                     sctmp = rttr.sci; //{ symtab: rttr.symtab, constraintItem: rttr.constraintItem };
                     const type = rttr.type;
                     const tstype = getTypeFromRefTypesType(type);

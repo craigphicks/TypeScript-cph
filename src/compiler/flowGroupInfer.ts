@@ -1074,7 +1074,7 @@ namespace ts {
         let scfailing: RefTypesSymtabConstraintItem | undefined;
 
         inferStatus.isInLoop = !!forFlow.loopState;
-        if (useNewApplyCrit){
+        // if (useNewApplyCrit){
             const xxx = sourceFileMrState.mrNarrow.mrNarrowTypes({
                 sci: anteSCArg,
                 expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
@@ -1086,14 +1086,14 @@ namespace ts {
                 scpassing = critret.passing.sci;
                 scfailing = critret.failing!.sci;
             }
-        }
-        else {
-            const {inferRefRtnType:{passing,failing}} = sourceFileMrState.mrNarrow.mrNarrowTypes({
-                sci: anteSCArg,
-                expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
-                scpassing = passing.sci;
-                scfailing = failing?.sci;
-        }
+        // }
+        // else {
+        //     const {inferRefRtnType:{passing,failing}} = sourceFileMrState.mrNarrow.mrNarrowTypes({
+        //         sci: anteSCArg,
+        //         expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
+        //         scpassing = passing.sci;
+        //         scfailing = failing?.sci;
+        // }
         if (inferStatus.inCondition){
             const cbe: CurrentBranchElementTF = {
                 kind: CurrentBranchesElementKind.tf,
