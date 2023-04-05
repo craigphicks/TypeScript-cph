@@ -2,6 +2,7 @@ namespace ts {
 
     export const extraAsserts = false; // not suitable for release
     const hardCodeEnableTSDevExpectStringFalse = true;
+    export const useNewApplyCrit = true;
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
@@ -363,6 +364,7 @@ namespace ts {
         const refTypesTypeModule = createRefTypesTypeModule(checker);
         const mrNarrow = createMrNarrow(checker, sourceFile, mrState, refTypesTypeModule, compilerOptions);
         initializeFlowGroupRefTypesSymtabModule(mrNarrow);
+        initFlowGroupInferApplyCrit(checker, mrNarrow);
         return {
             sourceFile,
             groupsForFlow,
@@ -1072,12 +1074,25 @@ namespace ts {
         let scfailing: RefTypesSymtabConstraintItem | undefined;
 
         inferStatus.isInLoop = !!forFlow.loopState;
-        {
-        const {inferRefRtnType:{passing,failing}} = sourceFileMrState.mrNarrow.mrNarrowTypes({
-            sci: anteSCArg,
-            expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
-            scpassing = passing.sci;
-            scfailing = failing?.sci;
+        if (useNewApplyCrit){
+            const xxx = sourceFileMrState.mrNarrow.mrNarrowTypes({
+                sci: anteSCArg,
+                expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
+            if (!inferStatus.inCondition){
+                scpassing = applyCritNone(xxx.inferRefRtnType.unmerged).sci;
+            }
+            else {
+                const critret = applyCrit(xxx.inferRefRtnType.unmerged, { kind:InferCritKind.truthy, alsoFailing:true });
+                scpassing = critret.passing.sci;
+                scfailing = critret.failing!.sci;
+            }
+        }
+        else {
+            const {inferRefRtnType:{passing,failing}} = sourceFileMrState.mrNarrow.mrNarrowTypes({
+                sci: anteSCArg,
+                expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
+                scpassing = passing.sci;
+                scfailing = failing?.sci;
         }
         if (inferStatus.inCondition){
             const cbe: CurrentBranchElementTF = {

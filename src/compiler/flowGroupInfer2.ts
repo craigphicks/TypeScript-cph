@@ -29,6 +29,7 @@ namespace ts {
         isUnknownType(t: Readonly<RefTypesType>): boolean,
         cloneRefTypesType(type: Readonly<RefTypesType>): RefTypesType;
         getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo): RefTypesType;
+        getDeclaredType(symbol: Symbol): RefTypesType;
         checker: TypeChecker,
         compilerOptions: CompilerOptions,
         mrState: MrState,
@@ -142,6 +143,7 @@ namespace ts {
             unionArrRefTypesSymtab,
             cloneRefTypesType,
             getEffectiveDeclaredType,
+            getDeclaredType,
             checker,
             compilerOptions,
             mrState: _mrState,
@@ -173,17 +175,18 @@ namespace ts {
             }
             const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
             Debug.assert(symbolFlowInfo);
-            return symbolFlowInfo.initializerType ??
-                symbolFlowInfo.effectiveDeclaredType ??
-                    (symbolFlowInfo.effectiveDeclaredType=createRefTypesType(symbolFlowInfo.effectiveDeclaredTsType));
+            return getSymbolFlowInfoInitializerOrDeclaredTypeFromSymbolFlowInfo(symbolFlowInfo);
         }
         /**
          *
-         * @param symbol This is a temporary solution - TODO: don't use RefTypesTableLeaf
+         * @param symbol
          * @returns
          */
         function getDeclaredType(symbol: Symbol): RefTypesType {
-            return getSymbolFlowInfoInitializerOrDeclaredType(symbol);
+            const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
+            Debug.assert(symbolFlowInfo);
+            return getEffectiveDeclaredType(symbolFlowInfo);
+            //return getSymbolFlowInfoInitializerOrDeclaredType(symbol);
         }
 
 
@@ -284,6 +287,7 @@ namespace ts {
             as.push(`  kind: ${rtt.kind},`);
             if ((rtt as any).symbol) as.push(`  symbol: ${dbgSymbolToStringSimple((rtt as any).symbol)},`);
             if ((rtt as any).isconst) as.push(`  isconst: ${(rtt as any).isconst},`);
+            if ((rtt as RefTypesTableReturn).isAssign) as.push(`  isAssign: ${(rtt as any).isAssign},`);
             Debug.assert(rtt.type);
             as.push(`  type: ${dbgRefTypesTypeToString(rtt.type)}`);
             if (isRefTypesTableReturn(rtt)){
@@ -410,10 +414,11 @@ namespace ts {
                     func(source, rel, !rel);
                 });
             }
-            else if (crit.kind===InferCritKind.typeof) {
-                Debug.fail("unexpected");
-            }
+            // else if (crit.kind===InferCritKind.typeof) {
+            //     Debug.fail("unexpected");
+            // }
             else {
+                // @ts-ignore
                 Debug.assert(false, "cannot handle crit.kind ", ()=>crit.kind);
             }
         }
@@ -503,7 +508,7 @@ namespace ts {
             refTypesSymtab:refTypesSymtabIn, expr, /* crit,*/ qdotfallout: _qdotFalloutIn, inferStatus, constraintItem: constraintItemIn
         }: InferRefInnerArgs & {expr: TypeOfExpression}): MrNarrowTypesInnerReturn {
             const rhs = mrNarrowTypes({ sci:{ symtab:refTypesSymtabIn,constraintItem:constraintItemIn }, expr:expr.expression, qdotfallout: undefined, inferStatus, crit:{ kind:InferCritKind.none } });
-            const rhsUnmerged = rhs.inferRefRtnType.unmerged!;
+            const rhsUnmerged = rhs.inferRefRtnType.unmerged;
             const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
             rhsUnmerged.forEach(rttr=>{
                 if (isNeverType(rttr.type)) return;
@@ -896,8 +901,11 @@ namespace ts {
                 sci: { symtab:refTypesSymtab, constraintItem },
                 crit: { kind:InferCritKind.none },
                 expr: rightExpr,
-                inferStatus: { ...args.inferStatus, inCondition: false }, // because the lhs is definitely not const
+                // TODO: If the assigment is not top level - a transitive assigment, then inCondtion should be inherited.
+                // Also, could be part of a const expression rhs.
+                inferStatus: { ...args.inferStatus, inCondition: false },
             });
+            const passing = useNewApplyCrit? applyCritNone(rhs.inferRefRtnType.unmerged) : rhs.inferRefRtnType.passing;
             if (leftExpr.kind===SyntaxKind.Identifier) {
                 assertCastType<Identifier>(leftExpr);
                 const symbol = getResolvedSymbol(leftExpr);
@@ -934,13 +942,10 @@ namespace ts {
                 if (extraAsserts) {
                     debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                 }
-                const sci = copyRefTypesSymtabConstraintItem(rhs.inferRefRtnType.passing.sci);
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-                sci.symtab = sci.symtab!.setAsAssigned(symbol,rhs.inferRefRtnType.passing.type);
-                // const symtab = copyRefTypesSymtab(rhs.inferRefRtnType.passing.sci.symtab!)
-                //     .setAsAssigned(symbol,rhs.inferRefRtnType.passing.type);
+                const sci = copyRefTypesSymtabConstraintItem(passing.sci); // TODO: shouldn't need to copy this because it isn't being modified.
+                // Previously sci.symtab was set with symbol,type, but now isAssign will allow it be done at the crit stage, just in time.
                 return { arrRefTypesTableReturn: [{
-                    ...rhs.inferRefRtnType.passing, symbol, sci
+                    ...passing, symbol, sci, isAssign:true,
                 }]};
             }
             else {
@@ -2013,7 +2018,7 @@ namespace ts {
                         return createNeverPassingFailingUnmerged(!!crit.alsoFailing);
                     }
                     else if (rttr.symbol){
-                        const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,type:rttr.type, getDeclaredType,
+                        const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, getDeclaredType,
                             sc:rttr.sci, mrNarrow});
                         passing = {
                             kind: RefTypesTableKind.return,
@@ -2213,7 +2218,7 @@ namespace ts {
             const nodeType = cloneRefTypesType(critret.passing.type);
             if (critret.failing) mergeToRefTypesType({ source:critret.failing.type, target:nodeType });
             mergeOneIntoNodeToTypeMaps(expr,getTypeFromRefTypesType(nodeType),inferStatus.groupNodeToTypeMap, /*dont skip*/ true);
-            const mrNarrowTypesReturn: MrNarrowTypesReturn  = {
+            const mrNarrowTypesReturn: { inferRefRtnType: Partial<MrNarrowTypesReturn["inferRefRtnType"]>}  = {
                 inferRefRtnType: { passing: critret.passing }
             };
             if (critret.failing) mrNarrowTypesReturn.inferRefRtnType.failing=critret.failing;
@@ -2242,7 +2247,7 @@ namespace ts {
                 consoleLog(`mrNarrowTypes[out] ${dbgNodeToString(expr)}`);
                 consoleGroupEnd();
             }
-            return mrNarrowTypesReturn;
+            return mrNarrowTypesReturn as MrNarrowTypesReturn;
         }
 
         function mrNarrowTypesInner({refTypesSymtab: refTypesSymtabIn, expr: expr, qdotfallout, inferStatus, constraintItem }: InferRefInnerArgs): MrNarrowTypesInnerReturn {
@@ -2719,7 +2724,8 @@ namespace ts {
                         const passing = rhs.inferRefRtnType.passing as RefTypesTableReturn;
                         passing.symbol = symbol;
                         passing.isconst = isconstVar;
-                        passing.sci.symtab!.set(symbol,passing.type);
+                        passing.isAssign = true;
+                        // TODO: remove next line
                         //passing.sci.symtab!.setAsAssigned(symbol,passing.type);
                         return { arrRefTypesTableReturn:[passing] };
                     }

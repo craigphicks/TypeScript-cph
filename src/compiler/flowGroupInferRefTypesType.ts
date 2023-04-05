@@ -31,6 +31,7 @@ namespace ts {
         literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
+        addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType;
     };
 
     export function createRefTypesTypeModule(checker: TypeChecker): RefTypesTypeModule {
@@ -85,6 +86,7 @@ namespace ts {
             literalWideningUnion,
             getUnionOrWidenedType,
             widenLiteralsAccordingToEffectiveDeclaredType,
+            addTsTypeNonUnionToRefTypesTypeMutate
         };
 
         // function isBooleanTrueType(type: Readonly<RefTypesType>): boolean {
@@ -113,7 +115,9 @@ namespace ts {
         function createRefTypesTypeUnknown(): RefTypesTypeUnknown {
             return { _flags: RefTypesTypeFlags.unknown, _set: undefined, _mapLiteral: undefined };
         }
-        function _privateAddTsTypeNonUnionToRefTypesType(tstype: Type, type: Readonly<RefTypesType>): RefTypesType {
+
+        // This mutates type even though it say it does not (Readonly). Why is that not caught? Because Sets do not count.
+        function addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType {
             Debug.assert(!(tstype.flags & TypeFlags.Union),"unexpected");
             if (tstype.flags & TypeFlags.Intersection){
                 Debug.assert(!(tstype.flags & TypeFlags.Intersection),"not yet implemented");
@@ -137,6 +141,7 @@ namespace ts {
                 if (tstype.flags & TypeFlags.NumberLiteral) {
                     if (!type._set.has(numberType)){
                         keyType = numberType;
+                        // TODO: could we just do tstype.regularType? Maybe not if it is an Enum.
                         regularTsType = checker.getNumberLiteralType((tstype as NumberLiteralType).value);
                     }
                 }
@@ -172,6 +177,66 @@ namespace ts {
             return type;
         }
 
+        // function addTsTypeNonUnionToRefTypesTypeMutate(tstype: Readonly<Type>, type: RefTypesType) {
+        //     Debug.assert(!(tstype.flags & TypeFlags.Union),"unexpected");
+        //     if (tstype.flags & TypeFlags.Intersection){
+        //         Debug.assert(!(tstype.flags & TypeFlags.Intersection),"not yet implemented");
+        //     }
+        //     if (tstype===neverType) return type;
+        //     if (tstype===anyType || type._flags===RefTypesTypeFlags.any) {
+        //         return createRefTypesTypeAny();
+        //     }
+        //     if (tstype===unknownType || type._flags===RefTypesTypeFlags.unknown) {
+        //         return createRefTypesTypeUnknown();
+        //     }
+        //     // Note: boolean type is actually a union of true and false types.  Therefore
+        //     // does not get treated as a literal here.
+        //     /**
+        //      * If the superset type of the literal type is already present, then the literal type is ignored.
+        //      * E.g., If string type is present, then adding literal string type "something" will be a non op.
+        //      */
+        //     if (!(tstype.flags & TypeFlags.BooleanLiteral) && tstype.flags & TypeFlags.Literal) {
+        //         let keyType: Type | undefined;
+        //         let regularTsType: LiteralType | undefined;
+        //         if (tstype.flags & TypeFlags.NumberLiteral) {
+        //             if (!type._set.has(numberType)){
+        //                 keyType = numberType;
+        //                 regularTsType = checker.getNumberLiteralType((tstype as NumberLiteralType).value);
+        //             }
+        //         }
+        //         else if (tstype.flags & TypeFlags.StringLiteral){
+        //             if (!type._set.has(stringType)) {
+        //                 keyType = stringType;
+        //                 regularTsType = checker.getStringLiteralType((tstype as StringLiteralType).value);
+        //             }
+        //         }
+        //         else if (tstype.flags & TypeFlags.BigIntLiteral) {
+        //             if (!type._set.has(bigintType)) {
+        //                 keyType = bigintType;
+        //                 regularTsType = checker.getBigIntLiteralType((tstype as BigIntLiteralType).value);
+        //             }
+        //         }
+        //         else Debug.fail("unexpected: "+dbgTypeToStringDetail(tstype));
+
+        //         if (keyType && regularTsType){
+        //             const got = type._mapLiteral.get(keyType);
+        //             if (!got) type._mapLiteral.set(keyType, new Set<LiteralType>([regularTsType]));
+        //             else got.add(regularTsType);
+        //         }
+        //     }
+        //     else {
+        //         const regularTsType = (tstype as any).regularType ? (tstype as any).regularType : tstype;
+        //         // may have to erase literals
+        //         if (regularTsType.flags & (TypeFlags.Number|TypeFlags.String|TypeFlags.BigInt)){
+        //             Debug.assert(regularTsType===numberType||regularTsType===stringType||regularTsType===bigintType, "unexpected");
+        //             /* if (type._setLiteral.has(regularTsType)) */ type._mapLiteral.delete(regularTsType);
+        //         }
+        //         type._set.add(regularTsType);
+        //     }
+        //     return type;
+        // }
+
+
         function createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType {
             // if (!tstype) return refTypesRefNeverType;
             if (Array.isArray(tstype)){
@@ -206,7 +271,7 @@ namespace ts {
         }
         function addTypeToRefTypesType({source:tstype,target:target}: { source: Readonly<Type>, target: Readonly<RefTypesType>}): RefTypesType {
             forEachTypeIfUnion(tstype, t=>{
-                target = _privateAddTsTypeNonUnionToRefTypesType(t, target);
+                target = addTsTypeNonUnionToRefTypesTypeMutate(t, target);
             });
             return target;
         }

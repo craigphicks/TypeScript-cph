@@ -49,6 +49,7 @@
         "flowNodesGrouping.ts",
         "flowNodesDebugWrite.ts",
         "flowGroupInfer.ts",
+        "flowGroupInferApplyCrit.ts",
         "flowGroupInfer2.ts",
         "flowGroupInferRefTypesType.ts",
         "flowGroupRefTypesSymtab.ts",

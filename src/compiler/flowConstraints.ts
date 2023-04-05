@@ -426,9 +426,10 @@ namespace ts {
         return orSymtabConstraintsV2(asc, mrNarrow);
     }
 
-    function andSymbolTypeIntoSymtabConstraintV2({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType:_}: Readonly<{
+    function andSymbolTypeIntoSymtabConstraintV2({symbol,isconst,isAssign,type:typeIn,sc, mrNarrow, getDeclaredType:_}: Readonly<{
         symbol: Readonly<Symbol>,
         readonly isconst: undefined | boolean,
+        readonly isAssign: boolean | undefined,
         type: Readonly<RefTypesType>,
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
@@ -436,7 +437,7 @@ namespace ts {
         const log = false;
         if (log && getMyDebug()){
             consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
-            +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(typeIn)}}`);
+            +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
         }
         const constraintItem = sc.constraintItem;
         Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
@@ -449,21 +450,21 @@ namespace ts {
         else if (!symtab){
             Debug.assert(isRefTypesSymtabConstraintItemNever(sc));
         }
-        // else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
-        //     constraintItem = andSymbolTypeIntoConstraint({ symbol,type:typeIn,constraintItem,getDeclaredType,mrNarrow });
-        // }
         else {
-            const type = symtab.get(symbol);
-            if (type) {
-                //const gottype = got.leaf.type;
-                typeOut = mrNarrow.intersectionOfRefTypesType(type, typeIn);
-                // TODO: replace with mrNarrow.equalRefTypesType
-                if (!mrNarrow.equalRefTypesTypes(typeOut,type)){
-                    symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeOut);
-                }
+            if (isAssign){
+                symtab = mrNarrow.copyRefTypesSymtab(symtab).setAsAssigned(symbol,typeIn);
             }
             else {
-                symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeIn);
+                const type = symtab.get(symbol);
+                if (type) {
+                    typeOut = mrNarrow.intersectionOfRefTypesType(type, typeIn);
+                    if (!mrNarrow.equalRefTypesTypes(typeOut,type)){
+                        symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeOut);
+                    }
+                }
+                else {
+                    symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeIn);
+                }
             }
         }
         if (log && getMyDebug()){
@@ -513,16 +514,17 @@ namespace ts {
         return constraintItem;
     }
 
-    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType}: Readonly<{
+    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType}: Readonly<{
         symbol: Readonly<Symbol>,
         readonly isconst: undefined | boolean,
+        readonly isAssign?: boolean | undefined,
         type: Readonly<RefTypesType>,
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
         //Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
-        if (isRefTypesSymtabConstraintItemNever(sc)) return { type: mrNarrow.createRefTypesType(), sc };
-        return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType });
+        if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesType(),sc };
+        return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType });
     }
     /**
      * Same interface as andSymbolTypeIntoSymtabConstraint,
@@ -530,9 +532,10 @@ namespace ts {
      * @param param0
      */
     // @ ts-ignore
-    export function orSymbolTypeIntoSymtabConstraint({symbol,isconst,type:typeIn,sc, mrNarrow, getDeclaredType:_getDeclaredType}: Readonly<{
+    export function orSymbolTypeIntoSymtabConstraint({symbol,isconst,isAssign,type:typeIn,sc, mrNarrow, getDeclaredType:_getDeclaredType}: Readonly<{
         symbol: Readonly<Symbol>,
         readonly isconst: undefined | boolean,
+        readonly isAssign?: undefined | boolean,
         type: Readonly<RefTypesType>,
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
@@ -551,21 +554,30 @@ namespace ts {
             //constraintItem = andSymbolTypeIntoConstraint({ symbol,type,constraintItem,getDeclaredType,mrNarrow });
         }
         else {
-            const gotType = symtab.get(symbol);
-            if (!gotType || mrNarrow.isNeverType(gotType) ||
-            mrNarrow.equalRefTypesTypes(typeIn,gotType)
-            ){
-                return { type:typeIn,sc };
-            }
-            const utype = mrNarrow.unionOfRefTypesType([typeIn, gotType]);
-            symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,utype);
-            return {
-                type: utype,
-                sc: {
+            if (isAssign){
+                symtab = mrNarrow.copyRefTypesSymtab(symtab).setAsAssigned(symbol,typeIn);
+                return { type:typeIn,sc:{
                     symtab,
-                    constraintItem: createFlowConstraintAlways()
+                    constraintItem: sc.constraintItem,
+                }};
+            }
+            else {
+                const gotType = symtab.get(symbol);
+                if (!gotType || mrNarrow.isNeverType(gotType) ||
+                mrNarrow.equalRefTypesTypes(typeIn,gotType)
+                ){
+                    return { type:typeIn,sc };
                 }
-            };
+                const utype = mrNarrow.unionOfRefTypesType([typeIn, gotType]);
+                symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,utype);
+                return {
+                    type: utype,
+                    sc: {
+                        symtab,
+                        constraintItem: sc.constraintItem //createFlowConstraintAlways()
+                    }
+                };
+            }
         }
     }
 
