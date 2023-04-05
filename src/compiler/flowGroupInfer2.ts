@@ -2539,7 +2539,7 @@ namespace ts {
                     if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression`);
                     const {condition, whenTrue, whenFalse} = (expr as ConditionalExpression);
                     if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; condition:${dbgNodeToString(condition)}`);
-                    const rcond = mrNarrowTypes({
+                    const rcond = applyCrit(mrNarrowTypes({
                         sci:{
                             symtab: refTypesSymtabIn,
                             constraintItem: constraintItemIn
@@ -2547,27 +2547,27 @@ namespace ts {
                         expr: condition,
                         crit: { kind: InferCritKind.truthy, alsoFailing: true },
                         inferStatus: { ...inferStatus, inCondition: true },
-                    });
+                    }).inferRefRtnType.unmerged,{ kind: InferCritKind.truthy, alsoFailing: true });
 
                     if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; whenTrue`);
-                    const retTrue = mrNarrowTypes({
-                        sci: rcond.inferRefRtnType.passing.sci,
+                    const retTrue = applyCritNone(mrNarrowTypes({
+                        sci: rcond.passing.sci,
                         expr: whenTrue,
                         crit: { kind: InferCritKind.none },
                         inferStatus, //: { ...inferStatus, inCondition: true }
-                    });
+                    }).inferRefRtnType.unmerged);
 
                     if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; whenFalse`);
-                    const retFalse = mrNarrowTypes({
-                        sci: rcond.inferRefRtnType.failing!.sci,
+                    const retFalse = applyCritNone(mrNarrowTypes({
+                        sci: rcond.failing!.sci,
                         expr: whenFalse,
                         crit: { kind: InferCritKind.none },
                         inferStatus, //: { ...inferStatus, inCondition: true }
-                    });
+                    }).inferRefRtnType.unmerged);
 
                     const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
-                    arrRefTypesTableReturn.push(retTrue.inferRefRtnType.passing);
-                    arrRefTypesTableReturn.push(retFalse.inferRefRtnType.passing);
+                    arrRefTypesTableReturn.push(retTrue);
+                    arrRefTypesTableReturn.push(retFalse);
                     const retval: MrNarrowTypesInnerReturn = {
                         arrRefTypesTableReturn
                     };
@@ -2591,32 +2591,32 @@ namespace ts {
                 }
                 case SyntaxKind.PrefixUnaryExpression:
                     if ((expr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
-                        const ret = mrNarrowTypes({
+                        const ret = applyCrit(mrNarrowTypes({
                             sci:{ symtab:refTypesSymtabIn, constraintItem:constraintItemIn },
                             expr:(expr as PrefixUnaryExpression).operand,
                             crit:{ negate: true, kind: InferCritKind.truthy, alsoFailing: true },
                             qdotfallout: undefined, inferStatus: { ...inferStatus, inCondition: true },
-                        });
+                        }).inferRefRtnType.unmerged,{ negate: true, kind: InferCritKind.truthy, alsoFailing: true });
                         /**
                          * The crit was already set with negate: true to reverse the passing and failing.
                          * Below, the symbols are set to undefined, and the types converted to booleans.
                          */
                         const nodeTypes: Type[] = [];
                         //ret.inferRefRtnType.passing.symbol = undefined;
-                        if (!isNeverType(ret.inferRefRtnType.passing.type)){
+                        if (!isNeverType(ret.passing.type)){
                             const ttype = checker.getTrueType();
                             nodeTypes.push(ttype);
-                            ret.inferRefRtnType.passing.type = createRefTypesType(ttype);
+                            ret.passing.type = createRefTypesType(ttype);
                         }
                         //ret.inferRefRtnType.failing!.symbol = undefined;
-                        if (!isNeverType(ret.inferRefRtnType.failing!.type)){
+                        if (!isNeverType(ret.failing!.type)){
                             const ftype = checker.getFalseType();
                             nodeTypes.push(ftype);
-                            ret.inferRefRtnType.failing!.type = createRefTypesType(ftype);
+                            ret.failing!.type = createRefTypesType(ftype);
                         }
                         //mergeOneIntoNodeToTypeMaps(expr, getUnionType(nodeTypes),inferStatus.groupNodeToTypeMap);
                         return {
-                            arrRefTypesTableReturn: [ret.inferRefRtnType.passing, ret.inferRefRtnType.failing!]
+                            arrRefTypesTableReturn: [ret.passing, ret.failing!]
                         };
                     }
                     Debug.fail("unexpected");
