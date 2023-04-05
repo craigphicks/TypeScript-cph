@@ -1,6 +1,6 @@
 //// [_caxnc-whileLoop-0047.ts]
 function t47(){
-    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: 0 | 1 | 2 | 999"
     let d1: 0 | 1 | 2 | 999 = 0;
     d1;
     // @ts-dev-expect-string "loopCount:2, invocations:1"
@@ -26,7 +26,7 @@ function t47(){
 //// [_caxnc-whileLoop-0047.js]
 "use strict";
 function t47() {
-    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: 0 | 1 | 2 | 999"
     var d1 = 0;
     d1;
     // @ts-dev-expect-string "loopCount:2, invocations:1"

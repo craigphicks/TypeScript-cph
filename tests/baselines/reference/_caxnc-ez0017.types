@@ -46,20 +46,32 @@ if (isFoo){
 >foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
 >arg : string
 
-    argIsString;
+    x; // expect "1"
+>x : "1"
+
+    arg; // expect string
+>arg : string
+
+    argIsString; // expect true
 >argIsString : true
 }
 else if (obja) {
 >obja : FooA | undefined
 
-    const y = obja.foo(arg);
->y : undefined
->obja.foo(arg) : undefined
+    const y = obja.foo(arg); // resolveCall has it's own logic, separate from flow
+>y : void
+>obja.foo(arg) : void
 >obja.foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
 >obja : FooA
 >foo : { (b: string): "1"; (b: number): undefined; (b: any): void; }
->arg : number
+>arg : string | number
 
-    argIsString;
->argIsString : false
+    y; // expect  "1" | undefined
+>y : "1" | undefined
+
+    arg; // expect string | number
+>arg : string | number
+
+    argIsString; // expect boolean
+>argIsString : boolean
 }

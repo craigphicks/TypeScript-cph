@@ -49,13 +49,13 @@ else if (obja) {
 >obja : FooA | undefined
 
     const y = obja.foo(arg);
->y : undefined
->obja.foo(arg) : undefined
+>y : never
+>obja.foo(arg) : never
 >obja.foo : { (b: string): "1"; (b: number): undefined; }
 >obja : FooA
 >foo : { (b: string): "1"; (b: number): undefined; }
->arg : number
+>arg : string | number
 
     argIsString;
->argIsString : false
+>argIsString : boolean
 }

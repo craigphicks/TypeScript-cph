@@ -10,7 +10,7 @@ declare const b2: false;
 if (b1 && b2){
 >b1 && b2 : false
 >b1 : false
->b2 : false
+>b2 : never
 
     b1;
 >b1 : never

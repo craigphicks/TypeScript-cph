@@ -1,0 +1,14 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeof-0021.ts ===
+declare const a: number|string;
+>a : string | number
+
+if (typeof a==="number"){
+>typeof a==="number" : boolean
+>typeof a : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>a : string | number
+>"number" : "number"
+
+    a;
+>a : number
+}
+

@@ -1,6 +1,6 @@
 namespace ts {
 
-    export const extraAsserts = false; // not suitable for release
+    export const extraAsserts = true; // not suitable for release
     const hardCodeEnableTSDevExpectStringFalse = true;
 
     let dbgs: Dbgs | undefined;
@@ -337,6 +337,7 @@ namespace ts {
     }
 
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
+        if (getMyDebug()) debugger;
         if (compilerOptions.mrNarrowConstraintsEnable===undefined) compilerOptions.mrNarrowConstraintsEnable = false;
         if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
         if (hardCodeEnableTSDevExpectStringFalse){
@@ -363,6 +364,7 @@ namespace ts {
         const refTypesTypeModule = createRefTypesTypeModule(checker);
         const mrNarrow = createMrNarrow(checker, sourceFile, mrState, refTypesTypeModule, compilerOptions);
         initializeFlowGroupRefTypesSymtabModule(mrNarrow);
+        initFlowGroupInferApplyCrit(checker, mrNarrow);
         return {
             sourceFile,
             groupsForFlow,
@@ -750,8 +752,14 @@ namespace ts {
                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
                 }
                 forFlow.currentBranchesMap.delete(loopGroup);
+
+                // The groupToNodeToType map must be replaced by the second call to resolveGroupForFlow(loopGroup,...)
+                if (forFlowParent.currentBranchesMap.has(loopGroup)) forFlowParent.currentBranchesMap.delete(loopGroup); // This is not required because it will be overwritten anyway.
+                if (forFlowParent.groupToNodeToType!.has(loopGroup)) forFlowParent.groupToNodeToType!.delete(loopGroup);
+
                 const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
                     resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop: scForConditionUnionOfInAndContinue, loopGroupIdx:loopGroup.groupIdx });
+
                 if (getMyDebug(dbgLevel)){
                     consoleLog(`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`);
                 }
@@ -1072,12 +1080,16 @@ namespace ts {
         let scfailing: RefTypesSymtabConstraintItem | undefined;
 
         inferStatus.isInLoop = !!forFlow.loopState;
-        {
-        const {inferRefRtnType:{passing,failing}} = sourceFileMrState.mrNarrow.mrNarrowTypes({
+        const mntr = sourceFileMrState.mrNarrow.mrNarrowTypes({
             sci: anteSCArg,
             expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
-            scpassing = passing.sci;
-            scfailing = failing?.sci;
+        if (!inferStatus.inCondition){
+            scpassing = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap).sci;
+        }
+        else {
+            const critret = applyCrit(mntr,{ kind:InferCritKind.truthy, alsoFailing:true },inferStatus.groupNodeToTypeMap);
+            scpassing = critret.passing.sci;
+            scfailing = critret.failing!.sci;
         }
         if (inferStatus.inCondition){
             const cbe: CurrentBranchElementTF = {
@@ -1116,6 +1128,9 @@ namespace ts {
             consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`);
             dbgForFlow(sourceFileMrState, forFlow).forEach(s=>consoleLog(`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`));
             consoleLog(`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`);
+            dbgNodeToTypeMap(inferStatus.groupNodeToTypeMap).forEach(str=>{
+                consoleLog(`resolveGroupForFlow[dbg] groupNodeToTypeMap: ${str}`);
+            });
             consoleLog(`resolveGroupForFlow[out]: ${dbgs?.dbgNodeToString(maximalNode)}, `);
             consoleGroupEnd();
         }

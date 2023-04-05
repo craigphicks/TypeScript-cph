@@ -40,15 +40,15 @@ else if (obja) {
 >obja : FooA | undefined
 
     arg; // should be number
->arg : number
+>arg : string | number
 
     const x = obja.foo(arg); // x should be undefined
->x : undefined
->obja.foo(arg) : undefined
+>x : never
+>obja.foo(arg) : never
 >obja.foo : { (b: string): "1"; (b: number): undefined; }
 >obja : FooA
 >foo : { (b: string): "1"; (b: number): undefined; }
->arg : number
+>arg : string | number
 
 } else {
     obja; // should be undefined

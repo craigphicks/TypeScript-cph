@@ -238,7 +238,7 @@ namespace ts {
     }
 
     export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
-        const dolog = false;
+        const dolog = true;
         if (dolog && getMyDebug()){
             consoleGroup(`unionArrRefTypesSymtab[in]`);
             arr.forEach((rts,i)=>{
@@ -272,16 +272,28 @@ namespace ts {
             mapSymToPType.forEach(({set, setAssigned},symbol)=>{
                 // c.f. _caxnc-whileLoop-0023 - for all i, s.t. arr[i].symbtabInner does not have symbol, must lookup in symtabOuter
                 let addedOuterTypeForSymbol = false;
-                arr.forEach(rts=>{
-                    if (addedOuterTypeForSymbol) return;
-                    if (!rts.symtabInner.has(symbol)){
-                        const otype = rts.symtabOuter?.get(symbol);
-                        if (otype){
+                if (!arr[0].isSubloop){
+                    arr.forEach(rts=>{
+                        if (addedOuterTypeForSymbol) return; // TODO optimize with loop breakout, iterator or other
+                        if (!rts.symtabInner.has(symbol)){
+                            const otype = mrNarrow.getEffectiveDeclaredType(symbolFlowInfoMap.get(symbol) ?? Debug.fail("unexpected"));
                             mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
                             addedOuterTypeForSymbol=true;
                         }
-                    }
-                });
+                    });
+                }
+                else {
+                    arr.forEach(rts=>{
+                        if (addedOuterTypeForSymbol) return; // TODO optimize with loop breakout, iterator or other
+                        if (!rts.symtabInner.has(symbol)){
+                            const otype = rts.symtabOuter?.get(symbol);
+                            if (otype){
+                                mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
+                                addedOuterTypeForSymbol=true;
+                            }
+                        }
+                    });
+                }
                 const atype: Type[]=[];
                 set.forEach(t=>atype.push(t));
                 const type = mrNarrow.refTypesTypeModule.createRefTypesType(atype);

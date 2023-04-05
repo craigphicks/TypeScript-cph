@@ -12,11 +12,15 @@ const isFoo = obja?.foo(arg);
 const argIsString = typeof arg === "string";
 if (isFoo){
     const x = obja.foo(arg);
-    argIsString;
+    x; // expect "1"
+    arg; // expect string
+    argIsString; // expect true
 }
 else if (obja) {
-    const y = obja.foo(arg);
-    argIsString;
+    const y = obja.foo(arg); // resolveCall has it's own logic, separate from flow
+    y; // expect  "1" | undefined
+    arg; // expect string | number
+    argIsString; // expect boolean
 }
 
 //// [_caxnc-ez0017.js]
@@ -27,11 +31,15 @@ var isFoo = obja === null || obja === void 0 ? void 0 : obja.foo(arg);
 var argIsString = typeof arg === "string";
 if (isFoo) {
     var x = obja.foo(arg);
-    argIsString;
+    x; // expect "1"
+    arg; // expect string
+    argIsString; // expect true
 }
 else if (obja) {
-    var y = obja.foo(arg);
-    argIsString;
+    var y = obja.foo(arg); // resolveCall has it's own logic, separate from flow
+    y; // expect  "1" | undefined
+    arg; // expect string | number
+    argIsString; // expect boolean
 }
 
 

@@ -44,19 +44,31 @@ if (isFoo){
 >foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
 >arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
 
-    argIsString;
+    x; // expect "1"
+>x : Symbol(x, Decl(_caxnc-ez0017.ts, 12, 9))
+
+    arg; // expect string
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+
+    argIsString; // expect true
 >argIsString : Symbol(argIsString, Decl(_caxnc-ez0017.ts, 10, 5))
 }
 else if (obja) {
 >obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 5, 13))
 
-    const y = obja.foo(arg);
->y : Symbol(y, Decl(_caxnc-ez0017.ts, 16, 9))
+    const y = obja.foo(arg); // resolveCall has it's own logic, separate from flow
+>y : Symbol(y, Decl(_caxnc-ez0017.ts, 18, 9))
 >obja.foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
 >obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 5, 13))
 >foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
 >arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
 
-    argIsString;
+    y; // expect  "1" | undefined
+>y : Symbol(y, Decl(_caxnc-ez0017.ts, 18, 9))
+
+    arg; // expect string | number
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+
+    argIsString; // expect boolean
 >argIsString : Symbol(argIsString, Decl(_caxnc-ez0017.ts, 10, 5))
 }

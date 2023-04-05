@@ -19,7 +19,7 @@ function t24(){
 
     // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (d){
->d : boolean
+>d : true
 
         c = b;
 >c = b : true

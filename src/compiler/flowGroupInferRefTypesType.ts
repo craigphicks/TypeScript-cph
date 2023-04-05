@@ -4,6 +4,20 @@ namespace ts {
     ): asserts _expression {
         return Debug.assert(arguments);
     }
+
+    type PartitionForEqualityCompareItem = & {
+        left?: Readonly<RefTypesType>;
+        right?: Readonly<RefTypesType>;
+        both?: Readonly<RefTypesType>;
+        leftts?: Type[];
+        rightts?: Type[];
+        bothts?: Type;
+        true?: boolean;
+        false?: boolean;
+    };
+    //export declare function partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
+
+
     export type RefTypesTypeModule = & {
         getTypeMemberCount(type: Readonly<RefTypesType>): number;
         forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void ;
@@ -31,6 +45,8 @@ namespace ts {
         literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
+        addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType;
+        partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
     };
 
     export function createRefTypesTypeModule(checker: TypeChecker): RefTypesTypeModule {
@@ -41,6 +57,8 @@ namespace ts {
         const numberType = checker.getNumberType();
         const bigintType = checker.getBigIntType();
         const anyType = checker.getAnyType();
+        // const trueType = checker.getTrueType();
+        // const falseType = checker.getFalseType();
         // const undefinedType = checker.getUndefinedType();
         // const errorType = checker.getErrorType();
         // const nullType = checker.getNullType();
@@ -61,8 +79,6 @@ namespace ts {
         return {
             getTypeMemberCount,
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
-            // createRefTypesTypeAny,
-            // createRefTypesTypeUnknown,
             createRefTypesType,
             cloneRefTypesType,
             addTypesToRefTypesType,
@@ -79,30 +95,13 @@ namespace ts {
             forEachRefTypesTypeType,
             partitionIntoSingularAndNonSingularTypes,
             getMapLiteralOfRefTypesType,
-            //getLiteralsOfANotInB,
-            //refTypesTypeNormalHasType,
             equalRefTypesTypes,
             literalWideningUnion,
             getUnionOrWidenedType,
             widenLiteralsAccordingToEffectiveDeclaredType,
+            addTsTypeNonUnionToRefTypesTypeMutate,
+            partitionForEqualityCompare,
         };
-
-        // function isBooleanTrueType(type: Readonly<RefTypesType>): boolean {
-        //     if (type._flags===RefTypesTypeFlags.none && type._set.size===1){
-        //         if (type._set.values().next().value===checker.getTrueType()){
-        //             return true;
-        //         }
-        //     }
-        //     return false;
-        // }
-        // function isBooleanFalseType(type: Readonly<RefTypesType>): boolean {
-        //     if (type._flags===RefTypesTypeFlags.none && type._set.size===1){
-        //         if (type._set.values().next().value===checker.getFalseType()){
-        //             return true;
-        //         }
-        //     }
-        //     return false;
-        // }
 
         function forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void {
             (type.flags & TypeFlags.Union) ? (type as UnionType).types.forEach(t => f(t)) : f(type);
@@ -113,7 +112,9 @@ namespace ts {
         function createRefTypesTypeUnknown(): RefTypesTypeUnknown {
             return { _flags: RefTypesTypeFlags.unknown, _set: undefined, _mapLiteral: undefined };
         }
-        function _privateAddTsTypeNonUnionToRefTypesType(tstype: Type, type: Readonly<RefTypesType>): RefTypesType {
+
+        // This mutates type even though it say it does not (Readonly). Why is that not caught? Because Sets do not count.
+        function addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType {
             Debug.assert(!(tstype.flags & TypeFlags.Union),"unexpected");
             if (tstype.flags & TypeFlags.Intersection){
                 Debug.assert(!(tstype.flags & TypeFlags.Intersection),"not yet implemented");
@@ -137,6 +138,7 @@ namespace ts {
                 if (tstype.flags & TypeFlags.NumberLiteral) {
                     if (!type._set.has(numberType)){
                         keyType = numberType;
+                        // TODO: could we just do tstype.regularType? Maybe not if it is an Enum.
                         regularTsType = checker.getNumberLiteralType((tstype as NumberLiteralType).value);
                     }
                 }
@@ -172,6 +174,66 @@ namespace ts {
             return type;
         }
 
+        // function addTsTypeNonUnionToRefTypesTypeMutate(tstype: Readonly<Type>, type: RefTypesType) {
+        //     Debug.assert(!(tstype.flags & TypeFlags.Union),"unexpected");
+        //     if (tstype.flags & TypeFlags.Intersection){
+        //         Debug.assert(!(tstype.flags & TypeFlags.Intersection),"not yet implemented");
+        //     }
+        //     if (tstype===neverType) return type;
+        //     if (tstype===anyType || type._flags===RefTypesTypeFlags.any) {
+        //         return createRefTypesTypeAny();
+        //     }
+        //     if (tstype===unknownType || type._flags===RefTypesTypeFlags.unknown) {
+        //         return createRefTypesTypeUnknown();
+        //     }
+        //     // Note: boolean type is actually a union of true and false types.  Therefore
+        //     // does not get treated as a literal here.
+        //     /**
+        //      * If the superset type of the literal type is already present, then the literal type is ignored.
+        //      * E.g., If string type is present, then adding literal string type "something" will be a non op.
+        //      */
+        //     if (!(tstype.flags & TypeFlags.BooleanLiteral) && tstype.flags & TypeFlags.Literal) {
+        //         let keyType: Type | undefined;
+        //         let regularTsType: LiteralType | undefined;
+        //         if (tstype.flags & TypeFlags.NumberLiteral) {
+        //             if (!type._set.has(numberType)){
+        //                 keyType = numberType;
+        //                 regularTsType = checker.getNumberLiteralType((tstype as NumberLiteralType).value);
+        //             }
+        //         }
+        //         else if (tstype.flags & TypeFlags.StringLiteral){
+        //             if (!type._set.has(stringType)) {
+        //                 keyType = stringType;
+        //                 regularTsType = checker.getStringLiteralType((tstype as StringLiteralType).value);
+        //             }
+        //         }
+        //         else if (tstype.flags & TypeFlags.BigIntLiteral) {
+        //             if (!type._set.has(bigintType)) {
+        //                 keyType = bigintType;
+        //                 regularTsType = checker.getBigIntLiteralType((tstype as BigIntLiteralType).value);
+        //             }
+        //         }
+        //         else Debug.fail("unexpected: "+dbgTypeToStringDetail(tstype));
+
+        //         if (keyType && regularTsType){
+        //             const got = type._mapLiteral.get(keyType);
+        //             if (!got) type._mapLiteral.set(keyType, new Set<LiteralType>([regularTsType]));
+        //             else got.add(regularTsType);
+        //         }
+        //     }
+        //     else {
+        //         const regularTsType = (tstype as any).regularType ? (tstype as any).regularType : tstype;
+        //         // may have to erase literals
+        //         if (regularTsType.flags & (TypeFlags.Number|TypeFlags.String|TypeFlags.BigInt)){
+        //             Debug.assert(regularTsType===numberType||regularTsType===stringType||regularTsType===bigintType, "unexpected");
+        //             /* if (type._setLiteral.has(regularTsType)) */ type._mapLiteral.delete(regularTsType);
+        //         }
+        //         type._set.add(regularTsType);
+        //     }
+        //     return type;
+        // }
+
+
         function createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType {
             // if (!tstype) return refTypesRefNeverType;
             if (Array.isArray(tstype)){
@@ -206,7 +268,7 @@ namespace ts {
         }
         function addTypeToRefTypesType({source:tstype,target:target}: { source: Readonly<Type>, target: Readonly<RefTypesType>}): RefTypesType {
             forEachTypeIfUnion(tstype, t=>{
-                target = _privateAddTsTypeNonUnionToRefTypesType(t, target);
+                target = addTsTypeNonUnionToRefTypesTypeMutate(t, target);
             });
             return target;
         }
@@ -322,6 +384,100 @@ namespace ts {
             return tleft;
         }
 
+        // @ ts-expect-error
+        function partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[] {
+            //Debug.fail("not yet implemented");
+            if (isNeverType(a)||isNeverType(b)) return [];
+            if (isAnyType(a) || isUnknownType(a) || isAnyType(b) || isUnknownType(b)) return [{ left:a,right:b, true:true,false:true }];
+            const symmSet = new Set<Type>();
+            const doOneSide = (x: Readonly<RefTypesType>, y: Readonly<RefTypesType>, pass: 0 | 1): PartitionForEqualityCompareItem[] => {
+                const arrYTsTypes: Type[] = getTsTypesOfType(y);
+                const setYTsTypes = new Set<Type>(arrYTsTypes);
+                const copySetYDelete=(d: Type) => {
+                    const r = new Set(setYTsTypes);
+                    r.delete(d);
+                    const a: Type[] = [];
+                    r.forEach(t=>a.push(t));
+                    return a;
+                };
+                const arr1: PartitionForEqualityCompareItem[] = [];
+                // @ts-expect-error mask
+                const a = undefined;
+                // @ts-expect-error mask
+                const b = undefined;
+                x._mapLiteral?.forEach((setltx,tx)=>{
+                    const setlty = y._mapLiteral?.get(tx);
+                    if (setlty){
+                        setltx.forEach(ltx=>{
+                            if (setlty.has(ltx)){
+                                if (pass===0){
+                                    arr1.push({ bothts:ltx, true:true });
+                                    symmSet.add(ltx);
+                                }
+                                else if (!symmSet.has(ltx)){
+                                    arr1.push({ bothts:ltx, true:true });
+                                }
+                                const rightts = copySetYDelete(ltx);
+                                if (rightts.length!==0) {
+                                    arr1.push({ leftts:[ltx], rightts, false:true });
+                                }
+                            }
+                            else {
+                                // both x and y have literals under ta, but only x has lta under ta
+                                arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+                            }
+                        });
+                    }
+                    else if (y._set?.has(tx)){
+                        // e.g. ltx is 1, and y is number
+                        setltx.forEach(ltx=>{
+                            if (pass===0){
+                                arr1.push({ bothts:ltx, true:true });
+                                symmSet.add(ltx);
+                            }
+                            else if (!symmSet.has(ltx)){
+                                arr1.push({ bothts:ltx, true:true });
+                            }
+                            // // cannot subtract singular from nonsingular so the inverse of right is just right, and although it matches just label as false only.
+                            arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+                        });
+                    }
+                    else {
+                        setltx.forEach(ltx=>{
+                            arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+                        });
+                    }
+                });
+                x._set!.forEach(tx=>{
+                    if (y._set!.has(tx)){
+                        if (pass===0){
+                            arr1.push({ bothts: tx, true:true, false: (tx.flags & TypeFlags.BooleanLiteral) ? false : true });
+                            symmSet.add(tx);
+                        }
+                        else if (!symmSet.has(tx)){
+                            arr1.push({ bothts: tx, true:true, false: (tx.flags & TypeFlags.BooleanLiteral) ? false : true });
+                        }
+                        const rightts = copySetYDelete(tx);
+                        if (rightts.length!==0){
+                            arr1.push({ leftts:[tx], rightts });
+                        }
+                    }
+                });
+                if (pass===1) {
+                    arr1.forEach(x=>{
+                        if (x.leftts){
+                            const tmp = x.leftts;
+                            x.leftts = x.rightts;
+                            x.rightts = tmp;
+                        }
+                    });
+                }
+                return arr1;
+            };
+            const ret = [ ...doOneSide(a,b,0), ...doOneSide(b,a,1) ];
+            return ret;
+        }
+
         // /**
         //  * If a is a subset of b returns true, else false.
         //  * @param a
@@ -355,6 +511,23 @@ namespace ts {
             }
             return isSubset;
         }
+
+        // function subtractTsTypeFromTypeInPlace(subtrahend: Readonly<Type>, target: RefTypesType, /* errorOnMissing = false */): boolean {
+        //     const deleteLiteral = (key: Type): boolean => {
+        //         let ltset: Set<LiteralType> | undefined;
+        //         if ((ltset=target._mapLiteral?.get(key))?.has(subtrahend as LiteralType)){
+        //             ltset.delete(subtrahend as LiteralType);
+        //             if (ltset.size===0) target._mapLiteral!.delete(key);
+        //             return true;
+        //         }
+        //         return false;
+        //     };
+        //     if (subtrahend.flags & TypeFlags.NumberLiteral && deleteLiteral(numberType)) return true;
+        //     if (subtrahend.flags & TypeFlags.StringLiteral && deleteLiteral(stringType)) return true;
+        //     if (subtrahend.flags & TypeFlags.BigIntLiteral && deleteLiteral(bigintType)) return true;
+        //     if (target._set!.delete(subtrahend)) return true;
+        //     return false;
+        // }
 
         /**
          * If part of subtrahend set does not exist in minuend it will be ignored.
@@ -423,6 +596,46 @@ namespace ts {
                 });
             }
         }
+        function getTsTypesOfType(type: Readonly<RefTypesType>): Type[] {
+            if (type._flags){
+                if (type._flags===RefTypesTypeFlags.any) return [anyType];
+                else return [unknownType];
+            }
+            else if (isNeverType(type)) return [];
+            else {
+                const at: Type[] = [];
+                type._set.forEach(t=>at.push(t));
+                type._mapLiteral.forEach((litset,_tstype)=>{
+                    litset.forEach(lt=>{
+                        at.push(lt);
+                    });
+                });
+                return at;
+            }
+        }
+
+        // function getPartitionedTsTypesOfType(type: Readonly<RefTypesType>): { literals?: Type[], nonliterals?: Type[] } {
+        //     if (type._flags){
+        //         if (type._flags===RefTypesTypeFlags.any) return { nonliterals:[anyType] };
+        //         else return { nonliterals:[unknownType] };
+        //     }
+        //     else if (isNeverType(type)) return {};
+        //     else {
+        //         const literals: Type[] = [];
+        //         const nonliterals: Type[] = [];
+        //         type._set.forEach(t=>nonliterals.push(t));
+        //         type._mapLiteral.forEach((litset,_tstype)=>{
+        //             litset.forEach(lt=>{
+        //                 literals.push(lt);
+        //             });
+        //         });
+        //         const ret: ReturnType<typeof getPartitionedTsTypesOfType> = {};
+        //         if (literals.length) ret.literals=literals;
+        //         if (nonliterals.length) ret.nonliterals=nonliterals;
+        //         return ret;
+        //     }
+        // }
+
         function getTypeMemberCount(type: RefTypesType): number {
             if (type._flags!==RefTypesTypeFlags.none) return 1;
             let count = type._set.size;

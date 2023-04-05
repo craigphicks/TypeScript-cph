@@ -1,0 +1,44 @@
+=== tests/cases/conformance/_caxnc/_caxnc-rp-004.ts ===
+declare const b01:0|1;
+>b01 : 0 | 1
+
+declare const b02:0|2;
+>b02 : 0 | 2
+
+const ca = b01 && b02;
+>ca : 0 | 2
+>b01 && b02 : 0 | 2
+>b01 : 0 | 1
+>b02 : 0 | 2
+
+const co = b01 || b02;
+>co : 0 | 1 | 2
+>b01 || b02 : 0 | 1 | 2
+>b01 : 0 | 1
+>b02 : 0 | 2
+
+const cao = ca && co;
+>cao : 0 | 1 | 2
+>ca && co : 0 | 1 | 2
+>ca : 0 | 2
+>co : 0 | 1 | 2
+
+if (!ca){
+>!ca : boolean
+>ca : 0 | 2
+
+    b01;b02;ca;co;cao;
+>b01 : 0 | 1
+>b02 : 0 | 2
+>ca : 0 | 2
+>co : 0 | 1 | 2
+>cao : 0
+
+    /**
+     * b01 b02 ca=b01&&b02 co=b01||b02 cao=ca&&co
+     * 0   0   0           0           0
+     * 1   0   0           1           0
+     * 0   2   0           2           0
+     */
+}
+

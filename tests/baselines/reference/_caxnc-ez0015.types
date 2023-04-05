@@ -36,9 +36,9 @@ const argIsString = typeof arg === "string";
 >"string" : "string"
 
 if (isFoo && argIsString){
->isFoo && argIsString : boolean | undefined
+>isFoo && argIsString : true | undefined
 >isFoo : "1" | undefined
->argIsString : boolean
+>argIsString : true
 
     const x = obja.foo(arg);
 >x : "1"

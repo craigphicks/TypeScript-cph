@@ -6,7 +6,7 @@ declare const c11: boolean;
 >c21 : boolean
 >c11 || c11 : boolean
 >c11 : boolean
->c11 : boolean
+>c11 : false
 }
 const c31 = c11;
 >c31 : boolean

@@ -6,6 +6,14 @@
 
 ### Priority: High
 
+0. Within loops, during invocations===0, does the node to type map neeed to be set?  For variable declarations which will become a replay, yes, because the non-const node values are required for the replay.
+
+0. In `SyntaxKind.Identifer` try setting groupNodeToTypeMap to `undefined` (optimization).
+
+0. `orSymbolTypeIntoSymtabConstraint` needs to be fixed to correctly work with `assignedType` (current fix is broken, but that is not being detected in tests).
+
+0. `mrNarrowTypesByBinaryExpresionAssign` assumed lhs is statement level, and sets inCondition to false, but it should be inherited.
+
 0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFLow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least.
 
 0. [proxySymtabSqueezing] Dev todo's:
@@ -410,3 +418,11 @@ A consequence is that `case SyntaxKind.CallExpression` currently has a narrow co
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  --prof built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `node --prof-process isolate- > isolate.txt`
 
+
+_caxnc-ez0007.ts is better but why not all never after `else if (obja)`?
+_caxnc-fn-0002.ts defnitely bad
+_caxnc-fn-0003.ts bad
+_caxnc-prop-0002.ts bad
+_caxnc-rp-003.ts bad
+
+simple typeof bad 

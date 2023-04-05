@@ -38,8 +38,12 @@ else {
 >co : Symbol(co, Decl(_caxnc-rp-003.ts, 3, 5))
 >cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 4, 5))
 
-    // (cao!==0) => (ca => (b1===1 && b2===2) => (b1||b2)===1 => co==1 ==> (cao====1)
-    // so expect cao: 0|1
+    /**
+     * b01 b02 ca=b01&&b02 co=b01||b02 cao=ca&&co
+     * 0   0   0           0           0
+     * 1   0   0           1           0
+     * 0   2   0           2           0
+     */
 }
 
 if (b01 && b02){

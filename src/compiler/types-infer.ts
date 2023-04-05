@@ -53,7 +53,26 @@ namespace ts {
         // constraintItem: ConstraintItem;
         sci: RefTypesSymtabConstraintItem
     };
+    export type RefTypesTableReturnNoSymbolNotNever = & {
+        kind: RefTypesTableKind.return;
+        type: RefTypesType;
+        //typeConstraintItem?: ConstraintItem;
+        // symtab: RefTypesSymtab;
+        // constraintItem: ConstraintItem;
+        sci: RefTypesSymtabConstraintItemNotNever
+    };
     export type RefTypesTableReturn = & {
+        kind: RefTypesTableKind.return;
+        symbol?: Symbol | undefined;
+        isconst?: boolean;
+        isAssign?: boolean; // don't need assignType because it will always be whole type.
+        type: RefTypesType;
+        //typeConstraintItem: ConstraintItem;
+        // symtab?: RefTypesSymtab;
+        // constraintItem: ConstraintItem;
+        sci: RefTypesSymtabConstraintItem
+    };
+    export type RefTypesTableReturnNotNever = & {
         kind: RefTypesTableKind.return;
         symbol?: Symbol | undefined;
         isconst?: boolean;
@@ -62,15 +81,15 @@ namespace ts {
         //typeConstraintItem: ConstraintItem;
         // symtab?: RefTypesSymtab;
         // constraintItem: ConstraintItem;
-        sci: RefTypesSymtabConstraintItem
+        sci: RefTypesSymtabConstraintItemNotNever
     };
     export enum InferCritKind {
         none= "none",
         truthy= "truthy",
         notnullundef= "notnullundef",
         assignable= "assignable",
-        typeof= "typeof",
-        twocrit= "twocrit"
+        // typeof= "typeof",
+        // twocrit= "twocrit"
     };
 
     export enum InferCritTypeofStrings {
@@ -86,11 +105,11 @@ namespace ts {
 
     export type InferCrit =
     (
-        | {
-            kind: typeof InferCritKind.twocrit // this is just to get the resulting type without any criteria
-            negate?: false;
-            crits: [InferCrit & {alsoFailing?: false}, InferCrit]
-        }
+        // | {
+        //     kind: typeof InferCritKind.twocrit // this is just to get the resulting type without any criteria
+        //     negate?: false;
+        //     crits: [InferCrit & {alsoFailing?: false}, InferCrit]
+        // }
         | {
             kind: typeof InferCritKind.none // this is just to get the resulting type without any criteria
             negate?: false;
@@ -108,9 +127,9 @@ namespace ts {
             negate?: boolean;
             target: Type;
         }
-        | {
-            kind: typeof InferCritKind.typeof;
-        }
+        // | {
+        //     kind: typeof InferCritKind.typeof;
+        // }
     )
     & {alsoFailing?: boolean}; // also output failing, in addition to passing
 
@@ -198,13 +217,20 @@ namespace ts {
 
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type MrNarrowTypesReturn = & {
-        //byNode: NodeToTypeMap;
         inferRefRtnType: InferRefRtnType;
+        nodeForMap: Readonly<Node>;
+        typeof?: {
+            map: ESMap<Type,RefTypesType>;
+            argSymbol: Symbol;
+        }
     };
+
+    // export type InferRefRtnType = Readonly<RefTypesTableReturn[]>;
+
     export type InferRefRtnType = & {
-        passing: RefTypesTableReturnNoSymbol;
-        failing?: RefTypesTableReturnNoSymbol;
-        unmerged?: Readonly<RefTypesTableReturn[]>;
+        // passing?: RefTypesTableReturnNoSymbol;
+        // failing?: RefTypesTableReturnNoSymbol;
+        unmerged: Readonly<RefTypesTableReturn[]>;
     };
 
     export type InferRefInnerArgs = & {
@@ -215,13 +241,11 @@ namespace ts {
         constraintItem: ConstraintItem;
     };
     export type MrNarrowTypesInnerReturn = & {
-        //byNode: NodeToTypeMap;
-        assignmentData?: { // set when Delcaration or assignment, and replayData was false
-            symbol: Symbol,
-            isconst: boolean;
-        }
-        //involvedSetReq?: "inIdentifier" | "inPropertyAccess";
         arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]>;
+        typeof?: {
+            map: ESMap<Type,RefTypesType>;
+            argSymbol: Symbol;
+        }
     };
     export enum ConstraintItemKind {
         node = "node",
