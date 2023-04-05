@@ -942,10 +942,11 @@ namespace ts {
                 if (extraAsserts) {
                     debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                 }
-                const sci = copyRefTypesSymtabConstraintItem(passing.sci); // TODO: shouldn't need to copy this because it isn't being modified.
+                //const sci = copyRefTypesSymtabConstraintItem(passing.sci); // TODO: shouldn't need to copy this because it isn't being modified.
                 // Previously sci.symtab was set with symbol,type, but now isAssign will allow it be done at the crit stage, just in time.
                 return { arrRefTypesTableReturn: [{
-                    ...passing, symbol, sci, isAssign:true,
+                    ...passing,
+                    symbol, isAssign:true,
                 }]};
             }
             else {
@@ -2273,16 +2274,6 @@ namespace ts {
                         }
                     }
                 });
-                if (innerret.assignmentData){
-                    consoleLog(`mrNarrowTypesInner[out]: innerret.assignmentData: { symbol: ${
-                        dbgSymbolToStringSimple(innerret.assignmentData?.symbol)
-                    }, isconst: ${
-                        innerret.assignmentData?.isconst
-                    }`);
-                }
-                else {
-                    consoleLog(`mrNarrowTypesInner[out]: innerret.assignmentData: <undef>`);
-                }
                 consoleLog(`mrNarrowTypesInner[out] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}`);
                 consoleGroupEnd();
             }
@@ -2432,10 +2423,10 @@ namespace ts {
                     };
                     const mrNarrowTypesInnerReturn: MrNarrowTypesInnerReturn = {
                         arrRefTypesTableReturn: [rttr],
-                        assignmentData: {
-                            isconst:isconst??false,
-                            symbol
-                        }
+                        // assignmentData: {
+                        //     isconst:isconst??false,
+                        //     symbol
+                        // }
                     };
                     return mrNarrowTypesInnerReturn;
 

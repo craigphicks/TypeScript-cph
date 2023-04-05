@@ -217,7 +217,6 @@ namespace ts {
 
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type MrNarrowTypesReturn = & {
-        //byNode: NodeToTypeMap;
         inferRefRtnType: InferRefRtnType;
     };
     export type InferRefRtnType = & {
@@ -234,12 +233,6 @@ namespace ts {
         constraintItem: ConstraintItem;
     };
     export type MrNarrowTypesInnerReturn = & {
-        //byNode: NodeToTypeMap;
-        assignmentData?: { // set when Delcaration or assignment, and replayData was false
-            symbol: Symbol,
-            isconst: boolean;
-        }
-        //involvedSetReq?: "inIdentifier" | "inPropertyAccess";
         arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]>;
     };
     export enum ConstraintItemKind {
