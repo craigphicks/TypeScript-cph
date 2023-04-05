@@ -1739,8 +1739,9 @@ namespace ts {
             consoleGroup(`InferRefTypesPreAccess[in] expr: ${dbgNodeToString(condExpr)}`);
         }
         try{
-            const { inferRefRtnType:{ passing, failing, unmerged } } = mrNarrowTypes(
+            const { inferRefRtnType:{ unmerged } } = mrNarrowTypes(
                 { sci:{ symtab:refTypes,constraintItem }, expr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus });
+            const { passing, failing } = applyCrit(unmerged,{ kind:InferCritKind.notnullundef, alsoFailing:true });
             Debug.assert(failing);
             if (!isNeverType(failing.type)){
                 if (isPropertyAccessExpression(condExpr) && condExpr.questionDotToken){
