@@ -2626,24 +2626,22 @@ namespace ts {
                     Debug.assert(expr.initializer);
                     const initializer = expr.initializer;
 
-                    const rhs = mrNarrowTypes({
+                    const rhs = applyCritNone(mrNarrowTypes({
                         sci:{
                             symtab: refTypesSymtabIn,
                             constraintItem: constraintItemIn
                         },
                         expr:initializer, crit:{ kind: InferCritKind.none }, qdotfallout:undefined,
                         inferStatus: { ...inferStatus, inCondition: false },
-                    });
+                    }).inferRefRtnType.unmerged);
 
                     // NOTE: in case of inferStatus.withinLoop, no action should be required here because the effect is already incorporated on the rhs
-                    Debug.assert(!rhs.inferRefRtnType.failing);
-                    Debug.assert(rhs.inferRefRtnType.unmerged);
                     if (isIdentifier(expr.name)){
 
                         const symbol = getSymbolOfNode(expr); // not condExpr.name
                         let symbolFlowInfo: SymbolFlowInfo | undefined= _mrState.symbolFlowInfoMap.get(symbol);
                         if (!symbolFlowInfo){
-                            let effectiveDeclaredType: RefTypesType | undefined = rhs.inferRefRtnType.passing.type;
+                            let effectiveDeclaredType: RefTypesType | undefined = rhs.type;
                             let effectiveDeclaredTsType: Type;
                             let typeNodeTsType: Type | undefined;
                             if (symbol.valueDeclaration===expr) {
@@ -2659,7 +2657,7 @@ namespace ts {
                                      * widenLiteralInitializersInLoop is used inside `` to control whether `initializerType` type is
                                      * used in preference to `effectiveDeclaredType`.
                                      */
-                                    const tsType = getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type);
+                                    const tsType = getTypeFromRefTypesType(rhs.type);
                                     effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr,checker.getFreshTypeOfLiteralType(tsType));
                                     effectiveDeclaredType = undefined;
                                 }
@@ -2672,7 +2670,7 @@ namespace ts {
                                 passCount: 0,
                                 isconst: isConstVariable(symbol),
                                 effectiveDeclaredTsType, //: createRefTypesType(actualDeclaredTsType),
-                                initializerType: rhs.inferRefRtnType.passing.type,
+                                initializerType: rhs.type,
                             };
                             if (effectiveDeclaredType) symbolFlowInfo.effectiveDeclaredType = effectiveDeclaredType;
                             if (typeNodeTsType) symbolFlowInfo.typeNodeTsType = typeNodeTsType; // TODO KILL
@@ -2681,7 +2679,7 @@ namespace ts {
                         else {
                             // if called more than once, must be in a loop,
                             symbolFlowInfo.passCount++;
-                            symbolFlowInfo.initializerType = unionOfRefTypesType([symbolFlowInfo.initializerType!,rhs.inferRefRtnType.passing.type]);
+                            symbolFlowInfo.initializerType = unionOfRefTypesType([symbolFlowInfo.initializerType!,rhs.type]);
                             if (extraAsserts && expr.type){
                                 Debug.assert(symbolFlowInfo.typeNodeTsType);
                                 const typeNodeTsType = checker.getTypeFromTypeNode(expr.type);
@@ -2725,14 +2723,14 @@ namespace ts {
                             //mergeOneIntoNodeToTypeMaps(expr,getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type),inferStatus.groupNodeToTypeMap);
                             return {arrRefTypesTableReturn:[{
                                 kind:RefTypesTableKind.return,
-                                type:rhs.inferRefRtnType.passing.type,
+                                type:rhs.type,
                                 sci:{
                                     symtab: refTypesSymtabIn,
                                     constraintItem: constraintItemIn
                                 }
                             }]};
                         }
-                        const passing = rhs.inferRefRtnType.passing as RefTypesTableReturn;
+                        const passing = rhs as RefTypesTableReturn;
                         passing.symbol = symbol;
                         passing.isconst = isconstVar;
                         passing.isAssign = true;
