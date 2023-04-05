@@ -2380,7 +2380,7 @@ namespace ts {
                          * NOTE: tests show this causes no harm, but don't have a test case that shows it is necessary.
                          */
                         const dummyNodeToTypeMap = new Map<Node,Type>();
-                        const rhs = mrNarrowTypes({
+                        const unmerged = mrNarrowTypes({
                             expr: replayable?.expr,
                             crit: { kind:InferCritKind.none },
                             sci:{
@@ -2389,24 +2389,17 @@ namespace ts {
                             },
                             qdotfallout: undefined,
                             inferStatus: { ...inferStatus, inCondition:true, currentReplayableItem:replayable, groupNodeToTypeMap: dummyNodeToTypeMap }
-                        });
+                        }).inferRefRtnType.unmerged;
                         if (getMyDebug()){
                             consoleLog(`mrNarrowTypesInner[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}`);
                         }
 
-                        Debug.assert(!rhs.inferRefRtnType.failing);
-                        Debug.assert(rhs.inferRefRtnType.unmerged);
-                        // if (inferStatus.inCondition && !inferStatus.accumNodeTypes) return { arrRefTypesTableReturn: rhs.inferRefRtnType.unmerged };
-                        if (inferStatus.inCondition) return { arrRefTypesTableReturn: rhs.inferRefRtnType.unmerged };
+                        if (inferStatus.inCondition) return { arrRefTypesTableReturn: unmerged };
                         else {
-                            const type = rhs.inferRefRtnType.passing.type;
-                            const scout: RefTypesSymtabConstraintItem = rhs.inferRefRtnType.passing.sci;
                             return {
-                                arrRefTypesTableReturn: [{
-                                    ...rhs.inferRefRtnType.passing,
-                                    type,
-                                    sci: scout,
-                                }]
+                                arrRefTypesTableReturn: [
+                                    applyCritNone(unmerged),
+                                ]
                             };
                         }
                     } // endof if (inferStatus.replayables.has(symbol))
