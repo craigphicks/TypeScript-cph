@@ -1978,11 +1978,11 @@ namespace ts {
                     // @ts-ignore
                     let _unusedType: RefTypesType;
                     // eslint-disable-next-line prefer-const
-                    ({type: _unusedType, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:{ symtab,constraintItem },
+                    ({type: _unusedType, sc:{ symtab,constraintItem }}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst, isAssign:rttr.isAssign,type,sc:{ symtab,constraintItem },
                         getDeclaredType,
                         mrNarrow}));
                     if (symbol){
-// if (isconst && compilerOptions.mrNarrowConstraintsEnable){
+                        // if (isconst && compilerOptions.mrNarrowConstraintsEnable){
                         //     const cover = evalCoverPerSymbol(constraintItem, getDeclaredType, mrNarrow);
                         //     if (extraAsserts){
                         //         Debug.assert(cover.has(rttr.symbol));
