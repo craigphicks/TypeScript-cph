@@ -2808,23 +2808,12 @@ namespace ts {
                     assertCastType<Readonly<ArrayLiteralExpression>>(expr);
                     let sci: RefTypesSymtabConstraintItem = { symtab:refTypesSymtabIn,constraintItem:constraintItemIn };
                     for (const e of expr.elements){
-                        if (e.kind ===SyntaxKind.SpreadElement){
-                            assertCastType<SpreadElement>(e);
-                            ({inferRefRtnType:{ passing:{sci}}}= mrNarrowTypes({
-                                sci,
-                                expr:e.expression,
-                                crit:{ kind: InferCritKind.none },
-                                qdotfallout: undefined, inferStatus,
-                            }));
-                        }
-                        else {
-                            ({ inferRefRtnType:{passing:{sci}}} = mrNarrowTypes({
-                                sci,
-                                expr:e,
-                                crit:{ kind: InferCritKind.none },
-                                qdotfallout: undefined, inferStatus,
-                            }));
-                        }
+                        ({sci}=applyCritNone(mrNarrowTypes({
+                            sci,
+                            expr:(e.kind===SyntaxKind.SpreadElement) ? (e as SpreadElement).expression : e,
+                            crit:{ kind: InferCritKind.none },
+                            qdotfallout: undefined, inferStatus,
+                        }).inferRefRtnType.unmerged));
                     }
 
                     const arrayType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
