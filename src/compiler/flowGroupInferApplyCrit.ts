@@ -63,13 +63,14 @@ namespace ts {
         }
     }
 
-    export function applyCritNone(arrRttr: Readonly<RefTypesTableReturn[]>): RefTypesTableReturnNoSymbol {
+    export function applyCritNone(arrRttr: Readonly<RefTypesTableReturn[]>, nodeForMap: Readonly<Node>, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
         if (arrRttr.length===0) return createNever();
         if (arrRttr.length===1) {
             const rttr = arrRttr[0];
             if (!rttr.symbol) return rttr;
             const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,
                 mrNarrow, getDeclaredType});
+            inferStatus.groupNodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
             return {
                 kind: RefTypesTableKind.return,
                 type,
@@ -79,6 +80,7 @@ namespace ts {
 
         const atype: RefTypesType[] = [];
         const asc: RefTypesSymtabConstraintItem[] = [];
+
         arrRttr.forEach(rttr=>{
             let type: RefTypesType;
             let sc: RefTypesSymtabConstraintItem;
@@ -102,6 +104,7 @@ namespace ts {
             }
         });
         const type = mrNarrow.unionOfRefTypesType(atype);
+        inferStatus.groupNodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
         const sci = orSymtabConstraints(asc,mrNarrow);
         return {
             kind: RefTypesTableKind.return,
@@ -112,7 +115,7 @@ namespace ts {
     //     passing: RefTypesTableReturnNoSymbol,
     //     failing?: RefTypesTableReturnNoSymbol | undefined
     // };
-    export function applyCrit(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>): {
+    export function applyCrit(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, nodeForMap: Readonly<Node>, inferStatus: InferStatus): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
         if (arrRttr.length===0) return { passing: createNever(), failing: crit.alsoFailing? createNever() : undefined };
@@ -175,6 +178,8 @@ namespace ts {
                     sci: failsc!
                 };
             }
+            inferStatus.groupNodeToTypeMap?.set(nodeForMap,
+                mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(mrNarrow.refTypesTypeModule.unionOfRefTypesType([passing.type,failing.type])));
             return { passing,failing };
         }
 

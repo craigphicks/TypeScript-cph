@@ -218,6 +218,7 @@ namespace ts {
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type MrNarrowTypesReturn = & {
         inferRefRtnType: InferRefRtnType;
+        nodeForMap: Readonly<Node>;
     };
     export type InferRefRtnType = & {
         passing?: RefTypesTableReturnNoSymbol;
