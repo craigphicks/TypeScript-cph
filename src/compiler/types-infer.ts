@@ -220,9 +220,12 @@ namespace ts {
         inferRefRtnType: InferRefRtnType;
         nodeForMap: Readonly<Node>;
     };
+
+    // export type InferRefRtnType = Readonly<RefTypesTableReturn[]>;
+
     export type InferRefRtnType = & {
-        passing?: RefTypesTableReturnNoSymbol;
-        failing?: RefTypesTableReturnNoSymbol;
+        // passing?: RefTypesTableReturnNoSymbol;
+        // failing?: RefTypesTableReturnNoSymbol;
         unmerged: Readonly<RefTypesTableReturn[]>;
     };
 

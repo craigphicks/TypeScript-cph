@@ -1073,14 +1073,14 @@ namespace ts {
         let scfailing: RefTypesSymtabConstraintItem | undefined;
 
         inferStatus.isInLoop = !!forFlow.loopState;
-        const xxx = sourceFileMrState.mrNarrow.mrNarrowTypes({
+        const mntr = sourceFileMrState.mrNarrow.mrNarrowTypes({
             sci: anteSCArg,
             expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
         if (!inferStatus.inCondition){
-            scpassing = applyCritNone(xxx.inferRefRtnType.unmerged).sci;
+            scpassing = applyCritNone(mntr,inferStatus.groupNodeToTypeMap).sci;
         }
         else {
-            const critret = applyCrit(xxx.inferRefRtnType.unmerged, { kind:InferCritKind.truthy, alsoFailing:true });
+            const critret = applyCrit(mntr,{ kind:InferCritKind.truthy, alsoFailing:true },inferStatus.groupNodeToTypeMap);
             scpassing = critret.passing.sci;
             scfailing = critret.failing!.sci;
         }

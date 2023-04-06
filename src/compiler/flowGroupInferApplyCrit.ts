@@ -63,14 +63,17 @@ namespace ts {
         }
     }
 
-    export function applyCritNone(arrRttr: Readonly<RefTypesTableReturn[]>, nodeForMap: Readonly<Node>, inferStatus: InferStatus): RefTypesTableReturnNoSymbol {
+    export function applyCritNone(x: Readonly<MrNarrowTypesReturn>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
+        return applyCritNone1(x.inferRefRtnType.unmerged, x.nodeForMap, nodeToTypeMap);
+    }
+    export function applyCritNone1(arrRttr: Readonly<RefTypesTableReturn[]>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
         if (arrRttr.length===0) return createNever();
         if (arrRttr.length===1) {
             const rttr = arrRttr[0];
             if (!rttr.symbol) return rttr;
             const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,
                 mrNarrow, getDeclaredType});
-            inferStatus.groupNodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
+            nodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
             return {
                 kind: RefTypesTableKind.return,
                 type,
@@ -104,18 +107,20 @@ namespace ts {
             }
         });
         const type = mrNarrow.unionOfRefTypesType(atype);
-        inferStatus.groupNodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
+        nodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
         const sci = orSymtabConstraints(asc,mrNarrow);
         return {
             kind: RefTypesTableKind.return,
             type, sci
         };
     }
-    // type ApplyCritReturnType = & {
-    //     passing: RefTypesTableReturnNoSymbol,
-    //     failing?: RefTypesTableReturnNoSymbol | undefined
-    // };
-    export function applyCrit(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, nodeForMap: Readonly<Node>, inferStatus: InferStatus): {
+
+    export function applyCrit(x: Readonly<MrNarrowTypesReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
+        passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
+    } {
+        return applyCrit1(x.inferRefRtnType.unmerged, crit, x.nodeForMap, nodeToTypeMap);
+    }
+    export function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
         if (arrRttr.length===0) return { passing: createNever(), failing: crit.alsoFailing? createNever() : undefined };
@@ -178,7 +183,7 @@ namespace ts {
                     sci: failsc!
                 };
             }
-            inferStatus.groupNodeToTypeMap?.set(nodeForMap,
+            nodeToTypeMap?.set(nodeForMap,
                 mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(mrNarrow.refTypesTypeModule.unionOfRefTypesType([passing.type,failing.type])));
             return { passing,failing };
         }
@@ -259,6 +264,9 @@ namespace ts {
                 };
             }
         }
+        nodeToTypeMap?.set(nodeForMap,
+            mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(
+                failing ? mrNarrow.refTypesTypeModule.unionOfRefTypesType([passing.type,failing.type]) : passing.type));
         return { passing,failing };
     }
 
