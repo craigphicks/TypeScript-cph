@@ -5,7 +5,7 @@
 // @enableTSDevExpectString: true
 
 function t47(){
-    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: 0 | 1 | 2 | 999"
     let d1: 0 | 1 | 2 | 999 = 0;
     d1;
     // @ts-dev-expect-string "loopCount:2, invocations:1"

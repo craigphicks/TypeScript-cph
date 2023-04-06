@@ -1,8 +1,7 @@
 namespace ts {
 
-    export const extraAsserts = false; // not suitable for release
+    export const extraAsserts = true; // not suitable for release
     const hardCodeEnableTSDevExpectStringFalse = true;
-    export const useNewApplyCrit = true;
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
