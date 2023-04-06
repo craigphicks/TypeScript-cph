@@ -220,7 +220,7 @@ namespace ts {
         inferRefRtnType: InferRefRtnType;
     };
     export type InferRefRtnType = & {
-        passing: RefTypesTableReturnNoSymbol;
+        passing?: RefTypesTableReturnNoSymbol;
         failing?: RefTypesTableReturnNoSymbol;
         unmerged: Readonly<RefTypesTableReturn[]>;
     };

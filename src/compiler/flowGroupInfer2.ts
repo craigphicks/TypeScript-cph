@@ -2830,7 +2830,7 @@ namespace ts {
                 case SyntaxKind.AsExpression:{
                     assertCastType<Readonly<AsExpression>>(expr);
                     const {expression:lhs,type:typeNode} = expr;
-                    const rhs = mrNarrowTypes({
+                    const rhs = applyCritNone(mrNarrowTypes({
                         sci:{
                             symtab: refTypesSymtabIn,
                             constraintItem: constraintItemIn
@@ -2838,12 +2838,12 @@ namespace ts {
                         expr:lhs,
                         crit:{ kind: InferCritKind.none },
                         qdotfallout: undefined, inferStatus,
-                    });
+                    }).inferRefRtnType.unmerged);
                     // When the typeNode is "const" checker.getTypeFromTypeNode will reparse the whole parent of typeNode expression,
                     // triggering an unwanted recursion in mrNarrowType.  A solution to this problem is to call inferStatus.getTypeOfExpression(expr) instead.
                     // Because that might extra work when typeNode is NOT const, we check first.
 
-                    const {symtab,constraintItem} = rhs.inferRefRtnType.passing.sci;
+                    const {symtab,constraintItem} = rhs.sci;
 
                     let tstype: Type;
                     if (typeNode.kind===SyntaxKind.TypeReference &&
