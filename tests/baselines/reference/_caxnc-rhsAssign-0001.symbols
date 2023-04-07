@@ -1,0 +1,17 @@
+=== tests/cases/conformance/_caxnc/_caxnc-rhsAssign-0001.ts ===
+declare const c11: 0 | 1;
+>c11 : Symbol(c11, Decl(_caxnc-rhsAssign-0001.ts, 0, 13))
+{
+    let b: 0 | 1;
+>b : Symbol(b, Decl(_caxnc-rhsAssign-0001.ts, 2, 7))
+
+    const c31 = c11 || (b=c11);
+>c31 : Symbol(c31, Decl(_caxnc-rhsAssign-0001.ts, 3, 9))
+>c11 : Symbol(c11, Decl(_caxnc-rhsAssign-0001.ts, 0, 13))
+>b : Symbol(b, Decl(_caxnc-rhsAssign-0001.ts, 2, 7))
+>c11 : Symbol(c11, Decl(_caxnc-rhsAssign-0001.ts, 0, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-rhsAssign-0001.ts, 2, 7))
+}
+

@@ -2638,6 +2638,16 @@ namespace ts {
                     Debug.assert(expr.initializer);
                     const initializer = expr.initializer;
 
+                    // const rhs = mrNarrowTypes({
+                    //     sci:{
+                    //         symtab: refTypesSymtabIn,
+                    //         constraintItem: constraintItemIn
+                    //     },
+                    //     expr:initializer, crit:{ kind: InferCritKind.none }, qdotfallout:undefined,
+                    //     inferStatus: { ...inferStatus, inCondition: false },
+                    // });
+
+
                     const rhs = applyCritNoneUnion(mrNarrowTypes({
                         sci:{
                             symtab: refTypesSymtabIn,
@@ -2732,23 +2742,28 @@ namespace ts {
                                 as.push(`expr: ${dbgNodeToString(replayableItem.expr)}`);
                                 as.forEach(s=>consoleLog(`${shdr}: ${s}`));
                             };
-                            //mergeOneIntoNodeToTypeMaps(expr,getTypeFromRefTypesType(rhs.inferRefRtnType.passing.type),inferStatus.groupNodeToTypeMap);
-                            return {arrRefTypesTableReturn:[{
-                                kind:RefTypesTableKind.return,
-                                type:rhs.type,
-                                sci:{
-                                    symtab: refTypesSymtabIn,
-                                    constraintItem: constraintItemIn
-                                }
-                            }]};
+                            if (true){
+                                // new for _caxnc-rhsAssign-001
+                                return { arrRefTypesTableReturn:[rhs] };
+                            }
+                            else {
+                                // old
+                                return {arrRefTypesTableReturn:[{
+                                    kind:RefTypesTableKind.return,
+                                    type:rhs.type,
+                                    sci:{
+                                        symtab: refTypesSymtabIn,
+                                        constraintItem: constraintItemIn
+                                    }
+                                }]};
+                            }
                         }
                         const passing = rhs as RefTypesTableReturn;
                         passing.symbol = symbol;
                         passing.isconst = isconstVar;
                         passing.isAssign = true;
-                        // TODO: remove next line
-                        //passing.sci.symtab!.setAsAssigned(symbol,passing.type);
                         return { arrRefTypesTableReturn:[passing] };
+                        // return { arrRefTypesTableReturn:[rhs] };
                     }
                     else {
                         // could be binding, or could a proeprty access on the lhs
