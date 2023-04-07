@@ -1077,7 +1077,7 @@ namespace ts {
             sci: anteSCArg,
             expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
         if (!inferStatus.inCondition){
-            scpassing = applyCritNone(mntr,inferStatus.groupNodeToTypeMap).sci;
+            scpassing = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap).sci;
         }
         else {
             const critret = applyCrit(mntr,{ kind:InferCritKind.truthy, alsoFailing:true },inferStatus.groupNodeToTypeMap);

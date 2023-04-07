@@ -63,23 +63,36 @@ namespace ts {
         }
     }
 
-    export function applyCritNone(x: Readonly<MrNarrowTypesReturn>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
-        return applyCritNone1(x.inferRefRtnType.unmerged, x.nodeForMap, nodeToTypeMap);
+    export function applyCritNoneToOne(rttr: Readonly<RefTypesTableReturn>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
+        if (!rttr.symbol) return rttr;
+        const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,
+            mrNarrow, getDeclaredType});
+        nodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
+        return {
+            kind: RefTypesTableKind.return,
+            type,
+            sci: sc
+        };
     }
-    export function applyCritNone1(arrRttr: Readonly<RefTypesTableReturn[]>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
+
+    export function applyCritNoneUnion(x: Readonly<MrNarrowTypesReturn>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
+        return applyCritNone1Union(x.inferRefRtnType.unmerged, x.nodeForMap, nodeToTypeMap);
+    }
+    export function applyCritNone1Union(arrRttr: Readonly<RefTypesTableReturn[]>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
         if (arrRttr.length===0) return createNever();
-        if (arrRttr.length===1) {
-            const rttr = arrRttr[0];
-            if (!rttr.symbol) return rttr;
-            const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,
-                mrNarrow, getDeclaredType});
-            nodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
-            return {
-                kind: RefTypesTableKind.return,
-                type,
-                sci: sc
-            };
-        }
+        if (arrRttr.length===1) return applyCritNoneToOne(arrRttr[0],nodeForMap,nodeToTypeMap);
+        // if (arrRttr.length===1) {
+        //     const rttr = arrRttr[0];
+        //     if (!rttr.symbol) return rttr;
+        //     const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,
+        //         mrNarrow, getDeclaredType});
+        //     nodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
+        //     return {
+        //         kind: RefTypesTableKind.return,
+        //         type,
+        //         sci: sc
+        //     };
+        // }
 
         const atype: RefTypesType[] = [];
         const asc: RefTypesSymtabConstraintItem[] = [];

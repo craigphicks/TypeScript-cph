@@ -667,7 +667,7 @@ namespace ts {
             const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[] = [];
             leftRet.inferRefRtnType.unmerged?.forEach((rttrLeftTmp, _leftIdx)=>{
                 const { symbol:rttrLeftSymbol, isconst:rttrLeftIsConst } = rttrLeftTmp;
-                const rttrLeft = applyCritNone1([rttrLeftTmp],leftExpr,inferStatus.groupNodeToTypeMap);
+                const rttrLeft = applyCritNone1Union([rttrLeftTmp],leftExpr,inferStatus.groupNodeToTypeMap);
                 //let tmpSymtabConstraintLeft: RefTypesSymtabConstraintItem = { symtab:rttrLeft.sci.symtab,constraintItem:rttrLeft.sci.constraintItem };
                 // May not need this? - Needed for compilerOptions.mrNarrowConstraintsEnable===false
 
@@ -686,7 +686,7 @@ namespace ts {
                 }
                 rhs1.inferRefRtnType.unmerged?.forEach((rttrRightTmp, _rightIdx)=>{
                     const { symbol:rttrRightSymbol, isconst:rttrRightIsConst } = rttrRightTmp;
-                    const rttrRight = applyCritNone1([rttrRightTmp],rightExpr,inferStatus.groupNodeToTypeMap);
+                    const rttrRight = applyCritNone1Union([rttrRightTmp],rightExpr,inferStatus.groupNodeToTypeMap);
                     const isect = intersectionOfRefTypesType(rttrLeft.type, rttrRight.type);
                     if (getMyDebug()){
                         consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[dbg] left#${_leftIdx}, right#${_rightIdx}, `
@@ -912,7 +912,7 @@ namespace ts {
                 // Also, could be part of a const expression rhs.
                 inferStatus: { ...args.inferStatus, inCondition: false },
             });
-            const passing = applyCritNone(rhs,args.inferStatus.groupNodeToTypeMap);
+            const passing = applyCritNoneUnion(rhs,args.inferStatus.groupNodeToTypeMap);
             if (leftExpr.kind===SyntaxKind.Identifier) {
                 assertCastType<Identifier>(leftExpr);
                 const symbol = getResolvedSymbol(leftExpr);
@@ -1373,7 +1373,7 @@ namespace ts {
                         inferStatus,
                     });
 
-                    const rttr: RefTypesTableReturn = mntr.inferRefRtnType.unmerged.length===1 ? mntr.inferRefRtnType.unmerged[0] : applyCritNone(mntr,inferStatus.groupNodeToTypeMap);
+                    const rttr: RefTypesTableReturn = mntr.inferRefRtnType.unmerged.length===1 ? mntr.inferRefRtnType.unmerged[0] : applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                     sctmp = rttr.sci; //{ symtab: rttr.symtab, constraintItem: rttr.constraintItem };
                     // The type ought to be a tuple or an array
                     const tstype1 = getTypeFromRefTypesType(rttr.type);
@@ -1428,7 +1428,7 @@ namespace ts {
                         qdotfallout:undefined,
                         inferStatus,
                     });
-                    const rttr: RefTypesTableReturn = mntr.inferRefRtnType.unmerged.length===1 ? mntr.inferRefRtnType.unmerged[0] : applyCritNone(mntr,inferStatus.groupNodeToTypeMap);
+                    const rttr: RefTypesTableReturn = mntr.inferRefRtnType.unmerged.length===1 ? mntr.inferRefRtnType.unmerged[0] : applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                     //const rttr: RefTypesTableReturn = unmerged?.length===1 ? unmerged[0] : applyCritNone(unmerged);
                     sctmp = rttr.sci; //{ symtab: rttr.symtab, constraintItem: rttr.constraintItem };
                     const type = rttr.type;
@@ -2228,6 +2228,9 @@ namespace ts {
                     nodeForMap: expr,
                 };
             }
+            if (expr.kind===SyntaxKind.ParenthesizedExpression){
+                expr = (expr as ParenthesizedExpression).expression;
+            }
             return mrNarrowTypesAux({
                 expr,crit,qdotfallout,refTypesSymtab:sci.symtab, constraintItem: sci.constraintItem, inferStatus
             });
@@ -2428,7 +2431,7 @@ namespace ts {
                         else {
                             return {
                                 arrRefTypesTableReturn: [
-                                    applyCritNone(mntr,/**/ undefined),
+                                    applyCritNoneUnion(mntr,/**/ undefined),
                                 ]
                             };
                         }
@@ -2535,24 +2538,9 @@ namespace ts {
                         arrRefTypesTableReturn: applyNotNullUndefCritToRefTypesTableReturn(innerret.arrRefTypesTableReturn),
                     };
                 }
-                case SyntaxKind.ParenthesizedExpression:{
-                    if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case ParenthesizedExpression [start]`);
-                    const ret = mrNarrowTypes({
-                        sci:{
-                            symtab: refTypesSymtabIn,
-                            constraintItem: constraintItemIn
-                        },
-                        expr: (expr as ParenthesizedExpression).expression,
-                        crit: { kind: InferCritKind.none },
-                        inferStatus
-                    });
-                    if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case ParenthesizedExpression [end]`);
-                    // TODO: losing resolution here by forcing the crit now. Could we pass back the node as well, and then set multiple entries in node to type map with same value
-                    return {
-                        arrRefTypesTableReturn: [applyCritNone(ret,inferStatus.groupNodeToTypeMap)],
-                    };
-                }
-                break;
+                case SyntaxKind.ParenthesizedExpression:
+                    Debug.fail("unexpected"); // now handled on entry to mrNarrowTypes
+                    break;
                 /**
                  * ConditionalExpression
                  */
@@ -2571,7 +2559,7 @@ namespace ts {
                     }),{ kind: InferCritKind.truthy, alsoFailing: true },inferStatus.groupNodeToTypeMap);
 
                     if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; whenTrue`);
-                    const retTrue = applyCritNone(mrNarrowTypes({
+                    const retTrue = applyCritNoneUnion(mrNarrowTypes({
                         sci: rcond.passing.sci,
                         expr: whenTrue,
                         crit: { kind: InferCritKind.none },
@@ -2579,7 +2567,7 @@ namespace ts {
                     }),inferStatus.groupNodeToTypeMap);
 
                     if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; whenFalse`);
-                    const retFalse = applyCritNone(mrNarrowTypes({
+                    const retFalse = applyCritNoneUnion(mrNarrowTypes({
                         sci: rcond.failing!.sci,
                         expr: whenFalse,
                         crit: { kind: InferCritKind.none },
@@ -2647,7 +2635,7 @@ namespace ts {
                     Debug.assert(expr.initializer);
                     const initializer = expr.initializer;
 
-                    const rhs = applyCritNone(mrNarrowTypes({
+                    const rhs = applyCritNoneUnion(mrNarrowTypes({
                         sci:{
                             symtab: refTypesSymtabIn,
                             constraintItem: constraintItemIn
@@ -2829,7 +2817,7 @@ namespace ts {
                     assertCastType<Readonly<ArrayLiteralExpression>>(expr);
                     let sci: RefTypesSymtabConstraintItem = { symtab:refTypesSymtabIn,constraintItem:constraintItemIn };
                     for (const e of expr.elements){
-                        ({sci}=applyCritNone(mrNarrowTypes({
+                        ({sci}=applyCritNoneUnion(mrNarrowTypes({
                             sci,
                             expr:(e.kind===SyntaxKind.SpreadElement) ? (e as SpreadElement).expression : e,
                             crit:{ kind: InferCritKind.none },
@@ -2851,7 +2839,7 @@ namespace ts {
                 case SyntaxKind.AsExpression:{
                     assertCastType<Readonly<AsExpression>>(expr);
                     const {expression:lhs,type:typeNode} = expr;
-                    const rhs = applyCritNone(mrNarrowTypes({
+                    const rhs = applyCritNoneUnion(mrNarrowTypes({
                         sci:{
                             symtab: refTypesSymtabIn,
                             constraintItem: constraintItemIn
