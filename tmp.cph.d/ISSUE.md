@@ -6,6 +6,8 @@
 
 ### Priority: High
 
+0. In `SyntaxKind.Identifer` try setting groupNodeToTypeMap to `undefined` (optimization).
+
 0. `orSymbolTypeIntoSymtabConstraint` needs to be fixed to correctly work with `assignedType` (current fix is broken, but that is not being detected in tests).
 
 0. `mrNarrowTypesByBinaryExpresionAssign` assumed lhs is statement level, and sets inCondition to false, but it should be inherited.

@@ -2296,10 +2296,11 @@ namespace ts {
                         dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  mrNarrowTypes[dbg]: unmerged[${i}]: ${s}`));
                     });
                 // consoleGroup("mrNarrowTypes[out] mrNarrowTypesReturn.byNode:");
+                consoleLog(`mrNarrowTypes[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
                 inferStatus.groupNodeToTypeMap.forEach((t,n)=>{
                     for(let ntmp = n; ntmp.kind!==SyntaxKind.SourceFile; ntmp=ntmp.parent){
                         if (ntmp===expr){
-                            consoleLog(`mrNarrowTypes[out] byNode: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
+                            consoleLog(`mrNarrowTypes[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
                             break;
                         }
                     }
@@ -2427,11 +2428,16 @@ namespace ts {
                             consoleLog(`mrNarrowTypesInner[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}`);
                         }
 
-                        if (inferStatus.inCondition) return { arrRefTypesTableReturn: mntr.inferRefRtnType.unmerged };
+                        if (inferStatus.inCondition){
+                            return {
+                                arrRefTypesTableReturn: mntr.inferRefRtnType.unmerged.map(
+                                    rttr=>applyCritNoneToOne(rttr,expr,inferStatus.currentReplayableItem?undefined:inferStatus.groupNodeToTypeMap))
+                            };
+                        }
                         else {
                             return {
                                 arrRefTypesTableReturn: [
-                                    applyCritNoneUnion(mntr,/**/ undefined),
+                                    applyCritNone1Union(mntr.inferRefRtnType.unmerged,expr,inferStatus.currentReplayableItem?undefined:inferStatus.groupNodeToTypeMap),
                                 ]
                             };
                         }
