@@ -1419,8 +1419,6 @@ namespace ts {
                 else {
                     const mntr = mrNarrowTypes({
                         sci:sctmp,
-                        // refTypesSymtab: sctmp.symtab,
-                        // constraintItem: sctmp.constraintItem, // this is the constraintItem from mrNarrowTypesByCallExpression arguments
                         expr: carg,
                         crit: {
                             kind: InferCritKind.none,
@@ -1428,24 +1426,22 @@ namespace ts {
                         qdotfallout:undefined,
                         inferStatus,
                     });
-                    const rttr: RefTypesTableReturn = mntr.inferRefRtnType.unmerged.length===1 ? mntr.inferRefRtnType.unmerged[0] : applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
-                    //const rttr: RefTypesTableReturn = unmerged?.length===1 ? unmerged[0] : applyCritNone(unmerged);
-                    sctmp = rttr.sci; //{ symtab: rttr.symtab, constraintItem: rttr.constraintItem };
+                    const unmerged = mntr.inferRefRtnType.unmerged;
+                    let symbol: Symbol | undefined;
+                    let isconst: boolean | undefined;
+                    if (unmerged.length===1 || (unmerged.length && unmerged.slice(1).every(rttr=>rttr.symbol===unmerged[0].symbol))){
+                        ({symbol,isconst} = unmerged[0]);
+                    }
+                    const rttr: RefTypesTableReturn = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
+                    sctmp = rttr.sci;
                     const type = rttr.type;
                     const tstype = getTypeFromRefTypesType(type);
-                    // const name: __String = `carg:${cargidx}` as __String;
-                    // const symbol = { ... checker.createSymbol(0,name), cargidx };
-                    let {symbol,isconst} = rttr;
                     if (!symbol) {
                         isconst = true;
                         symbol = createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,/**/ undefined, type);
                     }
                     else Debug.assert(isconst!==undefined);
                     ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:sctmp,mrNarrow,getDeclaredType }));
-                    //const symbol: CallArgumentSymbol = rttr.symbol ?? createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,/**/ undefined, type);
-                    // if (compilerOptions.mrNarrowConstraintsEnable){
-                    //     sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol, type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
-                    // }
                     resolvedCallArguments.push({ type,tstype,symbol,isconst });
                 }
             });

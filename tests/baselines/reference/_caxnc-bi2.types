@@ -26,8 +26,6 @@ const rab2 = bar ? !isTrue(bar) : isTrue(bar);
 >isTrue : { (b: true): true; (b: false): false; }
 >bar : false
 
-// const foo = rab2;
-// if (foo) {
-//     const x = bar;
-// }
+rab2;
+>rab2 : false
 
