@@ -1357,9 +1357,6 @@ namespace ts {
             const resolvedCallArguments: CallExpressionResolvedArg[] = [];
             let sctmp: RefTypesSymtabConstraintItem = scIn;
             callExpr.arguments.forEach((carg,cargidx)=>{
-                /**
-                 * TODO: Below are the only place calling andSymbolTypeIntoSymtabConstraint outside of applyCrit/applyCritNone and that could be problematic
-                 */
                 if (carg.kind===SyntaxKind.SpreadElement){
                     const mntr = mrNarrowTypes({
                         sci:sctmp,
@@ -1372,13 +1369,23 @@ namespace ts {
                         qdotfallout:undefined,
                         inferStatus,
                     });
+                    const unmerged = mntr.inferRefRtnType.unmerged;
+                    let symbolOuter: Symbol | undefined;
+                    let isconstOuter: boolean | undefined;
+                    {
+                        if (unmerged.length===1 || (unmerged.length && unmerged.slice(1).every(rttr=>rttr.symbol===unmerged[0].symbol))){
+                            ({symbol:symbolOuter,isconst:isconstOuter} = unmerged[0]);
+                        }
+                    }
+                    const rttr: RefTypesTableReturn = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
 
-                    const rttr: RefTypesTableReturn = mntr.inferRefRtnType.unmerged.length===1 ? mntr.inferRefRtnType.unmerged[0] : applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                     sctmp = rttr.sci; //{ symtab: rttr.symtab, constraintItem: rttr.constraintItem };
-                    // The type ought to be a tuple or an array
                     const tstype1 = getTypeFromRefTypesType(rttr.type);
                     if (checker.isArrayOrTupleType(tstype1)){
                         if (checker.isTupleType(tstype1)){
+                            /**
+                             * TODO: Calling andSymbolTypeIntoSymtabConstraint outside of applyCrit/applyCritNone and that could be problematic
+                             */
                             // tstype1 is TypeReference
                             if (tstype1.objectFlags & ObjectFlags.Reference){
                                 Debug.assert(tstype1.resolvedTypeArguments);
@@ -1390,7 +1397,7 @@ namespace ts {
                                     // sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol, type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
                                     resolvedCallArguments.push({ tstype,type,symbol,isconst });
                                 });
-                                const tupleSymbol = rttr.symbol ?? createTransientCallArgumentSymbol(cargidx, resolvedCallArguments.length,/**/ undefined, rttr.type);
+                                const tupleSymbol = symbolOuter ?? createTransientCallArgumentSymbol(cargidx, resolvedCallArguments.length,/**/ undefined, rttr.type);
                                 ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol:tupleSymbol, isconst:true, type:rttr.type,sc:sctmp,mrNarrow,getDeclaredType }));
                                 //sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol:tupleSymbol, type:rttr.type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
                             }
@@ -1399,19 +1406,17 @@ namespace ts {
                             }
                         }
                         else {
+                            // should be array type, although that fact isn't used here
                             const type = rttr.type;
                             const tstype = getTypeFromRefTypesType(type);
-                            let {symbol,isconst} = rttr;
+                            let symbol = symbolOuter;
+                            let isconst = isconstOuter;
                             if (!symbol) {
                                 isconst = true;
                                 symbol = createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,/**/ undefined, type);
                             }
                             else Debug.assert(isconst!==undefined);
                             ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:sctmp,mrNarrow,getDeclaredType }));
-                            // const symbol: CallArgumentSymbol = rttr.symbol ?? createTransientCallArgumentSymbol(cargidx, resolvedCallArguments.length,/**/ undefined, type);
-                            // if (compilerOptions.mrNarrowConstraintsEnable){
-                            //     sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol, type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
-                            // }
                             resolvedCallArguments.push({ type,tstype,hasSpread:true, symbol, isconst });
                         }
                     }
