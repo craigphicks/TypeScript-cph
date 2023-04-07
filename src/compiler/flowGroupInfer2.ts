@@ -1004,47 +1004,43 @@ namespace ts {
                     });
                     const leftRet = applyCrit(leftRet0,{ kind:InferCritKind.truthy, alsoFailing:true }, inferStatus.groupNodeToTypeMap);
 
-                    let arrRefTypesTableReturn: RefTypesTableReturn[];
-                    if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
-                    const leftTrueRightRet0 = mrNarrowTypes({
-                        sci: leftRet.passing.sci,// leftRet.inferRefRtnType.passing.sci,
-                        crit: { kind:InferCritKind.truthy, alsoFailing:true },
-                        expr: rightExpr,
-                        inferStatus,
-                    });
-                    const leftTrueRightRet = applyCrit(leftTrueRightRet0,{ kind:InferCritKind.truthy, alsoFailing:true }, inferStatus.groupNodeToTypeMap);
-                    if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
-                    const leftFalseRightRet0 = mrNarrowTypes({
-                        sci: leftRet.failing!.sci,
-                        // refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
-                        crit: { kind:InferCritKind.truthy, alsoFailing:true },
-                        expr: rightExpr,
-                        inferStatus,
-                        // constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
-                    });
-                    const leftFalseRightRet = applyCrit(leftFalseRightRet0,{ kind:InferCritKind.truthy, alsoFailing:true }, inferStatus.groupNodeToTypeMap);
+                    let leftTrueRightRet: ApplyCritResult | undefined;
+                    let leftFalseRightRet: ApplyCritResult | undefined;
+
+                    const arrRefTypesTableReturn: RefTypesTableReturn[]=[];
 
                     if (operatorToken.kind===SyntaxKind.AmpersandAmpersandToken){
-                        arrRefTypesTableReturn = [
-                            leftTrueRightRet.passing,
-                            leftTrueRightRet.failing!,
-                            { ...leftFalseRightRet.passing, type:leftRet.failing!.type },
-                            { ...leftFalseRightRet.failing!, type:leftRet.failing!.type }
-                        ];
+                        arrRefTypesTableReturn.push(leftRet.failing!);
+
+                        if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
+                        const leftTrueRightRet0 = mrNarrowTypes({
+                            sci: leftRet.passing.sci,// leftRet.inferRefRtnType.passing.sci,
+                            crit: { kind:InferCritKind.truthy, alsoFailing:true },
+                            expr: rightExpr,
+                            inferStatus,
+                        });
+                        leftTrueRightRet = applyCrit(leftTrueRightRet0,{ kind:InferCritKind.truthy, alsoFailing:true }, inferStatus.groupNodeToTypeMap);
+                        arrRefTypesTableReturn.push(leftTrueRightRet.passing);
+                        arrRefTypesTableReturn.push(leftTrueRightRet.failing!);
                     }
-                    else if (operatorToken.kind===SyntaxKind.BarBarToken){
-                        arrRefTypesTableReturn = [
-                            { ...leftTrueRightRet.passing, type:leftRet.passing.type },
-                            { ...leftTrueRightRet.failing!, type:leftRet.passing.type },
-                            leftFalseRightRet.passing,
-                            leftFalseRightRet.failing!
-                        ];
+
+
+                    if (operatorToken.kind===SyntaxKind.BarBarToken){
+                        arrRefTypesTableReturn.push(leftRet.passing);
+
+                        if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
+                        const leftFalseRightRet0 = mrNarrowTypes({
+                            sci: leftRet.failing!.sci,
+                            // refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
+                            crit: { kind:InferCritKind.truthy, alsoFailing:true },
+                            expr: rightExpr,
+                            inferStatus,
+                            // constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
+                        });
+                        leftFalseRightRet = applyCrit(leftFalseRightRet0,{ kind:InferCritKind.truthy, alsoFailing:true }, inferStatus.groupNodeToTypeMap);
+                        arrRefTypesTableReturn.push(leftFalseRightRet.passing);
+                        arrRefTypesTableReturn.push(leftFalseRightRet.failing!);
                     }
-                    else Debug.fail("unexpected");
-                    arrRefTypesTableReturn.forEach(rttr=>{
-                        rttr.symbol=undefined;
-                        rttr.isconst=undefined;
-                    });
                     return {
                         arrRefTypesTableReturn,
                     };

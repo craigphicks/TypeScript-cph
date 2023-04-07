@@ -9,7 +9,7 @@ namespace ts {
         (getDeclaredType as any) = mrNarrowIn.getDeclaredType;
     }
 
-    function createNever(): RefTypesTableReturnNoSymbol {
+    export function createNeverRefTypesTableReturn(): RefTypesTableReturnNoSymbol {
         return {
             kind: RefTypesTableKind.return,
             type: mrNarrow.createRefTypesType(),
@@ -82,7 +82,7 @@ namespace ts {
         return applyCritNone1Union(x.inferRefRtnType.unmerged, x.nodeForMap, nodeToTypeMap);
     }
     export function applyCritNone1Union(arrRttr: Readonly<RefTypesTableReturn[]>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
-        if (arrRttr.length===0) return createNever();
+        if (arrRttr.length===0) return createNeverRefTypesTableReturn();
         if (arrRttr.length===1) return applyCritNoneToOne(arrRttr[0],nodeForMap,nodeToTypeMap);
         // if (arrRttr.length===1) {
         //     const rttr = arrRttr[0];
@@ -131,6 +131,7 @@ namespace ts {
         };
     }
 
+    export type ApplyCritResult = & { passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined };
     export function applyCrit(x: Readonly<MrNarrowTypesReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
@@ -139,7 +140,7 @@ namespace ts {
     export function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
-        if (arrRttr.length===0) return { passing: createNever(), failing: crit.alsoFailing? createNever() : undefined };
+        if (arrRttr.length===0) return { passing: createNeverRefTypesTableReturn(), failing: crit.alsoFailing? createNeverRefTypesTableReturn() : undefined };
         if (arrRttr.length===1) {
             const rttr = arrRttr[0];
             if (mrNarrow.isNeverType(rttr.type)){
@@ -147,8 +148,8 @@ namespace ts {
                     Debug.assert(isRefTypesSymtabConstraintItemNever(rttr.sci));
                 }
                 return {
-                    passing: createNever(),
-                    failing: createNever(),
+                    passing: createNeverRefTypesTableReturn(),
+                    failing: createNeverRefTypesTableReturn(),
                 };
             }
             if (extraAsserts){
@@ -183,7 +184,7 @@ namespace ts {
             }
             let passing: RefTypesTableReturnNoSymbol;
             let failing: RefTypesTableReturnNoSymbol;
-            if (mrNarrow.isNeverType(passtype)) passing = createNever();
+            if (mrNarrow.isNeverType(passtype)) passing = createNeverRefTypesTableReturn();
             else {
                 passing = {
                     kind: RefTypesTableKind.return,
@@ -191,7 +192,7 @@ namespace ts {
                     sci: passsc
                 };
             }
-            if (crit.alsoFailing && mrNarrow.isNeverType(failtype!)) failing = createNever();
+            if (crit.alsoFailing && mrNarrow.isNeverType(failtype!)) failing = createNeverRefTypesTableReturn();
             else {
                 failing = {
                     kind: RefTypesTableKind.return,
@@ -262,7 +263,7 @@ namespace ts {
         });
         let passing: RefTypesTableReturnNoSymbol;
         let failing: RefTypesTableReturnNoSymbol | undefined;
-        if (arrPassType.length===0) passing = createNever();
+        if (arrPassType.length===0) passing = createNeverRefTypesTableReturn();
         else {
             passing = {
                 kind: RefTypesTableKind.return,
@@ -271,7 +272,7 @@ namespace ts {
             };
         }
         if (crit.alsoFailing) {
-            if (arrFailType.length===0) failing = createNever();
+            if (arrFailType.length===0) failing = createNeverRefTypesTableReturn();
             else {
                 failing = {
                     kind: RefTypesTableKind.return,
