@@ -74,18 +74,15 @@ namespace ts {
             return precOrderCI[a].node.pos-precOrderCI[b].node.pos;
         };
         arefCI.sort(compareCIpos);
-        const posOrderCI = arefCI.map(idx=>precOrderCI[idx]);
+        // const posOrderCI = arefCI.map(idx=>precOrderCI[idx]);
 
-        const findPrecOrdCIIdx = (n: Node) => {
-            /**
-             * TODO: Optimize with binary search
-             */
-            let i = 0;
-            for (; i<posOrderCI.length && posOrderCI[i].node.pos<=n.pos; i++);
-            i--;
-            while (i>0 && !(n.end <= posOrderCI[i].node.end)) i--;
-            return posOrderCI[i].precOrderIdx;
-        };
+        // const findPrecOrdCIIdx = (n: Node) => {
+        //     let i = 0;
+        //     for (; i<posOrderCI.length && posOrderCI[i].node.pos<=n.pos; i++);
+        //     i--;
+        //     while (i>0 && !(n.end <= posOrderCI[i].node.end)) i--;
+        //     return posOrderCI[i].precOrderIdx;
+        // };
 
         const setOfNodes = new Set<Node>();
         nodesWithFlow.forEach((n: Node)=>{
@@ -164,7 +161,7 @@ namespace ts {
                     kind,
                     idxb, idxe:fi,
                     maximalIdx,
-                    precOrdContainerIdx: findPrecOrdCIIdx(orderedNodes[maximalIdx]),
+                    //precOrdContainerIdx: findPrecOrdCIIdx(orderedNodes[maximalIdx]),
                     groupIdx: -1,
                     anteGroupLabels:[], //referencingGroupIdxs:[],
                 };
@@ -186,14 +183,14 @@ namespace ts {
             }
         }
         if (orderedNodes.length){
-            const precOrdCIIdx = findPrecOrdCIIdx(orderedNodes[maximalIdx]);
+            //const precOrdCIIdx = findPrecOrdCIIdx(orderedNodes[maximalIdx]);
             const maximal = orderedNodes[maximalIdx];
             const kind = getGroupForFlowKind(maximal);
             const group: GroupForFlow = {
                 kind,
                 idxb, idxe:orderedNodes.length,
                 maximalIdx,
-                precOrdContainerIdx: precOrdCIIdx,
+                //precOrdContainerIdx: precOrdCIIdx,
                 groupIdx: -1,
                 anteGroupLabels:[], //referencingGroupIdxs:[]
             };
@@ -201,7 +198,6 @@ namespace ts {
         }
         const arefGroups = groups.map((_v,i)=>i);
         /**
-         * TODO: This order doesn't capture the need to do some inners first.
          * @param a
          * @param b
          * @returns
@@ -677,9 +673,7 @@ namespace ts {
         gff.orderedGroups.forEach((g,i)=>{
             const maxnode = gff.posOrderedNodes[g.maximalIdx];
             //const maxnodecont = gff.precOrderContainerItems[g.precOrdContainerIdx];
-            astr.push(`groups[${i}]: {kind, ${g.kind}, maxnode: ${dbgNodeToString(maxnode)}}, contidx: ${
-                g.precOrdContainerIdx
-            }`);
+            astr.push(`groups[${i}]: {kind, ${g.kind}, maxnode: ${dbgNodeToString(maxnode)}}`);
             for (let idx = g.idxb; idx!==g.idxe; idx++){
                 const node = gff.posOrderedNodes[idx];
                 let str = `groups[${i}]:  [${idx}]: node: ${dbgNodeToString(node)}`;
