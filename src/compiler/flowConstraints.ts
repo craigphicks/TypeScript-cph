@@ -348,7 +348,6 @@ namespace ts {
 
     function andIntoConstraintShallow({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem, mrNarrow: MrNarrow}): ConstraintItem {
         if (mrNarrow.isNeverType(type)) return createFlowConstraintNever();
-        // TODO: if there was a symbol table input we could check for always
         if (constraintItem.kind===ConstraintItemKind.always){
             return { kind: ConstraintItemKind.leaf, symbol, type };
         }
@@ -357,7 +356,6 @@ namespace ts {
             if (constraintItem.symbol===symbol){
                 const isecttype = mrNarrow.intersectionOfRefTypesType(type, constraintItem.type);
                 if (mrNarrow.isNeverType(isecttype)) return createFlowConstraintNever();
-                // TODO: if there was a symbol table input we could check for "always"
                 return createFlowConstraintLeaf(symbol, isecttype);
             }
             return {
@@ -482,8 +480,6 @@ namespace ts {
             });
             consoleGroupEnd();
         }
-        // when useConstraintsV2() is true, the returned type is a dummy, to prevent unnecessary computation.
-        // TODO: return real type not dummy type, because it has to be recomputed anyway
         return { type: typeOut, sc:{ symtab, constraintItem } };
     }
 

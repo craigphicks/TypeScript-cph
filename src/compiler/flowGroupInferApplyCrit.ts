@@ -240,70 +240,7 @@ namespace ts {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
         if (arrRttr.length===0) return { passing: createNever(), failing: crit.alsoFailing? createNever() : undefined };
-        if (arrRttr.length===1) {
-            // TODO: Replace this block with applyCrit1ToOne
-            const rttr = arrRttr[0];
-            if (mrNarrow.isNeverType(rttr.type)){
-                if (extraAsserts){
-                    Debug.assert(isRefTypesSymtabConstraintItemNever(rttr.sci));
-                }
-                return {
-                    passing: createNever(),
-                    failing: createNever(),
-                };
-            }
-            if (extraAsserts){
-                Debug.assert(!isRefTypesSymtabConstraintItemNever(rttr.sci));
-            }
-            let passtype = mrNarrow.createRefTypesType();
-            let failtype = crit.alsoFailing ? mrNarrow.createRefTypesType() : undefined;
-            applyCritToType(rttr.type,crit,passtype,failtype);
-            let passsc = rttr.sci;
-            let failsc = crit.alsoFailing ? rttr.sci : undefined;
-            if (rttr.symbol){
-                ({type:passtype,sc:passsc} = andSymbolTypeIntoSymtabConstraint({
-                    symbol: rttr.symbol,
-                    type: passtype,
-                    isconst: rttr.isconst,
-                    isAssign: rttr.isAssign,
-                    sc: passsc,
-                    getDeclaredType,
-                    mrNarrow,
-                }));
-                if (crit.alsoFailing){
-                    ({type:failtype,sc:failsc} = andSymbolTypeIntoSymtabConstraint({
-                        symbol: rttr.symbol,
-                        type: failtype!,
-                        isconst: rttr.isconst,
-                        isAssign: rttr.isAssign,
-                        sc: failsc!,
-                        getDeclaredType,
-                        mrNarrow,
-                    }));
-                }
-            }
-            let passing: RefTypesTableReturnNoSymbol;
-            let failing: RefTypesTableReturnNoSymbol;
-            if (mrNarrow.isNeverType(passtype)) passing = createNever();
-            else {
-                passing = {
-                    kind: RefTypesTableKind.return,
-                    type: passtype,
-                    sci: passsc
-                };
-            }
-            if (crit.alsoFailing && mrNarrow.isNeverType(failtype!)) failing = createNever();
-            else {
-                failing = {
-                    kind: RefTypesTableKind.return,
-                    type: failtype!,
-                    sci: failsc!
-                };
-            }
-            if (nodeToTypeMap) orIntoNodeToTypeMap(mrNarrow.refTypesTypeModule.unionOfRefTypesType([passing.type,failing.type]),nodeForMap,nodeToTypeMap);
-            return { passing,failing };
-        }
-
+        if (arrRttr.length===1) return applyCrit1ToOne(arrRttr[0],crit,nodeForMap,nodeToTypeMap);
         const arrPassType: RefTypesType[]=[];
         const arrFailType: RefTypesType[]=[];
         const arrPassSC: RefTypesSymtabConstraintItemNotNever[]=[];
@@ -384,9 +321,6 @@ namespace ts {
             const typeForNodeMap = failing ? mrNarrow.refTypesTypeModule.unionOfRefTypesType([passing.type,failing.type]) : passing.type;
             orIntoNodeToTypeMap(typeForNodeMap, nodeForMap, nodeToTypeMap);
         }
-        // nodeToTypeMap?.set(nodeForMap,
-        //     mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(
-        //         failing ? mrNarrow.refTypesTypeModule.unionOfRefTypesType([passing.type,failing.type]) : passing.type));
         return { passing,failing };
     }
 

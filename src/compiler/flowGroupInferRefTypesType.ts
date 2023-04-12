@@ -42,7 +42,7 @@ namespace ts {
         //getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
         //refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean;
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
-        literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
+        //literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType;
@@ -96,7 +96,7 @@ namespace ts {
             partitionIntoSingularAndNonSingularTypes,
             getMapLiteralOfRefTypesType,
             equalRefTypesTypes,
-            literalWideningUnion,
+            //literalWideningUnion,
             getUnionOrWidenedType,
             widenLiteralsAccordingToEffectiveDeclaredType,
             addTsTypeNonUnionToRefTypesTypeMutate,
@@ -354,7 +354,7 @@ namespace ts {
                             _mapLiteral.set(tstype,ltset);
                         }
                         else ltset.add(lt);
-                        iset.delete(tstype); // TODO: kill
+                        iset.delete(tstype); // Note: this might not be necessary, but less is more, so leave it.
                     }
                 });
             });
@@ -749,30 +749,6 @@ namespace ts {
             return true;
         }
 
-        // TODO: use getUnionOrWidenedType instead of literalWideningUnion
-        function literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
-            const mu = getMapLiteralOfRefTypesType(tunion);
-            if (!mu) return tunion;
-            const msif = getMapLiteralOfRefTypesType(effectiveDeclaredType);
-            let ltcount = 0;
-            const aktype: Type[] = [];
-            mu.forEach((set,ktype)=>{
-                const msifset = msif?.get(ktype);
-                if (!msifset) {
-                    aktype.push(ktype);
-                    ltcount += set.size;
-                    return;
-                }
-                // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
-                if (extraAsserts){
-                    set.forEach(lt=>Debug.assert(msifset.has(lt)));
-                }
-            });
-            if (ltcount>=2){
-                return addTypesToRefTypesType({ source:aktype, target:tunion });
-            }
-            return tunion;
-        }
         function getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
             const mnew = getMapLiteralOfRefTypesType(tnew);
             if (!mnew) return unionOfRefTypesType([tnew,told]);

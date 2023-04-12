@@ -271,28 +271,25 @@ namespace ts {
             //const target = new RefTypesSymtabProxy(arr[0].symtabOuter,undefined,arr[0].);
             mapSymToPType.forEach(({set, setAssigned},symbol)=>{
                 // c.f. _caxnc-whileLoop-0023 - for all i, s.t. arr[i].symbtabInner does not have symbol, must lookup in symtabOuter
-                let addedOuterTypeForSymbol = false;
                 if (!arr[0].isSubloop){
-                    arr.forEach(rts=>{
-                        if (addedOuterTypeForSymbol) return; // TODO optimize with loop breakout, iterator or other
+                    for (const rts of arr){
                         if (!rts.symtabInner.has(symbol)){
                             const otype = mrNarrow.getEffectiveDeclaredType(symbolFlowInfoMap.get(symbol) ?? Debug.fail("unexpected"));
                             mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
-                            addedOuterTypeForSymbol=true;
+                            break;
                         }
-                    });
+                    }
                 }
                 else {
-                    arr.forEach(rts=>{
-                        if (addedOuterTypeForSymbol) return; // TODO optimize with loop breakout, iterator or other
+                    for (const rts of arr){
                         if (!rts.symtabInner.has(symbol)){
                             const otype = rts.symtabOuter?.get(symbol);
                             if (otype){
                                 mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
-                                addedOuterTypeForSymbol=true;
+                                break;
                             }
                         }
-                    });
+                    }
                 }
                 const atype: Type[]=[];
                 set.forEach(t=>atype.push(t));
