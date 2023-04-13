@@ -217,20 +217,12 @@ namespace ts {
 
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type MrNarrowTypesReturn = & {
-        inferRefRtnType: InferRefRtnType;
+        unmerged: Readonly<RefTypesTableReturn[]>;
         nodeForMap: Readonly<Node>;
         typeof?: {
             map: ESMap<Type,RefTypesType>;
             argSymbol: Symbol;
         }
-    };
-
-    // export type InferRefRtnType = Readonly<RefTypesTableReturn[]>;
-
-    export type InferRefRtnType = & {
-        // passing?: RefTypesTableReturnNoSymbol;
-        // failing?: RefTypesTableReturnNoSymbol;
-        unmerged: Readonly<RefTypesTableReturn[]>;
     };
 
     export type InferRefInnerArgs = & {
@@ -241,7 +233,7 @@ namespace ts {
         constraintItem: ConstraintItem;
     };
     export type MrNarrowTypesInnerReturn = & {
-        arrRefTypesTableReturn: Readonly<RefTypesTableReturn[]>;
+        unmerged: Readonly<RefTypesTableReturn[]>;
         typeof?: {
             map: ESMap<Type,RefTypesType>;
             argSymbol: Symbol;
