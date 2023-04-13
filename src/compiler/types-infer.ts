@@ -226,11 +226,12 @@ namespace ts {
     };
 
     export type InferRefInnerArgs = & {
-        refTypesSymtab: RefTypesSymtab,
+        sci: RefTypesSymtabConstraintItemNotNever,
+        //refTypesSymtab: RefTypesSymtab,
         expr: Readonly<Node>,
         qdotfallout: RefTypesTableReturn[],
         inferStatus: InferStatus,
-        constraintItem: ConstraintItem;
+        //constraintItem: ConstraintItem;
     };
     export type MrNarrowTypesInnerReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
