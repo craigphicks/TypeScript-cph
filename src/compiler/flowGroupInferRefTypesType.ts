@@ -462,6 +462,9 @@ namespace ts {
                             arr1.push({ leftts:[tx], rightts });
                         }
                     }
+                    else {
+                        arr1.push({ leftts:[tx], rightts:arrYTsTypes, false:true });
+                    }
                 });
                 if (pass===1) {
                     arr1.forEach(x=>{

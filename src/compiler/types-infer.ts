@@ -199,15 +199,14 @@ namespace ts {
         callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
     };
 
-    export type InferRefArgs1 = & {
-        refTypesSymtab: RefTypesSymtab,
-        constraintItem: ConstraintItem,
+    export type MrNarrowTypesArgsX = & {
+        sci: RefTypesSymtabConstraintItem,
         expr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
         inferStatus: InferStatus,
         crit: InferCrit,
     };
-    export type InferRefArgs = & {
+    export type MrNarrowTypesArgs = & {
         sci: RefTypesSymtabConstraintItem,
         expr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
@@ -227,11 +226,9 @@ namespace ts {
 
     export type InferRefInnerArgs = & {
         sci: RefTypesSymtabConstraintItemNotNever,
-        //refTypesSymtab: RefTypesSymtab,
         expr: Readonly<Node>,
         qdotfallout: RefTypesTableReturn[],
         inferStatus: InferStatus,
-        //constraintItem: ConstraintItem;
     };
     export type MrNarrowTypesInnerReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;

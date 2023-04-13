@@ -6,7 +6,7 @@ namespace ts {
     }
 
     export interface MrNarrow {
-        mrNarrowTypes({ sci, expr, crit, qdotfallout, inferStatus }: InferRefArgs): MrNarrowTypesReturn;
+        mrNarrowTypes({ sci, expr, crit, qdotfallout, inferStatus }: MrNarrowTypesArgs): MrNarrowTypesReturn;
         createRefTypesSymtab(): RefTypesSymtab;
         copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
         createRefTypesType(type?: Readonly<Type> | Readonly<Type[]>): RefTypesType;
@@ -2026,7 +2026,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypes({sci, expr:expr, inferStatus, crit, qdotfallout }: InferRefArgs): MrNarrowTypesReturn {
+        function mrNarrowTypes({sci, expr:expr, inferStatus, qdotfallout, crit }: MrNarrowTypesArgs): MrNarrowTypesReturn {
             if (!sci.symtab){
                 Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
                 return {
@@ -2043,17 +2043,18 @@ namespace ts {
             }
             if (expr.kind===SyntaxKind.ParenthesizedExpression){
                 const mntr = mrNarrowTypes({
-                    expr:(expr as ParenthesizedExpression).expression,crit,qdotfallout,sci,inferStatus
+                    expr:(expr as ParenthesizedExpression).expression,qdotfallout,sci,inferStatus, crit
                 });
                 applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                 return mntr;
             }
             return mrNarrowTypesAux({
-                expr,crit,qdotfallout,refTypesSymtab:sci.symtab, constraintItem: sci.constraintItem, inferStatus
+                expr,qdotfallout,sci,inferStatus, crit
             });
 
             function mrNarrowIdentifier(): MrNarrowTypesReturn {
-                if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.Identifier`);
+                if (getMyDebug()) consoleGroup(`mrNarrowIdentifier [in] ${dbgNodeToString(expr)}`);
+                function mrNarrowIdentifierAux(): MrNarrowTypesReturn {
                 Debug.assert(isIdentifier(expr));
 
                 const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
@@ -2108,80 +2109,111 @@ namespace ts {
                         consoleLog(`mrNarrowTypesInner[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}`);
                     }
 
-                    const addTypeofReturn = () => mntr.typeof ? { typeof: mntr.typeof } : {};
-                    if (inferStatus.inCondition && crit.kind!==InferCritKind.none){
-                        const { passing,failing } = applyCrit1(mntr.unmerged, crit, expr,inferStatus.currentReplayableItem?undefined:inferStatus.groupNodeToTypeMap);
+                        // true+false -> _caxnc-rp-003, _caxnc-rp-004 failing
+                        // true+true -> _caxnc-rp-001, _caxnc-rp-003, _caxnc-rp-004 failing
+                        const doIdentifierReturnEachUnmerged = false;
+                        const doIdentifierReturnEachUnmergedWithMap = true;
 
-                        return {
-                            unmerged:[{
-                                ...passing,symbol,isconst: replayable.isconst },{
-                                ...failing!,symbol,isconst: replayable.isconst
-                            }],
-                            nodeForMap: expr,
-                            ...addTypeofReturn()
-                        };
+                        const doIdentifierReturnEachUnmergedWithMapWithSymbol = false; // many failing including _caxnc-bi3
+
+                        if (doIdentifierReturnEachUnmerged){
+
+                            const unmerged = doIdentifierReturnEachUnmergedWithMap
+                                ? mntr.unmerged.map((rttr)=>({
+                                    ... applyCritNoneToOne(rttr,expr,inferStatus.currentReplayableItem?undefined:inferStatus.groupNodeToTypeMap),
+                                    ...(doIdentifierReturnEachUnmergedWithMapWithSymbol ? { symbol, isconst: replayable.isconst } : {})
+                                }))
+                                : mntr.unmerged;
+
+                            return {
+                                unmerged,
+                                nodeForMap: expr,
+                                ...(mntr.typeof ? { typeof:mntr.typeof } : {})
+                            };
+                        }
+                        else {
+                            const addTypeofReturn = () => mntr.typeof ? { typeof: mntr.typeof } : {};
+                            if (inferStatus.inCondition && crit.kind!==InferCritKind.none){
+                                const { passing,failing } = applyCrit1(mntr.unmerged, crit, expr,inferStatus.currentReplayableItem?undefined:inferStatus.groupNodeToTypeMap);
+
+                                return {
+                                    unmerged:[{
+                                        ...passing,symbol,isconst: replayable.isconst },{
+                                        ...failing!,symbol,isconst: replayable.isconst
+                                    }],
+                                    nodeForMap: expr,
+                                    ...addTypeofReturn()
+                                };
+                            }
+                            else {
+                                return {
+                                    unmerged:[{
+                                        ...applyCritNone1Union(mntr.unmerged,expr,inferStatus.currentReplayableItem?undefined:inferStatus.groupNodeToTypeMap),
+                                        symbol,
+                                        isconst: replayable.isconst
+                                    }],
+                                    nodeForMap: expr,
+                                    ...addTypeofReturn()
+                                };
+                            }
+                        }
+                    } // endof if (inferStatus.replayables.has(symbol))
+                    let type: RefTypesType | undefined;
+                    const isconst = symbolFlowInfo.isconst;
+                    type = sci.symtab?.get(symbol) ?? getSymbolFlowInfoInitializerOrDeclaredTypeFromSymbolFlowInfo(symbolFlowInfo);
+                    Debug.assert(type);
+                    if (inferStatus.currentReplayableItem){
+                        // If the value of the symbol has definitely NOT changed since the defintion of the replayable.
+                        // then we can continue on below to find the value via constraints.  Otherwise, we must use the value of the symbol
+                        // at the time of the definition of the replayable, as recorded in the replayables byNode map.
+                        // Currently `isconst` is equivalent to "definitely NOT changed".
+                        if (!isconst){
+                            const tstype = inferStatus.currentReplayableItem.nodeToTypeMap.get(expr)!;
+                            Debug.assert(type);
+                            type = createRefTypesType(tstype);
+                            return {
+                                unmerged:[{
+                                    kind: RefTypesTableKind.return,
+                                    // symbol and isconst are not passed back because in replay non-const is treated as a hardwired type
+                                    type,
+                                    sci
+                                }],
+                                nodeForMap:expr
+                            };
+                        }
                     }
-                    else {
-                        return {
-                            unmerged:[{
-                                ...applyCritNone1Union(mntr.unmerged,expr,inferStatus.currentReplayableItem?undefined:inferStatus.groupNodeToTypeMap),
-                                symbol,
-                                isconst: replayable.isconst
-                            }],
-                            nodeForMap: expr,
-                            ...addTypeofReturn()
-                        };
-                    }
-                } // endof if (inferStatus.replayables.has(symbol))
-                let type: RefTypesType | undefined;
-                const isconst = symbolFlowInfo.isconst;
-                type = sci.symtab?.get(symbol) ?? getSymbolFlowInfoInitializerOrDeclaredTypeFromSymbolFlowInfo(symbolFlowInfo);
-                Debug.assert(type);
-                if (inferStatus.currentReplayableItem){
-                    // If the value of the symbol has definitely NOT changed since the defintion of the replayable.
-                    // then we can continue on below to find the value via constraints.  Otherwise, we must use the value of the symbol
-                    // at the time of the definition of the replayable, as recorded in the replayables byNode map.
-                    // Currently `isconst` is equivalent to "definitely NOT changed".
-                    if (!isconst){
-                        const tstype = inferStatus.currentReplayableItem.nodeToTypeMap.get(expr)!;
-                        Debug.assert(type);
-                        type = createRefTypesType(tstype);
-                        return {
-                            unmerged:[{
-                                kind: RefTypesTableKind.return,
-                                // symbol and isconst are not passed back because in replay non-const is treated as a hardwired type
-                                type,
-                                sci
-                            }],
-                            nodeForMap:expr
-                        };
-                    }
+                    return {
+                        unmerged:[{
+                            kind: RefTypesTableKind.return,
+                            symbol,
+                            isconst,
+                            type,
+                            sci
+                        }],
+                        nodeForMap: expr
+                    };
                 }
-                return {
-                    unmerged:[{
-                        kind: RefTypesTableKind.return,
-                        symbol,
-                        isconst,
-                        type,
-                        sci
-                    }],
-                    nodeForMap: expr
-                };
+                const ret =  mrNarrowIdentifierAux();
+                if (getMyDebug()) {
+                    consoleLog(`mrNarrowIdentifier [out] ${dbgNodeToString(expr)}`);
+                    consoleGroupEnd();
+                }
+                return ret;
             }
-
         }
-        function mrNarrowTypesAux({refTypesSymtab: refTypesSymtabIn, constraintItem: constraintItemIn, expr:expr, inferStatus, crit: critIn, qdotfallout: qdotfalloutIn }: InferRefArgs1): MrNarrowTypesReturn {
+        function mrNarrowTypesAux({ sci, expr:expr, inferStatus, qdotfallout: qdotfalloutIn }: MrNarrowTypesArgsX): MrNarrowTypesReturn {
+            assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
             if (getMyDebug()) {
-                consoleGroup(`mrNarrowTypes[in] expr:${dbgNodeToString(expr)}, crit:{kind:${critIn.kind},negate:${(critIn as any).negate}}, `
+                consoleGroup(`mrNarrowTypes[in] expr:${dbgNodeToString(expr)}}, `
                 +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
                 +`qdotfalloutIn: ${!qdotfalloutIn ? "<undef>" : `length: ${qdotfalloutIn.length}`}`);
                 consoleLog(`mrNarrowTypes[in] refTypesSymtab:`);
-                dbgRefTypesSymtabToStrings(refTypesSymtabIn).forEach(str=> consoleLog(`  ${str}`));
+                dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> consoleLog(`  ${str}`));
                 consoleLog(`mrNarrowTypes[in] constraintItemIn:`);
-                if (constraintItemIn) dbgConstraintItem(constraintItemIn).forEach(str=> consoleLog(`  ${str}`));
+                dbgConstraintItem(sci.constraintItem).forEach(str=> consoleLog(`  ${str}`));
             }
             const qdotfallout = qdotfalloutIn??([] as RefTypesTableReturn[]);
-            const innerret = mrNarrowTypesInner({ sci:{ symtab:refTypesSymtabIn,constraintItem: constraintItemIn as ConstraintItemNotNever }, expr, qdotfallout,
+            const innerret = mrNarrowTypesInner({ sci, expr, qdotfallout,
                 inferStatus });
             let finalArrRefTypesTableReturn = innerret.unmerged;
             if (getMyDebug()){
@@ -2197,8 +2229,7 @@ namespace ts {
                  * !qdotfallout so merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit
                  */
                 if (getMyDebug()){
-                    consoleLog(`mrNarrowTypes[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit:`
-                    + `{kind:${critIn.kind},negate:${(critIn as any).negate}}`);
+                    consoleLog(`mrNarrowTypes[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit:`);
                     qdotfallout.forEach((rttr,i)=>{
                         dbgRefTypesTableToStrings(rttr).forEach(str=>{
                             consoleLog(`mrNarrowTypes[dbg]:  qdotfallout[${i}]: ${str}`);

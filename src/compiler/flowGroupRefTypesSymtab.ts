@@ -63,10 +63,11 @@ namespace ts {
                 Debug.assert(!this.symtabOuter);
                 return this.symtabInner.get(symbol)?.type;
             }
-            const sfi = symbolFlowInfoMap.get(symbol);
-            if (!sfi) return undefined;
-            const pt = this.symtabInner.get(symbol);
-            if (pt) return pt.type;
+            // TODO: move A to after B
+            const sfi = symbolFlowInfoMap.get(symbol); // A
+            if (!sfi) return undefined; // A
+            const pt = this.symtabInner.get(symbol); // B
+            if (pt) return pt.type; // B
             if (sfi.isconst) {
                 const type = this.symtabOuter?.get(symbol);
                 Debug.assert(type);

@@ -418,11 +418,11 @@ A consequence is that `case SyntaxKind.CallExpression` currently has a narrow co
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  --prof built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `node --prof-process isolate- > isolate.txt`
 
+_caxnc-bi3.ts
 
-_caxnc-ez0007.ts is better but why not all never after `else if (obja)`?
-_caxnc-fn-0002.ts defnitely bad
-_caxnc-fn-0003.ts bad
-_caxnc-prop-0002.ts bad
-_caxnc-rp-003.ts bad
 
-simple typeof bad 
+
+
+
+
+
