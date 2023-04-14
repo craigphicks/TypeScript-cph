@@ -1,7 +1,10 @@
 namespace ts {
 
-    export const extraAsserts = true; // not suitable for release
+    export const extraAsserts = false; // not suitable for release
     const hardCodeEnableTSDevExpectStringFalse = true;
+    // _caxnc-rp-001 fails unless doIdentifierExpandTypeOnCondition=true
+    export const doIdentifierExpandTypeOnCondition = false;
+
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {

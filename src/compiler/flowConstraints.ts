@@ -424,10 +424,24 @@ namespace ts {
         return orSymtabConstraintsV2(asc, mrNarrow);
     }
 
-    function andSymbolTypeIntoSymtabConstraintV2({symbol,isconst,isAssign,type:typeIn,sc, mrNarrow, getDeclaredType:_}: Readonly<{
+
+    // export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType}: Readonly<{
+    //     symbol: Readonly<Symbol>,
+    //     readonly isconst: undefined | boolean,
+    //     readonly isAssign?: boolean | undefined,
+    //     type: Readonly<RefTypesType>,
+    //     sc: RefTypesSymtabConstraintItem,
+    //     getDeclaredType: GetDeclaredTypeFn,
+    //     mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
+    //     //Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
+    //     if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesType(),sc };
+    //     return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType });
+    // }
+
+    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,isAssign,type:typeIn,sc, mrNarrow, getDeclaredType:_}: Readonly<{
         symbol: Readonly<Symbol>,
         readonly isconst: undefined | boolean,
-        readonly isAssign: boolean | undefined,
+        readonly isAssign?: boolean | undefined,
         type: Readonly<RefTypesType>,
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
@@ -437,6 +451,8 @@ namespace ts {
             consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
             +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
         }
+        if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesType(),sc };
+
         const constraintItem = sc.constraintItem;
         Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
         let symtab = sc.symtab;
@@ -510,18 +526,6 @@ namespace ts {
         return constraintItem;
     }
 
-    export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType}: Readonly<{
-        symbol: Readonly<Symbol>,
-        readonly isconst: undefined | boolean,
-        readonly isAssign?: boolean | undefined,
-        type: Readonly<RefTypesType>,
-        sc: RefTypesSymtabConstraintItem,
-        getDeclaredType: GetDeclaredTypeFn,
-        mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
-        //Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
-        if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesType(),sc };
-        return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType });
-    }
     /**
      * Same interface as andSymbolTypeIntoSymtabConstraint,
      * orSymbolTypeIntoSymtabConstraint is required because loop processing widens symbol types with cumulative history.

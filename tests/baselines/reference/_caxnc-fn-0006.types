@@ -43,7 +43,7 @@ if (obj===obja){
 >obja : FooA
 
     obj; // expect FooA
->obj : FooA | FooB
+>obj : FooA
 }
 else {
     obj; // expect FooA | FooB (even if left and right are FooA, the comparison result could still be false)

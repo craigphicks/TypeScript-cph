@@ -36,7 +36,7 @@ if (aeqb&&beqc)
 >beqc : boolean
 {
     aeqb;
->aeqb : boolean
+>aeqb : true
 
     beqc;
 >beqc : true

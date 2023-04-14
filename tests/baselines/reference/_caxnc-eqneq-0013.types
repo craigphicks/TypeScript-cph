@@ -36,16 +36,16 @@ if (aeqb&&beqc)
 >beqc : boolean
 {
     aeqb;
->aeqb : boolean
+>aeqb : true
 
     beqc;
 >beqc : true
 
     aeqc;
->aeqc : boolean
+>aeqc : true
 
     a;
->a : 2 | 3
+>a : 3
 
     b;
 >b : 3
@@ -56,7 +56,7 @@ if (aeqb&&beqc)
     let x1 = a===b;
 >x1 : boolean
 >a===b : boolean
->a : 2 | 3
+>a : 3
 >b : 3
 
     let y1 = b===c;
@@ -68,17 +68,17 @@ if (aeqb&&beqc)
     let z1 = a===c;
 >z1 : boolean
 >a===c : boolean
->a : 2 | 3
+>a : 3
 >c : 3
 
     x1;
->x1 : boolean
+>x1 : true
 
     y1;
 >y1 : true
 
     z1;
->z1 : boolean
+>z1 : true
 }
 else {
     aeqb;
