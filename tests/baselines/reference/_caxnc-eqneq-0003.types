@@ -42,10 +42,10 @@ if (aeqb&&beqc)
 >beqc : true
 
     aeqc;
->aeqc : boolean
+>aeqc : true
 
     a;
->a : 2 | 3
+>a : 3
 
     b;
 >b : 3

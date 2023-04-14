@@ -2111,10 +2111,9 @@ namespace ts {
 
                         // true+false -> _caxnc-rp-003, _caxnc-rp-004 failing
                         // true+true -> _caxnc-rp-001, _caxnc-rp-003, _caxnc-rp-004 failing
-                        const doIdentifierReturnEachUnmerged = false;
+                        const doIdentifierReturnEachUnmerged = true;
                         const doIdentifierReturnEachUnmergedWithMap = true;
-
-                        const doIdentifierReturnEachUnmergedWithMapWithSymbol = false; // many failing including _caxnc-bi3
+                        const doIdentifierReturnEachUnmergedWithMapWithSymbol = true; // many failing including _caxnc-bi3
 
                         if (doIdentifierReturnEachUnmerged){
 

@@ -1,69 +1,71 @@
 === tests/cases/conformance/_caxnc/_caxnc-rp-003.ts ===
+/**
+ * b01 b02 ca=b01&&b02 co=b01||b02 cao=ca&&co
+ * 0   0   0           0           0
+ * 1   0   0           1           0
+ * 0   2   0           2           0
+ * 1   2   2           1           1
+ */
+
+
 declare const b01:0|1;
->b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 0, 13))
+>b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 9, 13))
 
 declare const b02:0|2;
->b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 1, 13))
+>b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 10, 13))
 
 const ca = b01 && b02;
->ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 2, 5))
->b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 0, 13))
->b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 1, 13))
+>ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 11, 5))
+>b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 9, 13))
+>b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 10, 13))
 
 const co = b01 || b02;
->co : Symbol(co, Decl(_caxnc-rp-003.ts, 3, 5))
->b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 0, 13))
->b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 1, 13))
+>co : Symbol(co, Decl(_caxnc-rp-003.ts, 12, 5))
+>b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 9, 13))
+>b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 10, 13))
 
 const cao = ca && co;
->cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 4, 5))
->ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 2, 5))
->co : Symbol(co, Decl(_caxnc-rp-003.ts, 3, 5))
+>cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 13, 5))
+>ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 11, 5))
+>co : Symbol(co, Decl(_caxnc-rp-003.ts, 12, 5))
 
 if (ca){
->ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 2, 5))
+>ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 11, 5))
 
-    [b01,b02,ca,co,cao];
->b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 0, 13))
->b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 1, 13))
->ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 2, 5))
->co : Symbol(co, Decl(_caxnc-rp-003.ts, 3, 5))
->cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 4, 5))
+    [b01,b02,ca,co,cao]; // expect 1, 2, 2, 1, 1
+>b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 9, 13))
+>b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 10, 13))
+>ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 11, 5))
+>co : Symbol(co, Decl(_caxnc-rp-003.ts, 12, 5))
+>cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 13, 5))
 }
 else {
-    [b01,b02,ca,co,cao];
->b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 0, 13))
->b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 1, 13))
->ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 2, 5))
->co : Symbol(co, Decl(_caxnc-rp-003.ts, 3, 5))
->cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 4, 5))
-
-    /**
-     * b01 b02 ca=b01&&b02 co=b01||b02 cao=ca&&co
-     * 0   0   0           0           0
-     * 1   0   0           1           0
-     * 0   2   0           2           0
-     */
+    [b01,b02,ca,co,cao]; // expect 0|1, 0|2, 0, 0|1|2, 0
+>b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 9, 13))
+>b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 10, 13))
+>ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 11, 5))
+>co : Symbol(co, Decl(_caxnc-rp-003.ts, 12, 5))
+>cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 13, 5))
 }
 
 if (b01 && b02){
->b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 0, 13))
->b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 1, 13))
+>b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 9, 13))
+>b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 10, 13))
 
-    [b01,b02,ca,co,cao];
->b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 0, 13))
->b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 1, 13))
->ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 2, 5))
->co : Symbol(co, Decl(_caxnc-rp-003.ts, 3, 5))
->cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 4, 5))
+    [b01,b02,ca,co,cao]; // expect 1, 2, 2, 1, 1
+>b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 9, 13))
+>b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 10, 13))
+>ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 11, 5))
+>co : Symbol(co, Decl(_caxnc-rp-003.ts, 12, 5))
+>cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 13, 5))
 }
 else {
-    [b01,b02,ca,co,cao];
->b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 0, 13))
->b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 1, 13))
->ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 2, 5))
->co : Symbol(co, Decl(_caxnc-rp-003.ts, 3, 5))
->cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 4, 5))
+    [b01,b02,ca,co,cao]; // expect 0|1, 0|2, 2, 0|1|2, 1
+>b01 : Symbol(b01, Decl(_caxnc-rp-003.ts, 9, 13))
+>b02 : Symbol(b02, Decl(_caxnc-rp-003.ts, 10, 13))
+>ca : Symbol(ca, Decl(_caxnc-rp-003.ts, 11, 5))
+>co : Symbol(co, Decl(_caxnc-rp-003.ts, 12, 5))
+>cao : Symbol(cao, Decl(_caxnc-rp-003.ts, 13, 5))
 }
 
 
