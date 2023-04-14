@@ -1,0 +1,56 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0006.ts ===
+declare interface FooA {
+>FooA : Symbol(FooA, Decl(_caxnc-fn-0006.ts, 0, 0))
+
+    foo(b:string): "A";
+>foo : Symbol(FooA.foo, Decl(_caxnc-fn-0006.ts, 0, 24), Decl(_caxnc-fn-0006.ts, 1, 23))
+>b : Symbol(b, Decl(_caxnc-fn-0006.ts, 1, 8))
+
+    foo(...args:any[]): unknown;
+>foo : Symbol(FooA.foo, Decl(_caxnc-fn-0006.ts, 0, 24), Decl(_caxnc-fn-0006.ts, 1, 23))
+>args : Symbol(args, Decl(_caxnc-fn-0006.ts, 2, 8))
+}
+declare interface FooB {
+>FooB : Symbol(FooB, Decl(_caxnc-fn-0006.ts, 3, 1))
+
+    foo(b:number): "B";
+>foo : Symbol(FooB.foo, Decl(_caxnc-fn-0006.ts, 4, 24), Decl(_caxnc-fn-0006.ts, 5, 23))
+>b : Symbol(b, Decl(_caxnc-fn-0006.ts, 5, 8))
+
+    foo(...args:any[]): unknown;
+>foo : Symbol(FooB.foo, Decl(_caxnc-fn-0006.ts, 4, 24), Decl(_caxnc-fn-0006.ts, 5, 23))
+>args : Symbol(args, Decl(_caxnc-fn-0006.ts, 6, 8))
+
+};
+declare const obja: FooA;
+>obja : Symbol(obja, Decl(_caxnc-fn-0006.ts, 8, 13))
+>FooA : Symbol(FooA, Decl(_caxnc-fn-0006.ts, 0, 0))
+
+declare const objb: FooB;
+>objb : Symbol(objb, Decl(_caxnc-fn-0006.ts, 9, 13))
+>FooB : Symbol(FooB, Decl(_caxnc-fn-0006.ts, 3, 1))
+
+declare const arg: string | number;
+>arg : Symbol(arg, Decl(_caxnc-fn-0006.ts, 10, 13))
+
+declare const b: boolean;
+>b : Symbol(b, Decl(_caxnc-fn-0006.ts, 11, 13))
+
+const obj = b? obja : objb
+>obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
+>b : Symbol(b, Decl(_caxnc-fn-0006.ts, 11, 13))
+>obja : Symbol(obja, Decl(_caxnc-fn-0006.ts, 8, 13))
+>objb : Symbol(objb, Decl(_caxnc-fn-0006.ts, 9, 13))
+
+if (obj===obja){
+>obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
+>obja : Symbol(obja, Decl(_caxnc-fn-0006.ts, 8, 13))
+
+    obj; // expect FooA
+>obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
+}
+else {
+    obj; // expect FooA | FooB (even if left and right are FooA, the comparison result could still be false)
+>obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
+}
+

@@ -1,5 +1,6 @@
 const cp = require("child_process");
-const fs = require("fs/promises");
+//const fs = require("fs/promises");
+const fs = require("fs");
 const path = require("path");
 const readlinem = require("readline");
 const dir = "tests/baselines/local/";
@@ -27,7 +28,7 @@ function askUser(question) {
 }
 
 async function main(){
-    const arrdirent = await fs.readdir(dir,{ withFileTypes:true });
+    const arrdirent = await fs.promises.readdir(dir,{ withFileTypes:true });
     arrdirent.reduce(async (promise,de)=>{
         await promise;
         if (de.isFile()){
@@ -44,18 +45,26 @@ async function main(){
                 }
                 else {
                     console.log(`accepting ${de.name}`);
-                    await fs.copyFile(right,left);
+                    await fs.promises.copyFile(right,left);
                     console.log(`copy ${right} -> ${left} success`);
+
+                    const jsFile = right.replace(".types",".js");
+                    if (fs.existsSync(jsFile)){
+                        const jsFileLeft = left.replace(".types",".js");
+                        await fs.promises.copyFile(jsFile,jsFileLeft);
+                        console.log(`copy ${jsFile} -> ${jsFileLeft} success`);
+                    }
+
                     const symbolsFile = right.replace(".types",".symbols");
-                    if (await fs.exists(symbolsFile)){
+                    if (fs.existsSync(symbolsFile)){
                         const symbolsFileLeft = left.replace(".types",".symbols");
-                        await fs.copyFile(symbolsFile,symbolsFileLeft);
+                        await fs.promises.copyFile(symbolsFile,symbolsFileLeft);
                         console.log(`copy ${symbolsFile} -> ${symbolsFileLeft} success`);
                     }
                     const errorsFile = right.replace(".types",".errors.txt");
-                    if (await fs.exists(errorsFile)){
+                    if (fs.existsSync(errorsFile)){
                         const errorsFileLeft = left.replace(".types",".errors.txt");
-                        await fs.copyFile(errorsFile,errorsFileLeft);
+                        await fs.promises.copyFile(errorsFile,errorsFileLeft);
                         console.log(`copy ${errorsFile} -> ${errorsFileLeft} success`);
                     }
                 }
