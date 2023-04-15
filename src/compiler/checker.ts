@@ -35953,7 +35953,7 @@ namespace ts {
             if (/* flowTypeQueryState.disable && */ node.flags & NodeFlags.TypeCached && flowTypeCache) {
                 const cachedType = flowTypeCache[getNodeId(node)];
                 if (cachedType) {
-                    if (myDebug||true) consoleLog(`getTypeOfExpression: get flowTypeCache ${dbgNodeToString(node)} -> ${typeToString(cachedType)}`);
+                    if (myDebug) consoleLog(`getTypeOfExpression: get flowTypeCache ${dbgNodeToString(node)} -> ${typeToString(cachedType)}`);
                     return cachedType;
                 }
             }
@@ -35964,7 +35964,7 @@ namespace ts {
                 const cache = flowTypeCache || (flowTypeCache = []);
                 cache[getNodeId(node)] = type;
                 setNodeFlags(node, node.flags | NodeFlags.TypeCached);
-                if (myDebug||true) consoleLog(`getTypeOfExpression: set flowTypeCache ${dbgNodeToString(node)} -> ${typeToString(type)}`);
+                if (myDebug) consoleLog(`getTypeOfExpression: set flowTypeCache ${dbgNodeToString(node)} -> ${typeToString(type)}`);
             }
             return type;
         }

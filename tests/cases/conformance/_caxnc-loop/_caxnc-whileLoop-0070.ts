@@ -14,7 +14,7 @@ function t70(){
         b;c;d; // expecting true,true,boolean
         [b,c,d]; // expecting [true,true,boolean] 
         let e = b;
-        b;c;d;e; // expecting true,true,false,true
-        [b,c,d,e]; // expecting true,true,false,true
+        b;c;d;e; // expecting true,true,boolean,true
+        [b,c,d,e]; // expecting true,true,boolean,true
     }
 }

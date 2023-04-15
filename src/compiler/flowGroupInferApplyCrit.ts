@@ -79,17 +79,12 @@ namespace ts {
 
     function orIntoNodeToTypeMap(type: RefTypesType, node: Node, nodeToTypeMap: NodeToTypeMap){
         const tstype = mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type);
-        if (false){
-            nodeToTypeMap.set(node,tstype);
-        }
-        else {
-            const got = nodeToTypeMap.get(node);
-            if (!got) nodeToTypeMap.set(node,tstype);
-            else nodeToTypeMap.set(node,checker.getUnionType([got,tstype],UnionReduction.Literal));
-            if (getMyDebug()){
-                consoleLog(`orIntoNodeToTypeMap(type:${mrNarrow.dbgRefTypesTypeToString(type)},node:${mrNarrow.dbgNodeToString(node)})::`
-                    +`${got?checker.typeToString(got):"*"}->${checker.typeToString(nodeToTypeMap.get(node)!)}`);
-            }
+        const got = nodeToTypeMap.get(node);
+        if (!got) nodeToTypeMap.set(node,tstype);
+        else nodeToTypeMap.set(node,checker.getUnionType([got,tstype],UnionReduction.Literal));
+        if (getMyDebug()){
+            consoleLog(`orIntoNodeToTypeMap(type:${mrNarrow.dbgRefTypesTypeToString(type)},node:${mrNarrow.dbgNodeToString(node)})::`
+                +`${got?checker.typeToString(got):"*"}->${checker.typeToString(nodeToTypeMap.get(node)!)}`);
         }
     }
 
@@ -101,7 +96,6 @@ namespace ts {
         const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,
             mrNarrow, getDeclaredType});
         if (nodeToTypeMap) orIntoNodeToTypeMap(type,nodeForMap,nodeToTypeMap);
-        //nodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
         return {
             kind: RefTypesTableKind.return,
             type,
@@ -115,18 +109,6 @@ namespace ts {
     export function applyCritNone1Union(arrRttr: Readonly<RefTypesTableReturn[]>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
         if (arrRttr.length===0) return createNever();
         if (arrRttr.length===1) return applyCritNoneToOne(arrRttr[0],nodeForMap,nodeToTypeMap);
-        // if (arrRttr.length===1) {
-        //     const rttr = arrRttr[0];
-        //     if (!rttr.symbol) return rttr;
-        //     const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,
-        //         mrNarrow, getDeclaredType});
-        //     nodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
-        //     return {
-        //         kind: RefTypesTableKind.return,
-        //         type,
-        //         sci: sc
-        //     };
-        // }
 
         const atype: RefTypesType[] = [];
         const asc: RefTypesSymtabConstraintItem[] = [];

@@ -1152,69 +1152,68 @@ namespace ts {
         const { mrState, /* refTypesTypeModule */ } = sourceFileMrState;
 
         if (mrState.dataForGetTypeOfExpressionShallowRecursive){
+            /**
+             * It turns out that the upper "checkeExpression" software will try to do minor flow analsis outside of the scope
+             * of mrState.dataForGetTypeOfExpressionShallowRecursive.expr, so the original design doesn't work.
+             * However the queries should be answerable below with groupNodeToTypeMap, so we need to fall through to that,
+             * and only fail if that doesn't work.
+             */
             if (getMyDebug()){
                 consoleLog(`getTypeByMrNarrowAux[dbg]: getTypeOfExpressionShallowRecursive: ${dbgs!.dbgNodeToString(expr)}`);
-                let p = expr;
-                while (p!==mrState.dataForGetTypeOfExpressionShallowRecursive.expr && p.kind!==SyntaxKind.SourceFile) p=p.parent;
-                Debug.assert(p===mrState.dataForGetTypeOfExpressionShallowRecursive.expr, "unexpected");
+                // let p = expr;
+                // while (p!==mrState.dataForGetTypeOfExpressionShallowRecursive.expr && p.kind!==SyntaxKind.SourceFile) p=p.parent;
+                // Debug.assert(p===mrState.dataForGetTypeOfExpressionShallowRecursive.expr, "unexpected");
             }
             const tstype = mrState.dataForGetTypeOfExpressionShallowRecursive.tmpExprNodeToTypeMap.get(expr);
-            Debug.assert(tstype);
-            return tstype;
+            //Debug.assert(tstype);
+            if (tstype) return tstype;
+            consoleLog(`getTypeByMrNarrowAux[dbg]: getTypeOfExpressionShallowRecursive failed, try groupNodeTo`);
         }
 
-        try {
-            Debug.assert(sourceFileMrState.mrState.recursionLevel===0,"expected sourceFileMrState.mrState.recursionLevel===0");
-            sourceFileMrState.mrState.recursionLevel++;
-
-            const groupsForFlow = sourceFileMrState.groupsForFlow;
-            const groupForFlow = (()=>{
-                let parent = expr;
-                let fg = groupsForFlow.nodeToGroupMap.get(expr);
-                if (fg) return fg;
-                while (!fg && parent && parent.kind!==SyntaxKind.SourceFile && !(fg=groupsForFlow.nodeToGroupMap.get(parent))) parent = parent.parent;
-                return fg;
-            })();
-            if (!groupForFlow){
-                if (getMyDebug()){
-                    consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
-                }
-                // try to get symbol and defeault type
-                switch (expr.kind){
-                    case SyntaxKind.Identifier:{
-                        const getResolvedSymbol = sourceFileMrState.mrState.checker.getResolvedSymbol;
-                        const getTypeOfSymbol = sourceFileMrState.mrState.checker.getTypeOfSymbol;
-                        const symbol = getResolvedSymbol(expr as Identifier);
-                        const tstype = getTypeOfSymbol(symbol);
-                        return tstype;
-                    }
-                }
-                Debug.fail();
-            }
+        const groupsForFlow = sourceFileMrState.groupsForFlow;
+        const groupForFlow = (()=>{
+            let parent = expr;
+            let fg = groupsForFlow.nodeToGroupMap.get(expr);
+            if (fg) return fg;
+            while (!fg && parent && parent.kind!==SyntaxKind.SourceFile && !(fg=groupsForFlow.nodeToGroupMap.get(parent))) parent = parent.parent;
+            return fg;
+        })();
+        if (!groupForFlow){
             if (getMyDebug()){
-                const maxnode = sourceFileMrState.groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
-                consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, maximalNode: ${dbgs!.dbgNodeToString(maxnode)}`);
+                consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, does not have flowGroup`);
             }
-            /**
-             * If the type for expr is already in groupToNodeToType?.get(groupForFlow)?.get(expr) then return that.
-             * It is likely to be a recursive call via checker.getTypeOfExpression(...), e.g. from "case SyntaxKind.ArrayLiteralExpression"
-             */
-            const cachedType = sourceFileMrState.mrState.forFlowTop.groupToNodeToType?.get(groupForFlow)?.get(expr);
-            if (cachedType) {
-                if (getMyDebug()) consoleLog(`getTypeByMrNarrowAux[dbg]: cache hit`);
-                return cachedType;
+            // TODO: This is almost certainly never taken.
+            Debug.fail("unexpected");
+            switch (expr.kind){
+                case SyntaxKind.Identifier:{
+                    const getResolvedSymbol = sourceFileMrState.mrState.checker.getResolvedSymbol;
+                    const getTypeOfSymbol = sourceFileMrState.mrState.checker.getTypeOfSymbol;
+                    const symbol = getResolvedSymbol(expr as Identifier);
+                    const tstype = getTypeOfSymbol(symbol);
+                    return tstype;
+                }
             }
-            /**
-             * There is a potentional anomoly here because sourceFileMrState.mrState.forFlowTop is passed to a group which may be somewhere inside a loop.
-             * However, normally resolve heap will not (*is not expected to) be called on an group in a loop - those should all be cache hits.
-             */
-            updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState, sourceFileMrState.mrState.forFlowTop);
-            resolveHeap(sourceFileMrState, sourceFileMrState.mrState.forFlowTop, /*withinLoop*/ false);
-            return sourceFileMrState.mrState.forFlowTop.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
+            Debug.fail();
         }
-        finally {
-            sourceFileMrState.mrState.recursionLevel--;
+        if (getMyDebug()){
+            const maxnode = sourceFileMrState.groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+            consoleLog(`getTypeByMrNarrowAux[dbg]: reference: ${dbgs!.dbgNodeToString(expr)}, maximalNode: ${dbgs!.dbgNodeToString(maxnode)}`);
         }
+        /**
+         * If the type for expr is already in groupToNodeToType?.get(groupForFlow)?.get(expr) then return that.
+         * It is likely to be a recursive call via checker.getTypeOfExpression(...), e.g. from "case SyntaxKind.ArrayLiteralExpression"
+         */
+        const cachedType = sourceFileMrState.mrState.forFlowTop.groupToNodeToType?.get(groupForFlow)?.get(expr);
+        if (cachedType) {
+            if (getMyDebug()) consoleLog(`getTypeByMrNarrowAux[dbg]: cache hit`);
+            return cachedType;
+        }
+        Debug.assert(sourceFileMrState.mrState.recursionLevel===0,"expected sourceFileMrState.mrState.recursionLevel===0");
+        sourceFileMrState.mrState.recursionLevel++;
+        updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState, sourceFileMrState.mrState.forFlowTop);
+        resolveHeap(sourceFileMrState, sourceFileMrState.mrState.forFlowTop, /*withinLoop*/ false);
+        sourceFileMrState.mrState.recursionLevel--;
+        return sourceFileMrState.mrState.forFlowTop.groupToNodeToType?.get(groupForFlow)?.get(expr) ?? sourceFileMrState.mrState.checker.getNeverType();
 
     }
     function dbgNodeToTypeMap(map: Readonly<NodeToTypeMap>): string[] {
