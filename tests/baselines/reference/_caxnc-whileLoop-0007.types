@@ -19,7 +19,6 @@ function t7(){
 >d : boolean
 >true : true
 
-    // @ts-dev-expect-string "loopCount:4, invocations:1"
     while (d){
 >d : boolean
 

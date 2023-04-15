@@ -2,6 +2,8 @@
 // @mrNarrowConstraintsEnable: false
 // @strict: true
 // @declaration: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 // declare function f(x:1,y:1): 1;
 // declare function f(x:2,y:2): 2;

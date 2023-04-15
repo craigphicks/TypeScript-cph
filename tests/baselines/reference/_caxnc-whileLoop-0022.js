@@ -4,7 +4,7 @@ function t22(){
     let b = true;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
+
     while (d){
         d = c;
         c = b;
@@ -22,7 +22,6 @@ function t22() {
     var b = true;
     var c = true;
     var d = true;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (d) {
         d = c;
         c = b;

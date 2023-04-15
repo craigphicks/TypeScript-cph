@@ -1,0 +1,165 @@
+=== tests/cases/conformance/_caxnc/_caxnc-eqneq-0113.ts ===
+// declare function f(x:1,y:1): 1;
+// declare function f(x:2,y:2): 2;
+// declare function f(x:3,y:3): 2;
+
+declare const a: 1|2|3;
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+
+declare const b: 2|3|4;
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+
+declare const c: 3|4|5;
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+const aeqb=a===b;
+>aeqb : Symbol(aeqb, Decl(_caxnc-eqneq-0113.ts, 7, 5))
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+
+const beqc=b===c;
+>beqc : Symbol(beqc, Decl(_caxnc-eqneq-0113.ts, 8, 5))
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+const aeqc=a===c;
+>aeqc : Symbol(aeqc, Decl(_caxnc-eqneq-0113.ts, 9, 5))
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+if (aeqb&&beqc)
+>aeqb : Symbol(aeqb, Decl(_caxnc-eqneq-0113.ts, 7, 5))
+>beqc : Symbol(beqc, Decl(_caxnc-eqneq-0113.ts, 8, 5))
+{
+    aeqb;
+>aeqb : Symbol(aeqb, Decl(_caxnc-eqneq-0113.ts, 7, 5))
+
+    beqc;
+>beqc : Symbol(beqc, Decl(_caxnc-eqneq-0113.ts, 8, 5))
+
+    aeqc;
+>aeqc : Symbol(aeqc, Decl(_caxnc-eqneq-0113.ts, 9, 5))
+
+    a;
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+
+    c;
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+    let x1 = a===b;
+>x1 : Symbol(x1, Decl(_caxnc-eqneq-0113.ts, 19, 7))
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+
+    let y1 = b===c;
+>y1 : Symbol(y1, Decl(_caxnc-eqneq-0113.ts, 20, 7))
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+    let z1 = a===c;
+>z1 : Symbol(z1, Decl(_caxnc-eqneq-0113.ts, 21, 7))
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+    x1;
+>x1 : Symbol(x1, Decl(_caxnc-eqneq-0113.ts, 19, 7))
+
+    y1;
+>y1 : Symbol(y1, Decl(_caxnc-eqneq-0113.ts, 20, 7))
+
+    z1;
+>z1 : Symbol(z1, Decl(_caxnc-eqneq-0113.ts, 21, 7))
+}
+else {
+    aeqb;
+>aeqb : Symbol(aeqb, Decl(_caxnc-eqneq-0113.ts, 7, 5))
+
+    beqc;
+>beqc : Symbol(beqc, Decl(_caxnc-eqneq-0113.ts, 8, 5))
+
+    aeqc;
+>aeqc : Symbol(aeqc, Decl(_caxnc-eqneq-0113.ts, 9, 5))
+
+    a;
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+
+    c;
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+    let x2 = a===b;
+>x2 : Symbol(x2, Decl(_caxnc-eqneq-0113.ts, 33, 7))
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+
+    let y2 = b===c;
+>y2 : Symbol(y2, Decl(_caxnc-eqneq-0113.ts, 34, 7))
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+    let z2 = a===c;
+>z2 : Symbol(z2, Decl(_caxnc-eqneq-0113.ts, 35, 7))
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+    x2;
+>x2 : Symbol(x2, Decl(_caxnc-eqneq-0113.ts, 33, 7))
+
+    y2;
+>y2 : Symbol(y2, Decl(_caxnc-eqneq-0113.ts, 34, 7))
+
+    z2;
+>z2 : Symbol(z2, Decl(_caxnc-eqneq-0113.ts, 35, 7))
+
+    if (aeqc){
+>aeqc : Symbol(aeqc, Decl(_caxnc-eqneq-0113.ts, 9, 5))
+
+        aeqb;
+>aeqb : Symbol(aeqb, Decl(_caxnc-eqneq-0113.ts, 7, 5))
+
+        beqc;
+>beqc : Symbol(beqc, Decl(_caxnc-eqneq-0113.ts, 8, 5))
+
+        aeqc;
+>aeqc : Symbol(aeqc, Decl(_caxnc-eqneq-0113.ts, 9, 5))
+
+        a;
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+
+        b;
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+
+        c;
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+        let x3 = a===b;
+>x3 : Symbol(x3, Decl(_caxnc-eqneq-0113.ts, 46, 11))
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+
+        let y3 = b===c;
+>y3 : Symbol(y3, Decl(_caxnc-eqneq-0113.ts, 47, 11))
+>b : Symbol(b, Decl(_caxnc-eqneq-0113.ts, 5, 13))
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+        let z3 = a===c;
+>z3 : Symbol(z3, Decl(_caxnc-eqneq-0113.ts, 48, 11))
+>a : Symbol(a, Decl(_caxnc-eqneq-0113.ts, 4, 13))
+>c : Symbol(c, Decl(_caxnc-eqneq-0113.ts, 6, 13))
+
+        x3;
+>x3 : Symbol(x3, Decl(_caxnc-eqneq-0113.ts, 46, 11))
+
+        y3;
+>y3 : Symbol(y3, Decl(_caxnc-eqneq-0113.ts, 47, 11))
+
+        z3;
+>z3 : Symbol(z3, Decl(_caxnc-eqneq-0113.ts, 48, 11))
+    }
+}
+

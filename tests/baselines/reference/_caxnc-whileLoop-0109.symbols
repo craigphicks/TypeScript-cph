@@ -1,0 +1,51 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0109.ts ===
+function t9(){
+>t9 : Symbol(t9, Decl(_caxnc-whileLoop-0109.ts, 0, 0))
+
+    let b = true;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0109.ts, 1, 7))
+
+    let c = true;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0109.ts, 2, 7))
+
+    let d = true;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0109.ts, 3, 7))
+
+    while (d){
+>d : Symbol(d, Decl(_caxnc-whileLoop-0109.ts, 3, 7))
+
+        d = c;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0109.ts, 3, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0109.ts, 2, 7))
+
+        c = b;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0109.ts, 2, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0109.ts, 1, 7))
+
+        b;c;d; // expecting true,true,boolean
+>b : Symbol(b, Decl(_caxnc-whileLoop-0109.ts, 1, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0109.ts, 2, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0109.ts, 3, 7))
+
+        [b,c,d]; // expecting [true,true,boolean] 
+>b : Symbol(b, Decl(_caxnc-whileLoop-0109.ts, 1, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0109.ts, 2, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0109.ts, 3, 7))
+    }
+    let e = b;
+>e : Symbol(e, Decl(_caxnc-whileLoop-0109.ts, 10, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0109.ts, 1, 7))
+
+    b;c;d;e; // expecting true,true,false,true
+>b : Symbol(b, Decl(_caxnc-whileLoop-0109.ts, 1, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0109.ts, 2, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0109.ts, 3, 7))
+>e : Symbol(e, Decl(_caxnc-whileLoop-0109.ts, 10, 7))
+
+    [b,c,d,e]; // expecting true,true,false,true
+>b : Symbol(b, Decl(_caxnc-whileLoop-0109.ts, 1, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0109.ts, 2, 7))
+>d : Symbol(d, Decl(_caxnc-whileLoop-0109.ts, 3, 7))
+>e : Symbol(e, Decl(_caxnc-whileLoop-0109.ts, 10, 7))
+}
+

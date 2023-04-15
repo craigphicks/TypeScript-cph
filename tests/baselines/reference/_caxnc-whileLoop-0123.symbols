@@ -1,0 +1,53 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0123.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0123.ts, 0, 0))
+
+function t23(){
+>t23 : Symbol(t23, Decl(_caxnc-whileLoop-0123.ts, 0, 34))
+
+    let b = false;
+>b : Symbol(b, Decl(_caxnc-whileLoop-0123.ts, 2, 7))
+
+    let c = true;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0123.ts, 3, 7))
+
+    let d = true;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0123.ts, 4, 7))
+
+    let x = false;
+>x : Symbol(x, Decl(_caxnc-whileLoop-0123.ts, 5, 7))
+
+
+    while (d){
+>d : Symbol(d, Decl(_caxnc-whileLoop-0123.ts, 4, 7))
+
+        if (c && maybe()){
+>c : Symbol(c, Decl(_caxnc-whileLoop-0123.ts, 3, 7))
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0123.ts, 0, 0))
+
+            x = true; // gets set on iteration #0 only
+>x : Symbol(x, Decl(_caxnc-whileLoop-0123.ts, 5, 7))
+
+            break;
+        }
+        d = c;
+>d : Symbol(d, Decl(_caxnc-whileLoop-0123.ts, 4, 7))
+>c : Symbol(c, Decl(_caxnc-whileLoop-0123.ts, 3, 7))
+
+        c = b;
+>c : Symbol(c, Decl(_caxnc-whileLoop-0123.ts, 3, 7))
+>b : Symbol(b, Decl(_caxnc-whileLoop-0123.ts, 2, 7))
+    }
+    x; // x should be boolean - if (c && maybe()) "then" branches for each iteration need to "union" joined
+>x : Symbol(x, Decl(_caxnc-whileLoop-0123.ts, 5, 7))
+
+    b; // b should be false
+>b : Symbol(b, Decl(_caxnc-whileLoop-0123.ts, 2, 7))
+
+    c; // c should be boolean - ditto
+>c : Symbol(c, Decl(_caxnc-whileLoop-0123.ts, 3, 7))
+
+    d; // d should be boolean - ditto
+>d : Symbol(d, Decl(_caxnc-whileLoop-0123.ts, 4, 7))
+}
+

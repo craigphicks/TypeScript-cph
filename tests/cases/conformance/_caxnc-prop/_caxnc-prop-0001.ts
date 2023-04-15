@@ -3,6 +3,8 @@
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 declare type X = {
     foo: boolean;

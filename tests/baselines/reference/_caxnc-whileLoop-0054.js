@@ -7,10 +7,10 @@
 
 function t54(){
     let d1 = 0;
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
+
     while (true){
         let d2 = 0;
-        // @ts-dev-expect-string "loopCount:2, invocations:3"
+
         while (true){
             if (d2===0) d2=1;
             else if (d2===1) d2=2;
@@ -42,10 +42,8 @@ function t54(){
 // declare function next(d:D): D;
 function t54() {
     var d1 = 0;
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
     while (true) {
         var d2 = 0;
-        // @ts-dev-expect-string "loopCount:2, invocations:3"
         while (true) {
             if (d2 === 0)
                 d2 = 1;

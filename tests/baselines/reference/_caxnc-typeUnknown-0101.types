@@ -1,0 +1,30 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0101.ts ===
+declare const x: unknown;
+>x : unknown
+
+let a = 1;
+>a : number
+>1 : 1
+
+const b = 2;
+>b : 2
+>2 : 2
+
+let u = x;
+>u : unknown
+>x : unknown
+
+u;
+>u : unknown
+
+a;
+>a : number
+
+b;
+>b : 2
+
+
+
+
+
+

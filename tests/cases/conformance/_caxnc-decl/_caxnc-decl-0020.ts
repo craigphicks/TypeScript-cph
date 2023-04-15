@@ -3,6 +3,8 @@
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 function decl0020(){
     type X = 0|1|2;

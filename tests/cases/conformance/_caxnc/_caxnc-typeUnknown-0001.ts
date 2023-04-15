@@ -2,6 +2,8 @@
 // @mrNarrowConstraintsEnable: false
 // @strict: true
 // @declaration: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 declare const x: unknown;
 let a = 1;

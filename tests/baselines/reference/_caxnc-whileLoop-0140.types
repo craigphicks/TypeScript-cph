@@ -1,0 +1,18 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0140.ts ===
+function t40(){
+>t40 : () => void
+
+    let d1 = 0;
+>d1 : number
+>0 : 0
+
+    while (true){
+>true : true
+
+        d1;
+>d1 : number
+    }
+    d1;
+>d1 : never
+}
+

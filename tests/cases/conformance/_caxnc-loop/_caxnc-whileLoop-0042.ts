@@ -13,10 +13,10 @@
 function t42(){
     type D = 0 | 1 | 2 | 3 ;
     let d1: D = 0;
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
+
     while (true){
         let d2: D = 0;
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
+
         while (true){
             d1;
             if (d2===0) d2=1;

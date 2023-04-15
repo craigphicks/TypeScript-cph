@@ -6,7 +6,6 @@ function t52(){
 >d1 : number
 >0 : 0
 
-    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (true){
 >true : true
 
@@ -17,7 +16,6 @@ function t52(){
         d2;
 >d2 : 0
 
-        // @ts-dev-expect-string "loopCount:2, invocations:3"
         while (true){
 >true : true
 

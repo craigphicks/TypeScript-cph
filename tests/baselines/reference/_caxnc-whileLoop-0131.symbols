@@ -1,0 +1,25 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0131.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0131.ts, 0, 0))
+
+function t31(){
+>t31 : Symbol(t31, Decl(_caxnc-whileLoop-0131.ts, 0, 34))
+
+    let b1 = true;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0131.ts, 2, 7))
+
+    let b2 = true;
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0131.ts, 3, 7))
+
+    while (b1){
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0131.ts, 2, 7))
+
+        b1;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0131.ts, 2, 7))
+
+        while (b2){
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0131.ts, 3, 7))
+        }
+    }
+}
+

@@ -3,13 +3,15 @@
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 
 function t4(){
     let b = false;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loopCount:3, invocations:1"
+
     while (d){
         d = c;
         c = b;

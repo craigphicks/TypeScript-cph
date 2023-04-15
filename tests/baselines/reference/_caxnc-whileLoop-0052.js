@@ -1,11 +1,11 @@
 //// [_caxnc-whileLoop-0052.ts]
 function t52(){
     let d1 = 0;
-    // @ts-dev-expect-string "loopCount:2, invocations:1"
+
     while (true){
         let d2 = 0;
         d2;
-        // @ts-dev-expect-string "loopCount:2, invocations:3"
+
         while (true){
             d1;
             if (d2===0) d2=1;
@@ -33,11 +33,9 @@ function t52(){
 "use strict";
 function t52() {
     var d1 = 0;
-    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (true) {
         var d2 = 0;
         d2;
-        // @ts-dev-expect-string "loopCount:2, invocations:3"
         while (true) {
             d1;
             if (d2 === 0)

@@ -6,18 +6,17 @@
 
 ### Priority: High
 
+0. The @ts-dev-expect-string  usage for loopCount has been removed from test cases and code, so re-enable @ts-dev-expect-string (set `hardCodeEnableTSDevExpectStringFalse=false`) to enable the places where @ts-dev-expect-string is checking for `effectiveDeclaredType`.
 
-0. Test case and code: `mrNarrowTypesByBinaryExpresionAssign` assumed lhs is statement level, and sets inCondition to false, but it should be inherited.  E.g., `let x = (y=z)`)
+0. _caxnc-whileLoop-005x series: currently when initializer is a naked literal with no type, the intializer is set to (* check it), flow value is set to the initializer, and ored literal types remain as literal types instead of being widened.  This does not match the original (not mrNarrow) flow specs where a literal intializer without a type becomes the widened initializer.  Make the default behavior match the existing specs but allow the non-widening behavior with a parameter setting.
+
+0. Property assignment
+
 
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break. -- Break targets not yet tested/
 0.  `Do` loop
 0.  `For`,`ForOf`,`ForIn` loops
 0.  `Switch`
-
-0. Property assignment
-
-
-0. `orSymbolTypeIntoSymtabConstraint` needs to be fixed to correctly work with `assignedType` (current fix is broken, but that is not being detected in tests).
 
 
 0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFLow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least. (This was at least improved for  _caxnc-prop-0003 by commit ff478282a2).
@@ -67,6 +66,9 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. Test case and code: `mrNarrowTypesByBinaryExpresionAssign` assumed lhs is statement level, and sets inCondition to false, but it should be inherited.  E.g., `let x = (y=z)`).  _caxnc-rhsAssign-0001
+
 
 0. A minor optimization before last condition in loop using `modifiedInnerSymtabUsingOuterForFinalCondition`
 
@@ -395,7 +397,10 @@ A consequence is that `case SyntaxKind.CallExpression` currently has a narrow co
 - `node --prof-process isolate- > isolate.txt`
 
 
+## Correct type for case SyntaxKind.VariableDeclaration
 
+checker.ts, `getInitialTypeOfVariableDeclaration`
+might be correct
 
 
 

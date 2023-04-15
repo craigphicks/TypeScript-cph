@@ -15,7 +15,6 @@ function t42(){
 >d1 : 0 | 1 | 2 | 3
 >0 : 0
 
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
     while (true){
 >true : true
 
@@ -23,7 +22,6 @@ function t42(){
 >d2 : 0 | 1 | 2 | 3
 >0 : 0
 
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
         while (true){
 >true : true
 

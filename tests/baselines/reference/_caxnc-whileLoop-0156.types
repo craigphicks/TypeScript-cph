@@ -1,0 +1,57 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0156.ts ===
+function t56(){
+>t56 : () => void
+
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
+    let d1 = 0;
+>d1 : number
+>0 : 0
+
+    d1;
+>d1 : number
+
+    while (true){
+>true : true
+
+        d1;
+>d1 : number
+
+        if (d1===0){
+>d1===0 : boolean
+>d1 : number
+>0 : 0
+
+            d1 ;
+>d1 : 0
+
+            d1=1;
+>d1=1 : 1
+>d1 : number
+>1 : 1
+
+            d1  ;
+>d1 : number
+        }
+        else if (d1===1) {
+>d1===1 : boolean
+>d1 : number
+>1 : 1
+
+            d1   ;
+>d1 : 1
+
+            break;
+        }
+        else if (d1===999){
+>d1===999 : boolean
+>d1 : number
+>999 : 999
+
+            d1    ;
+>d1 : 999
+        }
+    }
+    d1;
+>d1 : 1
+}
+

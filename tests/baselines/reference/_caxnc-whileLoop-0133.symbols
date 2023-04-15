@@ -1,0 +1,42 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0133.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0133.ts, 0, 0))
+
+function t33(){
+>t33 : Symbol(t33, Decl(_caxnc-whileLoop-0133.ts, 0, 34))
+
+    let b1 = true;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0133.ts, 2, 7))
+
+    let b2 = true;
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0133.ts, 3, 7))
+
+    while (b1){
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0133.ts, 2, 7))
+
+        b1;b2;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0133.ts, 2, 7))
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0133.ts, 3, 7))
+
+        while (b2){
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0133.ts, 3, 7))
+
+            b1;b2;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0133.ts, 2, 7))
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0133.ts, 3, 7))
+
+            if (maybe()) break;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0133.ts, 0, 0))
+        }
+        b1;b2;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0133.ts, 2, 7))
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0133.ts, 3, 7))
+
+        if (maybe()) break;
+>maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0133.ts, 0, 0))
+    }
+    b1;b2;
+>b1 : Symbol(b1, Decl(_caxnc-whileLoop-0133.ts, 2, 7))
+>b2 : Symbol(b2, Decl(_caxnc-whileLoop-0133.ts, 3, 7))
+}
+

@@ -15,13 +15,11 @@ function t42(){
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0042.ts, 8, 7))
 >D : Symbol(D, Decl(_caxnc-whileLoop-0042.ts, 6, 15))
 
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
     while (true){
         let d2: D = 0;
 >d2 : Symbol(d2, Decl(_caxnc-whileLoop-0042.ts, 11, 11))
 >D : Symbol(D, Decl(_caxnc-whileLoop-0042.ts, 6, 15))
 
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
         while (true){
             d1;
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0042.ts, 8, 7))

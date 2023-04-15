@@ -11,7 +11,6 @@ function t4(){
     let d = true;
 >d : Symbol(d, Decl(_caxnc-whileLoop-0004.ts, 3, 7))
 
-    // @ts-dev-expect-string "loopCount:3, invocations:1"
     while (d){
 >d : Symbol(d, Decl(_caxnc-whileLoop-0004.ts, 3, 7))
 

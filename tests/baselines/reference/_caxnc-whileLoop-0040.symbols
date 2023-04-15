@@ -5,7 +5,6 @@ function t40(){
     let d1 = 0;
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0040.ts, 1, 7))
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (true){
         d1;
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0040.ts, 1, 7))

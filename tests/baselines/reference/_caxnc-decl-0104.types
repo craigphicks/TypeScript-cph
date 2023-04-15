@@ -1,0 +1,9 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0104.ts ===
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | number"
+let x: number|string = 1;
+>x : string | number
+>1 : 1
+
+x;
+>x : number
+

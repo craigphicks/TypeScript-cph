@@ -15,28 +15,24 @@ function t46(){
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0046.ts, 8, 7))
 >D : Symbol(D, Decl(_caxnc-whileLoop-0046.ts, 6, 15))
 
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
     while (true){
         let d2: D = d1;
 >d2 : Symbol(d2, Decl(_caxnc-whileLoop-0046.ts, 11, 11))
 >D : Symbol(D, Decl(_caxnc-whileLoop-0046.ts, 6, 15))
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0046.ts, 8, 7))
 
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
         while (true){
             let d3: D = d2;
 >d3 : Symbol(d3, Decl(_caxnc-whileLoop-0046.ts, 14, 15))
 >D : Symbol(D, Decl(_caxnc-whileLoop-0046.ts, 6, 15))
 >d2 : Symbol(d2, Decl(_caxnc-whileLoop-0046.ts, 11, 11))
 
-            // @ts-dev-expect-string "loopCount:10, invocations:12"
             while (true){
                 let d4: D = d3;
 >d4 : Symbol(d4, Decl(_caxnc-whileLoop-0046.ts, 17, 19))
 >D : Symbol(D, Decl(_caxnc-whileLoop-0046.ts, 6, 15))
 >d3 : Symbol(d3, Decl(_caxnc-whileLoop-0046.ts, 14, 15))
 
-                // @ts-dev-expect-string "loopCount:13, invocations:22"
                 while (true){
                     d1; d2; d3; d4;
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0046.ts, 8, 7))

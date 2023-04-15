@@ -6,7 +6,7 @@ function t5(){
     let b = true;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loopCount:4, invocations:1"
+
     while (d){
         d = c;
         c = b;
@@ -23,7 +23,6 @@ function t5() {
     var b = true;
     var c = true;
     var d = true;
-    // @ts-dev-expect-string "loopCount:4, invocations:1"
     while (d) {
         d = c;
         c = b;

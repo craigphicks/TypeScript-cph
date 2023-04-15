@@ -6,7 +6,6 @@ function t40(){
 >d1 : number
 >0 : 0
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (true){
 >true : true
 

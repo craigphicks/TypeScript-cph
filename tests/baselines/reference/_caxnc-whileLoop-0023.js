@@ -6,7 +6,7 @@ function t23(){
     let d = true;
     let x = false;
 
-    // @ ts-dev-expect-string "loopCount:1, invocations:1"
+
     while (d){
         if (c && maybe()){
             x = true; // gets set on iteration #0 only
@@ -29,7 +29,6 @@ function t23() {
     var c = true;
     var d = true;
     var x = false;
-    // @ ts-dev-expect-string "loopCount:1, invocations:1"
     while (d) {
         if (c && maybe()) {
             x = true; // gets set on iteration #0 only

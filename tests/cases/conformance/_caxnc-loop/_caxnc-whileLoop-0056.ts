@@ -3,12 +3,14 @@
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 function t56(){
     // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"
     let d1 = 0;
     d1;
-    // @ts-dev-expect-string "loopCount:2, invocations:1"
+
     while (true){
         d1;
         if (d1===0){

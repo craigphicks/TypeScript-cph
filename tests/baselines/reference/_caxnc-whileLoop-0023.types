@@ -21,7 +21,7 @@ function t23(){
 >x : boolean
 >false : false
 
-    // @ ts-dev-expect-string "loopCount:1, invocations:1"
+
     while (d){
 >d : boolean
 

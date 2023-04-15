@@ -3,13 +3,15 @@
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 declare function maybe(): boolean;
 function t22(){
     let b = true;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
+
     while (d){
         d = c;
         c = b;

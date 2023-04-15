@@ -2,7 +2,7 @@
 declare function maybe(): boolean;
 function t20(){
     let b = true;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
+
     while (b){
         if (b) break;
         b = false;
@@ -16,7 +16,6 @@ function t20(){
 "use strict";
 function t20() {
     var b = true;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b) {
         if (b)
             break;

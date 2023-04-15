@@ -9,7 +9,6 @@ function t2(){
     b;
 >b : false
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b){
 >b : false
 

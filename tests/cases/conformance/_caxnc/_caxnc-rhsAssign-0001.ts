@@ -1,3 +1,5 @@
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 function rhsAssign0001(){
     let a = 0;

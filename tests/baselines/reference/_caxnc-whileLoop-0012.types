@@ -18,7 +18,6 @@ function t12(){
 >d : boolean
 >true : true
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (d){
 >d : boolean
 

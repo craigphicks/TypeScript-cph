@@ -1,0 +1,44 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0102.ts ===
+function t2(){
+>t2 : () => void
+
+    let b = false;
+>b : boolean
+>false : false
+
+    b;
+>b : false
+
+    while (b){
+>b : false
+
+        let c = !b;
+>c : boolean
+>!b : boolean
+>b : never
+
+        c;
+>c : never
+
+        let d = b;
+>d : never
+>b : never
+
+        d;
+>d : never
+
+        b = c;
+>b = c : never
+>b : boolean
+>c : never
+    }
+    let e = b;
+>e : false
+>b : false
+
+    e;
+>e : false
+
+    b;
+>b : false
+}

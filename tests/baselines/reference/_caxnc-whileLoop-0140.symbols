@@ -1,0 +1,15 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0140.ts ===
+function t40(){
+>t40 : Symbol(t40, Decl(_caxnc-whileLoop-0140.ts, 0, 0))
+
+    let d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0140.ts, 1, 7))
+
+    while (true){
+        d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0140.ts, 1, 7))
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0140.ts, 1, 7))
+}
+

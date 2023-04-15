@@ -1,0 +1,71 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0153.ts ===
+// declare function next(x:0): 1;
+// declare function next(x:1): 2;
+// declare function next(x:2): 3;
+// declare function next(x:3): 0;
+// declare function next(d:D): D;
+
+function t53(){
+>t53 : Symbol(t53, Decl(_caxnc-whileLoop-0153.ts, 0, 0))
+
+    let d1 = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+
+    while (true){
+        let d2 = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+
+        while (true){
+            d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+
+            if (d2===0) d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+
+            else if (d2===1) d2=2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+
+            else if (d2===2) d2=3;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+
+            else if (d2===3) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+
+                d2=0; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+            }
+        }
+        d2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0153.ts, 10, 11))
+
+        d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+
+        if (d1===0) d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+
+        else if (d1===1) d1=2;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+
+        else if (d1===2) d1=3;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+
+        else if (d1===3) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+
+            d1=0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+
+            break;
+        }
+    }
+    d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0153.ts, 7, 7))
+}
+

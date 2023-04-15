@@ -1,7 +1,7 @@
 //// [_caxnc-whileLoop-0040.ts]
 function t40(){
     let d1 = 0;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
+
     while (true){
         d1;
     }
@@ -13,7 +13,6 @@ function t40(){
 "use strict";
 function t40() {
     var d1 = 0;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (true) {
         d1;
     }

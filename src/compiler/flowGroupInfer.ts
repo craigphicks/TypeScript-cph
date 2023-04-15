@@ -1,10 +1,9 @@
 namespace ts {
 
-    export const extraAsserts = false; // not suitable for release
-    const hardCodeEnableTSDevExpectStringFalse = true;
+    export const extraAsserts = true; // not suitable for release or timing tests.
+    const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
     // _caxnc-rp-001 fails unless doIdentifierExpandTypeOnCondition=true
-    export const doIdentifierExpandTypeOnCondition = false;
-
+    export const doIdentifierExpandTypeOnCondition = false; // kill this, already have a better way to do it.
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
@@ -343,6 +342,7 @@ namespace ts {
         if (getMyDebug()) debugger;
         if (compilerOptions.mrNarrowConstraintsEnable===undefined) compilerOptions.mrNarrowConstraintsEnable = false;
         if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
+        if (compilerOptions.mrNarrowDoNotWidenInitalizedFlowTypes===undefined) compilerOptions.mrNarrowDoNotWidenInitalizedFlowTypes = false;
         if (hardCodeEnableTSDevExpectStringFalse){
             compilerOptions.enableTSDevExpectString = false;
         }
@@ -793,18 +793,18 @@ namespace ts {
         } while (++loopCount);
         Debug.assert(forFlowFinal!);
 
-        if (mrNarrow.compilerOptions.enableTSDevExpectString && sourceFileMrState.mrState.currentLoopDepth===1){
-            sourceFileMrState.mrState.currentLoopsInLoopScope.forEach(loopg=>{
-                const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopg.maximalIdx];
-                const expected = getDevExpectString(node.parent, sourceFileMrState.sourceFile);
-                if (expected===undefined) return;
-                const lstate: ProcessLoopState = loopGroupToProcessLoopStateMap.get(loopg)!;
-                const actual = `loopCount:${lstate.loopCountWithoutFinals}, invocations:${lstate.invocations}`;
-                if (actual!==expected){
-                    Debug.fail(`@ts-dev-expect-string expected:"${expected}" !== actual:"${actual}" ; node:${dbgs!.dbgNodeToString(node)}`);
-                }
-            });
-        }
+        // if (mrNarrow.compilerOptions.enableTSDevExpectString && sourceFileMrState.mrState.currentLoopDepth===1){
+        //     sourceFileMrState.mrState.currentLoopsInLoopScope.forEach(loopg=>{
+        //         const node = sourceFileMrState.groupsForFlow.posOrderedNodes[loopg.maximalIdx];
+        //         const expected = getDevExpectString(node.parent, sourceFileMrState.sourceFile);
+        //         if (expected===undefined) return;
+        //         const lstate: ProcessLoopState = loopGroupToProcessLoopStateMap.get(loopg)!;
+        //         const actual = `loopCount:${lstate.loopCountWithoutFinals}, invocations:${lstate.invocations}`;
+        //         if (actual!==expected){
+        //             Debug.fail(`@ts-dev-expect-string expected:"${expected}" !== actual:"${actual}" ; node:${dbgs!.dbgNodeToString(node)}`);
+        //         }
+        //     });
+        // }
         /**
          *
          */

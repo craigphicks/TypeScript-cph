@@ -2,6 +2,8 @@
 // @mrNarrowConstraintsEnable: false
 // @strict: true
 // @declaration: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 // This loop terminates at 1 iteration
 function t6(){

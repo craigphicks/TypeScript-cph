@@ -9,7 +9,6 @@ function t56(){
     d1;
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0056.ts, 2, 7))
 
-    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (true){
         d1;
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0056.ts, 2, 7))

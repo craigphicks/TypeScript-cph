@@ -1,0 +1,89 @@
+=== tests/cases/conformance/_caxnc/_caxnc-rhsAssign-0101.ts ===
+function rhsAssign0001(){
+>rhsAssign0001 : () => void
+
+    let a = 0;
+>a : number
+>0 : 0
+
+    let b = (a = 1);
+>b : number
+>(a = 1) : 1
+>a = 1 : 1
+>a : number
+>1 : 1
+
+    a;b; // expecting 1,1
+>a : number
+>b : number
+}
+
+function rhsAssign0002(){
+>rhsAssign0002 : () => void
+
+    let a = 0;
+>a : number
+>0 : 0
+
+    let b = (a = 1);
+>b : number
+>(a = 1) : 1
+>a = 1 : 1
+>a : number
+>1 : 1
+
+    let c = (b=(a = 2));
+>c : number
+>(b=(a = 2)) : 2
+>b=(a = 2) : 2
+>b : number
+>(a = 2) : 2
+>a = 2 : 2
+>a : number
+>2 : 2
+
+    a;b;c; // expecting 2,2,2
+>a : number
+>b : number
+>c : number
+}
+
+function rhsAssign0003(){
+>rhsAssign0003 : () => void
+
+    let a=1,b=2,c=3,t=0;
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+>c : number
+>3 : 3
+>t : number
+>0 : 0
+
+    let x = [a,b,c,t=a,a=b,b=c,c=t,t=0] as const;
+>x : readonly [number, number, number, number, number, number, number, 0]
+>[a,b,c,t=a,a=b,b=c,c=t,t=0] as const : readonly [number, number, number, number, number, number, number, 0]
+>[a,b,c,t=a,a=b,b=c,c=t,t=0] : readonly [number, number, number, number, number, number, number, 0]
+>a : number
+>b : number
+>c : number
+>t=a : number
+>t : number
+>a : number
+>a=b : number
+>a : number
+>b : number
+>b=c : number
+>b : number
+>c : number
+>c=t : number
+>c : number
+>t : number
+>t=0 : 0
+>t : number
+>0 : 0
+
+    x; // expecting [1,2,3,1,2,3,1,0]
+>x : readonly [number, number, number, number, number, number, number, 0]
+}

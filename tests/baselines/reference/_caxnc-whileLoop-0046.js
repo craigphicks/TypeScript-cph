@@ -8,16 +8,16 @@
 function t46(){
     type D = 0 | 1 | 2 | 3 | 4 | 5;
     let d1: D = 0;
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
+
     while (true){
         let d2: D = d1;
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
+
         while (true){
             let d3: D = d2;
-            // @ts-dev-expect-string "loopCount:10, invocations:12"
+
             while (true){
                 let d4: D = d3;
-                // @ts-dev-expect-string "loopCount:13, invocations:22"
+
                 while (true){
                     d1; d2; d3; d4;
                     if (d4===3) {
@@ -85,16 +85,12 @@ function t46(){
 // declare function next(d:D): D;
 function t46() {
     var d1 = 0;
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
     while (true) {
         var d2 = d1;
-        // @ts-dev-expect-string "loopCount:7, invocations:5"
         while (true) {
             var d3 = d2;
-            // @ts-dev-expect-string "loopCount:10, invocations:12"
             while (true) {
                 var d4 = d3;
-                // @ts-dev-expect-string "loopCount:13, invocations:22"
                 while (true) {
                     d1;
                     d2;

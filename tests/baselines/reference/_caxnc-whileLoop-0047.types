@@ -10,7 +10,6 @@ function t47(){
     d1;
 >d1 : 0
 
-    // @ts-dev-expect-string "loopCount:2, invocations:1"
     while (true){
 >true : true
 

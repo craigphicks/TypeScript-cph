@@ -8,7 +8,6 @@ function t2(){
     b;
 >b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 1, 7))
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b){
 >b : Symbol(b, Decl(_caxnc-whileLoop-0002.ts, 1, 7))
 

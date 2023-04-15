@@ -8,7 +8,6 @@ function t20(){
     let b = true;
 >b : Symbol(b, Decl(_caxnc-whileLoop-0020.ts, 2, 7))
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b){
 >b : Symbol(b, Decl(_caxnc-whileLoop-0020.ts, 2, 7))
 

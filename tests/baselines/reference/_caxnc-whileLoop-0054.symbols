@@ -11,12 +11,10 @@ function t54(){
     let d1 = 0;
 >d1 : Symbol(d1, Decl(_caxnc-whileLoop-0054.ts, 7, 7))
 
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
     while (true){
         let d2 = 0;
 >d2 : Symbol(d2, Decl(_caxnc-whileLoop-0054.ts, 10, 11))
 
-        // @ts-dev-expect-string "loopCount:2, invocations:3"
         while (true){
             if (d2===0) d2=1;
 >d2 : Symbol(d2, Decl(_caxnc-whileLoop-0054.ts, 10, 11))

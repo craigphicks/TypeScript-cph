@@ -1,0 +1,12 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0103.ts ===
+declare const b: boolean;
+>b : Symbol(b, Decl(_caxnc-decl-0103.ts, 0, 13))
+
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number[]"
+let x = [b?1:1];
+>x : Symbol(x, Decl(_caxnc-decl-0103.ts, 2, 3))
+>b : Symbol(b, Decl(_caxnc-decl-0103.ts, 0, 13))
+
+x;
+>x : Symbol(x, Decl(_caxnc-decl-0103.ts, 2, 3))
+

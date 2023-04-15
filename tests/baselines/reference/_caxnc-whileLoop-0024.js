@@ -4,7 +4,7 @@ function t24(){
     let b = true;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
+
     while (d){
         c = b;
         d = c;
@@ -25,7 +25,6 @@ function t24() {
     var b = true;
     var c = true;
     var d = true;
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (d) {
         c = b;
         d = c;

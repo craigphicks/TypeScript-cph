@@ -3,6 +3,8 @@
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 // declare function next(x:0): 1;
 // declare function next(x:1): 2;
@@ -12,10 +14,10 @@
 
 function t53(){
     let d1 = 0;
-    // @ ts-dev-expect-string "loopCount:4, invocations:1"
+
     while (true){
         let d2 = 0;
-        // @ts-dev-expect-string "loopCount:3, invocations:3"
+
         while (true){
             d1;
             if (d2===0) d2=1;

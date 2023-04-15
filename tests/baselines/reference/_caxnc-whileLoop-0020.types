@@ -9,7 +9,6 @@ function t20(){
 >b : boolean
 >true : true
 
-    // @ts-dev-expect-string "loopCount:1, invocations:1"
     while (b){
 >b : true
 

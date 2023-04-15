@@ -1,0 +1,70 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0124.ts ===
+declare function maybe(): boolean;
+>maybe : () => boolean
+
+function t24(){
+>t24 : () => void
+
+    let b = true;
+>b : boolean
+>true : true
+
+    let c = true;
+>c : boolean
+>true : true
+
+    let d = true;
+>d : boolean
+>true : true
+
+    while (d){
+>d : true
+
+        c = b;
+>c = b : true
+>c : boolean
+>b : true
+
+        d = c;
+>d = c : true
+>d : boolean
+>c : true
+
+        b;c;d;
+>b : true
+>c : true
+>d : true
+
+        b = maybe();
+>b = maybe() : boolean
+>b : boolean
+>maybe() : boolean
+>maybe : () => boolean
+
+        if (!b) break;
+>!b : boolean
+>b : boolean
+
+        b;c;d;
+>b : true
+>c : true
+>d : true
+    }
+    let e = b;
+>e : false
+>b : false
+
+    b;c;d;e;
+>b : false
+>c : true
+>d : true
+>e : false
+
+    [b,c,d,e];
+>[b,c,d,e] : boolean[]
+>b : false
+>c : true
+>d : true
+>e : false
+}
+

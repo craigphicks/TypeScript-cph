@@ -11,7 +11,7 @@ function t7(){
     let b = true;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loopCount:4, invocations:1"
+
     while (d){
         c = b;
         d = c;

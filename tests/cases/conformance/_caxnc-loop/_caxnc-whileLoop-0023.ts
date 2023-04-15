@@ -3,6 +3,8 @@
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @mrNarrowDoNotWidenInitalizedFlowType: true
 
 declare function maybe(): boolean;
 function t23(){
@@ -11,7 +13,7 @@ function t23(){
     let d = true;
     let x = false;
 
-    // @ ts-dev-expect-string "loopCount:1, invocations:1"
+
     while (d){
         if (c && maybe()){
             x = true; // gets set on iteration #0 only

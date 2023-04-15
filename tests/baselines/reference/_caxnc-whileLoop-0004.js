@@ -3,7 +3,7 @@ function t4(){
     let b = false;
     let c = true;
     let d = true;
-    // @ts-dev-expect-string "loopCount:3, invocations:1"
+
     while (d){
         d = c;
         c = b;
@@ -23,7 +23,6 @@ function t4() {
     var b = false;
     var c = true;
     var d = true;
-    // @ts-dev-expect-string "loopCount:3, invocations:1"
     while (d) {
         d = c;
         c = b;
