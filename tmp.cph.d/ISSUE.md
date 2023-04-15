@@ -9,8 +9,6 @@
 
 0. Test case and code: `mrNarrowTypesByBinaryExpresionAssign` assumed lhs is statement level, and sets inCondition to false, but it should be inherited.  E.g., `let x = (y=z)`)
 
-0. _fixme-whileLoop-0007 last array in loop not getting flowed properly
-
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break. -- Break targets not yet tested/
 0.  `Do` loop
 0.  `For`,`ForOf`,`ForIn` loops
@@ -18,12 +16,11 @@
 
 0. Property assignment
 
-0. In `SyntaxKind.Identifer` try setting groupNodeToTypeMap to `undefined` (optimization).
 
 0. `orSymbolTypeIntoSymtabConstraint` needs to be fixed to correctly work with `assignedType` (current fix is broken, but that is not being detected in tests).
 
 
-0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFLow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least.
+0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFLow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least. (This was at least improved for  _caxnc-prop-0003 by commit ff478282a2).
 
 
 0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
