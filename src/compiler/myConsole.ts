@@ -103,7 +103,8 @@ namespace ts {
     }
     export function createDbgs(checker: TypeChecker): Dbgs{
         const dbgGetNodeText = (node: Node)=>{
-            return ((node as any).getText && node.pos>=0) ? (node as any).getText() : (node as Identifier).escapedText??"";
+            return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
+            //return ((node as any).getText && node.pos>=0) ? (node as any).getText() : (node as Identifier).escapedText??"";
         };
         const dbgFlowToString = (flow: FlowNode | undefined, withAntecedants?: boolean): string => {
             if (!flow) return "<undef>";

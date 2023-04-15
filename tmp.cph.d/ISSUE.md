@@ -6,61 +6,40 @@
 
 ### Priority: High
 
-0. Within loops, during invocations===0, does the node to type map neeed to be set?  For variable declarations which will become a replay, yes, because the non-const node values are required for the replay.
+
+0. Test case and code: `mrNarrowTypesByBinaryExpresionAssign` assumed lhs is statement level, and sets inCondition to false, but it should be inherited.  E.g., `let x = (y=z)`)
+
+0. _fixme-whileLoop-0007 last array in loop not getting flowed properly
+
+0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break. -- Break targets not yet tested/
+0.  `Do` loop
+0.  `For`,`ForOf`,`ForIn` loops
+0.  `Switch`
+
+0. Property assignment
 
 0. In `SyntaxKind.Identifer` try setting groupNodeToTypeMap to `undefined` (optimization).
 
 0. `orSymbolTypeIntoSymtabConstraint` needs to be fixed to correctly work with `assignedType` (current fix is broken, but that is not being detected in tests).
 
-0. `mrNarrowTypesByBinaryExpresionAssign` assumed lhs is statement level, and sets inCondition to false, but it should be inherited.
 
 0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFLow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least.
 
-0. [proxySymtabSqueezing] Dev todo's:
-
-    0. The `_caxnc-whileLoop-005*` series of tests use literal assigments without explcit typing.  These are currently automatically accumulated as unions of literals at no extra cost in terms of statement complexity, although of course it makes the types larger.  The could be seen as a feature, but it is probably better to enable with a compiler option and make the default a merger to the corresponding non-literal types.
-
-    0. The test file `_fixme-whileLoop-0007` is failing probably because the flow linkages are not including the final literal array in the body as depend statement in the loop.
-
-    0. `isAssign`, and various other dead fields need to be cleaned up.
-
-    0. All the different flavors of conditions need to be implemented - DoStatement, WhileStatement, ForStatement, ForInStatement, ForOfStatement,
-
-    0. Accuracy can be improved by utilizing logical constraints - but that is a priority lower than being able to compile all tests and build tsc.
-
-    0. Need to check timing - overhead is likely to be higher than existing flow algorithm, but the strict O(N) complexity is a plus.
-
-    0. existing test file `controlFlowIterationErrors` contains only `while` loop syntax, try it out.
 
 0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
 
-0. "loop convergence speedup"
-    0. When inside a loop, flow type should be widened instead of becoming union of literals (excepting explicit literal union types, which can be discerned from `symbolFlowInfo.typeNodeTsType` and sometimes from `symbolFlowInfo.initializerType`).  Outside of loops, might be OK to remain a union of literals - not much cost involved, often free.
 
-0. There exists code where `isASubsetOfB(x,y) && isASubsetOfB(y,x)` should be replaced by `equalRefTypesRef(x,y)`.
-
-0. A plan to limit unnecesary re-computations without buffering whole copies of the symbol table per group.
-
-    0. For each group, in the grouping stage construct a symbol to type map: `rhsSymbolToTypeMap` for the input types, with initial type value set to never.  Before re-computing the group, check input symbol table against `rhsSymbolToTypeMap`, and if for each symbol in `rhsSymbolToTypeMap` the types in the input symbol table are equal, the re-computation can be skipped.  Otherwise, update the value of `rhsSymbolToTypeMap` to union the input type before recomputation.
-
-    0. For each group, in the grouping stage construct a symbol to node map: `lhsSymbolToTypeMap` for the output types, with intial type value set to never.  In case the re-computation of the group is skipped, then the group re-computation effect can be replaced by, for each `lhsSymbolToTypeMap` symbol, update the value in the symbol table by the value in `lhsSymbolToTypeMap`. Output types occur under 'truthy' and 'falsy' members for if and loop groups.
-
-    0. This plan does not decrease the number of times a group is accessed, so it does not decrease e.g., the number of loop iterations, or prevent descending an if statement, even if all the enclosed groups will not be re-computed.  In order to achieve that level of efficiency, the enclosed groups maps could be merged a single map for the enclosing group. This is a separate dev step.
-
-    0. If more symbols than are actually involved get extracted during grouping that's ok.  Just have to make sure all those involved are gotten.
-
-
-
-0. Deeper embedded while loop tests to demonstrate exactly what is the looping complexity.
-0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break.
-0.  `Do` loop
-0.  `For`,`ForOf`,`ForIn` loops
-0.  `Switch`
 
 0. `const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));` When `unwidenedTsType` is type true, `checker.getWidenedType(unwidenedTsType)` is still true.
-0. replayables (set to inferStatus.replayables) should not also change the symtabConstraint.
+
+0. Test case and code: When comparing ===, left and/or right are also mutating expressions. E.g., `((a=b)===(c=d))`
+
+
+0. Deconstructed lhs.
 
 ### Priority: Postponed
+
+0. Within loops, during invocations===0, does the node to type map neeed to be set?  For variable declarations which will become a replay, yes, because the non-const node values are required for the replay. Node map setting does not take much time.
 
 0. The nodes of lhs of declarations and assignments are not included in node to type maps.  Could they be?
 1. During grouping, collect the symbol involved in every group.  That can used to
@@ -418,7 +397,6 @@ A consequence is that `case SyntaxKind.CallExpression` currently has a narrow co
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  --prof built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `node --prof-process isolate- > isolate.txt`
 
-_caxnc-bi3.ts
 
 
 

@@ -226,6 +226,8 @@ namespace ts {
         const labelAllFunctionCalls = !myDisableInfer;
         const alwaysAddFlowToConditionNode = !myDisableInfer;
         const recordBreakAndReturnOnControlLoop = !myDisableInfer;
+        const doArrayOrObjectLiteralExpression = !myDisableInfer;
+        //const doPropertyAssignment = !myDisableInfer; not yet
 
         let file: SourceFile;
         let options: CompilerOptions;
@@ -910,8 +912,16 @@ namespace ts {
                 case SyntaxKind.BindingElement:
                     bindBindingElementFlow(node as BindingElement);
                     break;
-                case SyntaxKind.ObjectLiteralExpression:
+
                 case SyntaxKind.ArrayLiteralExpression:
+                case SyntaxKind.ObjectLiteralExpression:
+                    if (doArrayOrObjectLiteralExpression){
+                        bindEachChild(node);
+                        currentFlow = createFlowExpressionStatement(currentFlow,node as Expression);
+                        inAssignmentPattern = saveInAssignmentPattern;
+                        break;
+                    }
+                    // falls through
                 case SyntaxKind.PropertyAssignment:
                 case SyntaxKind.SpreadElement:
                     // Carry over whether we are in an assignment pattern of Object and Array literals
