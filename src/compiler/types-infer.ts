@@ -191,7 +191,7 @@ namespace ts {
         };
         /**
          * This allows checker.getTypeOfExpression(expr) to be called on any node in groupNodeToTypeMap, which may be conputed deep within a speculative branch,
-         * e.g., mrNarrowTypesByCallExpression.  (In test _cax-fn-0020.ts it is called in SpreadElement deep under mrNarrowTypesByCallExpression)
+         * e.g., floughByCallExpression.  (In test _cax-fn-0020.ts it is called in SpreadElement deep under floughByCallExpression)
          * @param expr
          * @param checker
          */
@@ -199,14 +199,14 @@ namespace ts {
         callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
     };
 
-    // export type MrNarrowTypesArgsX = & {
+    // export type floughArgsX = & {
     //     sci: RefTypesSymtabConstraintItem,
     //     expr: Readonly<Node>,
     //     qdotfallout?: RefTypesTableReturn[],
     //     inferStatus: InferStatus,
     //     crit: InferCrit,
     // };
-    export type MrNarrowTypesArgs = & {
+    export type FloughArgs = & {
         sci: RefTypesSymtabConstraintItem,
         expr: Readonly<Node>,
         qdotfallout?: RefTypesTableReturn[],
@@ -215,7 +215,7 @@ namespace ts {
     };
 
     export type NodeToTypeMap = ESMap<Node, Type>;
-    export type MrNarrowTypesReturn = & {
+    export type FloughReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
         nodeForMap: Readonly<Node>;
         typeof?: {
@@ -230,7 +230,7 @@ namespace ts {
         qdotfallout?: RefTypesTableReturn[] | undefined,
         inferStatus: InferStatus,
     };
-    export type MrNarrowTypesInnerReturn = & {
+    export type FloughInnerReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
         typeof?: {
             map: ESMap<Type,RefTypesType>;

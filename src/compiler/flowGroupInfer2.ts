@@ -2,7 +2,7 @@
 namespace ts {
 
     export interface MrNarrow {
-        mrNarrowTypes({ sci, expr, crit, qdotfallout, inferStatus }: MrNarrowTypesArgs): MrNarrowTypesReturn;
+        flough({ sci, expr, crit, qdotfallout, inferStatus }: FloughArgs): FloughReturn;
         createRefTypesSymtab(): RefTypesSymtab;
         copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
         createRefTypesType(type?: Readonly<Type> | Readonly<Type[]>): RefTypesType;
@@ -120,7 +120,7 @@ namespace ts {
             //getLiteralsOfANotInB,
             //applyCritToRefTypesType,
 
-            mrNarrowTypes,
+            flough,
             createRefTypesSymtab,
             copyRefTypesSymtab,
             dbgRefTypesTypeToString,
@@ -576,17 +576,17 @@ namespace ts {
 
 
 
-        // function mrNarrowTypesByBinaryExpressionEqualsEquals({
+        // function floughByBinaryExpressionEqualsEquals({
         //     sci, expr,inferStatus,
-        // }: InferRefInnerArgs & {expr: BinaryExpression}): MrNarrowTypesInnerReturn {
+        // }: InferRefInnerArgs & {expr: BinaryExpression}): floughInnerReturn {
         //     if (getMyDebug()){
-        //         consoleGroup(`mrNarrowTypesByBinaryExpressionEqualsEquals[in] ${dbgNodeToString(expr)}`);
+        //         consoleGroup(`floughByBinaryExpressionEqualsEquals[in] ${dbgNodeToString(expr)}`);
         //     }
-        //     const ret: MrNarrowTypesInnerReturn = mrNarrowTypesByBinaryExpressionEqualCompare({
+        //     const ret: floughInnerReturn = floughByBinaryExpressionEqualCompare({
         //         sci, expr, inferStatus
         //     });
         //     if (getMyDebug()){
-        //         consoleLog(`mrNarrowTypesByBinaryExpressionEqualsEquals[out] ${dbgNodeToString(expr)}`);
+        //         consoleLog(`floughByBinaryExpressionEqualsEquals[out] ${dbgNodeToString(expr)}`);
         //         consoleGroupEnd();
         //     }
         //     return ret;
@@ -665,7 +665,7 @@ namespace ts {
          * Process the arguments of a CallExpression.
          * @param args
          */
-        function mrNarrowTypesByCallExpressionProcessCallArguments(args: {
+        function floughByCallExpressionProcessCallArguments(args: {
             callExpr: Readonly<CallExpression>,
             sc: RefTypesSymtabConstraintItem, inferStatus: InferStatus,
             setOfTransientCallArgumentSymbol: Set<TransientCallArgumentSymbol>
@@ -691,7 +691,7 @@ namespace ts {
             let sctmp: RefTypesSymtabConstraintItem = scIn;
             callExpr.arguments.forEach((carg,cargidx)=>{
                 if (carg.kind===SyntaxKind.SpreadElement){
-                    const mntr = mrNarrowTypes({
+                    const mntr = flough({
                         sci:sctmp,
                         expr: (carg as SpreadElement).expression,
                         crit: {
@@ -753,7 +753,7 @@ namespace ts {
                     }
                 }
                 else {
-                    const mntr = mrNarrowTypes({
+                    const mntr = flough({
                         sci:sctmp,
                         expr: carg,
                         crit: {
@@ -782,7 +782,7 @@ namespace ts {
                 }
             });
             if (getMyDebug()) {
-                const hdr0 = "mrNarrowTypesByCallExpressionProcessCallArguments ";
+                const hdr0 = "floughByCallExpressionProcessCallArguments ";
                 consoleLog(hdr0 + `resolvedCallArguments.length: ${resolvedCallArguments.length}`);
                 resolvedCallArguments.forEach((ca,idx)=>{
                     let str = hdr0 + `arg[${idx}] tstype: ${typeToString(ca.tstype)}, symbol${dbgSymbolToStringSimple(ca.symbol)}, isconst:${ca.isconst}`;
@@ -817,7 +817,7 @@ namespace ts {
 
         type InferRefTypesPreAccessRtnType = & {
             kind: "immediateReturn",
-            retval: MrNarrowTypesInnerReturn
+            retval: FloughInnerReturn
         } | {
             kind: "normal",
             passing: RefTypesTableReturn,
@@ -844,7 +844,7 @@ namespace ts {
             function InferRefTypesPreAccessAux(){
                 if (extraAsserts) Debug.assert(qdotfallout);
                 assertCastType<RefTypesTableReturn[]>(qdotfallout);
-                const mntr = mrNarrowTypes(
+                const mntr = flough(
                     { sci, expr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus });
 
                 const { passing, failing } = applyCrit(mntr,{ kind:InferCritKind.notnullundef, alsoFailing:true },inferStatus.groupNodeToTypeMap);
@@ -903,7 +903,7 @@ namespace ts {
 
 
 
-        function createMrNarrowTypesReturn(unmerged: RefTypesTableReturn[], nodeForMap: Node): MrNarrowTypesReturn {
+        function createfloughReturn(unmerged: RefTypesTableReturn[], nodeForMap: Node): FloughReturn {
             return {
                 unmerged,
                 nodeForMap
@@ -929,7 +929,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypes({sci, expr:expr, inferStatus, qdotfallout, crit }: MrNarrowTypesArgs): MrNarrowTypesReturn {
+        function flough({sci, expr:expr, inferStatus, qdotfallout, crit }: FloughArgs): FloughReturn {
             if (!sci.symtab){
                 Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
                 return {
@@ -945,33 +945,33 @@ namespace ts {
                 return mrNarrowIdentifier();
             }
             if (expr.kind===SyntaxKind.ParenthesizedExpression){
-                const mntr = mrNarrowTypes({
+                const mntr = flough({
                     expr:(expr as ParenthesizedExpression).expression,qdotfallout,sci,inferStatus, crit
                 });
                 applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                 return mntr;
             }
-            return mrNarrowTypesAux(/*{
+            return floughAux(/*{
                 expr,qdotfallout,sci,inferStatus, crit
             }*/);
 
-            function mrNarrowIdentifier(): MrNarrowTypesReturn {
+            function mrNarrowIdentifier(): FloughReturn {
                 if (getMyDebug()) consoleGroup(`mrNarrowIdentifier [in] ${dbgNodeToString(expr)}`);
-                function mrNarrowIdentifierAux(): MrNarrowTypesReturn {
+                function mrNarrowIdentifierAux(): FloughReturn {
                     Debug.assert(isIdentifier(expr));
 
                     const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
 
                     // There is a unique symbol for the type undefined - that gets converted directly to the undefined type here.
                     if (checker.isUndefinedSymbol(symbol)){
-                        return createMrNarrowTypesReturn([createRefTypesTableReturn(
+                        return createfloughReturn([createRefTypesTableReturn(
                             createRefTypesType(undefinedType),
                             sci)],
                             expr,
                         );
                     }
                     if (symbol.flags & SymbolFlags.Function){
-                        return createMrNarrowTypesReturn([createRefTypesTableReturn(
+                        return createfloughReturn([createRefTypesTableReturn(
                             createRefTypesType(getTypeOfSymbol(symbol)),
                             sci)],
                             expr,
@@ -991,7 +991,7 @@ namespace ts {
 
                     if (inferStatus.replayables.has(symbol)){
                         if (getMyDebug()){
-                            consoleLog(`mrNarrowTypesInner[dbg]: start replay for ${dbgSymbolToStringSimple(symbol)}`);
+                            consoleLog(`floughInner[dbg]: start replay for ${dbgSymbolToStringSimple(symbol)}`);
                         }
                         const replayable = inferStatus.replayables.get(symbol)!;
                         /**
@@ -1003,7 +1003,7 @@ namespace ts {
                         const replayableInType = sci.symtab?.get(symbol);
                         //sci.symtab?.delete(symbol);  -- don't acutally HAVE to delete it.  TODO: check that
                         const dummyNodeToTypeMap = new Map<Node,Type>();
-                        const mntr = mrNarrowTypes({
+                        const mntr = flough({
                             expr: replayable?.expr,
                             crit: { kind:InferCritKind.none },
                             sci,
@@ -1011,7 +1011,7 @@ namespace ts {
                             inferStatus: { ...inferStatus, inCondition:true, currentReplayableItem:replayable, groupNodeToTypeMap: dummyNodeToTypeMap }
                         });
                         if (getMyDebug()){
-                            consoleLog(`mrNarrowTypesInner[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}`);
+                            consoleLog(`floughInner[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}`);
                         }
 
                         /**
@@ -1122,9 +1122,9 @@ namespace ts {
 
                 if (getMyDebug()) {
                     ret.unmerged.forEach((rttr,i)=>{
-                        dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  mrNarrowTypes[dbg]: unmerged[${i}]: ${s}`));
+                        dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  flough[dbg]: unmerged[${i}]: ${s}`));
                     });
-                    consoleLog(`mrNarrowIdentifier[out] mrNarrowTypesReturn.typeof: ${ret.typeof}`);
+                    consoleLog(`mrNarrowIdentifier[out] floughReturn.typeof: ${ret.typeof}`);
 
                     consoleLog(`mrNarrowIdentifier[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
                     inferStatus.groupNodeToTypeMap.forEach((t,n)=>{
@@ -1141,25 +1141,25 @@ namespace ts {
                 return ret;
             } // endof mrNarrowIdentifier()
 
-            function mrNarrowTypesAux(/* { sci, expr, inferStatus, qdotfallout: qdotfallout }: MrNarrowTypesArgs */): MrNarrowTypesReturn {
+            function floughAux(/* { sci, expr, inferStatus, qdotfallout: qdotfallout }: floughArgs */): FloughReturn {
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
                 if (getMyDebug()) {
-                    consoleGroup(`mrNarrowTypes[in] expr:${dbgNodeToString(expr)}}, `
+                    consoleGroup(`flough[in] expr:${dbgNodeToString(expr)}}, `
                     +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
                     +`qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}`);
-                    consoleLog(`mrNarrowTypes[in] refTypesSymtab:`);
+                    consoleLog(`flough[in] refTypesSymtab:`);
                     dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> consoleLog(`  ${str}`));
-                    consoleLog(`mrNarrowTypes[in] constraintItemIn:`);
+                    consoleLog(`flough[in] constraintItemIn:`);
                     dbgConstraintItem(sci.constraintItem).forEach(str=> consoleLog(`  ${str}`));
                 }
                 const qdotfallout1 = qdotfallout??([] as RefTypesTableReturn[]);
-                const innerret = mrNarrowTypesInner(qdotfallout1);
+                const innerret = floughInner(qdotfallout1);
                 let finalArrRefTypesTableReturn = innerret.unmerged;
                 if (getMyDebug()){
-                    consoleLog(`mrNarrowTypes[dbg]: qdotfallout.length: ${qdotfallout1.length}`);
+                    consoleLog(`flough[dbg]: qdotfallout.length: ${qdotfallout1.length}`);
                     qdotfallout1.forEach((rttr,i)=>{
                         dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                            consoleLog(`mrNarrowTypes[dbg]:  qdotfallout[${i}]: ${str}`);
+                            consoleLog(`flough[dbg]:  qdotfallout[${i}]: ${str}`);
                         });
                     });
                 }
@@ -1168,69 +1168,69 @@ namespace ts {
                      * !qdotfallout so merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit
                      */
                     if (getMyDebug()){
-                        consoleLog(`mrNarrowTypes[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit:`);
+                        consoleLog(`flough[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit:`);
                         qdotfallout1.forEach((rttr,i)=>{
                             dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                                consoleLog(`mrNarrowTypes[dbg]:  qdotfallout[${i}]: ${str}`);
+                                consoleLog(`flough[dbg]:  qdotfallout[${i}]: ${str}`);
                             });
                         });
                     }
                     finalArrRefTypesTableReturn = [...qdotfallout1, ...innerret.unmerged];
                 }
-                const mrNarrowTypesReturn: MrNarrowTypesReturn = {
+                const floughReturn: FloughReturn = {
                     unmerged: finalArrRefTypesTableReturn.filter(rttr=>!isRefTypesSymtabConstraintItemNever(rttr.sci)),
                     nodeForMap: expr,
                 };
-                if (innerret.typeof) mrNarrowTypesReturn.typeof = innerret.typeof;
+                if (innerret.typeof) floughReturn.typeof = innerret.typeof;
 
                 if (getMyDebug()) {
-                    mrNarrowTypesReturn.unmerged.forEach((rttr,i)=>{
-                            dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  mrNarrowTypes[dbg]: unmerged[${i}]: ${s}`));
+                    floughReturn.unmerged.forEach((rttr,i)=>{
+                            dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  flough[dbg]: unmerged[${i}]: ${s}`));
                         });
-                    // consoleGroup("mrNarrowTypes[out] mrNarrowTypesReturn.byNode:");
-                    consoleLog(`mrNarrowTypes[out] mrNarrowTypesReturn.typeof: ${mrNarrowTypesReturn.typeof}`);
+                    // consoleGroup("flough[out] floughReturn.byNode:");
+                    consoleLog(`flough[out] floughReturn.typeof: ${floughReturn.typeof}`);
 
-                    consoleLog(`mrNarrowTypes[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
+                    consoleLog(`flough[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
                     inferStatus.groupNodeToTypeMap.forEach((t,n)=>{
                         for(let ntmp = n; ntmp.kind!==SyntaxKind.SourceFile; ntmp=ntmp.parent){
                             if (ntmp===expr){
-                                consoleLog(`mrNarrowTypes[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
+                                consoleLog(`flough[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
                                 break;
                             }
                         }
                     });
                     // consoleGroupEnd();
-                    consoleLog(`mrNarrowTypes[out] ${dbgNodeToString(expr)}`);
+                    consoleLog(`flough[out] ${dbgNodeToString(expr)}`);
                     consoleGroupEnd();
                 }
-                return mrNarrowTypesReturn;
-            } // endof mrNarrowTypesAux()
+                return floughReturn;
+            } // endof floughAux()
 
-            function mrNarrowTypesInner(qdotfalloutInner: RefTypesTableReturn[]): MrNarrowTypesInnerReturn {
+            function floughInner(qdotfalloutInner: RefTypesTableReturn[]): FloughInnerReturn {
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
                 if (getMyDebug()){
-                    consoleGroup(`mrNarrowTypesInner[in] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}`);
-                    consoleLog(`mrNarrowTypesInner[in] refTypesSymtab:`);
-                    dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> consoleLog(`mrNarrowTypesInner[in] refTypesSymtab:  ${str}`));
-                    consoleLog(`mrNarrowTypesInner[in] constraintItemIn:`);
-                    if (sci.constraintItem) dbgConstraintItem(sci.constraintItem).forEach(str=> consoleLog(`mrNarrowTypesInner[in] constraintItemIn:  ${str}`));
+                    consoleGroup(`floughInner[in] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}`);
+                    consoleLog(`floughInner[in] refTypesSymtab:`);
+                    dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> consoleLog(`floughInner[in] refTypesSymtab:  ${str}`));
+                    consoleLog(`floughInner[in] constraintItemIn:`);
+                    if (sci.constraintItem) dbgConstraintItem(sci.constraintItem).forEach(str=> consoleLog(`floughInner[in] constraintItemIn:  ${str}`));
                 }
-                const innerret = mrNarrowTypesInnerAux(qdotfalloutInner);
+                const innerret = floughInnerAux(qdotfalloutInner);
                 if (getMyDebug()){
                     innerret.unmerged.forEach((rttr,i)=>{
                         dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                            consoleLog(`mrNarrowTypesInner[out]:  innerret.arttr[${i}]: ${str}`);
+                            consoleLog(`floughInner[out]:  innerret.arttr[${i}]: ${str}`);
                         });
                     });
                     inferStatus.groupNodeToTypeMap.forEach((type,node)=>{
                         for(let ntmp = node; ntmp.kind!==SyntaxKind.SourceFile; ntmp=ntmp.parent){
                             if (ntmp===expr){
-                                consoleLog(`mrNarrowTypesInner[out]:  innerret.byNode: { node: ${dbgNodeToString(node)}, type: ${typeToString(type)}`);
+                                consoleLog(`floughInner[out]:  innerret.byNode: { node: ${dbgNodeToString(node)}, type: ${typeToString(type)}`);
                                 break;
                             }
                         }
                     });
-                    consoleLog(`mrNarrowTypesInner[out] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}`);
+                    consoleLog(`floughInner[out] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}`);
                     consoleGroupEnd();
                 }
                 return innerret;
@@ -1241,7 +1241,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function mrNarrowTypesInnerAux(qdotfalloutInner: RefTypesTableReturn[]): MrNarrowTypesInnerReturn {
+        function floughInnerAux(qdotfalloutInner: RefTypesTableReturn[]): FloughInnerReturn {
             if (extraAsserts){
                 Debug.assert(!isNeverConstraint(sci.constraintItem));
                 Debug.assert(sci.symtab);
@@ -1255,53 +1255,53 @@ namespace ts {
                     Debug.fail("unexpected");
                     break;
                 case SyntaxKind.NonNullExpression:
-                    return mrNarrowTypesInnerNonNullExpression();
+                    return floughInnerNonNullExpression();
                 case SyntaxKind.ParenthesizedExpression:
-                    Debug.fail("unexpected"); // now handled on entry to mrNarrowTypes
+                    Debug.fail("unexpected"); // now handled on entry to flough
                     break;
                 case SyntaxKind.ConditionalExpression:
-                    return mrNarrowTypesInnerConditionalExpression();
+                    return floughInnerConditionalExpression();
                 case SyntaxKind.PropertyAccessExpression:
-                    return mrNarrowTypesByPropertyAccessExpression();
+                    return floughByPropertyAccessExpression();
                 case SyntaxKind.CallExpression:{
-                    return mrNarrowTypesByCallExpression();
+                    return floughByCallExpression();
                 }
                 case SyntaxKind.PrefixUnaryExpression:
-                    return mrNarrowTypesInnerPrefixUnaryExpression();
+                    return floughInnerPrefixUnaryExpression();
                 case SyntaxKind.VariableDeclaration:
-                    return mrNarrowTypesInnerVariableDeclaration();
+                    return floughInnerVariableDeclaration();
                 case SyntaxKind.BinaryExpression:
-                    return mrNarrowTypesByBinaryExpression();
+                    return floughByBinaryExpression();
                 case SyntaxKind.TypeOfExpression:
-                    return mrNarrowTypesByTypeofExpression();
+                    return floughByTypeofExpression();
                 case SyntaxKind.TrueKeyword:
                 case SyntaxKind.FalseKeyword:
                 case SyntaxKind.NumericLiteral:
                 case SyntaxKind.StringLiteral:
-                    return mrNarrowTypesInnerLiteralNumberStringBigintBooleanExpression();
+                    return floughInnerLiteralNumberStringBigintBooleanExpression();
                 case SyntaxKind.ArrayLiteralExpression:
-                    return mrNarrowTypesInnerArrayLiteralExpression();
+                    return floughInnerArrayLiteralExpression();
                 case SyntaxKind.AsExpression:
-                    return mrNarrowTypesInnerAsExpression();
+                    return floughInnerAsExpression();
                 case SyntaxKind.SpreadElement:{
-                    Debug.fail("mrNarrowTypesInner[dbg] context of caller is important, getTypeOfExpressionShallowRecursion ignore type.target.readonly");
+                    Debug.fail("floughInner[dbg] context of caller is important, getTypeOfExpressionShallowRecursion ignore type.target.readonly");
                 }
                 break;
 
                 case SyntaxKind.PropertyAssignment:{
                     Debug.fail("unexpected"+ ` ${Debug.formatSyntaxKind(expr.kind)}}`);
-                    // mrNarrowTypesInnerPropertyAssignment();
+                    // floughInnerPropertyAssignment();
                 }
                 break;
                 default: Debug.fail("unexpected"+ ` ${Debug.formatSyntaxKind(expr.kind)}}`);
             } // switch
 
-            function mrNarrowTypesByBinaryExpression(): MrNarrowTypesInnerReturn {
+            function floughByBinaryExpression(): FloughInnerReturn {
                 assertCastType<BinaryExpression>(expr);
                 const {operatorToken} = expr;
                 switch (operatorToken.kind) {
                     case SyntaxKind.EqualsToken:
-                        return mrNarrowTypesByBinaryExpresionAssign();
+                        return floughByBinaryExpresionAssign();
                     case SyntaxKind.BarBarEqualsToken:
                     case SyntaxKind.AmpersandAmpersandEqualsToken:
                     case SyntaxKind.QuestionQuestionEqualsToken:
@@ -1311,7 +1311,7 @@ namespace ts {
                     case SyntaxKind.ExclamationEqualsEqualsToken:
                     case SyntaxKind.EqualsEqualsToken:
                     case SyntaxKind.EqualsEqualsEqualsToken:{
-                        return mrNarrowTypesByBinaryExpressionEqualsCompare();
+                        return floughByBinaryExpressionEqualsCompare();
                     }
                     break;
                     case SyntaxKind.InstanceOfKeyword:
@@ -1325,13 +1325,13 @@ namespace ts {
                         break;
                     case SyntaxKind.BarBarToken:
                     case SyntaxKind.AmpersandAmpersandToken:
-                        return mrNarrowTypesByBinaryExpressionAmpersandAmpersandToken();
+                        return floughByBinaryExpressionAmpersandAmpersandToken();
                     default:
                         Debug.fail("unexpected");
                 }
-            } // mrNarrowTypesByBinaryExpression
+            } // floughByBinaryExpression
 
-            function mrNarrowTypesInnerNonNullExpression(): MrNarrowTypesInnerReturn {
+            function floughInnerNonNullExpression(): FloughInnerReturn {
                 Debug.assert(isNonNullExpression(expr));
                 /**
                  * Typescript documentation on "Non-null assertion operator":
@@ -1354,9 +1354,9 @@ namespace ts {
                  *
                  *
                  */
-                // const innerret = mrNarrowTypesInner({ sci, expr: expr.expression,
+                // const innerret = floughInner({ sci, expr: expr.expression,
                 //     qdotfallout, inferStatus });
-                const innerret = mrNarrowTypes({ sci, expr: expr.expression, crit: { kind: InferCritKind.notnullundef },
+                const innerret = flough({ sci, expr: expr.expression, crit: { kind: InferCritKind.notnullundef },
                     qdotfallout: qdotfalloutInner, inferStatus });
 
                 /**
@@ -1384,29 +1384,29 @@ namespace ts {
                     unmerged: applyNotNullUndefCritToRefTypesTableReturn(innerret.unmerged),
                 };
 
-            } // mrNarrowTypesInnerNonNullExpression
+            } // floughInnerNonNullExpression
 
-            function mrNarrowTypesInnerConditionalExpression(): MrNarrowTypesInnerReturn {
-                    if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression`);
+            function floughInnerConditionalExpression(): FloughInnerReturn {
+                    if (getMyDebug()) consoleLog(`floughInner[dbg] case SyntaxKind.ConditionalExpression`);
                     const {condition, whenTrue, whenFalse} = (expr as ConditionalExpression);
-                    if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; condition:${dbgNodeToString(condition)}`);
-                    const rcond = applyCrit(mrNarrowTypes({
+                    if (getMyDebug()) consoleLog(`floughInner[dbg] case SyntaxKind.ConditionalExpression ; condition:${dbgNodeToString(condition)}`);
+                    const rcond = applyCrit(flough({
                         sci,
                         expr: condition,
                         crit: { kind: InferCritKind.truthy, alsoFailing: true },
                         inferStatus: { ...inferStatus, inCondition: true },
                     }),{ kind: InferCritKind.truthy, alsoFailing: true },inferStatus.groupNodeToTypeMap);
 
-                    if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; whenTrue`);
-                    const retTrue = applyCritNoneUnion(mrNarrowTypes({
+                    if (getMyDebug()) consoleLog(`floughInner[dbg] case SyntaxKind.ConditionalExpression ; whenTrue`);
+                    const retTrue = applyCritNoneUnion(flough({
                         sci: rcond.passing.sci,
                         expr: whenTrue,
                         crit: { kind: InferCritKind.none },
                         inferStatus, //: { ...inferStatus, inCondition: true }
                     }),inferStatus.groupNodeToTypeMap);
 
-                    if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg] case SyntaxKind.ConditionalExpression ; whenFalse`);
-                    const retFalse = applyCritNoneUnion(mrNarrowTypes({
+                    if (getMyDebug()) consoleLog(`floughInner[dbg] case SyntaxKind.ConditionalExpression ; whenFalse`);
+                    const retFalse = applyCritNoneUnion(flough({
                         sci: rcond.failing!.sci,
                         expr: whenFalse,
                         crit: { kind: InferCritKind.none },
@@ -1416,15 +1416,15 @@ namespace ts {
                     const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
                     arrRefTypesTableReturn.push(retTrue);
                     arrRefTypesTableReturn.push(retFalse);
-                    const retval: MrNarrowTypesInnerReturn = {
+                    const retval: FloughInnerReturn = {
                         unmerged: arrRefTypesTableReturn
                     };
                     return retval;
-            } // mrNarrowTypesInnerConditionalExpression
+            } // floughInnerConditionalExpression
 
-            function mrNarrowTypesInnerPrefixUnaryExpression(): MrNarrowTypesInnerReturn {
+            function floughInnerPrefixUnaryExpression(): FloughInnerReturn {
                 if ((expr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
-                    const ret = applyCrit(mrNarrowTypes({
+                    const ret = applyCrit(flough({
                         sci,
                         expr:(expr as PrefixUnaryExpression).operand,
                         crit:{ negate: true, kind: InferCritKind.truthy, alsoFailing: true },
@@ -1453,15 +1453,15 @@ namespace ts {
                     };
                 }
                 Debug.fail("unexpected");
-            } // mrNarrowTypesInnerPrefixUnaryExpression
+            } // floughInnerPrefixUnaryExpression
 
-            function mrNarrowTypesInnerVariableDeclaration(): MrNarrowTypesInnerReturn {
+            function floughInnerVariableDeclaration(): FloughInnerReturn {
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
                 Debug.assert(isVariableDeclaration(expr));
                 Debug.assert(expr.initializer);
                 const initializer = expr.initializer;
 
-                const rhs = applyCritNoneUnion(mrNarrowTypes({
+                const rhs = applyCritNoneUnion(flough({
                     sci,
                     expr:initializer, crit:{ kind: InferCritKind.none }, qdotfallout:undefined,
                     inferStatus: { ...inferStatus, inCondition: false },
@@ -1547,7 +1547,7 @@ namespace ts {
                         symbolFlowInfo.replayableItem = replayableItem;
                         inferStatus.replayables.set(symbol,replayableItem);
                         if (getMyDebug()){
-                            const shdr = `mrNarrowTypesInner[dbg] case SyntaxKind.VariableDeclaration +replayable `;
+                            const shdr = `floughInner[dbg] case SyntaxKind.VariableDeclaration +replayable `;
                             consoleLog(shdr);
                             const as: string[]=[];
                             as.push(`symbol: ${dbgSymbolToStringSimple(replayableItem.symbol)}, isconst: ${replayableItem.isconst}`);
@@ -1571,9 +1571,9 @@ namespace ts {
                     // could be binding, or could a proeprty access on the lhs
                     Debug.fail("not yet implemented");
                 }
-            } // mrNarrowTypesInnerVariableDeclaration
+            } // floughInnerVariableDeclaration
 
-            function mrNarrowTypesInnerLiteralNumberStringBigintBooleanExpression(): MrNarrowTypesInnerReturn {
+            function floughInnerLiteralNumberStringBigintBooleanExpression(): FloughInnerReturn {
                 let type: Type;
                 switch (expr.kind){
                     case SyntaxKind.TrueKeyword:
@@ -1605,13 +1605,13 @@ namespace ts {
                         sci
                     }]
                 };
-            } // mrNarrowTypesInnerLiteralAndBooleanType
+            } // floughInnerLiteralAndBooleanType
 
-            function mrNarrowTypesInnerArrayLiteralExpression(): MrNarrowTypesInnerReturn {
+            function floughInnerArrayLiteralExpression(): FloughInnerReturn {
                 // Calling getTypeAtLocation would result in an endless loop
                 // const type: Type = checker.getTypeAtLocation(expr);
                 /**
-                 * The array itself is created above the mrNarrowTypes level, in "function checkArrayLiteral", checker.ts.
+                 * The array itself is created above the flough level, in "function checkArrayLiteral", checker.ts.
                  * So we don't set the byNode entry for expr.
                  * However, the variable types within the literal array must be set herein.
                  */
@@ -1619,7 +1619,7 @@ namespace ts {
                 //let sci: RefTypesSymtabConstraintItem = { symtab:refTypesSymtabIn,constraintItem:constraintItemIn };
                 let sci1: RefTypesSymtabConstraintItem = sci;
                 for (const e of expr.elements){
-                    ({sci:sci1}=applyCritNoneUnion(mrNarrowTypes({
+                    ({sci:sci1}=applyCritNoneUnion(flough({
                         sci:sci1,
                         expr:(e.kind===SyntaxKind.SpreadElement) ? (e as SpreadElement).expression : e,
                         crit:{ kind: InferCritKind.none },
@@ -1628,19 +1628,19 @@ namespace ts {
                 }
 
                 const arrayType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
-                if (getMyDebug()) consoleLog(`mrNarrowTypesInner[dbg]: case SyntaxKind.ArrayLiteralExpression: arrayType: ${dbgTypeToString(arrayType)}`);
+                if (getMyDebug()) consoleLog(`floughInner[dbg]: case SyntaxKind.ArrayLiteralExpression: arrayType: ${dbgTypeToString(arrayType)}`);
                 return {
                     unmerged: [{
                         type: createRefTypesType(arrayType),
                         sci:sci1
                     }]
                 };
-            } // mrNarrowTypesInnerArrayLiteralExpression
+            } // floughInnerArrayLiteralExpression
 
-            function mrNarrowTypesInnerAsExpression(): MrNarrowTypesInnerReturn {
+            function floughInnerAsExpression(): FloughInnerReturn {
                 assertCastType<Readonly<AsExpression>>(expr);
                 const {expression:lhs,type:typeNode} = expr;
-                const rhs = applyCritNoneUnion(mrNarrowTypes({
+                const rhs = applyCritNoneUnion(flough({
                     sci,
                     expr:lhs,
                     crit:{ kind: InferCritKind.none },
@@ -1667,11 +1667,11 @@ namespace ts {
                         sci:{ symtab,constraintItem }
                     }]
                 };
-            } // mrNarrowTypesInnerAsExpression
+            } // floughInnerAsExpression
 
-            function mrNarrowTypesByPropertyAccessExpression():
-            MrNarrowTypesInnerReturn {
-                function mrNarrowTypesByPropertyAccessExpressionAux(): MrNarrowTypesInnerReturn {
+            function floughByPropertyAccessExpression():
+            FloughInnerReturn {
+                function floughByPropertyAccessExpressionAux(): FloughInnerReturn {
                     assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
                     /**
                      * It doesn't really make much sense for the PropertyAccessExpression to have a symbol because the property name is simply a key
@@ -1732,7 +1732,7 @@ namespace ts {
                                     getDeclaredType, mrNarrow }));
                             }
                             if (isArrayOrTupleType(t)||t===stringType) {
-                                if (getMyDebug()) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
+                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
                                 if (keystr==="length") {
                                     arrRttr.push({
                                         symbol: undefined,
@@ -1758,7 +1758,7 @@ namespace ts {
                              */
                             const propSymbol = checker.getPropertyOfType(t, keystr);
                             if (propSymbol) {
-                                if (getMyDebug()) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
+                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
                                 if (propSymbol.flags & SymbolFlags.EnumMember){
                                     // treat it as a literal type, not a symbol
                                     const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
@@ -1815,7 +1815,7 @@ namespace ts {
                                 return;
                             }
                             if (!(t.flags & TypeFlags.Object) && t!==stringType){
-                                if (getMyDebug()) consoleLog(`mrNarrowTypesByPropertyAccessExpression[dbg] (!(t.flags & TypeFlags.Object) && t!==stringType)`);
+                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] (!(t.flags & TypeFlags.Object) && t!==stringType)`);
                                 let tstype: Type;
                                 if (t===numberType) tstype = errorType;  // special case ERROR TYPE for t===numberType
                                 else tstype = undefinedType;
@@ -1831,24 +1831,24 @@ namespace ts {
                         });
                     });
                     return { unmerged: arrRttr };
-                } // mrNarrowTypesByPropertyAccessExpression_aux
+                } // floughByPropertyAccessExpression_aux
 
-                if (getMyDebug()) consoleGroup(`mrNarrowTypesByPropertyAccessExpression[in]`);
-                const r = mrNarrowTypesByPropertyAccessExpressionAux();
+                if (getMyDebug()) consoleGroup(`floughByPropertyAccessExpression[in]`);
+                const r = floughByPropertyAccessExpressionAux();
                 if (getMyDebug()) {
                     r.unmerged.forEach((rttr,idx)=>{
-                        dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`mrNarrowTypesByPropertyAccessExpression[out] arrRefTypesTableReturn[${idx}] ${s}`));
+                        dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`floughByPropertyAccessExpression[out] arrRefTypesTableReturn[${idx}] ${s}`));
                     });
-                    consoleLog(`mrNarrowTypesByPropertyAccessExpression[out]`);
+                    consoleLog(`floughByPropertyAccessExpression[out]`);
                     consoleGroupEnd();
                 }
                 return r;
-            } // mrNarrowTypesByPropertyAccessExpression
+            } // floughByPropertyAccessExpression
 
-            function mrNarrowTypesByCallExpression(): MrNarrowTypesInnerReturn {
+            function floughByCallExpression(): FloughInnerReturn {
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
                 if (getMyDebug()){
-                    consoleGroup(`mrNarrowTypesByCallExpression[in]`);
+                    consoleGroup(`floughByCallExpression[in]`);
                 }
                 Debug.assert(qdotfalloutInner);
                 // First duty is to call the pre-chain, if any.
@@ -1870,17 +1870,17 @@ namespace ts {
                         if (scIsolated.symtab) (scIsolated.symtab =  copyRefTypesSymtab(scIsolated.symtab)).delete(umrttr1.symbol);
                     });
                     if (getMyDebug()){
-                        dbgRefTypesSymtabConstrinatItemToStrings(scIsolated).forEach(s=>consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}, scIsolated: ${s}`));
+                        dbgRefTypesSymtabConstrinatItemToStrings(scIsolated).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx}, scIsolated: ${s}`));
                     }
 
-                    const {sc: scResolvedArgs, resolvedCallArguments} = mrNarrowTypesByCallExpressionProcessCallArguments({
+                    const {sc: scResolvedArgs, resolvedCallArguments} = floughByCallExpressionProcessCallArguments({
                         callExpr: expr as Readonly<CallExpression>, sc:{ symtab:scIsolated.symtab, constraintItem: scIsolated.constraintItem },inferStatus, setOfTransientCallArgumentSymbol });
 
                     const tstype = getTypeFromRefTypesType(umrttr.type);
                     const arrsig = checker.getSignaturesOfType(tstype, SignatureKind.Call);
                     const arrsigrettype = arrsig.map((sig)=>checker.getReturnTypeOfSignature(sig));
                     if (getMyDebug()){
-                        arrsig.forEach((sig,sigidx)=>consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx} sigidx:${sigidx} ${checker.signatureToString(sig)}`));
+                        arrsig.forEach((sig,sigidx)=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx} ${checker.signatureToString(sig)}`));
                     }
 
                     const allMappings: RefTypesType[][]=[];
@@ -1897,8 +1897,8 @@ namespace ts {
                             //let tmpArgsConstr = nextConstraint;
                             let tmpSC = nextSC;
                             if (getMyDebug()){
-                                dbgRefTypesSymtabConstrinatItemToStrings(tmpSC).forEach(s=>consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx} sigidx:${sigidx},tmpSC: ${s}`));
-                                dbgConstraintItem(cumLeftoverConstraintItem).forEach(s=>consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx} sigidx:${sigidx},cumLeftoverConstraintItem: ${s}`));
+                                dbgRefTypesSymtabConstrinatItemToStrings(tmpSC).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx},tmpSC: ${s}`));
+                                dbgConstraintItem(cumLeftoverConstraintItem).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx},cumLeftoverConstraintItem: ${s}`));
                             }
                             let pass1 = resolvedCallArguments.every((carg,cargidx)=>{
                                 if (!isValidSigParamIndex(sig,cargidx)){
@@ -1956,10 +1956,10 @@ namespace ts {
                             if (getMyDebug()){
                                 let str = "";
                                 oneMapping.forEach((t,_i)=>str+=`${dbgRefTypesTypeToString(t)}, `);
-                                consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneMapping:[${str}]`);
+                                consoleLog(`floughByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneMapping:[${str}]`);
                                 str = "";
                                 oneLeftoverMapping.forEach((t,_i)=>str+=`${dbgRefTypesTypeToString(t)}, `);
-                                consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneLeftoverMapping:[${str}]`);
+                                consoleLog(`floughByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneLeftoverMapping:[${str}]`);
                             }
                             if (pass1 && isValidSigParamIndex(sig, resolvedCallArguments.length)){
                                 // if there are leftover sig params the first one must be optional or final spread
@@ -2033,10 +2033,10 @@ namespace ts {
                             if (getMyDebug()){
                                 if (!finished1) {
                                     dbgRefTypesSymtabConstrinatItemToStrings(nextSC).forEach(s=>{
-                                        consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, nextSC: ${s}`);
+                                        consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, nextSC: ${s}`);
                                     });
                                 }
-                                consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, pass1:${pass1}, finshed1:${finished1}`);
+                                consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, pass1:${pass1}, finshed1:${finished1}`);
                             }
                             return finished1;
                         });
@@ -2057,22 +2057,22 @@ namespace ts {
                         });
                     }
                     if (getMyDebug()){
-                        consoleLog(`mrNarrowTypesByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, finished:${finished}`);
+                        consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, finished:${finished}`);
                     }
                 });
                 setOfTransientCallArgumentSymbol.forEach(symbol=>_mrState.symbolFlowInfoMap.delete(symbol));
                 if (getMyDebug()){
-                    consoleLog(`mrNarrowTypesByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${pre.unmergedPassing.length}`);
+                    consoleLog(`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${pre.unmergedPassing.length}`);
                     consoleGroupEnd();
                 }
                 return { unmerged: arrRefTypesTableReturn };
-            } // mrNarrowTypesByCallExpression
+            } // floughByCallExpression
 
 
-            function mrNarrowTypesByBinaryExpresionAssign(): MrNarrowTypesInnerReturn {
+            function floughByBinaryExpresionAssign(): FloughInnerReturn {
                 const {left:leftExpr,right:rightExpr} = expr as BinaryExpression;
                 //const {sci:{symtab:refTypesSymtab,constraintItem}} = args;
-                const rhs = mrNarrowTypes({
+                const rhs = flough({
                     sci,
                     crit: { kind:InferCritKind.none },
                     expr: rightExpr,
@@ -2133,11 +2133,11 @@ namespace ts {
 
 
 
-            function  mrNarrowTypesByBinaryExpressionAmpersandAmpersandToken(): MrNarrowTypesInnerReturn {
+            function  floughByBinaryExpressionAmpersandAmpersandToken(): FloughInnerReturn {
                 if (getMyDebug()) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token START`);
                 const {left:leftExpr, operatorToken, right:rightExpr}=expr as BinaryExpression;
                 if (getMyDebug()) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`);
-                const leftRet0 = mrNarrowTypes({
+                const leftRet0 = flough({
                     sci,
                     crit: { kind:InferCritKind.truthy, alsoFailing:true },
                     expr: leftExpr,
@@ -2152,7 +2152,7 @@ namespace ts {
                     arrRefTypesTableReturn.push(leftRet.failing!);
 
                     if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
-                    const leftTrueRightRet0 = mrNarrowTypes({
+                    const leftTrueRightRet0 = flough({
                         sci: leftRet.passing.sci,// leftRet.inferRefRtnType.passing.sci,
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
                         expr: rightExpr,
@@ -2177,7 +2177,7 @@ namespace ts {
                     arrRefTypesTableReturn.push(leftRet.passing);
 
                     if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
-                    const leftFalseRightRet0 = mrNarrowTypes({
+                    const leftFalseRightRet0 = flough({
                         sci: leftRet.failing!.sci,
                         // refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
@@ -2201,14 +2201,14 @@ namespace ts {
                 return {
                     unmerged: arrRefTypesTableReturn,
                 };
-            } // mrNarrowTypesByBinaryExpressionAmpersandAmpersandToken
+            } // floughByBinaryExpressionAmpersandAmpersandToken
 
 
-            function mrNarrowTypesByTypeofExpression(): MrNarrowTypesInnerReturn {
+            function floughByTypeofExpression(): FloughInnerReturn {
                 assertCastType<TypeOfExpression>(expr);
                 // @ts-expect-error
                 const qdotfallout = undefined; // shadow
-                const mntr = mrNarrowTypes({ sci, expr:expr.expression, qdotfallout: undefined, inferStatus, crit:{ kind:InferCritKind.none } });
+                const mntr = flough({ sci, expr:expr.expression, qdotfallout: undefined, inferStatus, crit:{ kind:InferCritKind.none } });
 
                 if (true || inferStatus.inCondition){
                     let symbolAttribsOut: SymbolWithAttributes | undefined;
@@ -2250,7 +2250,7 @@ namespace ts {
                         };
                         mapTypeOfStringToTsTypeSet.forEach((set,lit)=>map.set(lit,f(set)));
 
-                        const ret: MrNarrowTypesInnerReturn = {
+                        const ret: FloughInnerReturn = {
                             unmerged: [{
                                 ...rhs, ...symbolAttribsOut,
                                 type: createRefTypesType(arrStringLiteralType)
@@ -2263,14 +2263,14 @@ namespace ts {
                         return ret;
                     }
                 }
-            } // mrNarrowTypesByTypeofExpression
+            } // floughByTypeofExpression
 
-            function mrNarrowTypesByBinaryExpressionEqualsCompare(
-            ): MrNarrowTypesInnerReturn {
+            function floughByBinaryExpressionEqualsCompare(
+            ): FloughInnerReturn {
                 assertCastType<BinaryExpression>(expr);
                 const {left:leftExpr,operatorToken,right:rightExpr} = expr;
                 if (getMyDebug()) {
-                    consoleGroup(`mrNarrowTypesByBinaryExpressionEqualCompare[in] expr:${dbgNodeToString(expr)}`);
+                    consoleGroup(`floughByBinaryExpressionEqualCompare[in] expr:${dbgNodeToString(expr)}`);
                 }
                 if (![
                     SyntaxKind.EqualsEqualsEqualsToken,
@@ -2286,14 +2286,14 @@ namespace ts {
                 const nomativeFalseType = createRefTypesType(negateEq ? trueType : falseType);
                 const trueAndFalseType = createRefTypesType([trueType,falseType]);
 
-                const leftMntr = mrNarrowTypes({
+                const leftMntr = flough({
                     expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
                     sci
                 });
 
                 const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
 
-                const rightMntr = mrNarrowTypes({
+                const rightMntr = flough({
                     expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
                     sci: leftRttrUnion.sci
                 });
@@ -2304,7 +2304,7 @@ namespace ts {
                     rightMntr.unmerged.forEach(rightRttr0=>{
                         const rightRttr = applyCritNoneToOne(rightRttr0,rightExpr,inferStatus.groupNodeToTypeMap);
                         if (getMyDebug()){
-                            consoleLog(`mrNarrowTypesByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
+                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
                         }
                         const aeqcmp = mrNarrow.refTypesTypeModule.partitionForEqualityCompare(leftRttr.type,rightRttr.type);
                         aeqcmp.forEach((ec,_i)=>{
@@ -2314,7 +2314,7 @@ namespace ts {
                             if (getMyDebug()) {
                                 const left = bothts ? createRefTypesType(bothts) : (Debug.assert(leftts), createRefTypesType(leftts));
                                 const right = bothts ? createRefTypesType(bothts) : (Debug.assert(rightts), createRefTypesType(rightts));
-                                consoleLog(`mrNarrowTypesByBinaryExpressionEqualCompare[dbg] -- before`
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] -- before`
                                 +`[${_i}][0] left:${dbgRefTypesTypeToString(left)}, right:${dbgRefTypesTypeToString(right)}, pass:${pass},fail:${fail}`);
                             }
 
@@ -2374,7 +2374,7 @@ namespace ts {
                             if (getMyDebug()) {
                                 const leftx = left ?? bothts ? createRefTypesType(bothts) : (Debug.assert(leftts), createRefTypesType(leftts));
                                 const rightx = right ?? bothts ? createRefTypesType(bothts) : (Debug.assert(rightts), createRefTypesType(rightts));
-                                consoleLog(`mrNarrowTypesByBinaryExpressionEqualCompare[dbg] `
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] `
                                 +`[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`);
                             }
                             arrRefTypesTableReturn.push({
@@ -2385,11 +2385,11 @@ namespace ts {
                     });
                 });
                 return { unmerged: arrRefTypesTableReturn };
-            } // mrNarrowTypesByBinaryExpressionEqualCompare
+            } // floughByBinaryExpressionEqualCompare
 
-        } // endof mrNarrowTypesInnerAux()
-    } // endof mrNarrowTypesInner()
-} // endof mrNarrowTypes()
+        } // endof floughInnerAux()
+    } // endof floughInner()
+} // endof flough()
 
 
         return mrNarrow;

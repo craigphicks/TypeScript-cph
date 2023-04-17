@@ -101,7 +101,7 @@ namespace ts {
         };
     }
 
-    export function applyCritNoneUnion(x: Readonly<MrNarrowTypesReturn>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
+    export function applyCritNoneUnion(x: Readonly<FloughReturn>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
         return applyCritNone1Union(x.unmerged, x.nodeForMap, nodeToTypeMap);
     }
     export function applyCritNone1Union(arrRttr: Readonly<RefTypesTableReturn[]>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
@@ -142,7 +142,7 @@ namespace ts {
         };
     }
 
-    export function applyCrit(x: Readonly<MrNarrowTypesReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
+    export function applyCrit(x: Readonly<FloughReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
         return applyCrit1(x.unmerged, crit, x.nodeForMap, nodeToTypeMap);

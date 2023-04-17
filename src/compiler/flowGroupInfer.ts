@@ -1083,7 +1083,7 @@ namespace ts {
         let scfailing: RefTypesSymtabConstraintItem | undefined;
 
         inferStatus.isInLoop = !!forFlow.loopState;
-        const mntr = sourceFileMrState.mrNarrow.mrNarrowTypes({
+        const mntr = sourceFileMrState.mrNarrow.flough({
             sci: anteSCArg,
             expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
         if (!inferStatus.inCondition){
