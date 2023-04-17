@@ -11,7 +11,6 @@ namespace ts {
 
     function createNever(): RefTypesTableReturnNoSymbol {
         return {
-            kind: RefTypesTableKind.return,
             type: mrNarrow.createRefTypesType(),
             sci: createRefTypesSymtabConstraintItemNever()
         };
@@ -97,7 +96,6 @@ namespace ts {
             mrNarrow, getDeclaredType});
         if (nodeToTypeMap) orIntoNodeToTypeMap(type,nodeForMap,nodeToTypeMap);
         return {
-            kind: RefTypesTableKind.return,
             type,
             sci: sc
         };
@@ -140,7 +138,6 @@ namespace ts {
         //nodeToTypeMap?.set(nodeForMap,mrNarrow.refTypesTypeModule.getTypeFromRefTypesType(type));
         const sci = orSymtabConstraints(asc,mrNarrow);
         return {
-            kind: RefTypesTableKind.return,
             type, sci
         };
     }
@@ -198,7 +195,6 @@ namespace ts {
         if (mrNarrow.isNeverType(passtype)) passing = createNever();
         else {
             passing = {
-                kind: RefTypesTableKind.return,
                 type: passtype,
                 sci: passsc
             };
@@ -206,7 +202,6 @@ namespace ts {
         if (crit.alsoFailing && mrNarrow.isNeverType(failtype!)) failing = createNever();
         else {
             failing = {
-                kind: RefTypesTableKind.return,
                 type: failtype!,
                 sci: failsc!
             };
@@ -284,7 +279,6 @@ namespace ts {
         if (arrPassType.length===0) passing = createNever();
         else {
             passing = {
-                kind: RefTypesTableKind.return,
                 type: mrNarrow.unionOfRefTypesType(arrPassType),
                 sci: orSymtabConstraints(arrPassSC,mrNarrow)
             };
@@ -293,7 +287,6 @@ namespace ts {
             if (arrFailType.length===0) failing = createNever();
             else {
                 failing = {
-                    kind: RefTypesTableKind.return,
                     type: mrNarrow.unionOfRefTypesType(arrFailType),
                     sci: orSymtabConstraints(arrFailSC,mrNarrow)
                 };

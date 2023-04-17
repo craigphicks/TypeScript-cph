@@ -46,7 +46,7 @@ namespace ts {
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
-        kind: RefTypesTableKind.return;
+        // kind: RefTypesTableKind.return;
         type: RefTypesType;
         //typeConstraintItem?: ConstraintItem;
         // symtab: RefTypesSymtab;
@@ -54,7 +54,7 @@ namespace ts {
         sci: RefTypesSymtabConstraintItem
     };
     export type RefTypesTableReturnNoSymbolNotNever = & {
-        kind: RefTypesTableKind.return;
+        // kind: RefTypesTableKind.return;
         type: RefTypesType;
         //typeConstraintItem?: ConstraintItem;
         // symtab: RefTypesSymtab;
@@ -62,7 +62,7 @@ namespace ts {
         sci: RefTypesSymtabConstraintItemNotNever
     };
     export type RefTypesTableReturn = & {
-        kind: RefTypesTableKind.return;
+        // kind: RefTypesTableKind.return;
         symbol?: Symbol | undefined;
         isconst?: boolean;
         isAssign?: boolean; // don't need assignType because it will always be whole type.
@@ -73,7 +73,7 @@ namespace ts {
         sci: RefTypesSymtabConstraintItem
     };
     export type RefTypesTableReturnNotNever = & {
-        kind: RefTypesTableKind.return;
+        // kind: RefTypesTableKind.return;
         symbol?: Symbol | undefined;
         isconst?: boolean;
         //isAssign?: boolean;
@@ -199,13 +199,13 @@ namespace ts {
         callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
     };
 
-    export type MrNarrowTypesArgsX = & {
-        sci: RefTypesSymtabConstraintItem,
-        expr: Readonly<Node>,
-        qdotfallout?: RefTypesTableReturn[],
-        inferStatus: InferStatus,
-        crit: InferCrit,
-    };
+    // export type MrNarrowTypesArgsX = & {
+    //     sci: RefTypesSymtabConstraintItem,
+    //     expr: Readonly<Node>,
+    //     qdotfallout?: RefTypesTableReturn[],
+    //     inferStatus: InferStatus,
+    //     crit: InferCrit,
+    // };
     export type MrNarrowTypesArgs = & {
         sci: RefTypesSymtabConstraintItem,
         expr: Readonly<Node>,
@@ -227,7 +227,7 @@ namespace ts {
     export type InferRefInnerArgs = & {
         sci: RefTypesSymtabConstraintItemNotNever,
         expr: Readonly<Node>,
-        qdotfallout: RefTypesTableReturn[],
+        qdotfallout?: RefTypesTableReturn[] | undefined,
         inferStatus: InferStatus,
     };
     export type MrNarrowTypesInnerReturn = & {

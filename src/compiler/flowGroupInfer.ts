@@ -1,6 +1,6 @@
 namespace ts {
 
-    export const extraAsserts = true; // not suitable for release or timing tests.
+    export const extraAsserts = false; // not suitable for release or timing tests.
     const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
     // _caxnc-rp-001 fails unless doIdentifierExpandTypeOnCondition=true
     export const doIdentifierExpandTypeOnCondition = false; // kill this, already have a better way to do it.

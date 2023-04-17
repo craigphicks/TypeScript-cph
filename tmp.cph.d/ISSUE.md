@@ -6,9 +6,7 @@
 
 ### Priority: High
 
-0. The @ts-dev-expect-string  usage for loopCount has been removed from test cases and code, so re-enable @ts-dev-expect-string (set `hardCodeEnableTSDevExpectStringFalse=false`) to enable the places where @ts-dev-expect-string is checking for `effectiveDeclaredType`.
 
-0. _caxnc-whileLoop-005x series: currently when initializer is a naked literal with no type, the intializer is set to (* check it), flow value is set to the initializer, and ored literal types remain as literal types instead of being widened.  This does not match the original (not mrNarrow) flow specs where a literal intializer without a type becomes the widened initializer.  Make the default behavior match the existing specs but allow the non-widening behavior with a parameter setting.
 
 0. Property assignment
 
@@ -66,6 +64,11 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. _caxnc-whileLoop-005x series: currently when initializer is a naked literal with no type, the intializer is set to (* check it), flow value is set to the initializer, and ored literal types remain as literal types instead of being widened.  This does not match the original (not mrNarrow) flow specs where a literal intializer without a type becomes the widened initializer.  Make the default behavior match the existing specs but allow the non-widening behavior with a parameter setting.
+  
+    - The parameters is `compilerOptions.compileOptions.mrNarrowDoNotWidenInitalizedFlowTypes`.
+
 
 0. Test case and code: `mrNarrowTypesByBinaryExpresionAssign` assumed lhs is statement level, and sets inCondition to false, but it should be inherited.  E.g., `let x = (y=z)`).  _caxnc-rhsAssign-0001
 
@@ -396,11 +399,6 @@ A consequence is that `case SyntaxKind.CallExpression` currently has a narrow co
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  --prof built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `node --prof-process isolate- > isolate.txt`
 
-
-## Correct type for case SyntaxKind.VariableDeclaration
-
-checker.ts, `getInitialTypeOfVariableDeclaration`
-might be correct
 
 
 
