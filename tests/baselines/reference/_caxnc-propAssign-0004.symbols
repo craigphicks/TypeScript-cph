@@ -1,0 +1,18 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0004.ts ===
+declare type T2 = { };
+>T2 : Symbol(T2, Decl(_caxnc-propAssign-0004.ts, 0, 0))
+
+function propAssign0004_1(): any {
+>propAssign0004_1 : Symbol(propAssign0004_1, Decl(_caxnc-propAssign-0004.ts, 0, 22))
+
+    const t: T2 = { };
+>t : Symbol(t, Decl(_caxnc-propAssign-0004.ts, 2, 9))
+>T2 : Symbol(T2, Decl(_caxnc-propAssign-0004.ts, 0, 0))
+
+    t;
+>t : Symbol(t, Decl(_caxnc-propAssign-0004.ts, 2, 9))
+
+    t;
+>t : Symbol(t, Decl(_caxnc-propAssign-0004.ts, 2, 9))
+}
+

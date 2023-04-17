@@ -1,9 +1,9 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: false
+// @floughEnable: true
+// @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
 
 declare const b: boolean;
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"

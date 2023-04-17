@@ -1,5 +1,5 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: false
+// @floughEnable: true
+// @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
 declare function foo(a:1,b:2,c:3,d:number):string[];

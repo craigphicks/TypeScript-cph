@@ -141,7 +141,7 @@ namespace ts {
         const dbgTypeToString = (type: Type): string => {
             const alwaysDetail = false;
             if (alwaysDetail) return "(type detail)" + dbgTypeToStringDetail(type).join(", ");
-            return checker.typeToString(type);
+            return `${checker.typeToString(type)}:[${type.id}]`;
         };
         const dbgTypeToStringDetail = (type: Type): string[] => {
             const doOne = (t: Type): string => {

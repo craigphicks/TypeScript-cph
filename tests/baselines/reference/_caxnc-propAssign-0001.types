@@ -1,3 +1,58 @@
-=== tests/cases/conformance/_caxFIXME/_caxnc-propAssign-0001.ts ===
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0001.ts ===
+declare type T = { p: number };
+>T : { p: number; }
+>p : number
 
-No type information for this code.
+declare type U = { p: number };
+>U : { p: number; }
+>p : number
+
+declare const t:T;
+>t : T
+
+declare const tu:T | U;
+>tu : T | U
+
+function propAssign0001_1(): any {
+>propAssign0001_1 : () => any
+
+    t.p = 0;
+>t.p = 0 : 0
+>t.p : number
+>t : T
+>p : number
+>0 : 0
+
+    t;
+>t : T
+
+    t.p;
+>t.p : number
+>t : T
+>p : number
+
+    return t;
+>t : T
+}
+function propAssign0001_2(): any {
+>propAssign0001_2 : () => any
+
+    tu.p = 0;
+>tu.p = 0 : 0
+>tu.p : number
+>tu : T | U
+>p : number
+>0 : 0
+
+    tu;
+>tu : T | U
+
+    tu.p;
+>tu.p : number
+>tu : T | U
+>p : number
+
+    return tu;
+>tu : T | U
+}
+

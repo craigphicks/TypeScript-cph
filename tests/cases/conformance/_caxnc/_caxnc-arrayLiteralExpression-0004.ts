@@ -1,5 +1,5 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: false
+// @floughEnable: true
+// @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
 const x = [1,"2"] as [number,string];

@@ -6426,9 +6426,9 @@ namespace ts {
         esModuleInterop?: boolean;
         /* @internal */ showConfig?: boolean;
         useDefineForClassFields?: boolean;
-        mrNarrowEnable?: boolean; // not used yet, done by env variable instead.
-        mrNarrowConstraintsEnable?: boolean;
-        mrNarrowDoNotWidenInitalizedFlowType?: boolean;
+        floughEnable?: boolean; // not used yet, done by env variable instead.
+        floughConstraintsEnable?: boolean;
+        floughDoNotWidenInitalizedFlowType?: boolean;
         enableTSDevExpectString?: boolean;
         [option: string]: CompilerOptionsValue | TsConfigSourceFile | undefined;
     }

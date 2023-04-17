@@ -1,9 +1,7 @@
 namespace ts {
 
-    export const extraAsserts = false; // not suitable for release or timing tests.
+    export const extraAsserts = true; // not suitable for release or timing tests.
     const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
-    // _caxnc-rp-001 fails unless doIdentifierExpandTypeOnCondition=true
-    export const doIdentifierExpandTypeOnCondition = false; // kill this, already have a better way to do it.
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
@@ -254,7 +252,7 @@ namespace ts {
     }
     export type SymbolFlowInfo = & {
         passCount: number;
-        initializedInAssignment?: boolean;
+        // initializedInAssignment?: boolean;  -- not used
         isconst: boolean;
         replayableItem?: ReplayableItem;
         typeNodeTsType?: Type;
@@ -340,9 +338,9 @@ namespace ts {
 
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
         if (getMyDebug()) debugger;
-        if (compilerOptions.mrNarrowConstraintsEnable===undefined) compilerOptions.mrNarrowConstraintsEnable = false;
+        if (compilerOptions.floughConstraintsEnable===undefined) compilerOptions.floughConstraintsEnable = false;
         if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
-        if (compilerOptions.mrNarrowDoNotWidenInitalizedFlowTypes===undefined) compilerOptions.mrNarrowDoNotWidenInitalizedFlowTypes = false;
+        if (compilerOptions.floughDoNotWidenInitalizedFlowTypes===undefined) compilerOptions.floughDoNotWidenInitalizedFlowTypes = false;
         if (hardCodeEnableTSDevExpectStringFalse){
             compilerOptions.enableTSDevExpectString = false;
         }

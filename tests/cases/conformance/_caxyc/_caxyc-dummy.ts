@@ -1,4 +1,4 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: true
+// @floughEnable: true
+// @floughConstraintsEnable: true
 // @strict: true 
 // @declaration: true

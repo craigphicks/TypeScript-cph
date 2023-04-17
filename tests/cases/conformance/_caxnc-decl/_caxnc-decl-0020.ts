@@ -1,10 +1,10 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: false
+// @floughEnable: true
+// @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
 
 function decl0020(){
     type X = 0|1|2;

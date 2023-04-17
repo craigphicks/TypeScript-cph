@@ -1267,7 +1267,7 @@ namespace ts {
             defaultValueDescription: Diagnostics.auto_Colon_Treat_files_with_imports_exports_import_meta_jsx_with_jsx_Colon_react_jsx_or_esm_format_with_module_Colon_node16_as_modules,
         },
         {
-            name: "mrNarrowConstraintsEnable",
+            name: "floughConstraintsEnable",
             type: "boolean",
             affectsSemanticDiagnostics: true,
             category: Diagnostics.Type_Checking,
@@ -1275,7 +1275,7 @@ namespace ts {
             defaultValueDescription: false,
         },
         {
-            name: "mrNarrowEnable",
+            name: "floughEnable",
             type: "boolean",
             affectsSemanticDiagnostics: true,
             category: Diagnostics.Type_Checking,
@@ -1294,7 +1294,7 @@ namespace ts {
             // defaultValueDescription: false,
         },
         {
-            name: "mrNarrowDoNotWidenInitalizedFlowType",
+            name: "floughDoNotWidenInitalizedFlowType",
             type: "boolean",
             affectsSemanticDiagnostics: true,
             category: Diagnostics.Type_Checking,

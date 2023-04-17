@@ -1,9 +1,9 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: false
+// @floughEnable: true
+// @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
 
 declare const b: boolean;
 function decl0012(){

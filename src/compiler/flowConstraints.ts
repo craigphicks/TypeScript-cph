@@ -482,13 +482,19 @@ namespace ts {
             }
         }
         if (log && getMyDebug()){
-            let str = "`andSymbolTypeIntoSymtabConstraint[out] symtab:";
+            let str = "andSymbolTypeIntoSymtabConstraint[out] symtab:";
             if (!symtab) str+="<undef>";
             else {
-                symtab.forEach((type,symbol)=>{
-                    const isconst = mrNarrow.mrState.symbolFlowInfoMap.get(symbol)!.isconst;
-                    str += ` {symbol:${symbol.escapedName}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(type)}},`;
-                });
+                dbgRefTypesSymtabToStrings(symtab).forEach(s=> consoleLog(`andSymbolTypeIntoSymtabConstraint[out] symtab: ${s}`));
+                // symtab.forEach((type,symbol)=>{
+                //     const symbolFlowInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
+                //     if (!symbolFlowInfo) {
+                //         str+= ` {symbol:${symbol.escapedName}, isconst: <symbolFlowInfo not found>, type:${mrNarrow.dbgRefTypesTypeToString(type)}},`;
+                //         return;
+                //     }
+                //     const isconst = mrNarrow.mrState.symbolFlowInfoMap.get(symbol)!.isconst;
+                //     str += ` {symbol:${symbol.escapedName}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(type)}},`;
+                // });
             }
             consoleLog(str);
             mrNarrow.dbgConstraintItem(constraintItem).forEach(s=>{
@@ -549,7 +555,7 @@ namespace ts {
             // do nothing - an enum parent is not a real type
             return { type:typeIn,sc };
         }
-        else if (isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
+        else if (isconst && mrNarrow.compilerOptions.floughConstraintsEnable){
             Debug.fail("not yet implemented"); // orSymbolTypeIntoSymtabConstraint for isconst && mrNarrow.compilerOptions.mrNarrowConstraintsEnable
             //constraintItem = andSymbolTypeIntoConstraint({ symbol,type,constraintItem,getDeclaredType,mrNarrow });
         }
@@ -779,7 +785,7 @@ namespace ts {
 
     export function evalSymbol(symbol: Symbol, sc: Readonly<RefTypesSymtabConstraintItem>, getDeclaredType: GetDeclaredTypeFn, mrNarrow: MrNarrow): RefTypesType {
         Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
-        if (!mrNarrow.compilerOptions.mrNarrowConstraintsEnable || !sc.constraintItem.symbolsInvolved?.has(symbol)){
+        if (!mrNarrow.compilerOptions.floughConstraintsEnable || !sc.constraintItem.symbolsInvolved?.has(symbol)){
             const gotType = sc.symtab!.get(symbol);
             if (!gotType) Debug.fail("unexpected");
             return gotType;

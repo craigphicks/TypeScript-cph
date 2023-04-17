@@ -1,10 +1,10 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: false
+// @floughEnable: true
+// @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
 
 function t47(){
     // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: 0 | 1 | 2 | 999"

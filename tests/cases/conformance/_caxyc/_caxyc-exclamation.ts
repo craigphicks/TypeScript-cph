@@ -1,5 +1,5 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: true
+// @floughEnable: true
+// @floughConstraintsEnable: true
 // @strict: true
 // @declaration: true
 declare const n: 0 | 1;

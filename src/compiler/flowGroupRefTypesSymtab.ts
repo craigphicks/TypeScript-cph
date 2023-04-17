@@ -394,7 +394,7 @@ namespace ts {
             as.push(str);
         }
         x.symtabInner.forEach(({type,assignedType},s)=>{
-            as.push(`  symbol:{${s.escapedName},${s.id}}, `
+            as.push(`  symbol:${mrNarrow.dbgSymbolToStringSimple(s)}, `
              + `{ type:${mrNarrow.dbgRefTypesTypeToString(type)}, assignedType:${assignedType?mrNarrow.dbgRefTypesTypeToString(type):"<undef>"}}`);
         });
         if (x.symtabOuter){

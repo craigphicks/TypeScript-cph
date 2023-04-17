@@ -1,10 +1,10 @@
-// @mrNarrowEnable: true
-// @mrNarrowConstraintsEnable: false
+// @floughEnable: true
+// @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
 // @enableTSDevExpectString: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
-// @mrNarrowDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
+// @floughDoNotWidenInitalizedFlowType: true
 
 // declare function next(x:0): 1;
 // declare function next(x:1): 2;

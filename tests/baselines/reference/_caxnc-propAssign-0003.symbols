@@ -1,0 +1,53 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0003.ts ===
+declare type T3 = { name: "t3", p: number };
+>T3 : Symbol(T3, Decl(_caxnc-propAssign-0003.ts, 0, 0))
+>name : Symbol(name, Decl(_caxnc-propAssign-0003.ts, 0, 19))
+>p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 0, 31))
+
+declare type U3 = { namae: "u3", p: number };
+>U3 : Symbol(U3, Decl(_caxnc-propAssign-0003.ts, 0, 44))
+>namae : Symbol(namae, Decl(_caxnc-propAssign-0003.ts, 1, 19))
+>p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 1, 32))
+
+declare const b: boolean;
+>b : Symbol(b, Decl(_caxnc-propAssign-0003.ts, 2, 13))
+
+function propAssign0003_1(): any {
+>propAssign0003_1 : Symbol(propAssign0003_1, Decl(_caxnc-propAssign-0003.ts, 2, 25))
+
+    const t: T3 = { name: "t3", p: 0 };
+>t : Symbol(t, Decl(_caxnc-propAssign-0003.ts, 4, 9))
+>T3 : Symbol(T3, Decl(_caxnc-propAssign-0003.ts, 0, 0))
+>name : Symbol(name, Decl(_caxnc-propAssign-0003.ts, 4, 19))
+>p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 4, 31))
+
+    t.p=1;
+>t.p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 4, 31))
+>t : Symbol(t, Decl(_caxnc-propAssign-0003.ts, 4, 9))
+>p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 4, 31))
+
+    return t;
+>t : Symbol(t, Decl(_caxnc-propAssign-0003.ts, 4, 9))
+}
+function propAssign0003_2(): any {
+>propAssign0003_2 : Symbol(propAssign0003_2, Decl(_caxnc-propAssign-0003.ts, 7, 1))
+
+    const tu: T3 | U3 = b ? { name: "t3", p: 1 } : { namae: "u3", p: 0 };
+>tu : Symbol(tu, Decl(_caxnc-propAssign-0003.ts, 9, 9))
+>T3 : Symbol(T3, Decl(_caxnc-propAssign-0003.ts, 0, 0))
+>U3 : Symbol(U3, Decl(_caxnc-propAssign-0003.ts, 0, 44))
+>b : Symbol(b, Decl(_caxnc-propAssign-0003.ts, 2, 13))
+>name : Symbol(name, Decl(_caxnc-propAssign-0003.ts, 9, 29))
+>p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 9, 41))
+>namae : Symbol(namae, Decl(_caxnc-propAssign-0003.ts, 9, 52))
+>p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 9, 65))
+
+    tu.p = 2;
+>tu.p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 9, 41), Decl(_caxnc-propAssign-0003.ts, 9, 65))
+>tu : Symbol(tu, Decl(_caxnc-propAssign-0003.ts, 9, 9))
+>p : Symbol(p, Decl(_caxnc-propAssign-0003.ts, 9, 41), Decl(_caxnc-propAssign-0003.ts, 9, 65))
+
+    return tu;
+>tu : Symbol(tu, Decl(_caxnc-propAssign-0003.ts, 9, 9))
+}
+
