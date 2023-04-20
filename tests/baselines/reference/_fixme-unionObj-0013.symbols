@@ -1,0 +1,27 @@
+=== tests/cases/conformance/_caxFIXME/_fixme-unionObj-0013.ts ===
+// C.f. _caxnc-union-0003.ts, and see notes there.
+
+declare const x: boolean;
+>x : Symbol(x, Decl(_fixme-unionObj-0013.ts, 2, 13))
+
+let foo = { a: 1 };
+>foo : Symbol(foo, Decl(_fixme-unionObj-0013.ts, 4, 3))
+>a : Symbol(a, Decl(_fixme-unionObj-0013.ts, 4, 11))
+
+let bar = { a: 1, b: 2 };
+>bar : Symbol(bar, Decl(_fixme-unionObj-0013.ts, 5, 3))
+>a : Symbol(a, Decl(_fixme-unionObj-0013.ts, 5, 11))
+>b : Symbol(b, Decl(_fixme-unionObj-0013.ts, 5, 17))
+
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: number; b: number; }"
+let result = x ? foo : bar;
+>result : Symbol(result, Decl(_fixme-unionObj-0013.ts, 8, 3))
+>x : Symbol(x, Decl(_fixme-unionObj-0013.ts, 2, 13))
+>foo : Symbol(foo, Decl(_fixme-unionObj-0013.ts, 4, 3))
+>bar : Symbol(bar, Decl(_fixme-unionObj-0013.ts, 5, 3))
+
+result.b; // expect number | undefined
+>result.b : Symbol(b, Decl(_fixme-unionObj-0013.ts, 5, 17))
+>result : Symbol(result, Decl(_fixme-unionObj-0013.ts, 8, 3))
+>b : Symbol(b, Decl(_fixme-unionObj-0013.ts, 5, 17))
+

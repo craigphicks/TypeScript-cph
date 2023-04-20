@@ -1,0 +1,34 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-unionObj-0003.ts ===
+// C.f. _caxnc-unionObj-0002.ts, and issue: "Variables type wrong unification / conditional inference #48714"
+// When using flough, "result" has the same in both, and both can acccess "b" wihout error.
+//
+// However, when using orginal-flow the type of "result" is different in the two cases,
+// and the unionObj-0003 gives an error on "result.b" while unionObj-0002 does not.
+
+declare const x: boolean;
+>x : Symbol(x, Decl(_caxnc-unionObj-0003.ts, 6, 13))
+
+const foo = { a: 1 } as const;
+>foo : Symbol(foo, Decl(_caxnc-unionObj-0003.ts, 8, 5))
+>a : Symbol(a, Decl(_caxnc-unionObj-0003.ts, 8, 13))
+>const : Symbol(const)
+
+const bar = { a: 1, b: 2 } as const;
+>bar : Symbol(bar, Decl(_caxnc-unionObj-0003.ts, 9, 5))
+>a : Symbol(a, Decl(_caxnc-unionObj-0003.ts, 9, 13))
+>b : Symbol(b, Decl(_caxnc-unionObj-0003.ts, 9, 19))
+>const : Symbol(const)
+
+// Note: result is displayed in '.types' file as a union of two types: { a: 1, b?: 2} | { a: 1, b: 2 }, but flough-level code does not add the optional 'b'.
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { readonly a: 1; } | { readonly a: 1; readonly b: 2; }"
+const result = x ? foo : bar;
+>result : Symbol(result, Decl(_caxnc-unionObj-0003.ts, 13, 5))
+>x : Symbol(x, Decl(_caxnc-unionObj-0003.ts, 6, 13))
+>foo : Symbol(foo, Decl(_caxnc-unionObj-0003.ts, 8, 5))
+>bar : Symbol(bar, Decl(_caxnc-unionObj-0003.ts, 9, 5))
+
+result.b; // expect 2 | undefined, checkExpression level does not emit error because probably because it adds the optional 'b' to the type.
+>result.b : Symbol(b, Decl(_caxnc-unionObj-0003.ts, 9, 19))
+>result : Symbol(result, Decl(_caxnc-unionObj-0003.ts, 13, 5))
+>b : Symbol(b, Decl(_caxnc-unionObj-0003.ts, 9, 19))
+

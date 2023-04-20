@@ -1,0 +1,32 @@
+=== tests/cases/conformance/_caxFIXME/_fixme-object-0002.ts ===
+declare const x: boolean;
+>x : boolean
+
+const foo = { a: 1 } as const;
+>foo : { readonly a: 1; }
+>{ a: 1 } as const : { readonly a: 1; }
+>{ a: 1 } : { readonly a: 1; }
+>a : 1
+>1 : 1
+
+const bar = { a: 1, b: 2 } as const;
+>bar : { readonly a: 1; readonly b: 2; }
+>{ a: 1, b: 2 } as const : { readonly a: 1; readonly b: 2; }
+>{ a: 1, b: 2 } : { readonly a: 1; readonly b: 2; }
+>a : 1
+>1 : 1
+>b : 2
+>2 : 2
+
+const result = x ? foo : bar;
+>result : { readonly a: 1; readonly b?: undefined; } | { readonly a: 1; readonly b: 2; }
+>x ? foo : bar : { readonly a: 1; } | { readonly a: 1; readonly b: 2; }
+>x : boolean
+>foo : { readonly a: 1; }
+>bar : { readonly a: 1; readonly b: 2; }
+
+result.b;
+>result.b : 2 | undefined
+>result : { readonly a: 1; } | { readonly a: 1; readonly b: 2; }
+>b : 2 | undefined
+

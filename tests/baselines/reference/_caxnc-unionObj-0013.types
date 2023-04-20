@@ -1,0 +1,33 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-unionObj-0013.ts ===
+// C.f. _caxnc-union-0003.ts, and see notes there.
+
+declare const x: boolean;
+>x : boolean
+
+let foo = { a: 1 };
+>foo : { a: number; }
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+let bar = { a: 1, b: 2 };
+>bar : { a: number; b: number; }
+>{ a: 1, b: 2 } : { a: number; b: number; }
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: number; b: number; }"
+let result = x ? foo : bar;
+>result : { a: number; b?: undefined; } | { a: number; b: number; }
+>x ? foo : bar : { a: number; } | { a: number; b: number; }
+>x : boolean
+>foo : { a: number; }
+>bar : { a: number; b: number; }
+
+result.b; // expect number | undefined
+>result.b : number | undefined
+>result : { a: number; } | { a: number; b: number; }
+>b : number | undefined
+

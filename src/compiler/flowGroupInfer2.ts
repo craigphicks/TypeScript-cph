@@ -50,7 +50,7 @@ namespace ts {
         // const neverType = checker.getNeverType();
         const undefinedType = checker.getUndefinedType();
         // const unknownType = checker.getUnknownType();
-        const errorType = checker.getErrorType();
+        //const errorType = checker.getErrorType();
         const nullType = checker.getNullType();
         const stringType = checker.getStringType();
         const numberType = checker.getNumberType();
@@ -1915,22 +1915,6 @@ namespace ts {
                                 const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
                                     {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc,
                                     getDeclaredType, mrNarrow });
-                                // if (doInvolved && inferStatus.involved){
-                                //     /**
-                                //      * (1) Note that by setting the symbol here, it does include any possible 'undefined' resulting from optional '?'
-                                //      * accesses to left.  It must be so, because the same symbol can potentially be set or read from a different lhs.
-                                //      * (2) Only the first occurence of a symbol in the group is used to initialize.
-                                //      * (3) Cannot use initialize here because (unlike identifiers) propSymbols may change, so we have to be prepared to add new ones.
-                                //      */
-                                //     const involved = inferStatus.involved;
-                                //     if (!involved.inEncountered.has(propSymbol)) {
-                                //         (involved.involvedSymbolTypeCache.in.propertyAccessMap
-                                //             ?? (involved.involvedSymbolTypeCache.in.propertyAccessMap = new Map<Symbol,RefTypesType>()))
-                                //                 .set(propSymbol,type);
-                                //         involved.inEncountered.add(propSymbol);
-                                //     }
-                                // }
-
                                 arrRttr.push({
                                     symbol: propSymbol,
                                     isconst: symbolFlowInfo.isconst,
@@ -1939,14 +1923,12 @@ namespace ts {
                                 });
                                 return;
                             }
-                            if (!(t.flags & TypeFlags.Object) && t!==stringType){
-                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] (!(t.flags & TypeFlags.Object) && t!==stringType)`);
-                                let tstype: Type;
-                                if (t===numberType) tstype = errorType;  // special case ERROR TYPE for t===numberType
-                                else tstype = undefinedType;
-                                const type = createRefTypesType(tstype);
+                            else {
+                                // The keystring corresponded to no proptery of t.
+                                // Return undefinedType
+                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] lookup of propSymbol failed for "${keystr}" in ${dbgTypeToString(t)}, return undefined type`);
+                                const type = createRefTypesType(undefinedType);
                                 arrRttr.push({
-                                    symbol: undefined,
                                     type,
                                     sci:sc
                                 });

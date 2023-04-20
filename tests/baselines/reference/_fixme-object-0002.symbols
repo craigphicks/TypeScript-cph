@@ -1,0 +1,26 @@
+=== tests/cases/conformance/_caxFIXME/_fixme-object-0002.ts ===
+declare const x: boolean;
+>x : Symbol(x, Decl(_fixme-object-0002.ts, 0, 13))
+
+const foo = { a: 1 } as const;
+>foo : Symbol(foo, Decl(_fixme-object-0002.ts, 2, 5))
+>a : Symbol(a, Decl(_fixme-object-0002.ts, 2, 13))
+>const : Symbol(const)
+
+const bar = { a: 1, b: 2 } as const;
+>bar : Symbol(bar, Decl(_fixme-object-0002.ts, 3, 5))
+>a : Symbol(a, Decl(_fixme-object-0002.ts, 3, 13))
+>b : Symbol(b, Decl(_fixme-object-0002.ts, 3, 19))
+>const : Symbol(const)
+
+const result = x ? foo : bar;
+>result : Symbol(result, Decl(_fixme-object-0002.ts, 5, 5))
+>x : Symbol(x, Decl(_fixme-object-0002.ts, 0, 13))
+>foo : Symbol(foo, Decl(_fixme-object-0002.ts, 2, 5))
+>bar : Symbol(bar, Decl(_fixme-object-0002.ts, 3, 5))
+
+result.b;
+>result.b : Symbol(b, Decl(_fixme-object-0002.ts, 3, 19))
+>result : Symbol(result, Decl(_fixme-object-0002.ts, 5, 5))
+>b : Symbol(b, Decl(_fixme-object-0002.ts, 3, 19))
+
