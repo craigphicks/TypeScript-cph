@@ -1548,7 +1548,7 @@ namespace ts {
                         // In _caxnc-rp-003 this happens because a statement get thrown into the heap on multiple occasions. See ISSUE.md
                         // Debug.fail("unexpected: VariableDeclaration symbolFlowInfo already exists");
                     }
-                    if (extraAsserts){
+                    if (extraAsserts && compilerOptions.enableTSDevExpectString){
                         debugDevExpectEffectiveDeclaredType(expr.parent,symbolFlowInfo);
                     }
                     const isconstVar = symbolFlowInfo.isconst; // isConstVariable(symbol);
@@ -1909,7 +1909,7 @@ namespace ts {
                                         Debug.assert(symbolFlowInfo.effectiveDeclaredTsType===getTypeOfSymbol(propSymbol));
                                     }
                                 }
-                                if (extraAsserts){
+                                if (extraAsserts && compilerOptions.enableTSDevExpectString){
                                     debugDevExpectEffectiveDeclaredType(expr,symbolFlowInfo);
                                 }
                                 const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
@@ -2226,7 +2226,7 @@ namespace ts {
                             Debug.assert(checker.getTypeFromTypeNode((symbol.valueDeclaration as VariableDeclaration).type!)===symbolFlowInfo.effectiveDeclaredTsType);
                         }
                     }
-                    if (extraAsserts) {
+                    if (extraAsserts && compilerOptions.enableTSDevExpectString) {
                         debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                     }
                     const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo,
