@@ -2,6 +2,7 @@
 // @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
+// @enableTSDevExpectString: true
 
 // C.f. _caxnc-unionObj-0002.ts, and issue: "Variables type wrong unification / conditional inference #48714"
 // When using flough, "result" has the same in both, and both can acccess "b" wihout error.

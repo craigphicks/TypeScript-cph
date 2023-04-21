@@ -459,11 +459,11 @@ namespace ts {
                 x._set!.forEach(tx=>{
                     if (y._set!.has(tx)){
                         if (pass===0){
-                            arr1.push({ bothts: tx, true:true, false: (tx.flags & TypeFlags.BooleanLiteral) ? false : true });
+                            arr1.push({ bothts: tx, true:true, false: (tx.flags & (TypeFlags.BooleanLiteral|TypeFlags.Undefined|TypeFlags.Null)) ? false : true });
                             symmSet.add(tx);
                         }
                         else if (!symmSet.has(tx)){
-                            arr1.push({ bothts: tx, true:true, false: (tx.flags & TypeFlags.BooleanLiteral) ? false : true });
+                            arr1.push({ bothts: tx, true:true, false: (tx.flags & (TypeFlags.BooleanLiteral|TypeFlags.Undefined|TypeFlags.Null)) ? false : true });
                         }
                         const rightts = copySetYDelete(tx);
                         if (rightts.length!==0){

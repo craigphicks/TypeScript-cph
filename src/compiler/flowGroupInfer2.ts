@@ -1179,7 +1179,7 @@ namespace ts {
                      * !qdotfallout so merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit
                      */
                     if (getMyDebug()){
-                        consoleLog(`flough[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit:`);
+                        consoleLog(`flough[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)`);
                         qdotfallout1.forEach((rttr,i)=>{
                             dbgRefTypesTableToStrings(rttr).forEach(str=>{
                                 consoleLog(`flough[dbg]:  qdotfallout[${i}]: ${str}`);
@@ -1230,7 +1230,7 @@ namespace ts {
                 if (getMyDebug()){
                     innerret.unmerged.forEach((rttr,i)=>{
                         dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                            consoleLog(`floughInner[out]:  innerret.arttr[${i}]: ${str}`);
+                            consoleLog(`floughInner[out]:  innerret.unmerged[${i}]: ${str}`);
                         });
                     });
                     inferStatus.groupNodeToTypeMap.forEach((type,node)=>{
@@ -2423,11 +2423,16 @@ namespace ts {
                 const nomativeFalseType = createRefTypesType(negateEq ? trueType : falseType);
                 const trueAndFalseType = createRefTypesType([trueType,falseType]);
 
+
                 const leftMntr = flough({
                     expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
                     sci
                 });
 
+                /**
+                 * It's too expensive to compute flough seperately for every indepent leftMntr.unmerged, so it is done on leftRttrUnion instead.
+                 * IWOZERE
+                 */
                 const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
 
                 const rightMntr = flough({

@@ -2,6 +2,7 @@
 // @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
+// @enableTSDevExpectString: true
 
 declare const x: boolean;
 

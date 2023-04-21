@@ -2,6 +2,7 @@
 // @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
+// @enableTSDevExpectString: true
 
 // C.f. _caxnc-union-0003.ts, and see notes there.
 
