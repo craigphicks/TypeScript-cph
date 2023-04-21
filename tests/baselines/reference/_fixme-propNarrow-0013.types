@@ -1,0 +1,41 @@
+=== tests/cases/conformance/_caxFIXME/_fixme-propNarrow-0013.ts ===
+declare const x: boolean;
+>x : boolean
+
+let y = { a: 1};
+>y : { a: number; }
+>{ a: 1} : { a: number; }
+>a : number
+>1 : 1
+
+let z = { a: "one", b: "two"};
+>z : { a: string; b: string; }
+>{ a: "one", b: "two"} : { a: string; b: string; }
+>a : string
+>"one" : "one"
+>b : string
+>"two" : "two"
+
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: string; b: string; }"
+let r = x ? y : z;
+>r : { a: number; b?: undefined; } | { a: string; b: string; }
+>x ? y : z : { a: number; } | { a: string; b: string; }
+>x : boolean
+>y : { a: number; }
+>z : { a: string; b: string; }
+
+if (r.b===undefined){
+>r.b===undefined : boolean
+>r.b : string | undefined
+>r : { a: number; } | { a: string; b: string; }
+>b : string | undefined
+>undefined : undefined
+
+    r;
+>r : { a: number; }
+}
+else {
+    r;
+>r : { a: string; b: string; }
+}
+

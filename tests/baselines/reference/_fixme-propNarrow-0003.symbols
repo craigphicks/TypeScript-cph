@@ -1,0 +1,26 @@
+=== tests/cases/conformance/_caxFIXME/_fixme-propNarrow-0003.ts ===
+declare const x: boolean;
+>x : Symbol(x, Decl(_fixme-propNarrow-0003.ts, 0, 13))
+
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: string; b: string; }"
+let r = x ? { a: 1} : { a: "one", b: "two"};
+>r : Symbol(r, Decl(_fixme-propNarrow-0003.ts, 3, 3))
+>x : Symbol(x, Decl(_fixme-propNarrow-0003.ts, 0, 13))
+>a : Symbol(a, Decl(_fixme-propNarrow-0003.ts, 3, 13))
+>a : Symbol(a, Decl(_fixme-propNarrow-0003.ts, 3, 23))
+>b : Symbol(b, Decl(_fixme-propNarrow-0003.ts, 3, 33))
+
+if (r.b===undefined){
+>r.b : Symbol(b, Decl(_fixme-propNarrow-0003.ts, 3, 33))
+>r : Symbol(r, Decl(_fixme-propNarrow-0003.ts, 3, 3))
+>b : Symbol(b, Decl(_fixme-propNarrow-0003.ts, 3, 33))
+>undefined : Symbol(undefined)
+
+    r;
+>r : Symbol(r, Decl(_fixme-propNarrow-0003.ts, 3, 3))
+}
+else {
+    r;
+>r : Symbol(r, Decl(_fixme-propNarrow-0003.ts, 3, 3))
+}
+

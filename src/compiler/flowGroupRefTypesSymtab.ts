@@ -16,6 +16,7 @@ namespace ts {
         setAsAssigned(symbol: Symbol, type: Readonly<RefTypesType>): RefTypesSymtabProxyI;
         delete(symbol: Symbol): void;
         forEach(f: (type: RefTypesType, symbol: Symbol) => void): void;
+        getAssignCount(): number;
         get size(): number;
     }
     /**
@@ -30,8 +31,10 @@ namespace ts {
         isSubloop?: boolean;
         loopState?: ProcessLoopState;
         loopGroup?: GroupForFlow;
+        assignCount: number;
 
-        constructor(symtabOuter?: Readonly<RefTypesSymtabProxy>, symtabInner?: RefTypesSymtabProxyInnerSymtab, isSubloop?: boolean, loopState?: ProcessLoopState, loopGroup?: GroupForFlow){
+        constructor(symtabOuter?: Readonly<RefTypesSymtabProxy>, symtabInner?: RefTypesSymtabProxyInnerSymtab, isSubloop?: boolean, loopState?: ProcessLoopState, loopGroup?: GroupForFlow, assignCount?: number){
+            this.assignCount = assignCount??0;
             this.symtabOuter = symtabOuter;
             this.symtabInner = new Map<Symbol,RefTypesSymtabProxyType>(symtabInner);
             if (isSubloop){
@@ -109,9 +112,11 @@ namespace ts {
         }
         setAsAssigned(symbol: Symbol, type: Readonly<RefTypesType>): RefTypesSymtabProxy {
             // NOTE: do NOT try to set pt elements - it is unsafe because someone else could be using the pt object.
+            this.assignCount++;
             this.symtabInner.set(symbol,{ type, assignedType: type });
             return this;
         }
+        getAssignCount(): number { return this.assignCount; }
         delete(symbol: Symbol): boolean {
             const ret = this.symtabInner.delete(symbol);
             if (this.loopState){
@@ -225,7 +230,7 @@ namespace ts {
     export function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
         Debug.assert(symtab instanceof RefTypesSymtabProxy);
         assertCastType<Readonly<RefTypesSymtabProxy>>(symtab);
-        return new RefTypesSymtabProxy(symtab.symtabOuter,symtab.symtabInner,symtab.isSubloop, symtab.loopState, symtab.loopGroup);
+        return new RefTypesSymtabProxy(symtab.symtabOuter,symtab.symtabInner,symtab.isSubloop, symtab.loopState, symtab.loopGroup, symtab.assignCount);
     }
     export function copyRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
         if (isRefTypesSymtabConstraintItemNever(sc)) return { constraintItem: { ...sc.constraintItem } };
