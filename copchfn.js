@@ -1,7 +1,7 @@
 
 const path = require("path");
 const fs = require("fs");
-// function to substitute  "fixme" to "caxnc" in the basename of a file path
+// function to substitute "fixme" to "caxnc" in the basename of a file path
 function subs(fp) {
     const base = path.basename(fp);
     const dir = path.dirname(fp);
@@ -15,8 +15,9 @@ function getFiles(dir) {
     return fs.readdirSync(dir);
 }
 
-getFiles("tests/cases/conformance/_caxnc-prop").forEach((file) => {
-    const fnsrc = path.join("tests/cases/conformance/_caxnc-prop", file);
+const dir="tests/cases/conformance/_caxFIXME";
+getFiles(dir).forEach((file) => {
+    const fnsrc = path.join(dir, file);
     const fndst = subs(fnsrc);
     if (fnsrc === fndst) return;
     console.log(fnsrc, fndst);

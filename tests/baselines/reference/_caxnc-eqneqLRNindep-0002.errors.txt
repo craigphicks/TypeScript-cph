@@ -1,0 +1,16 @@
+tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0002.ts(5,5): error TS2367: This condition will always return 'false' since the types 'number' and 'string' have no overlap.
+
+
+==== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0002.ts (1 errors) ====
+    let x: string | number | bigint = 1;
+    let y: string | number | bigint = 1;
+    x;
+    y;
+    if (x===(y="one")){
+        ~~~~~~~~~~~~~
+!!! error TS2367: This condition will always return 'false' since the types 'number' and 'string' have no overlap.
+        x;y;
+    }
+    else {
+        x;y;
+    }

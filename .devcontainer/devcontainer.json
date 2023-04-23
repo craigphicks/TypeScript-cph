@@ -15,7 +15,9 @@
                 }
             },
             "extensions": [
-                "dbaeumer.vscode-eslint"
+                "dbaeumer.vscode-eslint",
+                "GitHub.copilot",
+                "alefragnani.Bookmarks"
             ]
         }
     }

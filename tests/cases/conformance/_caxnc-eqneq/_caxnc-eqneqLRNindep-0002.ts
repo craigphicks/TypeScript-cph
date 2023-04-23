@@ -5,8 +5,8 @@
 // @enableTSDevExpectString: true
 
 
-let x: string | number = 1;
-let y: string | number = 1;
+let x: string | number | bigint = 1;
+let y: string | number | bigint = 1;
 x;
 y;
 if (x===(y="one")){
