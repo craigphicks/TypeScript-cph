@@ -12,9 +12,11 @@ ARG USER_GID=1000
 #RUN groupadd --gid $USER_GID $USERNAME
 #RUN useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
 
-RUN apt-get update
-RUN apt-get install -y sudo
-RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME
-RUN chmod 0440 /etc/sudoers.d/$USERNAME
-RUN sudo -u ${USERNAME} apt install meld
-RUN sudo -u ${USERNAME} npm install -g gulp-cli
+RUN apt-get update && \
+ apt-get install -y sudo && \
+ echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME && \
+ chmod 0440 /etc/sudoers.d/$USERNAME && \
+ echo "umask 0002" >> /home/$USERNAME/.bashrc && \
+ sudo -u ${USERNAME} npm install -g gulp-cli && \
+ sudo -u ${USERNAME} alias hig='history | grep'
+
