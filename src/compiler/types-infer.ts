@@ -12,33 +12,6 @@ namespace ts {
     //     inUse: boolean; // to prevent recursion of aliases
     // };
 
-    export enum RefTypesTableKind {
-        leaf = "leaf",
-        nonLeaf = "nonLeaf",
-        return = "return"
-    };
-    declare function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn;
-    export enum RefTypesTypeFlags {
-        none=0,
-        any=1,
-        unknown=2,
-    };
-    export interface RefTypesTypeNormal {
-        _flags: RefTypesTypeFlags.none;
-        _set: Set<Type>;
-        _mapLiteral: ESMap<Type, Set<LiteralType>>;
-    };
-    export interface RefTypesTypeAny {
-        _flags: RefTypesTypeFlags.any;
-        _set: undefined;
-        _mapLiteral: undefined;
-    };
-    export interface RefTypesTypeUnknown {
-        _flags: RefTypesTypeFlags.unknown;
-        _set: undefined;
-        _mapLiteral: undefined;
-    };
-    export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
 
 //    export type MakeRequired<Type, Key extends keyof Type> = Omit<Type, Key> & Required<Pick<Type, Key>>;
 
@@ -61,16 +34,15 @@ namespace ts {
         // constraintItem: ConstraintItem;
         sci: RefTypesSymtabConstraintItemNotNever
     };
+    export type PropertySymbol = Symbol;
     export type RefTypesTableReturn = & {
         // kind: RefTypesTableKind.return;
         symbol?: Symbol | undefined;
         isconst?: boolean;
         isAssign?: boolean; // don't need assignType because it will always be whole type.
         type: RefTypesType;
-        //typeConstraintItem: ConstraintItem;
-        // symtab?: RefTypesSymtab;
-        // constraintItem: ConstraintItem;
-        sci: RefTypesSymtabConstraintItem
+        propStack?: { propSymbol: PropertySymbol,baseObjectType: FloughObjectTypeInstance };
+        sci: RefTypesSymtabConstraintItem;
     };
     export type RefTypesTableReturnNotNever = & {
         // kind: RefTypesTableKind.return;

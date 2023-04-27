@@ -2,7 +2,8 @@
     "extends": "../tsconfig-base",
     "compilerOptions": {
         "outFile": "../../built/local/compiler.js",
-        "types": ["node"]
+        "types": ["node"],
+        "ignoreDeprecations": "5.0",
     },
 
     "references": [
@@ -46,6 +47,7 @@
         "symbolWalker.ts",
         "checker.ts",
         "heaper.ts",
+        "flowLogicalObject.ts",
         "flowNodesGrouping.ts",
         "flowNodesDebugWrite.ts",
         "flowGroupInfer.ts",

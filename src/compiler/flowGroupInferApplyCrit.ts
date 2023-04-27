@@ -11,14 +11,14 @@ namespace ts {
 
     function createNever(): RefTypesTableReturnNoSymbol {
         return {
-            type: mrNarrow.createRefTypesType(),
+            type: mrNarrow.createRefTypesTypeNever(),
             sci: createRefTypesSymtabConstraintItemNever()
         };
     }
 
     function applyCritToType(rt: Readonly<RefTypesType>,crit: Readonly<InferCrit>, passtype: RefTypesType, failtype?: RefTypesType): void {
         Debug.assert(crit.kind!==InferCritKind.none);
-        const forEachRefTypesTypeType = mrNarrow.refTypesTypeModule.forEachRefTypesTypeType;
+        const forEachRefTypesTypeType = mrNarrow.refTypesTypeModule.forEachNonObjectRefTypesTypeTsType;
         const addTsTypeNonUnionToRefTypesTypeMutate = mrNarrow.refTypesTypeModule.addTsTypeNonUnionToRefTypesTypeMutate;
         if (crit.kind===InferCritKind.truthy) {
             if (crit.alsoFailing){
@@ -163,8 +163,8 @@ namespace ts {
         if (extraAsserts){
             Debug.assert(!isRefTypesSymtabConstraintItemNever(rttr.sci));
         }
-        let passtype = mrNarrow.createRefTypesType();
-        let failtype = crit.alsoFailing ? mrNarrow.createRefTypesType() : undefined;
+        let passtype = mrNarrow.createRefTypesTypeNever();
+        let failtype = crit.alsoFailing ? mrNarrow.createRefTypesTypeNever() : undefined;
         applyCritToType(rttr.type,crit,passtype,failtype);
         let passsc = rttr.sci;
         let failsc = crit.alsoFailing ? rttr.sci : undefined;
@@ -232,8 +232,8 @@ namespace ts {
             if (extraAsserts){
                 Debug.assert(!isRefTypesSymtabConstraintItemNever(rttr.sci));
             }
-            let passtype = mrNarrow.createRefTypesType();
-            let failtype = crit.alsoFailing ? mrNarrow.createRefTypesType() : undefined;
+            let passtype = mrNarrow.createRefTypesTypeNever();
+            let failtype = crit.alsoFailing ? mrNarrow.createRefTypesTypeNever() : undefined;
             applyCritToType(rttr.type,crit,passtype,failtype);
             if (!mrNarrow.isNeverType(passtype)){
                 let passsc = rttr.sci;

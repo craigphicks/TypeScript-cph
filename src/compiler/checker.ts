@@ -719,9 +719,6 @@ namespace ts {
             isConstVariable,
             isConstantReference,
             getNodeLinks,
-            // getUnionType(types: readonly Type[], unionReduction: UnionReduction = UnionReduction.Literal, aliasSymbol?: Symbol, aliasTypeArguments?: readonly Type[], origin?: Type): Type {
-            //     return getUnionType(types, unionReduction, aliasSymbol, aliasTypeArguments, origin);
-            // },
             getResolvedSymbol,
             getSymbolOfNode,
             getUnknownType(){ return unknownType; },
@@ -951,6 +948,7 @@ namespace ts {
             },
             getApparentType,
             getUnionType,
+            getIntersectionType,
             isTypeAssignableTo,
             createAnonymousType,
             createSignature,

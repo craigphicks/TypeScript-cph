@@ -6,6 +6,7 @@ namespace ts {
         createRefTypesSymtab(): RefTypesSymtab;
         copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
         createRefTypesType(type?: Readonly<Type> | Readonly<Type[]>): RefTypesType;
+        createRefTypesTypeNever(): RefTypesTypeNormal;
         dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string;
         dbgRefTypesTableToStrings(t: RefTypesTable): string[],
         dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[],
@@ -89,6 +90,7 @@ namespace ts {
             //getTypeMemberCount,
             //orEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
             createRefTypesType,
+            createRefTypesTypeNever,
             cloneRefTypesType,
             addTypeToRefTypesType,
             mergeToRefTypesType,
@@ -100,7 +102,7 @@ namespace ts {
             isNeverType,
             isAnyType,
             isUnknownType,
-            forEachRefTypesTypeType,
+            forEachNonObjectRefTypesTypeTsType,
             //partitionIntoSingularAndNonSingularTypes,
             equalRefTypesTypes,
         } = refTypesTypeModule; //createRefTypesTypeModule(checker);
@@ -108,6 +110,7 @@ namespace ts {
         const mrNarrow: MrNarrow = {
             // forwarded from flowGroupInferRefTypesType
             createRefTypesType,
+            createRefTypesTypeNever,
             equalRefTypesTypes,
             mergeToRefTypesType,
             unionOfRefTypesType,
@@ -234,7 +237,7 @@ namespace ts {
         function dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string {
             const astr: string[]=[];
 
-            forEachRefTypesTypeType(rt, t=>astr.push(`${dbgTypeToString(t)}`));
+            forEachNonObjectRefTypesTypeTsType(rt, t=>astr.push(`${dbgTypeToString(t)}`));
             return astr.join(" | ");
             // return typeToString(getTypeFromRefTypesType(rt));
         }
@@ -330,7 +333,7 @@ namespace ts {
 
             const atypeMaybeWidened: Type[] = [];
             let someWidened = false;
-            forEachRefTypesTypeType(rawRhsType, tstype=>{
+            forEachNonObjectRefTypesTypeTsType(rawRhsType, tstype=>{
                 /**
                  * In case of tstype is Object, and when the lhsSymbolFlowInfo.effectiveTsType is the, or a union of, "canonical" types,
                  * then, for each "canonical" type, we use checker.isTypeRelatedTo to detect if tstype is assignable to that "canonical" type,
@@ -475,14 +478,14 @@ namespace ts {
         // @ ts-ignore-error 6133
         function applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void {
             if (crit.kind===InferCritKind.none) {
-                forEachRefTypesTypeType(rt, t => {
+                forEachNonObjectRefTypesTypeTsType(rt, t => {
                     func(t, /* pass */ true, /* fail */ false);
                 });
             }
             else if (crit.kind===InferCritKind.truthy) {
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
                 const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
-                forEachRefTypesTypeType(rt, t => {
+                forEachNonObjectRefTypesTypeTsType(rt, t => {
                     const tf = checker.getTypeFacts(t);
                     func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
@@ -490,13 +493,13 @@ namespace ts {
             else if (crit.kind===InferCritKind.notnullundef) {
                 const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
                 const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
-                forEachRefTypesTypeType(rt, t => {
+                forEachNonObjectRefTypesTypeTsType(rt, t => {
                     const tf = checker.getTypeFacts(t);
                     func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
             }
             else if (crit.kind===InferCritKind.assignable) {
-                forEachRefTypesTypeType(rt, source => {
+                forEachNonObjectRefTypesTypeTsType(rt, source => {
                     let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
                     if (crit.negate) rel = !rel;
                     func(source, rel, !rel);
@@ -971,7 +974,7 @@ namespace ts {
                 Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
                 return {
                     unmerged: [{
-                        type: createRefTypesType(), // never
+                        type: createRefTypesTypeNever(), // never
                         sci: createRefTypesSymtabConstraintItemNever()
                     }],
                     nodeForMap: expr,
@@ -1057,7 +1060,7 @@ namespace ts {
                          */
                         if (inferStatus.inCondition && replayable.expr.kind===SyntaxKind.Identifier && mntr.unmerged.length===1){
                             const unmerged: RefTypesTableReturn[] = [];
-                            forEachRefTypesTypeType(mntr.unmerged[0].type, t => unmerged.push({
+                            forEachNonObjectRefTypesTypeTsType(mntr.unmerged[0].type, t => unmerged.push({
                                 ...mntr.unmerged[0],
                                 type: createRefTypesType(t)
                             }));
@@ -1376,7 +1379,7 @@ namespace ts {
                 const applyNotNullUndefCritToRefTypesTableReturn = (arrRttr: Readonly<RefTypesTableReturn[]>): Readonly<RefTypesTableReturn[]> => {
                     const arrOut: RefTypesTableReturn[] = [];
                     arrRttr.forEach(rttr=>{
-                        const type = createRefTypesType();
+                        const type = createRefTypesTypeNever();
                         applyCritToRefTypesType(rttr.type,{ kind: InferCritKind.notnullundef }, (tstype, bpass, _bfail)=>{
                             if (bpass) addTypeToRefTypesType({ source:tstype,target:type });
                         });
@@ -1843,7 +1846,8 @@ namespace ts {
                          * For each new branch a RefTypesTableReturn is created and pushed to arrRttr.
                          *
                          */
-                        forEachRefTypesTypeType(prePassing.type, t => {
+                        forEachNonObjectRefTypesTypeTsType(prePassing.type, t => {
+                            // TODO: Shouldn't this either (not happen) or (return after andSymbolTypeIntoSymtabConstraint)?
                             if (t===undefinedType||t===nullType) {
                                 return;
                             }
@@ -2353,7 +2357,7 @@ namespace ts {
                     const rhs = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                     if (!inferStatus.inCondition || !typeofArgSymbol){
                         const setOfTypeOfStrings = new Set<string>();
-                        forEachRefTypesTypeType(rhs.type, t=>{
+                        forEachNonObjectRefTypesTypeTsType(rhs.type, t=>{
                             typeToTypeofStrings(t).forEach(str=>{
                                 setOfTypeOfStrings.add(str);
                             });
@@ -2370,7 +2374,7 @@ namespace ts {
 
                         const arrStringLiteralType: StringLiteralType[]=[];
                         const mapTypeOfStringToTsTypeSet = new Map<LiteralType,Set<Type>>();
-                        forEachRefTypesTypeType(rhs.type, t=>{
+                        forEachNonObjectRefTypesTypeTsType(rhs.type, t=>{
                             typeToTypeofStrings(t).forEach(str=>{
                                 const typeofString = checker.getStringLiteralType(str);
                                 arrStringLiteralType.push(typeofString);

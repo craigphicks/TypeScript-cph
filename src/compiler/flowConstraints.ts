@@ -126,9 +126,9 @@ namespace ts {
             typeRange = mrNarrow.createRefTypesType(mrNarrow.checker.getAnyType());
         }
 
-        if (cin.kind===ConstraintItemKind.always) return !negate ? typeRange : mrNarrow.createRefTypesType();
+        if (cin.kind===ConstraintItemKind.always) return !negate ? typeRange : mrNarrow.createRefTypesTypeNever();
         if (cin.kind===ConstraintItemKind.never){
-            if (!negate) return mrNarrow.createRefTypesType(); // never
+            if (!negate) return mrNarrow.createRefTypesTypeNever(); // never
             return typeRange;
         }
         if (cin.kind===ConstraintItemKind.leaf){
@@ -137,7 +137,7 @@ namespace ts {
                 return mrNarrow.intersectionOfRefTypesType(cin.type,typeRange);
             }
             else {
-                if (cin.symbol!==symbol) return mrNarrow.createRefTypesType(); // never
+                if (cin.symbol!==symbol) return mrNarrow.createRefTypesTypeNever(); // never
                 return mrNarrow.subtractFromType(cin.type,typeRange);
             }
         }
@@ -155,7 +155,7 @@ namespace ts {
                 return isectType;
             }
             if (cin.op===ConstraintItemNodeOp.or && !negate || cin.op===ConstraintItemNodeOp.and && negate){
-                const unionType = mrNarrow.createRefTypesType(); // never
+                const unionType = mrNarrow.createRefTypesTypeNever(); // never
                 for (const subc of cin.constraints){
                     const subType = evalTypeOverConstraint({ cin:subc, symbol, typeRange, mrNarrow, depth:depth+1 });
                     mrNarrow.mergeToRefTypesType({ source:subType, target:unionType });
@@ -434,7 +434,7 @@ namespace ts {
     //     getDeclaredType: GetDeclaredTypeFn,
     //     mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
     //     //Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
-    //     if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesType(),sc };
+    //     if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesTypeNever(),sc };
     //     return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType });
     // }
 
@@ -451,7 +451,7 @@ namespace ts {
             consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
             +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
         }
-        if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesType(),sc };
+        if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesTypeNever(),sc };
 
         const constraintItem = sc.constraintItem;
         Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
@@ -819,7 +819,7 @@ namespace ts {
             return new Map<Symbol,RefTypesType>(ast);
         }
 
-        const rttnever = mrNarrow.createRefTypesType();// never
+        const rttnever = mrNarrow.createRefTypesTypeNever();// never
         const rttbool = mrNarrow.createRefTypesType(checker.getBooleanType());
         const rtttrue = mrNarrow.createRefTypesType(checker.getTrueType());
         const rttfalse = mrNarrow.createRefTypesType(checker.getFalseType());
@@ -1054,7 +1054,7 @@ namespace ts {
                     Debug.assert(data.out.has(symbol), `data[${_iter}].out missing symbol ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
                 });
                 data.out.forEach((type,symbol)=>{
-                    const actualType = coverMap.get(symbol) ?? mrNarrow.createRefTypesType(); // never
+                    const actualType = coverMap.get(symbol) ?? mrNarrow.createRefTypesTypeNever(); // never
                     Debug.assert(mrNarrow.isASubsetOfB(actualType,type),
                         `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(actualType:${mrNarrow.dbgRefTypesTypeToString(actualType)}, expectedType:${mrNarrow.dbgRefTypesTypeToString(type)})`);
                     Debug.assert(mrNarrow.isASubsetOfB(type, actualType),
