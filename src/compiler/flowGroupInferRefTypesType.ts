@@ -97,7 +97,7 @@ namespace ts {
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType;
         partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
         addFloughObjectTypeInstanceToRefTypesTypeMutate(fobj: FloughObjectTypeInstance, target: RefTypesType): RefTypesType;
-        };
+    };
 
     export function createRefTypesTypeModule(checker: TypeChecker): RefTypesTypeModule {
 
@@ -665,18 +665,6 @@ namespace ts {
                     });
                 });
                 return at;
-            }
-        }
-
-        function forEachObjectRefTypesTypeLookupProperty<F extends (type: RefTypesType, baseType?: RefTypesType) => any>(type: Readonly<RefTypesType>, key: string, f: F): void {
-            if (isAnyType(type)) f(createRefTypesTypeAny());
-            if (isUnknownType(type)) f(createRefTypesTypeAny());
-            assertCastType<RefTypesTypeNormal>(type);
-            if (type._objects){
-                type._objects.forEach(fti=>{
-                    f(fti.keyToType?.get(key)??createRefTypesTypeNever());
-                });
-                // TODO: we're going to continue after implementing FloughLogicalObjectTypesInstance
             }
         }
 

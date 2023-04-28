@@ -1,5 +1,15 @@
 namespace ts {
 
+    const checker = undefined as any as TypeChecker; // TODO: intialize;
+    // const createRefTypesType = undefined as any as RefTypesTypeModule["createRefTypesType"] &
+    // {
+    //     getRefTypesTypeUndefined: () => RefTypesType;
+    // }
+    const refTypesTypeModule = undefined as any as RefTypesTypeModule &
+    {
+        getRefTypesTypeUndefined: () => RefTypesType;
+    };
+
     type PropertyKeyType = string;
     const essymbolFloughObjectTypeInstance = Symbol("floughObjectTypeInstance");
     export type FloughObjectTypeInstance = & {
@@ -101,6 +111,7 @@ namespace ts {
      * This is a test function - we really want to get keys and types together, which it a bit more complicated.
      * The resulting set of keys are the zero order result, meaning there is no correlation between the keys - just one set of all keys.
      * @param logicalObjectTop
+     * TODO: These are only the keys that have been loaded into the logical object, not all keys of the type. Get all keys of the type.
      */
     export function logicalObjectGetKeysZeroOrder(
         logicalObjectTop: Readonly<FloughLogicalObjectTypeInstance>,
@@ -138,9 +149,112 @@ namespace ts {
         return result.setof!;
     }
 
-    // export function logicalObjectForEachTypeOfProperyLookup(
-    //     logicalObjectTop: Readonly<FloughLogicalObjectTypeInstance>, key: PropertyKeyType, func: (type: Readonly<RefTypesType>) => any
-    // ): void {
-    // }
+    /**
+     * For teh given key "lookupkey", return an array of all object instances with property "lookupkey" and the corresponding type.
+     * It's not so simple because the object instances are in a tree, and the lookupkey may be in a union or intersection.
+     * However, the object instances are wanted so we can go back and trim the tree.
+     * The idea is that this replaces the old code action, in "floughByPropertyAccessExpression", where
+     * ```
+     * forEachRefTypesTypeTsType(prePassing.type, t => {
+     *   ...
+     *   const propSymbol = checker.getPropertyOfType(t, keystr);
+     *   if (propSymbol)
+     *            const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
+     *                {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc,
+     *                getDeclaredType, mrNarrow });
+     *            arrRttr.push({
+     *                symbol: propSymbol,
+     *                isconst: symbolFlowInfo.isconst,
+     *                type, //symbolFlowInfo.effectiveDeclaredType!,
+     *                sci: propSC
+     *            });
+     *    else
+     *           arrRttr.push({symbol: undefined, type: checker.getUndefinedType(), sci: sc});
+     * ```
+     * In the above code, t corresponds to the type of the object instance, and keystr corresponds to the lookupkey.
+     * In the new code, is we will be calling forEachRefTypesTypeObject, with iterates over its floughLogicalObjectTypeInstance-s. (or will there be just one?).
+     * When there are no intersections, it is simply a matter of adding each {baseObjectInstance, type} to the result array, so they are kept separate.
+     * Then, if a criteria is applied the result array, the corresponding object instances can be narrowed.  The criteria is applied to the type, which is updated in the object instance,
+     * and if the results type is never, the object instance is removed from the tree.
+     * When there are intersections of {baseObjectInstance1, type1}, {baseObjectInstance2, type2}, the result is
+     * {baseObjectInstance1, intersect(type1,type2)} and {baseObjectInstance2, intersect(type1,type2)} - both of which are added to the result array, since they are mutually constraining.
+     *
+     * It is possible that the result array will contain the same object more than once.  Therfore, it using Map<objectInstance, type>.
+     *
+     * Note that as a result of intersection constraining, some of the property types returned in the may be
+     * - undefined type even if that is not an allowed type for the property (might change this to never type)
+     * - never type (alway allowed, it is a flow description not really a type)
+     * - an unresolved intersection type of FloughtObjectTypesInstance-s.  This is probably not acceptable but is a TODO to solve with working tests.
+     *
+     * @param logicalObjectTop
+     * @param lookupkey
+     * @returns
+     */
+    export function logicalObjectForEachTypeOfProperyLookup(
+        logicalObjectTop: Readonly<FloughLogicalObjectTypeInstance>, lookupkey: PropertyKeyType,
+    ): ESMap<Readonly<FloughObjectTypeInstance>, Readonly<RefTypesType>> {
+        // type Result = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<RefTypesType> }[];
+        // type State = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<RefTypesType> }[];
+        type Result = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<RefTypesType>>;
+        type State = Result;
+        function newMap(x?: {objectTypeInstance: Readonly<FloughObjectTypeInstance>, type: RefTypesType}){
+            const map = new Map<Readonly<FloughObjectTypeInstance>, RefTypesType>();
+            if (x) map.set(x.objectTypeInstance,x.type);
+            return map;
+        }
+        function createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey: PropertyKeyType):
+            LogicalObjectVisitor<Result, State>{
+            return {
+                onPlain: (logicalObject: Readonly<FloughLogicalObjectTypePlain>) => {
+                    let type = logicalObject.item.keyToType.get(lookupkey);
+                    if (!type) {
+                        // check if the key is in the base object, if so get the type from there
+                        const tsObjectType = logicalObject.item.tsObjectType;
+                        const tsPropertyType = checker.getTypeOfPropertyOfType(tsObjectType, lookupkey);
+                        type = tsPropertyType ? refTypesTypeModule.createRefTypesType(tsPropertyType) : refTypesTypeModule.getRefTypesTypeUndefined();
+                        if (!tsPropertyType) {
+                            // TODO: maybe if undefined is not allowed in the base object, this should return never.
+                            type = refTypesTypeModule.getRefTypesTypeUndefined();
+                        }
+                    }
+                    return newMap({ objectTypeInstance:logicalObject.item, type });
+                },
+                onUnion(_logicalObject: Readonly<FloughLogicalObjectTypeInstanceUnion>, result: Result, state: State) {
+                    // This does nothing because we do not want to widen the individual object instances in the union.
+                    // Note that any indivual object instances might have been narrowed in "onPlain" if the lookupkey was not found.
+                    result.forEach((type, objectInstance) => {
+                        if (!state.get(objectInstance)) state.set(objectInstance, type);
+                    });
+                    return state;
+                },
+                OnIntersection(_logicalObject: Readonly<FloughLogicalObjectTypeInstanceIntersection>, result: Result, state: State) {
+                    /**
+                     * This does NOT compute the type intersections over all keys.  It only computes the type intersection for the given key.
+                     */
+                    const iter = result.entries();
+                    const first = iter.next();
+                    Debug.assert(!first.done);
+                    let isecttype = first.value[1];
+                    if (!refTypesTypeModule.isNeverType(isecttype)) {
+                        for (let it = iter.next(); !it.done; it = iter.next()) {
+                            isecttype = refTypesTypeModule.intersectionOfRefTypesType(isecttype, it.value[1]);
+                            if (refTypesTypeModule.isNeverType(isecttype)) break;
+                        }
+                    }
+                    result.forEach((_type, objectInstance) => {
+                        state.set(objectInstance, isecttype);
+                    });
+                    return state;
+                },
+                OnItemsInitializeState: () => newMap(),
+                OnItemsFinished: (state: State | undefined) => {
+                    return state ?? newMap();
+                }
+            };
+        } // end of createLogicalObjectVisitorForForEachTypeOfProperyLookup
+        const visitor = createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey);
+        const result = logicalObjecVisit(logicalObjectTop, () => visitor);
+        return result;
+    } // end of logicalObjectForEachTypeOfProperyLookup
 
 }
