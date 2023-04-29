@@ -33,48 +33,158 @@ namespace ts {
     export function cloneFloughObjectTypeInstance(fobj: Readonly<FloughObjectTypeInstance>): FloughObjectTypeInstance {
         return createFloughObjectTypeInstance(fobj.tsObjectType, fobj.keyToType, fobj.objectTypeInstanceId);
     }
-    export type FloughLogicalObjectTypePlain = & {
-        kind: "plain";
+    export enum FloughLogicalObjectKind {
+        plain="plain",
+        union="union",
+        intersection="intersection"
+    }
+    type FloughLogicalObjectPlain = & {
+        kind: FloughLogicalObjectKind.plain;
         item: FloughObjectTypeInstance;
     };
-    export type FloughLogicalObjectTypeInstanceUnion = & {
-        kind: "union";
-        items: FloughLogicalObjectTypeInstance[];
+    type FloughLogicalObjectUnion = & {
+        kind: FloughLogicalObjectKind.union;
+        items: FloughLogicalObject[];
     };
-    export type FloughLogicalObjectTypeInstanceIntersection = & {
-        kind: "intersection";
-        items: FloughLogicalObjectTypeInstance[];
+    type FloughLogicalObjectIntersection = & {
+        kind: FloughLogicalObjectKind.intersection;
+        items: FloughLogicalObject[];
     };
-    export type FloughLogicalObjectTypeInstance = FloughLogicalObjectTypePlain | FloughLogicalObjectTypeInstanceUnion | FloughLogicalObjectTypeInstanceIntersection;
+    type FloughLogicalObject = FloughLogicalObjectPlain | FloughLogicalObjectUnion | FloughLogicalObjectIntersection;
+    export interface FloughLogicalObjectIF {
+        kind: FloughLogicalObjectKind;
+    }
+
+    export function createFloughLogicalObjectTypeInstance(tstype: ObjectType){
+        return {
+            kind: FloughLogicalObjectKind.plain,
+            item: createFloughObjectTypeInstance(tstype)
+        };
+    }
+
+    export function unionOfFloughLogicalObjectTypeInstances(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
+        assertCastType<FloughLogicalObject>(a);
+        assertCastType<FloughLogicalObject>(b);
+        if (a.kind===FloughLogicalObjectKind.plain) {
+            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.intersection) {
+                return {
+                    kind: FloughLogicalObjectKind.union,
+                    items: [a, b],
+                };
+            }
+            else /* if (target.kind===FloughLogicalObjectKind.union) */ {
+                return {
+                    kind: FloughLogicalObjectKind.union,
+                    items: [a, ...b.items],
+                };
+            }
+        }
+        else if (a.kind===FloughLogicalObjectKind.union) {
+            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.intersection) {
+                return {
+                    kind: FloughLogicalObjectKind.union,
+                    items: [...a.items, b],
+                };
+            }
+            else /* if (target.kind===FloughLogicalObjectKind.union) */ {
+                return {
+                    kind: FloughLogicalObjectKind.union,
+                    items: [...a.items, ...b.items],
+                };
+            }
+        }
+        else /* if (source.kind===FloughLogicalObjectKind.intersection) */ {
+            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.intersection) {
+                return {
+                    kind: FloughLogicalObjectKind.union,
+                    items: [a, b],
+                };
+            }
+            else /* if (target.kind===FloughLogicalObjectKind.union) */ {
+                return {
+                    kind: FloughLogicalObjectKind.union,
+                    items: [...b.items, a],
+                };
+            }
+        }
+    }
+
+    export function intersectionOfFloughLogicalObjectTypeInstances(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
+        assertCastType<FloughLogicalObject>(a);
+        assertCastType<FloughLogicalObject>(b);
+        if (a.kind===FloughLogicalObjectKind.plain) {
+            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.union) {
+                return {
+                    kind: FloughLogicalObjectKind.intersection,
+                    items: [a, b],
+                };
+            }
+            else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
+                return {
+                    kind: FloughLogicalObjectKind.intersection,
+                    items: [a, ...b.items],
+                };
+            }
+        }
+        else if (a.kind===FloughLogicalObjectKind.intersection) {
+            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.union) {
+                return {
+                    kind: FloughLogicalObjectKind.intersection,
+                    items: [...a.items, b],
+                };
+            }
+            else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
+                return {
+                    kind: FloughLogicalObjectKind.intersection,
+                    items: [...a.items, ...b.items],
+                };
+            }
+        }
+        else /* if (source.kind===FloughLogicalObjectKind.union) */ {
+            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.union) {
+                return {
+                    kind: FloughLogicalObjectKind.intersection,
+                    items: [a, b],
+                };
+            }
+            else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
+                return {
+                    kind: FloughLogicalObjectKind.intersection,
+                    items: [...b.items, a],
+                };
+            }
+        }
+    }
+
 
     type LogicalObjectVisitor<ResultType,StateType> = & {
-        onPlain: (logicalObject: Readonly<FloughLogicalObjectTypePlain>) => ResultType;
-        onUnion: (logicalObject: Readonly<FloughLogicalObjectTypeInstanceUnion>, result: ResultType, state: StateType) => StateType;
-        OnIntersection: (logicalObject: Readonly<FloughLogicalObjectTypeInstanceIntersection>, result: ResultType, state: StateType) => StateType;
+        onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => ResultType;
+        onUnion: (logicalObject: Readonly<FloughLogicalObjectUnion>, result: ResultType, state: StateType) => StateType;
+        OnIntersection: (logicalObject: Readonly<FloughLogicalObjectIntersection>, result: ResultType, state: StateType) => StateType;
         OnItemsInitializeState: () => StateType;
         OnItemsFinished: (state: StateType | undefined) => ResultType;
     };
     function logicalObjecVisit<ArgType, ResultType,StateType>(
-        logicalObjectTop: Readonly<FloughLogicalObjectTypeInstance>,
+        logicalObjectTop: Readonly<FloughLogicalObject>,
         createVisitor: (arg?: ArgType | undefined) => LogicalObjectVisitor<ResultType,StateType>,
         arg?: ArgType,
     ): ResultType {
         const visitor = createVisitor(arg);
         const stackItemsIndexIdx = 1;
         const stackStateIdx = 2;
-        const stack: [logicalObject: Readonly<FloughLogicalObjectTypeInstance>, itemsIndex: number, state: StateType | undefined][]
+        const stack: [logicalObject: Readonly<FloughLogicalObject>, itemsIndex: number, state: StateType | undefined][]
             = [[logicalObjectTop, 0, undefined]];
         let result: ResultType | undefined;
         while (stack.length!==0) {
             const [logicalObject,itemsIndex,state] = stack[stack.length - 1];
             switch (logicalObject.kind) {
-                case "plain": {
+                case FloughLogicalObjectKind.plain: {
                     stack.pop();
                     result = visitor.onPlain(logicalObject);
                     continue;
                 }
-                case "union":
-                case "intersection":
+                case FloughLogicalObjectKind.union:
+                case FloughLogicalObjectKind.intersection:
                     if (itemsIndex===logicalObject.items.length){
                         stack.pop();
                     }
@@ -84,7 +194,7 @@ namespace ts {
                         stack.push([logicalObject.items[itemsIndex],0,undefined]);
                     }
                     else {
-                        if (logicalObject.kind==="intersection") {
+                        if (logicalObject.kind===FloughLogicalObjectKind.intersection) {
                             stack[stack.length-1][stackStateIdx] = visitor.OnIntersection(logicalObject, result!, state!);
                             stack.push([logicalObject.items[itemsIndex],itemsIndex+1,undefined]);
                         }
@@ -114,24 +224,24 @@ namespace ts {
      * TODO: These are only the keys that have been loaded into the logical object, not all keys of the type. Get all keys of the type.
      */
     export function logicalObjectGetKeysZeroOrder(
-        logicalObjectTop: Readonly<FloughLogicalObjectTypeInstance>,
+        logicalObjectTop: Readonly<FloughLogicalObject>,
     ): Set<PropertyKeyType> {
         type Result = & {iter: Iterator<PropertyKeyType>, setof: Set<PropertyKeyType> | undefined};
         type State = Set<PropertyKeyType>;
         function createLogicalObjectVisitorForGetKeysZeroOrder():
         LogicalObjectVisitor<Result, State>{
             return {
-                onPlain: (logicalObject: Readonly<FloughLogicalObjectTypePlain>) => {
+                onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => {
                     const result: Result = { iter: logicalObject.item.keyToType.keys(), setof: undefined };
                     return result;
                 },
-                onUnion(_logicalObject: Readonly<FloughLogicalObjectTypeInstanceUnion>, result: Result, state: State) {
+                onUnion(_logicalObject: Readonly<FloughLogicalObjectUnion>, result: Result, state: State) {
                     for (let it=result.iter.next();!it.done; it=result.iter.next()) {
                         state.add(it.value);
                     }
                     return state;
                 },
-                OnIntersection(_logicalObject: Readonly<FloughLogicalObjectTypeInstanceIntersection>, result: Result, state: State) {
+                OnIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State) {
                     const setOfKeys = new Set<PropertyKeyType>();
                     for (let it=result.iter.next();!it.done; it=result.iter.next()) {
                         if (state.has(it.value)) setOfKeys.add(it.value);
@@ -184,14 +294,14 @@ namespace ts {
      * Note that as a result of intersection constraining, some of the property types returned in the may be
      * - undefined type even if that is not an allowed type for the property (might change this to never type)
      * - never type (alway allowed, it is a flow description not really a type)
-     * - an unresolved intersection type of FloughtObjectTypesInstance-s.  This is probably not acceptable but is a TODO to solve with working tests.
+     * - an unresolved intersection type of FloughtObjectTypesInstance-s.  This is probably not acceptable but is a TODO: to solve with working tests.
      *
      * @param logicalObjectTop
      * @param lookupkey
      * @returns
      */
     export function logicalObjectForEachTypeOfProperyLookup(
-        logicalObjectTop: Readonly<FloughLogicalObjectTypeInstance>, lookupkey: PropertyKeyType,
+        logicalObjectTop: Readonly<FloughLogicalObject>, lookupkey: PropertyKeyType,
     ): ESMap<Readonly<FloughObjectTypeInstance>, Readonly<RefTypesType>> {
         // type Result = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<RefTypesType> }[];
         // type State = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<RefTypesType> }[];
@@ -205,7 +315,7 @@ namespace ts {
         function createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey: PropertyKeyType):
             LogicalObjectVisitor<Result, State>{
             return {
-                onPlain: (logicalObject: Readonly<FloughLogicalObjectTypePlain>) => {
+                onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => {
                     let type = logicalObject.item.keyToType.get(lookupkey);
                     if (!type) {
                         // check if the key is in the base object, if so get the type from there
@@ -219,7 +329,7 @@ namespace ts {
                     }
                     return newMap({ objectTypeInstance:logicalObject.item, type });
                 },
-                onUnion(_logicalObject: Readonly<FloughLogicalObjectTypeInstanceUnion>, result: Result, state: State) {
+                onUnion(_logicalObject: Readonly<FloughLogicalObjectUnion>, result: Result, state: State) {
                     // This does nothing because we do not want to widen the individual object instances in the union.
                     // Note that any indivual object instances might have been narrowed in "onPlain" if the lookupkey was not found.
                     result.forEach((type, objectInstance) => {
@@ -227,7 +337,7 @@ namespace ts {
                     });
                     return state;
                 },
-                OnIntersection(_logicalObject: Readonly<FloughLogicalObjectTypeInstanceIntersection>, result: Result, state: State) {
+                OnIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State) {
                     /**
                      * This does NOT compute the type intersections over all keys.  It only computes the type intersection for the given key.
                      */

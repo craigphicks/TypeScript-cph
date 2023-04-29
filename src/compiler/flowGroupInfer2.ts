@@ -102,7 +102,7 @@ namespace ts {
             isNeverType,
             isAnyType,
             isUnknownType,
-            forEachNonObjectRefTypesTypeTsType,
+            forEachRefTypesTypeTsTypeExcludingLogicalObject,
             //partitionIntoSingularAndNonSingularTypes,
             equalRefTypesTypes,
         } = refTypesTypeModule; //createRefTypesTypeModule(checker);
@@ -197,47 +197,10 @@ namespace ts {
             Debug.fail("unexpected");
         }
 
-        // function createRefTypesSymtab(): RefTypesSymtab {
-        //     return new Map<Symbol, RefTypesType>();
-        // }
-
-        // function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
-        //     return new Map<Symbol, RefTypesType>(symtab);
-        // }
-        /**
-         * Should be the most efficient way to get union of symtabs
-         * @param arr
-         * @returns
-         */
-        // function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
-        //     const target = createRefTypesSymtab();
-        //     if (arr.length===0) return target;
-        //     if (arr.length===1) return arr[0];
-        //     const mapSymToType = new Map<Symbol,{set: Set<Type>}>();
-        //     arr.forEach(rts=>{
-        //         rts.forEach((type,symbol)=>{
-        //             let got = mapSymToType.get(symbol);
-        //             if (!got) {
-        //                 got = { set:new Set<Type>() };
-        //                 mapSymToType.set(symbol, got);
-        //             }
-        //             forEachRefTypesTypeType(type, t=>got!.set.add(t));
-        //         });
-        //     });
-        //     mapSymToType.forEach(({set},symbol)=>{
-        //         // const isconst = _mrState.symbolFlowInfoMap.get(symbol)!.isconst;
-        //         const atype: Type[]=[];
-        //         set.forEach(t=>atype.push(t));
-        //         const type = createRefTypesType(atype);
-        //         target.set(symbol,type);
-        //     });
-        //     return target;
-        // }
-
         function dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string {
             const astr: string[]=[];
 
-            forEachNonObjectRefTypesTypeTsType(rt, t=>astr.push(`${dbgTypeToString(t)}`));
+            forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t=>astr.push(`${dbgTypeToString(t)}`));
             return astr.join(" | ");
             // return typeToString(getTypeFromRefTypesType(rt));
         }
@@ -333,7 +296,7 @@ namespace ts {
 
             const atypeMaybeWidened: Type[] = [];
             let someWidened = false;
-            forEachNonObjectRefTypesTypeTsType(rawRhsType, tstype=>{
+            forEachRefTypesTypeTsTypeExcludingLogicalObject(rawRhsType, tstype=>{
                 /**
                  * In case of tstype is Object, and when the lhsSymbolFlowInfo.effectiveTsType is the, or a union of, "canonical" types,
                  * then, for each "canonical" type, we use checker.isTypeRelatedTo to detect if tstype is assignable to that "canonical" type,
@@ -478,14 +441,14 @@ namespace ts {
         // @ ts-ignore-error 6133
         function applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void {
             if (crit.kind===InferCritKind.none) {
-                forEachNonObjectRefTypesTypeTsType(rt, t => {
+                forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t => {
                     func(t, /* pass */ true, /* fail */ false);
                 });
             }
             else if (crit.kind===InferCritKind.truthy) {
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
                 const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
-                forEachNonObjectRefTypesTypeTsType(rt, t => {
+                forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t => {
                     const tf = checker.getTypeFacts(t);
                     func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
@@ -493,13 +456,13 @@ namespace ts {
             else if (crit.kind===InferCritKind.notnullundef) {
                 const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
                 const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
-                forEachNonObjectRefTypesTypeTsType(rt, t => {
+                forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t => {
                     const tf = checker.getTypeFacts(t);
                     func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
             }
             else if (crit.kind===InferCritKind.assignable) {
-                forEachNonObjectRefTypesTypeTsType(rt, source => {
+                forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, source => {
                     let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
                     if (crit.negate) rel = !rel;
                     func(source, rel, !rel);
@@ -1060,7 +1023,7 @@ namespace ts {
                          */
                         if (inferStatus.inCondition && replayable.expr.kind===SyntaxKind.Identifier && mntr.unmerged.length===1){
                             const unmerged: RefTypesTableReturn[] = [];
-                            forEachNonObjectRefTypesTypeTsType(mntr.unmerged[0].type, t => unmerged.push({
+                            forEachRefTypesTypeTsTypeExcludingLogicalObject(mntr.unmerged[0].type, t => unmerged.push({
                                 ...mntr.unmerged[0],
                                 type: createRefTypesType(t)
                             }));
@@ -1846,7 +1809,7 @@ namespace ts {
                          * For each new branch a RefTypesTableReturn is created and pushed to arrRttr.
                          *
                          */
-                        forEachNonObjectRefTypesTypeTsType(prePassing.type, t => {
+                        forEachRefTypesTypeTsTypeExcludingLogicalObject(prePassing.type, t => {
                             // TODO: Shouldn't this either (not happen) or (return after andSymbolTypeIntoSymtabConstraint)?
                             if (t===undefinedType||t===nullType) {
                                 return;
@@ -2357,7 +2320,7 @@ namespace ts {
                     const rhs = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                     if (!inferStatus.inCondition || !typeofArgSymbol){
                         const setOfTypeOfStrings = new Set<string>();
-                        forEachNonObjectRefTypesTypeTsType(rhs.type, t=>{
+                        forEachRefTypesTypeTsTypeExcludingLogicalObject(rhs.type, t=>{
                             typeToTypeofStrings(t).forEach(str=>{
                                 setOfTypeOfStrings.add(str);
                             });
@@ -2374,7 +2337,7 @@ namespace ts {
 
                         const arrStringLiteralType: StringLiteralType[]=[];
                         const mapTypeOfStringToTsTypeSet = new Map<LiteralType,Set<Type>>();
-                        forEachNonObjectRefTypesTypeTsType(rhs.type, t=>{
+                        forEachRefTypesTypeTsTypeExcludingLogicalObject(rhs.type, t=>{
                             typeToTypeofStrings(t).forEach(str=>{
                                 const typeofString = checker.getStringLiteralType(str);
                                 arrStringLiteralType.push(typeofString);

@@ -18,13 +18,13 @@ namespace ts {
 
     function applyCritToType(rt: Readonly<RefTypesType>,crit: Readonly<InferCrit>, passtype: RefTypesType, failtype?: RefTypesType): void {
         Debug.assert(crit.kind!==InferCritKind.none);
-        const forEachRefTypesTypeType = mrNarrow.refTypesTypeModule.forEachNonObjectRefTypesTypeTsType;
+        const forEachRefTypesTypeTsTypeExcludingLogicalObject = mrNarrow.refTypesTypeModule.forEachRefTypesTypeTsTypeExcludingLogicalObject;
         const addTsTypeNonUnionToRefTypesTypeMutate = mrNarrow.refTypesTypeModule.addTsTypeNonUnionToRefTypesTypeMutate;
         if (crit.kind===InferCritKind.truthy) {
             if (crit.alsoFailing){
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
                 const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
-                forEachRefTypesTypeType(rt, t => {
+                forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t => {
                     const tf = checker.getTypeFacts(t);
                     if (tf&pfacts) addTsTypeNonUnionToRefTypesTypeMutate(t,passtype);
                     if (tf&ffacts) addTsTypeNonUnionToRefTypesTypeMutate(t,failtype!);
@@ -32,7 +32,7 @@ namespace ts {
             }
             else {
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
-                forEachRefTypesTypeType(rt, t => {
+                forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t => {
                     const tf = checker.getTypeFacts(t);
                     if (tf&pfacts) addTsTypeNonUnionToRefTypesTypeMutate(t,passtype);
                 });
@@ -41,7 +41,7 @@ namespace ts {
         else if (crit.kind===InferCritKind.notnullundef) {
             const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
             const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
-            forEachRefTypesTypeType(rt, t => {
+            forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t => {
                 const tf = checker.getTypeFacts(t);
                 if (tf&pfacts) addTsTypeNonUnionToRefTypesTypeMutate(t,passtype);
                 if (failtype && tf&ffacts) addTsTypeNonUnionToRefTypesTypeMutate(t,failtype);
@@ -49,7 +49,7 @@ namespace ts {
         }
         else if (crit.kind===InferCritKind.assignable) {
             const assignableRelation = checker.getRelations().assignableRelation;
-            forEachRefTypesTypeType(rt, source => {
+            forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, source => {
                 let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
                 if (crit.negate) rel = !rel;
                 if (rel) addTsTypeNonUnionToRefTypesTypeMutate(source, passtype);
@@ -163,8 +163,8 @@ namespace ts {
         if (extraAsserts){
             Debug.assert(!isRefTypesSymtabConstraintItemNever(rttr.sci));
         }
-        let passtype = mrNarrow.createRefTypesTypeNever();
-        let failtype = crit.alsoFailing ? mrNarrow.createRefTypesTypeNever() : undefined;
+        let passtype: RefTypesType = mrNarrow.createRefTypesTypeNever();
+        let failtype: RefTypesType | undefined = crit.alsoFailing ? mrNarrow.createRefTypesTypeNever() : undefined;
         applyCritToType(rttr.type,crit,passtype,failtype);
         let passsc = rttr.sci;
         let failsc = crit.alsoFailing ? rttr.sci : undefined;
@@ -232,8 +232,8 @@ namespace ts {
             if (extraAsserts){
                 Debug.assert(!isRefTypesSymtabConstraintItemNever(rttr.sci));
             }
-            let passtype = mrNarrow.createRefTypesTypeNever();
-            let failtype = crit.alsoFailing ? mrNarrow.createRefTypesTypeNever() : undefined;
+            let passtype: RefTypesType = mrNarrow.createRefTypesTypeNever();
+            let failtype: RefTypesType | undefined = crit.alsoFailing ? mrNarrow.createRefTypesTypeNever() : undefined;
             applyCritToType(rttr.type,crit,passtype,failtype);
             if (!mrNarrow.isNeverType(passtype)){
                 let passsc = rttr.sci;

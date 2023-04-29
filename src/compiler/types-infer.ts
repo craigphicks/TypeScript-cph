@@ -41,7 +41,6 @@ namespace ts {
         isconst?: boolean;
         isAssign?: boolean; // don't need assignType because it will always be whole type.
         type: RefTypesType;
-        propStack?: { propSymbol: PropertySymbol,baseObjectType: FloughObjectTypeInstance };
         sci: RefTypesSymtabConstraintItem;
     };
     export type RefTypesTableReturnNotNever = & {

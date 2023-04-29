@@ -23,12 +23,13 @@ namespace ts {
      */
     export interface RefTypesTypeNormal {
         _flags: RefTypesTypeFlags.none;
-        _set: Set<Type>;
+        _set: Set<Type>; // also arrays and tuples
         _mapLiteral: ESMap<Type, Set<LiteralType>>;
         //_intersectionOfObjects?: RefTypesTypeNormal[];
-        _objects?: FloughObjectTypeInstance[];
-        _intersection?: RefTypesTypeNormal[];
-        _union?: RefTypesTypeNormal[];
+        // _objects?: FloughObjectTypeInstance[];
+        // _intersection?: RefTypesTypeNormal[];
+        // _union?: RefTypesTypeNormal[];
+        _logicalObject?: FloughLogicalObjectIF;
     };
     export interface RefTypesTypeAny {
         _flags: RefTypesTypeFlags.any;
@@ -42,16 +43,6 @@ namespace ts {
     };
     export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
 
-    function hasNonObjectTypes(type: Readonly<RefTypesTypeNormal>): boolean {
-        return !!(type._set?.size || type._mapLiteral?.size);
-    }
-    function hasObjectTypes(type: Readonly<RefTypesTypeNormal>): boolean {
-        return !!(type._objects?.length || type._intersection?.length || type._union?.length);
-    }
-
-    // export type RefTypesObjectIntersection = & {
-    //     objects: Readonly<FloughObjectTypeInstance>[];
-    // };
 
     type PartitionForEqualityCompareItem = & {
         left?: Readonly<RefTypesType>;
@@ -74,7 +65,7 @@ namespace ts {
         createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType ;
         createRefTypesTypeNever(): RefTypesTypeNormal;
         cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType;
-        addTypesToRefTypesType({source,target}: { source: Readonly<Type>[], target: RefTypesType}): RefTypesType ;
+        //addTypesToRefTypesType({source,target}: { source: Readonly<Type>[], target: RefTypesType}): RefTypesType ;
         addTypeToRefTypesType({source,target}: { source: Readonly<Type>, target: RefTypesType}): RefTypesType ;
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void ;
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType ;
@@ -85,7 +76,7 @@ namespace ts {
         isNeverType(type: Readonly<RefTypesType>): boolean ;
         isAnyType(type: Readonly<RefTypesType>): boolean ;
         isUnknownType(type: Readonly<RefTypesType>): boolean ;
-        forEachNonObjectRefTypesTypeTsType<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void ;
+        forEachRefTypesTypeTsTypeExcludingLogicalObject<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void ;
         //partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number};
         getMapLiteralOfRefTypesType(t: RefTypesType): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
         //getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
@@ -96,7 +87,8 @@ namespace ts {
         // widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType;
         partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
-        addFloughObjectTypeInstanceToRefTypesTypeMutate(fobj: FloughObjectTypeInstance, target: RefTypesType): RefTypesType;
+        unionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType;
+        intersectionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType;
     };
 
     export function createRefTypesTypeModule(checker: TypeChecker): RefTypesTypeModule {
@@ -132,7 +124,7 @@ namespace ts {
             createRefTypesType,
             createRefTypesTypeNever,
             cloneRefTypesType,
-            addTypesToRefTypesType,
+            //addTypesToRefTypesType,
             addTypeToRefTypesType,
             mergeToRefTypesType,
             unionOfRefTypesType,
@@ -143,16 +135,17 @@ namespace ts {
             isNeverType,
             isAnyType,
             isUnknownType,
-            forEachNonObjectRefTypesTypeTsType,
+            forEachRefTypesTypeTsTypeExcludingLogicalObject,
             //partitionIntoSingularAndNonSingularTypes,
             getMapLiteralOfRefTypesType,
             equalRefTypesTypes,
             //literalWideningUnion,
             getUnionOrWidenedType,
             //widenLiteralsAccordingToEffectiveDeclaredType,
-            addTsTypeNonUnionToRefTypesTypeMutate,
+            addTsTypeNonUnionToRefTypesTypeMutate: addTsTypeNonCompoundToRefTypesTypeMutate,
             partitionForEqualityCompare,
-            addFloughObjectTypeInstanceToRefTypesTypeMutate,
+            unionOfFloughObjectTypeInstanceToRefTypesTypeMutate,
+            intersectionOfFloughObjectTypeInstanceToRefTypesTypeMutate,
         };
 
         function forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void {
@@ -165,20 +158,24 @@ namespace ts {
             return { _flags: RefTypesTypeFlags.unknown, _set: undefined, _mapLiteral: undefined };
         }
 
-        function addFloughObjectTypeInstanceToRefTypesTypeMutate(fobj: FloughObjectTypeInstance, target: RefTypesType): RefTypesType {
+        function unionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType {
             if (target._flags & RefTypesTypeFlags.any) return target;
             if (target._flags & RefTypesTypeFlags.unknown) return target;
             assertCastType<RefTypesTypeNormal>(target);
-            if (!target._objects) target._objects = [];
-            target._objects.push(fobj);
+            if (!target._logicalObject) target._logicalObject = logicalObj;
+            else target._logicalObject = unionOfFloughLogicalObjectTypeInstances(logicalObj, target._logicalObject);
             return target;
         }
-        // This mutates type even though it say it does not (Readonly). Why is that not caught? Because Sets do not count.
-        function addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType {
-            Debug.assert(!(tstype.flags & TypeFlags.Union),"unexpected");
-            if (tstype.flags & TypeFlags.Intersection){
-                Debug.assert(!(tstype.flags & TypeFlags.Intersection),"not yet implemented");
-            }
+        function intersectionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType {
+            if (target._flags & RefTypesTypeFlags.any) return target;
+            if (target._flags & RefTypesTypeFlags.unknown) return target;
+            assertCastType<RefTypesTypeNormal>(target);
+            if (!target._logicalObject) target._logicalObject = logicalObj;
+            else target._logicalObject = intersectionOfFloughLogicalObjectTypeInstances(logicalObj, target._logicalObject);
+            return target;
+        }
+        function addTsTypeNonCompoundToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType {
+            Debug.assert(!(tstype.flags & (TypeFlags.Union|TypeFlags.Intersection)),"unexpected");
             if (tstype===neverType) return type;
             if (tstype===anyType || type._flags===RefTypesTypeFlags.any) {
                 return createRefTypesTypeAny();
@@ -222,12 +219,21 @@ namespace ts {
                     else got.add(regularTsType);
                 }
             }
+            else if (tstype.flags & TypeFlags.Object) {
+                const logicalObj = createFloughLogicalObjectTypeInstance(tstype as ObjectType);
+                assertCastType<RefTypesTypeNormal>(type);
+                if (!type._logicalObject) type._logicalObject = logicalObj;
+                else type._logicalObject = unionOfFloughLogicalObjectTypeInstances(logicalObj, type._logicalObject);
+            }
             else {
+                // The only other types coming in here should be the primitives:
+                // stringType, numberType, bigintType, symbolType, uniqueSymbolType (?), voidType, undefinedType, nullType.
                 const regularTsType = (tstype as any).regularType ? (tstype as any).regularType : tstype;
-                // may have to erase literals
+                // erase literals
                 if (regularTsType.flags & (TypeFlags.Number|TypeFlags.String|TypeFlags.BigInt)){
+                    // So these "numberType" etc are not their own regular types.  This always surprises me.
                     Debug.assert(regularTsType===numberType||regularTsType===stringType||regularTsType===bigintType, "unexpected");
-                    /* if (type._setLiteral.has(regularTsType)) */ type._mapLiteral.delete(regularTsType);
+                    type._mapLiteral.delete(regularTsType);
                 }
                 type._set.add(regularTsType);
             }
@@ -250,7 +256,7 @@ namespace ts {
                 _mapLiteral: new Map<Type, Set<LiteralType>>(),
             };
             if (!tstype) return typeOut;
-            return addTypeToRefTypesType({ source:tstype as Readonly<Type>,target:typeOut });
+            return addTypeToRefTypesTypeMaybeMutate({ source:tstype as Readonly<Type>,target:typeOut });
         }
         function cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType{
             if (t._flags) return { _flags:t._flags, _set: undefined, _mapLiteral: undefined };
@@ -263,24 +269,32 @@ namespace ts {
                 _set: new Set(t._set),
                 _mapLiteral: _mapLiterals,
             };
-            if (t._objects) r._objects = t._objects.slice(0);
+            if (t._logicalObject) r._logicalObject = t._logicalObject; // because every operation on _logicalObject creates a new object.
             return r;
         }
 
         function addTypesToRefTypesType({source:at,target:target}: { source: Readonly<Type>[], target: RefTypesType}): RefTypesType {
             at.forEach(t=>{
-                target = addTypeToRefTypesType({ source:t,target });
+                target = addTypeToRefTypesTypeMaybeMutate({ source:t,target });
             });
             return target;
         }
-        function addTypeToRefTypesType({source:tstype,target:target}: { source: Readonly<Type>, target: Readonly<RefTypesType>}): RefTypesType {
-            forEachTypeIfUnion(tstype, t=>{
-                target = addTsTypeNonUnionToRefTypesTypeMutate(t, target);
-            });
+        function addTypeToRefTypesTypeMaybeMutate({source:tstype,target:target}: { source: Readonly<Type>, target: Readonly<RefTypesType>}): RefTypesType {
+            if (tstype.flags & TypeFlags.Union){
+               (tstype as UnionType).types.forEach(t=>{
+                    target = addTsTypeNonCompoundToRefTypesTypeMutate(t, target);
+               });
+            }
             return target;
+        }
+        function addTypeToRefTypesType({source:tstype,target:targetIn}: { source: Readonly<Type>, target: Readonly<RefTypesType>}): RefTypesType {
+            const targetOut = addTypeToRefTypesTypeMaybeMutate({ source:tstype,target:targetIn });
+            if (targetOut === targetIn) return cloneRefTypesType(targetOut);
+            return targetOut;
         }
 
         /**
+         * This is not currently being used because it called from Constraints and that has been disabled until other issues are resolved.
          * @param param0 In place modification of target.
          * @returns void
          */
@@ -312,32 +326,17 @@ namespace ts {
             assertCastType<RefTypesTypeNormal>(target);
             let tmpTarget = target;
             source._set.forEach(tstype=>{
-                tmpTarget = addTypeToRefTypesType({ source:tstype, target:tmpTarget }) as RefTypesTypeNormal;
+                tmpTarget = addTypeToRefTypesTypeMaybeMutate({ source:tstype, target:tmpTarget }) as RefTypesTypeNormal;
             });
             source._mapLiteral.forEach((set,_key)=>{
                 //tmpTarget = addTypeToRefTypesType({ source:tstype, target:tmpTarget });
                 set.forEach(tsLiteralType=>{
-                    tmpTarget = addTypeToRefTypesType({ source:tsLiteralType, target:tmpTarget }) as RefTypesTypeNormal;
+                    tmpTarget = addTypeToRefTypesTypeMaybeMutate({ source:tsLiteralType, target:tmpTarget }) as RefTypesTypeNormal;
                 });
             });
             target._flags = tmpTarget._flags;
             target._set = tmpTarget._set;
             target._mapLiteral = tmpTarget._mapLiteral;
-
-            if (source._objects){
-                if (!target._objects) target._objects = [];
-                target._objects.push(...source._objects);
-            }
-
-            if (source._intersection){
-                Debug.assert(!source._union);
-                if (!target._union) target._union = [];
-                target._union.push({ ...createRefTypesTypeNever(), _intersection:source._intersection });
-            }
-            else if (source._union){
-                if (!target._union) target._union = [];
-                target._union.push(...source._union);
-            }
         }
 
         function unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType {
@@ -391,42 +390,24 @@ namespace ts {
             });
         }
         function intersectRefTypesTypes2(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType {
-            if (isAnyType(a)) return cloneRefTypesType(b);
+            if (isAnyType(a)) return cloneRefTypesType(b); // TODO: check, and not need to clone
             if (isAnyType(b)) return cloneRefTypesType(a);
-            if (isUnknownType(a)||isUnknownType(b)) return createRefTypesTypeUnknown();
+            // See https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-0.html#new-unknown-top-type
+            // under intersection everying absords absorbs unknown
+            if (isUnknownType(a)) return b;
+            if (isUnknownType(b)) return a;
+            //if (isUnknownType(a)||isUnknownType(b)) return createRefTypesTypeUnknown();
+            // IWOZERE
             Debug.assert(!a._flags && !b._flags);
-            assertCastType<RefTypesTypeNormal>(a);
-            assertCastType<RefTypesTypeNormal>(b);
-            if (hasNonObjectTypes(a) && hasObjectTypes(b)) return createRefTypesTypeNever();
-            if (hasNonObjectTypes(b) && hasObjectTypes(a)) return createRefTypesTypeNever();
-            let ret = createRefTypesTypeNever();
-            if (a._set.size || a._mapLiteral.size || b._set.size || b._mapLiteral.size){
-                if (a._objects?.length || a._intersection?.length || a._union?.length) return createRefTypesTypeNever(); // never
-                if (b._objects?.length || b._intersection?.length || b._union?.length) return createRefTypesTypeNever(); // never
-                const [isetnonobj,isetobj] = isectSet(a._set, b._set);
-                const _mapLiteral = new Map<Type, Set<LiteralType>>();
-                intersectRefTypesTypesAux(a,b,isetnonobj,_mapLiteral);
-                intersectRefTypesTypesAux(b,a,isetnonobj,_mapLiteral);
-                if (isetobj.size) isetobj.forEach(t=>isetnonobj.add(t));
-                ret = {
-                    _flags: RefTypesTypeFlags.none,
-                    _set: isetnonobj,
-                    _mapLiteral,
-                };
-            }
-            const _intersection: RefTypesTypeNormal[] = [];
-            if (a._intersection?.length){
-                _intersection.push(...a._intersection);
-            }
-            else _intersection.push(a);
-            if (b._intersection?.length){
-                _intersection.push(...b._intersection);
-            }
-            else _intersection.push(a);
-
+            const [isetnonobj,isetobj] = isectSet(a._set, b._set);
+            const _mapLiteral = new Map<Type, Set<LiteralType>>();
+            intersectRefTypesTypesAux(a,b,isetnonobj,_mapLiteral);
+            intersectRefTypesTypesAux(b,a,isetnonobj,_mapLiteral);
+            if (isetobj.size) isetobj.forEach(t=>isetnonobj.add(t));
             return {
-                ...ret,
-                _intersection
+                _flags: RefTypesTypeFlags.none,
+                _set: isetnonobj,
+                _mapLiteral
             };
         }
         function intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType {
@@ -443,10 +424,9 @@ namespace ts {
         function partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[] {
             if (isNeverType(a)||isNeverType(b)) return [];
             if (isAnyType(a) || isUnknownType(a) || isAnyType(b) || isUnknownType(b)) return [{ left:a,right:b, true:true,false:true }];
-            if (hasObjectTypes(a as RefTypesTypeNormal)||hasObjectTypes(b as RefTypesTypeNormal)) Debug.fail("not yet implemented");
             const symmSet = new Set<Type>();
             const doOneSide = (x: Readonly<RefTypesType>, y: Readonly<RefTypesType>, pass: 0 | 1): PartitionForEqualityCompareItem[] => {
-                const arrYTsTypes: Type[] = getNonObjectTsTypesOfType(y);
+                const arrYTsTypes: Type[] = getTsTypesExcludingLogicalObject(y);
                 const setYTsTypes = new Set<Type>(arrYTsTypes);
                 const copySetYDelete=(d: Type) => {
                     const r = new Set(setYTsTypes);
@@ -547,7 +527,6 @@ namespace ts {
             // eslint-disable-next-line no-null/no-null
             if (isAnyType(b)||isUnknownType(b)) return false;
             Debug.assert(!a._flags && !b._flags);
-            if (hasObjectTypes(a) || !hasObjectTypes(b)) return false;
             let isSubset = true;
             for (let mapiter = a._mapLiteral.entries(), mi = mapiter.next(); !mi.done && isSubset; mi=mapiter.next()){
                 const [tstype, litset] = mi.value;
@@ -568,7 +547,6 @@ namespace ts {
                     isSubset = false;
                 }
             }
-            if (hasObjectTypes(a) || hasObjectTypes(b)) Debug.fail("not yet implemented");
             return isSubset;
         }
 
@@ -599,7 +577,6 @@ namespace ts {
             (minuend as RefTypesTypeNormal)._set.forEach(t=>{
                 if (!(subtrahend as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
             });
-            if (hasObjectTypes(subtrahend) || hasObjectTypes(minuend)) Debug.fail("not yet implemented");
             return c;
         }
         function getTypeFromRefTypesType(type: Readonly<RefTypesType>): Type {
@@ -614,16 +591,7 @@ namespace ts {
                     tslittypes.push(lt);
                 });
             });
-            const all = [...tstypes,...tslittypes];
-            if (type._intersection){
-                const isecttstype = checker.getIntersectionType(type._intersection.map(rtt=>getTypeFromRefTypesType(rtt)));
-                all.push(isecttstype);
-            }
-            if (type._union){
-                all.push(...type._union.map(rtt=>getTypeFromRefTypesType(rtt)));
-            }
-            if (type._objects) all.push(...type._objects.map(fti=>fti.tsObjectType));
-            return checker.getUnionType(all,UnionReduction.Literal);
+            return checker.getUnionType([...tstypes,...tslittypes],UnionReduction.Literal);
         }
         function isNeverType(type: Readonly<RefTypesType>): boolean {
             return type._flags===RefTypesTypeFlags.none && type._set.size===0 && type._mapLiteral.size===0;
@@ -634,7 +602,7 @@ namespace ts {
         function isUnknownType(type: Readonly<RefTypesType>): boolean {
             return type._flags===RefTypesTypeFlags.unknown;
         }
-        function forEachNonObjectRefTypesTypeTsType<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void {
+        function forEachRefTypesTypeTsTypeExcludingLogicalObject<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void {
             if (type._flags){
                 if (type._flags===RefTypesTypeFlags.any) f(anyType);
                 else f(unknownType);
@@ -650,7 +618,7 @@ namespace ts {
             }
         }
 
-        function getNonObjectTsTypesOfType(type: Readonly<RefTypesType>): Type[] {
+        function getTsTypesExcludingLogicalObject(type: Readonly<RefTypesType>): Type[] {
             if (type._flags){
                 if (type._flags===RefTypesTypeFlags.any) return [anyType];
                 else return [unknownType];
@@ -677,7 +645,6 @@ namespace ts {
             if (a._flags || b._flags) return a._flags===b._flags;
             if (a._set.size !== b._set.size) return false;
             if (a._mapLiteral.size !== b._mapLiteral.size) return false;
-            if (hasNonObjectTypes(a) || hasNonObjectTypes(b)) return false; // TODO: do the calclulation
             if (a._set.size){
                 for (let iter=a._set.values(), it=iter.next(); !it.done; it=iter.next()){
                     if (!b._set.has(it.value)) return false;
@@ -693,7 +660,14 @@ namespace ts {
                     }
                 }
             }
-            return true;
+            if (!a._logicalObject) {
+                if (b._logicalObject) return false;
+                else return true;
+            }
+            else {
+                if (!b._logicalObject) return false;
+                else return a._logicalObject===b._logicalObject; // sufficient but not necessary condition for actual equality
+            }
         }
 
         function getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {

@@ -6,9 +6,15 @@
 
 ### Priority: High
 
+0. Was in the middle of modifiying `intersectRefTypesTypes2`.
 
+0. `unknown` type, should follow https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-0.html#new-unknown-top-type
 
-0. Property assignment
+0. Properties
+
+    0. Modify `flowGroupRefTypesSymtab` to incorporate `FloughLogicalObjectTypeInstance`
+
+        0.
 
 
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break. -- Break targets not yet tested/
@@ -66,7 +72,7 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 ### Done (reverse order)
 
 0. _caxnc-whileLoop-005x series: currently when initializer is a naked literal with no type, the intializer is set to (* check it), flow value is set to the initializer, and ored literal types remain as literal types instead of being widened.  This does not match the original (not mrNarrow) flow specs where a literal intializer without a type becomes the widened initializer.  Make the default behavior match the existing specs but allow the non-widening behavior with a parameter setting.
-  
+
     - The parameters is `compilerOptions.compileOptions.mrNarrowDoNotWidenInitalizedFlowTypes`.
 
 

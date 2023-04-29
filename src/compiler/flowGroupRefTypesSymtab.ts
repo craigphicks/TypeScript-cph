@@ -8,12 +8,6 @@ namespace ts {
         (symbolFlowInfoMap as any) = mrNarrowIn.mrState.symbolFlowInfoMap;
     }
 
-    /**
-     * FloughObjectTypeInstance is used to enable the flow analysis to track the type of an object instance.
-     */
-
-
-
     export interface RefTypesSymtabProxyI {
         has(symbol: Symbol): boolean;
         get(symbol: Symbol): RefTypesType | undefined;
@@ -272,8 +266,8 @@ namespace ts {
                         ptypeGot = { set:new Set<Type>(), setAssigned:new Set<Type>() };
                         mapSymToPType.set(symbol, ptypeGot);
                     }
-                    mrNarrow.refTypesTypeModule.forEachNonObjectRefTypesTypeTsType(pt.type, tstype=>ptypeGot!.set.add(tstype));
-                    if (pt.assignedType) mrNarrow.refTypesTypeModule.forEachNonObjectRefTypesTypeTsType(pt.assignedType, tstype=>ptypeGot!.setAssigned.add(tstype));
+                    mrNarrow.refTypesTypeModule.forEachRefTypesTypeTsTypeExcludingLogicalObject(pt.type, tstype=>ptypeGot!.set.add(tstype));
+                    if (pt.assignedType) mrNarrow.refTypesTypeModule.forEachRefTypesTypeTsTypeExcludingLogicalObject(pt.assignedType, tstype=>ptypeGot!.setAssigned.add(tstype));
                 });
             });
 
@@ -287,7 +281,7 @@ namespace ts {
                     for (const rts of arr){
                         if (!rts.symtabInner.has(symbol)){
                             const otype = mrNarrow.getEffectiveDeclaredType(symbolFlowInfoMap.get(symbol) ?? Debug.fail("unexpected"));
-                            mrNarrow.refTypesTypeModule.forEachNonObjectRefTypesTypeTsType(otype, tstype=>set.add(tstype));
+                            mrNarrow.refTypesTypeModule.forEachRefTypesTypeTsTypeExcludingLogicalObject(otype, tstype=>set.add(tstype));
                             break;
                         }
                     }
@@ -297,7 +291,7 @@ namespace ts {
                         if (!rts.symtabInner.has(symbol)){
                             const otype = rts.symtabOuter?.get(symbol);
                             if (otype){
-                                mrNarrow.refTypesTypeModule.forEachNonObjectRefTypesTypeTsType(otype, tstype=>set.add(tstype));
+                                mrNarrow.refTypesTypeModule.forEachRefTypesTypeTsTypeExcludingLogicalObject(otype, tstype=>set.add(tstype));
                                 break;
                             }
                         }
