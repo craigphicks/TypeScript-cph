@@ -222,7 +222,7 @@ namespace ts {
                 }
             }
             else if (tstype.flags & TypeFlags.Object) {
-                const logicalObj = createFloughLogicalObject(tstype as ObjectType);
+                const logicalObj = createFloughLogicalObjectPlain(tstype as ObjectType);
                 assertCastType<RefTypesTypeNormal>(type);
                 if (!type._logicalObject) type._logicalObject = logicalObj;
                 else type._logicalObject = unionOfFloughLogicalObject(logicalObj, type._logicalObject);

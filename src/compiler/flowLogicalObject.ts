@@ -36,7 +36,8 @@ namespace ts {
     export enum FloughLogicalObjectKind {
         plain="plain",
         union="union",
-        intersection="intersection"
+        intersection="intersection",
+        difference="difference",
     }
     const essymbolFloughLogicalObject = Symbol("floughLogicalObject");
     type FloughLogicalObjectPlain = & {
@@ -54,12 +55,12 @@ namespace ts {
         items: FloughLogicalObject[];
         [essymbolFloughLogicalObject]: true;
     };
-    // type FloughLogicalObjectANotB = & {
-    //     kind: FloughLogicalObjectKind.intersection;
-    //     items: [FloughLogicalObject,FloughLogicalObject];
-    //     [essymbolFloughLogicalObject]: true;
-    // };
-    type FloughLogicalObject = FloughLogicalObjectPlain | FloughLogicalObjectUnion | FloughLogicalObjectIntersection;
+    type FloughLogicalObjectDifference= & {
+        kind: FloughLogicalObjectKind.difference;
+        items: [FloughLogicalObject,FloughLogicalObject];
+        [essymbolFloughLogicalObject]: true;
+    };
+    type FloughLogicalObject = FloughLogicalObjectPlain | FloughLogicalObjectUnion | FloughLogicalObjectIntersection | FloughLogicalObjectDifference;
     export interface FloughLogicalObjectIF {
         //[essymbolFloughLogicalObject]: true;
         //kind: FloughLogicalObjectKind;
@@ -69,126 +70,62 @@ namespace ts {
         return !!x?.[essymbolFloughLogicalObject];
     }
 
-    export function createFloughLogicalObject(tstype: ObjectType){
+    export function createFloughLogicalObjectPlain(tstype: ObjectType){
         return {
             kind: FloughLogicalObjectKind.plain,
-            item: createFloughObjectTypeInstance(tstype)
+            item: createFloughObjectTypeInstance(tstype),
+            [essymbolFloughLogicalObject]: true
         };
     }
 
     export function unionOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
         assertCastType<FloughLogicalObject>(a);
         assertCastType<FloughLogicalObject>(b);
-        if (a.kind===FloughLogicalObjectKind.plain) {
-            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.intersection) {
-                return {
-                    kind: FloughLogicalObjectKind.union,
-                    items: [a, b],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-            else /* if (target.kind===FloughLogicalObjectKind.union) */ {
-                return {
-                    kind: FloughLogicalObjectKind.union,
-                    items: [a, ...b.items],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-        }
-        else if (a.kind===FloughLogicalObjectKind.union) {
-            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.intersection) {
-                return {
-                    kind: FloughLogicalObjectKind.union,
-                    items: [...a.items, b],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-            else /* if (target.kind===FloughLogicalObjectKind.union) */ {
-                return {
-                    kind: FloughLogicalObjectKind.union,
-                    items: [...a.items, ...b.items],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-        }
-        else /* if (source.kind===FloughLogicalObjectKind.intersection) */ {
-            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.intersection) {
-                return {
-                    kind: FloughLogicalObjectKind.union,
-                    items: [a, b],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-            else /* if (target.kind===FloughLogicalObjectKind.union) */ {
-                return {
-                    kind: FloughLogicalObjectKind.union,
-                    items: [...b.items, a],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-        }
+        const items: FloughLogicalObject[] = [];
+        if (a.kind===FloughLogicalObjectKind.union) items.push(...a.items);
+        else items.push(a);
+        if (b.kind===FloughLogicalObjectKind.union) items.push(...b.items);
+        else items.push(b);
+        return {
+            kind: FloughLogicalObjectKind.union,
+            items,
+            [essymbolFloughLogicalObject]: true
+        };
     }
 
     export function intersectionOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
         assertCastType<FloughLogicalObject>(a);
         assertCastType<FloughLogicalObject>(b);
-        if (a.kind===FloughLogicalObjectKind.plain) {
-            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.union) {
-                return {
-                    kind: FloughLogicalObjectKind.intersection,
-                    items: [a, b],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-            else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
-                return {
-                    kind: FloughLogicalObjectKind.intersection,
-                    items: [a, ...b.items],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-        }
-        else if (a.kind===FloughLogicalObjectKind.intersection) {
-            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.union) {
-                return {
-                    kind: FloughLogicalObjectKind.intersection,
-                    items: [...a.items, b],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-            else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
-                return {
-                    kind: FloughLogicalObjectKind.intersection,
-                    items: [...a.items, ...b.items],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-        }
-        else /* if (source.kind===FloughLogicalObjectKind.union) */ {
-            if (b.kind===FloughLogicalObjectKind.plain || b.kind===FloughLogicalObjectKind.union) {
-                return {
-                    kind: FloughLogicalObjectKind.intersection,
-                    items: [a, b],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-            else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
-                return {
-                    kind: FloughLogicalObjectKind.intersection,
-                    items: [...b.items, a],
-                    [essymbolFloughLogicalObject]: true
-                };
-            }
-        }
+        const items: FloughLogicalObject[] = [];
+        if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
+        else items.push(a);
+        if (b.kind===FloughLogicalObjectKind.intersection) items.push(...b.items);
+        else items.push(b);
+        return {
+            kind: FloughLogicalObjectKind.intersection,
+            items,
+            [essymbolFloughLogicalObject]: true
+        };
+    }
+
+    export function differenceOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
+        assertCastType<FloughLogicalObject>(a);
+        assertCastType<FloughLogicalObject>(b);
+        return {
+            kind: FloughLogicalObjectKind.difference,
+            items: [a,b],
+            [essymbolFloughLogicalObject]: true
+        };
     }
 
 
     type LogicalObjectVisitor<ResultType,StateType> = & {
         onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => ResultType;
         onUnion: (logicalObject: Readonly<FloughLogicalObjectUnion>, result: ResultType, state: StateType) => StateType;
-        OnIntersection: (logicalObject: Readonly<FloughLogicalObjectIntersection>, result: ResultType, state: StateType) => StateType;
-        OnItemsInitializeState: () => StateType;
-        OnItemsFinished: (state: StateType | undefined) => ResultType;
+        onIntersection: (logicalObject: Readonly<FloughLogicalObjectIntersection>, result: ResultType, state: StateType) => StateType;
+        onDifference?: (logicalObject: Readonly<FloughLogicalObjectDifference>, result: ResultType, state: StateType) => StateType;
+        onItemsInitializeState: () => StateType;
+        onItemsFinished: (state: StateType | undefined) => ResultType;
     };
     function logicalObjecVisit<ArgType, ResultType,StateType>(
         logicalObjectTop: Readonly<FloughLogicalObject>,
@@ -203,40 +140,42 @@ namespace ts {
         let result: ResultType | undefined;
         while (stack.length!==0) {
             const [logicalObject,itemsIndex,state] = stack[stack.length - 1];
-            switch (logicalObject.kind) {
-                case FloughLogicalObjectKind.plain: {
+            if (logicalObject.kind===FloughLogicalObjectKind.plain){
                     stack.pop();
                     result = visitor.onPlain(logicalObject);
                     continue;
+            }
+            else {
+                if (itemsIndex===logicalObject.items.length){
+                    stack.pop();
                 }
-                case FloughLogicalObjectKind.union:
-                case FloughLogicalObjectKind.intersection:
-                    if (itemsIndex===logicalObject.items.length){
-                        stack.pop();
+                else if (itemsIndex===0) {
+                    stack[stack.length-1][stackStateIdx] = visitor.onItemsInitializeState();
+                    stack[stack.length-1][stackItemsIndexIdx]++;
+                    stack.push([logicalObject.items[itemsIndex],0,undefined]);
+                }
+                else {
+                    switch (logicalObject.kind) {
+                        case FloughLogicalObjectKind.union:
+                            stack[stack.length-1][stackStateIdx] = visitor.onUnion(logicalObject, result!, state!);
+                            break;
+                        case FloughLogicalObjectKind.intersection:
+                            stack[stack.length-1][stackStateIdx] = visitor.onIntersection(logicalObject, result!, state!);
+                            break;
+                        case FloughLogicalObjectKind.difference:
+                            stack[stack.length-1][stackStateIdx] = visitor.onDifference ? visitor.onDifference(logicalObject, result!, state!) : Debug.fail("onDifference not implemented");
+                            break;
+
                     }
-                    else if (itemsIndex===0) {
-                        stack[stack.length-1][stackStateIdx] = visitor.OnItemsInitializeState();
-                        stack[stack.length-1][stackItemsIndexIdx]++;
-                        stack.push([logicalObject.items[itemsIndex],0,undefined]);
+                    if (itemsIndex===logicalObject.items.length) {
+                        result = visitor.onItemsFinished(state);
                     }
                     else {
-                        if (logicalObject.kind===FloughLogicalObjectKind.intersection) {
-                            stack[stack.length-1][stackStateIdx] = visitor.OnIntersection(logicalObject, result!, state!);
-                            stack.push([logicalObject.items[itemsIndex],itemsIndex+1,undefined]);
-                        }
-                        else {
-                            stack[stack.length-1][stackStateIdx] = visitor.onUnion(logicalObject, result!, state!);
-                            stack.push([logicalObject.items[itemsIndex],itemsIndex+1,undefined]);
-                        }
-                        if (itemsIndex===logicalObject.items.length) {
-                            result = visitor.OnItemsFinished(state);
-                        }
-                        else {
-                            stack[stack.length-1][stackItemsIndexIdx]++;
-                            stack.push([logicalObject.items[itemsIndex],0,undefined]);
-                        }
+                        stack.push([logicalObject.items[itemsIndex],itemsIndex+1,undefined]);
                     }
-                    continue;
+
+                }
+                continue;
             }
         }
         return result!;
@@ -267,15 +206,15 @@ namespace ts {
                     }
                     return state;
                 },
-                OnIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State) {
+                onIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State) {
                     const setOfKeys = new Set<PropertyKeyType>();
                     for (let it=result.iter.next();!it.done; it=result.iter.next()) {
                         if (state.has(it.value)) setOfKeys.add(it.value);
                     }
                     return setOfKeys;
                 },
-                OnItemsInitializeState: () => new Set<PropertyKeyType>(),
-                OnItemsFinished: (state: State | undefined) => {
+                onItemsInitializeState: () => new Set<PropertyKeyType>(),
+                onItemsFinished: (state: State | undefined) => {
                     return { iter: state!.keys(), setof: state };
                 }
             };
@@ -363,7 +302,7 @@ namespace ts {
                     });
                     return state;
                 },
-                OnIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State) {
+                onIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State) {
                     /**
                      * This does NOT compute the type intersections over all keys.  It only computes the type intersection for the given key.
                      */
@@ -382,8 +321,8 @@ namespace ts {
                     });
                     return state;
                 },
-                OnItemsInitializeState: () => newMap(),
-                OnItemsFinished: (state: State | undefined) => {
+                onItemsInitializeState: () => newMap(),
+                onItemsFinished: (state: State | undefined) => {
                     return state ?? newMap();
                 }
             };
