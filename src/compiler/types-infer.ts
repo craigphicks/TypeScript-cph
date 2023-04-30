@@ -190,7 +190,7 @@ namespace ts {
         unmerged: Readonly<RefTypesTableReturn[]>;
         nodeForMap: Readonly<Node>;
         typeof?: {
-            map: ESMap<Type,RefTypesType>;
+            map: ESMap<Type | FloughLogicalObjectIF,RefTypesType>;
             argSymbol: Symbol;
         }
     };
@@ -204,7 +204,7 @@ namespace ts {
     export type FloughInnerReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
         typeof?: {
-            map: ESMap<Type,RefTypesType>;
+            map: ESMap<Type | FloughLogicalObjectIF,RefTypesType>;
             argSymbol: Symbol;
         }
     };

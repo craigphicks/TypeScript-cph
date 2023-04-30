@@ -1033,7 +1033,8 @@ namespace ts {
                         {
                             const unmerged: RefTypesTableReturn[] = [];
                             mntr.unmerged.forEach((rttr)=>{
-                                const narrowerTypeOut = (replayableInType && !isASubsetOfB(rttr.type,replayableInType) && intersectionOfRefTypesType(rttr.type, replayableInType)) || undefined;
+                                // !isASubsetOfB(rttr.type,replayableInType) is not required - intersectionOfRefTypesType(rttr.type, replayableInType) is sufficient.
+                                const narrowerTypeOut = (replayableInType /* && !isASubsetOfB(rttr.type,replayableInType)*/ && intersectionOfRefTypesType(rttr.type, replayableInType)) || undefined;
                                 if (narrowerTypeOut && isNeverType(narrowerTypeOut)) return;
                                 rttr = applyCritNoneToOne({ ...rttr,type:narrowerTypeOut??rttr.type },expr,/**/ undefined); // don't write here because the original symbol is from replay.
                                 // unmerged.push({
@@ -2283,11 +2284,9 @@ namespace ts {
                     if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
                     const leftFalseRightRet0 = flough({
                         sci: leftRet.failing!.sci,
-                        // refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
                         crit: { kind:InferCritKind.truthy, alsoFailing:true },
                         expr: rightExpr,
                         inferStatus,
-                        // constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
                     });
                     if (!inferStatus.inCondition){
                         const leftFalseRightRet = applyCrit(leftFalseRightRet0,{ kind:InferCritKind.truthy, alsoFailing:true }, inferStatus.groupNodeToTypeMap);
@@ -2320,10 +2319,15 @@ namespace ts {
                     const rhs = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                     if (!inferStatus.inCondition || !typeofArgSymbol){
                         const setOfTypeOfStrings = new Set<string>();
-                        forEachRefTypesTypeTsTypeExcludingLogicalObject(rhs.type, t=>{
-                            typeToTypeofStrings(t).forEach(str=>{
-                                setOfTypeOfStrings.add(str);
-                            });
+                        refTypesTypeModule.forEachRefTypesTypeTsTypeIncludingLogicalObject(rhs.type, t=>{
+                            if (!isFloughLogicalObject(t)){
+                                typeToTypeofStrings(t as Type).forEach(str=>{
+                                    setOfTypeOfStrings.add(str);
+                                });
+                            }
+                            else {
+                                setOfTypeOfStrings.add("object");
+                            }
                         });
                         const arrStringLiteralType: StringLiteralType[]=[];
                         setOfTypeOfStrings.forEach(str=>{
@@ -2336,19 +2340,28 @@ namespace ts {
                     else {
 
                         const arrStringLiteralType: StringLiteralType[]=[];
-                        const mapTypeOfStringToTsTypeSet = new Map<LiteralType,Set<Type>>();
-                        forEachRefTypesTypeTsTypeExcludingLogicalObject(rhs.type, t=>{
-                            typeToTypeofStrings(t).forEach(str=>{
-                                const typeofString = checker.getStringLiteralType(str);
+                        const mapTypeOfStringToTsTypeSet = new Map<LiteralType,Set<Type | FloughLogicalObjectIF>>();
+                        refTypesTypeModule.forEachRefTypesTypeTsTypeIncludingLogicalObject(rhs.type, t=>{
+                            if (!isFloughLogicalObject(t)){
+                                typeToTypeofStrings(t as Type).forEach(str=>{
+                                    const typeofString = checker.getStringLiteralType(str);
+                                    arrStringLiteralType.push(typeofString);
+                                    const accumSet = mapTypeOfStringToTsTypeSet.get(typeofString);
+                                    if (!accumSet) mapTypeOfStringToTsTypeSet.set(typeofString, new Set<Type | FloughLogicalObjectIF>([t]));
+                                    else accumSet.add(t as Type);
+                                });
+                            }
+                            else {
+                                const typeofString = checker.getStringLiteralType("object");
                                 arrStringLiteralType.push(typeofString);
                                 const accumSet = mapTypeOfStringToTsTypeSet.get(typeofString);
-                                if (!accumSet) mapTypeOfStringToTsTypeSet.set(typeofString, new Set<Type>([t]));
+                                if (!accumSet) mapTypeOfStringToTsTypeSet.set(typeofString, new Set<Type | FloughLogicalObjectIF>([t]));
                                 else accumSet.add(t);
-                            });
+                            }
                         });
                         const map = new Map<LiteralType,RefTypesType>();
-                        const f = (set: Set<Type>): RefTypesType => {
-                            const a: Type[] = [];
+                        const f = (set: Set<Type | FloughLogicalObjectIF>): RefTypesType => {
+                            const a: (Type | FloughLogicalObjectIF)[] = [];
                             set.forEach(t=>a.push(t));
                             return createRefTypesType(a);
                         };

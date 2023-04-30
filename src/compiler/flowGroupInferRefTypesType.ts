@@ -48,9 +48,9 @@ namespace ts {
         left?: Readonly<RefTypesType>;
         right?: Readonly<RefTypesType>;
         both?: Readonly<RefTypesType>;
-        leftts?: Type[];
-        rightts?: Type[];
-        bothts?: Type;
+        leftts?: (Type | FloughLogicalObjectIF)[];
+        rightts?: (Type | FloughLogicalObjectIF)[];
+        bothts?: (Type | FloughLogicalObjectIF);
         true?: boolean;
         false?: boolean;
     };
@@ -62,7 +62,8 @@ namespace ts {
         forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void ;
         // createRefTypesTypeAny(): RefTypesTypeAny ;
         // createRefTypesTypeUnknown(): RefTypesTypeUnknown ;
-        createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType ;
+        //createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType ;
+        createRefTypesType(tstype?: Readonly<Type | FloughLogicalObjectIF> | Readonly<(Type | FloughLogicalObjectIF)[]>): RefTypesType;
         createRefTypesTypeNever(): RefTypesTypeNormal;
         cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType;
         //addTypesToRefTypesType({source,target}: { source: Readonly<Type>[], target: RefTypesType}): RefTypesType ;
@@ -77,7 +78,8 @@ namespace ts {
         isAnyType(type: Readonly<RefTypesType>): boolean ;
         isUnknownType(type: Readonly<RefTypesType>): boolean ;
         forEachRefTypesTypeTsTypeExcludingLogicalObject<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void ;
-        //partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number};
+        forEachRefTypesTypeTsTypeIncludingLogicalObject<F extends (t: Type | FloughLogicalObjectIF) => any>(type: Readonly<RefTypesType>, f: F): void;
+            //partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number};
         getMapLiteralOfRefTypesType(t: RefTypesType): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
         //getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
         //refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean;
@@ -136,7 +138,7 @@ namespace ts {
             isAnyType,
             isUnknownType,
             forEachRefTypesTypeTsTypeExcludingLogicalObject,
-            //partitionIntoSingularAndNonSingularTypes,
+            forEachRefTypesTypeTsTypeIncludingLogicalObject,
             getMapLiteralOfRefTypesType,
             equalRefTypesTypes,
             //literalWideningUnion,
@@ -163,7 +165,7 @@ namespace ts {
             if (target._flags & RefTypesTypeFlags.unknown) return target;
             assertCastType<RefTypesTypeNormal>(target);
             if (!target._logicalObject) target._logicalObject = logicalObj;
-            else target._logicalObject = unionOfFloughLogicalObjectTypeInstances(logicalObj, target._logicalObject);
+            else target._logicalObject = unionOfFloughLogicalObject(logicalObj, target._logicalObject);
             return target;
         }
         function intersectionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType {
@@ -171,7 +173,7 @@ namespace ts {
             if (target._flags & RefTypesTypeFlags.unknown) return target;
             assertCastType<RefTypesTypeNormal>(target);
             if (!target._logicalObject) target._logicalObject = logicalObj;
-            else target._logicalObject = intersectionOfFloughLogicalObjectTypeInstances(logicalObj, target._logicalObject);
+            else target._logicalObject = intersectionOfFloughLogicalObject(logicalObj, target._logicalObject);
             return target;
         }
         function addTsTypeNonCompoundToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType {
@@ -220,10 +222,10 @@ namespace ts {
                 }
             }
             else if (tstype.flags & TypeFlags.Object) {
-                const logicalObj = createFloughLogicalObjectTypeInstance(tstype as ObjectType);
+                const logicalObj = createFloughLogicalObject(tstype as ObjectType);
                 assertCastType<RefTypesTypeNormal>(type);
                 if (!type._logicalObject) type._logicalObject = logicalObj;
-                else type._logicalObject = unionOfFloughLogicalObjectTypeInstances(logicalObj, type._logicalObject);
+                else type._logicalObject = unionOfFloughLogicalObject(logicalObj, type._logicalObject);
             }
             else {
                 // The only other types coming in here should be the primitives:
@@ -245,7 +247,7 @@ namespace ts {
         }
 
 
-        function createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType {
+        function createRefTypesType(tstype?: Readonly<Type | FloughLogicalObjectIF> | Readonly<(Type | FloughLogicalObjectIF)[]>): RefTypesType {
             // if (!tstype) return refTypesRefNeverType;
             if (Array.isArray(tstype)){
                 return addTypesToRefTypesType({ source:tstype.slice(1), target:createRefTypesType(tstype[0]) });
@@ -256,6 +258,7 @@ namespace ts {
                 _mapLiteral: new Map<Type, Set<LiteralType>>(),
             };
             if (!tstype) return typeOut;
+            if (isFloughLogicalObject(tstype)) return unionOfFloughObjectTypeInstanceToRefTypesTypeMutate(tstype, typeOut);
             return addTypeToRefTypesTypeMaybeMutate({ source:tstype as Readonly<Type>,target:typeOut });
         }
         function cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType{
@@ -269,7 +272,7 @@ namespace ts {
                 _set: new Set(t._set),
                 _mapLiteral: _mapLiterals,
             };
-            if (t._logicalObject) r._logicalObject = t._logicalObject; // because every operation on _logicalObject creates a new object.
+            if (t._logicalObject) r._logicalObject = t._logicalObject; // ok because every operation on _logicalObject creates a new object.
             return r;
         }
 
@@ -357,20 +360,21 @@ namespace ts {
             return target;
         }
 
-        function isectSet(x: Readonly<Set<Type>>,y: Readonly<Set<Type>>): [nonbj:Set<Type>,obj:Set<Type>] {
+        function isectSet(x: Readonly<Set<Type>>,y: Readonly<Set<Type>>): [nonbj:Set<Type>] {
             const nonobj = new Set<Type>();
-            const ouiobj = new Set<Type>();
+            //const ouiobj = new Set<Type>();
             if (y.size<x.size) [x,y]=[y,x];
             x.forEach(xt=>{
-                if (xt.flags & TypeFlags.Object){
-                    for (let iter = y.values(),y2 = iter.next();!y2.done;y2 = iter.next()){
-                        const yt = y2.value;
-                        if (checker.isTypeRelatedTo(xt,yt,checker.getRelations().identityRelation)) ouiobj.add(xt);
-                    }
-                }
-                else if (y.has(xt)) nonobj.add(xt);
+                // if (xt.flags & TypeFlags.Object){
+                //     for (let iter = y.values(),y2 = iter.next();!y2.done;y2 = iter.next()){
+                //         const yt = y2.value;
+                //         if (checker.isTypeRelatedTo(xt,yt,checker.getRelations().identityRelation)) ouiobj.add(xt);
+                //     }
+                // }
+                // else
+                if (y.has(xt)) nonobj.add(xt);
             });
-            return [nonobj,ouiobj];
+            return [nonobj/*,ouiobj*/];
         }
 
         function intersectRefTypesTypesAux(x: Readonly<RefTypesTypeNormal>, y: Readonly<RefTypesTypeNormal>, iset: Set<Type>, _mapLiteral: ESMap<Type, Set<LiteralType>>): void {
@@ -399,15 +403,20 @@ namespace ts {
             //if (isUnknownType(a)||isUnknownType(b)) return createRefTypesTypeUnknown();
             // IWOZERE
             Debug.assert(!a._flags && !b._flags);
-            const [isetnonobj,isetobj] = isectSet(a._set, b._set);
+            const [isetnonobj/*,isetobj*/] = isectSet(a._set, b._set);
             const _mapLiteral = new Map<Type, Set<LiteralType>>();
             intersectRefTypesTypesAux(a,b,isetnonobj,_mapLiteral);
             intersectRefTypesTypesAux(b,a,isetnonobj,_mapLiteral);
-            if (isetobj.size) isetobj.forEach(t=>isetnonobj.add(t));
+            //if (isetobj.size) isetobj.forEach(t=>isetnonobj.add(t));
+            let _logicalObject: FloughLogicalObjectIF | undefined;
+            if (a._logicalObject && b._logicalObject) {
+                _logicalObject = intersectionOfFloughLogicalObject(a._logicalObject, b._logicalObject);
+            }
             return {
                 _flags: RefTypesTypeFlags.none,
                 _set: isetnonobj,
-                _mapLiteral
+                _mapLiteral,
+                ...(_logicalObject ? { _logicalObject } : {})
             };
         }
         function intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType {
@@ -420,8 +429,135 @@ namespace ts {
             return tleft;
         }
 
-        // @ ts-expect-error
+        // TODO: add for cases with logical object - don't actually have to compare them, just add them to the cross product result
         function partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[] {
+            if (isNeverType(a)||isNeverType(b)) return [];
+            if (isAnyType(a) || isUnknownType(a) || isAnyType(b) || isUnknownType(b)) return [{ left:a,right:b, true:true,false:true }];
+            assertCastType<RefTypesTypeNormal>(a);
+            assertCastType<RefTypesTypeNormal>(b);
+            let intersectionOfLogicalObjects: FloughLogicalObjectIF | undefined;
+            if (a._logicalObject && b._logicalObject) {
+                intersectionOfLogicalObjects = intersectionOfFloughLogicalObject(a._logicalObject, b._logicalObject);
+            }
+
+            const symmSet = new Set<Type>();
+            const doOneSide = (x: Readonly<RefTypesTypeNormal>, y: Readonly<RefTypesTypeNormal>, pass: 0 | 1): PartitionForEqualityCompareItem[] => {
+                const arrYTsTypes: (Type | FloughLogicalObjectIF)[] = getTsTypesExcludingLogicalObject(y);
+                if (y._logicalObject) arrYTsTypes.push(y._logicalObject);
+                const setYTsTypes = new Set<Type | FloughLogicalObjectIF>(arrYTsTypes);
+                const copySetYDelete=(d: Type | FloughLogicalObjectIF) => {
+                    const r = new Set(setYTsTypes);
+                    r.delete(d);
+                    const a: (Type | FloughLogicalObjectIF)[] = [];
+                    r.forEach(t=>a.push(t));
+                    return a;
+                };
+                const arr1: PartitionForEqualityCompareItem[] = [];
+                // @ts-expect-error mask
+                const a = undefined;
+                // @ts-expect-error mask
+                const b = undefined;
+                x._mapLiteral?.forEach((setltx,tx)=>{
+                    const setlty = y._mapLiteral?.get(tx);
+                    if (setlty){
+                        setltx.forEach(ltx=>{
+                            if (setlty.has(ltx)){
+                                if (pass===0){
+                                    arr1.push({ bothts:ltx, true:true });
+                                    symmSet.add(ltx);
+                                }
+                                else if (!symmSet.has(ltx)){
+                                    arr1.push({ bothts:ltx, true:true });
+                                }
+                                const rightts = copySetYDelete(ltx);
+                                if (rightts.length!==0) {
+                                    arr1.push({ leftts:[ltx], rightts, false:true });
+                                }
+                            }
+                            else {
+                                // both x and y have literals under ta, but only x has lta under ta
+                                arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+                            }
+                        });
+                    }
+                    else if (y._set?.has(tx)){
+                        // e.g. ltx is 1, and y is number
+                        setltx.forEach(ltx=>{
+                            if (pass===0){
+                                arr1.push({ bothts:ltx, true:true });
+                                symmSet.add(ltx);
+                            }
+                            else if (!symmSet.has(ltx)){
+                                arr1.push({ bothts:ltx, true:true });
+                            }
+                            // // cannot subtract singular from nonsingular so the inverse of right is just right, and although it matches just label as false only.
+                            arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+                        });
+                    }
+                    else {
+                        setltx.forEach(ltx=>{
+                            arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+                        });
+                    }
+                });
+                // TODO: might there be some cases among these types where equality is not identity (e.g., void and undefined)?
+                x._set.forEach(tx=>{
+                    if (y._set.has(tx)){
+                        if (pass===0){
+                            arr1.push({ bothts: tx, true:true, false: (tx.flags & (TypeFlags.BooleanLiteral|TypeFlags.Undefined|TypeFlags.Null)) ? false : true });
+                            symmSet.add(tx);
+                        }
+                        else if (!symmSet.has(tx)){
+                            arr1.push({ bothts: tx, true:true, false: (tx.flags & (TypeFlags.BooleanLiteral|TypeFlags.Undefined|TypeFlags.Null)) ? false : true });
+                        }
+                        const rightts = copySetYDelete(tx);
+                        if (rightts.length!==0){
+                            arr1.push({ leftts:[tx], rightts });
+                        }
+                    }
+                    else {
+                        arr1.push({ leftts:[tx], rightts:arrYTsTypes, false:true });
+                    }
+                });
+                // Do the logcal object(s)
+                if (intersectionOfLogicalObjects) {
+                    /**
+                     * Ideally we would do this:
+                     * Partition x._logicalObject into intersectionOfLogicalObjects + (x._logicalObject - intersectionOfLogicalObjects)
+                     * arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
+                     * arr1.push({ leftts: (x._logicalObject - intersectionOfLogicalObjects),
+                     *     rightts: [(y._logicalObject - intersectionOfLogicalObjects), ...copySetYDelete(y._logicalObject!)], true:false, false:true }, );
+                     *
+                     * However, we don't have a way to do the subtraction, so we just do this:
+                     * arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
+                     * arr1.push({ leftts: intersectionOfLogicalObjects, rightts: [...copySetYDelete(y._logicalObject!)], true:false, false:true }, );
+                     * Could this be better for second one?:
+                     * - arr1.push({ leftts: intersectionOfLogicalObjects, rightts: arrYTsTypes, true:false, false:true }, );
+                     */
+                    if (pass===0) arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
+                    arr1.push({ leftts: [intersectionOfLogicalObjects], rightts: [...copySetYDelete(y._logicalObject!)], true:false, false:true });
+                }
+                else if (x._logicalObject) {
+                    arr1.push({ leftts: [x._logicalObject], rightts: arrYTsTypes, true:false, false:true });
+                }
+                if (pass===1) {
+                    arr1.forEach(x=>{
+                        if (x.leftts){
+                            const tmp = x.leftts;
+                            x.leftts = x.rightts;
+                            x.rightts = tmp;
+                        }
+                    });
+                }
+                return arr1;
+            };
+            const ret = [ ...doOneSide(a,b,0), ...doOneSide(b,a,1) ];
+            return ret;
+        }
+
+        // TODO: add for cases with logical object - don't actually have to compare them, just add them to the cross product result
+        // @ts-ignore
+        function partitionForEqualityCompareDEPRECATED(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[] {
             if (isNeverType(a)||isNeverType(b)) return [];
             if (isAnyType(a) || isUnknownType(a) || isAnyType(b) || isUnknownType(b)) return [{ left:a,right:b, true:true,false:true }];
             const symmSet = new Set<Type>();
@@ -483,6 +619,7 @@ namespace ts {
                         });
                     }
                 });
+                // To do: might there be some cases among these types where equality is not identity (e.g., void and undefined)?
                 x._set!.forEach(tx=>{
                     if (y._set!.has(tx)){
                         if (pass===0){
@@ -516,11 +653,17 @@ namespace ts {
             return ret;
         }
 
-        // /**
-        //  * If a is a subset of b returns true, else false.
-        //  * @param a
-        //  * @param b
-        //  */
+        /**
+         * For non-object this is easy.
+         * For objects, we need to compare the types of the properties recursively.  If the compuation is going to be long, abort and return false.
+         * During development we can test the abort case by forcing abort even for simple computations.
+         * This is called from:
+         * - // floughIdentifier - not any more
+         * - modifiedInnerSymtabUsingOuterForFinalCondition when updating the symtab.
+         * - floughByCallExpression when matching call arguments
+         * @param b
+         * @returns
+         */
         function isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean{
             if (isAnyType(a)) return isAnyType(b) ? true : false;
             if (isUnknownType(a)) return false;
@@ -555,12 +698,22 @@ namespace ts {
          * @param subtrahend: the set subtracted from the minuend
          * @param minuend: the set from which the subtrahend set will be removed
          * @returns
+         *
+         * remark: currently subtractFromType is actively called only from two places:
+         * 1. inferRefTypesPreAccess, where it only subtracts [null,undefined].
+         * 2. floughByCallExpression, to calc `const notAssignableType = subtractFromType(assignableType, carg.type);`
+         * The notAssignableType is a remainder using the calculation of further possible matches when there are multiple overloads.
+         * So either add a subtraction operand (it can be used in === comparison also), chage the floughByCallExpression algo, or make a special algo for logicalObjject.
+         * For the moment just assert that the subtrahend and minuend do not both contain logical objects (one side only fine).
          */
         function subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>, /* errorOnMissing = false */): RefTypesType {
             if (isNeverType(subtrahend)) return minuend;
             if (isAnyType(subtrahend)) return createRefTypesType(neverType);
             if (isUnknownType(subtrahend)||isUnknownType(minuend)) Debug.fail("not yet implemented");
             Debug.assert(!subtrahend._flags && !minuend._flags);
+            assertCastType<RefTypesTypeNormal>(subtrahend);
+            assertCastType<RefTypesTypeNormal>(minuend);
+            Debug.assert(!(subtrahend._logicalObject && minuend._logicalObject));
             const c = createRefTypesTypeNever();
             minuend._mapLiteral.forEach((ltset,tstype)=>{
                 const subltset = subtrahend._mapLiteral.get(tstype);
@@ -574,8 +727,8 @@ namespace ts {
                     else cltset.add(ltype);
                 });
             });
-            (minuend as RefTypesTypeNormal)._set.forEach(t=>{
-                if (!(subtrahend as RefTypesTypeNormal)._set.has(t)) c._set.add(t);
+            minuend._set.forEach(t=>{
+                if (!subtrahend._set.has(t)) c._set.add(t);
             });
             return c;
         }
@@ -615,6 +768,22 @@ namespace ts {
                         f(lt);
                     });
                 });
+            }
+        }
+        function forEachRefTypesTypeTsTypeIncludingLogicalObject<F extends (t: Type | FloughLogicalObjectIF) => any>(type: Readonly<RefTypesType>, f: F): void {
+            if (type._flags){
+                if (type._flags===RefTypesTypeFlags.any) f(anyType);
+                else f(unknownType);
+            }
+            else if (isNeverType(type)) f(neverType);
+            else {
+                type._set.forEach(t=>f(t));
+                type._mapLiteral.forEach((litset,_tstype)=>{
+                    litset.forEach(lt=>{
+                        f(lt);
+                    });
+                });
+                if (type._logicalObject) f(type._logicalObject);
             }
         }
 

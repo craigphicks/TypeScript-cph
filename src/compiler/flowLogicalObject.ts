@@ -38,31 +38,45 @@ namespace ts {
         union="union",
         intersection="intersection"
     }
+    const essymbolFloughLogicalObject = Symbol("floughLogicalObject");
     type FloughLogicalObjectPlain = & {
         kind: FloughLogicalObjectKind.plain;
         item: FloughObjectTypeInstance;
+        [essymbolFloughLogicalObject]: true;
     };
     type FloughLogicalObjectUnion = & {
         kind: FloughLogicalObjectKind.union;
         items: FloughLogicalObject[];
+        [essymbolFloughLogicalObject]: true;
     };
     type FloughLogicalObjectIntersection = & {
         kind: FloughLogicalObjectKind.intersection;
         items: FloughLogicalObject[];
+        [essymbolFloughLogicalObject]: true;
     };
+    // type FloughLogicalObjectANotB = & {
+    //     kind: FloughLogicalObjectKind.intersection;
+    //     items: [FloughLogicalObject,FloughLogicalObject];
+    //     [essymbolFloughLogicalObject]: true;
+    // };
     type FloughLogicalObject = FloughLogicalObjectPlain | FloughLogicalObjectUnion | FloughLogicalObjectIntersection;
     export interface FloughLogicalObjectIF {
-        kind: FloughLogicalObjectKind;
+        //[essymbolFloughLogicalObject]: true;
+        //kind: FloughLogicalObjectKind;
     }
 
-    export function createFloughLogicalObjectTypeInstance(tstype: ObjectType){
+    export function isFloughLogicalObject(x: any): x is FloughLogicalObject {
+        return !!x?.[essymbolFloughLogicalObject];
+    }
+
+    export function createFloughLogicalObject(tstype: ObjectType){
         return {
             kind: FloughLogicalObjectKind.plain,
             item: createFloughObjectTypeInstance(tstype)
         };
     }
 
-    export function unionOfFloughLogicalObjectTypeInstances(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
+    export function unionOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
         assertCastType<FloughLogicalObject>(a);
         assertCastType<FloughLogicalObject>(b);
         if (a.kind===FloughLogicalObjectKind.plain) {
@@ -70,12 +84,14 @@ namespace ts {
                 return {
                     kind: FloughLogicalObjectKind.union,
                     items: [a, b],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
             else /* if (target.kind===FloughLogicalObjectKind.union) */ {
                 return {
                     kind: FloughLogicalObjectKind.union,
                     items: [a, ...b.items],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
         }
@@ -84,12 +100,14 @@ namespace ts {
                 return {
                     kind: FloughLogicalObjectKind.union,
                     items: [...a.items, b],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
             else /* if (target.kind===FloughLogicalObjectKind.union) */ {
                 return {
                     kind: FloughLogicalObjectKind.union,
                     items: [...a.items, ...b.items],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
         }
@@ -98,18 +116,20 @@ namespace ts {
                 return {
                     kind: FloughLogicalObjectKind.union,
                     items: [a, b],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
             else /* if (target.kind===FloughLogicalObjectKind.union) */ {
                 return {
                     kind: FloughLogicalObjectKind.union,
                     items: [...b.items, a],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
         }
     }
 
-    export function intersectionOfFloughLogicalObjectTypeInstances(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
+    export function intersectionOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
         assertCastType<FloughLogicalObject>(a);
         assertCastType<FloughLogicalObject>(b);
         if (a.kind===FloughLogicalObjectKind.plain) {
@@ -117,12 +137,14 @@ namespace ts {
                 return {
                     kind: FloughLogicalObjectKind.intersection,
                     items: [a, b],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
             else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
                 return {
                     kind: FloughLogicalObjectKind.intersection,
                     items: [a, ...b.items],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
         }
@@ -131,12 +153,14 @@ namespace ts {
                 return {
                     kind: FloughLogicalObjectKind.intersection,
                     items: [...a.items, b],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
             else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
                 return {
                     kind: FloughLogicalObjectKind.intersection,
                     items: [...a.items, ...b.items],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
         }
@@ -145,12 +169,14 @@ namespace ts {
                 return {
                     kind: FloughLogicalObjectKind.intersection,
                     items: [a, b],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
             else /* if (target.kind===FloughLogicalObjectKind.intersection) */ {
                 return {
                     kind: FloughLogicalObjectKind.intersection,
                     items: [...b.items, a],
+                    [essymbolFloughLogicalObject]: true
                 };
             }
         }
