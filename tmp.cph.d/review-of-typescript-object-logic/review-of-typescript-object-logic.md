@@ -1,16 +1,20 @@
+### Overview
+
+One goal of the Flough software is to improve intuitive usability by enabling (\**when feasible*) true union and intersection computations in flow.
+
+Some simple examples: ....
+
+As the examples show, the user doesn't actually need to be cognitively aware of "set-theory operations" to improve usability.
+There are simple intutively-just-oughta-work cases that currently are not allowed, and that degrades usability.
+
 
 It is important to clealy separate the following two things:
 1. Typescript definitions:  of types and the type operators | (union) and & (intersection) on record types.
-2. General flow alalysis requirements: The meaning of sets, and operators of union and intersection on sets, as are required for correct flow analysis of record-types in a programming language (including Typescript).
+2. General flow alalysis requirements: The meaning of sets, and set-theory-operators of union and intersection on sets, that are required for correct flow analysis in any programming language (including Typescript).
 
-The above 1 and 2 coincide with respect to primitive types and record-object descriptions.
-Also, with respect to primitive types (which doesn't include record objects) the union and intersection operators are the same for both cases 1 and 2.
+The above 1 and 2 coincide with respect to primitive types, however the differ with respect to object types.
 
-However, for the operators union and insersection over record objects, cases 1 and 2 differ.
-
-Flow analyis requires tracking the sets of possible types throughout the program flow.  That requires *the* well defined set operations of union and intersection - call them set-union and set-intersection.  Although implementations may differ, they cannot be arbitrarily defined.  The operations typescript-union and typescript-intersection do not meet that criteria.
-
-The following tables compares tyescript and set theory operations union and intersection on record-types.
+The following tables compares Typescript-operations and set-theory-operations union and intersection on record-types (\**excepting arrays and tuples*)
 
 | intersection-op | property-keys | property primitive-types |
 |---|---|---|
@@ -28,35 +32,31 @@ Traversing down the tree, the typescript-operators are also applied to the next 
 
 Although the type-operations do not correspond to the actual relations that occur during flow,
 the typescript-operations do describe concrete new types.
-Therefore if we start from the axiom that the Typescript-operation defined types are correct,
-then we only need to be concerned with how to:
 
-1. interpret the types passed from the upper layer to flough
-2. process those types in flough
-3. relay the results from flough back to the upper layer.
+### Why are Typescript operators of Union and Intersection defined as they are?
 
-W.r.t. #1, the necessary typescript-operators can be programmed into visitor (c.f. the visitor for `logicalObjectForEachTypeOfProperyLookup`) to work as colleague(s) alongside `onInterseciton` and `onUnion`.
-- `Type.flags & TypeFlags.Union` could probably just be mapped to the current `OnUnion`, so that the keys are not lost.
-- `Type.flags & TypeFlags.Intersection` should map to a new operator `OnTsIntersection`, which is similar to `OnIntersection`, but which doesn't take unions over keys.
+Neither the exact definitions of Typescript-Union and Typescript-Intersection nor the reasons for those definitions are comprehensively documented in a holistic top-down manner.
+However, the de-facto behavior has developed organically, with user feedback, and under the constraints of computation time, so it well defined in a bottom-up manner.
 
-W.r.t. #2 calling, `logicalObjectForEachTypeOfProperyLookup` and `logicalObjectAssign`
+Nevertheless, this a possible interpretation of the current rules:
 
-W.r.t. #3, that might be a problem because although flough knows about `ts.Type` operations and set-operations, `ts.Type` doesn't know about set-operations.
-All we can do for now is map "union" to typescript-union and "intersection" to typescript-intersection.
+1.  **Union:** Union uses the intersection of keys because that creates types which are reliably fast to compute in flow and user interface.  Although the "intersection of keys" can lose information, that can be replaced by requiring the user to explicitly declaring the type being accessed (e.g., by casing on a 'kind' member with discrete values, or using an `as`-(some Type) clause, etc.), which will bring the missing keys back when required.
 
------
+2. **Intersection:**  There is a need for an operator to allow users to compose object types from other object types, with a result that merges keys of both types (e.g., the "union" of keys but let's avoid that word here to avoid confusion).  Because the operator Typescript-Union is already taken, the operator Typescript-Intersection can be used instead.  There is some theoretical justification - suppose the operand types are "open", e.g., they include generic property fields `[key: string]: any`, then the set-intersection would in fact coincide with the Typescript-intersection.  The problem with this justification is that augmenting the `[key: string]: any` fields is only temporary for the intersection operation, and then it is removed afterwards.  It doesn't seem to be a necessity from a compuational speed point of view.  Hence the conclusion that it is intended to fulfill the need for a composition operator.
 
-Why does typescript reverse the operation logic for keys? ... Never mind.
+### Suggestions
 
-What's missing in Typescript are operators to define new types composed from others types, independently of Union and Intersection.
+Some suggestions based on this analysis:
 
-Intersection is being used to glob together record types by using a union of keys.  The user will be "warned" if overlapping keys have completely incompatible types because then the whole type will become never (but not if the key's types are only partially compatible).
-It is an ad hoc solution to a need.
+1. Typescript needs (an) explicit composition operator(s).  That would be more clear than overrding `|`.
+2. The `||` and `&&` symbols (over Types) could be used to represent set-intersection and set-union.  In cases of large types where computation is infeasible,
+the full computation can be eschewed, either silently or with a warning (depending on option).  It may be that a warning would enable users to compose better types,
+that even if large, are still quickly computable.
 
-I expect that for many use cases it would be  better to provide some typescipt operator CombineTypes([A,B,C], {conflicts:...}) where conflicts could be "union", "intersection", "override" or "error".
-- "union" takes the union of all types per key.
-- "error" is not to allow any per key types to differ, i.e for each key the union must equal the intersection or an error occurs.
-- "intersection" is the equalivalent to the current typescript-intersection `|`, where an error effectively occurs only if the intersection is empty.
-- "override" is similar to js notation `{...A,...B,...C}` but it is also applied recursively to the property types.
-Most of the big cases where there are thousands of keys where this would useful probably don't require circular referencing, so circular referencing can be disallowed.  The result would be an independent new type which only reference the underlying types once, during creation.  
 
+### Integration Typescript-operators with Flough, over objects
+
+1. Typescript-to-Flough interface for object: Start out by mapping both Typescript-intersection and Typescript-union to set-union
+1. Flough-to-Typescript interface: Then going back all the object types would be unions.
+
+Unlikely to be sufficient but it's a start.

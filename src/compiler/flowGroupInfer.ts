@@ -373,6 +373,7 @@ namespace ts {
             mrNarrow,
             refTypesTypeModule
         };
+        initFlowLogicalObject(checker,refTypesTypeModule);
     }
     function getGroupDependencies(group: Readonly<GroupForFlow>,
         sourceFileMrState: SourceFileMrState, forFlow: Readonly<ForFlow> | undefined, options?: {minGroupIdxToAdd: number}):

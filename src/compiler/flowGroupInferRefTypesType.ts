@@ -58,6 +58,14 @@ namespace ts {
 
 
     export type RefTypesTypeModule = & {
+        getRefTypesTypeNever: () => RefTypesType;
+        getRefTypesTypeAny: () => RefTypesType;
+        getRefTypesTypeUnknown: () => RefTypesType;
+        getRefTypesTypeUndefined: () => RefTypesType;
+        getRefTypesTypeString: () => RefTypesType;
+        getRefTypesTypeNumber: () => RefTypesType;
+        getRefTypesTypeBigInt: () => RefTypesType;
+        //getRefTypesType: () => RefTypesType;
         //getTypeMemberCount(type: Readonly<RefTypesType>): number;
         forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void ;
         // createRefTypesTypeAny(): RefTypesTypeAny ;
@@ -71,8 +79,9 @@ namespace ts {
         mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void ;
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType ;
         intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType ;
-        isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
+        differenceOfRefTypesType(minuend: Readonly<RefTypesType>, subtrahend: Readonly<RefTypesType>): RefTypesType ;
         subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>, /* errorOnMissing = false */): RefTypesType ;
+        isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         getTypeFromRefTypesType(type: Readonly<RefTypesType>): Type ;
         isNeverType(type: Readonly<RefTypesType>): boolean ;
         isAnyType(type: Readonly<RefTypesType>): boolean ;
@@ -89,18 +98,22 @@ namespace ts {
         // widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType;
         partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
-        unionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType;
-        intersectionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType;
+        unionOfFloughLogicalObjectToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType;
+        intersectionOfFloughLogicalObjectToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType;
     };
 
     export function createRefTypesTypeModule(checker: TypeChecker): RefTypesTypeModule {
 
-        const neverType = checker.getNeverType();
-        const unknownType = checker.getUnknownType();
-        const stringType = checker.getStringType();
-        const numberType = checker.getNumberType();
-        const bigintType = checker.getBigIntType();
-        const anyType = checker.getAnyType();
+        const neverTsType = checker.getNeverType();
+        const anyTsType = checker.getAnyType();
+        const unknownTsType = checker.getUnknownType();
+        const undefinedTsType = checker.getUndefinedType();
+        const stringTsType = checker.getStringType();
+        const numberTsType = checker.getNumberType();
+        const bigintTsType = checker.getBigIntType();
+
+
+
         // const trueType = checker.getTrueType();
         // const falseType = checker.getFalseType();
         // const undefinedType = checker.getUndefinedType();
@@ -121,7 +134,14 @@ namespace ts {
         } = createDbgs(checker);
 
         return {
-            //getTypeMemberCount,
+            getRefTypesTypeNever,
+            getRefTypesTypeAny,
+            getRefTypesTypeUnknown,
+            getRefTypesTypeUndefined,
+            getRefTypesTypeString,
+            getRefTypesTypeNumber,
+            getRefTypesTypeBigInt,
+                //getTypeMemberCount,
             forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
             createRefTypesType,
             createRefTypesTypeNever,
@@ -131,6 +151,7 @@ namespace ts {
             mergeToRefTypesType,
             unionOfRefTypesType,
             intersectionOfRefTypesType,
+            differenceOfRefTypesType,
             isASubsetOfB,
             subtractFromType,
             getTypeFromRefTypesType,
@@ -146,9 +167,40 @@ namespace ts {
             //widenLiteralsAccordingToEffectiveDeclaredType,
             addTsTypeNonUnionToRefTypesTypeMutate: addTsTypeNonCompoundToRefTypesTypeMutate,
             partitionForEqualityCompare,
-            unionOfFloughObjectTypeInstanceToRefTypesTypeMutate,
-            intersectionOfFloughObjectTypeInstanceToRefTypesTypeMutate,
+            unionOfFloughLogicalObjectToRefTypesTypeMutate,
+            intersectionOfFloughLogicalObjectToRefTypesTypeMutate,
         };
+        //const neverType = checker.getNeverType();
+
+        // const neverTsType = checker.getNeverType();
+        // const unknownTsType = checker.getUnknownType();
+        // const stringTsType = checker.getStringType();
+        // const numberTsType = checker.getNumberType();
+        // const bigintTsType = checker.getBigIntType();
+        // const anyTsType = checker.getAnyType();
+
+        const neverType = createRefTypesType(); // never
+        const unknownType = createRefTypesType(unknownTsType);
+        const undefinedType = createRefTypesType(undefinedTsType);
+        const stringType = createRefTypesType(stringTsType);
+        const numberType = createRefTypesType(numberTsType);
+        const bigintType = createRefTypesType(bigintTsType);
+        const anyType = createRefTypesType(anyTsType);
+
+        // eslint-disable-next-line max-statements-per-line
+        function getRefTypesTypeNever(): RefTypesType { return neverType; }
+        // eslint-disable-next-line max-statements-per-line
+        function getRefTypesTypeUnknown(): RefTypesType { return unknownType; }
+        // eslint-disable-next-line max-statements-per-line
+        function getRefTypesTypeUndefined(): RefTypesType { return undefinedType; }
+        // eslint-disable-next-line max-statements-per-line
+        function getRefTypesTypeString(): RefTypesType { return stringType; }
+        // eslint-disable-next-line max-statements-per-line
+        function getRefTypesTypeNumber(): RefTypesType { return numberType; }
+        // eslint-disable-next-line max-statements-per-line
+        function getRefTypesTypeBigInt(): RefTypesType { return bigintType; }
+        // eslint-disable-next-line max-statements-per-line
+        function getRefTypesTypeAny(): RefTypesType { return anyType; }
 
         function forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void {
             (type.flags & TypeFlags.Union) ? (type as UnionType).types.forEach(t => f(t)) : f(type);
@@ -160,7 +212,7 @@ namespace ts {
             return { _flags: RefTypesTypeFlags.unknown, _set: undefined, _mapLiteral: undefined };
         }
 
-        function unionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType {
+        function unionOfFloughLogicalObjectToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType {
             if (target._flags & RefTypesTypeFlags.any) return target;
             if (target._flags & RefTypesTypeFlags.unknown) return target;
             assertCastType<RefTypesTypeNormal>(target);
@@ -168,7 +220,7 @@ namespace ts {
             else target._logicalObject = unionOfFloughLogicalObject(logicalObj, target._logicalObject);
             return target;
         }
-        function intersectionOfFloughObjectTypeInstanceToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType {
+        function intersectionOfFloughLogicalObjectToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType {
             if (target._flags & RefTypesTypeFlags.any) return target;
             if (target._flags & RefTypesTypeFlags.unknown) return target;
             assertCastType<RefTypesTypeNormal>(target);
@@ -178,11 +230,11 @@ namespace ts {
         }
         function addTsTypeNonCompoundToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType {
             Debug.assert(!(tstype.flags & (TypeFlags.Union|TypeFlags.Intersection)),"unexpected");
-            if (tstype===neverType) return type;
-            if (tstype===anyType || type._flags===RefTypesTypeFlags.any) {
+            if (tstype===neverTsType) return type;
+            if (tstype===anyTsType || type._flags===RefTypesTypeFlags.any) {
                 return createRefTypesTypeAny();
             }
-            if (tstype===unknownType || type._flags===RefTypesTypeFlags.unknown) {
+            if (tstype===unknownTsType || type._flags===RefTypesTypeFlags.unknown) {
                 return createRefTypesTypeUnknown();
             }
             // Note: boolean type is actually a union of true and false types.  Therefore
@@ -195,21 +247,21 @@ namespace ts {
                 let keyType: Type | undefined;
                 let regularTsType: LiteralType | undefined;
                 if (tstype.flags & TypeFlags.NumberLiteral) {
-                    if (!type._set.has(numberType)){
-                        keyType = numberType;
+                    if (!type._set.has(numberTsType)){
+                        keyType = numberTsType;
                         // TODO: could we just do tstype.regularType? Maybe not if it is an Enum.
                         regularTsType = checker.getNumberLiteralType((tstype as NumberLiteralType).value);
                     }
                 }
                 else if (tstype.flags & TypeFlags.StringLiteral){
-                    if (!type._set.has(stringType)) {
-                        keyType = stringType;
+                    if (!type._set.has(stringTsType)) {
+                        keyType = stringTsType;
                         regularTsType = checker.getStringLiteralType((tstype as StringLiteralType).value);
                     }
                 }
                 else if (tstype.flags & TypeFlags.BigIntLiteral) {
-                    if (!type._set.has(bigintType)) {
-                        keyType = bigintType;
+                    if (!type._set.has(bigintTsType)) {
+                        keyType = bigintTsType;
                         regularTsType = checker.getBigIntLiteralType((tstype as BigIntLiteralType).value);
                     }
                 }
@@ -234,7 +286,7 @@ namespace ts {
                 // erase literals
                 if (regularTsType.flags & (TypeFlags.Number|TypeFlags.String|TypeFlags.BigInt)){
                     // So these "numberType" etc are not their own regular types.  This always surprises me.
-                    Debug.assert(regularTsType===numberType||regularTsType===stringType||regularTsType===bigintType, "unexpected");
+                    Debug.assert(regularTsType===numberTsType||regularTsType===stringTsType||regularTsType===bigintTsType, "unexpected");
                     type._mapLiteral.delete(regularTsType);
                 }
                 type._set.add(regularTsType);
@@ -258,7 +310,7 @@ namespace ts {
                 _mapLiteral: new Map<Type, Set<LiteralType>>(),
             };
             if (!tstype) return typeOut;
-            if (isFloughLogicalObject(tstype)) return unionOfFloughObjectTypeInstanceToRefTypesTypeMutate(tstype, typeOut);
+            if (isFloughLogicalObject(tstype)) return unionOfFloughLogicalObjectToRefTypesTypeMutate(tstype, typeOut);
             return addTypeToRefTypesTypeMaybeMutate({ source:tstype as Readonly<Type>,target:typeOut });
         }
         function cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType{
@@ -393,6 +445,12 @@ namespace ts {
                 });
             });
         }
+        // @ts-expect-error
+        function differenceOfRefTypesType(minuend: Readonly<RefTypesType>, subtrahend: Readonly<RefTypesType>): RefTypesType {
+            // TODO: the implementation.
+            return 0 as any as RefTypesType;
+        }
+
         function intersectRefTypesTypes2(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): RefTypesType {
             if (isAnyType(a)) return cloneRefTypesType(b); // TODO: check, and not need to clone
             if (isAnyType(b)) return cloneRefTypesType(a);
@@ -708,7 +766,7 @@ namespace ts {
          */
         function subtractFromType(subtrahend: Readonly<RefTypesType>, minuend: Readonly<RefTypesType>, /* errorOnMissing = false */): RefTypesType {
             if (isNeverType(subtrahend)) return minuend;
-            if (isAnyType(subtrahend)) return createRefTypesType(neverType);
+            if (isAnyType(subtrahend)) return createRefTypesType(neverTsType);
             if (isUnknownType(subtrahend)||isUnknownType(minuend)) Debug.fail("not yet implemented");
             Debug.assert(!subtrahend._flags && !minuend._flags);
             assertCastType<RefTypesTypeNormal>(subtrahend);
@@ -733,9 +791,9 @@ namespace ts {
             return c;
         }
         function getTypeFromRefTypesType(type: Readonly<RefTypesType>): Type {
-            if (type._flags===RefTypesTypeFlags.any) return anyType;
-            if (type._flags===RefTypesTypeFlags.unknown) return unknownType;
-            if (isNeverType(type)) return neverType;
+            if (type._flags===RefTypesTypeFlags.any) return anyTsType;
+            if (type._flags===RefTypesTypeFlags.unknown) return unknownTsType;
+            if (isNeverType(type)) return neverTsType;
             const tstypes: Type[] = [];
             const tslittypes: LiteralType[] = [];
             type._set.forEach(t=>tstypes.push(t));
@@ -757,10 +815,10 @@ namespace ts {
         }
         function forEachRefTypesTypeTsTypeExcludingLogicalObject<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void {
             if (type._flags){
-                if (type._flags===RefTypesTypeFlags.any) f(anyType);
-                else f(unknownType);
+                if (type._flags===RefTypesTypeFlags.any) f(anyTsType);
+                else f(unknownTsType);
             }
-            else if (isNeverType(type)) f(neverType);
+            else if (isNeverType(type)) f(neverTsType);
             else {
                 type._set.forEach(t=>f(t));
                 type._mapLiteral.forEach((litset,_tstype)=>{
@@ -772,10 +830,10 @@ namespace ts {
         }
         function forEachRefTypesTypeTsTypeIncludingLogicalObject<F extends (t: Type | FloughLogicalObjectIF) => any>(type: Readonly<RefTypesType>, f: F): void {
             if (type._flags){
-                if (type._flags===RefTypesTypeFlags.any) f(anyType);
-                else f(unknownType);
+                if (type._flags===RefTypesTypeFlags.any) f(anyTsType);
+                else f(unknownTsType);
             }
-            else if (isNeverType(type)) f(neverType);
+            else if (isNeverType(type)) f(neverTsType);
             else {
                 type._set.forEach(t=>f(t));
                 type._mapLiteral.forEach((litset,_tstype)=>{
@@ -789,8 +847,8 @@ namespace ts {
 
         function getTsTypesExcludingLogicalObject(type: Readonly<RefTypesType>): Type[] {
             if (type._flags){
-                if (type._flags===RefTypesTypeFlags.any) return [anyType];
-                else return [unknownType];
+                if (type._flags===RefTypesTypeFlags.any) return [anyTsType];
+                else return [unknownTsType];
             }
             else if (isNeverType(type)) return [];
             else {
