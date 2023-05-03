@@ -1,62 +1,101 @@
-### Overview
 
-One goal of the Flough software is to improve intuitive usability by enabling (\**when feasible*) true union and intersection computations in flow.
+## Typescript union and intersection operators.
 
-Some simple examples: ....
+Typescript operators | (union) and & (intersection), when applied to objects, are not set-operations, and they are not meant to be.
 
-As the examples show, the user doesn't actually need to be cognitively aware of "set-theory operations" to improve usability.
-There are simple intutively-just-oughta-work cases that currently are not allowed, and that degrades usability.
+Rules governing which keys can be read:
 
-
-It is important to clealy separate the following two things:
-1. Typescript definitions:  of types and the type operators | (union) and & (intersection) on record types.
-2. General flow alalysis requirements: The meaning of sets, and set-theory-operators of union and intersection on sets, that are required for correct flow analysis in any programming language (including Typescript).
-
-The above 1 and 2 coincide with respect to primitive types, however the differ with respect to object types.
-
-The following tables compares Typescript-operations and set-theory-operations union and intersection on record-types (\**excepting arrays and tuples*)
-
-| intersection-op | property-keys | property primitive-types |
+| typescript-op | property-keys | property primitive-types |
 |---|---|---|
-|typescript | *union of keys* | intersection of types |
-| set-theory | intersection of keys | intersection of types |
+| intersection | *union of keys* | intersection of key-types |
+| union | *intersection of keys* | union of key-types |
 
-| union-op | keys | primitive-types |
+Rules governing which keys can be assigned, and to which types:
+
+| typescript-op | property-keys | property primitive-types |
 |---|---|---|
-|typescript | *intersection of keys* | union of types |
-| set-theory | union of keys | union of types |
-
-Roughly speaking, Typescript inverts the operations over keys, but the rule differs for arrays and tuples where the keys are, roughly speaking, unioned in both typescript-union and typescript-intersection.
-
-Traversing down the tree, the typescript-operators are also applied to the next level (just as their set-counterparts are).
-
-Although the type-operations do not correspond to the actual relations that occur during flow,
-the typescript-operations do describe concrete new types.
-
-### Why are Typescript operators of Union and Intersection defined as they are?
-
-Neither the exact definitions of Typescript-Union and Typescript-Intersection nor the reasons for those definitions are comprehensively documented in a holistic top-down manner.
-However, the de-facto behavior has developed organically, with user feedback, and under the constraints of computation time, so it well defined in a bottom-up manner.
-
-Nevertheless, this a possible interpretation of the current rules:
-
-1.  **Union:** Union uses the intersection of keys because that creates types which are reliably fast to compute in flow and user interface.  Although the "intersection of keys" can lose information, that can be replaced by requiring the user to explicitly declaring the type being accessed (e.g., by casing on a 'kind' member with discrete values, or using an `as`-(some Type) clause, etc.), which will bring the missing keys back when required.
-
-2. **Intersection:**  There is a need for an operator to allow users to compose object types from other object types, with a result that merges keys of both types (e.g., the "union" of keys but let's avoid that word here to avoid confusion).  Because the operator Typescript-Union is already taken, the operator Typescript-Intersection can be used instead.  There is some theoretical justification - suppose the operand types are "open", e.g., they include generic property fields `[key: string]: any`, then the set-intersection would in fact coincide with the Typescript-intersection.  The problem with this justification is that augmenting the `[key: string]: any` fields is only temporary for the intersection operation, and then it is removed afterwards.  It doesn't seem to be a necessity from a compuational speed point of view.  Hence the conclusion that it is intended to fulfill the need for a composition operator.
-
-### Suggestions
-
-Some suggestions based on this analysis:
-
-1. Typescript needs (an) explicit composition operator(s).  That would be more clear than overrding `|`.
-2. The `||` and `&&` symbols (over Types) could be used to represent set-intersection and set-union.  In cases of large types where computation is infeasible,
-the full computation can be eschewed, either silently or with a warning (depending on option).  It may be that a warning would enable users to compose better types,
-that even if large, are still quickly computable.
+| intersection | *union of keys* | intersection of key-types |
+| union | *intersection of keys* | union of key-types |
 
 
-### Integration Typescript-operators with Flough, over objects
+For objects with multiple levels (including circular references) the typescript-union operator is also
+applied recursively to the next key level, the operands being all keys of the same key-name.
 
-1. Typescript-to-Flough interface for object: Start out by mapping both Typescript-intersection and Typescript-union to set-union
-1. Flough-to-Typescript interface: Then going back all the object types would be unions.
+For objects with multiple levels (including circular references) the typescript-intersection operator is also
+applied recursively to the next key level, the operands being all keys of the same key-name.
 
-Unlikely to be sufficient but it's a start.
+
+```
+/* eslint-disable object-literal-surrounding-space */
+/* eslint-disable @typescript-eslint/no-unused-expressions */
+
+declare interface A { a: string, c: { d: number, e: number } };
+declare interface B { b: string, c: { d: number, f: number } };
+
+declare const x: A | B;
+
+x.a; // error
+x.b; // error
+x.c; // no error
+x.c.d; // no error
+x.c.e; // error
+
+const x0: A | B = {a: "", b:undefined, c: {d: 1, e: 2, f: ""}}; // error: undefined is not a type of b, string is not a type of f
+const x1: A | B = {a: "", b:undefined, c: {d: 1, e: 2}}; // no error, but why no error on b here?
+
+declare const y: A & B;
+
+y.a; // no error
+y.b;  // no error
+y.c; // no error
+y.c.d; // no error
+y.c.e; // no error
+
+const y0: A & B = {a: "", b:undefined, c: {d: 1, e: 2, f: 3}}; // error: undefined is not a type of b
+const y1: A & B = {a: "", b:"", c: {d: 1, e: 2}}; // error: missing f
+```
+
+The typescript-union works best with types which share a mutual "kind" key with a literal for each separate type.
+Then the union is just the "kind" key.  Until the "kind" key is narrowed, no other keys can be seen (unless they happen to be shared between all).
+But once the "kind" key is narrowed, all keys for the narrowed type are visible.
+
+However, if there is no "kind" key, usually the only way to narrow is by explicitly identifying the type.
+
+
+## Flough union and intersection operators
+
+The actual behavior of types in general programatic type flow analysis (not only typescript) can be modeled with sets, where the set members are instances of types.
+An instance of a type can an actual valid value for a type, or some subset of valid values for a type.
+The members of set may be instances of different types.
+
+Set-union and set-intersection take sets as their operands.
+
+In the following typescript
+```
+type A = & { a: string | number };
+type B = & { a: string, b?: string };
+
+declare const x: A;
+declare const y: B;
+declare const b: boolean;
+
+const z = b ? x : y;
+
+// Error because key "b" was elimiated in union type
+if (typeof z.b=== "string"){
+    console.log(typeof z.a); // will be string
+}
+
+```
+`z` is either of type `A` or `B` and not a mix of both.
+So logically `typeof z.b=== "string"` implies `typeof z.a=== "string"`.
+However, the typescript-union operator, under the access rule, doesn't allow `b` to be accessed from `z` (even though it can be assigned under the assignment rule.)
+
+At least for computationally simple cases like this one, it is reasonable to follow the set-union logic and allow `z.b` to be accessed in order to infer the type of `z.a`
+
+## Efficiency of typescript-union operator.
+
+The typescript-union operator is (or is close to) a projection of set-union onto a lower dimensional space.
+This may make some computations faster.
+
+

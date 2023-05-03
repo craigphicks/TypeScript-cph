@@ -3,7 +3,7 @@
     "compilerOptions": {
         "outFile": "../../built/local/compiler.js",
         "types": ["node"],
-        "ignoreDeprecations": "5.0",
+        //"ignoreDeprecations": "5.0",
     },
 
     "references": [

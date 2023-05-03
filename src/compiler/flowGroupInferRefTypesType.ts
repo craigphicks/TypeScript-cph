@@ -94,13 +94,15 @@ namespace ts {
         //refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean;
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         //literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
-        getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
+        //getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         // widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType;
         partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
         unionOfFloughLogicalObjectToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType;
         intersectionOfFloughLogicalObjectToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType;
-    };
+        hasLogicalObject(type: Readonly<RefTypesType>): boolean;
+        getLogicalObject(type: Readonly<RefTypesType>): FloughLogicalObjectIF | undefined;
+};
 
     export function createRefTypesTypeModule(checker: TypeChecker): RefTypesTypeModule {
 
@@ -112,6 +114,13 @@ namespace ts {
         const numberTsType = checker.getNumberType();
         const bigintTsType = checker.getBigIntType();
 
+        const neverType = createRefTypesType(); // never
+        const unknownType = createRefTypesType(unknownTsType);
+        const undefinedType = createRefTypesType(undefinedTsType);
+        const stringType = createRefTypesType(stringTsType);
+        const numberType = createRefTypesType(numberTsType);
+        const bigintType = createRefTypesType(bigintTsType);
+        const anyType = createRefTypesType(anyTsType);
 
 
         // const trueType = checker.getTrueType();
@@ -163,12 +172,14 @@ namespace ts {
             getMapLiteralOfRefTypesType,
             equalRefTypesTypes,
             //literalWideningUnion,
-            getUnionOrWidenedType,
+            //getUnionOrWidenedType,
             //widenLiteralsAccordingToEffectiveDeclaredType,
             addTsTypeNonUnionToRefTypesTypeMutate: addTsTypeNonCompoundToRefTypesTypeMutate,
             partitionForEqualityCompare,
             unionOfFloughLogicalObjectToRefTypesTypeMutate,
             intersectionOfFloughLogicalObjectToRefTypesTypeMutate,
+            hasLogicalObject,
+            getLogicalObject,
         };
         //const neverType = checker.getNeverType();
 
@@ -179,13 +190,6 @@ namespace ts {
         // const bigintTsType = checker.getBigIntType();
         // const anyTsType = checker.getAnyType();
 
-        const neverType = createRefTypesType(); // never
-        const unknownType = createRefTypesType(unknownTsType);
-        const undefinedType = createRefTypesType(undefinedTsType);
-        const stringType = createRefTypesType(stringTsType);
-        const numberType = createRefTypesType(numberTsType);
-        const bigintType = createRefTypesType(bigintTsType);
-        const anyType = createRefTypesType(anyTsType);
 
         // eslint-disable-next-line max-statements-per-line
         function getRefTypesTypeNever(): RefTypesType { return neverType; }
@@ -210,6 +214,13 @@ namespace ts {
         }
         function createRefTypesTypeUnknown(): RefTypesTypeUnknown {
             return { _flags: RefTypesTypeFlags.unknown, _set: undefined, _mapLiteral: undefined };
+        }
+
+        function hasLogicalObject(type: Readonly<RefTypesType>): boolean {
+            return (type as RefTypesTypeNormal)._logicalObject !== undefined;
+        }
+        function getLogicalObject(type: Readonly<RefTypesType>): FloughLogicalObjectIF | undefined{
+            return (type as RefTypesTypeNormal)._logicalObject;
         }
 
         function unionOfFloughLogicalObjectToRefTypesTypeMutate(logicalObj: FloughLogicalObjectIF, target: RefTypesType): RefTypesType {
@@ -295,7 +306,7 @@ namespace ts {
         }
 
         function createRefTypesTypeNever(): RefTypesTypeNormal {
-            return createRefTypesTypeNever();
+            return createRefTypesType() as RefTypesTypeNormal;
         }
 
 
@@ -339,6 +350,12 @@ namespace ts {
                (tstype as UnionType).types.forEach(t=>{
                     target = addTsTypeNonCompoundToRefTypesTypeMutate(t, target);
                });
+            }
+            else if (tstype.flags & TypeFlags.Intersection){
+                Debug.fail("unexpected");
+            }
+            else {
+                target = addTsTypeNonCompoundToRefTypesTypeMutate(tstype, target);
             }
             return target;
         }
@@ -593,7 +610,8 @@ namespace ts {
                      * - arr1.push({ leftts: intersectionOfLogicalObjects, rightts: arrYTsTypes, true:false, false:true }, );
                      */
                     if (pass===0) arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
-                    arr1.push({ leftts: [intersectionOfLogicalObjects], rightts: [...copySetYDelete(y._logicalObject!)], true:false, false:true });
+                    arr1.push({ leftts: [intersectionOfLogicalObjects],
+                        rightts: [differenceOfFloughLogicalObject(y._logicalObject!,intersectionOfLogicalObjects),...copySetYDelete(y._logicalObject!)], true:false, false:true });
                 }
                 else if (x._logicalObject) {
                     arr1.push({ leftts: [x._logicalObject], rightts: arrYTsTypes, true:false, false:true });
@@ -897,43 +915,43 @@ namespace ts {
             }
         }
 
-        function getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
-            const mnew = getMapLiteralOfRefTypesType(tnew);
-            if (!mnew) return unionOfRefTypesType([tnew,told]);
-            const msif = getMapLiteralOfRefTypesType(effectiveDeclaredType);
-            if (!msif) return unionOfRefTypesType([tnew,told]);
-            const mold = getMapLiteralOfRefTypesType(told);
-            let ltcount = 0;
-            const aktype: Type[] = [];
-            mnew.forEach((set,ktype)=>{
-                const msifset = msif?.get(ktype);
-                if (!msifset) {
-                    aktype.push(ktype);
-                    ltcount += set.size;
-                    return;
-                }
-                // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
-                if (extraAsserts){
-                    set.forEach(lt=>Debug.assert(msifset.has(lt)));
-                }
-            });
-            mold?.forEach((set,ktype)=>{
-                const msifset = msif?.get(ktype);
-                if (!msifset) {
-                    aktype.push(ktype);
-                    ltcount += set.size;
-                    return;
-                }
-                // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
-                if (extraAsserts){
-                    set.forEach(lt=>Debug.assert(msifset.has(lt)));
-                }
-            });
-            if (ltcount>=2){
-                return addTypesToRefTypesType({ source:aktype, target:unionOfRefTypesType([tnew,told]) });
-            }
-            return unionOfRefTypesType([tnew,told]);
-        }
+        // function getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
+        //     const mnew = getMapLiteralOfRefTypesType(tnew);
+        //     if (!mnew) return unionOfRefTypesType([tnew,told]);
+        //     const msif = getMapLiteralOfRefTypesType(effectiveDeclaredType);
+        //     if (!msif) return unionOfRefTypesType([tnew,told]);
+        //     const mold = getMapLiteralOfRefTypesType(told);
+        //     let ltcount = 0;
+        //     const aktype: Type[] = [];
+        //     mnew.forEach((set,ktype)=>{
+        //         const msifset = msif?.get(ktype);
+        //         if (!msifset) {
+        //             aktype.push(ktype);
+        //             ltcount += set.size;
+        //             return;
+        //         }
+        //         // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+        //         if (extraAsserts){
+        //             set.forEach(lt=>Debug.assert(msifset.has(lt)));
+        //         }
+        //     });
+        //     mold?.forEach((set,ktype)=>{
+        //         const msifset = msif?.get(ktype);
+        //         if (!msifset) {
+        //             aktype.push(ktype);
+        //             ltcount += set.size;
+        //             return;
+        //         }
+        //         // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+        //         if (extraAsserts){
+        //             set.forEach(lt=>Debug.assert(msifset.has(lt)));
+        //         }
+        //     });
+        //     if (ltcount>=2){
+        //         return addTypesToRefTypesType({ source:aktype, target:unionOfRefTypesType([tnew,told]) });
+        //     }
+        //     return unionOfRefTypesType([tnew,told]);
+        // }
     }
 
 }

@@ -392,7 +392,7 @@ namespace ts {
         return createFlowConstraintNodeOr({ constraints:ac });
     }
     function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow): RefTypesSymtabConstraintItem{
-        if (asc.length===0) Debug.fail("unexpected"); //return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
+        if (asc.length===0) /*Debug.fail("unexpected"); //*/return { constraintItem: createFlowConstraintNever() };
         if (asc.length===1) return asc[0];
         const asc1 = asc.filter(sc=>!isNeverConstraint(sc.constraintItem));
         if (asc1.length===0) return createRefTypesSymtabConstraintItemNever(); // assuming or of nevers is never

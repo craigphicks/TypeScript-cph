@@ -62,6 +62,22 @@ namespace ts {
         //[essymbolFloughLogicalObject]: true;
         //kind: FloughLogicalObjectKind;
     }
+    // @ts-expect-error
+    function isFloughLogicalObjectPlain(x: FloughLogicalObject): x is FloughLogicalObjectPlain {
+        return x.kind===FloughLogicalObjectKind.plain;
+    }
+    // @ts-expect-error
+    function isFloughLogicalObjectUnion(x: FloughLogicalObject): x is FloughLogicalObjectUnion {
+        return x.kind===FloughLogicalObjectKind.union;
+    }
+    // @ts-expect-error
+    function isFloughLogicalObjectIntersection(x: FloughLogicalObject): x is FloughLogicalObjectIntersection {
+        return x.kind===FloughLogicalObjectKind.intersection;
+    }
+    // @ts-expect-error
+    function isFloughLogicalObjectDifference(x: FloughLogicalObject): x is FloughLogicalObjectDifference {
+        return x.kind===FloughLogicalObjectKind.difference;
+    }
 
     export function isFloughLogicalObject(x: any): x is FloughLogicalObject {
         return !!x?.[essymbolFloughLogicalObject];
@@ -281,16 +297,18 @@ namespace ts {
      * The stack implementation is not really necessary for speed or maximum depth (the depth of the tree is limited by the nummber of operators applied to the type.)
      * So a recusrive implementation would be fine.  However, the stack implementation might be more general, and useful in other places.
      * A recusrive implementation could be done with callback functions.
-     * @param logicalObjectTop
-     * @param lookupkey
+     * @param logicalObjectTop  - the logical object to search
+     * @param lookupkey - the property key to look up
+     * @param _crit - the criteria to apply to the type (TODO: not implemented yet, it's a significant optimization)
      * @returns
      */
 
     type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<RefTypesType>>;
     export type LogicalObjectForEachTypeOfProperyLookupReturnType = & { objToType: ObjToTypeMap; type: Readonly<RefTypesType> };
     export function logicalObjectForEachTypeOfProperyLookup(
-        logicalObjectTop: Readonly<FloughLogicalObject>, lookupkey: PropertyKeyType,
+        logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType, _crit?: InferCrit
     ): LogicalObjectForEachTypeOfProperyLookupReturnType {
+        assertCastType<FloughLogicalObject>(logicalObjectTop);
         // type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<RefTypesType>>;
         // type Result = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<RefTypesType> }[];
         // type State = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<RefTypesType> }[];
@@ -327,10 +345,18 @@ namespace ts {
                         if (!type) {
                             // check if the key is in the base object, if so get the type from there
                             const tsObjectType = logicalObject.item.tsObjectType;
+                            /**
+                             * Previously, this was done with
+                             * const propSymbol = checker.getPropertyOfType(t, keystr);
+                             * if (propSymbol.flags & SymbolFlags.EnumMember)
+                             *     treat it as a literal type, not a symbol
+                             *     const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
+                             * else // treat it as a symbol
+                             */
                             const tsPropertyType = checker.getTypeOfPropertyOfType(tsObjectType, lookupkey);
-                            type = tsPropertyType ? refTypesTypeModule.createRefTypesType(tsPropertyType) : refTypesTypeModule.getRefTypesTypeUndefined();
-                            if (!tsPropertyType) {
-                                // TODO: maybe if undefined is not allowed in the base object, this should return never.
+                            // TODO: apply crit
+                            if (tsPropertyType) type = refTypesTypeModule.createRefTypesType(tsPropertyType);
+                            else {
                                 type = refTypesTypeModule.getRefTypesTypeUndefined();
                             }
                         }
@@ -417,5 +443,6 @@ namespace ts {
         const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: refTypesTypeModule.createRefTypesTypeNever() });
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup
+
 
 }

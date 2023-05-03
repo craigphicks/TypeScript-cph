@@ -102,7 +102,10 @@ namespace ts {
             isNeverType,
             isAnyType,
             isUnknownType,
+            // @ts-ignore
             forEachRefTypesTypeTsTypeExcludingLogicalObject,
+            // @ts-ignore
+            forEachRefTypesTypeTsTypeIncludingLogicalObject,
             //partitionIntoSingularAndNonSingularTypes,
             equalRefTypesTypes,
         } = refTypesTypeModule; //createRefTypesTypeModule(checker);
@@ -189,13 +192,13 @@ namespace ts {
 
 
         // @ ts-ignore
-        function enumMemberSymbolToLiteralTsType(symbol: Symbol): Type {
-            Debug.assert(symbol.flags & SymbolFlags.EnumMember);
-            const litValue = (getTypeOfSymbol(symbol) as LiteralType).value;
-            if (typeof litValue==="string") return checker.getStringLiteralType(litValue);
-            else if (typeof litValue==="number") return checker.getNumberLiteralType(litValue);
-            Debug.fail("unexpected");
-        }
+        // function enumMemberSymbolToLiteralTsType(symbol: Symbol): Type {
+        //     Debug.assert(symbol.flags & SymbolFlags.EnumMember);
+        //     const litValue = (getTypeOfSymbol(symbol) as LiteralType).value;
+        //     if (typeof litValue==="string") return checker.getStringLiteralType(litValue);
+        //     else if (typeof litValue==="number") return checker.getNumberLiteralType(litValue);
+        //     Debug.fail("unexpected");
+        // }
 
         function dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string {
             const astr: string[]=[];
@@ -441,6 +444,7 @@ namespace ts {
         // @ ts-ignore-error 6133
         function applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType,crit: InferCrit, func: F): void {
             if (crit.kind===InferCritKind.none) {
+                Debug.assert(crit.negate===false);
                 forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t => {
                     func(t, /* pass */ true, /* fail */ false);
                 });
@@ -1800,8 +1804,7 @@ namespace ts {
                     //const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = []; //
                     const arrRttr: RefTypesTableReturn[]=[];
 
-                    // nope
-                    //const {symbol: sfiPropSymbol, symbolFlowInfo } = getSymbolFlowInfoForIdentifier(expr.name,_mrState);
+
 
                     pre.unmergedPassing.forEach(prePassing=>{
                         if (isRefTypesSymtabConstraintItemNever(prePassing.sci)) return;
@@ -1810,6 +1813,31 @@ namespace ts {
                          * For each new branch a RefTypesTableReturn is created and pushed to arrRttr.
                          *
                          */
+                        //if (prePassing.type===undefinedType||prePassing.type===nullType) {
+                        {
+                            const logicalObject = refTypesTypeModule.getLogicalObject(prePassing.type);
+                            if (logicalObject) {
+                                const {objToType,type: _typeUnion} = logicalObjectForEachTypeOfProperyLookup(logicalObject, keystr);
+                                objToType.forEach((type, _obj) => {
+                                    let sc = prePassing.sci;
+                                    if (prePassing.symbol){
+                                        ({type,sc} = andSymbolTypeIntoSymtabConstraint({
+                                            symbol:prePassing.symbol, type, isconst:prePassing.isconst, sc,
+                                            getDeclaredType, mrNarrow
+                                        }));
+                                    }
+                                    arrRttr.push({
+                                        type,
+                                        sci: sc
+                                    });
+                                });
+                                return;
+                            }
+                        }
+
+
+
+
                         forEachRefTypesTypeTsTypeExcludingLogicalObject(prePassing.type, t => {
                             // TODO: Shouldn't this either (not happen) or (return after andSymbolTypeIntoSymtabConstraint)?
                             if (t===undefinedType||t===nullType) {
@@ -1825,83 +1853,86 @@ namespace ts {
                                     getDeclaredType, mrNarrow }));
                             }
                             if (isArrayOrTupleType(t)||t===stringType) {
-                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
-                                if (keystr==="length") {
-                                    arrRttr.push({
-                                        symbol: undefined,
-                                        type: createRefTypesType(numberType),
-                                        sci:sc,
-                                    });
-                                }
-                                else {
-                                    Debug.fail("not yet implemented ");
-                                    // arrRttr.push({
-                                    //     kind: RefTypesTableKind.return,
-                                    //     symbol: undefined,
-                                    //     type: createRefTypesType(undefinedType),
-                                    //     symtab,
-                                    //     constraintItem
-                                    // });
-                                };
+                                // should not arrive here because its a logical object
+                                Debug.fail("unexpected");
+                                // if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
+                                // if (keystr==="length") {
+                                //     arrRttr.push({
+                                //         symbol: undefined,
+                                //         type: createRefTypesType(numberType),
+                                //         sci:sc,
+                                //     });
+                                // }
+                                // else {
+                                //     Debug.fail("not yet implemented ");
+                                //     // arrRttr.push({
+                                //     //     kind: RefTypesTableKind.return,
+                                //     //     symbol: undefined,
+                                //     //     type: createRefTypesType(undefinedType),
+                                //     //     symtab,
+                                //     //     constraintItem
+                                //     // });
+                                // };
                                 return;
                             }
                             /**
                              * Add propSymbol, resolvedType to a copy of refTypesSymtab
                              *
                              */
-                            const propSymbol = checker.getPropertyOfType(t, keystr);
-                            if (propSymbol) {
-                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
-                                if (propSymbol.flags & SymbolFlags.EnumMember){
-                                    // treat it as a literal type, not a symbol
-                                    const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
-                                    arrRttr.push({
-                                        type: createRefTypesType(tstype),
-                                        sci:sc,
-                                    });
-                                    return;
-                                }
-                                let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(propSymbol);
-                                if (!symbolFlowInfo){
-                                    const effectiveDeclaredTsType = getTypeOfSymbol(propSymbol);
-                                    symbolFlowInfo = {
-                                        passCount: 0,
-                                        isconst: checker.isReadonlyProperty(propSymbol),
-                                        effectiveDeclaredTsType,
-                                        effectiveDeclaredType: createRefTypesType(effectiveDeclaredTsType),
-                                    };
-                                    _mrState.symbolFlowInfoMap.set(propSymbol,symbolFlowInfo);
-                                }
-                                else {
-                                    if (extraAsserts){
-                                        Debug.assert(symbolFlowInfo.effectiveDeclaredTsType===getTypeOfSymbol(propSymbol));
-                                    }
-                                }
-                                if (extraAsserts && compilerOptions.enableTSDevExpectString){
-                                    debugDevExpectEffectiveDeclaredType(expr,symbolFlowInfo);
-                                }
-                                const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
-                                    {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc,
-                                    getDeclaredType, mrNarrow });
-                                arrRttr.push({
-                                    symbol: propSymbol,
-                                    isconst: symbolFlowInfo.isconst,
-                                    type, //symbolFlowInfo.effectiveDeclaredType!,
-                                    sci: propSC
-                                });
-                                return;
-                            }
-                            else {
-                                // The keystring corresponded to no proptery of t.
-                                // Return undefinedType
-                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] lookup of propSymbol failed for "${keystr}" in ${dbgTypeToString(t)}, return undefined type`);
-                                const type = createRefTypesType(undefinedType);
-                                arrRttr.push({
-                                    type,
-                                    sci:sc
-                                });
-                                return;
-                            }
+                            if (t.flags & TypeFlags.Object) Debug.fail("unexpected - should be handled by logicalObject");
+                            // const propSymbol = checker.getPropertyOfType(t, keystr);
+                            // if (propSymbol) {
+                            //     if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
+                            //     if (propSymbol.flags & SymbolFlags.EnumMember){
+                            //         // treat it as a literal type, not a symbol
+                            //         const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
+                            //         arrRttr.push({
+                            //             type: createRefTypesType(tstype),
+                            //             sci:sc,
+                            //         });
+                            //         return;
+                            //     }
+                            //     let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(propSymbol);
+                            //     if (!symbolFlowInfo){
+                            //         const effectiveDeclaredTsType = getTypeOfSymbol(propSymbol);
+                            //         symbolFlowInfo = {
+                            //             passCount: 0,
+                            //             isconst: checker.isReadonlyProperty(propSymbol),
+                            //             effectiveDeclaredTsType,
+                            //             effectiveDeclaredType: createRefTypesType(effectiveDeclaredTsType),
+                            //         };
+                            //         _mrState.symbolFlowInfoMap.set(propSymbol,symbolFlowInfo);
+                            //     }
+                            //     else {
+                            //         if (extraAsserts){
+                            //             Debug.assert(symbolFlowInfo.effectiveDeclaredTsType===getTypeOfSymbol(propSymbol));
+                            //         }
+                            //     }
+                            //     if (extraAsserts && compilerOptions.enableTSDevExpectString){
+                            //         debugDevExpectEffectiveDeclaredType(expr,symbolFlowInfo);
+                            //     }
+                            //     const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
+                            //         {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc,
+                            //         getDeclaredType, mrNarrow });
+                            //     arrRttr.push({
+                            //         symbol: propSymbol,
+                            //         isconst: symbolFlowInfo.isconst,
+                            //         type, //symbolFlowInfo.effectiveDeclaredType!,
+                            //         sci: propSC
+                            //     });
+                            //     return;
+                            // }
+                            // else {
+                            //     // The keystring corresponded to no proptery of t.
+                            //     // Return undefinedType
+                            //     if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] lookup of propSymbol failed for "${keystr}" in ${dbgTypeToString(t)}, return undefined type`);
+                            //     const type = createRefTypesType(undefinedType);
+                            //     arrRttr.push({
+                            //         type,
+                            //         sci:sc
+                            //     });
+                            //     return;
+                            // }
                             Debug.fail("unexpected");
                         });
                     });

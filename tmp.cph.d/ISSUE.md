@@ -400,7 +400,8 @@ A consequence is that `case SyntaxKind.CallExpression` currently has a narrow co
 
 ## command line snippets
 
-- `myMaxLinesOut=300000 myDebug=0 myDebugLevel=1 myDisableInfer=0 gulp runtests --tests="_caxnc-"`
+- `myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"`
+- `myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"`
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  --prof built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `node --prof-process isolate- > isolate.txt`
