@@ -46,6 +46,8 @@
         "symbolWalker.ts",
         "checker.ts",
         "heaper.ts",
+        "floughType.ts",
+        "floughLogicalObject.ts",
         "flowNodesGrouping.ts",
         "flowNodesDebugWrite.ts",
         "flowGroupInfer.ts",

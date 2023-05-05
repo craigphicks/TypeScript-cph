@@ -1,4 +1,14 @@
 namespace ts {
+    export type PartitionForEqualityCompareItem = & {
+        left?: Readonly<RefTypesType>;
+        right?: Readonly<RefTypesType>;
+        both?: Readonly<RefTypesType>;
+        leftts?: (Type | FloughLogicalObjectIF)[];
+        rightts?: (Type | FloughLogicalObjectIF)[];
+        bothts?: (Type | FloughLogicalObjectIF);
+        true?: boolean;
+        false?: boolean;
+    };
 
     // export interface AliasAssignableState {
     //     readonly node: Node;
