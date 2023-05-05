@@ -4,33 +4,32 @@ namespace ts {
 
     // leave the names the same in RefTypesType while changing the names in FloughTypeIF
     export interface FloughTypeModule {
-        // interface copied from RefTypesType
-        createFloughType(tstype?: Readonly<Type | FloughLogicalObjectIF> | Readonly<(Type | FloughLogicalObjectIF)[]>): FloughType;
-        createFloughTypeNever(): FloughType;
-        cloneFloughType(t: Readonly<FloughType>): FloughType;
-        addTypeToFloughType({source,target}: { source: Readonly<Type>, target: FloughType}): FloughType ;
-        mergeToFloughType({source,target}: { source: Readonly<FloughType>, target: FloughType}): void ;
-        unionOfFloughType(types: Readonly<FloughType[]>): FloughType ;
-        intersectionOfFloughType(...args: Readonly<FloughType>[]): FloughType ;
-        differenceOfFloughType(minuend: Readonly<FloughType>, subtrahend: Readonly<FloughType>): FloughType ;
-        subtractFromType(subtrahend: Readonly<FloughType>, minuend: Readonly<FloughType>, /* errorOnMissing = false */): FloughType ;
+        /**
+         * Interface copied from RefTypesTypeModule
+         */
+
+        createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): FloughType ;
+        cloneRefTypesType(t: Readonly<FloughType>): FloughType;
+        addTypeToRefTypesType({source,target}: { source: Readonly<Type>, target: FloughType}): FloughType ;
+        mergeToRefTypesType({source,target}: { source: Readonly<FloughType>, target: FloughType}): void ; // DEPRECATED
+        unionOfRefTypesType(types: Readonly<FloughType[]>): FloughType ;
+        intersectionOfRefTypesType(...args: Readonly<FloughType>[]): FloughType ;
         isASubsetOfB(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
-        getTypeFromFloughType(type: Readonly<FloughType>): Type ;
+        subtractFromType(subtrahend: Readonly<FloughType>, minuend: Readonly<FloughType>, /* errorOnMissing = false */): FloughType ;
+        getTypeFromRefTypesType(type: Readonly<FloughType>): Type ;
         isNeverType(type: Readonly<FloughType>): boolean ;
         isAnyType(type: Readonly<FloughType>): boolean ;
         isUnknownType(type: Readonly<FloughType>): boolean ;
-        forEachFloughTypeTsTypeExcludingLogicalObject<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void ;
-        forEachFloughTypeTsTypeIncludingLogicalObject<F extends (t: Type | FloughLogicalObjectIF) => any>(type: Readonly<FloughType>, f: F): void;
-        getMapLiteralOfFloughType(t: FloughType): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
-        equalFloughTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
-        addTsTypeNonUnionToFloughTypeMutate(tstype: Type, type: FloughType): FloughType;
+        forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void ;
+        equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
+        addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): FloughType;
         partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[];
-        unionOfFloughLogicalObjectToFloughTypeMutate(logicalObj: FloughLogicalObjectIF, target: FloughType): FloughType;
-        intersectionOfFloughLogicalObjectToFloughTypeMutate(logicalObj: FloughLogicalObjectIF, target: FloughType): FloughType;
-        hasLogicalObject(type: Readonly<FloughType>): boolean;
-        getLogicalObject(type: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
 
-        // prefered interface
+        /**
+         * Prefered interface for FloughType
+         * @param ft
+         */
+        createFromTsType(tstype: Readonly<Type>): FloughType;
         cloneType(ft: Readonly<FloughType>): FloughType;
         createNeverType(): FloughType;
         //isNeverType(ft: Readonly<FloughType>): boolean; // already defined above
@@ -38,6 +37,9 @@ namespace ts {
         getNumberType(): Readonly<FloughType>;
         getUndefinedType(): Readonly<FloughType>;
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
+        intersectionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
+        unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
+        differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
     }
 
 

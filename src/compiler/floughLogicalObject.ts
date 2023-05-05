@@ -9,7 +9,7 @@ namespace ts {
         (dbgs as any) = dbgsIn;
         (mrNarrow as any) = mrNarrowIn;
     }
-    const refTypesTypeModule = floughTypeModule;
+//    const floughTypeModule = floughTypeModule;
 
     type PropertyKeyType = string;
     const essymbolFloughObjectTypeInstance = Symbol("floughObjectTypeInstance");
@@ -374,19 +374,19 @@ namespace ts {
                 onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => {
                     if (checker.isArrayOrTupleType(logicalObject.item.tsObjectType)) {
                         if (lookupkey === "length") {
-                            return { objToType: newMap([logicalObject.item, refTypesTypeModule.getNumberType()]), type: refTypesTypeModule.getNumberType() };
+                            return { objToType: newMap([logicalObject.item, floughTypeModule.getNumberType()]), type: floughTypeModule.getNumberType() };
                         }
                         if (checker.isArrayType(logicalObject.item.tsObjectType)){
                             // by convention, the instance of an array kill keep the instance type value (if it exists) as element 0.
                             let type = logicalObject.item.keyToType.get("0");
                             if (type) return { objToType: newMap([logicalObject.item, type]), type };
                             const tsElementType = checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType);
-                            type = tsElementType ? refTypesTypeModule.createFloughType(tsElementType) : refTypesTypeModule.getUndefinedType();
+                            type = tsElementType ? floughTypeModule.createFromTsType(tsElementType) : Debug.fail("not yet implemented (any type?)");
                             return { objToType: newMap([logicalObject.item, type]), type };
                         }
                         else { // tuple
                             const n = parseInt(lookupkey);
-                            if (isNaN(n)) return { objToType:newMap() , type: refTypesTypeModule.getUndefinedType() }; // propably should never happen
+                            if (isNaN(n)) return { objToType:newMap() , type: floughTypeModule.getUndefinedType() }; // propably should never happen
                             Debug.fail("not yet implemented");
                         }
                     }
@@ -405,9 +405,9 @@ namespace ts {
                              */
                             const tsPropertyType = checker.getTypeOfPropertyOfType(tsObjectType, lookupkey);
                             // TODO: apply crit
-                            if (tsPropertyType) type = refTypesTypeModule.createFloughType(tsPropertyType);
+                            if (tsPropertyType) type = floughTypeModule.createFromTsType(tsPropertyType);
                             else {
-                                type = refTypesTypeModule.getUndefinedType();
+                                type = floughTypeModule.getUndefinedType();
                             }
                         }
                         return { objToType:newMap([logicalObject.item, type]) , type };
@@ -422,7 +422,7 @@ namespace ts {
                         objToType.forEach((t, objectInstance) => {
                             if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, t);
                             // TODO: this could be an in-place merge of t into type, not requiring a new type
-                            type = refTypesTypeModule.unionOfFloughType([t,type]);
+                            type = floughTypeModule.unionWithFloughTypeMutate(t,type);
                         });
                         state.type = type;
                     }
@@ -451,7 +451,7 @@ namespace ts {
                         objToType.forEach((t, objectInstance) => {
                             if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, t);
                             // TODO: this could be an in-place merge of t into type, not requiring a new type
-                            type = refTypesTypeModule.intersectionOfFloughType(t,type);
+                            type = floughTypeModule.intersectionWithFloughTypeMutate(t,type);
                         });
                         state.type = type;
                         // result.forEach((_type, objectInstance) => {
@@ -478,9 +478,9 @@ namespace ts {
                         Debug.assert(state);
                         // eslint-disable-next-line prefer-const
                         let {objToType, type} = result;
-                        objToType.forEach((t, objectInstance) => {
-                            if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, t);
-                            type = refTypesTypeModule.differenceOfFloughType(type,t); // type - t
+                        objToType.forEach((tsubtrahend, objectInstance) => {
+                            if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, tsubtrahend);
+                            type = floughTypeModule.differenceWithFloughTypeMutate(tsubtrahend,type); // type - t
                         });
                         state.objToType.forEach((_t, objectInstance) => state!.objToType.set(objectInstance, type));
                         state.type = type;
@@ -490,7 +490,7 @@ namespace ts {
             };
         } // end of createLogicalObjectVisitorForForEachTypeOfProperyLookup
         const visitor = createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey);
-        const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: refTypesTypeModule.createFloughTypeNever() });
+        const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: floughTypeModule.createNeverType() });
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup
 
