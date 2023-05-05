@@ -17,6 +17,6 @@ RUN apt-get update && \
  echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME && \
  chmod 0440 /etc/sudoers.d/$USERNAME && \
  echo "umask 0002" >> /home/$USERNAME/.bashrc && \
- sudo -u ${USERNAME} npm install -g gulp-cli && \
- sudo -u ${USERNAME} alias hig='history | grep'
+ sudo -u ${USERNAME} npm install -g gulp-cli
 
+RUN echo "alias hig=\"history | grep\"" >> /home/$USERNAME/.bashrc
