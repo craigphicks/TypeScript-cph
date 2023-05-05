@@ -2,9 +2,13 @@ namespace ts {
 
     const checker = undefined as any as TypeChecker; // TODO: intialize;
     const refTypesTypeModule = undefined as any as RefTypesTypeModule;
-    export function initFlowLogicalObject(checker: TypeChecker, refTypesTypeModule: RefTypesTypeModule) {
-        checker = checker;
-        refTypesTypeModule = refTypesTypeModule;
+    const dbgs = undefined as any as Dbgs;
+    const mrNarrow = undefined as any as MrNarrow;
+    export function initFlowLogicalObject(checkerIn: TypeChecker, refTypesTypeModuleIn: RefTypesTypeModule, dbgsIn: Dbgs, mrNarrowIn: MrNarrow) {
+        (checker as any) = checkerIn;
+        (refTypesTypeModule as any) = refTypesTypeModuleIn;
+        (dbgs as any) = dbgsIn;
+        (mrNarrow as any) = mrNarrowIn;
     }
 
     type PropertyKeyType = string;
@@ -35,6 +39,8 @@ namespace ts {
         union="union",
         intersection="intersection",
         difference="difference",
+        tsintersection="tsintersection", // not a set-logic operation, but a TypeScript specific defined operation
+        tsunion="tsunion", // Although originating from a TypeScript specific defined operation, will behave like a set-union, but has a reference to the original TypeScript union
     }
     const essymbolFloughLogicalObject = Symbol("floughLogicalObject");
     type FloughLogicalObjectPlain = & {
@@ -57,7 +63,20 @@ namespace ts {
         items: [FloughLogicalObject,FloughLogicalObject];
         [essymbolFloughLogicalObject]: true;
     };
-    type FloughLogicalObject = FloughLogicalObjectPlain | FloughLogicalObjectUnion | FloughLogicalObjectIntersection | FloughLogicalObjectDifference;
+    type FloughLogicalObjectTsintersection = & {
+        kind: FloughLogicalObjectKind.tsintersection;
+        items: FloughLogicalObject[];
+        tsType: IntersectionType;
+        [essymbolFloughLogicalObject]: true;
+    };
+    type FloughLogicalObjectTsunion = & {
+        kind: FloughLogicalObjectKind.tsunion;
+        items: FloughLogicalObject[];
+        tsType: UnionType;
+        [essymbolFloughLogicalObject]: true;
+    };
+
+    type FloughLogicalObject = FloughLogicalObjectPlain | FloughLogicalObjectUnion | FloughLogicalObjectIntersection | FloughLogicalObjectDifference | FloughLogicalObjectTsintersection | FloughLogicalObjectTsunion;
     export interface FloughLogicalObjectIF {
         //[essymbolFloughLogicalObject]: true;
         //kind: FloughLogicalObjectKind;
@@ -90,7 +109,24 @@ namespace ts {
             [essymbolFloughLogicalObject]: true
         };
     }
-
+    export function createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectTsunion {
+        assertCastType<FloughLogicalObject[]>(items);
+        return {
+            kind: FloughLogicalObjectKind.tsunion,
+            items,
+            tsType: unionType,
+            [essymbolFloughLogicalObject]: true
+        };
+    }
+    export function createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectTsintersection {
+        assertCastType<FloughLogicalObject[]>(items);
+        return {
+            kind: FloughLogicalObjectKind.tsintersection,
+            items,
+            tsType: intersectionType,
+            [essymbolFloughLogicalObject]: true
+        };
+    }
     export function unionOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
         assertCastType<FloughLogicalObject>(a);
         assertCastType<FloughLogicalObject>(b);
@@ -137,6 +173,9 @@ namespace ts {
         onUnion: (logicalObject: Readonly<FloughLogicalObjectUnion>, result: ResultType, state: StateType, itemsIndex: number) => [StateType | undefined,ResultType | undefined];
         onIntersection: (logicalObject: Readonly<FloughLogicalObjectIntersection>, result: ResultType, state: StateType, itemsIndex: number) => [StateType | undefined,ResultType | undefined];
         onDifference?: (logicalObject: Readonly<FloughLogicalObjectDifference>, result: ResultType, state: StateType, itemsIndex: number) => [StateType | undefined,ResultType | undefined];
+        onTsunion?: (logicalObject: Readonly<FloughLogicalObjectTsunion>, result: ResultType, state: StateType, itemsIndex: number) => [StateType | undefined,ResultType | undefined];
+        onTsintersection?: (logicalObject: Readonly<FloughLogicalObjectTsintersection>, result: ResultType, state: StateType, itemsIndex: number) => [StateType | undefined,ResultType | undefined];
+
         // onItemsInitializeState: () => StateType;
         // onItemsFinished: (state: StateType | undefined) => ResultType;
     };
@@ -181,6 +220,12 @@ namespace ts {
                         case FloughLogicalObjectKind.difference:
                             ([stack[stack.length-1][stackStateIdx],result]
                                 = visitor.onDifference ? visitor.onDifference(logicalObject, result, state!, itemsIndex-1) : Debug.fail("onDifference not implemented"));
+                            break;
+                        case FloughLogicalObjectKind.tsunion:
+                            ([stack[stack.length-1][stackStateIdx],result] = visitor.onTsunion ? visitor.onTsunion(logicalObject, result, state!, itemsIndex-1) : Debug.fail("onTsunion not implemented"));
+                            break;
+                        case FloughLogicalObjectKind.tsintersection:
+                            ([stack[stack.length-1][stackStateIdx],result] = visitor.onTsintersection ? visitor.onTsintersection(logicalObject, result, state!, itemsIndex-1) : Debug.fail("onTsintersection not implemented"));
                             break;
 
                     }
@@ -443,6 +488,34 @@ namespace ts {
         const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: refTypesTypeModule.createRefTypesTypeNever() });
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup
+
+    export function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[] {
+        const as: string[] = [];
+        assertCastType<FloughLogicalObject>(logicalObjectTop);
+        let indent = 0;
+
+        function dbgLogicalObjectToStringsAux(logicalObject: FloughLogicalObject){
+            const pad = " ".repeat(indent);
+            indent+=4;
+            const lenin = as.length;
+            as. push("kind: "+logicalObject.kind);
+            if (logicalObject.kind === "plain") {
+                as.push(`  logicalObject.item.objectTypeInstanceId: ${logicalObject.item.objectTypeInstanceId}`);
+                as.push("  logicalObject.item.tsObjectType: "+dbgs.dbgTypeToString(logicalObject.item.tsObjectType));
+                logicalObject.item.keyToType.forEach((t, key) => {
+                    as.push("  "+key + ": " + mrNarrow.dbgRefTypesTypeToString(t));
+                });
+            }
+            else {
+                as. push("  #items: "+logicalObject.items.length);
+                logicalObject.items.forEach(item=>dbgLogicalObjectToStringsAux(item));
+            }
+            for (let i=lenin; i<as.length; i++) as[i] = pad + as[i];
+            indent-=2;
+        }
+        dbgLogicalObjectToStringsAux(logicalObjectTop);
+        return as;
+    }
 
 
 }

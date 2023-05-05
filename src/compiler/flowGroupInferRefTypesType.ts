@@ -44,16 +44,6 @@ namespace ts {
     export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
 
 
-    type PartitionForEqualityCompareItem = & {
-        left?: Readonly<RefTypesType>;
-        right?: Readonly<RefTypesType>;
-        both?: Readonly<RefTypesType>;
-        leftts?: (Type | FloughLogicalObjectIF)[];
-        rightts?: (Type | FloughLogicalObjectIF)[];
-        bothts?: (Type | FloughLogicalObjectIF);
-        true?: boolean;
-        false?: boolean;
-    };
     //export declare function partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
 
 
@@ -510,10 +500,10 @@ namespace ts {
             if (isAnyType(a) || isUnknownType(a) || isAnyType(b) || isUnknownType(b)) return [{ left:a,right:b, true:true,false:true }];
             assertCastType<RefTypesTypeNormal>(a);
             assertCastType<RefTypesTypeNormal>(b);
-            let intersectionOfLogicalObjects: FloughLogicalObjectIF | undefined;
-            if (a._logicalObject && b._logicalObject) {
-                intersectionOfLogicalObjects = intersectionOfFloughLogicalObject(a._logicalObject, b._logicalObject);
-            }
+            // let intersectionOfLogicalObjects: FloughLogicalObjectIF | undefined;
+            // if (a._logicalObject && b._logicalObject) {
+            //     intersectionOfLogicalObjects = intersectionOfFloughLogicalObject(a._logicalObject, b._logicalObject);
+            // }
 
             const symmSet = new Set<Type>();
             const doOneSide = (x: Readonly<RefTypesTypeNormal>, y: Readonly<RefTypesTypeNormal>, pass: 0 | 1): PartitionForEqualityCompareItem[] => {
@@ -595,27 +585,27 @@ namespace ts {
                     }
                 });
                 // Do the logcal object(s)
-                if (intersectionOfLogicalObjects) {
-                    /**
-                     * Ideally we would do this:
-                     * Partition x._logicalObject into intersectionOfLogicalObjects + (x._logicalObject - intersectionOfLogicalObjects)
-                     * arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
-                     * arr1.push({ leftts: (x._logicalObject - intersectionOfLogicalObjects),
-                     *     rightts: [(y._logicalObject - intersectionOfLogicalObjects), ...copySetYDelete(y._logicalObject!)], true:false, false:true }, );
-                     *
-                     * However, we don't have a way to do the subtraction, so we just do this:
-                     * arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
-                     * arr1.push({ leftts: intersectionOfLogicalObjects, rightts: [...copySetYDelete(y._logicalObject!)], true:false, false:true }, );
-                     * Could this be better for second one?:
-                     * - arr1.push({ leftts: intersectionOfLogicalObjects, rightts: arrYTsTypes, true:false, false:true }, );
-                     */
-                    if (pass===0) arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
-                    arr1.push({ leftts: [intersectionOfLogicalObjects],
-                        rightts: [differenceOfFloughLogicalObject(y._logicalObject!,intersectionOfLogicalObjects),...copySetYDelete(y._logicalObject!)], true:false, false:true });
-                }
-                else if (x._logicalObject) {
-                    arr1.push({ leftts: [x._logicalObject], rightts: arrYTsTypes, true:false, false:true });
-                }
+                // if (intersectionOfLogicalObjects) {
+                //     /**
+                //      * Ideally we would do this:
+                //      * Partition x._logicalObject into intersectionOfLogicalObjects + (x._logicalObject - intersectionOfLogicalObjects)
+                //      * arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
+                //      * arr1.push({ leftts: (x._logicalObject - intersectionOfLogicalObjects),
+                //      *     rightts: [(y._logicalObject - intersectionOfLogicalObjects), ...copySetYDelete(y._logicalObject!)], true:false, false:true }, );
+                //      *
+                //      * However, we don't have a way to do the subtraction, so we just do this:
+                //      * arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
+                //      * arr1.push({ leftts: intersectionOfLogicalObjects, rightts: [...copySetYDelete(y._logicalObject!)], true:false, false:true }, );
+                //      * Could this be better for second one?:
+                //      * - arr1.push({ leftts: intersectionOfLogicalObjects, rightts: arrYTsTypes, true:false, false:true }, );
+                //      */
+                //     if (pass===0) arr1.push({ bothts: intersectionOfLogicalObjects, true:true, false: true });
+                //     arr1.push({ leftts: [intersectionOfLogicalObjects],
+                //         rightts: [differenceOfFloughLogicalObject(y._logicalObject!,intersectionOfLogicalObjects),...copySetYDelete(y._logicalObject!)], true:false, false:true });
+                // }
+                // else if (x._logicalObject) {
+                //     arr1.push({ leftts: [x._logicalObject], rightts: arrYTsTypes, true:false, false:true });
+                // }
                 if (pass===1) {
                     arr1.forEach(x=>{
                         if (x.leftts){
@@ -823,7 +813,7 @@ namespace ts {
             return checker.getUnionType([...tstypes,...tslittypes],UnionReduction.Literal);
         }
         function isNeverType(type: Readonly<RefTypesType>): boolean {
-            return type._flags===RefTypesTypeFlags.none && type._set.size===0 && type._mapLiteral.size===0;
+            return type._flags===RefTypesTypeFlags.none && type._set.size===0 && type._mapLiteral.size===0 && !type._logicalObject;
         }
         function isAnyType(type: Readonly<RefTypesType>): boolean {
             return type._flags===RefTypesTypeFlags.any;

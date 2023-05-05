@@ -366,6 +366,7 @@ namespace ts {
         const mrNarrow = createMrNarrow(checker, sourceFile, mrState, refTypesTypeModule, compilerOptions);
         initializeFlowGroupRefTypesSymtabModule(mrNarrow);
         initFlowGroupInferApplyCrit(checker, mrNarrow);
+        initFlowLogicalObject(checker,refTypesTypeModule, dbgs, mrNarrow);
         return {
             sourceFile,
             groupsForFlow,
@@ -373,7 +374,6 @@ namespace ts {
             mrNarrow,
             refTypesTypeModule
         };
-        initFlowLogicalObject(checker,refTypesTypeModule);
     }
     function getGroupDependencies(group: Readonly<GroupForFlow>,
         sourceFileMrState: SourceFileMrState, forFlow: Readonly<ForFlow> | undefined, options?: {minGroupIdxToAdd: number}):

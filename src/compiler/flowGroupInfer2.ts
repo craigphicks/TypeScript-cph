@@ -203,9 +203,31 @@ namespace ts {
         function dbgRefTypesTypeToString(rt: Readonly<RefTypesType>): string {
             const astr: string[]=[];
 
-            forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t=>astr.push(`${dbgTypeToString(t)}`));
+            forEachRefTypesTypeTsTypeIncludingLogicalObject(rt, t=>{
+                if (isFloughLogicalObject(t)){
+                    const as1: string[] = [];
+                    dbgLogicalObjectToStrings(refTypesTypeModule.getLogicalObject(rt)!).forEach(s=>as1.push(s));
+                    astr.push(`logicalObject: ${as1.join("***")}`);
+                }
+                else {
+                    assertCastType<Type>(t);
+                    astr.push(`${dbgTypeToString(t)}`);
+                }
+            });
             return astr.join(" | ");
-            // return typeToString(getTypeFromRefTypesType(rt));
+        }
+        function dbgRefTypesTypeToStrings(rt: Readonly<RefTypesType>): string[] {
+            const astr1: string[]=[];
+            forEachRefTypesTypeTsTypeExcludingLogicalObject(rt, t=>{
+                assertCastType<Type>(t);
+                astr1.push(`${dbgTypeToString(t)}`);
+            });
+            const str1 = astr1.join(" | ");
+            const astr2: string[]=[];
+            if (refTypesTypeModule.hasLogicalObject(rt)){
+                dbgLogicalObjectToStrings(refTypesTypeModule.getLogicalObject(rt)!).forEach(s=>astr2.push(`logobj: ${s}`));
+            }
+            return [str1, ...astr2];
         }
         function dbgConstraintItem(ci: ConstraintItem): string[] {
             Debug.assert(ci);
@@ -254,7 +276,8 @@ namespace ts {
             if ((rtt as any).isconst) as.push(`  isconst: ${(rtt as any).isconst},`);
             if ((rtt as RefTypesTableReturn).isAssign) as.push(`  isAssign: ${(rtt as any).isAssign},`);
             Debug.assert(rtt.type);
-            as.push(`  type: ${dbgRefTypesTypeToString(rtt.type)}`);
+            //as.push(`  type: ${dbgRefTypesTypeToString(rtt.type)}`);
+            dbgRefTypesTypeToStrings(rtt.type).forEach(s=>as.push("type: "+s));
             if (true){
                 if (!rtt.sci.symtab) as.push("  symtab: <undef>");
                 else dbgRefTypesSymtabToStrings(rtt.sci.symtab).forEach((str,i)=>as.push(((i===0)?"  symtab: ":"  ")+str));
