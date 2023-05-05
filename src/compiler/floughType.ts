@@ -4,9 +4,7 @@ namespace ts {
 
     // leave the names the same in RefTypesType while changing the names in FloughTypeIF
     export interface FloughTypeModule {
-        getRefTypesTypeNumber(): FloughType;
-        getRefTypesTypeUndefined(): FloughType;
-        cloneType(ft: Readonly<FloughType>): FloughType;
+        // interface copied from RefTypesType
         createFloughType(tstype?: Readonly<Type | FloughLogicalObjectIF> | Readonly<(Type | FloughLogicalObjectIF)[]>): FloughType;
         createFloughTypeNever(): FloughType;
         cloneFloughType(t: Readonly<FloughType>): FloughType;
@@ -31,6 +29,15 @@ namespace ts {
         intersectionOfFloughLogicalObjectToFloughTypeMutate(logicalObj: FloughLogicalObjectIF, target: FloughType): FloughType;
         hasLogicalObject(type: Readonly<FloughType>): boolean;
         getLogicalObject(type: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
+
+        // prefered interface
+        cloneType(ft: Readonly<FloughType>): FloughType;
+        createNeverType(): FloughType;
+        //isNeverType(ft: Readonly<FloughType>): boolean; // already defined above
+        getNeverType(): Readonly<FloughType>;
+        getNumberType(): Readonly<FloughType>;
+        getUndefinedType(): Readonly<FloughType>;
+        dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
     }
 
 

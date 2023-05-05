@@ -19,15 +19,15 @@ namespace ts {
 
 
     export type RefTypesTypeModule = & {
-        getTypeMemberCount(type: Readonly<RefTypesType>): number;
-        forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void ;
+        //getTypeMemberCount(type: Readonly<RefTypesType>): number;
+        //forEachTypeIfUnion<F extends ((t: Type) => any)>(type: Type, f: F): void ;
         // createRefTypesTypeAny(): RefTypesTypeAny ;
         // createRefTypesTypeUnknown(): RefTypesTypeUnknown ;
         createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): RefTypesType ;
         cloneRefTypesType(t: Readonly<RefTypesType>): RefTypesType;
-        addTypesToRefTypesType({source,target}: { source: Readonly<Type>[], target: RefTypesType}): RefTypesType ;
+        //addTypesToRefTypesType({source,target}: { source: Readonly<Type>[], target: RefTypesType}): RefTypesType ;
         addTypeToRefTypesType({source,target}: { source: Readonly<Type>, target: RefTypesType}): RefTypesType ;
-        mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void ;
+        mergeToRefTypesType({source,target}: { source: Readonly<RefTypesType>, target: RefTypesType}): void ; // DEPRECATED
         unionOfRefTypesType(types: Readonly<RefTypesType[]>): RefTypesType ;
         intersectionOfRefTypesType(...args: Readonly<RefTypesType>[]): RefTypesType ;
         isASubsetOfB(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
@@ -37,13 +37,13 @@ namespace ts {
         isAnyType(type: Readonly<RefTypesType>): boolean ;
         isUnknownType(type: Readonly<RefTypesType>): boolean ;
         forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<RefTypesType>, f: F): void ;
-        partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number};
-        getMapLiteralOfRefTypesType(t: RefTypesType): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
+        //partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number};
+        //getMapLiteralOfRefTypesType(t: RefTypesType): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
         //getLiteralsOfANotInB(ta: Readonly<RefTypesType>, tb: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined;
         //refTypesTypeNormalHasType(type: Readonly<RefTypesTypeNormal>, tstype: Readonly<Type>): boolean;
         equalRefTypesTypes(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): boolean;
         //literalWideningUnion(tunion: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
-        getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
+        //getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         // widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: RefTypesType): RefTypesType;
         partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
@@ -77,13 +77,13 @@ namespace ts {
         } = createDbgs(checker);
 
         return {
-            getTypeMemberCount,
-            forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
+            // getTypeMemberCount,
+            // forEachTypeIfUnion, //<F extends ((t: Type) => any)>(type: Type, f: F): void ;
             createRefTypesType,
             cloneRefTypesType,
-            addTypesToRefTypesType,
+            //addTypesToRefTypesType,
             addTypeToRefTypesType,
-            mergeToRefTypesType,
+            mergeToRefTypesType: ({source:_a,target:_b}: { source: Readonly<RefTypesType>, target: RefTypesType}) => Debug.fail("unexpected (contraints not enabled)") as void,
             unionOfRefTypesType,
             intersectionOfRefTypesType,
             isASubsetOfB,
@@ -93,11 +93,11 @@ namespace ts {
             isAnyType,
             isUnknownType,
             forEachRefTypesTypeType,
-            partitionIntoSingularAndNonSingularTypes,
-            getMapLiteralOfRefTypesType,
+            //partitionIntoSingularAndNonSingularTypes,
+            //getMapLiteralOfRefTypesType,
             equalRefTypesTypes,
             //literalWideningUnion,
-            getUnionOrWidenedType,
+            //getUnionOrWidenedType,
             //widenLiteralsAccordingToEffectiveDeclaredType,
             addTsTypeNonUnionToRefTypesTypeMutate,
             partitionForEqualityCompare,
@@ -627,49 +627,49 @@ namespace ts {
         }
 
 
-        function getTypeMemberCount(type: RefTypesType): number {
-            if (type._flags!==RefTypesTypeFlags.none) return 1;
-            let count = type._set.size;
-            type._mapLiteral.forEach((set,_tstype)=>{
-                count += set.size;
-            });
-            return count;
-        }
-        function getMapLiteralOfRefTypesType(t: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined {
-            return t._mapLiteral;
-        }
-        function partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {
-            singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number
-        } {
-            let singularCount = 0;
-            let nonSingularCount = 0;
-            if (isAnyType(type)) return { singular: createRefTypesType(), singularCount, nonSingular: createRefTypesTypeAny(), nonSingularCount:1 };
-            if (isUnknownType(type)) return { singular: createRefTypesType(), singularCount, nonSingular: createRefTypesTypeUnknown(), nonSingularCount:1 };
-            if (!type._flags){
-                const singular = createRefTypesType() as RefTypesTypeNormal;
-                const nonSingular = createRefTypesType() as RefTypesTypeNormal;
-                type._set.forEach(t=>{
-                    if (t.flags & TypeFlags.BooleanLiteral) {
-                        singular._set.add(t);
-                        singularCount++;
-                    }
-                    else {
-                        nonSingular._set.add(t);
-                        nonSingularCount++;
-                    }
-                });
-                type._mapLiteral.forEach((set,tstype)=>{
-                    set.forEach(t=>{
-                        const got = singular._mapLiteral.get(tstype);
-                        if (!got) singular._mapLiteral.set(tstype, new Set<LiteralType>([t]));
-                        else got.add(t);
-                        singularCount++;
-                    });
-                });
-                return { singular,singularCount,nonSingular,nonSingularCount };
-            }
-            Debug.fail("unexpected");
-        }
+        // function getTypeMemberCount(type: RefTypesType): number {
+        //     if (type._flags!==RefTypesTypeFlags.none) return 1;
+        //     let count = type._set.size;
+        //     type._mapLiteral.forEach((set,_tstype)=>{
+        //         count += set.size;
+        //     });
+        //     return count;
+        // }
+        // function getMapLiteralOfRefTypesType(t: Readonly<RefTypesType>): Readonly<ESMap<Type,Readonly<Set<LiteralType>>>> | undefined {
+        //     return t._mapLiteral;
+        // }
+        // function partitionIntoSingularAndNonSingularTypes(type: Readonly<RefTypesType>): {
+        //     singular: RefTypesType, singularCount: number, nonSingular: RefTypesType, nonSingularCount: number
+        // } {
+        //     let singularCount = 0;
+        //     let nonSingularCount = 0;
+        //     if (isAnyType(type)) return { singular: createRefTypesType(), singularCount, nonSingular: createRefTypesTypeAny(), nonSingularCount:1 };
+        //     if (isUnknownType(type)) return { singular: createRefTypesType(), singularCount, nonSingular: createRefTypesTypeUnknown(), nonSingularCount:1 };
+        //     if (!type._flags){
+        //         const singular = createRefTypesType() as RefTypesTypeNormal;
+        //         const nonSingular = createRefTypesType() as RefTypesTypeNormal;
+        //         type._set.forEach(t=>{
+        //             if (t.flags & TypeFlags.BooleanLiteral) {
+        //                 singular._set.add(t);
+        //                 singularCount++;
+        //             }
+        //             else {
+        //                 nonSingular._set.add(t);
+        //                 nonSingularCount++;
+        //             }
+        //         });
+        //         type._mapLiteral.forEach((set,tstype)=>{
+        //             set.forEach(t=>{
+        //                 const got = singular._mapLiteral.get(tstype);
+        //                 if (!got) singular._mapLiteral.set(tstype, new Set<LiteralType>([t]));
+        //                 else got.add(t);
+        //                 singularCount++;
+        //             });
+        //         });
+        //         return { singular,singularCount,nonSingular,nonSingularCount };
+        //     }
+        //     Debug.fail("unexpected");
+        // }
         /**
          * Used for testing purposes
          * @param a
@@ -699,43 +699,43 @@ namespace ts {
             return true;
         }
 
-        function getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
-            const mnew = getMapLiteralOfRefTypesType(tnew);
-            if (!mnew) return unionOfRefTypesType([tnew,told]);
-            const msif = getMapLiteralOfRefTypesType(effectiveDeclaredType);
-            if (!msif) return unionOfRefTypesType([tnew,told]);
-            const mold = getMapLiteralOfRefTypesType(told);
-            let ltcount = 0;
-            const aktype: Type[] = [];
-            mnew.forEach((set,ktype)=>{
-                const msifset = msif?.get(ktype);
-                if (!msifset) {
-                    aktype.push(ktype);
-                    ltcount += set.size;
-                    return;
-                }
-                // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
-                if (extraAsserts){
-                    set.forEach(lt=>Debug.assert(msifset.has(lt)));
-                }
-            });
-            mold?.forEach((set,ktype)=>{
-                const msifset = msif?.get(ktype);
-                if (!msifset) {
-                    aktype.push(ktype);
-                    ltcount += set.size;
-                    return;
-                }
-                // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
-                if (extraAsserts){
-                    set.forEach(lt=>Debug.assert(msifset.has(lt)));
-                }
-            });
-            if (ltcount>=2){
-                return addTypesToRefTypesType({ source:aktype, target:unionOfRefTypesType([tnew,told]) });
-            }
-            return unionOfRefTypesType([tnew,told]);
-        }
+        // function getUnionOrWidenedType(told: Readonly<RefTypesType>, tnew: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
+        //     const mnew = getMapLiteralOfRefTypesType(tnew);
+        //     if (!mnew) return unionOfRefTypesType([tnew,told]);
+        //     const msif = getMapLiteralOfRefTypesType(effectiveDeclaredType);
+        //     if (!msif) return unionOfRefTypesType([tnew,told]);
+        //     const mold = getMapLiteralOfRefTypesType(told);
+        //     let ltcount = 0;
+        //     const aktype: Type[] = [];
+        //     mnew.forEach((set,ktype)=>{
+        //         const msifset = msif?.get(ktype);
+        //         if (!msifset) {
+        //             aktype.push(ktype);
+        //             ltcount += set.size;
+        //             return;
+        //         }
+        //         // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+        //         if (extraAsserts){
+        //             set.forEach(lt=>Debug.assert(msifset.has(lt)));
+        //         }
+        //     });
+        //     mold?.forEach((set,ktype)=>{
+        //         const msifset = msif?.get(ktype);
+        //         if (!msifset) {
+        //             aktype.push(ktype);
+        //             ltcount += set.size;
+        //             return;
+        //         }
+        //         // otherwise msifset.get(ktype) must containt every member of set because it is a superset - we may assert it
+        //         if (extraAsserts){
+        //             set.forEach(lt=>Debug.assert(msifset.has(lt)));
+        //         }
+        //     });
+        //     if (ltcount>=2){
+        //         return addTypesToRefTypesType({ source:aktype, target:unionOfRefTypesType([tnew,told]) });
+        //     }
+        //     return unionOfRefTypesType([tnew,told]);
+        // }
         // function widenLiteralsAccordingToEffectiveDeclaredType(type: Readonly<RefTypesType>, effectiveDeclaredType: Readonly<RefTypesType>): RefTypesType {
         //     if (type._flags) return type;
         //     const ml = type._mapLiteral;

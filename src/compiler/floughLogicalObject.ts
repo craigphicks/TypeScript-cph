@@ -1,27 +1,22 @@
 namespace ts {
 
     const checker = undefined as any as TypeChecker; // TODO: intialize;
-    const refTypesTypeModule = undefined as any as RefTypesTypeModule & {
-        createRefTypesTypeNever(): RefTypesType;
-        getRefTypesTypeNumber(): RefTypesType;
-        getRefTypesTypeUndefined(): RefTypesType;
-        differenceOfRefTypesType(minuend: RefTypesType, subtrahend: RefTypesType): RefTypesType;
-    };
     const dbgs = undefined as any as Dbgs;
     const mrNarrow = undefined as any as MrNarrow;
-    export function initFlowLogicalObject(checkerIn: TypeChecker, refTypesTypeModuleIn: RefTypesTypeModule, dbgsIn: Dbgs, mrNarrowIn: MrNarrow) {
+    export function initFlowLogicalObject(checkerIn: TypeChecker, dbgsIn: Dbgs, mrNarrowIn: MrNarrow) {
         (checker as any) = checkerIn;
-        (refTypesTypeModule as any) = refTypesTypeModuleIn;
+        //(refTypesTypeModule as any) = refTypesTypeModuleIn;
         (dbgs as any) = dbgsIn;
         (mrNarrow as any) = mrNarrowIn;
     }
+    const refTypesTypeModule = floughTypeModule;
 
     type PropertyKeyType = string;
     const essymbolFloughObjectTypeInstance = Symbol("floughObjectTypeInstance");
     export type FloughObjectTypeInstance = & {
         objectTypeInstanceId: number; // keeps same instance on cloning (for narrowing), but not on merging (unless all merged share same id, this is not yet implemented)
         tsObjectType: ObjectType;
-        keyToType: ESMap<PropertyKeyType,RefTypesType>; // instantiated and filled as needed
+        keyToType: ESMap<PropertyKeyType,FloughType>; // instantiated and filled as needed
         [essymbolFloughObjectTypeInstance]: true
     };
     export function isFloughObjectTypeInstance(x: any): x is FloughObjectTypeInstance {
@@ -30,7 +25,7 @@ namespace ts {
     let nextFloughObjectTypeInstanceId = 1;
     export function createFloughObjectTypeInstance(
         tsObjectType: Readonly<ObjectType>,
-        arg1?: Readonly<[PropertyKeyType,RefTypesType][]> | Readonly<ESMap<PropertyKeyType,RefTypesType>>,
+        arg1?: Readonly<[PropertyKeyType,FloughType][]> | Readonly<ESMap<PropertyKeyType,FloughType>>,
         objectTypeInstanceId: number = nextFloughObjectTypeInstanceId++):
         FloughObjectTypeInstance {
         const map = new Map(arg1);
@@ -48,6 +43,11 @@ namespace ts {
         tsunion="tsunion", // Although originating from a TypeScript specific defined operation, will behave like a set-union, but has a reference to the original TypeScript union
     }
     const essymbolFloughLogicalObject = Symbol("floughLogicalObject");
+    /**
+     * The FloughLogicalObjectPlain item member is a FloughObjectTypeInstance and not a FloughType because
+     * as the top level floughLogicalObject is created within a FloughType, the non-object types are ALWAYS raised to the top level
+     * so they are immediately avalable within the encosing FloughType.
+     */
     type FloughLogicalObjectPlain = & {
         kind: FloughLogicalObjectKind.plain;
         item: FloughObjectTypeInstance;
@@ -309,7 +309,7 @@ namespace ts {
      * However, the object instances are wanted so we can go back and trim the tree.
      * The idea is that this replaces the old code action, in "floughByPropertyAccessExpression", where
      * ```
-     * forEachRefTypesTypeTsType(prePassing.type, t => {
+     * forEachFloughTypeTsType(prePassing.type, t => {
      *   ...
      *   const propSymbol = checker.getPropertyOfType(t, keystr);
      *   if (propSymbol)
@@ -326,7 +326,7 @@ namespace ts {
      *           arrRttr.push({symbol: undefined, type: checker.getUndefinedType(), sci: sc});
      * ```
      * In the above code, t corresponds to the type of the object instance, and keystr corresponds to the lookupkey.
-     * In the new code, is we will be calling forEachRefTypesTypeObject, with iterates over its floughLogicalObjectTypeInstance-s. (or will there be just one?).
+     * In the new code, is we will be calling forEachFloughTypeObject, with iterates over its floughLogicalObjectTypeInstance-s. (or will there be just one?).
      * When there are no intersections, it is simply a matter of adding each {baseObjectInstance, type} to the result array, so they are kept separate.
      * Then, if a criteria is applied the result array, the corresponding object instances can be narrowed.  The criteria is applied to the type, which is updated in the object instance,
      * and if the results type is never, the object instance is removed from the tree.
@@ -353,19 +353,19 @@ namespace ts {
      * @returns
      */
 
-    type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<RefTypesType>>;
-    export type LogicalObjectForEachTypeOfProperyLookupReturnType = & { objToType: ObjToTypeMap; type: Readonly<RefTypesType> };
+    type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<FloughType>>;
+    export type LogicalObjectForEachTypeOfProperyLookupReturnType = & { objToType: ObjToTypeMap; type: Readonly<FloughType> };
     export function logicalObjectForEachTypeOfProperyLookup(
         logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType, _crit?: InferCrit
     ): LogicalObjectForEachTypeOfProperyLookupReturnType {
         assertCastType<FloughLogicalObject>(logicalObjectTop);
-        // type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<RefTypesType>>;
-        // type Result = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<RefTypesType> }[];
-        // type State = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<RefTypesType> }[];
+        // type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<FloughType>>;
+        // type Result = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<FloughType> }[];
+        // type State = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<FloughType> }[];
         type Result = LogicalObjectForEachTypeOfProperyLookupReturnType;
-        type State = & { objToType: ObjToTypeMap; type: Readonly<RefTypesType>/*, setOfObj?: Set<Readonly<FloughObjectTypeInstance>>*/ };
-        function newMap(x?: [objectTypeInstance: Readonly<FloughObjectTypeInstance>, type: RefTypesType]){
-            const map = new Map<Readonly<FloughObjectTypeInstance>, RefTypesType>(x?[x]:[]);
+        type State = & { objToType: ObjToTypeMap; type: Readonly<FloughType>/*, setOfObj?: Set<Readonly<FloughObjectTypeInstance>>*/ };
+        function newMap(x?: [objectTypeInstance: Readonly<FloughObjectTypeInstance>, type: FloughType]){
+            const map = new Map<Readonly<FloughObjectTypeInstance>, FloughType>(x?[x]:[]);
             return map;
         }
         function createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey: PropertyKeyType):
@@ -374,19 +374,19 @@ namespace ts {
                 onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => {
                     if (checker.isArrayOrTupleType(logicalObject.item.tsObjectType)) {
                         if (lookupkey === "length") {
-                            return { objToType: newMap([logicalObject.item, refTypesTypeModule.getRefTypesTypeNumber()]), type: refTypesTypeModule.getRefTypesTypeNumber() };
+                            return { objToType: newMap([logicalObject.item, refTypesTypeModule.getNumberType()]), type: refTypesTypeModule.getNumberType() };
                         }
                         if (checker.isArrayType(logicalObject.item.tsObjectType)){
                             // by convention, the instance of an array kill keep the instance type value (if it exists) as element 0.
                             let type = logicalObject.item.keyToType.get("0");
                             if (type) return { objToType: newMap([logicalObject.item, type]), type };
                             const tsElementType = checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType);
-                            type = tsElementType ? refTypesTypeModule.createRefTypesType(tsElementType) : refTypesTypeModule.getRefTypesTypeUndefined();
+                            type = tsElementType ? refTypesTypeModule.createFloughType(tsElementType) : refTypesTypeModule.getUndefinedType();
                             return { objToType: newMap([logicalObject.item, type]), type };
                         }
                         else { // tuple
                             const n = parseInt(lookupkey);
-                            if (isNaN(n)) return { objToType:newMap() , type: refTypesTypeModule.getRefTypesTypeUndefined() }; // propably should never happen
+                            if (isNaN(n)) return { objToType:newMap() , type: refTypesTypeModule.getUndefinedType() }; // propably should never happen
                             Debug.fail("not yet implemented");
                         }
                     }
@@ -405,9 +405,9 @@ namespace ts {
                              */
                             const tsPropertyType = checker.getTypeOfPropertyOfType(tsObjectType, lookupkey);
                             // TODO: apply crit
-                            if (tsPropertyType) type = refTypesTypeModule.createRefTypesType(tsPropertyType);
+                            if (tsPropertyType) type = refTypesTypeModule.createFloughType(tsPropertyType);
                             else {
-                                type = refTypesTypeModule.getRefTypesTypeUndefined();
+                                type = refTypesTypeModule.getUndefinedType();
                             }
                         }
                         return { objToType:newMap([logicalObject.item, type]) , type };
@@ -422,7 +422,7 @@ namespace ts {
                         objToType.forEach((t, objectInstance) => {
                             if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, t);
                             // TODO: this could be an in-place merge of t into type, not requiring a new type
-                            type = refTypesTypeModule.unionOfRefTypesType([t,type]);
+                            type = refTypesTypeModule.unionOfFloughType([t,type]);
                         });
                         state.type = type;
                     }
@@ -432,7 +432,7 @@ namespace ts {
                 onIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State | undefined, itemsIndex: number) {
                     /**
                      * Even if the intersection is empty, we still want to return the object instances to type map, so that they can be trimmed.
-                     * TODO:ing: Therefore need "type" in the state - compute the intersection RefTypesType - if that becomes never type,
+                     * TODO:ing: Therefore need "type" in the state - compute the intersection FloughType - if that becomes never type,
                      * we can stop computing intersections but the object instances mappings are still needed (for trimming) - but can we get by
                      * without making those mappings by assuming that empty mappings are mapping to never type? We can try that later,
                      * but for add all object mappings.  Worth noting that the same objects may be get mapped to a non-never type later in a union.
@@ -451,7 +451,7 @@ namespace ts {
                         objToType.forEach((t, objectInstance) => {
                             if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, t);
                             // TODO: this could be an in-place merge of t into type, not requiring a new type
-                            type = refTypesTypeModule.intersectionOfRefTypesType(t,type);
+                            type = refTypesTypeModule.intersectionOfFloughType(t,type);
                         });
                         state.type = type;
                         // result.forEach((_type, objectInstance) => {
@@ -480,7 +480,7 @@ namespace ts {
                         let {objToType, type} = result;
                         objToType.forEach((t, objectInstance) => {
                             if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, t);
-                            type = refTypesTypeModule.differenceOfRefTypesType(type,t); // type - t
+                            type = refTypesTypeModule.differenceOfFloughType(type,t); // type - t
                         });
                         state.objToType.forEach((_t, objectInstance) => state!.objToType.set(objectInstance, type));
                         state.type = type;
@@ -490,7 +490,7 @@ namespace ts {
             };
         } // end of createLogicalObjectVisitorForForEachTypeOfProperyLookup
         const visitor = createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey);
-        const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: refTypesTypeModule.createRefTypesTypeNever() });
+        const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: refTypesTypeModule.createFloughTypeNever() });
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup
 
@@ -508,7 +508,7 @@ namespace ts {
                 as.push(`  logicalObject.item.objectTypeInstanceId: ${logicalObject.item.objectTypeInstanceId}`);
                 as.push("  logicalObject.item.tsObjectType: "+dbgs.dbgTypeToString(logicalObject.item.tsObjectType));
                 logicalObject.item.keyToType.forEach((t, key) => {
-                    as.push("  "+key + ": " + mrNarrow.dbgRefTypesTypeToString(t));
+                    floughTypeModule.dbgFloughTypeToStrings(t).forEach(s=>as.push("  "+key + ": " + s));
                 });
             }
             else {
