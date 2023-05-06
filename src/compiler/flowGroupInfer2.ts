@@ -1067,7 +1067,9 @@ namespace ts {
                         {
                             const unmerged: RefTypesTableReturn[] = [];
                             mntr.unmerged.forEach((rttr)=>{
-                                const narrowerTypeOut = (replayableInType && !isASubsetOfB(rttr.type,replayableInType) && intersectionOfRefTypesType(rttr.type, replayableInType)) || undefined;
+                                // Note: `!isASubsetOfB` not required here, it is equivalent to the `intersectionOfRefTypesType`
+                                //       followed by the isNever test (isNever will not detect "deep" never logical object types).
+                                const narrowerTypeOut = (replayableInType /* && !isASubsetOfB(rttr.type,replayableInType) */ && intersectionOfRefTypesType(rttr.type, replayableInType)) || undefined;
                                 if (narrowerTypeOut && isNeverType(narrowerTypeOut)) return;
                                 rttr = applyCritNoneToOne({ ...rttr,type:narrowerTypeOut??rttr.type },expr,/**/ undefined); // don't write here because the original symbol is from replay.
                                 // unmerged.push({

@@ -24,6 +24,7 @@ namespace ts {
         equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): FloughType;
         partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[];
+        // end of interface copied from RefTypesTypeModule
 
         /**
          * Prefered interface for FloughType
@@ -47,6 +48,9 @@ namespace ts {
 
 
     const floughTypeModuleTmp: Partial<FloughTypeModule> = {
+        /**
+         * Interface copied from RefTypesTypeModule
+         */
         createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): FloughType {
             if (tstype === undefined) return createNeverType();
             if (Array.isArray(tstype)) {
@@ -74,7 +78,18 @@ namespace ts {
             });
             return ft;
         },
-        // IWOZERE
+        intersectionOfRefTypesType(...args: Readonly<FloughType>[]): FloughType {
+            if (args.length === 0) return createNeverType();
+            let ft = args[0];
+            args.slice(1).forEach((t,_i)=>{
+                ft = intersectionWithFloughTypeMutate(t,ft);
+            });
+            return ft;
+        }
+        // isASubsetOfB(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean {
+        //     return ;
+        // },
+        // end of interface copied from RefTypesTypeModule
     } as FloughTypeModule;
 
     export const floughTypeModule = floughTypeModuleTmp as FloughTypeModule;
@@ -83,6 +98,22 @@ namespace ts {
     export function initFloughTypeModule(checkerIn: TypeChecker): void {
         (checker as any) = checkerIn;
     }
+
+    // type FloughTypeNonObj = & {
+    //     any?: true;
+    //     unknown?: true;
+    //     string?: true | Set<LiteralType>;
+    //     number?: true | Set<LiteralType>;
+    //     bigint?: true | Set<LiteralType>;
+    //     null?: true;
+    //     undefined?: true;
+    //     boolTrue?: true;
+    //     boolFalse?: true;
+    //     symbol?: true;
+    //     uniqueSymbol?: true;
+    //     void?: true;
+    // };
+
 
     type FloughTypei = & {
         any?: true;
@@ -499,6 +530,10 @@ namespace ts {
         }
         return minuend;
     }
+    // The non-object versions are only required for the specicial Typescript type-operators `&` and `|`, therefore `difference...NonObj` not required.
+    // function differenceWithFloughTypeNonObjMutate(subtrahend: Readonly<FloughTypei>, minuend: FloughTypei): FloughTypei {
+    //     differenceWithFloughTypeMutate(subtrahend, minuend, /**/ true);
+    // }
+
+
 }
-
-
