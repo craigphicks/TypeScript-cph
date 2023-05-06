@@ -30,6 +30,7 @@ namespace ts {
          * @param ft
          */
         createFromTsType(tstype: Readonly<Type>): FloughType;
+        unionWithTsTypeMutate(tstype: Readonly<Type>, ft: FloughType): FloughType;
         cloneType(ft: Readonly<FloughType>): FloughType;
         createNeverType(): FloughType;
         //isNeverType(ft: Readonly<FloughType>): boolean; // already defined above
@@ -43,8 +44,40 @@ namespace ts {
     }
 
 
-    export const floughTypeModule: FloughTypeModule = 0 as any as FloughTypeModule;
 
+
+    const floughTypeModuleTmp: Partial<FloughTypeModule> = {
+        createRefTypesType(tstype?: Readonly<Type> | Readonly<Type[]>): FloughType {
+            if (tstype === undefined) return createNeverType();
+            if (Array.isArray(tstype)) {
+                let ft = createNeverType();
+                tstype.forEach((t,_i)=>{
+                    ft = unionWithTsTypeMutate(t,ft);
+                });
+                return ft;
+            }
+            return createFromTsType(tstype as Type);
+        },
+        cloneRefTypesType(t: Readonly<FloughType>): FloughType {
+            return cloneType(t);
+        },
+        addTypeToRefTypesType({source,target}: { source: Readonly<Type>, target: FloughType}): FloughType {
+            return unionWithTsTypeMutate(source,target);
+        },
+        mergeToRefTypesType({source:_a,target:_b}: { source: Readonly<FloughType>, target: FloughType}): void {
+            Debug.fail("mergeToRefTypesType is deprecated");
+        },
+        unionOfRefTypesType(types: Readonly<FloughType[]>): FloughType {
+            let ft = createNeverType();
+            types.forEach((t,_i)=>{
+                ft = unionWithFloughTypeMutate(t,ft);
+            });
+            return ft;
+        },
+        // IWOZERE
+    } as FloughTypeModule;
+
+    export const floughTypeModule = floughTypeModuleTmp as FloughTypeModule;
 
     const checker = 0 as any as TypeChecker;
     export function initFloughTypeModule(checkerIn: TypeChecker): void {
@@ -73,6 +106,13 @@ namespace ts {
 
     function createNeverType(): FloughTypei {
         return {};
+    }
+    function cloneType(ft: Readonly<FloughTypei>): FloughTypei {
+        const ft1 = { ...ft };
+        if (ft1.string && ft1.string !== true) ft1.string = new Set(ft1.string);
+        if (ft1.number && ft1.number !== true) ft1.number = new Set(ft1.number);
+        if (ft1.bigint && ft1.bigint !== true) ft1.bigint = new Set(ft1.bigint);
+        return ft1;
     }
     function isNeverType(ft: Readonly<FloughTypei>): boolean {
         let empty = true;
@@ -251,7 +291,10 @@ namespace ts {
      * @returns
      */
     function unionWithFloughTypeNonObjMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei): FloughTypei {
-        Debug.assert(!ft0.logicalObject && !ft1.logicalObject);
+        return unionWithFloughTypeMutate(ft0, ft1, /**/ true);
+    }
+    function unionWithFloughTypeMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei, doNotAllowObjToBePresent?: true): FloughTypei {
+        //Debug.assert(!ft0.logicalObject && !ft1.logicalObject);
         if (ft1.any) return ft1;
         if (ft0.any) return { any: true };
         if (ft1.unknown) return ft0;
@@ -300,16 +343,21 @@ namespace ts {
         if (ft0.undefined) ft1.undefined = true;
         if (ft0.symbol) ft1.symbol = true;
         if (ft0.uniqueSymbol) ft1.uniqueSymbol = true;
+
+        if (doNotAllowObjToBePresent) {
+            if (ft0.logicalObject || ft1.logicalObject) Debug.fail("unexpected");
+        }
+        if (ft0.logicalObject) {
+            if (ft1.logicalObject) ft1.logicalObject = unionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
+            else ft1.logicalObject = ft0.logicalObject;
+        }
         return ft1;
     }
-    /**
-     * "tsIntersection"
-     * - intersection of primitive types
-     * - union of object type keys, with ts-intersection applied to similar named property types
-     * Only the intersection of primitive types is calculated here - the rest is postponed
-     */
+
     function intersectionWithFloughTypeNonObjMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei): FloughTypei {
-        Debug.assert(!ft0.logicalObject && !ft1.logicalObject);
+        return intersectionWithFloughTypeMutate(ft0, ft1, /**/ true);
+    }
+    function intersectionWithFloughTypeMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei, doNotAllowObjToBePresent?: true): FloughTypei {
         if (ft1.any) return ft1;
         if (ft0.any) return { any: true };
         if (ft1.unknown) return ft0;
@@ -369,6 +417,13 @@ namespace ts {
         if (ft1.undefined) {
             if (ft0.undefined===undefined) delete ft1.undefined;
         }
+        if (doNotAllowObjToBePresent) {
+            if (ft0.logicalObject || ft1.logicalObject) Debug.fail("unexpected");
+        }
+        if (ft1.logicalObject) {
+            if (!ft0.logicalObject) delete ft1.logicalObject;
+            else ft1.logicalObject = intersectionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
+        }
         return ft1;
     }
 
@@ -384,8 +439,7 @@ namespace ts {
      * @returns
      */
     // @ts-expect-error
-    function differenceWithFloughTypeNonObjMutate(subtrahend: Readonly<FloughTypei>, minuend: FloughTypei): FloughTypei {
-        Debug.assert(!subtrahend.logicalObject && !minuend.logicalObject);
+    function differenceWithFloughTypeMutate(subtrahend: Readonly<FloughTypei>, minuend: FloughTypei, doNotAllowObjToBePresent?: true): FloughTypei {
         if (minuend.any) return minuend;
         if (subtrahend.any) return {};
         if (subtrahend.unknown) return {};
@@ -436,6 +490,12 @@ namespace ts {
         }
         if (subtrahend.void && minuend.void) {
             delete minuend.void;
+        }
+        if (doNotAllowObjToBePresent) {
+            if (subtrahend.logicalObject || minuend.logicalObject) Debug.fail("unexpected");
+        }
+        if (subtrahend.logicalObject && minuend.logicalObject) {
+            minuend.logicalObject = differenceOfFloughLogicalObject(subtrahend.logicalObject, minuend.logicalObject);
         }
         return minuend;
     }
