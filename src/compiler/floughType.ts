@@ -92,16 +92,46 @@ namespace ts {
                 ft = intersectionWithFloughTypeMutate(t,ft);
             });
             return ft;
-        }
+        },
         // isASubsetOfB(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean {
-        //     return ;
+        //     castReadonlyFloughTypei(a);
+        //     castReadonlyFloughTypei(b);
+        //     if (isNeverType(a)) return true;
+        //     if (isNeverType(b)) return false;
+        //     if (isAnyType(a)) return isAnyType(b) ? true : false;
+        //     if (isUnknownType(a) || isAnyOrUnknownType(b)) return false; // too pessimistic?
+        //     if (!isSubsetOfFloughTypeNobj(a.nobj,b.nobj)) return false;
+        //     if (a.logicalObject) {
+        //         if (!b.logicalObject) return false; // TODO: alothough a.logicalObject might be a deep postponed never type in which case true would be correct.
+        //         // this gets complicated. Is it valid to postpone, and what is the correct result to return here when postponing?
+        //         return true;
+        //     }
+        //     return true;
         // },
+        isASubsetOfB(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean {
+            // The above commented out code should give the same answer but maybe be faster.  But this is more simple. TODO: compare performance.
+            castReadonlyFloughTypei(a);
+            castReadonlyFloughTypei(b);
+            const diff = differenceWithFloughTypeMutate(b,cloneType(a));
+            return isNeverType(diff);
+        },
+        subtractFromType(subtrahend: Readonly<FloughType>, minuend: Readonly<FloughType>, /* errorOnMissing = false */): FloughType {
+            castReadonlyFloughTypei(subtrahend);
+            castReadonlyFloughTypei(minuend);
+            return differenceWithFloughTypeMutate(subtrahend,cloneType(minuend));
+        },
+        getTypeFromRefTypesType(type: Readonly<FloughType>): Type {
+            castReadonlyFloughTypei(type);
+            return getTsTypeFromFloughType(type);
+        }
+
         // end of interface copied from RefTypesTypeModule
     } as FloughTypeModule;
 
     export const floughTypeModule = floughTypeModuleTmp as FloughTypeModule;
 
     const checker = 0 as any as TypeChecker;
+
     export function initFloughTypeModule(checkerIn: TypeChecker): void {
         (checker as any) = checkerIn;
     }
@@ -124,18 +154,6 @@ namespace ts {
         any?: true;
         unknown?: true;
         nobj: FloughTypeNobj;
-        // any?: true;
-        // unknown?: true;
-        // string?: true | Set<LiteralType>;
-        // number?: true | Set<LiteralType>;
-        // bigint?: true | Set<LiteralType>;
-        // null?: true;
-        // undefined?: true;
-        // boolTrue?: true;
-        // boolFalse?: true;
-        // symbol?: true;
-        // uniqueSymbol?: true;
-        // void?: true;
         logicalObject?: FloughLogicalObjectIF;
     };
 
@@ -175,7 +193,7 @@ namespace ts {
         }
         return empty;
     }
-    // @ts-expect-error
+    // @ ts-expect-error
     function isNeverType(ft: Readonly<FloughTypei>): boolean {
         return  !ft.any && !ft.unknown && !ft.logicalObject && isNeverTypeNobj(ft.nobj);
     }
@@ -190,6 +208,69 @@ namespace ts {
     // @ts-expect-error
     function isAnyOrUnknownType(ft: Readonly<FloughTypei>): boolean {
         return  !!ft.any || !!ft.unknown;
+    }
+
+    function getTsTypeFromFloughType(ft: Readonly<FloughTypei>): Type {
+        if (ft.any) return checker.getAnyType();
+        if (ft.unknown) return checker.getAnyType();
+        const at = getTsTypesFromFloughTypeNobj(ft.nobj);
+        // Now for the objects.
+        if (ft.logicalObject) {
+            at.push(getTsTypeFromLogicalObject(ft.logicalObject));
+        }
+        if (at.length === 0) return checker.getNeverType();
+        if (at.length === 1) return at[0];
+        return checker.getUnionType(at);
+    }
+    function getTsTypesFromFloughTypeNobj(ft: Readonly<FloughTypeNobj>): Type[] {
+        const at: Type[] = [];
+        if (ft.string) {
+            if (ft.string === true) {
+                at.push(checker.getStringType());
+            }
+            else {
+                ft.string.forEach(l => at.push(l));
+            }
+        }
+        if (ft.number) {
+            if (ft.number === true) {
+                at.push(checker.getNumberType());
+            }
+            else {
+                ft.number.forEach(l => at.push(l));
+            }
+        }
+        if (ft.bigint) {
+            if (ft.bigint === true) {
+                at.push(checker.getBigIntType());
+            }
+            else {
+                ft.bigint.forEach(l => at.push(l));
+            }
+        }
+        if (ft.null) {
+            at.push(checker.getNullType());
+        }
+        if (ft.undefined) {
+            at.push(checker.getUndefinedType());
+        }
+        if (ft.void) {
+            at.push(checker.getVoidType());
+        }
+        if (ft.boolTrue) {
+            at.push(checker.getTrueType());
+        }
+        if (ft.boolFalse) {
+            at.push(checker.getFalseType());
+        }
+        if (ft.symbol) {
+            at.push(checker.getESSymbolType());
+        }
+        if (ft.uniqueSymbol) {
+            Debug.fail("uniqueSymbol not implemented");
+            //at.push(checker.getUniqueSymbolType());
+        }
+        return at;
     }
 
     function createFromTsType(tstype: Readonly<Type>): FloughTypei {
@@ -269,6 +350,7 @@ namespace ts {
                 return;
             }
             if (t.flags & TypeFlags.UniqueESSymbol) {
+                // Is this really implemented in TS? Cannot see how to get a/the type of this from checker.
                 nobj.uniqueSymbol = true;
                 return;
             }
@@ -568,7 +650,7 @@ namespace ts {
      * @param minuend
      * @returns
      */
-    // @ts-expect-error
+    // @ ts-expect-error
     function differenceWithFloughTypeMutate(subtrahend: Readonly<FloughTypei>, minuend: FloughTypei): FloughTypei {
         if (minuend.any) return minuend;
         if (subtrahend.any) return createNeverType();

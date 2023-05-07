@@ -162,12 +162,12 @@ namespace ts {
         };
     }
 
-    export function differenceOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
-        assertCastType<FloughLogicalObject>(a);
-        assertCastType<FloughLogicalObject>(b);
+    export function differenceOfFloughLogicalObject(minuend: FloughLogicalObjectIF, subtrahend: FloughLogicalObjectIF): FloughLogicalObject {
+        assertCastType<FloughLogicalObject>(minuend);
+        assertCastType<FloughLogicalObject>(subtrahend);
         return {
             kind: FloughLogicalObjectKind.difference,
-            items: [a,b],
+            items: [minuend,subtrahend],
             [essymbolFloughLogicalObject]: true
         };
     }
@@ -355,13 +355,10 @@ namespace ts {
 
     type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<FloughType>>;
     export type LogicalObjectForEachTypeOfProperyLookupReturnType = & { objToType: ObjToTypeMap; type: Readonly<FloughType> };
-    export function logicalObjectForEachTypeOfProperyLookup(
+    export function logicalObjectForEachTypeOfPropertyLookup(
         logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType, _crit?: InferCrit
     ): LogicalObjectForEachTypeOfProperyLookupReturnType {
         assertCastType<FloughLogicalObject>(logicalObjectTop);
-        // type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<FloughType>>;
-        // type Result = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<FloughType> }[];
-        // type State = { objectInstance: Readonly<FloughLogicalObjectTypeInstance>, type: Readonly<FloughType> }[];
         type Result = LogicalObjectForEachTypeOfProperyLookupReturnType;
         type State = & { objToType: ObjToTypeMap; type: Readonly<FloughType>/*, setOfObj?: Set<Readonly<FloughObjectTypeInstance>>*/ };
         function newMap(x?: [objectTypeInstance: Readonly<FloughObjectTypeInstance>, type: FloughType]){
@@ -413,23 +410,26 @@ namespace ts {
                         return { objToType:newMap([logicalObject.item, type]) , type };
                     }
                 },
-                onUnion(_logicalObject: Readonly<FloughLogicalObjectUnion>, result: Result, state: State | undefined, itemsIndex: number) {
+                onUnion(logicalObject: Readonly<FloughLogicalObjectUnion>, result: Result, state: State | undefined, itemsIndex: number) {
                     if (itemsIndex===0) state = result;
                     else {
                         Debug.assert(state);
                         // eslint-disable-next-line prefer-const
-                        let {objToType, type} = result;
-                        objToType.forEach((t, objectInstance) => {
-                            if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, t);
-                            // TODO: this could be an in-place merge of t into type, not requiring a new type
-                            type = floughTypeModule.unionWithFloughTypeMutate(t,type);
+                        result.objToType.forEach((t, objectInstance) => {
+                            assertCastType<State>(state);
+                            if (!state.objToType.get(objectInstance)) state.objToType.set(objectInstance, t);
+                            else {
+                                // Probably pretty rare, but if the same object instance is in multiple branches of the union, we need to union the types.
+                                Debug.fail("does this really happen?");
+                                //state.objToType.set(objectInstance, floughTypeModule.unionWithFloughTypeMutate(t,state.objToType.get(objectInstance)!));
+                            }
+                            state.type = floughTypeModule.unionWithFloughTypeMutate(t,state.type);
                         });
-                        state.type = type;
                     }
-                    if (itemsIndex === _logicalObject.items.length-1) return [undefined, state];
+                    if (itemsIndex === logicalObject.items.length-1) return [undefined, state];
                     return [state, undefined];
                 },
-                onIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State | undefined, itemsIndex: number) {
+                onIntersection(logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State | undefined, itemsIndex: number) {
                     /**
                      * Even if the intersection is empty, we still want to return the object instances to type map, so that they can be trimmed.
                      * TODO:ing: Therefore need "type" in the state - compute the intersection FloughType - if that becomes never type,
@@ -441,49 +441,48 @@ namespace ts {
                      */
                     if (itemsIndex===0) {
                         state = result;
-                        // state.setOfObj = new Set<Readonly<FloughObjectTypeInstance>>();
-                        // result.
                     }
                     else {
                         Debug.assert(state);
-                        // eslint-disable-next-line prefer-const
-                        let {objToType, type} = result;
-                        objToType.forEach((t, objectInstance) => {
-                            if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, t);
-                            // TODO: this could be an in-place merge of t into type, not requiring a new type
-                            type = floughTypeModule.intersectionWithFloughTypeMutate(t,type);
+                        result.objToType.forEach((t, objectInstance) => {
+                            assertCastType<State>(state);
+                            if (!state.objToType.get(objectInstance)) state.objToType.set(objectInstance, t);
+                            else {
+                                Debug.fail("does this really happen?");
+                            }
                         });
-                        state.type = type;
-                        // result.forEach((_type, objectInstance) => {
-                        //     state.set(objectInstance, isecttype);
-                        // });
+                        state.type = floughTypeModule.intersectionWithFloughTypeMutate(result.type,state.type);
                     }
-                    if (itemsIndex === _logicalObject.items.length - 1) {
+                    if (itemsIndex === logicalObject.items.length - 1) {
                         /**
                          * The intersection type is incrementally computed for each itemsIndex, but the type is not set to the map until the last itemsIndex.
                          * Now that the type is set, we can set the type for all the object instances.
                          */
-                        state.objToType.forEach((_t, objectInstance) => state!.objToType.set(objectInstance, state!.type));
+                        state.objToType.forEach((t, objectInstance) => {
+                            assertCastType<State>(state);
+                            const finalType = floughTypeModule.intersectionWithFloughTypeMutate(t,state.type);
+                            state.objToType.set(objectInstance, finalType);
+                        });
                         return [undefined, state];
                     }
                     return [state, undefined];
                 },
-                onDifference(_logicalObject: Readonly<FloughLogicalObjectDifference>, result: Result, state: State | undefined, itemsIndex: number) {
-                    Debug.assert(_logicalObject.items.length === 2);
+                onDifference(logicalObject: Readonly<FloughLogicalObjectDifference>, result: Result, state: State | undefined, itemsIndex: number) {
+                    Debug.assert(logicalObject.items.length === 2);
                     if (itemsIndex===0) {
                         state = result;
                         return [state,undefined];
                     }
                     else {
                         Debug.assert(state);
-                        // eslint-disable-next-line prefer-const
-                        let {objToType, type} = result;
-                        objToType.forEach((tsubtrahend, objectInstance) => {
-                            if (!objToType.get(objectInstance)) state!.objToType.set(objectInstance, tsubtrahend);
-                            type = floughTypeModule.differenceWithFloughTypeMutate(tsubtrahend,type); // type - t
+                        // state is minuend, result is subtrahend
+                        // const lesserSubtrahend = floughTypeModule.intersectionWithFloughTypeMutate(result.type,state.type);
+                        state.objToType.forEach((_t, objectInstance) => {
+                            assertCastType<State>(state);
+                            const finalType = floughTypeModule.differenceWithFloughTypeMutate(result.type,_t);
+                            state.objToType.set(objectInstance, finalType);
                         });
-                        state.objToType.forEach((_t, objectInstance) => state!.objToType.set(objectInstance, type));
-                        state.type = type;
+                        state.type = floughTypeModule.differenceWithFloughTypeMutate(result.type,state.type);;
                         return [undefined, state];
                     }
                 }
@@ -493,6 +492,87 @@ namespace ts {
         const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: floughTypeModule.createNeverType() });
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup
+
+    export function getTsTypeFromLogicalObject(logicalObjectTop: FloughLogicalObjectIF): Type {
+        assertCastType<FloughLogicalObject>(logicalObjectTop);
+        type Result = Type;
+        type State = Type[];
+        function createLogicalObjectVisitorForGetTsTypeFromLogicalObject(): LogicalObjectVisitor<Result, State>{
+            return {
+                onPlain(logicalObject: Readonly<FloughLogicalObjectPlain>) {
+                    return logicalObject.item.tsObjectType;
+                },
+                onUnion(logicalObject: Readonly<FloughLogicalObjectUnion>, result: Result, state: State | undefined, itemsIndex: number) {
+                    if (itemsIndex===0) state = [result];
+                    else {
+                        Debug.assert(state);
+                        state = [...state, result];
+                    }
+                    if (itemsIndex === logicalObject.items.length-1) return [undefined,checker.getUnionType(state)];
+                    return [state,undefined];
+                },
+                onIntersection(logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, state: State | undefined, itemsIndex: number) {
+                    if (itemsIndex===0) state = [result];
+                    else {
+                        Debug.assert(state);
+                        state = [...state, result];
+                    }
+                    /**
+                     * We can't return checker.getIntersectionType(state) because that has a different meaning to set-intersection.
+                     */
+                    // NOPE! if (itemsIndex === _logicalObject.items.length-1) return [undefined,checker.getIntersectionType(state)];
+
+                    // Set intersection is the set of shared types, different object-instances can share the same object-type, even if the instances dont have overlapping values.
+                    // TODO: For now we pass back the union, instead of the intersection, but we should change this to return the intersection.
+                    if (itemsIndex === logicalObject.items.length-1) return [undefined,checker.getUnionType(state)];
+                    return [state,undefined];
+                },
+                onDifference(logicalObject: Readonly<FloughLogicalObjectDifference>, result: Result, state: State | undefined, itemsIndex: number) {
+                    Debug.assert(logicalObject.items.length === 2);
+                    if (itemsIndex===0) {
+                        state = [result];
+                        return [state,undefined];
+                    }
+                    else {
+                        // TODO: compute the difference; subtract the types of the subtrahend (result )from types of the the minuend (state[0])
+                        Debug.assert(state);
+                        return [undefined,state[0]];
+                    }
+                },
+                onTsunion(logicalObject: Readonly<FloughLogicalObjectTsunion>, result: Result, state: State | undefined, itemsIndex: number) {
+                    if (itemsIndex===0) {
+                        if (logicalObject.tsType.types.length === logicalObject.items.length) return [undefined,logicalObject.tsType]; // done!
+                        return [[result], undefined]; // keep going
+                    }
+                    else {
+                        Debug.assert(state);
+                        state = [...state, result];
+                    }
+                    if (itemsIndex === logicalObject.items.length-1) {
+                        return [undefined,checker.getUnionType(state)];
+                    }
+                    return [state,undefined];
+                },
+                onTsintersection(logicalObject: Readonly<FloughLogicalObjectTsintersection>, result: Result, state: State | undefined, itemsIndex: number) {
+                    if (itemsIndex===0) {
+                        if (logicalObject.tsType.types.length === logicalObject.items.length) return [undefined,logicalObject.tsType]; // done!
+                        return [[result], undefined]; // keep going
+                    }
+                    else {
+                        Debug.assert(state);
+                        state = [...state, result];
+                    }
+                    if (itemsIndex === logicalObject.items.length-1) {
+                        return [undefined,checker.getUnionType(state)];
+                    }
+                    return [state,undefined];
+                },
+            };
+        }
+        const visitor = createLogicalObjectVisitorForGetTsTypeFromLogicalObject();
+        const result = logicalObjecVisit(logicalObjectTop, () => visitor, checker.getNeverType());
+        return result;
+    }
 
     export function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[] {
         const as: string[] = [];
