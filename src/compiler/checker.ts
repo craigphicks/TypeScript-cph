@@ -951,6 +951,7 @@ namespace ts {
             },
             getApparentType,
             getUnionType,
+            getIntersectionType,
             isTypeAssignableTo,
             createAnonymousType,
             createSignature,

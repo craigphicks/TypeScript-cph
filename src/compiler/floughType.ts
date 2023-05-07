@@ -123,6 +123,39 @@ namespace ts {
         getTypeFromRefTypesType(type: Readonly<FloughType>): Type {
             castReadonlyFloughTypei(type);
             return getTsTypeFromFloughType(type);
+        },
+        isNeverType(type: Readonly<FloughType>): boolean {
+            castReadonlyFloughTypei(type);
+            return isNeverType(type);
+        },
+        isAnyType(type: Readonly<FloughType>): boolean {
+            castReadonlyFloughTypei(type);
+            return isAnyOrUnknownType(type);
+        },
+        isUnknownType(type: Readonly<FloughType>): boolean {
+            castReadonlyFloughTypei(type);
+            return isAnyOrUnknownType(type);
+        },
+        forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void {
+            castReadonlyFloughTypei(type);
+            const tsType = getTsTypeFromFloughType(type);
+            checker.forEachType(tsType,f);
+        },
+        equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean {
+            castReadonlyFloughTypei(a);
+            castReadonlyFloughTypei(b);
+            if (a === b) return true;
+            if (isNeverType(a) && isNeverType(b)) return true;
+            if (isAnyOrUnknownType(a)||isAnyOrUnknownType(b)) return false;
+            if ((a.logicalObject||b.logicalObject) && a.logicalObject!==b.logicalObject) return false;
+            return equalFloughTypesNonObj(a.nobj,b.nobj);
+        },
+        addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): FloughType {
+            castReadonlyFloughTypei(type);
+            return unionWithTsTypeMutate(tstype,type);
+        },
+        partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
+            return partitionForEqualityCompareFloughType(a,b);
         }
 
         // end of interface copied from RefTypesTypeModule
@@ -197,15 +230,15 @@ namespace ts {
     function isNeverType(ft: Readonly<FloughTypei>): boolean {
         return  !ft.any && !ft.unknown && !ft.logicalObject && isNeverTypeNobj(ft.nobj);
     }
-    // @ts-expect-error
+    // @ ts-expect-error
     function isAnyType(ft: Readonly<FloughTypei>): boolean {
         return  !!ft.any;
     }
-    // @ts-expect-error
+    // @ ts-expect-error
     function isUnknownType(ft: Readonly<FloughTypei>): boolean {
         return  !!ft.unknown;
     }
-    // @ts-expect-error
+    // @ ts-expect-error
     function isAnyOrUnknownType(ft: Readonly<FloughTypei>): boolean {
         return  !!ft.any || !!ft.unknown;
     }
@@ -756,6 +789,153 @@ namespace ts {
             }
         }
         return true;
+    }
+
+    function equalFloughTypesNonObj(a: Readonly<FloughTypeNobj>, b: Readonly<FloughTypeNobj>): boolean {
+        if (a.boolFalse!==b.boolFalse) return false;
+        if (a.boolTrue!==b.boolTrue) return false;
+        if (a.symbol!==b.symbol) return false;
+        if (a.uniqueSymbol!==b.uniqueSymbol) return false;
+        if (a.null!==b.null) return false;
+        if (a.undefined!==b.undefined) return false;
+        if (a.void!==b.void) return false;
+        if (a.string) {
+            if (!b.string) return false;
+            if (a.string===true){
+                if (b.string!==true) return false;
+            }
+            else if (b.string!==true){
+                if (a.string.size!==b.string.size) return false;
+                for (let iter = a.string.values(), it=iter.next(); !it.done; it=iter.next()){
+                    if (!b.string.has(it.value)) return false;
+                }
+            }
+        }
+        if (a.number) {
+            if (!b.number) return false;
+            if (a.number===true){
+                if (b.number!==true) return false;
+            }
+            else if (b.number!==true){
+                if (a.number.size!==b.number.size) return false;
+                for (let iter = a.number.values(), it=iter.next(); !it.done; it=iter.next()){
+                    if (!b.number.has(it.value)) return false;
+                }
+            }
+        }
+        if (a.bigint) {
+            if (!b.bigint) return false;
+            if (a.bigint===true){
+                if (b.bigint!==true) return false;
+            }
+            else if (b.bigint!==true){
+                if (a.bigint.size!==b.bigint.size) return false;
+                for (let iter = a.bigint.values(), it=iter.next(); !it.done; it=iter.next()){
+                    if (!b.bigint.has(it.value)) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    type Partition = PartitionForEqualityCompareItemTpl<FloughType>;
+    function partitionForEqualityCompareFloughType(a: Readonly<FloughType>, b: Readonly<FloughType>): Partition[] {
+        castReadonlyFloughTypei(a);
+        castReadonlyFloughTypei(b);
+        if (isNeverType(a)||isNeverType(b)) return [];
+        if (isAnyType(a) || isUnknownType(a) || isAnyType(b) || isUnknownType(b)) return [{ left:a,right:b, true:true,false:true }];
+        return 0 as any as Partition[];
+        // const symmSet = new Set<Type>();
+
+        // const doOneSide = (x: Readonly<FloughType>, y: Readonly<FloughType>, pass: 0 | 1): Partition[] => {
+        //     const arrYTsTypes: Type[] = getTsTypesOfType(y);
+        //     const setYTsTypes = new Set<Type>(arrYTsTypes);
+        //     const copySetYDelete=(d: Type) => {
+        //         const r = new Set(setYTsTypes);
+        //         r.delete(d);
+        //         const a: Type[] = [];
+        //         r.forEach(t=>a.push(t));
+        //         return a;
+        //     };
+        //     const arr1: PartitionForEqualityCompareItem[] = [];
+        //     // @ts-expect-error mask
+        //     const a = undefined;
+        //     // @ts-expect-error mask
+        //     const b = undefined;
+        //     x._mapLiteral?.forEach((setltx,tx)=>{
+        //         const setlty = y._mapLiteral?.get(tx);
+        //         if (setlty){
+        //             setltx.forEach(ltx=>{
+        //                 if (setlty.has(ltx)){
+        //                     if (pass===0){
+        //                         arr1.push({ bothts:ltx, true:true });
+        //                         symmSet.add(ltx);
+        //                     }
+        //                     else if (!symmSet.has(ltx)){
+        //                         arr1.push({ bothts:ltx, true:true });
+        //                     }
+        //                     const rightts = copySetYDelete(ltx);
+        //                     if (rightts.length!==0) {
+        //                         arr1.push({ leftts:[ltx], rightts, false:true });
+        //                     }
+        //                 }
+        //                 else {
+        //                     // both x and y have literals under ta, but only x has lta under ta
+        //                     arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+        //                 }
+        //             });
+        //         }
+        //         else if (y._set?.has(tx)){
+        //             // e.g. ltx is 1, and y is number
+        //             setltx.forEach(ltx=>{
+        //                 if (pass===0){
+        //                     arr1.push({ bothts:ltx, true:true });
+        //                     symmSet.add(ltx);
+        //                 }
+        //                 else if (!symmSet.has(ltx)){
+        //                     arr1.push({ bothts:ltx, true:true });
+        //                 }
+        //                 // // cannot subtract singular from nonsingular so the inverse of right is just right, and although it matches just label as false only.
+        //                 arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+        //             });
+        //         }
+        //         else {
+        //             setltx.forEach(ltx=>{
+        //                 arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
+        //             });
+        //         }
+        //     });
+        //     x._set!.forEach(tx=>{
+        //         if (y._set!.has(tx)){
+        //             if (pass===0){
+        //                 arr1.push({ bothts: tx, true:true, false: (tx.flags & (TypeFlags.BooleanLiteral|TypeFlags.Undefined|TypeFlags.Null)) ? false : true });
+        //                 symmSet.add(tx);
+        //             }
+        //             else if (!symmSet.has(tx)){
+        //                 arr1.push({ bothts: tx, true:true, false: (tx.flags & (TypeFlags.BooleanLiteral|TypeFlags.Undefined|TypeFlags.Null)) ? false : true });
+        //             }
+        //             const rightts = copySetYDelete(tx);
+        //             if (rightts.length!==0){
+        //                 arr1.push({ leftts:[tx], rightts });
+        //             }
+        //         }
+        //         else {
+        //             arr1.push({ leftts:[tx], rightts:arrYTsTypes, false:true });
+        //         }
+        //     });
+        //     if (pass===1) {
+        //         arr1.forEach(x=>{
+        //             if (x.leftts){
+        //                 const tmp = x.leftts;
+        //                 x.leftts = x.rightts;
+        //                 x.rightts = tmp;
+        //             }
+        //         });
+        //     }
+        //     return arr1;
+        // };
+        // const ret = [ ...doOneSide(a,b,0), ...doOneSide(b,a,1) ];
+        // return ret;
     }
 
 }

@@ -366,6 +366,8 @@ namespace ts {
         const mrNarrow = createMrNarrow(checker, sourceFile, mrState, refTypesTypeModule, compilerOptions);
         initializeFlowGroupRefTypesSymtabModule(mrNarrow);
         initFlowGroupInferApplyCrit(checker, mrNarrow);
+        initFloughTypeModule(checker);
+        initFloughLogicalObject(checker,dbgs,mrNarrow);
         return {
             sourceFile,
             groupsForFlow,

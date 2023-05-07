@@ -5,16 +5,16 @@ namespace ts {
         return Debug.assert(arguments);
     }
 
-    type PartitionForEqualityCompareItem = & {
-        left?: Readonly<RefTypesType>;
-        right?: Readonly<RefTypesType>;
-        both?: Readonly<RefTypesType>;
-        leftts?: Type[];
-        rightts?: Type[];
-        bothts?: Type;
-        true?: boolean;
-        false?: boolean;
-    };
+    // type PartitionForEqualityCompareItem = & {
+    //     left?: Readonly<RefTypesType>;
+    //     right?: Readonly<RefTypesType>;
+    //     both?: Readonly<RefTypesType>;
+    //     leftts?: Type[];
+    //     rightts?: Type[];
+    //     bothts?: Type;
+    //     true?: boolean;
+    //     false?: boolean;
+    // };
     //export declare function partitionForEqualityCompare(a: Readonly<RefTypesType>, b: Readonly<RefTypesType>): PartitionForEqualityCompareItem[];
 
 

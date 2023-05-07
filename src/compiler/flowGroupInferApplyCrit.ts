@@ -45,7 +45,7 @@ namespace ts {
                 const tf = checker.getTypeFacts(t);
                 if (tf&pfacts) addTsTypeNonUnionToRefTypesTypeMutate(t,passtype);
                 if (failtype && tf&ffacts) addTsTypeNonUnionToRefTypesTypeMutate(t,failtype);
-    });
+            });
         }
         else if (crit.kind===InferCritKind.assignable) {
             const assignableRelation = checker.getRelations().assignableRelation;

@@ -4538,6 +4538,7 @@ namespace ts {
         /* @internal */ getNeverType(): Type;
         /* @internal */ getOptionalType(): Type;
         /* @internal */ getUnionType(types: Type[], subtypeReduction?: UnionReduction): Type;
+        /* @internal */ getIntersectionType(types: Type[]): Type;
         /* @internal */ createArrayType(elementType: Type): Type;
         /* @internal */ getElementTypeOfArrayType(arrayType: Type): Type | undefined;
         /* @internal */ createPromiseType(type: Type): Type;

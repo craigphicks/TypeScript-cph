@@ -3,7 +3,7 @@ namespace ts {
     const checker = undefined as any as TypeChecker; // TODO: intialize;
     const dbgs = undefined as any as Dbgs;
     const mrNarrow = undefined as any as MrNarrow;
-    export function initFlowLogicalObject(checkerIn: TypeChecker, dbgsIn: Dbgs, mrNarrowIn: MrNarrow) {
+    export function initFloughLogicalObject(checkerIn: TypeChecker, dbgsIn: Dbgs, mrNarrowIn: MrNarrow) {
         (checker as any) = checkerIn;
         //(refTypesTypeModule as any) = refTypesTypeModuleIn;
         (dbgs as any) = dbgsIn;
@@ -486,11 +486,25 @@ namespace ts {
                     return [undefined, state];
                 }
             }
+            function onTsunion(logicalObject: Readonly<FloughLogicalObjectTsunion>, result: Result, state: State | undefined, itemsIndex: number): OnReturnType {
+                return onUnion({
+                    ...logicalObject, kind: FloughLogicalObjectKind.union},
+                    result, state, itemsIndex
+                );
+            }
+            function onTsintersection(logicalObject: Readonly<FloughLogicalObjectTsintersection>, result: Result, state: State | undefined, itemsIndex: number): OnReturnType {
+                return onUnion({
+                    ...logicalObject, kind: FloughLogicalObjectKind.union},
+                    result, state, itemsIndex
+                );
+            }
             return {
                 onPlain,
                 onUnion,
                 onIntersection,
                 onDifference,
+                onTsunion,
+                onTsintersection,
             };
         } // end of createLogicalObjectVisitorForForEachTypeOfProperyLookup
         const visitor = createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey);
@@ -568,7 +582,8 @@ namespace ts {
                         state = [...state, result];
                     }
                     if (itemsIndex === logicalObject.items.length-1) {
-                        return [undefined,checker.getUnionType(state)];
+                        //return [undefined,checker.getUnionType(state)];
+                        return [undefined,checker.getIntersectionType(state)];
                     }
                     return [state,undefined];
                 },

@@ -1,14 +1,28 @@
 namespace ts {
-    export type PartitionForEqualityCompareItem = & {
-        left?: Readonly<RefTypesType>;
-        right?: Readonly<RefTypesType>;
-        both?: Readonly<RefTypesType>;
-        leftts?: (Type | FloughLogicalObjectIF)[];
-        rightts?: (Type | FloughLogicalObjectIF)[];
-        bothts?: (Type | FloughLogicalObjectIF);
+
+    export type PartitionForEqualityCompareItemTpl<TT> = & {
+        left?: Readonly<TT>;
+        right?: Readonly<TT>;
+        //both?: Readonly<TT>;
+        leftts?: Type[];
+        rightts?: Type[];
+        bothts?: Type;
         true?: boolean;
         false?: boolean;
     };
+
+    export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
+
+    // export type PartitionForEqualityCompareItem = & {
+    //     left?: Readonly<RefTypesType>;
+    //     right?: Readonly<RefTypesType>;
+    //     both?: Readonly<RefTypesType>;
+    //     leftts?: Type[];
+    //     rightts?: Type[];
+    //     bothts?: Type;
+    //     true?: boolean;
+    //     false?: boolean;
+    // };
 
     // export interface AliasAssignableState {
     //     readonly node: Node;
