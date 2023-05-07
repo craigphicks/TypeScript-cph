@@ -89,7 +89,7 @@ namespace ts {
                 else {
                     // symbol was assigned in invocation 0, and the range of that assignment is reflected in the type here
                     const outer = this.symtabOuter?.get(symbol);
-                    const type = outer ? mrNarrow.unionOfRefTypesType([range,outer]) : range;
+                    const type = outer ? floughTypeModule.unionOfRefTypesType([range,outer]) : range;
                     this.symtabInner.set(symbol,{ type, assignedType: undefined });
                     return type;
                 }
@@ -266,8 +266,8 @@ namespace ts {
                         ptypeGot = { set:new Set<Type>(), setAssigned:new Set<Type>() };
                         mapSymToPType.set(symbol, ptypeGot);
                     }
-                    mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(pt.type, tstype=>ptypeGot!.set.add(tstype));
-                    if (pt.assignedType) mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(pt.assignedType, tstype=>ptypeGot!.setAssigned.add(tstype));
+                    floughTypeModule.forEachRefTypesTypeType(pt.type, tstype=>ptypeGot!.set.add(tstype));
+                    if (pt.assignedType) floughTypeModule.forEachRefTypesTypeType(pt.assignedType, tstype=>ptypeGot!.setAssigned.add(tstype));
                 });
             });
 
@@ -281,7 +281,7 @@ namespace ts {
                     for (const rts of arr){
                         if (!rts.symtabInner.has(symbol)){
                             const otype = mrNarrow.getEffectiveDeclaredType(symbolFlowInfoMap.get(symbol) ?? Debug.fail("unexpected"));
-                            mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
+                            floughTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
                             break;
                         }
                     }
@@ -291,7 +291,7 @@ namespace ts {
                         if (!rts.symtabInner.has(symbol)){
                             const otype = rts.symtabOuter?.get(symbol);
                             if (otype){
-                                mrNarrow.refTypesTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
+                                floughTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
                                 break;
                             }
                         }
@@ -299,11 +299,11 @@ namespace ts {
                 }
                 const atype: Type[]=[];
                 set.forEach(t=>atype.push(t));
-                const type = mrNarrow.refTypesTypeModule.createRefTypesType(atype);
+                const type = floughTypeModule.createRefTypesType(atype);
                 const aAssignedType: Type[] = [];
                 setAssigned.forEach(t=>aAssignedType.push(t));
                 let assignedType: RefTypesType | undefined;
-                if (setAssigned.size) assignedType = mrNarrow.refTypesTypeModule.createRefTypesType(aAssignedType);
+                if (setAssigned.size) assignedType = floughTypeModule.createRefTypesType(aAssignedType);
                 target.symtabInner.set(symbol,{ type, assignedType });
             });
             return target;
@@ -342,7 +342,7 @@ namespace ts {
                         }
                     }
                     else if (!mrNarrow.isASubsetOfB(otype, pt.type)){
-                        updates.push([symbol,mrNarrow.unionOfRefTypesType([pt.type,otype])]);
+                        updates.push([symbol,floughTypeModule.unionOfRefTypesType([pt.type,otype])]);
                     }
                 }
             }
@@ -385,14 +385,14 @@ namespace ts {
                 symbolsDone.add(s);
                 if (x.loopState!.symbolsAssignedRange?.has(s)){
                     const rangeType = x.loopState!.symbolsAssignedRange.get(s)!;
-                    str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${mrNarrow.dbgRefTypesTypeToString(rangeType)}}, `;
+                    str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
                 };
             });
             x.symtabInner.forEach((_pt,s)=>{
                 if (symbolsDone.has(s)) return;
                 if (x.loopState!.symbolsAssignedRange?.has(s)){
                     const rangeType = x.loopState!.symbolsAssignedRange.get(s)!;
-                    str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${mrNarrow.dbgRefTypesTypeToString(rangeType)}}, `;
+                    str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
                 };
             });
             str+=`]`;
@@ -400,7 +400,7 @@ namespace ts {
         }
         x.symtabInner.forEach(({type,assignedType},s)=>{
             as.push(`  symbol:${mrNarrow.dbgSymbolToStringSimple(s)}, `
-             + `{ type:${mrNarrow.dbgRefTypesTypeToString(type)}, assignedType:${assignedType?mrNarrow.dbgRefTypesTypeToString(type):"<undef>"}}`);
+             + `{ type:${floughTypeModule.dbgRefTypesTypeToString(type)}, assignedType:${assignedType?floughTypeModule.dbgRefTypesTypeToString(type):"<undef>"}}`);
         });
         if (x.symtabOuter){
             as.push(...dbgRefTypesSymtabToStrings(x.symtabOuter).map(str=>`  outer:${str}`));

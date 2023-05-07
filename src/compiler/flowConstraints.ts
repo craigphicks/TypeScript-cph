@@ -102,14 +102,14 @@ namespace ts {
         if (getMyDebug()){
             const as: string[] = [];
             consoleGroup(`evalTypeOverConstraint[in][${depth}]`);
-            as.push(`evalTypeOverConstraint[in][${depth}]: depth:${depth}, symbol:${symbol.escapedName}, negate:${negate}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(typeRange)}.`);
+            as.push(`evalTypeOverConstraint[in][${depth}]: depth:${depth}, symbol:${symbol.escapedName}, negate:${negate}, typeRange: ${floughTypeModule.dbgRefTypesTypeToString(typeRange)}.`);
             if (!cin) as.push(`evalTypeOverConstraint[in][${depth}]: constraint: undefined`);
             else mrNarrow.dbgConstraintItem(cin).forEach(s=>as.push(`evalTypeOverConstraint[in][${depth}]: constraint: ${s}`));
             as.forEach(s=>consoleLog(s));
         }
         const r = evalTypeOverConstraint_aux({ cin, symbol, typeRange, negate, mrNarrow, depth });
         if (getMyDebug()){
-            consoleLog(`evalTypeOverConstraint[out][${depth}]: ${mrNarrow.dbgRefTypesTypeToString(r)}`);
+            consoleLog(`evalTypeOverConstraint[out][${depth}]: ${floughTypeModule.dbgRefTypesTypeToString(r)}`);
             consoleGroupEnd();
         }
         return r;
@@ -119,16 +119,16 @@ namespace ts {
         cin: Readonly<ConstraintItem>, symbol: Readonly<Symbol>, typeRange: Readonly<RefTypesType>, negate?: boolean, /*refDfltTypeOfSymbol: [RefTypesType | undefined],*/ mrNarrow: MrNarrow, depth?: number
     }): RefTypesType {
         depth=depth??0;
-        if (mrNarrow.isNeverType(typeRange)){
+        if (floughTypeModule.isNeverType(typeRange)){
             return typeRange;
         }
         if (mrNarrow.isAnyType(typeRange) || mrNarrow.isUnknownType(typeRange)){
-            typeRange = mrNarrow.createRefTypesType(mrNarrow.checker.getAnyType());
+            typeRange = floughTypeModule.createRefTypesType(mrNarrow.checker.getAnyType());
         }
 
-        if (cin.kind===ConstraintItemKind.always) return !negate ? typeRange : mrNarrow.createRefTypesType();
+        if (cin.kind===ConstraintItemKind.always) return !negate ? typeRange : floughTypeModule.createRefTypesType();
         if (cin.kind===ConstraintItemKind.never){
-            if (!negate) return mrNarrow.createRefTypesType(); // never
+            if (!negate) return floughTypeModule.createRefTypesType(); // never
             return typeRange;
         }
         if (cin.kind===ConstraintItemKind.leaf){
@@ -137,7 +137,7 @@ namespace ts {
                 return mrNarrow.intersectionOfRefTypesType(cin.type,typeRange);
             }
             else {
-                if (cin.symbol!==symbol) return mrNarrow.createRefTypesType(); // never
+                if (cin.symbol!==symbol) return floughTypeModule.createRefTypesType(); // never
                 return mrNarrow.subtractFromType(cin.type,typeRange);
             }
         }
@@ -149,13 +149,13 @@ namespace ts {
                 let isectType = typeRange;
                 for (const subc of cin.constraints){
                     const subType = evalTypeOverConstraint({ cin:subc, symbol, typeRange:isectType, mrNarrow, depth:depth+1 });
-                    if (mrNarrow.isNeverType(subType)) return subType;
+                    if (floughTypeModule.isNeverType(subType)) return subType;
                     if (subType!==isectType && !mrNarrow.isASubsetOfB(isectType,subType)) isectType=subType;
                 }
                 return isectType;
             }
             if (cin.op===ConstraintItemNodeOp.or && !negate || cin.op===ConstraintItemNodeOp.and && negate){
-                const unionType = mrNarrow.createRefTypesType(); // never
+                const unionType = floughTypeModule.createRefTypesType(); // never
                 for (const subc of cin.constraints){
                     const subType = evalTypeOverConstraint({ cin:subc, symbol, typeRange, mrNarrow, depth:depth+1 });
                     mrNarrow.mergeToRefTypesType({ source:subType, target:unionType });
@@ -194,7 +194,7 @@ namespace ts {
         if (!declaredType) declaredType = getDeclaredType(symbol);
         const doLog = false;
         if (doLog && getMyDebug()){
-            consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${mrNarrow.dbgRefTypesTypeToString(type)}, typeRange: ${mrNarrow.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
+            consoleGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${floughTypeModule.dbgRefTypesTypeToString(type)}, typeRange: ${floughTypeModule.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
             mrNarrow.dbgConstraintItem(cin).forEach(s=>{
                 consoleLog(`andDistributeDivide[in][${depth??0}] constraint: ${s}`);
             });
@@ -223,7 +223,7 @@ namespace ts {
         depth = depth??0;
         refCountIn[0]++;
         refCountOut[0]++;
-        //if (mrNarrow.isNeverType(type)) return createFlowConstraintNever(); don't want this because pass never to remove symbols and their products
+        //if (floughTypeModule.isNeverType(type)) return createFlowConstraintNever(); don't want this because pass never to remove symbols and their products
         if (mrNarrow.isASubsetOfB(declaredType,type)) {
             // Bug fix with ConstraintsV2
             // keep on going, (could also just return cin?).
@@ -233,7 +233,7 @@ namespace ts {
         if ((cin.kind===ConstraintItemKind.never && negate) || (cin.kind===ConstraintItemKind.always && !negate)) return createFlowConstraintAlways();
         if (cin.kind===ConstraintItemKind.leaf){
             if (symbol===cin.symbol){
-                if (mrNarrow.isNeverType(cin.type)) Debug.fail("unexpected");
+                if (floughTypeModule.isNeverType(cin.type)) Debug.fail("unexpected");
                 if (mrNarrow.isAnyType(cin.type)) Debug.fail("not yet implemented");
                 if (mrNarrow.isUnknownType(cin.type)) Debug.fail("not yet implemented");
             }
@@ -244,7 +244,7 @@ namespace ts {
                 else {
                     // @ ts-expect-error
                     const isectType = mrNarrow.intersectionOfRefTypesType(cin.type, type);
-                    if (mrNarrow.isNeverType(isectType)) return createFlowConstraintNever();
+                    if (floughTypeModule.isNeverType(isectType)) return createFlowConstraintNever();
                     if (!mrNarrow.isASubsetOfB(type,isectType)) return createFlowConstraintLeaf(symbol,isectType);
                     return createFlowConstraintAlways();
                 }
@@ -256,7 +256,7 @@ namespace ts {
                 }
                 else {
                     const isectInvType = mrNarrow.intersectionOfRefTypesType(mrNarrow.subtractFromType(cin.type, declaredType), type);
-                    if (mrNarrow.isNeverType(isectInvType)) return createFlowConstraintNever();
+                    if (floughTypeModule.isNeverType(isectInvType)) return createFlowConstraintNever();
                     if (!mrNarrow.isASubsetOfB(type,isectInvType)) return createFlowConstraintLeaf(symbol,isectInvType);
                     return createFlowConstraintAlways();
                 }
@@ -295,7 +295,7 @@ namespace ts {
                         const atype: RefTypesType[] = [];
                         setc.forEach(cleaf=>atype.push(cleaf.type));
                         const ctype = mrNarrow.intersectionOfRefTypesType(...atype);
-                        if (mrNarrow.isNeverType(ctype)) hasNeverLeaf = true;
+                        if (floughTypeModule.isNeverType(ctype)) hasNeverLeaf = true;
                         constraints.push({ kind:ConstraintItemKind.leaf,symbol:csymbol,type:ctype });
                     }
                 });
@@ -331,7 +331,7 @@ namespace ts {
                     else {
                         const atype: RefTypesType[] = [];
                         setc.forEach(cleaf=>atype.push(cleaf.type));
-                        const ctype = mrNarrow.unionOfRefTypesType(atype);
+                        const ctype = floughTypeModule.unionOfRefTypesType(atype);
                         const cdeclType = getDeclaredType(csymbol);
                         if (mrNarrow.isASubsetOfB(cdeclType,ctype)) hasAlwaysLeaf = true;
                         constraints.push({ kind:ConstraintItemKind.leaf,symbol:csymbol,type:ctype });
@@ -347,7 +347,7 @@ namespace ts {
     }
 
     function andIntoConstraintShallow({symbol, type, constraintItem, mrNarrow}: {symbol: Symbol, type: RefTypesType, constraintItem: ConstraintItem, mrNarrow: MrNarrow}): ConstraintItem {
-        if (mrNarrow.isNeverType(type)) return createFlowConstraintNever();
+        if (floughTypeModule.isNeverType(type)) return createFlowConstraintNever();
         if (constraintItem.kind===ConstraintItemKind.always){
             return { kind: ConstraintItemKind.leaf, symbol, type };
         }
@@ -355,7 +355,7 @@ namespace ts {
         if (constraintItem.kind===ConstraintItemKind.leaf){
             if (constraintItem.symbol===symbol){
                 const isecttype = mrNarrow.intersectionOfRefTypesType(type, constraintItem.type);
-                if (mrNarrow.isNeverType(isecttype)) return createFlowConstraintNever();
+                if (floughTypeModule.isNeverType(isecttype)) return createFlowConstraintNever();
                 return createFlowConstraintLeaf(symbol, isecttype);
             }
             return {
@@ -434,7 +434,7 @@ namespace ts {
     //     getDeclaredType: GetDeclaredTypeFn,
     //     mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
     //     //Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
-    //     if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesType(),sc };
+    //     if (isRefTypesSymtabConstraintItemNever(sc)) return { type:floughTypeModule.createRefTypesType(),sc };
     //     return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType });
     // }
 
@@ -449,9 +449,9 @@ namespace ts {
         const log = false;
         if (log && getMyDebug()){
             consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
-            +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
+            +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
         }
-        if (isRefTypesSymtabConstraintItemNever(sc)) return { type:mrNarrow.createRefTypesType(),sc };
+        if (isRefTypesSymtabConstraintItemNever(sc)) return { type:floughTypeModule.createRefTypesType(),sc };
 
         const constraintItem = sc.constraintItem;
         Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
@@ -489,11 +489,11 @@ namespace ts {
                 // symtab.forEach((type,symbol)=>{
                 //     const symbolFlowInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
                 //     if (!symbolFlowInfo) {
-                //         str+= ` {symbol:${symbol.escapedName}, isconst: <symbolFlowInfo not found>, type:${mrNarrow.dbgRefTypesTypeToString(type)}},`;
+                //         str+= ` {symbol:${symbol.escapedName}, isconst: <symbolFlowInfo not found>, type:${floughTypeModule.dbgRefTypesTypeToString(type)}},`;
                 //         return;
                 //     }
                 //     const isconst = mrNarrow.mrState.symbolFlowInfoMap.get(symbol)!.isconst;
-                //     str += ` {symbol:${symbol.escapedName}, isconst:${isconst}, type:${mrNarrow.dbgRefTypesTypeToString(type)}},`;
+                //     str += ` {symbol:${symbol.escapedName}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(type)}},`;
                 // });
             }
             consoleLog(str);
@@ -569,12 +569,12 @@ namespace ts {
             }
             else {
                 const gotType = symtab.get(symbol);
-                if (!gotType || mrNarrow.isNeverType(gotType) ||
+                if (!gotType || floughTypeModule.isNeverType(gotType) ||
                 mrNarrow.equalRefTypesTypes(typeIn,gotType)
                 ){
                     return { type:typeIn,sc };
                 }
-                const utype = mrNarrow.unionOfRefTypesType([typeIn, gotType]);
+                const utype = floughTypeModule.unionOfRefTypesType([typeIn, gotType]);
                 symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,utype);
                 return {
                     type: utype,
@@ -622,7 +622,7 @@ namespace ts {
                         type = mrNarrow.intersectionOfRefTypesType(prevType,type);
                         // if type is never, then this product-term will always be never, so there is no need to compute the rest,
                         // therefore simply return.
-                        if (mrNarrow.isNeverType(type)) return;
+                        if (floughTypeModule.isNeverType(type)) return;
                     }
                     mapref[0] = copyMap(mapref[0]).set(ciLeft.symbol, type);
                     // negate is "false" because the negate associated with the pulled aciRight[0] was earlier pushed with it.
@@ -684,7 +684,7 @@ namespace ts {
     //     function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
     //         if (getMyDebug()){
     //             mapSymbolType.forEach((type,symbol)=>{
-    //                 consoleLog(`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+    //                 consoleLog(`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
     //             });
     //             prodnum++;
     //         }
@@ -703,7 +703,7 @@ namespace ts {
     //     visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
     //     if (getMyDebug()){
     //         map.forEach((type,symbol)=>{
-    //             consoleLog(`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+    //             consoleLog(`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
     //         });
     //         consoleGroupEnd();
     //     }
@@ -723,7 +723,7 @@ namespace ts {
         function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
             if (log && getMyDebug()){
                 mapSymbolType.forEach((type,symbol)=>{
-                    consoleLog(`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+                    consoleLog(`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
                 });
                 prodnum++;
             }
@@ -737,13 +737,13 @@ namespace ts {
                 const type = mapSymbolType.get(dsymbol) ?? getDeclaredType(dsymbol);
                 const got = map.get(dsymbol);
                 if (!got) map.set(dsymbol,type);
-                else map.set(dsymbol, mrNarrow.unionOfRefTypesType([got,type]));
+                else map.set(dsymbol, floughTypeModule.unionOfRefTypesType([got,type]));
             });
         }
         visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
         if (log && getMyDebug()){
             map.forEach((type,symbol)=>{
-                consoleLog(`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${mrNarrow.dbgRefTypesTypeToString(type)}`);
+                consoleLog(`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
             });
             consoleGroupEnd();
         }
@@ -819,35 +819,35 @@ namespace ts {
             return new Map<Symbol,RefTypesType>(ast);
         }
 
-        const rttnever = mrNarrow.createRefTypesType();// never
-        const rttbool = mrNarrow.createRefTypesType(checker.getBooleanType());
-        const rtttrue = mrNarrow.createRefTypesType(checker.getTrueType());
-        const rttfalse = mrNarrow.createRefTypesType(checker.getFalseType());
+        const rttnever = floughTypeModule.createRefTypesType();// never
+        const rttbool = floughTypeModule.createRefTypesType(checker.getBooleanType());
+        const rtttrue = floughTypeModule.createRefTypesType(checker.getTrueType());
+        const rttfalse = floughTypeModule.createRefTypesType(checker.getFalseType());
         const symx = { escapedName:"x" } as any as Symbol;
         const symy = { escapedName:"y" } as any as Symbol;
         const symz = { escapedName:"z" } as any as Symbol;
         const symtabx = new Map<Symbol, RefTypesType>([[symx,rttbool]]);
         const symtabxy = new Map<Symbol, RefTypesType>([[symx,rttbool],[symy,rttbool]]);
 
-        const tn1 = mrNarrow.createRefTypesType(checker.getNumberLiteralType(1));
-        const tn2 = mrNarrow.createRefTypesType(checker.getNumberLiteralType(2));
-        const tn3 = mrNarrow.createRefTypesType(checker.getNumberLiteralType(3));
-        //const tn4 = mrNarrow.createRefTypesType(checker.getNumberLiteralType(4));
-        const t123 = mrNarrow.unionOfRefTypesType([tn1,tn2,tn3]);
+        const tn1 = floughTypeModule.createRefTypesType(checker.getNumberLiteralType(1));
+        const tn2 = floughTypeModule.createRefTypesType(checker.getNumberLiteralType(2));
+        const tn3 = floughTypeModule.createRefTypesType(checker.getNumberLiteralType(3));
+        //const tn4 = floughTypeModule.createRefTypesType(checker.getNumberLiteralType(4));
+        const t123 = floughTypeModule.unionOfRefTypesType([tn1,tn2,tn3]);
         // @ts-ignore
         const symtab123 = new Map<Symbol, RefTypesType>([[symx,t123],[symy,t123],[symz,t123]]);
 
 
         // @ts-expect-error
-        const rttNum = mrNarrow.createRefTypesType(checker.getNumberType());
+        const rttNum = floughTypeModule.createRefTypesType(checker.getNumberType());
         // @ts-expect-error
-        const rttStr = mrNarrow.createRefTypesType(checker.getStringType());
+        const rttStr = floughTypeModule.createRefTypesType(checker.getStringType());
         // @ts-expect-error
-        const rttNumStr = mrNarrow.createRefTypesType([checker.getNumberType(), checker.getStringType()]);
+        const rttNumStr = floughTypeModule.createRefTypesType([checker.getNumberType(), checker.getStringType()]);
         // @ts-expect-error
-        const rttLitNum0 = mrNarrow.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,0));
+        const rttLitNum0 = floughTypeModule.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,0));
         // @ts-expect-error
-        const rttLitNum1 = mrNarrow.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,1));
+        const rttLitNum1 = floughTypeModule.createRefTypesType(checker.createLiteralType(TypeFlags.NumberLiteral,1));
 
         const datum: {in: InType,out: OutType}[] = [
             {
@@ -1038,7 +1038,7 @@ namespace ts {
                 visitSOP(data.in.cin, (map: Readonly<VisitSOPMap>)=>{
                     let str = `out[${_iter}],[sop#${sopIdx++}]`;
                     map.forEach((type,symbol)=>{
-                        str += ` ${mrNarrow.dbgSymbolToStringSimple(symbol)}:${mrNarrow.dbgRefTypesTypeToString(type)},`;
+                        str += ` ${mrNarrow.dbgSymbolToStringSimple(symbol)}:${floughTypeModule.dbgRefTypesTypeToString(type)},`;
                     });
                     consoleLog(str);
                 }, mrNarrow, getDeclaredType);
@@ -1054,11 +1054,11 @@ namespace ts {
                     Debug.assert(data.out.has(symbol), `data[${_iter}].out missing symbol ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
                 });
                 data.out.forEach((type,symbol)=>{
-                    const actualType = coverMap.get(symbol) ?? mrNarrow.createRefTypesType(); // never
+                    const actualType = coverMap.get(symbol) ?? floughTypeModule.createRefTypesType(); // never
                     Debug.assert(mrNarrow.isASubsetOfB(actualType,type),
-                        `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(actualType:${mrNarrow.dbgRefTypesTypeToString(actualType)}, expectedType:${mrNarrow.dbgRefTypesTypeToString(type)})`);
+                        `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(actualType:${floughTypeModule.dbgRefTypesTypeToString(actualType)}, expectedType:${floughTypeModule.dbgRefTypesTypeToString(type)})`);
                     Debug.assert(mrNarrow.isASubsetOfB(type, actualType),
-                        `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(expectedType:${mrNarrow.dbgRefTypesTypeToString(type)}, actualType:${mrNarrow.dbgRefTypesTypeToString(actualType)})`);
+                        `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(expectedType:${floughTypeModule.dbgRefTypesTypeToString(type)}, actualType:${floughTypeModule.dbgRefTypesTypeToString(actualType)})`);
                 });
             }
         });

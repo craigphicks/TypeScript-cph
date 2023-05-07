@@ -115,7 +115,7 @@ namespace ts {
         groupsForFlow: GroupsForFlow,
         mrState: MrState;
         mrNarrow: MrNarrow;
-        refTypesTypeModule: RefTypesTypeModule;
+        //refTypesTypeModule: RefTypesTypeModule;
     };
     interface CurrentBranchesItem {
         sc: RefTypesSymtabConstraintItem
@@ -258,7 +258,7 @@ namespace ts {
         typeNodeTsType?: Type;
         initializerType?: RefTypesType;
         effectiveDeclaredTsType: Type; // <actual declared type> || <widened initial type>
-        effectiveDeclaredType?: RefTypesType; // = createRefTypesType(effectiveDeclaredTsType), createWhenNeeded
+        effectiveDeclaredType?: RefTypesType; // = floughTypeModule.createRefTypesType(effectiveDeclaredTsType), createWhenNeeded
     };
     export type SymbolFlowInfoMap = WeakMap<Symbol,SymbolFlowInfo | undefined>;
     export interface MrState {
@@ -362,8 +362,8 @@ namespace ts {
             currentLoopsInLoopScope: new Set<GroupForFlow>(),
             symbolFlowInfoMap: new WeakMap<Symbol,SymbolFlowInfo | undefined>()
         };
-        const refTypesTypeModule = createRefTypesTypeModule(checker);
-        const mrNarrow = createMrNarrow(checker, sourceFile, mrState, refTypesTypeModule, compilerOptions);
+        //const refTypesTypeModule = floughTypeModule.createRefTypesTypeModule(checker);
+        const mrNarrow = createMrNarrow(checker, sourceFile, mrState, /*refTypesTypeModule, */ compilerOptions);
         initializeFlowGroupRefTypesSymtabModule(mrNarrow);
         initFlowGroupInferApplyCrit(checker, mrNarrow);
         initFloughTypeModule(checker);
@@ -373,7 +373,7 @@ namespace ts {
             groupsForFlow,
             mrState,
             mrNarrow,
-            refTypesTypeModule
+            //refTypesTypeModule
         };
     }
     function getGroupDependencies(group: Readonly<GroupForFlow>,

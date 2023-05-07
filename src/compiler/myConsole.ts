@@ -101,6 +101,8 @@ namespace ts {
         dbgSymbolToStringSimple(s: Readonly<Symbol | undefined>): string;
         dbgSymbolToStringSimple(s: Readonly<Symbol | undefined>): string;
     }
+    export const dbgsModule: Dbgs = 0 as any as Dbgs;
+
     export function createDbgs(checker: TypeChecker): Dbgs{
         const dbgGetNodeText = (node: Node)=>{
             return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
@@ -183,7 +185,7 @@ namespace ts {
         function dbgSymbolToStringSimple(s: Readonly<Symbol | undefined>): string {
             return s ? `{ id:${getSymbolId(s)}, ename: ${s.escapedName} }` : "<undef>";
         }
-        return {
+        const ret: Dbgs = {
             dbgGetNodeText,
             dbgFlowToString,
             dbgFlowTypeToString,
@@ -194,6 +196,8 @@ namespace ts {
             dbgWriteSignatureArray,
             dbgSymbolToStringSimple,
         };
+        (dbgsModule as any) = ret;
+        return ret;
     }
 }
 

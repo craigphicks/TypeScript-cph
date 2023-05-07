@@ -1,5 +1,7 @@
 namespace ts {
 
+    export type RefTypesType = FloughType;
+
     export interface FloughType {};
 
     // leave the names the same in RefTypesType while changing the names in FloughTypeIF
@@ -24,6 +26,7 @@ namespace ts {
         equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): FloughType;
         partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[];
+        dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[];
         // end of interface copied from RefTypesTypeModule
 
         /**
@@ -49,7 +52,7 @@ namespace ts {
     function castReadonlyFloughTypei(_ft: FloughType): asserts _ft is Readonly<FloughTypei> {}
 
 
-    const floughTypeModuleTmp: Partial<FloughTypeModule> = {
+    const floughTypeModuleTmp: FloughTypeModule = {
         /**
          * Interface copied from RefTypesTypeModule
          */
@@ -136,7 +139,7 @@ namespace ts {
             castReadonlyFloughTypei(type);
             return isAnyOrUnknownType(type);
         },
-        forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void {
+       forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void {
             castReadonlyFloughTypei(type);
             const tsType = getTsTypeFromFloughType(type);
             checker.forEachType(tsType,f);
@@ -156,12 +159,16 @@ namespace ts {
         },
         partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
             return partitionForEqualityCompareFloughType(a,b);
+        },
+        dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[] {
+            castReadonlyFloughTypei(type);
+            return dbgFloughTypeToStrings(type);
         }
 
         // end of interface copied from RefTypesTypeModule
     } as FloughTypeModule;
 
-    export const floughTypeModule = floughTypeModuleTmp as FloughTypeModule;
+    export const floughTypeModule = floughTypeModuleTmp;
 
     const checker = 0 as any as TypeChecker;
 
@@ -1025,6 +1032,39 @@ namespace ts {
             partarr.push(pi);
         }
         return partarr;
+    }
+
+    function dbgFloughTypeToStrings(ft: Readonly<FloughType>): string[] {
+        castReadonlyFloughTypei(ft);
+        if (isNeverType(ft)) return ["never"];
+        if (isAnyType(ft)) return ["any"];
+        if (isUnknownType(ft)) return ["unknown"];
+        const arr: string[] = [];
+        const nobj = ft.nobj;
+        for (const k in nobj){
+            if (k==="string" || k==="number" || k==="bigint") {
+                let str = "nobj."+k;
+                if (nobj[k]===true) str+=":true";
+                else {
+                    str+=":{";
+                    const set = nobj[k] as Set<LiteralType>;
+                    let first = true;
+                    set.forEach((v)=>{
+                        if (first) first = false;
+                        else str+=",";
+                        str+=dbgsModule.dbgTypeToString(v);
+                    });
+                    str+="}";
+                }
+            }
+            else {
+                if ((nobj as Record<string,boolean>)[k]) arr.push("nobj."+k+":true");
+            }
+        }
+        if (ft.logicalObject) {
+            dbgLogicalObjectToStrings(ft.logicalObject).forEach((s)=>arr.push("logicalObject:"+s));
+        }
+        return arr;
     }
 
 }

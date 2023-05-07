@@ -44,31 +44,29 @@ namespace ts {
         return = "return"
     };
     declare function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn;
-    export enum RefTypesTypeFlags {
-        none=0,
-        any=1,
-        unknown=2,
-    };
-    export interface RefTypesTypeNormal {
-        _flags: RefTypesTypeFlags.none;
-        _set: Set<Type>;
-        _mapLiteral: ESMap<Type, Set<LiteralType>>;
-    };
-    export interface RefTypesTypeAny {
-        _flags: RefTypesTypeFlags.any;
-        _set: undefined;
-        _mapLiteral: undefined;
-    };
-    export interface RefTypesTypeUnknown {
-        _flags: RefTypesTypeFlags.unknown;
-        _set: undefined;
-        _mapLiteral: undefined;
-    };
-    export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
+    // export enum RefTypesTypeFlags {
+    //     none=0,
+    //     any=1,
+    //     unknown=2,
+    // };
+    // export interface RefTypesTypeNormal {
+    //     _flags: RefTypesTypeFlags.none;
+    //     _set: Set<Type>;
+    //     _mapLiteral: ESMap<Type, Set<LiteralType>>;
+    // };
+    // export interface RefTypesTypeAny {
+    //     _flags: RefTypesTypeFlags.any;
+    //     _set: undefined;
+    //     _mapLiteral: undefined;
+    // };
+    // export interface RefTypesTypeUnknown {
+    //     _flags: RefTypesTypeFlags.unknown;
+    //     _set: undefined;
+    //     _mapLiteral: undefined;
+    // };
+    //export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
+    // export type RefTypesType = FloughType;
 
-//    export type MakeRequired<Type, Key extends keyof Type> = Omit<Type, Key> & Required<Pick<Type, Key>>;
-
-    //export type RefTypesSymtab = ESMap<Symbol, RefTypesType>;
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
