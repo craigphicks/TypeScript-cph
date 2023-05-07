@@ -3,10 +3,12 @@ namespace ts {
     export type PartitionForEqualityCompareItemTpl<TT> = & {
         left?: Readonly<TT>;
         right?: Readonly<TT>;
-        //both?: Readonly<TT>;
+        both?: Readonly<TT>;
         leftts?: Type[];
         rightts?: Type[];
         bothts?: Type;
+        leftobj?: FloughLogicalObjectIF;
+        rightobj?: FloughLogicalObjectIF;
         true?: boolean;
         false?: boolean;
     };

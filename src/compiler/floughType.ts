@@ -148,7 +148,7 @@ namespace ts {
             if (isNeverType(a) && isNeverType(b)) return true;
             if (isAnyOrUnknownType(a)||isAnyOrUnknownType(b)) return false;
             if ((a.logicalObject||b.logicalObject) && a.logicalObject!==b.logicalObject) return false;
-            return equalFloughTypesNonObj(a.nobj,b.nobj);
+            return equalFloughTypesNobj(a.nobj,b.nobj);
         },
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): FloughType {
             castReadonlyFloughTypei(type);
@@ -388,7 +388,8 @@ namespace ts {
                 return;
             }
             if (t.flags & TypeFlags.Void) {
-                nobj.void = true;
+                //nobj.void = true;
+                nobj.undefined = true; // void is undefined
                 return;
             }
             if (t.flags & TypeFlags.Undefined) {
@@ -443,7 +444,7 @@ namespace ts {
                             return;
                         }
                         const {logicalObject:logicalObjectSub, nobj: nobjSub} = ftsub;
-                        nobj = unionWithFloughTypeNonObjMutate(nobjSub, nobj);
+                        nobj = unionWithFloughTypeNobjMutate(nobjSub, nobj);
                         if (logicalObjectSub) arrlogobj.push(logicalObjectSub);
                     }
                     else doUnionOne(tsub, /* expectOnlyPrimitive */ true);
@@ -493,13 +494,13 @@ namespace ts {
                     else if (tsub.flags & (TypeFlags.Union|TypeFlags.Intersection)) {
                         const {logicalObject:logicalObjectSub, nobj:nobjSub}  = createFromTsType(tsub);
                         if (!nobjSubjIsect) nobjSubjIsect = nobjSub;
-                        else nobjSubjIsect = intersectionWithFloughTypeNonObjMutate(nobjSub, nobjSubjIsect);
+                        else nobjSubjIsect = intersectionWithFloughTypeNobjMutate(nobjSub, nobjSubjIsect);
                         if (logicalObjectSub) arrlogobj.push(logicalObjectSub);
                     }
                     else {
                         const {logicalObject:logicalObjectSub, nobj:nobjSub}  = createFromTsType(tsub);
                         if (!nobjSubjIsect) nobjSubjIsect = nobjSub;
-                        else nobjSubjIsect = intersectionWithFloughTypeNonObjMutate(nobjSub, nobjSubjIsect);
+                        else nobjSubjIsect = intersectionWithFloughTypeNobjMutate(nobjSub, nobjSubjIsect);
                         if (logicalObjectSub) arrlogobj.push(logicalObjectSub);
                     }
                 });
@@ -510,7 +511,7 @@ namespace ts {
                     return;
                 }
                 if (nobjSubjIsect){
-                    nobj = unionWithFloughTypeNonObjMutate(nobjSubjIsect, nobj);
+                    nobj = unionWithFloughTypeNobjMutate(nobjSubjIsect, nobj);
                 }
                 if (arrlogobj.length!==0) {
                     const logobj = createFloughLogicalObjectTsintersection(t,arrlogobj);
@@ -541,7 +542,7 @@ namespace ts {
     function unionWithFloughTypeMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei): FloughTypei {
         if (ft0.any||ft1.any) return createAnyType();
         if (ft0.unknown||ft1.unknown) return createUnknownType();
-        ft1.nobj = unionWithFloughTypeNonObjMutate(ft0.nobj, ft1.nobj);
+        ft1.nobj = unionWithFloughTypeNobjMutate(ft0.nobj, ft1.nobj);
         if (ft0.logicalObject){
             if (ft1.logicalObject) {
                 ft1.logicalObject = unionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
@@ -552,7 +553,7 @@ namespace ts {
         }
         return ft1;
     }
-    function unionWithFloughTypeNonObjMutate(ft0: Readonly<FloughTypeNobj>, ft1: FloughTypeNobj): FloughTypeNobj {
+    function unionWithFloughTypeNobjMutate(ft0: Readonly<FloughTypeNobj>, ft1: FloughTypeNobj): FloughTypeNobj {
         if (isNeverTypeNobj(ft0) && isNeverTypeNobj(ft1)) return {};
         if (ft0.string){
             if (ft1.string===undefined) {
@@ -604,7 +605,7 @@ namespace ts {
         if (ft0.any||ft1.any) return createAnyType();
         if (ft0.unknown) return ft1;
         if (ft1.unknown) return ft0;
-        ft1.nobj = intersectionWithFloughTypeNonObjMutate(ft0.nobj, ft1.nobj);
+        ft1.nobj = intersectionWithFloughTypeNobjMutate(ft0.nobj, ft1.nobj);
         if (!ft0.logicalObject){
             delete ft1.logicalObject; // no error if not present
         }
@@ -613,7 +614,7 @@ namespace ts {
         }
         return ft1;
     }
-    function intersectionWithFloughTypeNonObjMutate(ft0: Readonly<FloughTypeNobj>, ft1: FloughTypeNobj): FloughTypeNobj {
+    function intersectionWithFloughTypeNobjMutate(ft0: Readonly<FloughTypeNobj>, ft1: FloughTypeNobj): FloughTypeNobj {
         if (isNeverTypeNobj(ft0) || isNeverTypeNobj(ft1)) return {};
         if (ft1.string) {
             if (ft0.string===undefined) delete ft1.string;
@@ -791,7 +792,7 @@ namespace ts {
         return true;
     }
 
-    function equalFloughTypesNonObj(a: Readonly<FloughTypeNobj>, b: Readonly<FloughTypeNobj>): boolean {
+    function equalFloughTypesNobj(a: Readonly<FloughTypeNobj>, b: Readonly<FloughTypeNobj>): boolean {
         if (a.boolFalse!==b.boolFalse) return false;
         if (a.boolTrue!==b.boolTrue) return false;
         if (a.symbol!==b.symbol) return false;
@@ -838,104 +839,192 @@ namespace ts {
         return true;
     }
 
-    type Partition = PartitionForEqualityCompareItemTpl<FloughType>;
-    function partitionForEqualityCompareFloughType(a: Readonly<FloughType>, b: Readonly<FloughType>): Partition[] {
-        castReadonlyFloughTypei(a);
-        castReadonlyFloughTypei(b);
-        if (isNeverType(a)||isNeverType(b)) return [];
-        if (isAnyType(a) || isUnknownType(a) || isAnyType(b) || isUnknownType(b)) return [{ left:a,right:b, true:true,false:true }];
-        return 0 as any as Partition[];
-        // const symmSet = new Set<Type>();
+    type PartitionNobj = & {
+        both?: FloughTypeNobj;
+        left?: FloughTypeNobj;
+        right?: FloughTypeNobj;
+        bothts?: Type;
+        leftts?: Type[];
+        rightts?: Type[];
+        leftobj?: undefined | FloughLogicalObjectIF;
+        rightobj?: undefined | FloughLogicalObjectIF;
+        true?: boolean;
+        false?: boolean;
+    };
 
-        // const doOneSide = (x: Readonly<FloughType>, y: Readonly<FloughType>, pass: 0 | 1): Partition[] => {
-        //     const arrYTsTypes: Type[] = getTsTypesOfType(y);
-        //     const setYTsTypes = new Set<Type>(arrYTsTypes);
-        //     const copySetYDelete=(d: Type) => {
-        //         const r = new Set(setYTsTypes);
-        //         r.delete(d);
-        //         const a: Type[] = [];
-        //         r.forEach(t=>a.push(t));
-        //         return a;
-        //     };
-        //     const arr1: PartitionForEqualityCompareItem[] = [];
-        //     // @ts-expect-error mask
-        //     const a = undefined;
-        //     // @ts-expect-error mask
-        //     const b = undefined;
-        //     x._mapLiteral?.forEach((setltx,tx)=>{
-        //         const setlty = y._mapLiteral?.get(tx);
-        //         if (setlty){
-        //             setltx.forEach(ltx=>{
-        //                 if (setlty.has(ltx)){
-        //                     if (pass===0){
-        //                         arr1.push({ bothts:ltx, true:true });
-        //                         symmSet.add(ltx);
-        //                     }
-        //                     else if (!symmSet.has(ltx)){
-        //                         arr1.push({ bothts:ltx, true:true });
-        //                     }
-        //                     const rightts = copySetYDelete(ltx);
-        //                     if (rightts.length!==0) {
-        //                         arr1.push({ leftts:[ltx], rightts, false:true });
-        //                     }
-        //                 }
-        //                 else {
-        //                     // both x and y have literals under ta, but only x has lta under ta
-        //                     arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
-        //                 }
-        //             });
-        //         }
-        //         else if (y._set?.has(tx)){
-        //             // e.g. ltx is 1, and y is number
-        //             setltx.forEach(ltx=>{
-        //                 if (pass===0){
-        //                     arr1.push({ bothts:ltx, true:true });
-        //                     symmSet.add(ltx);
-        //                 }
-        //                 else if (!symmSet.has(ltx)){
-        //                     arr1.push({ bothts:ltx, true:true });
-        //                 }
-        //                 // // cannot subtract singular from nonsingular so the inverse of right is just right, and although it matches just label as false only.
-        //                 arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
-        //             });
-        //         }
-        //         else {
-        //             setltx.forEach(ltx=>{
-        //                 arr1.push({ leftts:[ltx], rightts:arrYTsTypes, false:true });
-        //             });
-        //         }
-        //     });
-        //     x._set!.forEach(tx=>{
-        //         if (y._set!.has(tx)){
-        //             if (pass===0){
-        //                 arr1.push({ bothts: tx, true:true, false: (tx.flags & (TypeFlags.BooleanLiteral|TypeFlags.Undefined|TypeFlags.Null)) ? false : true });
-        //                 symmSet.add(tx);
-        //             }
-        //             else if (!symmSet.has(tx)){
-        //                 arr1.push({ bothts: tx, true:true, false: (tx.flags & (TypeFlags.BooleanLiteral|TypeFlags.Undefined|TypeFlags.Null)) ? false : true });
-        //             }
-        //             const rightts = copySetYDelete(tx);
-        //             if (rightts.length!==0){
-        //                 arr1.push({ leftts:[tx], rightts });
-        //             }
-        //         }
-        //         else {
-        //             arr1.push({ leftts:[tx], rightts:arrYTsTypes, false:true });
-        //         }
-        //     });
-        //     if (pass===1) {
-        //         arr1.forEach(x=>{
-        //             if (x.leftts){
-        //                 const tmp = x.leftts;
-        //                 x.leftts = x.rightts;
-        //                 x.rightts = tmp;
-        //             }
-        //         });
-        //     }
-        //     return arr1;
-        // };
-        // const ret = [ ...doOneSide(a,b,0), ...doOneSide(b,a,1) ];
-        // return ret;
+    function itemCountFloughTypeNobj(a: Readonly<FloughTypeNobj>): number {
+        let count = 0;
+        if (a.boolFalse) count++;
+        if (a.boolTrue) count++;
+        if (a.symbol) count++;
+        if (a.uniqueSymbol) count++;
+        if (a.null) count++;
+        if (a.undefined) count++;
+        if (a.void) count++;
+        if (a.string) {
+            if (a.string===true) count++;
+            else count += a.string.size;
+        }
+        if (a.number) {
+            if (a.number===true) count++;
+            else count += a.number.size;
+        }
+        if (a.bigint) {
+            if (a.bigint===true) count++;
+            else count += a.bigint.size;
+        }
+        return count;
+    }
+
+    function partitionForEqualityCompareFloughTypeNobj(
+        a: Readonly<FloughTypeNobj>, b: Readonly<FloughTypeNobj>,
+        blogobj: FloughLogicalObjectIF | undefined,
+        pass: 0 | 1, symset: Set<string | LiteralType>):
+    PartitionNobj[] {
+        const arr: PartitionNobj[] = [];
+        //const both = intersectionWithFloughTypeNobjMutate(a,cloneTypeNobj(b));
+        //const neither = differenceWithFloughTypeNobjMutate(both,cloneTypeNobj(a));
+        const bcount = itemCountFloughTypeNobj(b) + (blogobj ? 1 : 0);
+        // TODO: f1 is simpler to write, but expanding out each case would probably be faster
+        function f1(k: string){
+            assertCastType<Record<string,boolean>>(a);
+            assertCastType<Record<string,boolean>>(b);
+            if (a[k]) {
+                if (b[k]) {
+                    if (pass===0) {
+                        arr.push({ both:{ [k]:true }, true:true, false:true });
+                        symset.add(k);
+                    }
+                    else if (!symset.has(k)) {
+                        arr.push({ both:{ [k]:true }, true:true, false:true });
+                    }
+                    if (bcount>1){
+                        const bd = cloneTypeNobj(b) as Record<string,boolean>;
+                        delete bd[k];
+                        arr.push({ left: { [k]:true }, right:bd, rightobj: blogobj, false:true });
+                    }
+                }
+                else {
+                    arr.push({ left: { [k]:true }, right:b, rightobj: blogobj, false:true });
+                }
+            }
+        }
+        f1("boolFalse");
+        f1("boolTrue");
+        f1("symbol");
+        f1("uniqueSymbol");
+        f1("null");
+        f1("undefined");
+        f1("void");
+
+        function f2(k: "string" | "number" | "bigint"){
+            const ak = a[k];
+            const bk = b[k];
+            if (ak) {
+                if (ak===true) {
+                    if (bk) {
+                        if (bk===true){
+                            if (pass===0) {
+                                arr.push({ both:{ [k]:true }, true:true, false:true });
+                                symset.add(k);
+                            }
+                            else if (!symset.has(k)) {
+                                arr.push({ both:{ [k]:true }, true:true, false:true });
+                            }
+                            if (bcount>1){
+                                const bd = cloneTypeNobj(b) as Record<string,undefined | true | Set<LiteralType>>;
+                                delete bd[k];
+                                arr.push({ left: { [k]:true }, right:bd, rightobj: blogobj, false:true });
+                            }
+                        }
+                        else { // ak is true, bk is a set
+                            arr.push({ left:{ [k]: true }, right:{ [k]:new Set<LiteralType>(bk) }, true:true, false:true });
+                            const bd = cloneTypeNobj(b) as Record<string,undefined | true | Set<LiteralType>>;
+                            delete bd[k];
+                            if (blogobj || itemCountFloughTypeNobj(bd)>0) {
+                                arr.push({ left:{ [k]: true }, right:bd, rightobj: blogobj, false:true });
+                            }
+                        }
+                    }
+                    else {
+                        arr.push({ left:{ [k]:true }, right:b, rightobj: blogobj, false:true });
+                    }
+                }
+                else {
+                    ak.forEach((v)=>{
+                        if (bk) {
+                            if (bk===true){
+                                arr.push({ bothts:v, true:true });
+                                // cannot subtract v from b
+                                arr.push({ leftts:[v], right:b, rightobj: blogobj, false:true });
+                            }
+                            else {
+                                if (bk.has(v)){
+                                    arr.push({ bothts:v, true:true });
+                                    if (bcount>1){
+                                        const bd = cloneTypeNobj(b);
+                                        (bd[k]! as Set<LiteralType>).delete(v);
+                                        arr.push({ leftts:[v], right:bd, rightobj: blogobj, false:true });
+                                    }
+                                }
+                                else {
+                                    arr.push({ leftts:[v], right:b, rightobj: blogobj, false:true });
+                                }
+                            }
+                        }
+                        else {
+                            arr.push({ leftts:[v], right:b, rightobj: blogobj, false:true });
+                        }
+                    });
+                }
+            }
+        } // end of f2
+        f2("string");
+        f2("number");
+        f2("bigint");
+        if (pass===1){
+            // swap left* and right*
+            for (const p of arr){
+                ({
+                    left:p.right,
+                    right:p.left,
+                    leftts:p.rightts,
+                    rightts:p.leftts,
+                    leftobj:p.rightobj,
+                    rightobj:p.leftobj,
+                }=p);
+            }
+        }
+        return arr;
+    }
+
+
+    function partitionForEqualityCompareFloughType(ai: Readonly<FloughType>, bi: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
+        castReadonlyFloughTypei(ai);
+        castReadonlyFloughTypei(bi);
+        if (isNeverType(ai)||isNeverType(bi)) return [];
+        if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
+
+        const symset = new Set<string | LiteralType>();
+        const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
+        const partnobj1 = partitionForEqualityCompareFloughTypeNobj(bi.nobj,ai.nobj,ai.logicalObject,1,symset);
+        const partnobj = partnobj0.concat(partnobj1);
+        const partarr: PartitionForEqualityCompareItemTpl<FloughType>[] = [];
+        for (const pn of partnobj){
+            const pi: PartitionForEqualityCompareItemTpl<FloughType> = { true:pn.true, false:pn.false };
+            if (pn.both) pi.both = { nobj:pn.both };
+            if (pn.left) pi.left = { nobj:pn.left };
+            if (pn.right) pi.right = { nobj:pn.right };
+
+            if (pn.bothts) pi.bothts = pn.bothts;
+            if (pn.leftts) pi.leftts = pn.leftts;
+            if (pn.rightts) pi.rightts = pn.rightts;
+
+            if (pn.leftobj) pi.leftobj = pn.leftobj;
+            if (pn.rightobj) pi.rightobj = pn.rightobj;
+            partarr.push(pi);
+        }
+        return partarr;
     }
 
 }
