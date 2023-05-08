@@ -330,18 +330,18 @@ namespace ts {
             if (otype=symtab.symtabOuter!.get(symbol)){
                 if (!symtab.loopState?.symbolsAssignedRange?.has(symbol)){
                     // a priori the inner type can only be a subset of the outer type.
-                    if (!mrNarrow.isASubsetOfB(otype,pt.type)){
+                    if (!floughTypeModule.isASubsetOfB(otype,pt.type)){
                         // pt.type is a strict subset of otype
                         updates.push([symbol,otype]);
                     } // else they are equal, do nothing
                 }
                 else {
-                    if (mrNarrow.isASubsetOfB(pt.type,otype)){
-                        if (!mrNarrow.isASubsetOfB(otype, pt.type)) {
+                    if (floughTypeModule.isASubsetOfB(pt.type,otype)){
+                        if (!floughTypeModule.isASubsetOfB(otype, pt.type)) {
                             updates.push([symbol,otype]);
                         }
                     }
-                    else if (!mrNarrow.isASubsetOfB(otype, pt.type)){
+                    else if (!floughTypeModule.isASubsetOfB(otype, pt.type)){
                         updates.push([symbol,floughTypeModule.unionOfRefTypesType([pt.type,otype])]);
                     }
                 }
@@ -380,27 +380,32 @@ namespace ts {
             as.push(str);
 
             str = `x.loopState.symbolsAssignedRange:[`;
+            as.push(str);
             const symbolsDone = new Set<Symbol>();
             x.symtabOuter?.forEach((_pt,s)=>{
                 symbolsDone.add(s);
                 if (x.loopState!.symbolsAssignedRange?.has(s)){
                     const rangeType = x.loopState!.symbolsAssignedRange.get(s)!;
-                    str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
+                    floughTypeModule.dbgRefTypesTypeToStrings(rangeType).forEach(str1=>as.push(`outer: symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${str1}`));
+                    //str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
                 };
             });
             x.symtabInner.forEach((_pt,s)=>{
                 if (symbolsDone.has(s)) return;
                 if (x.loopState!.symbolsAssignedRange?.has(s)){
                     const rangeType = x.loopState!.symbolsAssignedRange.get(s)!;
-                    str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
+                    floughTypeModule.dbgRefTypesTypeToStrings(rangeType).forEach(str1=>as.push(`inner: symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${str1}`));
+                    //str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
                 };
             });
             str+=`]`;
             as.push(str);
         }
         x.symtabInner.forEach(({type,assignedType},s)=>{
-            as.push(`  symbol:${mrNarrow.dbgSymbolToStringSimple(s)}, `
-             + `{ type:${floughTypeModule.dbgRefTypesTypeToString(type)}, assignedType:${assignedType?floughTypeModule.dbgRefTypesTypeToString(type):"<undef>"}}`);
+            as.push(`  symbol:${mrNarrow.dbgSymbolToStringSimple(s)}, `);
+            floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(str=>as.push(`    type:${str}`));
+            if (assignedType) floughTypeModule.dbgRefTypesTypeToStrings(assignedType).forEach(str=>as.push(`    assignedType:${str}`));
+            //+ `{ type:${floughTypeModule.dbgRefTypesTypeToString(type)}, assignedType:${assignedType?floughTypeModule.dbgRefTypesTypeToString(type):"<undef>"}}`);
         });
         if (x.symtabOuter){
             as.push(...dbgRefTypesSymtabToStrings(x.symtabOuter).map(str=>`  outer:${str}`));

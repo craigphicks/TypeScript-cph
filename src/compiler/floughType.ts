@@ -383,6 +383,11 @@ namespace ts {
                     }
                     return;
                 }
+                else if (t.flags & TypeFlags.Boolean){
+                    nobj.boolTrue = true;
+                    nobj.boolFalse = true;
+                    return;
+                }
                 Debug.fail("not yet implemented: ",()=>Debug.formatTypeFlags(t.flags));
             }
             if (t.flags & TypeFlags.ESSymbol) {
@@ -1056,6 +1061,7 @@ namespace ts {
                     });
                     str+="}";
                 }
+                arr.push(str);
             }
             else {
                 if ((nobj as Record<string,boolean>)[k]) arr.push("nobj."+k+":true");
