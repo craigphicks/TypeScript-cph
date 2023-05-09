@@ -204,7 +204,8 @@ namespace ts {
                     continue;
             }
             else {
-                if (logicalObject.items.length=0){
+                if (logicalObject.items.length===0){
+                    Debug.fail("unexpected; empty items, prove this is necessary before allowing");
                     stack.pop(); // result carries
                 }
                 else if (itemsIndex===0) {
@@ -234,10 +235,12 @@ namespace ts {
                             break;
 
                     }
-                    if (itemsIndex===logicalObject.items.length || result!==undefined) {
+                    if (itemsIndex===logicalObject.items.length) {
                         Debug.assert(result);
+                        stack.pop();
                     }
                     else {
+                        stack[stack.length-1][stackItemsIndexIdx]++;
                         stack.push([logicalObject.items[itemsIndex],itemsIndex+1,undefined]);
                     }
 
@@ -512,8 +515,8 @@ namespace ts {
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup
 
-    export function getTsTypeFromLogicalObject(logicalObjectTop: FloughLogicalObjectIF): Type {
-        assertCastType<FloughLogicalObject>(logicalObjectTop);
+    export function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type {
+        assertCastType<Readonly<FloughLogicalObject>>(logicalObjectTop);
         type Result = Type;
         type State = Type[];
         function createLogicalObjectVisitorForGetTsTypeFromLogicalObject(): LogicalObjectVisitor<Result, State>{

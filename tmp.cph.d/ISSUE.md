@@ -66,7 +66,7 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 ### Done (reverse order)
 
 0. _caxnc-whileLoop-005x series: currently when initializer is a naked literal with no type, the intializer is set to (* check it), flow value is set to the initializer, and ored literal types remain as literal types instead of being widened.  This does not match the original (not mrNarrow) flow specs where a literal intializer without a type becomes the widened initializer.  Make the default behavior match the existing specs but allow the non-widening behavior with a parameter setting.
-  
+
     - The parameters is `compilerOptions.compileOptions.mrNarrowDoNotWidenInitalizedFlowTypes`.
 
 
@@ -394,6 +394,8 @@ A consequence is that `case SyntaxKind.CallExpression` currently has a narrow co
 
 ## command line snippets
 
+- myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"
+- myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"
 - `myMaxLinesOut=300000 myDebug=0 myDebugLevel=1 myDisableInfer=0 gulp runtests --tests="_caxnc-"`
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  --prof built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`

@@ -449,13 +449,19 @@ namespace ts {
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
-        const log = false;
+        const log = true;
         if (log && getMyDebug()){
-            floughTypeModule.dbgRefTypesTypeToStrings(typeIn).forEach(s=>consoleLog(`andSymbolTypeIntoSymtabConstraint[in] isconst:${isconst}, isAssigned: ${isAssign}}, typeIn: ${s}`));
-            // consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] `
+            consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, isAssigned: ${isAssign}}`);
+            floughTypeModule.dbgRefTypesTypeToStrings(typeIn).forEach(s=>consoleLog(`andSymbolTypeIntoSymtabConstraint[in], typeIn: ${s}`));
             // +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
         }
-        if (isRefTypesSymtabConstraintItemNever(sc)) return { type:floughTypeModule.createRefTypesType(),sc };
+        if (isRefTypesSymtabConstraintItemNever(sc)) {
+            if (log && getMyDebug()) {
+                consoleLog(`andSymbolTypeIntoSymtabConstraint[out] isconst:${isconst}, isAssigned: ${isAssign}}, sc out: never`);
+                consoleGroupEnd();
+            }
+            return { type:floughTypeModule.createRefTypesType(),sc };
+        }
 
         const constraintItem = sc.constraintItem;
         Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));

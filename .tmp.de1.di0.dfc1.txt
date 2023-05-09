@@ -1,0 +1,1532 @@
+myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTestFilename=, currentTestFile=_caxnc-enum-0001.ts
+  checkSourceElement[in] node: [n17] declare const enum E {
+    n1 = 1,
+    n2 = 2,
+    sa = "a",
+    sb = "b"
+}, [0,75], EnumDeclaration
+  checkSourceElement[out]: nodeid: 17
+  checkSourceElement[in] node: [n23] ;, [75,76], EmptyStatement
+  checkSourceElement[out]: nodeid: 23
+  checkSourceElement[in] node: [n18] declare const enum F {
+    n1 = 1,
+    n2 = 2,
+    sa = "a",
+    sb = "b"
+}, [76,152], EnumDeclaration
+  checkSourceElement[out]: nodeid: 18
+  checkSourceElement[in] node: [n28] ;, [152,153], EmptyStatement
+  checkSourceElement[out]: nodeid: 28
+  checkSourceElement[in] node: [n29] declare const e: E|F;, [153,176], VariableStatement
+    checkSourceElement[in] node: [n30] e: E|F, [168,175], VariableDeclaration
+      checkVariableLikeDeclaration[in]: node: [n30] e: E|F, [168,175], VariableDeclaration
+        checkSourceElement[in] node: [n31] E|F, [171,175], UnionType
+          checkSourceElement[in] node: [n32] E, [171,173], TypeReference
+          checkSourceElement[out]: nodeid: 32
+          checkSourceElement[in] node: [n33] F, [174,175], TypeReference
+          checkSourceElement[out]: nodeid: 33
+        checkSourceElement[out]: nodeid: 31
+      checkVariableLikeDeclaration[out]: node: [n30] e: E|F, [168,175], VariableDeclaration
+    checkSourceElement[out]: nodeid: 30
+  checkSourceElement[out]: nodeid: 29
+  checkSourceElement[in] node: [n34] if (e===E.n1){
+    e; // E.n1
+}
+// @ts-ignore to suppress TS2367
+else if (e===1){
+    // Compile error TS2367 doesn't show up in the GUI, only compile time
+    // Error TS2367: This condition will always return 'false' since the types '2 | "a" | "b"' and '1' have no overlap.
+    e; // F.n1 !!!! This makes no "runtime" sense. Should be never.
+}, [176,752], IfStatement
+    checkExpression[in] node: [n12] e===E.n1, [411,419], BinaryExpression
+      checkExpression[in] node: [n35] e, [411,412], Identifier
+        getFlowTypeOfReference[in]: reference [n35] e, [411,412], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f7], Start|Referenced|Shared, [gftor call depth:0
+          getTypeByMrNarrow[in] expr: [n35] e, [411,412], Identifier
+          getTypeByMrNarrowAux[dbg]: reference: [n35] e, [411,412], Identifier, maximalNode: [n12] e===E.n1, [411,419], BinaryExpression
+            updateHeapWithGroupForFlow[in]: group: {groupIdx: 0, maximalNode: [n12] e===E.n1, [411,419], BinaryExpression}. minGroupIdxToAdd: undefined
+              updateHeapWithGroupForFlow[dbg] heap[1=>0] [n12] e===E.n1, [411,419], BinaryExpression
+            updateHeapWithGroupForFlow[out]: group: {maximalNode: [n12] e===E.n1, [411,419], BinaryExpression}
+            resolveGroupForFlow[in]: [n12] e===E.n1, [411,419], BinaryExpression, groupIndex:0, kind:ifexpr, maximalNode.parent.kind:IfStatement, 
+            resolveGroupForFlow[dbg:] currentBranchesMap[before]:
+            resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap.size:0
+            resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:
+            resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
+            resolveGroupForFlow[dbg] symtab: [
+            resolveGroupForFlow[dbg] symtab: ]
+            resolveGroupForFlow[dbg] constraintItem: {
+            resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled:
+            resolveGroupForFlow[dbg] constraintItem:  kind: always,
+            resolveGroupForFlow[dbg] constraintItem: },
+            resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():
+              flough[in] expr:[n12] e===E.n1, [411,419], BinaryExpression}, inferStatus:{inCondition:true, currentReplayable:undefined}, qdotfalloutIn: <undef>
+              flough[in] refTypesSymtab:
+                [
+                ]
+              flough[in] constraintItemIn:
+                {
+                 symbolsInvoled:
+                 kind: always,
+                },
+                floughInner[in] expr:[n12] e===E.n1, [411,419], BinaryExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                floughInner[in] refTypesSymtab:
+                floughInner[in] refTypesSymtab:  [
+                floughInner[in] refTypesSymtab:  ]
+                floughInner[in] constraintItemIn:
+                floughInner[in] constraintItemIn:  {
+                floughInner[in] constraintItemIn:   symbolsInvoled:
+                floughInner[in] constraintItemIn:   kind: always,
+                floughInner[in] constraintItemIn:  },
+                  floughByBinaryExpressionEqualCompare[in] expr:[n12] e===E.n1, [411,419], BinaryExpression
+                    mrNarrowIdentifier [in] [n35] e, [411,412], Identifier
+                      flough[dbg]: unmerged[0]: {
+                      flough[dbg]: unmerged[0]:   symbol: { id:26, ename: e },
+                      flough[dbg]: unmerged[0]:   isconst: true,
+                      flough[dbg]: unmerged[0]:   type: E.n1:[81] | E.n2:[83] | E.sa:[85] | E.sb:[87] | F.n1:[90] | F.n2:[92] | F.sa:[94] | F.sb:[96]
+                      flough[dbg]: unmerged[0]:   symtab: [
+                      flough[dbg]: unmerged[0]:   ]
+                      flough[dbg]: unmerged[0]:   constraintItem: {
+                      flough[dbg]: unmerged[0]:      symbolsInvoled:
+                      flough[dbg]: unmerged[0]:      kind: always,
+                      flough[dbg]: unmerged[0]:     },
+                      flough[dbg]: unmerged[0]: }
+                    mrNarrowIdentifier[out] floughReturn.typeof: undefined
+                    mrNarrowIdentifier[out] groupNodeToTypeMap.size: 0
+                    mrNarrowIdentifier [out] [n35] e, [411,412], Identifier
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  orIntoNodeToTypeMap(type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]},nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]},node:[n35] e, [411,412], Identifier)::*->E | F
+                  floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: 0
+                    flough[in] expr:[n36] E.n1, [415,419], PropertyAccessExpression}, inferStatus:{inCondition:true, currentReplayable:undefined}, qdotfalloutIn: <undef>
+                    flough[in] refTypesSymtab:
+                      [
+                        symbol:{ id:26, ename: e }, 
+                          type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                      ]
+                    flough[in] constraintItemIn:
+                      {
+                       symbolsInvoled:
+                       kind: always,
+                      },
+                      floughInner[in] expr:[n36] E.n1, [415,419], PropertyAccessExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                      floughInner[in] refTypesSymtab:
+                      floughInner[in] refTypesSymtab:  [
+                      floughInner[in] refTypesSymtab:    symbol:{ id:26, ename: e }, 
+                      floughInner[in] refTypesSymtab:      type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                      floughInner[in] refTypesSymtab:      type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                      floughInner[in] refTypesSymtab:  ]
+                      floughInner[in] constraintItemIn:
+                      floughInner[in] constraintItemIn:  {
+                      floughInner[in] constraintItemIn:   symbolsInvoled:
+                      floughInner[in] constraintItemIn:   kind: always,
+                      floughInner[in] constraintItemIn:  },
+                        floughByPropertyAccessExpression[in]
+                          InferRefTypesPreAccess[in] expr: [n36] E.n1, [415,419], PropertyAccessExpression
+                            mrNarrowIdentifier [in] [n37] E, [415,416], Identifier
+                              flough[dbg]: unmerged[0]: {
+                              flough[dbg]: unmerged[0]:   symbol: { id:16, ename: E },
+                              flough[dbg]: unmerged[0]:   type: typeof E:[101]
+                              flough[dbg]: unmerged[0]:   symtab: [
+                              flough[dbg]: unmerged[0]:     symbol:{ id:26, ename: e }, 
+                              flough[dbg]: unmerged[0]:       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                              flough[dbg]: unmerged[0]:       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                              flough[dbg]: unmerged[0]:   ]
+                              flough[dbg]: unmerged[0]:   constraintItem: {
+                              flough[dbg]: unmerged[0]:      symbolsInvoled:
+                              flough[dbg]: unmerged[0]:      kind: always,
+                              flough[dbg]: unmerged[0]:     },
+                              flough[dbg]: unmerged[0]: }
+                            mrNarrowIdentifier[out] floughReturn.typeof: undefined
+                            mrNarrowIdentifier[out] groupNodeToTypeMap.size: 1
+                            mrNarrowIdentifier [out] [n37] E, [415,416], Identifier
+                            andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:16, ename: E }, isconst:false, isAssigned: undefined}
+                            andSymbolTypeIntoSymtabConstraint[in], typeIn: logicalObject:kind: plain
+                            andSymbolTypeIntoSymtabConstraint[in], typeIn: logicalObject:  logicalObject.item.objectTypeInstanceId: 2
+                            andSymbolTypeIntoSymtabConstraint[in], typeIn: logicalObject:  logicalObject.item.tsObjectType: typeof E:[101]
+                            andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                            andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                            andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                            andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                            andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                            andSymbolTypeIntoSymtabConstraint[out] symtab:
+                            andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                            andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                            andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                            andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                            andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:16, ename: E }, isconst:false, isAssigned: undefined}
+                            andSymbolTypeIntoSymtabConstraint[in], typeIn: never
+                            andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                            andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                            andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                            andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                            andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                            andSymbolTypeIntoSymtabConstraint[out] symtab:
+                            andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                            andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                            andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                            andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                          orIntoNodeToTypeMap(type:logicalObject:kind: plain,logicalObject:  logicalObject.item.objectTypeInstanceId: 2,logicalObject:  logicalObject.item.tsObjectType: typeof E:[101],node:[n37] E, [415,416], Identifier)::*->typeof E
+                          InferRefTypesPreAccess[dbg] passing: {
+                          InferRefTypesPreAccess[dbg] passing:   type: typeof E:[101]
+                          InferRefTypesPreAccess[dbg] passing:   symtab: [
+                          InferRefTypesPreAccess[dbg] passing:     symbol:{ id:26, ename: e }, 
+                          InferRefTypesPreAccess[dbg] passing:       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          InferRefTypesPreAccess[dbg] passing:       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                          InferRefTypesPreAccess[dbg] passing:   ]
+                          InferRefTypesPreAccess[dbg] passing:   constraintItem: {
+                          InferRefTypesPreAccess[dbg] passing:      symbolsInvoled:
+                          InferRefTypesPreAccess[dbg] passing:      kind: always,
+                          InferRefTypesPreAccess[dbg] passing:     },
+                          InferRefTypesPreAccess[dbg] passing: }
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]: {
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:   symbol: { id:16, ename: E },
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:   type: typeof E:[101]
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:   symtab: [
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:     symbol:{ id:26, ename: e }, 
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:   ]
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:   constraintItem: {
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:      symbolsInvoled:
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:      kind: always,
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]:     },
+                          InferRefTypesPreAccess[dbg] unmergedPassing[0]: }
+                          InferRefTypesPreAccess[out]
+                          andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:16, ename: E }, isconst:false, isAssigned: undefined}
+                          andSymbolTypeIntoSymtabConstraint[in], typeIn: logicalObject:kind: plain
+                          andSymbolTypeIntoSymtabConstraint[in], typeIn: logicalObject:  logicalObject.item.objectTypeInstanceId: 3
+                          andSymbolTypeIntoSymtabConstraint[in], typeIn: logicalObject:  logicalObject.item.tsObjectType: typeof E:[101]
+                          andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                          andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                          andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                          andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                          andSymbolTypeIntoSymtabConstraint[out] symtab:
+                          andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                          andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                          andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                          andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                        floughByPropertyAccessExpression[dbg] propSymbol { id:18, ename: n1 }, ExportDoesNotSupportDefaultModifier|EnumMember
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0] {
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]   type: 1:[102]
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]   symtab: [
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]     symbol:{ id:26, ename: e }, 
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]   ]
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]   constraintItem: {
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]      symbolsInvoled:
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]      kind: always,
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0]     },
+                        floughByPropertyAccessExpression[out] arrRefTypesTableReturn[0] }
+                        floughByPropertyAccessExpression[out]
+                      floughInner[out]:  innerret.unmerged[0]: {
+                      floughInner[out]:  innerret.unmerged[0]:   type: 1:[102]
+                      floughInner[out]:  innerret.unmerged[0]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[0]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[0]:       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                      floughInner[out]:  innerret.unmerged[0]:       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                      floughInner[out]:  innerret.unmerged[0]:   ]
+                      floughInner[out]:  innerret.unmerged[0]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[0]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[0]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[0]:     },
+                      floughInner[out]:  innerret.unmerged[0]: }
+                      floughInner[out]:  innerret.byNode: { node: [n37] E, [415,416], Identifier, type: typeof E
+                      floughInner[out] expr:[n36] E.n1, [415,419], PropertyAccessExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                    flough[dbg]: qdotfallout.length: 0
+                    flough[dbg]: [n36] E.n1, [415,419], PropertyAccessExpression: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)
+                      flough[dbg]: unmerged[0]: {
+                      flough[dbg]: unmerged[0]:   type: 1:[102]
+                      flough[dbg]: unmerged[0]:   symtab: [
+                      flough[dbg]: unmerged[0]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[0]:       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                      flough[dbg]: unmerged[0]:       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                      flough[dbg]: unmerged[0]:   ]
+                      flough[dbg]: unmerged[0]:   constraintItem: {
+                      flough[dbg]: unmerged[0]:      symbolsInvoled:
+                      flough[dbg]: unmerged[0]:      kind: always,
+                      flough[dbg]: unmerged[0]:     },
+                      flough[dbg]: unmerged[0]: }
+                    flough[out] floughReturn.typeof: undefined
+                    flough[out] groupNodeToTypeMap.size: 2
+                    flough[out] groupNodeToTypeMap: node: [n37] E, [415,416], Identifier, type: typeof E
+                    flough[out] [n36] E.n1, [415,419], PropertyAccessExpression
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  orIntoNodeToTypeMap(type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]},nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]},node:[n35] e, [411,412], Identifier)::E | F->E | F
+                  floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: 0, leftRightIndependent: true
+                  floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:E.n1:[81] | E.n2:[83] | E.sa:[85] | E.sb:[87] | F.n1:[90] | F.n2:[92] | F.sa:[94] | F.sb:[96], rightRttr.type:1:[102]
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[0][0] left:E.sa:[85], right:never:[23], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{E.sa:[85]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [0][0] left:E.sa:[85], right:never:[23], pass:undefined,fail:true
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[1][0] left:E.sb:[87], right:never:[23], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{E.sb:[87]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sb:[87]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [1][0] left:E.sb:[87], right:never:[23], pass:undefined,fail:true
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[2][0] left:F.sa:[94], right:never:[23], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{F.sa:[94]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{F.sa:[94]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [2][0] left:F.sa:[94], right:never:[23], pass:undefined,fail:true
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[3][0] left:F.sb:[96], right:never:[23], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{F.sb:[96]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{F.sb:[96]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [3][0] left:F.sb:[96], right:never:[23], pass:undefined,fail:true
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[4][0] left:E.n1:[81], right:never:[23], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{E.n1:[81]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [4][0] left:E.n1:[81], right:never:[23], pass:undefined,fail:true
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[5][0] left:E.n2:[83], right:never:[23], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{E.n2:[83]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n2:[83]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [5][0] left:E.n2:[83], right:never:[23], pass:undefined,fail:true
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[6][0] left:F.n1:[90], right:never:[23], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{F.n1:[90]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{F.n1:[90]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [6][0] left:F.n1:[90], right:never:[23], pass:undefined,fail:true
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[7][0] left:F.n2:[92], right:never:[23], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{F.n2:[92]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{F.n2:[92]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [7][0] left:F.n2:[92], right:never:[23], pass:undefined,fail:true
+                  floughByBinaryExpressionEqualCompare[dbg] -- before[8][0] left:1:[102], right:1:[102], pass:undefined,fail:true
+                    andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                    andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{1:[102]}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{}
+                    andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                    andSymbolTypeIntoSymtabConstraint[out] symtab:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                    andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                    andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                  floughByBinaryExpressionEqualCompare[dbg] [8][0] left:1:[102], right:1:[102], pass:undefined,fail:true
+                  floughInner[out]:  innerret.unmerged[0]: {
+                  floughInner[out]:  innerret.unmerged[0]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[0]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[0]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[0]:       type:nobj.string:{E.sa:[85]}
+                  floughInner[out]:  innerret.unmerged[0]:   ]
+                  floughInner[out]:  innerret.unmerged[0]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[0]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[0]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[0]:     },
+                  floughInner[out]:  innerret.unmerged[0]: }
+                  floughInner[out]:  innerret.unmerged[1]: {
+                  floughInner[out]:  innerret.unmerged[1]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[1]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[1]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[1]:       type:nobj.string:{E.sb:[87]}
+                  floughInner[out]:  innerret.unmerged[1]:   ]
+                  floughInner[out]:  innerret.unmerged[1]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[1]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[1]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[1]:     },
+                  floughInner[out]:  innerret.unmerged[1]: }
+                  floughInner[out]:  innerret.unmerged[2]: {
+                  floughInner[out]:  innerret.unmerged[2]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[2]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[2]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[2]:       type:nobj.string:{F.sa:[94]}
+                  floughInner[out]:  innerret.unmerged[2]:   ]
+                  floughInner[out]:  innerret.unmerged[2]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[2]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[2]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[2]:     },
+                  floughInner[out]:  innerret.unmerged[2]: }
+                  floughInner[out]:  innerret.unmerged[3]: {
+                  floughInner[out]:  innerret.unmerged[3]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[3]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[3]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[3]:       type:nobj.string:{F.sb:[96]}
+                  floughInner[out]:  innerret.unmerged[3]:   ]
+                  floughInner[out]:  innerret.unmerged[3]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[3]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[3]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[3]:     },
+                  floughInner[out]:  innerret.unmerged[3]: }
+                  floughInner[out]:  innerret.unmerged[4]: {
+                  floughInner[out]:  innerret.unmerged[4]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[4]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[4]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[4]:       type:nobj.number:{E.n1:[81]}
+                  floughInner[out]:  innerret.unmerged[4]:   ]
+                  floughInner[out]:  innerret.unmerged[4]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[4]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[4]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[4]:     },
+                  floughInner[out]:  innerret.unmerged[4]: }
+                  floughInner[out]:  innerret.unmerged[5]: {
+                  floughInner[out]:  innerret.unmerged[5]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[5]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[5]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[5]:       type:nobj.number:{E.n2:[83]}
+                  floughInner[out]:  innerret.unmerged[5]:   ]
+                  floughInner[out]:  innerret.unmerged[5]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[5]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[5]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[5]:     },
+                  floughInner[out]:  innerret.unmerged[5]: }
+                  floughInner[out]:  innerret.unmerged[6]: {
+                  floughInner[out]:  innerret.unmerged[6]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[6]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[6]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[6]:       type:nobj.number:{F.n1:[90]}
+                  floughInner[out]:  innerret.unmerged[6]:   ]
+                  floughInner[out]:  innerret.unmerged[6]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[6]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[6]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[6]:     },
+                  floughInner[out]:  innerret.unmerged[6]: }
+                  floughInner[out]:  innerret.unmerged[7]: {
+                  floughInner[out]:  innerret.unmerged[7]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[7]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[7]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[7]:       type:nobj.number:{F.n2:[92]}
+                  floughInner[out]:  innerret.unmerged[7]:   ]
+                  floughInner[out]:  innerret.unmerged[7]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[7]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[7]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[7]:     },
+                  floughInner[out]:  innerret.unmerged[7]: }
+                  floughInner[out]:  innerret.unmerged[8]: {
+                  floughInner[out]:  innerret.unmerged[8]:   type: false:[17]
+                  floughInner[out]:  innerret.unmerged[8]:   symtab: [
+                  floughInner[out]:  innerret.unmerged[8]:     symbol:{ id:26, ename: e }, 
+                  floughInner[out]:  innerret.unmerged[8]:       type:nobj.number:{}
+                  floughInner[out]:  innerret.unmerged[8]:   ]
+                  floughInner[out]:  innerret.unmerged[8]:   constraintItem: {
+                  floughInner[out]:  innerret.unmerged[8]:      symbolsInvoled:
+                  floughInner[out]:  innerret.unmerged[8]:      kind: always,
+                  floughInner[out]:  innerret.unmerged[8]:     },
+                  floughInner[out]:  innerret.unmerged[8]: }
+                  floughInner[out]:  innerret.byNode: { node: [n35] e, [411,412], Identifier, type: E | F
+                  floughInner[out]:  innerret.byNode: { node: [n37] E, [415,416], Identifier, type: typeof E
+                  floughInner[out]:  innerret.byNode: { node: [n36] E.n1, [415,419], PropertyAccessExpression, type: 1
+                  floughInner[out] expr:[n12] e===E.n1, [411,419], BinaryExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                flough[dbg]: qdotfallout.length: 0
+                flough[dbg]: [n12] e===E.n1, [411,419], BinaryExpression: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)
+                  flough[dbg]: unmerged[0]: {
+                  flough[dbg]: unmerged[0]:   type: false:[17]
+                  flough[dbg]: unmerged[0]:   symtab: [
+                  flough[dbg]: unmerged[0]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[0]:       type:nobj.string:{E.sa:[85]}
+                  flough[dbg]: unmerged[0]:   ]
+                  flough[dbg]: unmerged[0]:   constraintItem: {
+                  flough[dbg]: unmerged[0]:      symbolsInvoled:
+                  flough[dbg]: unmerged[0]:      kind: always,
+                  flough[dbg]: unmerged[0]:     },
+                  flough[dbg]: unmerged[0]: }
+                  flough[dbg]: unmerged[1]: {
+                  flough[dbg]: unmerged[1]:   type: false:[17]
+                  flough[dbg]: unmerged[1]:   symtab: [
+                  flough[dbg]: unmerged[1]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[1]:       type:nobj.string:{E.sb:[87]}
+                  flough[dbg]: unmerged[1]:   ]
+                  flough[dbg]: unmerged[1]:   constraintItem: {
+                  flough[dbg]: unmerged[1]:      symbolsInvoled:
+                  flough[dbg]: unmerged[1]:      kind: always,
+                  flough[dbg]: unmerged[1]:     },
+                  flough[dbg]: unmerged[1]: }
+                  flough[dbg]: unmerged[2]: {
+                  flough[dbg]: unmerged[2]:   type: false:[17]
+                  flough[dbg]: unmerged[2]:   symtab: [
+                  flough[dbg]: unmerged[2]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[2]:       type:nobj.string:{F.sa:[94]}
+                  flough[dbg]: unmerged[2]:   ]
+                  flough[dbg]: unmerged[2]:   constraintItem: {
+                  flough[dbg]: unmerged[2]:      symbolsInvoled:
+                  flough[dbg]: unmerged[2]:      kind: always,
+                  flough[dbg]: unmerged[2]:     },
+                  flough[dbg]: unmerged[2]: }
+                  flough[dbg]: unmerged[3]: {
+                  flough[dbg]: unmerged[3]:   type: false:[17]
+                  flough[dbg]: unmerged[3]:   symtab: [
+                  flough[dbg]: unmerged[3]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[3]:       type:nobj.string:{F.sb:[96]}
+                  flough[dbg]: unmerged[3]:   ]
+                  flough[dbg]: unmerged[3]:   constraintItem: {
+                  flough[dbg]: unmerged[3]:      symbolsInvoled:
+                  flough[dbg]: unmerged[3]:      kind: always,
+                  flough[dbg]: unmerged[3]:     },
+                  flough[dbg]: unmerged[3]: }
+                  flough[dbg]: unmerged[4]: {
+                  flough[dbg]: unmerged[4]:   type: false:[17]
+                  flough[dbg]: unmerged[4]:   symtab: [
+                  flough[dbg]: unmerged[4]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[4]:       type:nobj.number:{E.n1:[81]}
+                  flough[dbg]: unmerged[4]:   ]
+                  flough[dbg]: unmerged[4]:   constraintItem: {
+                  flough[dbg]: unmerged[4]:      symbolsInvoled:
+                  flough[dbg]: unmerged[4]:      kind: always,
+                  flough[dbg]: unmerged[4]:     },
+                  flough[dbg]: unmerged[4]: }
+                  flough[dbg]: unmerged[5]: {
+                  flough[dbg]: unmerged[5]:   type: false:[17]
+                  flough[dbg]: unmerged[5]:   symtab: [
+                  flough[dbg]: unmerged[5]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[5]:       type:nobj.number:{E.n2:[83]}
+                  flough[dbg]: unmerged[5]:   ]
+                  flough[dbg]: unmerged[5]:   constraintItem: {
+                  flough[dbg]: unmerged[5]:      symbolsInvoled:
+                  flough[dbg]: unmerged[5]:      kind: always,
+                  flough[dbg]: unmerged[5]:     },
+                  flough[dbg]: unmerged[5]: }
+                  flough[dbg]: unmerged[6]: {
+                  flough[dbg]: unmerged[6]:   type: false:[17]
+                  flough[dbg]: unmerged[6]:   symtab: [
+                  flough[dbg]: unmerged[6]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[6]:       type:nobj.number:{F.n1:[90]}
+                  flough[dbg]: unmerged[6]:   ]
+                  flough[dbg]: unmerged[6]:   constraintItem: {
+                  flough[dbg]: unmerged[6]:      symbolsInvoled:
+                  flough[dbg]: unmerged[6]:      kind: always,
+                  flough[dbg]: unmerged[6]:     },
+                  flough[dbg]: unmerged[6]: }
+                  flough[dbg]: unmerged[7]: {
+                  flough[dbg]: unmerged[7]:   type: false:[17]
+                  flough[dbg]: unmerged[7]:   symtab: [
+                  flough[dbg]: unmerged[7]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[7]:       type:nobj.number:{F.n2:[92]}
+                  flough[dbg]: unmerged[7]:   ]
+                  flough[dbg]: unmerged[7]:   constraintItem: {
+                  flough[dbg]: unmerged[7]:      symbolsInvoled:
+                  flough[dbg]: unmerged[7]:      kind: always,
+                  flough[dbg]: unmerged[7]:     },
+                  flough[dbg]: unmerged[7]: }
+                  flough[dbg]: unmerged[8]: {
+                  flough[dbg]: unmerged[8]:   type: false:[17]
+                  flough[dbg]: unmerged[8]:   symtab: [
+                  flough[dbg]: unmerged[8]:     symbol:{ id:26, ename: e }, 
+                  flough[dbg]: unmerged[8]:       type:nobj.number:{}
+                  flough[dbg]: unmerged[8]:   ]
+                  flough[dbg]: unmerged[8]:   constraintItem: {
+                  flough[dbg]: unmerged[8]:      symbolsInvoled:
+                  flough[dbg]: unmerged[8]:      kind: always,
+                  flough[dbg]: unmerged[8]:     },
+                  flough[dbg]: unmerged[8]: }
+                flough[out] floughReturn.typeof: undefined
+                flough[out] groupNodeToTypeMap.size: 3
+                flough[out] groupNodeToTypeMap: node: [n35] e, [411,412], Identifier, type: E | F
+                flough[out] groupNodeToTypeMap: node: [n37] E, [415,416], Identifier, type: typeof E
+                flough[out] groupNodeToTypeMap: node: [n36] E.n1, [415,419], PropertyAccessExpression, type: 1
+                flough[out] [n12] e===E.n1, [411,419], BinaryExpression
+                unionArrRefTypesSymtab[in]
+                unionArrRefTypesSymtab[in] symtab[0] [
+                unionArrRefTypesSymtab[in] symtab[0]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[0]     type:nobj.string:{E.sa:[85]}
+                unionArrRefTypesSymtab[in] symtab[0] ]
+                unionArrRefTypesSymtab[in] symtab[1] [
+                unionArrRefTypesSymtab[in] symtab[1]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[1]     type:nobj.string:{E.sb:[87]}
+                unionArrRefTypesSymtab[in] symtab[1] ]
+                unionArrRefTypesSymtab[in] symtab[2] [
+                unionArrRefTypesSymtab[in] symtab[2]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[2]     type:nobj.string:{F.sa:[94]}
+                unionArrRefTypesSymtab[in] symtab[2] ]
+                unionArrRefTypesSymtab[in] symtab[3] [
+                unionArrRefTypesSymtab[in] symtab[3]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[3]     type:nobj.string:{F.sb:[96]}
+                unionArrRefTypesSymtab[in] symtab[3] ]
+                unionArrRefTypesSymtab[in] symtab[4] [
+                unionArrRefTypesSymtab[in] symtab[4]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[4]     type:nobj.number:{E.n1:[81]}
+                unionArrRefTypesSymtab[in] symtab[4] ]
+                unionArrRefTypesSymtab[in] symtab[5] [
+                unionArrRefTypesSymtab[in] symtab[5]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[5]     type:nobj.number:{E.n2:[83]}
+                unionArrRefTypesSymtab[in] symtab[5] ]
+                unionArrRefTypesSymtab[in] symtab[6] [
+                unionArrRefTypesSymtab[in] symtab[6]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[6]     type:nobj.number:{F.n1:[90]}
+                unionArrRefTypesSymtab[in] symtab[6] ]
+                unionArrRefTypesSymtab[in] symtab[7] [
+                unionArrRefTypesSymtab[in] symtab[7]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[7]     type:nobj.number:{F.n2:[92]}
+                unionArrRefTypesSymtab[in] symtab[7] ]
+                unionArrRefTypesSymtab[in] symtab[8] [
+                unionArrRefTypesSymtab[in] symtab[8]   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[in] symtab[8]     type:nobj.number:{}
+                unionArrRefTypesSymtab[in] symtab[8] ]
+                unionArrRefTypesSymtab[out] return: [
+                unionArrRefTypesSymtab[out] return:   symbol:{ id:26, ename: e }, 
+                unionArrRefTypesSymtab[out] return:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                unionArrRefTypesSymtab[out] return:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                unionArrRefTypesSymtab[out] return: ]
+              orIntoNodeToTypeMap(type:nobj.boolFalse:true,node:[n12] e===E.n1, [411,419], BinaryExpression)::*->false
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]:
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap.size:1
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n12] e===E.n1, [411,419], BinaryExpression]:
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:0
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:2
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     true:
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab: <undef>
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     false:
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         [
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:26, ename: e }, 
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         ]
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n35] e, [411,412], Identifier] -> type:E | F:[100]
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n37] E, [415,416], Identifier] -> type:typeof E:[101]
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n36] E.n1, [415,419], PropertyAccessExpression] -> type:1:[102]
+              resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n12] e===E.n1, [411,419], BinaryExpression] -> type:false:[17]
+              resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:
+              resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n35] e, [411,412], Identifier] -> type:E | F:[100]
+              resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n37] E, [415,416], Identifier] -> type:typeof E:[101]
+              resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n36] E.n1, [415,419], PropertyAccessExpression] -> type:1:[102]
+              resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n12] e===E.n1, [411,419], BinaryExpression] -> type:false:[17]
+              resolveGroupForFlow[out]: [n12] e===E.n1, [411,419], BinaryExpression, 
+            getTypeByMrNarrow[out] expr: [n35] e, [411,412], Identifier -> E | F:[100]
+          getFlowTypeOfReference[out]: reference [n35] e, [411,412], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f7], Start|Referenced|Shared, [gftor call depth:0, return: E | F
+        In getIdentifier(), getFlowTypeOfReference returned E | F
+        checkExpression[out]: [n35] e, [411,412], Identifier -> E | F
+        checkExpression[in] node: [n36] E.n1, [415,419], PropertyAccessExpression
+          checkExpression[in] node: [n37] E, [415,416], Identifier
+          checkExpression[out]: [n37] E, [415,416], Identifier -> typeof E
+        checkExpression[out]: [n36] E.n1, [415,419], PropertyAccessExpression -> E.n1
+      checkExpression[out]: [n12] e===E.n1, [411,419], BinaryExpression -> boolean
+      checkExpression[in] node: [n12] e===E.n1, [411,419], BinaryExpression
+        checkExpression[in] node: [n35] e, [411,412], Identifier
+          getFlowTypeOfReference[in]: reference [n35] e, [411,412], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f7], Start|Referenced|Shared, [gftor call depth:0
+            getTypeByMrNarrow[in] expr: [n35] e, [411,412], Identifier
+            getTypeByMrNarrowAux[dbg]: reference: [n35] e, [411,412], Identifier, maximalNode: [n12] e===E.n1, [411,419], BinaryExpression
+            getTypeByMrNarrowAux[dbg]: cache hit
+            getTypeByMrNarrow[out] expr: [n35] e, [411,412], Identifier -> E | F:[100]
+          getFlowTypeOfReference[out]: reference [n35] e, [411,412], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f7], Start|Referenced|Shared, [gftor call depth:0, return: E | F
+        In getIdentifier(), getFlowTypeOfReference returned E | F
+        checkExpression[out]: [n35] e, [411,412], Identifier -> E | F
+        checkExpression[in] node: [n36] E.n1, [415,419], PropertyAccessExpression
+          checkExpression[in] node: [n37] E, [415,416], Identifier
+          checkExpression[out]: [n37] E, [415,416], Identifier -> typeof E
+        checkExpression[out]: [n36] E.n1, [415,419], PropertyAccessExpression -> E.n1
+      checkExpression[out]: [n12] e===E.n1, [411,419], BinaryExpression -> boolean
+      checkSourceElement[in] node: [n38] {
+    e; // E.n1
+}, [420,438], Block
+        checkSourceElement[in] node: [n39] e;, [421,428], ExpressionStatement
+          checkExpression[in] node: [n11] e, [421,427], Identifier
+            getFlowTypeOfReference[in]: reference [n11] e, [421,427], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f5], BranchLabel|Label|Referenced, branchKind:then, [gftor call depth:0
+              getTypeByMrNarrow[in] expr: [n11] e, [421,427], Identifier
+              getTypeByMrNarrowAux[dbg]: reference: [n11] e, [421,427], Identifier, maximalNode: [n11] e, [421,427], Identifier
+                updateHeapWithGroupForFlow[in]: group: {groupIdx: 1, maximalNode: [n11] e, [421,427], Identifier}. minGroupIdxToAdd: undefined
+                  updateHeapWithGroupForFlow[dbg] heap[1=>1] [n11] e, [421,427], Identifier
+                updateHeapWithGroupForFlow[out]: group: {maximalNode: [n11] e, [421,427], Identifier}
+                resolveGroupForFlow[in]: [n11] e, [421,427], Identifier, groupIndex:1, kind:plain, maximalNode.parent.kind:ExpressionStatement, 
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap.size:1
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap: [[n12] e===E.n1, [411,419], BinaryExpression]:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   groupIdx:0
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   cbe.kind:2
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     true:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab: <undef>
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     false:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         [
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:26, ename: e }, 
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         ]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n35] e, [411,412], Identifier] -> type:E | F:[100]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n37] E, [415,416], Identifier] -> type:typeof E:[101]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n36] E.n1, [415,419], PropertyAccessExpression] -> type:1:[102]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n12] e===E.n1, [411,419], BinaryExpression] -> type:false:[17]
+                resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:
+                CurrentBranchesMapC[0].delete(groupIdx:0,[then,]),  size before delete:1
+                resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
+                resolveGroupForFlow[dbg] constraintItem: {
+                resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled: <undefined>
+                resolveGroupForFlow[dbg] constraintItem:  kind: never,
+                resolveGroupForFlow[dbg] constraintItem: },
+                resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]:
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap.size:2
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n12] e===E.n1, [411,419], BinaryExpression]:
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:0
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:2
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     true:[deleted]
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab: <undef>
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     false:
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         [
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:26, ename: e }, 
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         ]
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n11] e, [421,427], Identifier]:
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:1
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:1
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab: <undef>
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: {
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled: <undefined>
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  kind: never,
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: },
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n35] e, [411,412], Identifier] -> type:E | F:[100]
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n37] E, [415,416], Identifier] -> type:typeof E:[101]
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n36] E.n1, [415,419], PropertyAccessExpression] -> type:1:[102]
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n12] e===E.n1, [411,419], BinaryExpression] -> type:false:[17]
+                resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:1: [node:[n11] e, [421,427], Identifier] -> type:never:[23]
+                resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:
+                resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n11] e, [421,427], Identifier] -> type:never:[23]
+                resolveGroupForFlow[out]: [n11] e, [421,427], Identifier, 
+              getTypeByMrNarrow[out] expr: [n11] e, [421,427], Identifier -> never:[23]
+            getFlowTypeOfReference[out]: reference [n11] e, [421,427], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f5], BranchLabel|Label|Referenced, branchKind:then, [gftor call depth:0, return: never
+          In getIdentifier(), getFlowTypeOfReference returned never
+          checkExpression[out]: [n11] e, [421,427], Identifier -> never
+        checkSourceElement[out]: nodeid: 39
+      checkSourceElement[out]: nodeid: 38
+      checkSourceElement[in] node: [n40] if (e===1){
+    // Compile error TS2367 doesn't show up in the GUI, only compile time
+    // Error TS2367: This condition will always return 'false' since the types '2 | "a" | "b"' and '1' have no overlap.
+    e; // F.n1 !!!! This makes no "runtime" sense. Should be never.
+}, [476,752], IfStatement
+        checkExpression[in] node: [n14] e===1, [481,486], BinaryExpression
+          checkExpression[in] node: [n15] e, [481,482], Identifier
+            getFlowTypeOfReference[in]: reference [n15] e, [481,482], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f14], BranchLabel|Label|Referenced|Shared, branchKind:else, [gftor call depth:0
+              getTypeByMrNarrow[in] expr: [n15] e, [481,482], Identifier
+              getTypeByMrNarrowAux[dbg]: reference: [n15] e, [481,482], Identifier, maximalNode: [n14] e===1, [481,486], BinaryExpression
+                updateHeapWithGroupForFlow[in]: group: {groupIdx: 2, maximalNode: [n14] e===1, [481,486], BinaryExpression}. minGroupIdxToAdd: undefined
+                  updateHeapWithGroupForFlow[dbg] heap[1=>2] [n14] e===1, [481,486], BinaryExpression
+                updateHeapWithGroupForFlow[out]: group: {maximalNode: [n14] e===1, [481,486], BinaryExpression}
+                resolveGroupForFlow[in]: [n14] e===1, [481,486], BinaryExpression, groupIndex:2, kind:ifexpr, maximalNode.parent.kind:IfStatement, 
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap.size:2
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap: [[n12] e===E.n1, [411,419], BinaryExpression]:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   groupIdx:0
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   cbe.kind:2
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     true:[deleted]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab: <undef>
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     false:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         [
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:26, ename: e }, 
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         ]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap: [[n11] e, [421,427], Identifier]:
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   groupIdx:1
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   cbe.kind:1
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab: <undef>
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem: {
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled: <undefined>
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem:  kind: never,
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem: },
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n35] e, [411,412], Identifier] -> type:E | F:[100]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n37] E, [415,416], Identifier] -> type:typeof E:[101]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n36] E.n1, [415,419], PropertyAccessExpression] -> type:1:[102]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n12] e===E.n1, [411,419], BinaryExpression] -> type:false:[17]
+                resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:1: [node:[n11] e, [421,427], Identifier] -> type:never:[23]
+                resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:
+                CurrentBranchesMapC[0].delete(groupIdx:0,[else,]),  size before delete:2
+                resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
+                resolveGroupForFlow[dbg] symtab: [
+                resolveGroupForFlow[dbg] symtab:   symbol:{ id:26, ename: e }, 
+                resolveGroupForFlow[dbg] symtab:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                resolveGroupForFlow[dbg] symtab:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                resolveGroupForFlow[dbg] symtab: ]
+                resolveGroupForFlow[dbg] constraintItem: {
+                resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled:
+                resolveGroupForFlow[dbg] constraintItem:  kind: always,
+                resolveGroupForFlow[dbg] constraintItem: },
+                resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():
+                  flough[in] expr:[n14] e===1, [481,486], BinaryExpression}, inferStatus:{inCondition:true, currentReplayable:undefined}, qdotfalloutIn: <undef>
+                  flough[in] refTypesSymtab:
+                    [
+                      symbol:{ id:26, ename: e }, 
+                        type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                        type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    ]
+                  flough[in] constraintItemIn:
+                    {
+                     symbolsInvoled:
+                     kind: always,
+                    },
+                    floughInner[in] expr:[n14] e===1, [481,486], BinaryExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                    floughInner[in] refTypesSymtab:
+                    floughInner[in] refTypesSymtab:  [
+                    floughInner[in] refTypesSymtab:    symbol:{ id:26, ename: e }, 
+                    floughInner[in] refTypesSymtab:      type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                    floughInner[in] refTypesSymtab:      type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    floughInner[in] refTypesSymtab:  ]
+                    floughInner[in] constraintItemIn:
+                    floughInner[in] constraintItemIn:  {
+                    floughInner[in] constraintItemIn:   symbolsInvoled:
+                    floughInner[in] constraintItemIn:   kind: always,
+                    floughInner[in] constraintItemIn:  },
+                      floughByBinaryExpressionEqualCompare[in] expr:[n14] e===1, [481,486], BinaryExpression
+                        mrNarrowIdentifier [in] [n15] e, [481,482], Identifier
+                          flough[dbg]: unmerged[0]: {
+                          flough[dbg]: unmerged[0]:   symbol: { id:26, ename: e },
+                          flough[dbg]: unmerged[0]:   isconst: true,
+                          flough[dbg]: unmerged[0]:   type: E.n1:[81] | E.n2:[83] | E.sa:[85] | E.sb:[87] | F.n1:[90] | F.n2:[92] | F.sa:[94] | F.sb:[96]
+                          flough[dbg]: unmerged[0]:   symtab: [
+                          flough[dbg]: unmerged[0]:     symbol:{ id:26, ename: e }, 
+                          flough[dbg]: unmerged[0]:       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                          flough[dbg]: unmerged[0]:       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          flough[dbg]: unmerged[0]:   ]
+                          flough[dbg]: unmerged[0]:   constraintItem: {
+                          flough[dbg]: unmerged[0]:      symbolsInvoled:
+                          flough[dbg]: unmerged[0]:      kind: always,
+                          flough[dbg]: unmerged[0]:     },
+                          flough[dbg]: unmerged[0]: }
+                        mrNarrowIdentifier[out] floughReturn.typeof: undefined
+                        mrNarrowIdentifier[out] groupNodeToTypeMap.size: 0
+                        mrNarrowIdentifier [out] [n15] e, [481,482], Identifier
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      orIntoNodeToTypeMap(type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]},nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]},node:[n15] e, [481,482], Identifier)::*->E | F
+                      floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: 0
+                        flough[in] expr:[n41] 1, [485,486], NumericLiteral}, inferStatus:{inCondition:true, currentReplayable:undefined}, qdotfalloutIn: <undef>
+                        flough[in] refTypesSymtab:
+                          [
+                            symbol:{ id:26, ename: e }, 
+                              type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                              type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          ]
+                        flough[in] constraintItemIn:
+                          {
+                           symbolsInvoled:
+                           kind: always,
+                          },
+                          floughInner[in] expr:[n41] 1, [485,486], NumericLiteral, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                          floughInner[in] refTypesSymtab:
+                          floughInner[in] refTypesSymtab:  [
+                          floughInner[in] refTypesSymtab:    symbol:{ id:26, ename: e }, 
+                          floughInner[in] refTypesSymtab:      type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                          floughInner[in] refTypesSymtab:      type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          floughInner[in] refTypesSymtab:  ]
+                          floughInner[in] constraintItemIn:
+                          floughInner[in] constraintItemIn:  {
+                          floughInner[in] constraintItemIn:   symbolsInvoled:
+                          floughInner[in] constraintItemIn:   kind: always,
+                          floughInner[in] constraintItemIn:  },
+                          floughInner[out]:  innerret.unmerged[0]: {
+                          floughInner[out]:  innerret.unmerged[0]:   type: 1:[102]
+                          floughInner[out]:  innerret.unmerged[0]:   symtab: [
+                          floughInner[out]:  innerret.unmerged[0]:     symbol:{ id:26, ename: e }, 
+                          floughInner[out]:  innerret.unmerged[0]:       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                          floughInner[out]:  innerret.unmerged[0]:       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          floughInner[out]:  innerret.unmerged[0]:   ]
+                          floughInner[out]:  innerret.unmerged[0]:   constraintItem: {
+                          floughInner[out]:  innerret.unmerged[0]:      symbolsInvoled:
+                          floughInner[out]:  innerret.unmerged[0]:      kind: always,
+                          floughInner[out]:  innerret.unmerged[0]:     },
+                          floughInner[out]:  innerret.unmerged[0]: }
+                          floughInner[out] expr:[n41] 1, [485,486], NumericLiteral, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                        flough[dbg]: qdotfallout.length: 0
+                        flough[dbg]: [n41] 1, [485,486], NumericLiteral: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)
+                          flough[dbg]: unmerged[0]: {
+                          flough[dbg]: unmerged[0]:   type: 1:[102]
+                          flough[dbg]: unmerged[0]:   symtab: [
+                          flough[dbg]: unmerged[0]:     symbol:{ id:26, ename: e }, 
+                          flough[dbg]: unmerged[0]:       type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                          flough[dbg]: unmerged[0]:       type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                          flough[dbg]: unmerged[0]:   ]
+                          flough[dbg]: unmerged[0]:   constraintItem: {
+                          flough[dbg]: unmerged[0]:      symbolsInvoled:
+                          flough[dbg]: unmerged[0]:      kind: always,
+                          flough[dbg]: unmerged[0]:     },
+                          flough[dbg]: unmerged[0]: }
+                        flough[out] floughReturn.typeof: undefined
+                        flough[out] groupNodeToTypeMap.size: 1
+                        flough[out] [n41] 1, [485,486], NumericLiteral
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      orIntoNodeToTypeMap(type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]},nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]},node:[n15] e, [481,482], Identifier)::E | F->E | F
+                      floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: 0, leftRightIndependent: true
+                      floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:E.n1:[81] | E.n2:[83] | E.sa:[85] | E.sb:[87] | F.n1:[90] | F.n2:[92] | F.sa:[94] | F.sb:[96], rightRttr.type:1:[102]
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[0][0] left:E.sa:[85], right:never:[23], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{E.sa:[85]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sa:[85]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [0][0] left:E.sa:[85], right:never:[23], pass:undefined,fail:true
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[1][0] left:E.sb:[87], right:never:[23], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{E.sb:[87]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{E.sb:[87]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [1][0] left:E.sb:[87], right:never:[23], pass:undefined,fail:true
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[2][0] left:F.sa:[94], right:never:[23], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{F.sa:[94]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{F.sa:[94]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [2][0] left:F.sa:[94], right:never:[23], pass:undefined,fail:true
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[3][0] left:F.sb:[96], right:never:[23], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.string:{F.sb:[96]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.string:{F.sb:[96]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [3][0] left:F.sb:[96], right:never:[23], pass:undefined,fail:true
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[4][0] left:E.n1:[81], right:never:[23], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{E.n1:[81]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n1:[81]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [4][0] left:E.n1:[81], right:never:[23], pass:undefined,fail:true
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[5][0] left:E.n2:[83], right:never:[23], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{E.n2:[83]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{E.n2:[83]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [5][0] left:E.n2:[83], right:never:[23], pass:undefined,fail:true
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[6][0] left:F.n1:[90], right:never:[23], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{F.n1:[90]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{F.n1:[90]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [6][0] left:F.n1:[90], right:never:[23], pass:undefined,fail:true
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[7][0] left:F.n2:[92], right:never:[23], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{F.n2:[92]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{F.n2:[92]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [7][0] left:F.n2:[92], right:never:[23], pass:undefined,fail:true
+                      floughByBinaryExpressionEqualCompare[dbg] -- before[8][0] left:1:[102], right:1:[102], pass:undefined,fail:true
+                        andSymbolTypeIntoSymtabConstraint[in] symbol:{ id:26, ename: e }, isconst:true, isAssigned: undefined}
+                        andSymbolTypeIntoSymtabConstraint[in], typeIn: nobj.number:{1:[102]}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: [
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:   symbol:{ id:26, ename: e }, 
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:     type:nobj.number:{}
+                        andSymbolTypeIntoSymtabConstraint[out] symtab: ]
+                        andSymbolTypeIntoSymtabConstraint[out] symtab:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: {
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  symbolsInvoled:
+                        andSymbolTypeIntoSymtabConstraint[out] constraints:  kind: always,
+                        andSymbolTypeIntoSymtabConstraint[out] constraints: },
+                      floughByBinaryExpressionEqualCompare[dbg] [8][0] left:1:[102], right:1:[102], pass:undefined,fail:true
+                      floughInner[out]:  innerret.unmerged[0]: {
+                      floughInner[out]:  innerret.unmerged[0]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[0]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[0]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[0]:       type:nobj.string:{E.sa:[85]}
+                      floughInner[out]:  innerret.unmerged[0]:   ]
+                      floughInner[out]:  innerret.unmerged[0]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[0]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[0]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[0]:     },
+                      floughInner[out]:  innerret.unmerged[0]: }
+                      floughInner[out]:  innerret.unmerged[1]: {
+                      floughInner[out]:  innerret.unmerged[1]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[1]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[1]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[1]:       type:nobj.string:{E.sb:[87]}
+                      floughInner[out]:  innerret.unmerged[1]:   ]
+                      floughInner[out]:  innerret.unmerged[1]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[1]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[1]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[1]:     },
+                      floughInner[out]:  innerret.unmerged[1]: }
+                      floughInner[out]:  innerret.unmerged[2]: {
+                      floughInner[out]:  innerret.unmerged[2]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[2]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[2]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[2]:       type:nobj.string:{F.sa:[94]}
+                      floughInner[out]:  innerret.unmerged[2]:   ]
+                      floughInner[out]:  innerret.unmerged[2]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[2]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[2]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[2]:     },
+                      floughInner[out]:  innerret.unmerged[2]: }
+                      floughInner[out]:  innerret.unmerged[3]: {
+                      floughInner[out]:  innerret.unmerged[3]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[3]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[3]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[3]:       type:nobj.string:{F.sb:[96]}
+                      floughInner[out]:  innerret.unmerged[3]:   ]
+                      floughInner[out]:  innerret.unmerged[3]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[3]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[3]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[3]:     },
+                      floughInner[out]:  innerret.unmerged[3]: }
+                      floughInner[out]:  innerret.unmerged[4]: {
+                      floughInner[out]:  innerret.unmerged[4]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[4]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[4]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[4]:       type:nobj.number:{E.n1:[81]}
+                      floughInner[out]:  innerret.unmerged[4]:   ]
+                      floughInner[out]:  innerret.unmerged[4]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[4]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[4]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[4]:     },
+                      floughInner[out]:  innerret.unmerged[4]: }
+                      floughInner[out]:  innerret.unmerged[5]: {
+                      floughInner[out]:  innerret.unmerged[5]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[5]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[5]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[5]:       type:nobj.number:{E.n2:[83]}
+                      floughInner[out]:  innerret.unmerged[5]:   ]
+                      floughInner[out]:  innerret.unmerged[5]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[5]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[5]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[5]:     },
+                      floughInner[out]:  innerret.unmerged[5]: }
+                      floughInner[out]:  innerret.unmerged[6]: {
+                      floughInner[out]:  innerret.unmerged[6]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[6]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[6]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[6]:       type:nobj.number:{F.n1:[90]}
+                      floughInner[out]:  innerret.unmerged[6]:   ]
+                      floughInner[out]:  innerret.unmerged[6]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[6]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[6]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[6]:     },
+                      floughInner[out]:  innerret.unmerged[6]: }
+                      floughInner[out]:  innerret.unmerged[7]: {
+                      floughInner[out]:  innerret.unmerged[7]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[7]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[7]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[7]:       type:nobj.number:{F.n2:[92]}
+                      floughInner[out]:  innerret.unmerged[7]:   ]
+                      floughInner[out]:  innerret.unmerged[7]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[7]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[7]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[7]:     },
+                      floughInner[out]:  innerret.unmerged[7]: }
+                      floughInner[out]:  innerret.unmerged[8]: {
+                      floughInner[out]:  innerret.unmerged[8]:   type: false:[17]
+                      floughInner[out]:  innerret.unmerged[8]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[8]:     symbol:{ id:26, ename: e }, 
+                      floughInner[out]:  innerret.unmerged[8]:       type:nobj.number:{}
+                      floughInner[out]:  innerret.unmerged[8]:   ]
+                      floughInner[out]:  innerret.unmerged[8]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[8]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[8]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[8]:     },
+                      floughInner[out]:  innerret.unmerged[8]: }
+                      floughInner[out]:  innerret.byNode: { node: [n15] e, [481,482], Identifier, type: E | F
+                      floughInner[out]:  innerret.byNode: { node: [n41] 1, [485,486], NumericLiteral, type: 1
+                      floughInner[out] expr:[n14] e===1, [481,486], BinaryExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                    flough[dbg]: qdotfallout.length: 0
+                    flough[dbg]: [n14] e===1, [481,486], BinaryExpression: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)
+                      flough[dbg]: unmerged[0]: {
+                      flough[dbg]: unmerged[0]:   type: false:[17]
+                      flough[dbg]: unmerged[0]:   symtab: [
+                      flough[dbg]: unmerged[0]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[0]:       type:nobj.string:{E.sa:[85]}
+                      flough[dbg]: unmerged[0]:   ]
+                      flough[dbg]: unmerged[0]:   constraintItem: {
+                      flough[dbg]: unmerged[0]:      symbolsInvoled:
+                      flough[dbg]: unmerged[0]:      kind: always,
+                      flough[dbg]: unmerged[0]:     },
+                      flough[dbg]: unmerged[0]: }
+                      flough[dbg]: unmerged[1]: {
+                      flough[dbg]: unmerged[1]:   type: false:[17]
+                      flough[dbg]: unmerged[1]:   symtab: [
+                      flough[dbg]: unmerged[1]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[1]:       type:nobj.string:{E.sb:[87]}
+                      flough[dbg]: unmerged[1]:   ]
+                      flough[dbg]: unmerged[1]:   constraintItem: {
+                      flough[dbg]: unmerged[1]:      symbolsInvoled:
+                      flough[dbg]: unmerged[1]:      kind: always,
+                      flough[dbg]: unmerged[1]:     },
+                      flough[dbg]: unmerged[1]: }
+                      flough[dbg]: unmerged[2]: {
+                      flough[dbg]: unmerged[2]:   type: false:[17]
+                      flough[dbg]: unmerged[2]:   symtab: [
+                      flough[dbg]: unmerged[2]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[2]:       type:nobj.string:{F.sa:[94]}
+                      flough[dbg]: unmerged[2]:   ]
+                      flough[dbg]: unmerged[2]:   constraintItem: {
+                      flough[dbg]: unmerged[2]:      symbolsInvoled:
+                      flough[dbg]: unmerged[2]:      kind: always,
+                      flough[dbg]: unmerged[2]:     },
+                      flough[dbg]: unmerged[2]: }
+                      flough[dbg]: unmerged[3]: {
+                      flough[dbg]: unmerged[3]:   type: false:[17]
+                      flough[dbg]: unmerged[3]:   symtab: [
+                      flough[dbg]: unmerged[3]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[3]:       type:nobj.string:{F.sb:[96]}
+                      flough[dbg]: unmerged[3]:   ]
+                      flough[dbg]: unmerged[3]:   constraintItem: {
+                      flough[dbg]: unmerged[3]:      symbolsInvoled:
+                      flough[dbg]: unmerged[3]:      kind: always,
+                      flough[dbg]: unmerged[3]:     },
+                      flough[dbg]: unmerged[3]: }
+                      flough[dbg]: unmerged[4]: {
+                      flough[dbg]: unmerged[4]:   type: false:[17]
+                      flough[dbg]: unmerged[4]:   symtab: [
+                      flough[dbg]: unmerged[4]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[4]:       type:nobj.number:{E.n1:[81]}
+                      flough[dbg]: unmerged[4]:   ]
+                      flough[dbg]: unmerged[4]:   constraintItem: {
+                      flough[dbg]: unmerged[4]:      symbolsInvoled:
+                      flough[dbg]: unmerged[4]:      kind: always,
+                      flough[dbg]: unmerged[4]:     },
+                      flough[dbg]: unmerged[4]: }
+                      flough[dbg]: unmerged[5]: {
+                      flough[dbg]: unmerged[5]:   type: false:[17]
+                      flough[dbg]: unmerged[5]:   symtab: [
+                      flough[dbg]: unmerged[5]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[5]:       type:nobj.number:{E.n2:[83]}
+                      flough[dbg]: unmerged[5]:   ]
+                      flough[dbg]: unmerged[5]:   constraintItem: {
+                      flough[dbg]: unmerged[5]:      symbolsInvoled:
+                      flough[dbg]: unmerged[5]:      kind: always,
+                      flough[dbg]: unmerged[5]:     },
+                      flough[dbg]: unmerged[5]: }
+                      flough[dbg]: unmerged[6]: {
+                      flough[dbg]: unmerged[6]:   type: false:[17]
+                      flough[dbg]: unmerged[6]:   symtab: [
+                      flough[dbg]: unmerged[6]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[6]:       type:nobj.number:{F.n1:[90]}
+                      flough[dbg]: unmerged[6]:   ]
+                      flough[dbg]: unmerged[6]:   constraintItem: {
+                      flough[dbg]: unmerged[6]:      symbolsInvoled:
+                      flough[dbg]: unmerged[6]:      kind: always,
+                      flough[dbg]: unmerged[6]:     },
+                      flough[dbg]: unmerged[6]: }
+                      flough[dbg]: unmerged[7]: {
+                      flough[dbg]: unmerged[7]:   type: false:[17]
+                      flough[dbg]: unmerged[7]:   symtab: [
+                      flough[dbg]: unmerged[7]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[7]:       type:nobj.number:{F.n2:[92]}
+                      flough[dbg]: unmerged[7]:   ]
+                      flough[dbg]: unmerged[7]:   constraintItem: {
+                      flough[dbg]: unmerged[7]:      symbolsInvoled:
+                      flough[dbg]: unmerged[7]:      kind: always,
+                      flough[dbg]: unmerged[7]:     },
+                      flough[dbg]: unmerged[7]: }
+                      flough[dbg]: unmerged[8]: {
+                      flough[dbg]: unmerged[8]:   type: false:[17]
+                      flough[dbg]: unmerged[8]:   symtab: [
+                      flough[dbg]: unmerged[8]:     symbol:{ id:26, ename: e }, 
+                      flough[dbg]: unmerged[8]:       type:nobj.number:{}
+                      flough[dbg]: unmerged[8]:   ]
+                      flough[dbg]: unmerged[8]:   constraintItem: {
+                      flough[dbg]: unmerged[8]:      symbolsInvoled:
+                      flough[dbg]: unmerged[8]:      kind: always,
+                      flough[dbg]: unmerged[8]:     },
+                      flough[dbg]: unmerged[8]: }
+                    flough[out] floughReturn.typeof: undefined
+                    flough[out] groupNodeToTypeMap.size: 2
+                    flough[out] groupNodeToTypeMap: node: [n15] e, [481,482], Identifier, type: E | F
+                    flough[out] groupNodeToTypeMap: node: [n41] 1, [485,486], NumericLiteral, type: 1
+                    flough[out] [n14] e===1, [481,486], BinaryExpression
+                    unionArrRefTypesSymtab[in]
+                    unionArrRefTypesSymtab[in] symtab[0] [
+                    unionArrRefTypesSymtab[in] symtab[0]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[0]     type:nobj.string:{E.sa:[85]}
+                    unionArrRefTypesSymtab[in] symtab[0] ]
+                    unionArrRefTypesSymtab[in] symtab[1] [
+                    unionArrRefTypesSymtab[in] symtab[1]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[1]     type:nobj.string:{E.sb:[87]}
+                    unionArrRefTypesSymtab[in] symtab[1] ]
+                    unionArrRefTypesSymtab[in] symtab[2] [
+                    unionArrRefTypesSymtab[in] symtab[2]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[2]     type:nobj.string:{F.sa:[94]}
+                    unionArrRefTypesSymtab[in] symtab[2] ]
+                    unionArrRefTypesSymtab[in] symtab[3] [
+                    unionArrRefTypesSymtab[in] symtab[3]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[3]     type:nobj.string:{F.sb:[96]}
+                    unionArrRefTypesSymtab[in] symtab[3] ]
+                    unionArrRefTypesSymtab[in] symtab[4] [
+                    unionArrRefTypesSymtab[in] symtab[4]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[4]     type:nobj.number:{E.n1:[81]}
+                    unionArrRefTypesSymtab[in] symtab[4] ]
+                    unionArrRefTypesSymtab[in] symtab[5] [
+                    unionArrRefTypesSymtab[in] symtab[5]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[5]     type:nobj.number:{E.n2:[83]}
+                    unionArrRefTypesSymtab[in] symtab[5] ]
+                    unionArrRefTypesSymtab[in] symtab[6] [
+                    unionArrRefTypesSymtab[in] symtab[6]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[6]     type:nobj.number:{F.n1:[90]}
+                    unionArrRefTypesSymtab[in] symtab[6] ]
+                    unionArrRefTypesSymtab[in] symtab[7] [
+                    unionArrRefTypesSymtab[in] symtab[7]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[7]     type:nobj.number:{F.n2:[92]}
+                    unionArrRefTypesSymtab[in] symtab[7] ]
+                    unionArrRefTypesSymtab[in] symtab[8] [
+                    unionArrRefTypesSymtab[in] symtab[8]   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[in] symtab[8]     type:nobj.number:{}
+                    unionArrRefTypesSymtab[in] symtab[8] ]
+                    unionArrRefTypesSymtab[out] return: [
+                    unionArrRefTypesSymtab[out] return:   symbol:{ id:26, ename: e }, 
+                    unionArrRefTypesSymtab[out] return:     type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                    unionArrRefTypesSymtab[out] return:     type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    unionArrRefTypesSymtab[out] return: ]
+                  orIntoNodeToTypeMap(type:nobj.boolFalse:true,node:[n14] e===1, [481,486], BinaryExpression)::*->false
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap.size:2
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n11] e, [421,427], Identifier]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled: <undefined>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  kind: never,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n14] e===1, [481,486], BinaryExpression]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:2
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:2
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     true:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     false:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         [
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:26, ename: e }, 
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         ]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n35] e, [411,412], Identifier] -> type:E | F:[100]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n37] E, [415,416], Identifier] -> type:typeof E:[101]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n36] E.n1, [415,419], PropertyAccessExpression] -> type:1:[102]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n12] e===E.n1, [411,419], BinaryExpression] -> type:false:[17]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:1: [node:[n11] e, [421,427], Identifier] -> type:never:[23]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:2: [node:[n15] e, [481,482], Identifier] -> type:E | F:[100]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:2: [node:[n41] 1, [485,486], NumericLiteral] -> type:1:[102]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:2: [node:[n14] e===1, [481,486], BinaryExpression] -> type:false:[17]
+                  resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:
+                  resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n15] e, [481,482], Identifier] -> type:E | F:[100]
+                  resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n41] 1, [485,486], NumericLiteral] -> type:1:[102]
+                  resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n14] e===1, [481,486], BinaryExpression] -> type:false:[17]
+                  resolveGroupForFlow[out]: [n14] e===1, [481,486], BinaryExpression, 
+                getTypeByMrNarrow[out] expr: [n15] e, [481,482], Identifier -> E | F:[100]
+              getFlowTypeOfReference[out]: reference [n15] e, [481,482], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f14], BranchLabel|Label|Referenced|Shared, branchKind:else, [gftor call depth:0, return: E | F
+            In getIdentifier(), getFlowTypeOfReference returned E | F
+            checkExpression[out]: [n15] e, [481,482], Identifier -> E | F
+            checkExpression[in] node: [n41] 1, [485,486], NumericLiteral
+            checkExpression[out]: [n41] 1, [485,486], NumericLiteral -> 1
+          checkExpression[out]: [n14] e===1, [481,486], BinaryExpression -> boolean
+          checkExpression[in] node: [n14] e===1, [481,486], BinaryExpression
+            checkExpression[in] node: [n15] e, [481,482], Identifier
+              getFlowTypeOfReference[in]: reference [n15] e, [481,482], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f14], BranchLabel|Label|Referenced|Shared, branchKind:else, [gftor call depth:0
+                getTypeByMrNarrow[in] expr: [n15] e, [481,482], Identifier
+                getTypeByMrNarrowAux[dbg]: reference: [n15] e, [481,482], Identifier, maximalNode: [n14] e===1, [481,486], BinaryExpression
+                getTypeByMrNarrowAux[dbg]: cache hit
+                getTypeByMrNarrow[out] expr: [n15] e, [481,482], Identifier -> E | F:[100]
+              getFlowTypeOfReference[out]: reference [n15] e, [481,482], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f14], BranchLabel|Label|Referenced|Shared, branchKind:else, [gftor call depth:0, return: E | F
+            In getIdentifier(), getFlowTypeOfReference returned E | F
+            checkExpression[out]: [n15] e, [481,482], Identifier -> E | F
+            checkExpression[in] node: [n41] 1, [485,486], NumericLiteral
+            checkExpression[out]: [n41] 1, [485,486], NumericLiteral -> 1
+          checkExpression[out]: [n14] e===1, [481,486], BinaryExpression -> boolean
+          checkSourceElement[in] node: [n42] {
+    // Compile error TS2367 doesn't show up in the GUI, only compile time
+    // Error TS2367: This condition will always return 'false' since the types '2 | "a" | "b"' and '1' have no overlap.
+    e; // F.n1 !!!! This makes no "runtime" sense. Should be never.
+}, [487,752], Block
+            checkSourceElement[in] node: [n43] e;, [488,689], ExpressionStatement
+              checkExpression[in] node: [n13] e, [488,688], Identifier
+                getFlowTypeOfReference[in]: reference [n13] e, [488,688], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f12], BranchLabel|Label|Referenced, branchKind:then, [gftor call depth:0
+                  getTypeByMrNarrow[in] expr: [n13] e, [488,688], Identifier
+                  getTypeByMrNarrowAux[dbg]: reference: [n13] e, [488,688], Identifier, maximalNode: [n13] e, [488,688], Identifier
+                    updateHeapWithGroupForFlow[in]: group: {groupIdx: 3, maximalNode: [n13] e, [488,688], Identifier}. minGroupIdxToAdd: undefined
+                      updateHeapWithGroupForFlow[dbg] heap[1=>3] [n13] e, [488,688], Identifier
+                    updateHeapWithGroupForFlow[out]: group: {maximalNode: [n13] e, [488,688], Identifier}
+                    resolveGroupForFlow[in]: [n13] e, [488,688], Identifier, groupIndex:3, kind:plain, maximalNode.parent.kind:ExpressionStatement, 
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap.size:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap: [[n11] e, [421,427], Identifier]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   groupIdx:1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   cbe.kind:1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled: <undefined>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem:  kind: never,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap: [[n14] e===1, [481,486], BinaryExpression]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   groupIdx:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   cbe.kind:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     true:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     false:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         [
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:26, ename: e }, 
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         ]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n35] e, [411,412], Identifier] -> type:E | F:[100]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n37] E, [415,416], Identifier] -> type:typeof E:[101]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n36] E.n1, [415,419], PropertyAccessExpression] -> type:1:[102]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n12] e===E.n1, [411,419], BinaryExpression] -> type:false:[17]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:1: [node:[n11] e, [421,427], Identifier] -> type:never:[23]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:2: [node:[n15] e, [481,482], Identifier] -> type:E | F:[100]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:2: [node:[n41] 1, [485,486], NumericLiteral] -> type:1:[102]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:2: [node:[n14] e===1, [481,486], BinaryExpression] -> type:false:[17]
+                    resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:
+                    CurrentBranchesMapC[0].delete(groupIdx:2,[then,]),  size before delete:2
+                    resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
+                    resolveGroupForFlow[dbg] constraintItem: {
+                    resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled: <undefined>
+                    resolveGroupForFlow[dbg] constraintItem:  kind: never,
+                    resolveGroupForFlow[dbg] constraintItem: },
+                    resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap.size:3
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n11] e, [421,427], Identifier]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled: <undefined>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  kind: never,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n14] e===1, [481,486], BinaryExpression]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     true:[deleted]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     false:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         [
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:26, ename: e }, 
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:nobj.string:{E.sa:[85],E.sb:[87],F.sa:[94],F.sb:[96]}
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:nobj.number:{E.n1:[81],E.n2:[83],F.n1:[90],F.n2:[92]}
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         ]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n13] e, [488,688], Identifier]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:3
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled: <undefined>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  kind: never,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n35] e, [411,412], Identifier] -> type:E | F:[100]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n37] E, [415,416], Identifier] -> type:typeof E:[101]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n36] E.n1, [415,419], PropertyAccessExpression] -> type:1:[102]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n12] e===E.n1, [411,419], BinaryExpression] -> type:false:[17]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:1: [node:[n11] e, [421,427], Identifier] -> type:never:[23]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:2: [node:[n15] e, [481,482], Identifier] -> type:E | F:[100]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:2: [node:[n41] 1, [485,486], NumericLiteral] -> type:1:[102]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:2: [node:[n14] e===1, [481,486], BinaryExpression] -> type:false:[17]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:3: [node:[n13] e, [488,688], Identifier] -> type:never:[23]
+                    resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:
+                    resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n13] e, [488,688], Identifier] -> type:never:[23]
+                    resolveGroupForFlow[out]: [n13] e, [488,688], Identifier, 
+                  getTypeByMrNarrow[out] expr: [n13] e, [488,688], Identifier -> never:[23]
+                getFlowTypeOfReference[out]: reference [n13] e, [488,688], Identifier, declaredType: E | F, initialType: E | F, flowContainer: 16, flowNode: [f12], BranchLabel|Label|Referenced, branchKind:then, [gftor call depth:0, return: never
+              In getIdentifier(), getFlowTypeOfReference returned never
+              checkExpression[out]: [n13] e, [488,688], Identifier -> never
+            checkSourceElement[out]: nodeid: 43
+          checkSourceElement[out]: nodeid: 42
+        checkSourceElement[out]: nodeid: 40
+      checkSourceElement[out]: nodeid: 34
+      checkSourceElement[in] node: [n44] , [752,755], EndOfFileToken
+      checkSourceElement[out]: nodeid: 44
+    _caxnc-enum-0001.ts, time(ms): 104, myMaxDepth: 0

@@ -24,7 +24,7 @@ namespace ts {
         isUnknownType(type: Readonly<FloughType>): boolean ;
         forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void ;
         equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
-        addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): FloughType;
+        addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): void;
         partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[];
         dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[];
         // end of interface copied from RefTypesTypeModule
@@ -48,7 +48,7 @@ namespace ts {
     }
 
 
-    //function castFloughTypei(ft: FloughType): asserts ft is FloughTypei {}
+    function castFloughTypei(_ft: FloughType): asserts _ft is FloughTypei {}
     function castReadonlyFloughTypei(_ft: FloughType): asserts _ft is Readonly<FloughTypei> {}
 
 
@@ -142,7 +142,10 @@ namespace ts {
        forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void {
             castReadonlyFloughTypei(type);
             const tsType = getTsTypeFromFloughType(type);
-            checker.forEachType(tsType,f);
+            checker.forEachType(tsType,(t: Type)=>{
+                // Called in brackets to avoid accidentally returning a value from forEachType - which causes checker.forEachType to quit early.
+                f(t);
+            });
         },
         equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean {
             castReadonlyFloughTypei(a);
@@ -153,9 +156,16 @@ namespace ts {
             if ((a.logicalObject||b.logicalObject) && a.logicalObject!==b.logicalObject) return false;
             return equalFloughTypesNobj(a.nobj,b.nobj);
         },
-        addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): FloughType {
-            castReadonlyFloughTypei(type);
-            return unionWithTsTypeMutate(tstype,type);
+        addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): void {
+            castFloughTypei(type);
+            const tmp = unionWithTsTypeMutate(tstype,type);
+            // unionWithTsTypeMutate possibly returns a new type,
+            // whereas the old interface addTsTypeNonUnionToRefTypesTypeMutate strictly mutates the type argument and returns void
+            // so we need to copy the properties back to the original type.
+            if (!(type.any = tmp.any)) delete type.any;
+            if (!(type.unknown = tmp.unknown)) delete type.unknown;
+            if (!(type.logicalObject = tmp.logicalObject)) delete type.logicalObject;
+            type.nobj = tmp.nobj;
         },
         partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
             return partitionForEqualityCompareFloughType(a,b);
@@ -375,7 +385,7 @@ namespace ts {
             }
             if (t.flags & TypeFlags.BooleanLike) {
                 if (t.flags & TypeFlags.BooleanLiteral){
-                    if ((t as LiteralType).value){
+                    if (t===checker.getTrueType()){
                         nobj.boolTrue = true;
                     }
                     else {
@@ -966,7 +976,13 @@ namespace ts {
                     ak.forEach((v)=>{
                         if (bk) {
                             if (bk===true){
-                                arr.push({ bothts:v, true:true });
+                                if (pass===0) {
+                                    arr.push({ bothts:v, true:true });
+                                    symset.add(v);
+                                }
+                                else if (!symset.has(v)) {
+                                    arr.push({ bothts:v, true:true });
+                                }
                                 // cannot subtract v from b
                                 arr.push({ leftts:[v], right:b, rightobj: blogobj, false:true });
                             }
@@ -997,14 +1013,21 @@ namespace ts {
         if (pass===1){
             // swap left* and right*
             for (const p of arr){
-                ({
-                    left:p.right,
-                    right:p.left,
-                    leftts:p.rightts,
-                    rightts:p.leftts,
-                    leftobj:p.rightobj,
-                    rightobj:p.leftobj,
-                }=p);
+                if (p.left||p.right) {
+                    const t = p.left;
+                    p.left = p.right;
+                    p.right = t;
+                }
+                if (p.leftts||p.rightts) {
+                    const t = p.leftts;
+                    p.leftts = p.rightts;
+                    p.rightts = t;
+                }
+                if (p.leftobj||p.rightobj) {
+                    const t = p.leftobj;
+                    p.leftobj = p.rightobj;
+                    p.rightobj = t;
+                }
             }
         }
         return arr;
