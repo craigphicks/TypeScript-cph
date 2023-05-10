@@ -6,7 +6,7 @@
 
 ### Priority: High
 
-
+0. Rewrite logicalObjectVisitor so that the supervisor is not aware of a logicalObject's items and visitor return a additional value which, if not undefined, is the next item to be placed on the stack.
 
 0. Property assignment
 
