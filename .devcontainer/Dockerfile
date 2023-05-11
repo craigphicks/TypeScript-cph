@@ -20,3 +20,5 @@ RUN apt-get update && \
  sudo -u ${USERNAME} npm install -g gulp-cli
 
 RUN echo "alias hig=\"history | grep\"" >> /home/$USERNAME/.bashrc
+RUN echo "HISTFILE=/workspaces/TypeScript-cph/.bash_history" >> /home/$USERNAME/.bashrc
+RUN echo "PROMPT_COMMAND=\"history -a; history -c; history -r; \$PROMPT_COMMAND\"" >> /home/$USERNAME/.bashrc

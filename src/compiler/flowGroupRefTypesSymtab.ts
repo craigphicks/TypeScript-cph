@@ -417,8 +417,8 @@ namespace ts {
     export function dbgRefTypesSymtabConstrinatItemToStrings(sc: Readonly<RefTypesSymtabConstraintItem>): string[] {
         const as: string[]=["{"];
         if (!sc.symtab) as.push(`  symtab:<undef>`);
-        else dbgRefTypesSymtabToStrings(sc.symtab).forEach(s=>`  symtab: ${s}`);
-        mrNarrow.dbgConstraintItem(sc.constraintItem).forEach(s=>`  constraintItem: ${s}`);
+        else dbgRefTypesSymtabToStrings(sc.symtab).forEach(s=>as.push(`  symtab: ${s}`));
+        mrNarrow.dbgConstraintItem(sc.constraintItem).forEach(s=>as.push(`  constraintItem: ${s}`));
         as.push(`}`);
         return as;
     }

@@ -45,6 +45,8 @@ namespace ts {
         intersectionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
+
+        getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
     }
 
 
@@ -173,7 +175,8 @@ namespace ts {
         dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[] {
             castReadonlyFloughTypei(type);
             return dbgFloughTypeToStrings(type);
-        }
+        },
+        getTsTypesFromFloughType,
 
         // end of interface copied from RefTypesTypeModule
     } as FloughTypeModule;
@@ -262,7 +265,7 @@ namespace ts {
 
     function getTsTypeFromFloughType(ft: Readonly<FloughTypei>): Type {
         if (ft.any) return checker.getAnyType();
-        if (ft.unknown) return checker.getAnyType();
+        if (ft.unknown) return checker.getUnknownType();
         const at = getTsTypesFromFloughTypeNobj(ft.nobj);
         // Now for the objects.
         if (ft.logicalObject) {
@@ -272,6 +275,18 @@ namespace ts {
         if (at.length === 1) return at[0];
         return checker.getUnionType(at);
     }
+    function getTsTypesFromFloughType(ft: Readonly<FloughTypei>): Type[] {
+        if (ft.any) return [checker.getAnyType()];
+        if (ft.unknown) return [checker.getUnknownType()];
+        const at = getTsTypesFromFloughTypeNobj(ft.nobj);
+        // Now for the objects.
+        if (ft.logicalObject) {
+            at.push(getTsTypeFromLogicalObject(ft.logicalObject));
+        }
+        if (at.length === 0) return [checker.getNeverType()];
+        return at;
+    }
+
     function getTsTypesFromFloughTypeNobj(ft: Readonly<FloughTypeNobj>): Type[] {
         const at: Type[] = [];
         if (ft.string) {
@@ -822,42 +837,31 @@ namespace ts {
         if (a.null!==b.null) return false;
         if (a.undefined!==b.undefined) return false;
         if (a.void!==b.void) return false;
-        if (a.string) {
-            if (!b.string) return false;
-            if (a.string===true){
-                if (b.string!==true) return false;
-            }
-            else if (b.string!==true){
-                if (a.string.size!==b.string.size) return false;
-                for (let iter = a.string.values(), it=iter.next(); !it.done; it=iter.next()){
-                    if (!b.string.has(it.value)) return false;
+        function feq1(k: "string" | "number" | "bigint"): boolean {
+            const ak = a[k];
+            const bk = b[k];
+            if (!ak!==!bk) return false;
+            if (ak) {
+                Debug.assert(bk);
+                if (ak===true){
+                    if (bk!==true) return false;
+                }
+                else {
+                    if (bk===true) return false;
+                    if (ak.size!==bk.size) return false;
+                    for (let iter = ak.values(), it=iter.next(); !it.done; it=iter.next()){
+                        if (!bk.has(it.value)) return false;
+                    }
+                    for (let iter = bk.values(), it=iter.next(); !it.done; it=iter.next()){
+                        if (!ak.has(it.value)) return false;
+                    }
                 }
             }
+            return true;
         }
-        if (a.number) {
-            if (!b.number) return false;
-            if (a.number===true){
-                if (b.number!==true) return false;
-            }
-            else if (b.number!==true){
-                if (a.number.size!==b.number.size) return false;
-                for (let iter = a.number.values(), it=iter.next(); !it.done; it=iter.next()){
-                    if (!b.number.has(it.value)) return false;
-                }
-            }
-        }
-        if (a.bigint) {
-            if (!b.bigint) return false;
-            if (a.bigint===true){
-                if (b.bigint!==true) return false;
-            }
-            else if (b.bigint!==true){
-                if (a.bigint.size!==b.bigint.size) return false;
-                for (let iter = a.bigint.values(), it=iter.next(); !it.done; it=iter.next()){
-                    if (!b.bigint.has(it.value)) return false;
-                }
-            }
-        }
+        if (!feq1("string")) return false;
+        if (!feq1("number")) return false;
+        if (!feq1("bigint")) return false;
         return true;
     }
 
@@ -1040,6 +1044,10 @@ namespace ts {
         if (isNeverType(ai)||isNeverType(bi)) return [];
         if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
 
+        const leftTsType = ai.logicalObject ? getTsTypeFromLogicalObject(ai.logicalObject) : undefined;
+        const rightTsType = bi.logicalObject ? getTsTypeFromLogicalObject(bi.logicalObject) : undefined;
+
+
         const symset = new Set<string | LiteralType>();
         const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
         const partnobj1 = partitionForEqualityCompareFloughTypeNobj(bi.nobj,ai.nobj,ai.logicalObject,1,symset);
@@ -1055,9 +1063,15 @@ namespace ts {
             if (pn.leftts) pi.leftts = pn.leftts;
             if (pn.rightts) pi.rightts = pn.rightts;
 
-            if (pn.leftobj) pi.leftobj = pn.leftobj;
-            if (pn.rightobj) pi.rightobj = pn.rightobj;
+            if (leftTsType) pi.leftts ? pi.leftts.push(leftTsType) : pi.leftts = [leftTsType];
+            if (rightTsType) pi.rightts ? pi.rightts.push(rightTsType) : pi.rightts = [rightTsType];
             partarr.push(pi);
+        }
+        if (leftTsType && rightTsType) {
+            const subtLofR = checker.isTypeRelatedTo(leftTsType, rightTsType, checker.getRelations().subtypeRelation);
+            const subtRofL = checker.isTypeRelatedTo(rightTsType, leftTsType, checker.getRelations().subtypeRelation);
+            const sometimesEqual = subtLofR || subtRofL;
+            partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:sometimesEqual, false:true });
         }
         return partarr;
     }

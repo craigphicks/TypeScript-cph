@@ -28,6 +28,7 @@ if (obj.foo(arg)){
     //     const xb = obj.foo(arg);
     //     xb; // should be "B"
     // }
+    // @ts-dev-debugger
     const x = obj.foo(arg); // x should be "A" | "B"
     obj;
     obj.foo;

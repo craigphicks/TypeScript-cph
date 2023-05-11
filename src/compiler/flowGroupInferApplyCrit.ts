@@ -18,8 +18,6 @@ namespace ts {
 
     function applyCritToType(rt: Readonly<RefTypesType>,crit: Readonly<InferCrit>, passtype: RefTypesType, failtype?: RefTypesType): void {
         Debug.assert(crit.kind!==InferCritKind.none);
-        //const forEachRefTypesTypeType = floughTypeModule.forEachRefTypesTypeType;
-        //const floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate = floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate;
         if (crit.kind===InferCritKind.truthy) {
             if (crit.alsoFailing){
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
@@ -135,7 +133,6 @@ namespace ts {
         });
         const type = floughTypeModule.unionOfRefTypesType(atype);
         if (nodeToTypeMap) orIntoNodeToTypeMap(type,nodeForMap,nodeToTypeMap);
-        //nodeToTypeMap?.set(nodeForMap,floughTypeModule.floughTypeModule.getTypeFromRefTypesType(type));
         const sci = orSymtabConstraints(asc,mrNarrow);
         return {
             type, sci
@@ -207,8 +204,6 @@ namespace ts {
             };
         }
         if (nodeToTypeMap) orIntoNodeToTypeMap(floughTypeModule.unionOfRefTypesType([passing.type,failing.type]),nodeForMap,nodeToTypeMap);
-        // nodeToTypeMap?.set(nodeForMap,
-        //     floughTypeModule.floughTypeModule.getTypeFromRefTypesType(floughTypeModule.unionOfRefTypesType([passing.type,failing.type])));
         return { passing,failing };
     }
 

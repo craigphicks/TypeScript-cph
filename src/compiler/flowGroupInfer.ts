@@ -336,8 +336,12 @@ namespace ts {
         };
     }
 
+    // @ts-ignore
+    function breakpoint(){
+        debugger;
+    }
     export function createSourceFileMrState(sourceFile: SourceFile, checker: TypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
-        if (getMyDebug()) debugger;
+        //if (getMyDebug()) breakpoint();;
         if (compilerOptions.floughConstraintsEnable===undefined) compilerOptions.floughConstraintsEnable = false;
         if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
         if (compilerOptions.floughDoNotWidenInitalizedFlowTypes===undefined) compilerOptions.floughDoNotWidenInitalizedFlowTypes = false;
@@ -568,6 +572,36 @@ namespace ts {
             groupToInvolvedSymbolTypeCache: new WeakMap<GroupForFlow,InvolvedSymbolTypeCache>()
         };
     }
+
+    export function getDevDebugger(node: Node, sourceFile: SourceFile): boolean{
+        const num = Number(process.env.myDebug);
+        if (isNaN(num) || num===0) return false;
+        let stmnt = node;
+        let hasStatement = false;
+        while (stmnt.kind !== SyntaxKind.SourceFile){
+            // if (isStatement(stmnt)){ // not what it looks like
+            //     break;
+            // }
+            if (stmnt.kind >= SyntaxKind.FirstStatement && stmnt.kind <= SyntaxKind.LastStatement){
+                hasStatement = true;
+                break;
+            }
+            stmnt = stmnt.parent;
+        }
+        if (!hasStatement) return false;
+        const arrCommentRange = getLeadingCommentRangesOfNode(stmnt, sourceFile);
+        let cr: CommentRange | undefined;
+        if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length-1];
+        if (cr) {
+            const comment = sourceFile.text.slice(cr.pos, cr.end);
+            const matches = /@ts-dev-debugger/.exec(comment);
+            if (matches){
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     export function getDevExpectString(node: Node, sourceFile: SourceFile): string | undefined {
         const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
@@ -1083,6 +1117,9 @@ namespace ts {
         let scfailing: RefTypesSymtabConstraintItem | undefined;
 
         inferStatus.isInLoop = !!forFlow.loopState;
+        if (getDevDebugger(maximalNode,sourceFileMrState.sourceFile)){
+            debugger;
+        }
         const mntr = sourceFileMrState.mrNarrow.flough({
             sci: anteSCArg,
             expr:maximalNode, crit, qdotfallout: undefined, inferStatus });

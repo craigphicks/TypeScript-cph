@@ -7,8 +7,8 @@ namespace ts {
         leftts?: Type[];
         rightts?: Type[];
         bothts?: Type;
-        leftobj?: FloughLogicalObjectIF;
-        rightobj?: FloughLogicalObjectIF;
+        // leftobj?: FloughLogicalObjectIF;
+        // rightobj?: FloughLogicalObjectIF;
         true?: boolean;
         false?: boolean;
     };

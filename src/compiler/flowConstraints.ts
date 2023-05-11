@@ -449,10 +449,11 @@ namespace ts {
         sc: RefTypesSymtabConstraintItem,
         getDeclaredType: GetDeclaredTypeFn,
         mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
-        const log = true;
+        const log = false;
         if (log && getMyDebug()){
             consoleGroup(`andSymbolTypeIntoSymtabConstraint[in] symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, isAssigned: ${isAssign}}`);
             floughTypeModule.dbgRefTypesTypeToStrings(typeIn).forEach(s=>consoleLog(`andSymbolTypeIntoSymtabConstraint[in], typeIn: ${s}`));
+            dbgRefTypesSymtabConstrinatItemToStrings(sc).forEach(s=> consoleLog(`andSymbolTypeIntoSymtabConstraint[in] sc: ${s}`));
             // +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
         }
         if (isRefTypesSymtabConstraintItemNever(sc)) {

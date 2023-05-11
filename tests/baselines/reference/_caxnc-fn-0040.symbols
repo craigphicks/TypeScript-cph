@@ -1,0 +1,11 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0040.ts ===
+declare function isTrue(): boolean;
+>isTrue : Symbol(isTrue, Decl(_caxnc-fn-0040.ts, 0, 0))
+
+const x = isTrue();
+>x : Symbol(x, Decl(_caxnc-fn-0040.ts, 1, 5))
+>isTrue : Symbol(isTrue, Decl(_caxnc-fn-0040.ts, 0, 0))
+
+x;
+>x : Symbol(x, Decl(_caxnc-fn-0040.ts, 1, 5))
+

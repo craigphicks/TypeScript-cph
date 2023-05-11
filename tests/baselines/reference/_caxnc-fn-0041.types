@@ -1,0 +1,17 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0041.ts ===
+declare function isTrue(b:boolean): boolean;
+>isTrue : (b: boolean) => boolean
+>b : boolean
+
+declare const bar: boolean;
+>bar : boolean
+
+const x = isTrue(bar);
+>x : boolean
+>isTrue(bar) : boolean
+>isTrue : (b: boolean) => boolean
+>bar : boolean
+
+x;
+>x : boolean
+
