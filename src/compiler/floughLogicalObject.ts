@@ -517,45 +517,57 @@ namespace ts {
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup
 
-    export function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type {
+    export function getTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Set<Type> {
         assertCastType<Readonly<FloughLogicalObject>>(logicalObjectTop);
-        type Result = Type;
-        type State = Type[];
-        type OnReturnType = [State | undefined, Result | undefined, FloughLogicalObject | undefined];
+        type Result = Set<Type>;
+        type State = Set<Type>;
+        type OnReturnType = [state:State | undefined, result:Result | undefined, push:FloughLogicalObject | undefined];
         function createLogicalObjectVisitorForGetTsTypeFromLogicalObject(): LogicalObjectVisitor<Result, State>{
             function onUnion(logicalObject: Readonly<FloughLogicalObjectUnion | FloughLogicalObjectTsunion>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
-                if (itemsIndex===-1) return [[], undefined, logicalObject.items[0]];
+                if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
                 Debug.assert(state && result);
-                state = [...state, result];
-                if (itemsIndex === logicalObject.items.length-1) return [undefined,checker.getUnionType(state),undefined];
+                result.forEach(t => state.add(t));
+                if (itemsIndex === logicalObject.items.length-1) return [undefined,state,undefined];
                 return [state,undefined, logicalObject.items[itemsIndex+1]];
             }
             return {
                 onPlain(logicalObject: Readonly<FloughLogicalObjectPlain>) {
-                    return logicalObject.item.tsObjectType;
+                    return new Set<Type>([logicalObject.item.tsObjectType]);
                 },
                 onUnion,
                 onIntersection(logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
-                    if (itemsIndex===-1) return [[], undefined, logicalObject.items[0]];
+                    if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
                     Debug.assert(state && result);
-                    state = [...state, result];
-                    // Set intersection is the set of shared types, different object-instances can share the same object-type, even if the instances dont have overlapping values.
-                    // TODO: For now we pass back the union, instead of the intersection, but we should change this to return the intersection.
-                    if (itemsIndex === logicalObject.items.length-1) return [undefined,checker.getUnionType(state),undefined];
+                    if (itemsIndex===0) {
+                        Debug.assert(state.size===0);
+                        state = result;
+                    }
+                    else {
+                        const [smaller,larger] = state.size<result.size ? [state,result] : [result,state];
+                        smaller.forEach(t =>{
+                            if (!larger.has(t)) smaller.delete(t);
+                        });
+                        state = smaller;
+                    }
+                    /**
+                     * If state.size===0, then the intersection is empty, so we can stop.
+                     */
+                    if (itemsIndex === logicalObject.items.length-1 || state.size===0) return [undefined,state,undefined];
                     return [state,undefined, logicalObject.items[itemsIndex+1]];
                 },
                 onDifference(logicalObject: Readonly<FloughLogicalObjectDifference>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
                     Debug.assert(logicalObject.items.length === 2);
-                    if (itemsIndex===-1) return [[], undefined, logicalObject.items[0]];
+                    if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
                     Debug.assert(state && result);
                     if (itemsIndex===0) {
-                        state = [result];
-                        return [state,undefined, logicalObject.items[1]];
+                        Debug.assert(state.size===0);
+                        state = result;
+                        return [state,undefined, logicalObject.items[itemsIndex+1]];
                     }
                     else {
                         // TODO: compute the difference; subtract the types of the subtrahend (result )from types of the the minuend (state[0])
-                        Debug.assert(state);
-                        return [undefined,state[0], undefined];
+                        result.forEach(t => state!.delete(t));
+                        return [undefined,state, undefined];
                     }
                 },
                 onTsunion(logicalObject: Readonly<FloughLogicalObjectTsunion>, result: Result | undefined, state: State | undefined, itemsIndex: number) {
@@ -564,16 +576,43 @@ namespace ts {
                 },
                 onTsintersection(logicalObject: Readonly<FloughLogicalObjectTsintersection>, _result: Result | undefined, _state: State | undefined, _itemsIndex: number) {
                     /**
-                     * To get things running just return the orginal tsunion type.
-                     * Later we may want to return a union of the types of the items
+                     * ts intersection is a single type, not a union of types, and it should contain any unions beneath it.
                      */
-                    return [undefined, logicalObject.tsType, undefined];
+                    return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
                 },
             };
         }
         const visitor = createLogicalObjectVisitorForGetTsTypeFromLogicalObject();
-        const result = logicalObjecVisit(logicalObjectTop, () => visitor, checker.getNeverType());
+        const result = logicalObjecVisit(logicalObjectTop, () => visitor, new Set<Type>());
         return result;
+    }
+
+    export function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type {
+        assertCastType<FloughLogicalObject>(logicalObjectTop);
+        const at: Type[] = [];
+        const typeSet = getTsTypeSetFromLogicalObject(logicalObjectTop);
+        typeSet.forEach(t => at.push(t));
+        if (logicalObjectTop.kind === "tsunion"){
+            if (logicalObjectTop.items.length===at.length){
+                // the types in the original tsType map 1-1 to those in the type set, so return the input.
+                if (logicalObjectTop.tsType.types.every(t => typeSet.has(t))) return logicalObjectTop.tsType;
+            }
+        }
+        if (at.length===0) return checker.getNeverType();
+        if (at.length===1) return at[0];
+        const ut = checker.getUnionType(at);
+        return ut;
+    }
+    export function getTsTypesFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type[] {
+        const at: Type[] = [];
+        getTsTypeSetFromLogicalObject(logicalObjectTop).forEach(t => at.push(t));
+        return at;
+    }
+
+    export function intersectionAndSimplifyLogicalObjects(arrlogobj: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF {
+        Debug.fail("not yet implemented");
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        arrlogobj;
     }
 
     export function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[] {

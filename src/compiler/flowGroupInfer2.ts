@@ -1018,7 +1018,6 @@ namespace ts {
                          * NOTE: tests show this causes no harm, but don't have a test case that shows it is necessary.
                          */
                         const replayableInType = sci.symtab?.get(symbol);
-                        //sci.symtab?.delete(symbol);  -- don't acutally HAVE to delete it.  TODO: check that
                         const dummyNodeToTypeMap = new Map<Node,Type>();
                         const mntr = flough({
                             expr: replayable?.expr,
@@ -1047,9 +1046,12 @@ namespace ts {
                         {
                             const unmerged: RefTypesTableReturn[] = [];
                             mntr.unmerged.forEach((rttr)=>{
-                                // Note: `!isASubsetOfB` not required here, it is equivalent to the `intersectionOfRefTypesType`
-                                //       followed by the isNever test (isNever will not detect "deep" never logical object types).
-                                const narrowerTypeOut = (replayableInType /* && !isASubsetOfB(rttr.type,replayableInType) */ && floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType)) || undefined;
+                                let narrowerTypeOut: FloughType | undefined;
+                                if (replayableInType){
+                                    const narrowerTsTypeOut = floughTypeModule.getTypeFromRefTypesType(floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType));
+                                    narrowerTypeOut = floughTypeModule.createRefTypesType(narrowerTsTypeOut);
+                                }
+                                // const narrowerTypeOut = (replayableInType /* && !isASubsetOfB(rttr.type,replayableInType) */ && floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType)) || undefined;
                                 if (narrowerTypeOut &&floughTypeModule.isNeverType(narrowerTypeOut)) return;
                                 rttr = applyCritNoneToOne({ ...rttr,type:narrowerTypeOut??rttr.type },expr,/**/ undefined); // don't write here because the original symbol is from replay.
                                 // unmerged.push({

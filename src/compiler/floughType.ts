@@ -281,10 +281,32 @@ namespace ts {
         const at = getTsTypesFromFloughTypeNobj(ft.nobj);
         // Now for the objects.
         if (ft.logicalObject) {
+            // TODO: return nonunion types?
             at.push(getTsTypeFromLogicalObject(ft.logicalObject));
         }
         if (at.length === 0) return [checker.getNeverType()];
         return at;
+    }
+
+    // @ts-expect-error
+    function intersectionWithObjectSimplification(types: Readonly<FloughType>[]): FloughType {
+        if (types.length === 0) return createNeverType();
+        castReadonlyFloughTypei(types[0]);
+        const arrlogobj: FloughLogicalObjectIF[] = [];
+        let ft = cloneType(types[0]);
+        if (ft.logicalObject) {
+            arrlogobj.push(ft.logicalObject);
+            delete ft.logicalObject;
+        }
+        types.slice(1).forEach((t,_i)=>{
+            castReadonlyFloughTypei(t);
+            if (t.logicalObject) arrlogobj.push(t.logicalObject);
+            // t.logicalObject will be elided in intersectionWithFloughTypeMutate because ft has no logical object.
+            ft = intersectionWithFloughTypeMutate(t,ft);
+        });
+        if (arrlogobj.length === 0) return ft;
+        ft.logicalObject = intersectionAndSimplifyLogicalObjects(arrlogobj);
+        return ft;
     }
 
     function getTsTypesFromFloughTypeNobj(ft: Readonly<FloughTypeNobj>): Type[] {
