@@ -133,6 +133,44 @@ namespace ts {
             [essymbolFloughLogicalObject]: true
         };
     }
+    /**
+     *
+     * @param tsType Only UnionType | IntersectionType | ObjectType return a FloughLogicalObject.
+     *     In case of UnionType | IntersectionType, if the type.types contains an elemtent not UnionType | IntersectionType | ObjectTYpe, it is ignored (effectively never).
+     * @returns
+     * Recurively filters out all non-(UnionType | IntersectionType | ObjectType) elements from each type.types array recursively
+     * Return undefined if all types are filtered out.
+     * Otherwise, return the type tree converted to a FloughLogicalObject tree.
+     */
+    export function createFloughLogicalObject(tsType: Type): FloughLogicalObjectIF | undefined{
+        //assertCastType<FloughLogicalObject>(logicalObject);
+        //createFloughLogicalObject(getTsTypeFromLogicalObject(logicalObject));
+        function filterAndMapItems(items: Type[]): FloughLogicalObjectIF[] {
+            return items.filter(x=>x.flags & (TypeFlags.Object | TypeFlags.Union | TypeFlags.Intersection))
+                .map(x=>createFloughLogicalObject(x as UnionType | IntersectionType | ObjectType)!)
+                .filter(x=>!!x);
+        }
+        if (tsType.flags & TypeFlags.Union) {
+            const items = filterAndMapItems((tsType as UnionType).types);
+            if (items.length===0) return undefined;
+            else if (items.length===1) return items[0];
+            return createFloughLogicalObjectTsunion(tsType as UnionType, items);
+        }
+        else if (tsType.flags & TypeFlags.Intersection) {
+            const items = filterAndMapItems((tsType as UnionType).types);
+            if (items.length===0) return undefined;
+            else if (items.length===1) return items[0];
+            return createFloughLogicalObjectTsintersection(tsType as IntersectionType, filterAndMapItems((tsType as IntersectionType).types));
+        }
+        else if (tsType.flags & TypeFlags.Object) {
+            return createFloughLogicalObjectPlain(tsType as ObjectType);
+        }
+        else {
+            return undefined;
+        }
+     }
+
+
     export function unionOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
         assertCastType<FloughLogicalObject>(a);
         assertCastType<FloughLogicalObject>(b);
@@ -156,6 +194,19 @@ namespace ts {
         else items.push(a);
         if (b.kind===FloughLogicalObjectKind.intersection) items.push(...b.items);
         else items.push(b);
+        return {
+            kind: FloughLogicalObjectKind.intersection,
+            items,
+            [essymbolFloughLogicalObject]: true
+        };
+    }
+    export function intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectIF[]): FloughLogicalObject {
+        assertCastType<FloughLogicalObject[]>(arrobj);
+        const items: FloughLogicalObject[] = [];
+        for (const a of arrobj) {
+            if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
+            else items.push(a);
+        }
         return {
             kind: FloughLogicalObjectKind.intersection,
             items,
@@ -609,10 +660,11 @@ namespace ts {
         return at;
     }
 
-    export function intersectionAndSimplifyLogicalObjects(arrlogobj: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF {
-        Debug.fail("not yet implemented");
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        arrlogobj;
+
+    export function intersectionAndSimplifyLogicalObjects(arrlogobj: FloughLogicalObjectIF[]): FloughLogicalObjectIF | undefined{
+        assertCastType<FloughLogicalObject[]>(arrlogobj);
+        const logobj = intersectionOfFloughLogicalObjects(...arrlogobj);
+        return createFloughLogicalObject(getTsTypeFromLogicalObject(logobj));
     }
 
     export function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[] {

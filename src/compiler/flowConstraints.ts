@@ -482,7 +482,8 @@ namespace ts {
             else {
                 const type = symtab.get(symbol);
                 if (type) {
-                    typeOut = floughTypeModule.intersectionOfRefTypesType(type, typeIn);
+                    typeOut = floughTypeModule.intersectionWithObjectSimplification(type, typeIn);
+                    //typeOut = floughTypeModule.intersectionOfRefTypesType(type, typeIn);
                     if (!floughTypeModule.equalRefTypesTypes(typeOut,type)){
                         symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeOut);
                     }

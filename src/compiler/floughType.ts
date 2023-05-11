@@ -47,6 +47,7 @@ namespace ts {
         differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
 
         getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
+        intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType;
     }
 
 
@@ -177,6 +178,7 @@ namespace ts {
             return dbgFloughTypeToStrings(type);
         },
         getTsTypesFromFloughType,
+        intersectionWithObjectSimplification,
 
         // end of interface copied from RefTypesTypeModule
     } as FloughTypeModule;
@@ -288,8 +290,7 @@ namespace ts {
         return at;
     }
 
-    // @ts-expect-error
-    function intersectionWithObjectSimplification(types: Readonly<FloughType>[]): FloughType {
+    function intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType {
         if (types.length === 0) return createNeverType();
         castReadonlyFloughTypei(types[0]);
         const arrlogobj: FloughLogicalObjectIF[] = [];
@@ -305,7 +306,8 @@ namespace ts {
             ft = intersectionWithFloughTypeMutate(t,ft);
         });
         if (arrlogobj.length === 0) return ft;
-        ft.logicalObject = intersectionAndSimplifyLogicalObjects(arrlogobj);
+        ft.logicalObject = intersectionAndSimplifyLogicalObjects(arrlogobj); // note that this may return undefined.
+        if (!ft.logicalObject) delete ft.logicalObject; // delete the undefined member.
         return ft;
     }
 
