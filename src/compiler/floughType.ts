@@ -772,30 +772,49 @@ namespace ts {
     function differenceWithFloughTypeNobjMutate(subtrahend: Readonly<FloughTypeNobj>, minuend: FloughTypeNobj): FloughTypeNobj {
         if (isNeverTypeNobj(subtrahend)) return minuend;
         if (isNeverTypeNobj(minuend)) return {};
-        if (subtrahend.string && minuend.string) {
-            if (subtrahend.string===true) delete minuend.string;
-            else if (minuend.string!==true){
-                subtrahend.string.forEach((v)=>{
-                    (minuend.string as Set<LiteralType>).delete(v);
-                });
+
+        function fndiff(k: "number" | "string" | "bigint"): void {
+            const sk = subtrahend[k];
+            const mk = minuend[k];
+            if (sk && mk) {
+                if (sk===true) delete minuend[k];
+                else if (mk!==true){
+                    sk.forEach((v)=>{
+                        mk.delete(v);
+                    });
+                    if (mk.size===0) delete minuend[k];
+                }
             }
         }
-        if (subtrahend.number && minuend.number) {
-            if (subtrahend.number===true) delete minuend.number;
-            else if (minuend.number!==true){
-                subtrahend.number.forEach((v)=>{
-                    (minuend.number as Set<LiteralType>).delete(v);
-                });
-            }
-        }
-        if (subtrahend.bigint && minuend.bigint) {
-            if (subtrahend.bigint===true) delete minuend.bigint;
-            else if (minuend.bigint!==true){
-                subtrahend.bigint.forEach((v)=>{
-                    (minuend.bigint as Set<LiteralType>).delete(v);
-                });
-            }
-        }
+        fndiff("string");
+        fndiff("number");
+        fndiff("bigint");
+
+        // if (subtrahend.string && minuend.string) {
+        //     if (subtrahend.string===true) delete minuend.string;
+        //     else if (minuend.string!==true){
+        //         subtrahend.string.forEach((v)=>{
+        //             (minuend.string as Set<LiteralType>).delete(v);
+        //         });
+        //     }
+        // }
+        // if (subtrahend.number && minuend.number) {
+        //     if (subtrahend.number===true) delete minuend.number;
+        //     else if (minuend.number!==true){
+        //         subtrahend.number.forEach((v)=>{
+        //             (minuend.number as Set<LiteralType>).delete(v);
+        //         });
+        //         if (minuend.number.size===0) delete minuend.number;
+        //     }
+        // }
+        // if (subtrahend.bigint && minuend.bigint) {
+        //     if (subtrahend.bigint===true) delete minuend.bigint;
+        //     else if (minuend.bigint!==true){
+        //         subtrahend.bigint.forEach((v)=>{
+        //             (minuend.bigint as Set<LiteralType>).delete(v);
+        //         });
+        //     }
+        // }
         if (subtrahend.boolFalse && minuend.boolFalse) {
             delete minuend.boolFalse;
         }

@@ -1,0 +1,20 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0023.ts ===
+declare function foo(x?:number):number[];
+>foo : { (x?: number): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>x : number | undefined
+
+declare function foo(x?:number,y?:string,z?:string):string[];
+>foo : { (x?: number | undefined): number[]; (x?: number, y?: string, z?: string): string[]; }
+>x : number | undefined
+>y : string | undefined
+>z : string | undefined
+
+const a2 = foo(1);
+>a2 : number[]
+>foo(1) : number[]
+>foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>1 : 1
+
+a2; // expect number[]
+>a2 : number[]
+

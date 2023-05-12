@@ -1978,8 +1978,8 @@ namespace ts {
                 pre.unmergedPassing.forEach((umrttr,rttridx)=>{
                     /**
                      * In the case where multiple functions with the same name but different symbols are coincide on this CallExpression
-                     * we have to disambiguate the constraints by and-not'ing with all other instances than the one of interest.
-                     * .... What needs top be done is to ....
+                     * We have to disambiguate the constraints by and-not'ing with all other instances than the one of interest.
+                     * Actually that was nevessary when we logical contraints were implemented and enabled - might not be necessary now.
                      */
                     const scIsolated: RefTypesSymtabConstraintItem = umrttr.sci; //{ symtab: umrttr.symtab, constraintItem: umrttr.constraintItem };
                     pre.unmergedPassing.forEach((umrttr1,_rttridx1)=>{
@@ -2033,35 +2033,35 @@ namespace ts {
                                 if (floughTypeModule.isNeverType(assignableType)){
                                     return false;
                                 }
-                                ({sc:tmpSC}=andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol as Symbol,isconst:carg.isconst,type:assignableType,sc: tmpSC,getDeclaredType, mrNarrow }));
+                                ({type: assignableType, sc:tmpSC}=andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol as Symbol,isconst:carg.isconst,type:assignableType,sc: tmpSC,getDeclaredType, mrNarrow }));
                                 // if (compilerOptions.mrNarrowConstraintsEnable){
                                 //     tmpArgsConstr = andSymbolTypeIntoConstraint({ symbol:carg.symbol as Symbol,type:assignableType, constraintItem:tmpArgsConstr,getDeclaredType,mrNarrow });
                                 //     if (isNeverConstraint(tmpArgsConstr)) {
                                 //         return false;
                                 //     }
                                 // }
-                                const evaledAssignableType = evalSymbol(carg.symbol,tmpSC, getDeclaredType, mrNarrow);
+                                //const evaledAssignableType = evalSymbol(carg.symbol,tmpSC, getDeclaredType, mrNarrow);
                                 if (getMyDebug()){
-                                    consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, evaledAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(evaledAssignableType)}`);
+                                    consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (2) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
                                 }
                                 // is this necessary? evalCover is expensive
                                 //const evaledAssignableType = evalCoverForOneSymbol(carg.symbol,tmpArgsConstr, getDeclaredType, mrNarrow);
-                                if (floughTypeModule.isNeverType(evaledAssignableType)){
+                                if (floughTypeModule.isNeverType(assignableType)){
                                     return false;
                                 }
-                                if (!floughTypeModule.isASubsetOfB(assignableType,evaledAssignableType)){
-                                    assignableType = evaledAssignableType;
-                                    if (getMyDebug()){
-                                        consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
-                                    }
-                                }
+                                // if (!floughTypeModule.isASubsetOfB(assignableType,evaledAssignableType)){
+                                //     assignableType = evaledAssignableType;
+                                //     if (getMyDebug()){
+                                //         consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
+                                //     }
+                                // }
                                 oneMapping.push(assignableType);
 
                                 const notAssignableType =floughTypeModule.subtractFromType(assignableType, carg.type);
                                 if (getMyDebug()){
                                     consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, notAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(notAssignableType)}`);
                                 }
-                            // check if the non assignable type is allowed.
+                                // check if the non assignable type is allowed.
                                 {
                                     const {sc:checkSC} = andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol, isconst:carg.isconst, type:notAssignableType, sc: nextSC, getDeclaredType, mrNarrow });
                                     const evaledNotAssignableType = evalSymbol(carg.symbol,checkSC,getDeclaredType,mrNarrow);
@@ -2088,7 +2088,7 @@ namespace ts {
                                 }
                             }
                             if (pass1){
-                                // check if mapping lies within the shadow of any pervious mapping, in which case it pass1->false
+                                // check if mapping lies within the shadow of any previous mapping, in which case pass1->false
                                 const shadowsPrev = allMappings.some((prevMapping,_prevMappingIdx)=>{
                                     if (prevMapping.length<oneMapping.length) return false;
                                     const oneshadow = oneMapping.every((onetype,idx)=>{
