@@ -1,64 +1,14 @@
 === tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0003.ts ===
-declare type T3 = { name: "t3", p: number };
->T3 : { name: "t3"; p: number; }
->name : "t3"
->p : number
+declare type T2 = { };
+>T2 : {}
 
-declare type U3 = { namae: "u3", p: number };
->U3 : { namae: "u3"; p: number; }
->namae : "u3"
->p : number
+const t: T2 = { };
+>t : T2
+>{ } : {}
 
-declare const b: boolean;
->b : boolean
+t;
+>t : T2
 
-function propAssign0003_1(): any {
->propAssign0003_1 : () => any
-
-    const t: T3 = { name: "t3", p: 0 };
->t : T3
->{ name: "t3", p: 0 } : { name: "t3"; p: number; }
->name : "t3"
->"t3" : "t3"
->p : number
->0 : 0
-
-    t.p=1;
->t.p=1 : 1
->t.p : number
->t : { name: "t3"; p: number; }
->p : number
->1 : 1
-
-    return t;
->t : { name: "t3"; p: number; }
-}
-function propAssign0003_2(): any {
->propAssign0003_2 : () => any
-
-    const tu: T3 | U3 = b ? { name: "t3", p: 1 } : { namae: "u3", p: 0 };
->tu : T3 | U3
->b ? { name: "t3", p: 1 } : { namae: "u3", p: 0 } : { name: "t3"; p: number; } | { namae: "u3"; p: number; }
->b : boolean
->{ name: "t3", p: 1 } : { name: "t3"; p: number; }
->name : "t3"
->"t3" : "t3"
->p : number
->1 : 1
->{ namae: "u3", p: 0 } : { namae: "u3"; p: number; }
->namae : "u3"
->"u3" : "u3"
->p : number
->0 : 0
-
-    tu.p = 2;
->tu.p = 2 : 2
->tu.p : number
->tu : { name: "t3"; p: number; } | { namae: "u3"; p: number; }
->p : number
->2 : 2
-
-    return tu;
->tu : { name: "t3"; p: number; } | { namae: "u3"; p: number; }
-}
+t;
+>t : T2
 

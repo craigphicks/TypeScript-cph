@@ -1065,6 +1065,25 @@ namespace ts {
                         {
                             const unmerged: RefTypesTableReturn[] = [];
                             mntr.unmerged.forEach((rttr)=>{
+                                /**
+                                 * In the case where the rhs of the replayable is an object (possible a union tree), the lhs type id might/will not match the rhs type id.
+                                 * The lhs type was established by the checker module after the rhs was processed, and it recorded in the current variable `symbolFlowInfo`.
+                                 * If rttr.type corresponds to a plain object, then we can simple replace the plain objects tsType with the symbolFlowInfo.tsType.
+                                 * However is rttr.type corresponds to a union tree, then we need to map each object type in the tree to the corresponding types in
+                                 * the symbolFlowInfo.tsType tree, which might get complicated, especially it some the object types in the symbolFlowInfo.tsType tree
+                                 * are not in the rttr.type tree because they became never in the narrow type, for example.
+                                 * We cannot just replace the entire rttr.type tree with the symbolFlowInfo.tsType tree because the rttr.type tree might have been narrowed.
+                                 * It would be good if we could (figuratively) map the Node values in literal object to the types they became in the symbolFlowInfo.tsType tree.
+                                 *
+                                 */
+                                if (rttr.type && floughTypeModule.hasObject(rttr.type)){
+                                    const effectiveDeclaredType = getEffectiveDeclaredType(symbolFlowInfo!);
+                                    const mappedType = floughTypeModule.mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(rttr.type, effectiveDeclaredType);
+                                    if (getMyDebug()){
+                                        consoleLog(`floughInner[dbg]: mapped ${dbgRefTypesTypeToString(rttr.type)} to ${dbgRefTypesTypeToString(mappedType)} with ${dbgRefTypesTypeToString(effectiveDeclaredType)}`);
+                                    }
+                                    rttr.type = mappedType;
+                                }
                                 let narrowerTypeOut: FloughType | undefined;
                                 if (replayableInType){
                                     const narrowerTsTypeOut = floughTypeModule.getTypeFromRefTypesType(floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType));

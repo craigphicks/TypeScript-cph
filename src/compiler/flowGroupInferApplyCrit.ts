@@ -87,7 +87,8 @@ namespace ts {
 
     export function applyCritNoneToOne(rttr: Readonly<RefTypesTableReturn>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
         if (!rttr.symbol){
-            nodeToTypeMap?.set(nodeForMap,floughTypeModule.getTypeFromRefTypesType(rttr.type));
+            if (nodeToTypeMap) orIntoNodeToTypeMap(rttr.type,nodeForMap,nodeToTypeMap);
+            //nodeToTypeMap?.set(nodeForMap,floughTypeModule.getTypeFromRefTypesType(rttr.type));
             return rttr;
         }
         const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,

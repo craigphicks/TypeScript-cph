@@ -12,7 +12,7 @@ namespace ts {
     }
 //    const floughTypeModule = floughTypeModule;
 
-    type PropertyKeyType = string;
+    type PropertyKeyType = string | number; // number is for tuple index, number 0 for array type
     const essymbolFloughObjectTypeInstance = Symbol("floughObjectTypeInstance");
     export type FloughObjectTypeInstance = & {
         objectTypeInstanceId: number; // keeps same instance on cloning (for narrowing), but not on merging (unless all merged share same id, this is not yet implemented)
@@ -87,31 +87,80 @@ namespace ts {
         //[essymbolFloughLogicalObject]: true;
         //kind: FloughLogicalObjectKind;
     }
-    // @ts-expect-error
+    // @ ts-expect-error
+    // export function isFloughLogicalObjectPlain(x: FloughLogicalObjectIF): boolean {
+    //     assertCastType<FloughLogicalObject>(x);
+    //     return x.kind===FloughLogicalObjectKind.plain;
+    // }
     function isFloughLogicalObjectPlain(x: FloughLogicalObject): x is FloughLogicalObjectPlain {
         return x.kind===FloughLogicalObjectKind.plain;
     }
-    // @ts-expect-error
-    function isFloughLogicalObjectUnion(x: FloughLogicalObject): x is FloughLogicalObjectUnion {
-        return x.kind===FloughLogicalObjectKind.union;
-    }
-    // @ts-expect-error
-    function isFloughLogicalObjectIntersection(x: FloughLogicalObject): x is FloughLogicalObjectIntersection {
-        return x.kind===FloughLogicalObjectKind.intersection;
-    }
-    // @ts-expect-error
-    function isFloughLogicalObjectDifference(x: FloughLogicalObject): x is FloughLogicalObjectDifference {
-        return x.kind===FloughLogicalObjectKind.difference;
+
+    // // @ ts-expect-error
+    // function isFloughLogicalObjectUnion(x: FloughLogicalObject): x is FloughLogicalObjectUnion {
+    //     return x.kind===FloughLogicalObjectKind.union;
+    // }
+    // // @ ts-expect-error
+    // function isFloughLogicalObjectIntersection(x: FloughLogicalObject): x is FloughLogicalObjectIntersection {
+    //     return x.kind===FloughLogicalObjectKind.intersection;
+    // }
+    // // @ ts-expect-error
+    // function isFloughLogicalObjectDifference(x: FloughLogicalObject): x is FloughLogicalObjectDifference {
+    //     return x.kind===FloughLogicalObjectKind.difference;
+    // }
+    export function mapFloughLogicalObjectToEffectiveDeclaredLogicalObject(x: FloughLogicalObjectIF, xDeclared: FloughLogicalObjectIF): FloughLogicalObjectIF {
+        assertCastType<FloughLogicalObject>(x);
+        assertCastType<FloughLogicalObject>(xDeclared);
+        if (!isFloughLogicalObjectPlain(x)) Debug.fail("unexpected (or not yet implemented?)[x]");
+        if (!isFloughLogicalObjectPlain(xDeclared)) Debug.fail("unexpected (or not yet implemented?)[xDeclared]");
+        // if the types do not match then we cannot map the types, but the checker software should detects the type mismatch and report it
+        if (x.item.tsObjectType===xDeclared.item.tsObjectType) return x;
+        if (checker.isArrayOrTupleType(x.item.tsObjectType)!==checker.isArrayOrTupleType(xDeclared.item.tsObjectType)) return x;
+        // Exception: declared is array, but instance is tuple, then we can force map the tuple down to the array
+        //if (checker.isArrayType(x.item.tsObjectType)!==checker.isArrayType(xDeclared.item.tsObjectType)) return x;
+        if (checker.isArrayOrTupleType(xDeclared.item.tsObjectType)) {
+            if (checker.isArrayType(xDeclared.item.tsObjectType)){
+                if (checker.isTupleType(xDeclared.item.tsObjectType)){
+                    Debug.fail("not yet implemented: tuple->array mapping");
+                }
+                else {
+                    // both arrays
+                    const etx = checker.getElementTypeOfArrayType(x.item.tsObjectType);
+                    const etxDeclared = checker.getElementTypeOfArrayType(xDeclared.item.tsObjectType);
+                    if (etx===etxDeclared) return createFloughLogicalObjectPlain(xDeclared.item.tsObjectType);
+                    const eltFloughType = floughTypeModule.createRefTypesType(etx);
+                    const ret = createFloughLogicalObjectPlain(xDeclared.item.tsObjectType, new Map([[0,eltFloughType]]));
+                    return ret;
+                }
+            }
+            else { // declared is tuple
+                // if the types do not match then we cannot map the types, but the checker software should detects the type mismatch and report it
+                if (checker.isArrayType(x.item.tsObjectType)){
+                    return x; // hope the checker software will detect the type mismatch and report it
+                }
+                // both tuples
+                // x.item.keyToType; // if exists, use it. otherwise, use the resolvedTypeArguments
+                // x.item.tsObjectType.resolvedTypeArguments;
+                if (x.item.keyToType) return createFloughLogicalObjectPlain(xDeclared.item.tsObjectType, x.item.keyToType);
+                else {
+                    const args = (x.item.tsObjectType as TupleTypeReference)
+                        .resolvedTypeArguments?.map((x,i)=>[i,floughTypeModule.createRefTypesType(x)] as [number,FloughType]);
+                    return createFloughLogicalObjectPlain(xDeclared.item.tsObjectType, args?new Map(args):undefined);
+                }
+            }
+        }
+        return createFloughLogicalObjectPlain(xDeclared.item.tsObjectType, x.item.keyToType);
     }
 
     export function isFloughLogicalObject(x: any): x is FloughLogicalObject {
         return !!x?.[essymbolFloughLogicalObject];
     }
 
-    export function createFloughLogicalObjectPlain(tstype: ObjectType){
+    //arg1?: Readonly<[PropertyKeyType,FloughType][]> | Readonly<ESMap<PropertyKeyType,FloughType>>,
+    export function createFloughLogicalObjectPlain(tstype: ObjectType, arg1?: Readonly<ESMap<PropertyKeyType,FloughType>>){
         return {
             kind: FloughLogicalObjectKind.plain,
-            item: createFloughObjectTypeInstance(tstype),
+            item: createFloughObjectTypeInstance(tstype, arg1),
             [essymbolFloughLogicalObject]: true
         };
     }
@@ -422,19 +471,27 @@ namespace ts {
                     }
                     if (checker.isArrayType(logicalObject.item.tsObjectType)){
                         // by convention, the instance of an array kill keep the instance type value (if it exists) as element 0.
-                        let type = logicalObject.item.keyToType.get("0");
+                        let type = logicalObject.item.keyToType.get(0);
+                        if (!type) type = floughTypeModule.createRefTypesType(checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType));
                         if (type) return { objToType: newMap([logicalObject.item, type]), type };
-                        const tsElementType = checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType);
-                        type = tsElementType ? floughTypeModule.createFromTsType(tsElementType) : Debug.fail("not yet implemented (any type?)");
+                        // const tsElementType = checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType);
+                        // type = tsElementType ? floughTypeModule.createFromTsType(tsElementType) : Debug.fail("not yet implemented (any type?)");
                         return { objToType: newMap([logicalObject.item, type]), type };
                     }
                     else { // tuple
-                        const n = parseInt(lookupkey);
-                        if (isNaN(n)) return { objToType:newMap() , type: floughTypeModule.getUndefinedType() }; // propably should never happen
+                        let n: number;
+                        if (typeof lookupkey === "string") {
+                            n = parseInt(lookupkey);
+                            Debug.assert(!isNaN(n), "unexpected key for tuple: ", ()=>lookupkey);
+                        }
+                        else n = lookupkey;
+                        debugger; // tuple length?
+                        //return { objToType:newMap() , type: floughTypeModule.getUndefinedType() }; // propably should never happen
                         Debug.fail("not yet implemented");
                     }
                 }
                 else {
+                    Debug.assert(typeof lookupkey === "string", "unexpected non string key for object: ");
                     let type = logicalObject.item.keyToType.get(lookupkey);
                     if (!type) {
                         // check if the key is in the base object, if so get the type from there
@@ -689,7 +746,7 @@ namespace ts {
                 logicalObject.items.forEach(item=>dbgLogicalObjectToStringsAux(item));
             }
             for (let i=lenin; i<as.length; i++) as[i] = pad + as[i];
-            indent-=2;
+            indent-=4;
         }
         dbgLogicalObjectToStringsAux(logicalObjectTop);
         return as;

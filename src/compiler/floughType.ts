@@ -49,6 +49,8 @@ namespace ts {
 
         getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
         intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType;
+        hasObject(ft: Readonly<FloughType>): boolean;
+        mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectiveDeclaredType: Readonly<FloughType>): FloughType;
     }
 
 
@@ -56,7 +58,7 @@ namespace ts {
     function castReadonlyFloughTypei(_ft: FloughType): asserts _ft is Readonly<FloughTypei> {}
 
 
-    const floughTypeModuleTmp: FloughTypeModule = {
+    export const floughTypeModule: FloughTypeModule = {
         /**
          * Interface copied from RefTypesTypeModule
          */
@@ -174,6 +176,10 @@ namespace ts {
         partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
             return partitionForEqualityCompareFloughType(a,b);
         },
+
+        // end of interface copied from RefTypesTypeModule
+
+
         dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[] {
             castReadonlyFloughTypei(type);
             return dbgFloughTypeToStrings(type);
@@ -181,11 +187,14 @@ namespace ts {
         dbgFloughTypeToString,
         getTsTypesFromFloughType,
         intersectionWithObjectSimplification,
+        hasObject,
+        mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectiveDeclaredType: Readonly<FloughType>): FloughType {
+            return mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft,ftEffectiveDeclaredType);
+        }
 
-        // end of interface copied from RefTypesTypeModule
     } as FloughTypeModule;
 
-    export const floughTypeModule = floughTypeModuleTmp;
+    //export const floughTypeModule = floughTypeModuleTmp;
 
     const checker = 0 as any as TypeChecker;
 
@@ -1130,6 +1139,20 @@ namespace ts {
         }
         return partarr;
     }
+
+    function hasObject(ft: Readonly<FloughType>): boolean {
+        castReadonlyFloughTypei(ft);
+        return ft.logicalObject!==undefined;
+    }
+    function mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectDeclaredType: Readonly<FloughType>): FloughTypei {
+        castReadonlyFloughTypei(ft);
+        castReadonlyFloughTypei(ftEffectDeclaredType);
+        if (ft.logicalObject===undefined) return ft;
+        if (ftEffectDeclaredType.logicalObject===undefined) Debug.fail("unexpected: ftEffectDeclaredType.logicalObject===undefined");
+        const logicalObject = mapFloughLogicalObjectToEffectiveDeclaredLogicalObject(ft.logicalObject, ftEffectDeclaredType.logicalObject);
+        return { nobj: ft.nobj, logicalObject };
+    }
+
 
     function dbgFloughTypeToStrings(ft: Readonly<FloughType>): string[] {
         castReadonlyFloughTypei(ft);
