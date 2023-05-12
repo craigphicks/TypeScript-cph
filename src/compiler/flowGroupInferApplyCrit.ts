@@ -80,8 +80,8 @@ namespace ts {
         if (!got) nodeToTypeMap.set(node,tstype);
         else nodeToTypeMap.set(node,checker.getUnionType([got,tstype],UnionReduction.Literal));
         if (getMyDebug()){
-            consoleLog(`orIntoNodeToTypeMap(type:${floughTypeModule.dbgRefTypesTypeToStrings(type)},node:${mrNarrow.dbgNodeToString(node)})::`
-                +`${got?checker.typeToString(got):"*"}->${checker.typeToString(nodeToTypeMap.get(node)!)}`);
+            consoleLog(`orIntoNodeToTypeMap(type:${floughTypeModule.dbgFloughTypeToString(type)},node:${dbgsModule.dbgNodeToString(node)})::`
+                +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node)!)}`);
         }
     }
 

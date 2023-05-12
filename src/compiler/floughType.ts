@@ -296,18 +296,25 @@ namespace ts {
         if (types.length === 0) return createNeverType();
         castReadonlyFloughTypei(types[0]);
         const arrlogobj: FloughLogicalObjectIF[] = [];
+        let blogobj = false;
         let ft = cloneType(types[0]);
         if (ft.logicalObject) {
+            blogobj = true;
             arrlogobj.push(ft.logicalObject);
             delete ft.logicalObject;
         }
-        types.slice(1).forEach((t,_i)=>{
+        for (let i=1; i<types.length; i++) {
+            if (isNeverType(ft) && !blogobj) return ft;
+            const t = types[i];
             castReadonlyFloughTypei(t);
-            if (t.logicalObject) arrlogobj.push(t.logicalObject);
+            if (t.logicalObject) {
+                if (blogobj) arrlogobj.push(t.logicalObject);
+            }
+            else if (blogobj) blogobj = false;
             // t.logicalObject will be elided in intersectionWithFloughTypeMutate because ft has no logical object.
             ft = intersectionWithFloughTypeMutate(t,ft);
-        });
-        if (arrlogobj.length === 0) return ft;
+        };
+        if (!blogobj) return ft;
         ft.logicalObject = intersectionAndSimplifyLogicalObjects(arrlogobj); // note that this may return undefined.
         if (!ft.logicalObject) delete ft.logicalObject; // delete the undefined member.
         return ft;
@@ -752,10 +759,10 @@ namespace ts {
      */
     // @ ts-expect-error
     function differenceWithFloughTypeMutate(subtrahend: Readonly<FloughTypei>, minuend: FloughTypei): FloughTypei {
-        if (minuend.any) return minuend;
+        if (minuend.any) return minuend; // no way to represent not-subtrahend
         if (subtrahend.any) return createNeverType();
         if (subtrahend.unknown) return createNeverType();
-        if (minuend.unknown) return minuend;
+        if (minuend.unknown) return minuend; // no way to represent not-subtrahend
         minuend.nobj = differenceWithFloughTypeNobjMutate(subtrahend.nobj, minuend.nobj);
         if (subtrahend.logicalObject && minuend.logicalObject) {
             minuend.logicalObject = differenceOfFloughLogicalObject(subtrahend.logicalObject, minuend.logicalObject);

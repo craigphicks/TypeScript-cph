@@ -1454,17 +1454,17 @@ namespace ts {
                      * The crit was already set with negate: true to reverse the passing and failing.
                      * Below, the symbols are set to undefined, and the types converted to booleans.
                      */
-                    const nodeTypes: Type[] = [];
+                    //const nodeTypes: Type[] = [];
                     //ret.inferRefRtnType.passing.symbol = undefined;
                     if (!floughTypeModule.isNeverType(ret.passing.type)){
                         const ttype = checker.getTrueType();
-                        nodeTypes.push(ttype);
+                        //nodeTypes.push(ttype);
                         ret.passing.type = floughTypeModule.createRefTypesType(ttype);
                     }
                     //ret.inferRefRtnType.failing!.symbol = undefined;
                     if (!floughTypeModule.isNeverType(ret.failing!.type)){
                         const ftype = checker.getFalseType();
-                        nodeTypes.push(ftype);
+                        //nodeTypes.push(ftype);
                         ret.failing!.type = floughTypeModule.createRefTypesType(ftype);
                     }
                     //mergeOneIntoNodeToTypeMaps(expr, getUnionType(nodeTypes),inferStatus.groupNodeToTypeMap);
