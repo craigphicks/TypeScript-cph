@@ -835,7 +835,7 @@ namespace ts {
             retval: FloughInnerReturn
         } | {
             kind: "normal",
-            passing: RefTypesTableReturn,
+            //passing: RefTypesTableReturn,
             unmergedPassing: RefTypesTableReturn[]
             //byNode: ESMap<Node, Type>,
         };
@@ -862,45 +862,64 @@ namespace ts {
                 const mntr = flough(
                     { sci, expr: condExpr.expression, crit: { kind:InferCritKind.notnullundef, negate: false, alsoFailing:true }, qdotfallout, inferStatus });
 
-                const { passing, failing } = applyCrit(mntr,{ kind:InferCritKind.notnullundef, alsoFailing:true },inferStatus.groupNodeToTypeMap);
-                Debug.assert(failing);
-                if (!floughTypeModule.isNeverType(failing.type)){
-                    if (isPropertyAccessExpression(condExpr) && condExpr.questionDotToken){
-                        qdotfallout.push(failing); // The caller of InferRefTypesPreAccess need deal with this no further.
-                        if (getMyDebug()){
-                            dbgRefTypesTableToStrings(failing).forEach(s=>{
-                                consoleLog(`InferRefTypesPreAccess[dbg] failling->qdotfallout: ${s}`);
-                            });
-                        }
-                    }
-                    else {
-                        /**
-                         * If floughTypeModule.isNeverType and if !condExpr.questionDotToken, then what should happen to the failing node value in byNode?
-                         * Doesn't matter if there is going to be an error anyway.
-                         */
-                        if (getMyDebug()) consoleLog(`Error: expression ${dbgNodeToString(condExpr)} cannot be applied to undefined or null.  Add '?' or '!' if appropriate.`);
-                    }
-                }
-                if (floughTypeModule.isNeverType(passing.type)){
-                    return { kind:"immediateReturn", retval: { unmerged:[] } };
-                }
+                // const { passing, failing } = applyCrit(mntr,{ kind:InferCritKind.notnullundef, alsoFailing:true },inferStatus.groupNodeToTypeMap);
+                // Debug.assert(failing);
+                // if (!floughTypeModule.isNeverType(failing.type)){
+                //     if (isPropertyAccessExpression(condExpr) && condExpr.questionDotToken){
+                //         qdotfallout.push(failing); // The caller of InferRefTypesPreAccess need deal with this no further.
+                //         if (getMyDebug()){
+                //             dbgRefTypesTableToStrings(failing).forEach(s=>{
+                //                 consoleLog(`InferRefTypesPreAccess[dbg] failling->qdotfallout: ${s}`);
+                //             });
+                //         }
+                //     }
+                //     else {
+                //         /**
+                //          * If floughTypeModule.isNeverType and if !condExpr.questionDotToken, then what should happen to the failing node value in byNode?
+                //          * Doesn't matter if there is going to be an error anyway.
+                //          */
+                //         if (getMyDebug()) consoleLog(`Error: expression ${dbgNodeToString(condExpr)} cannot be applied to undefined or null.  Add '?' or '!' if appropriate.`);
+                //     }
+                // }
+                // if (floughTypeModule.isNeverType(passing.type)){
+                //     return { kind:"immediateReturn", retval: { unmerged:[] } };
+                // }
                 const unmergedPassing: RefTypesTableReturn[] = [];
                 mntr.unmerged?.forEach(rttr=>{
-                    const type =floughTypeModule.subtractFromType(floughTypeModule.createRefTypesType([nullType,undefinedType]),rttr.type);
-                    if (floughTypeModule.isNeverType(type) || isRefTypesSymtabConstraintItemNever(rttr.sci)) return;
-                    unmergedPassing.push({ ...rttr, type });
+                    if (isRefTypesSymtabConstraintItemNever(rttr.sci)) return;
+                    const { passing, failing } = applyCrit1ToOne(rttr,{ kind:InferCritKind.notnullundef, alsoFailing:true },mntr.nodeForMap, inferStatus.groupNodeToTypeMap);
+                    Debug.assert(failing);
+                    if (!floughTypeModule.isNeverType(failing.type)){
+                        if (isPropertyAccessExpression(condExpr) && condExpr.questionDotToken){
+                            qdotfallout.push(failing); // The caller of InferRefTypesPreAccess need deal with this no further.
+                            if (getMyDebug()){
+                                dbgRefTypesTableToStrings(failing).forEach(s=>{
+                                    consoleLog(`InferRefTypesPreAccess[dbg] failling->qdotfallout: ${s}`);
+                                });
+                            }
+                        }
+                        else {
+                            /**
+                             * If floughTypeModule.isNeverType and if !condExpr.questionDotToken, then what should happen to the failing node value in byNode?
+                             * Doesn't matter if there is going to be an error anyway.
+                             */
+                            if (getMyDebug()) consoleLog(`Error: expression ${dbgNodeToString(condExpr)} cannot be applied to undefined or null.  Add '?' or '!' if appropriate.`);
+                        }
+                    }
+                    if (floughTypeModule.isNeverType(passing.type)) return;
+                    if (extraAsserts){
+                        if (isRefTypesSymtabConstraintItemNever(rttr.sci)) Debug.fail("unexpected");
+                    }
+                    unmergedPassing.push(passing);
                 });
                 if (getMyDebug()){
-                    dbgRefTypesTableToStrings(passing).forEach(s=>{
-                        consoleLog(`InferRefTypesPreAccess[dbg] passing: ${s}`);
-                    });
                     unmergedPassing.forEach((umrttr,umidx)=>{
                         dbgRefTypesTableToStrings(umrttr).forEach(s=>{
                             consoleLog(`InferRefTypesPreAccess[dbg] unmergedPassing[${umidx}]: ${s}`);
                         });
                     });
                 }
-                return { kind:"normal", passing, unmergedPassing };
+                return { kind:"normal", unmergedPassing };
             }
             const ret = InferRefTypesPreAccessAux();
             if (getMyDebug()){
@@ -2007,6 +2026,10 @@ namespace ts {
                                     return false;
                                 }
                                 let assignableType = floughTypeModule.intersectionOfRefTypesType(carg.type, floughTypeModule.createRefTypesType(sparam.type));
+                                if (getMyDebug()){
+                                    consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (1) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
+                                }
+
                                 if (floughTypeModule.isNeverType(assignableType)){
                                     return false;
                                 }
@@ -2018,6 +2041,9 @@ namespace ts {
                                 //     }
                                 // }
                                 const evaledAssignableType = evalSymbol(carg.symbol,tmpSC, getDeclaredType, mrNarrow);
+                                if (getMyDebug()){
+                                    consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, evaledAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(evaledAssignableType)}`);
+                                }
                                 // is this necessary? evalCover is expensive
                                 //const evaledAssignableType = evalCoverForOneSymbol(carg.symbol,tmpArgsConstr, getDeclaredType, mrNarrow);
                                 if (floughTypeModule.isNeverType(evaledAssignableType)){
@@ -2025,14 +2051,23 @@ namespace ts {
                                 }
                                 if (!floughTypeModule.isASubsetOfB(assignableType,evaledAssignableType)){
                                     assignableType = evaledAssignableType;
+                                    if (getMyDebug()){
+                                        consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
+                                    }
                                 }
                                 oneMapping.push(assignableType);
 
                                 const notAssignableType =floughTypeModule.subtractFromType(assignableType, carg.type);
-                                // check if the non assignable type is allowed.
+                                if (getMyDebug()){
+                                    consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, notAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(notAssignableType)}`);
+                                }
+                            // check if the non assignable type is allowed.
                                 {
                                     const {sc:checkSC} = andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol, isconst:carg.isconst, type:notAssignableType, sc: nextSC, getDeclaredType, mrNarrow });
                                     const evaledNotAssignableType = evalSymbol(carg.symbol,checkSC,getDeclaredType,mrNarrow);
+                                    if (getMyDebug()){
+                                        consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) evaledNotAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(evaledNotAssignableType)}`);
+                                    }
                                     oneLeftoverMapping.push(evaledNotAssignableType);
                                 }
                                 return true;

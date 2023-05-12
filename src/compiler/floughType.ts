@@ -42,6 +42,7 @@ namespace ts {
         getNumberType(): Readonly<FloughType>;
         getUndefinedType(): Readonly<FloughType>;
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
+        dbgFloughTypeToString(type: Readonly<FloughType>): string;
         intersectionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
@@ -177,6 +178,7 @@ namespace ts {
             castReadonlyFloughTypei(type);
             return dbgFloughTypeToStrings(type);
         },
+        dbgFloughTypeToString,
         getTsTypesFromFloughType,
         intersectionWithObjectSimplification,
 
@@ -663,7 +665,10 @@ namespace ts {
     }
 
     function intersectionWithFloughTypeMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei): FloughTypei {
-        if (ft0.any||ft1.any) return createAnyType();
+        if (ft0.any && ft1.any) return ft0;
+        if (ft0.unknown && ft1.unknown) return ft0;
+        if (ft0.any) return ft1;
+        if (ft1.any) return ft0;
         if (ft0.unknown) return ft1;
         if (ft1.unknown) return ft0;
         ft1.nobj = intersectionWithFloughTypeNobjMutate(ft0.nobj, ft1.nobj);
@@ -1132,6 +1137,11 @@ namespace ts {
             dbgLogicalObjectToStrings(ft.logicalObject).forEach((s)=>arr.push("logicalObject:"+s));
         }
         return arr;
+    }
+    function dbgFloughTypeToString(ft: Readonly<FloughType>): string {
+        castReadonlyFloughTypei(ft);
+        const tstype = getTsTypeFromFloughType(ft);
+        return dbgsModule.dbgTypeToString(tstype);
     }
 
 }
