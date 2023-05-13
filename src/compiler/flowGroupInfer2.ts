@@ -1076,7 +1076,8 @@ namespace ts {
                                  * It would be good if we could (figuratively) map the Node values in literal object to the types they became in the symbolFlowInfo.tsType tree.
                                  *
                                  */
-                                if (rttr.type && floughTypeModule.hasObject(rttr.type)){
+                                const enableMapReplayedObjectTypesToSymbolFlowInfoTypes = false;
+                                if (enableMapReplayedObjectTypesToSymbolFlowInfoTypes && rttr.type && floughTypeModule.hasObject(rttr.type)){
                                     const effectiveDeclaredType = getEffectiveDeclaredType(symbolFlowInfo!);
                                     const mappedType = floughTypeModule.mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(rttr.type, effectiveDeclaredType);
                                     if (getMyDebug()){
