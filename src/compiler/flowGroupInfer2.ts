@@ -1077,7 +1077,7 @@ namespace ts {
                                  *
                                  */
                                 const enableMapReplayedObjectTypesToSymbolFlowInfoTypes = false;
-                                if (enableMapReplayedObjectTypesToSymbolFlowInfoTypes && rttr.type && floughTypeModule.hasObject(rttr.type)){
+                                if (enableMapReplayedObjectTypesToSymbolFlowInfoTypes && rttr.type && floughTypeModule.hasLogicalObject(rttr.type)){
                                     const effectiveDeclaredType = getEffectiveDeclaredType(symbolFlowInfo!);
                                     const mappedType = floughTypeModule.mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(rttr.type, effectiveDeclaredType);
                                     if (getMyDebug()){
@@ -1297,6 +1297,8 @@ namespace ts {
                     return floughInnerConditionalExpression();
                 case SyntaxKind.PropertyAccessExpression:
                     return floughByPropertyAccessExpression();
+                case SyntaxKind.ElementAccessExpression:
+                    return floughElementAccessExpression();
                 case SyntaxKind.CallExpression:{
                     return floughByCallExpression();
                 }
@@ -2625,6 +2627,63 @@ namespace ts {
                 return { unmerged: arrRefTypesTableReturn };
             } // floughByBinaryExpressionEqualCompare
 
+            function floughElementAccessExpression(): FloughInnerReturn {
+                assertCastType<ElementAccessExpression>(expr);
+                if (getMyDebug()){
+                    consoleGroup(`floughElementAccessExpression[in] expr: ${dbgsModule.dbgNodeToString(expr)}`);
+                }
+                const {expression, argumentExpression} = expr;
+
+                // const fir: FloughInnerReturn = {
+                //     unmerged: [],
+                // };
+                const unmerged: RefTypesTableReturnNoSymbol[] = [];
+
+                const leftMntr = flough({
+                    expr:expression, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
+                    sci
+                });
+                leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
+                    const { type: leftType, sci: leftSci} = applyCritNoneToOne(leftRttr0, leftMntr.nodeForMap, inferStatus.groupNodeToTypeMap);
+                    if (leftType === floughTypeModule.getNeverType()) return;
+
+                    const logicalObject = floughTypeModule.getLogicalObject(leftType);
+                    if (!logicalObject) return;
+
+                    const argMntr = flough({
+                        expr:argumentExpression, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
+                        sci: leftSci
+                    });
+                    argMntr.unmerged.forEach((argMntr0,_argidx)=>{
+                        const {type: argType, sci:argSci} = applyCritNoneToOne(argMntr0,argMntr.nodeForMap, inferStatus.groupNodeToTypeMap);
+
+                        floughTypeModule.getTsTypesFromFloughType(argType).forEach(argts=>{
+                            if (argts.flags & TypeFlags.Never) return;
+                            if (!(argts.flags & (TypeFlags.Number|TypeFlags.NumberLiteral))) {
+                                Debug.assert(false,"unexpected",()=>Debug.formatTypeFlags(argts.flags));
+                                return;
+                            }
+                            const x = logicalObjectForEachTypeOfPropertyLookup(logicalObject,argts as NumberLiteralType | IntrinsicType);
+                            x.arrBaseAndPropertyType.forEach(([baseType,elementType])=>{
+                                if (getMyDebug()){
+                                    consoleLog(`floughElementAccessExpression[dbg,${_leftidx},${_argidx}] `
+                                    +`baseType:${dbgRefTypesTypeToString(baseType)}, elementType:${dbgRefTypesTypeToString(elementType)}`);
+                                }
+                                unmerged.push({
+                                    type: elementType,
+                                    sci:argSci
+                                });
+                            });
+
+                        });
+                    });
+                });
+                if (getMyDebug()){
+                    consoleLog(`floughElementAccessExpression[out] expr: ${dbgsModule.dbgNodeToString(expr)}`);
+                    consoleGroupEnd();
+                }
+                return { unmerged };
+            } // endof floughElementAccessExpression
         } // endof floughInnerAux()
     } // endof floughInner()
 } // endof flough()

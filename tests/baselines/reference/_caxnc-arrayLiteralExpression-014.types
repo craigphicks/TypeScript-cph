@@ -1,4 +1,4 @@
-=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-013.ts ===
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-014.ts ===
 declare const c: boolean;
 >c : boolean
 
@@ -15,8 +15,13 @@ const x: readonly[boolean,boolean] = c ? [c,c] as const : [c,c] as const;
 >c : false
 >c : false
 
-if (c) {
->c : boolean
+if (x[0]) {
+>x[0] : boolean
+>x : readonly [true, true] | readonly [false, false]
+>0 : 0
+
+    c;
+>c : true
 
     x;
 >x : readonly [true, true]
@@ -30,23 +35,5 @@ if (c) {
 >x[1] : true
 >x : readonly [true, true]
 >1 : 1
-
-    let x0 = x[0];
->x0 : true
->x[0] : true
->x : readonly [true, true]
->0 : 0
-
-    let x1 = x[1];
->x1 : true
->x[1] : true
->x : readonly [true, true]
->1 : 1
-
-    x0;
->x0 : true
-
-    x1;
->x1 : true
 }
 

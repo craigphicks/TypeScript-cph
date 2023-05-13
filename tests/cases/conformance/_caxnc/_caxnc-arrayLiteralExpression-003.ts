@@ -1,6 +1,6 @@
 // @floughEnable: true
 // @floughConstraintsEnable: false
-// @strict: true 
+// @strict: true
 // @declaration: true
 
 declare const c: boolean;

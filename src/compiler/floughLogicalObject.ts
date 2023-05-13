@@ -12,7 +12,7 @@ namespace ts {
     }
 //    const floughTypeModule = floughTypeModule;
 
-    type PropertyKeyType = string | number; // number is for tuple index, number 0 for array type
+    type PropertyKeyType = string | number | IntrinsicType | LiteralType; // IntrinsicType is numberType/stringType, TemplateLiteral also possible, but not yet supported.
     const essymbolFloughObjectTypeInstance = Symbol("floughObjectTypeInstance");
     export type FloughObjectTypeInstance = & {
         objectTypeInstanceId: number; // keeps same instance on cloning (for narrowing), but not on merging (unless all merged share same id, this is not yet implemented)
@@ -24,7 +24,7 @@ namespace ts {
         return !!x?.[essymbolFloughObjectTypeInstance];
     }
     let nextFloughObjectTypeInstanceId = 1;
-    export function createFloughObjectTypeInstance(
+    function createFloughObjectTypeInstance(
         tsObjectType: Readonly<ObjectType>,
         arg1?: Readonly<[PropertyKeyType,FloughType][]> | Readonly<ESMap<PropertyKeyType,FloughType>>,
         objectTypeInstanceId: number = nextFloughObjectTypeInstanceId++):
@@ -446,9 +446,27 @@ namespace ts {
      * @returns
      */
 
-    type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<FloughType>>;
-    export type LogicalObjectForEachTypeOfProperyLookupReturnType = & { objToType: ObjToTypeMap; type: Readonly<FloughType> };
     export function logicalObjectForEachTypeOfPropertyLookup(
+        logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType, _crit?: undefined
+    ): { arrBaseAndPropertyType: [base:FloughType,property:FloughType][], type: FloughType } {
+        const { objToType, type } = logicalObjectForEachTypeOfPropertyLookupInternal(logicalObjectTop,lookupkey);
+        const ret = { arrBaseAndPropertyType: [] as [base:FloughType,property:FloughType][], type: floughTypeModule.createNeverType() };
+        objToType.forEach((pt,oi)=>{
+            const logicalObject: FloughLogicalObject = {
+                kind: FloughLogicalObjectKind.plain,
+                item: oi,
+                [essymbolFloughLogicalObject]: true
+            };
+            const base = floughTypeModuleForFloughLogicalObject.createFloughTypeFromLogicalObject(logicalObject);
+            ret.arrBaseAndPropertyType.push([base,pt]);
+        });
+        ret.type = type;
+        return ret;
+    }
+
+    type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<FloughType>>;
+    type LogicalObjectForEachTypeOfProperyLookupReturnType = & { objToType: ObjToTypeMap; type: Readonly<FloughType> };
+    function logicalObjectForEachTypeOfPropertyLookupInternal(
         logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType, _crit?: InferCrit
     ): LogicalObjectForEachTypeOfProperyLookupReturnType {
         assertCastType<FloughLogicalObject>(logicalObjectTop);
@@ -462,12 +480,17 @@ namespace ts {
         function createEmptyState(): State {
             return { objToType: newMap(), type: floughTypeModule.getNeverType() };
         }
-        function createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey: PropertyKeyType):
+        /**
+         *
+         * @param lookupkey So far only handles literal keys, not computed keys or generic keys
+         * @returns
+         */
+        function createLogicalObjectVisitorForForEachTypeOfPropertyLookup(lookupkey: PropertyKeyType):
             LogicalObjectVisitor<Result, State>{
             function onPlain(logicalObject: Readonly<FloughLogicalObjectPlain>): Result {
                 if (checker.isArrayOrTupleType(logicalObject.item.tsObjectType)) {
                     if (lookupkey === "length") {
-                        return { objToType: newMap([logicalObject.item, floughTypeModule.getNumberType()]), type: floughTypeModule.getNumberType() };
+                        return { objToType: newMap([logicalObject.item, floughTypeModule.createNumberType()]), type: floughTypeModule.createNumberType() };
                     }
                     if (checker.isArrayType(logicalObject.item.tsObjectType)){
                         // by convention, the instance of an array kill keep the instance type value (if it exists) as element 0.
@@ -481,13 +504,31 @@ namespace ts {
                     else { // tuple
                         let n: number;
                         if (typeof lookupkey === "string") {
+                            // might not need/want this
                             n = parseInt(lookupkey);
                             Debug.assert(!isNaN(n), "unexpected key for tuple: ", ()=>lookupkey);
                         }
-                        else n = lookupkey;
-                        debugger; // tuple length?
-                        //return { objToType:newMap() , type: floughTypeModule.getUndefinedType() }; // propably should never happen
-                        Debug.fail("not yet implemented");
+                        else if (typeof lookupkey === "number") n = lookupkey;
+                        else if ((lookupkey as Type).flags & TypeFlags.NumberLiteral) n = (lookupkey as NumberLiteralType).value;
+                        else {
+                            Debug.assert(false, "not yet implemented key for tuple: ", ()=>dbgsModule.dbgTypeToString(lookupkey as Type));
+                        }
+
+                        assertCastType<TupleTypeReference>(logicalObject.item.tsObjectType);
+                        // TODO: rest element
+                        if (logicalObject.item.keyToType.has(n)) {
+                            const type = logicalObject.item.keyToType.get(n);
+                            if (type) return { objToType: newMap([logicalObject.item, type]), type };
+                        }
+                        if (logicalObject.item.tsObjectType.resolvedTypeArguments) {
+                            const tsTupleTypes = logicalObject.item.tsObjectType.resolvedTypeArguments;
+                            const type = (n < tsTupleTypes.length) ? floughTypeModule.createFromTsType(tsTupleTypes[n]) : undefined;
+                            if (type) return { objToType: newMap([logicalObject.item, type]), type };
+                        }
+                        {
+                            const type = floughTypeModule.createUndefinedType();
+                            return { objToType: newMap([logicalObject.item, type]), type };
+                        }
                     }
                 }
                 else {
@@ -508,7 +549,7 @@ namespace ts {
                         // TODO: apply crit
                         if (tsPropertyType) type = floughTypeModule.createFromTsType(tsPropertyType);
                         else {
-                            type = floughTypeModule.getUndefinedType();
+                            type = floughTypeModule.createUndefinedType();
                         }
                     }
                     return { objToType:newMap([logicalObject.item, type]) , type };
@@ -620,7 +661,7 @@ namespace ts {
                 onTsintersection,
             };
         } // end of createLogicalObjectVisitorForForEachTypeOfProperyLookup
-        const visitor = createLogicalObjectVisitorForForEachTypeOfProperyLookup(lookupkey);
+        const visitor = createLogicalObjectVisitorForForEachTypeOfPropertyLookup(lookupkey);
         const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: floughTypeModule.createNeverType() });
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup

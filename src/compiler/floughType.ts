@@ -1,5 +1,7 @@
 namespace ts {
 
+    const uniqueNeverType: FloughType = { nobj:{} } as const;
+
     export type RefTypesType = FloughType;
 
     export interface FloughType {};
@@ -39,23 +41,22 @@ namespace ts {
         createNeverType(): FloughType;
         //isNeverType(ft: Readonly<FloughType>): boolean; // already defined above
         getNeverType(): Readonly<FloughType>;
-        getNumberType(): Readonly<FloughType>;
-        getUndefinedType(): Readonly<FloughType>;
-        dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
-        dbgFloughTypeToString(type: Readonly<FloughType>): string;
+        createNumberType(): Readonly<FloughType>;
+        createUndefinedType(): Readonly<FloughType>;
         intersectionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
 
         getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
         intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType;
-        hasObject(ft: Readonly<FloughType>): boolean;
+        hasLogicalObject(ft: Readonly<FloughType>): boolean;
+        getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
         mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectiveDeclaredType: Readonly<FloughType>): FloughType;
+
+        dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
+        dbgFloughTypeToString(type: Readonly<FloughType>): string;
+
     }
-
-
-    function castFloughTypei(_ft: FloughType): asserts _ft is FloughTypei {}
-    function castReadonlyFloughTypei(_ft: FloughType): asserts _ft is Readonly<FloughTypei> {}
 
 
     export const floughTypeModule: FloughTypeModule = {
@@ -72,6 +73,12 @@ namespace ts {
                 return ft;
             }
             return createFromTsType(tstype as Type);
+        },
+        createNeverType(): FloughType {
+            return { nobj:{} };
+        },
+        getNeverType(){
+                return uniqueNeverType;
         },
         cloneRefTypesType(t: Readonly<FloughType>): FloughType {
             castReadonlyFloughTypei(t);
@@ -145,7 +152,7 @@ namespace ts {
             castReadonlyFloughTypei(type);
             return isAnyOrUnknownType(type);
         },
-       forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void {
+        forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void {
             castReadonlyFloughTypei(type);
             const tsType = getTsTypeFromFloughType(type);
             checker.forEachType(tsType,(t: Type)=>{
@@ -184,15 +191,42 @@ namespace ts {
             castReadonlyFloughTypei(type);
             return dbgFloughTypeToStrings(type);
         },
-        dbgFloughTypeToString,
         getTsTypesFromFloughType,
         intersectionWithObjectSimplification,
-        hasObject,
+        hasLogicalObject,
+        getLogicalObject,
         mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectiveDeclaredType: Readonly<FloughType>): FloughType {
             return mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft,ftEffectiveDeclaredType);
-        }
+        },
+        createFromTsType,
+        unionWithTsTypeMutate,
+        cloneType,
+        differenceWithFloughTypeMutate,
+        intersectionWithFloughTypeMutate,
+        unionWithFloughTypeMutate,
+        createNumberType(): FloughType {
+            return { nobj: { number: true } };
+        },
+        createUndefinedType(): FloughType {
+            return { nobj: { undefined: true } };
+        },
+        dbgFloughTypeToStrings,
+        dbgFloughTypeToString,
+    };
 
-    } as FloughTypeModule;
+    export const floughTypeModuleForFloughLogicalObject: {
+        createFloughTypeFromLogicalObject(logicalObject: FloughLogicalObjectIF): FloughType;
+    } = {
+        createFloughTypeFromLogicalObject(logicalObject: FloughLogicalObjectIF){
+            return { nobj:{}, logicalObject };
+        }
+    };
+
+
+    function castFloughTypei(_ft: FloughType): asserts _ft is FloughTypei {}
+    function castReadonlyFloughTypei(_ft: FloughType): asserts _ft is Readonly<FloughTypei> {}
+
+
 
     //export const floughTypeModule = floughTypeModuleTmp;
 
@@ -261,7 +295,7 @@ namespace ts {
     }
     // @ ts-expect-error
     function isNeverType(ft: Readonly<FloughTypei>): boolean {
-        return  !ft.any && !ft.unknown && !ft.logicalObject && isNeverTypeNobj(ft.nobj);
+        return ft===uniqueNeverType || !ft.any && !ft.unknown && !ft.logicalObject && isNeverTypeNobj(ft.nobj);
     }
     // @ ts-expect-error
     function isAnyType(ft: Readonly<FloughTypei>): boolean {
@@ -1140,9 +1174,13 @@ namespace ts {
         return partarr;
     }
 
-    function hasObject(ft: Readonly<FloughType>): boolean {
+    function hasLogicalObject(ft: Readonly<FloughType>): boolean {
         castReadonlyFloughTypei(ft);
         return ft.logicalObject!==undefined;
+    }
+    function getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined {
+        castReadonlyFloughTypei(ft);
+        return ft.logicalObject;
     }
     function mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectDeclaredType: Readonly<FloughType>): FloughTypei {
         castReadonlyFloughTypei(ft);
