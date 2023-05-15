@@ -370,7 +370,7 @@ namespace ts {
         const mrNarrow = createMrNarrow(checker, sourceFile, mrState, /*refTypesTypeModule, */ compilerOptions);
         initializeFlowGroupRefTypesSymtabModule(mrNarrow);
         initFlowGroupInferApplyCrit(checker, mrNarrow);
-        initFloughTypeModule(checker);
+        initFloughTypeModule(checker,compilerOptions);
         initFloughLogicalObject(checker,dbgs,mrNarrow);
         return {
             sourceFile,
@@ -1123,6 +1123,13 @@ namespace ts {
         const mntr = sourceFileMrState.mrNarrow.flough({
             sci: anteSCArg,
             expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
+
+        if (getMyDebug()) {
+            mntr.unmerged.forEach((rttr,i)=>{
+                mrNarrow.dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`---- resolveGroupForFlow[post flough]: mntr.unmerged[${i}]: ${s}`));
+            });
+        }
+
         if (!inferStatus.inCondition){
             scpassing = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap).sci;
         }

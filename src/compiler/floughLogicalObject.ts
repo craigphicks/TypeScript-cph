@@ -1,6 +1,34 @@
 
 namespace ts {
 
+    /**
+     * FlowLogicalObjectIF
+     * Types have a hierachy:
+     * - 1. FloughType
+     * - 2.1 Special Exclusive Types: Any, Unknown.  Do not occur in cobinations with other types.
+     * - 2.2 Non Objects: string, number, literals, etc.  Do occur in combinations with each other and with objects.
+     * - 2.2. Objects: object, array, etc.  Do occur in combinations with each other and with non-objects.
+     *
+     * Objects may be tree structured with set-union, set-intersection, set-difference operations, with Plain objects as leafs.
+     * Non-objects are never included in this tree structure, but are always raised to the top level.
+     * The FloughLogicalObjectIF is the interface for the tree structure, passed to functions exported from floughLogicalObject in FloughLogicalObjecModule.
+     *
+     * Kinds of operation on and/or resulting in FloughLogicalObjectIF:
+     *
+     * creation -
+     * - 1. creation from a TypeScript type (e.g., a literal object type is converted to a FloughLogicalObjectIF with a single Plain object leaf)
+     * - 2. creation from two (or more) FloughLogicalObjectIF
+     * - 2.1. set-union, confluence of flow paths
+     * - 2.2. set-intersection, set-difference: narrowing of a flow path, e.g., matching function overloads, ===.
+     * - 3. During assignment casting a rhs FloughLogicalObjectIF to a lhs declared type.
+     * - 4 Prop/Elt Access with lookupkey and criteria: narrow and/or split the FloughLogicalObjectIF, e.g., if (obj.prop1.prop2) ...
+     * reading - property access, indexing, etc.
+     * writing - assignment, property assignment, (can this modify inplace, or does it always need to create a new FloughLogicalObjectIF?)
+     */
+
+    const enableReSectionSubsetOfTsUnionAndIntersection = true;
+
+
     const checker = undefined as any as TypeChecker; // TODO: intialize;
     const dbgs = undefined as any as Dbgs;
     const mrNarrow = undefined as any as MrNarrow;
@@ -32,6 +60,12 @@ namespace ts {
         const map = new Map(arg1);
         return { tsObjectType, keyToType: map, objectTypeInstanceId, [essymbolFloughObjectTypeInstance]: true };
     }
+    // type InstanceUpdate = {
+    //     instance: FloughObjectTypeInstance;
+    //     key: PropertyKeyType;
+    //     type: FloughType;
+    // };
+
     export function cloneFloughObjectTypeInstance(fobj: Readonly<FloughObjectTypeInstance>): FloughObjectTypeInstance {
         return createFloughObjectTypeInstance(fobj.tsObjectType, fobj.keyToType, fobj.objectTypeInstanceId);
     }
@@ -49,117 +83,128 @@ namespace ts {
      * as the top level floughLogicalObject is created within a FloughType, the non-object types are ALWAYS raised to the top level
      * so they are immediately avalable within the encosing FloughType.
      */
-    type FloughLogicalObjectPlain = & {
-        kind: FloughLogicalObjectKind.plain;
-        item: FloughObjectTypeInstance;
+    interface FloughLogicalObjectBase {
+        kind: FloughLogicalObjectKind.union | FloughLogicalObjectKind.intersection | FloughLogicalObjectKind.difference;
+        tsType?: ObjectType | IntersectionType | UnionType;
         [essymbolFloughLogicalObject]: true;
-    };
-    type FloughLogicalObjectUnion = & {
+    }
+    interface FloughLogicalTsObjectBase {
+        kind: FloughLogicalObjectKind.tsunion | FloughLogicalObjectKind.tsintersection | FloughLogicalObjectKind.plain;
+        tsType: ObjectType | IntersectionType | UnionType;
+        [essymbolFloughLogicalObject]: true;
+    }
+
+    type FloughLogicalObjectUnion = FloughLogicalObjectBase & {
         kind: FloughLogicalObjectKind.union;
         items: FloughLogicalObject[];
-        [essymbolFloughLogicalObject]: true;
     };
-    type FloughLogicalObjectIntersection = & {
+    type FloughLogicalObjectIntersection = FloughLogicalObjectBase & {
         kind: FloughLogicalObjectKind.intersection;
         items: FloughLogicalObject[];
-        [essymbolFloughLogicalObject]: true;
     };
-    type FloughLogicalObjectDifference= & {
+    type FloughLogicalObjectDifference= FloughLogicalObjectBase & {
         kind: FloughLogicalObjectKind.difference;
         items: [FloughLogicalObject,FloughLogicalObject];
-        [essymbolFloughLogicalObject]: true;
     };
-    type FloughLogicalObjectTsintersection = & {
+
+    type FloughLogicalObjectPlain = FloughLogicalTsObjectBase & {
+        kind: FloughLogicalObjectKind.plain;
+        item: FloughObjectTypeInstance;
+    };
+    /**
+     * Although FloughLogicalObjectTsintersection is a leaf node, it is not a FloughLogicalObjectPlain and it has member "items" because
+     * TS may include non-objects in intersections (even though result is never), but these are always raised to the top level in FloughType.
+     * TODO: `items: FloughLogicalObjectPlain[]`
+     */
+    type FloughLogicalObjectTsintersection = FloughLogicalTsObjectBase & {
         kind: FloughLogicalObjectKind.tsintersection;
         items: FloughLogicalObject[];
-        tsType: IntersectionType;
-        [essymbolFloughLogicalObject]: true;
     };
-    type FloughLogicalObjectTsunion = & {
+    type FloughLogicalObjectTsunion = FloughLogicalTsObjectBase & {
         kind: FloughLogicalObjectKind.tsunion;
         items: FloughLogicalObject[];
-        tsType: UnionType;
-        [essymbolFloughLogicalObject]: true;
     };
 
-    type FloughLogicalObject = FloughLogicalObjectPlain | FloughLogicalObjectUnion | FloughLogicalObjectIntersection | FloughLogicalObjectDifference | FloughLogicalObjectTsintersection | FloughLogicalObjectTsunion;
-    export interface FloughLogicalObjectIF {
-        //[essymbolFloughLogicalObject]: true;
-        //kind: FloughLogicalObjectKind;
-    }
-    // @ ts-expect-error
-    // export function isFloughLogicalObjectPlain(x: FloughLogicalObjectIF): boolean {
-    //     assertCastType<FloughLogicalObject>(x);
-    //     return x.kind===FloughLogicalObjectKind.plain;
-    // }
-    function isFloughLogicalObjectPlain(x: FloughLogicalObject): x is FloughLogicalObjectPlain {
-        return x.kind===FloughLogicalObjectKind.plain;
-    }
+    type FloughLogicalTsObject = FloughLogicalObjectTsintersection | FloughLogicalObjectTsunion | FloughLogicalObjectPlain ;
 
-    // // @ ts-expect-error
-    // function isFloughLogicalObjectUnion(x: FloughLogicalObject): x is FloughLogicalObjectUnion {
-    //     return x.kind===FloughLogicalObjectKind.union;
-    // }
-    // // @ ts-expect-error
-    // function isFloughLogicalObjectIntersection(x: FloughLogicalObject): x is FloughLogicalObjectIntersection {
-    //     return x.kind===FloughLogicalObjectKind.intersection;
-    // }
-    // // @ ts-expect-error
-    // function isFloughLogicalObjectDifference(x: FloughLogicalObject): x is FloughLogicalObjectDifference {
-    //     return x.kind===FloughLogicalObjectKind.difference;
-    // }
-    export function mapFloughLogicalObjectToEffectiveDeclaredLogicalObject(x: FloughLogicalObjectIF, xDeclared: FloughLogicalObjectIF): FloughLogicalObjectIF {
-        assertCastType<FloughLogicalObject>(x);
-        assertCastType<FloughLogicalObject>(xDeclared);
-        if (!isFloughLogicalObjectPlain(x)) Debug.fail("unexpected (or not yet implemented?)[x]");
-        if (!isFloughLogicalObjectPlain(xDeclared)) Debug.fail("unexpected (or not yet implemented?)[xDeclared]");
-        // if the types do not match then we cannot map the types, but the checker software should detects the type mismatch and report it
-        if (x.item.tsObjectType===xDeclared.item.tsObjectType) return x;
-        if (checker.isArrayOrTupleType(x.item.tsObjectType)!==checker.isArrayOrTupleType(xDeclared.item.tsObjectType)) return x;
-        // Exception: declared is array, but instance is tuple, then we can force map the tuple down to the array
-        //if (checker.isArrayType(x.item.tsObjectType)!==checker.isArrayType(xDeclared.item.tsObjectType)) return x;
-        if (checker.isArrayOrTupleType(xDeclared.item.tsObjectType)) {
-            if (checker.isArrayType(xDeclared.item.tsObjectType)){
-                if (checker.isTupleType(xDeclared.item.tsObjectType)){
-                    Debug.fail("not yet implemented: tuple->array mapping");
-                }
-                else {
-                    // both arrays
-                    const etx = checker.getElementTypeOfArrayType(x.item.tsObjectType);
-                    const etxDeclared = checker.getElementTypeOfArrayType(xDeclared.item.tsObjectType);
-                    if (etx===etxDeclared) return createFloughLogicalObjectPlain(xDeclared.item.tsObjectType);
-                    const eltFloughType = floughTypeModule.createRefTypesType(etx);
-                    const ret = createFloughLogicalObjectPlain(xDeclared.item.tsObjectType, new Map([[0,eltFloughType]]));
-                    return ret;
-                }
-            }
-            else { // declared is tuple
-                // if the types do not match then we cannot map the types, but the checker software should detects the type mismatch and report it
-                if (checker.isArrayType(x.item.tsObjectType)){
-                    return x; // hope the checker software will detect the type mismatch and report it
-                }
-                // both tuples
-                // x.item.keyToType; // if exists, use it. otherwise, use the resolvedTypeArguments
-                // x.item.tsObjectType.resolvedTypeArguments;
-                if (x.item.keyToType) return createFloughLogicalObjectPlain(xDeclared.item.tsObjectType, x.item.keyToType);
-                else {
-                    const args = (x.item.tsObjectType as TupleTypeReference)
-                        .resolvedTypeArguments?.map((x,i)=>[i,floughTypeModule.createRefTypesType(x)] as [number,FloughType]);
-                    return createFloughLogicalObjectPlain(xDeclared.item.tsObjectType, args?new Map(args):undefined);
-                }
-            }
+    type FloughLogicalObject = FloughLogicalObjectUnion | FloughLogicalObjectIntersection | FloughLogicalObjectDifference | FloughLogicalTsObject;
+
+    /**
+     * The FloughLogicalObjectIF is the handle for arguments and return values used in exported functions of this module.
+     */
+    export interface FloughLogicalObjectIF {}
+
+    export function modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject: FloughLogicalObjectIF, edType: Type): FloughLogicalObjectIF {
+        assertCastType<FloughLogicalObject>(logicalObject);
+        if (!(edType.flags & (TypeFlags.Union | TypeFlags.Intersection | TypeFlags.Object))) {
+            /**
+             * Cannot change the effective declared type so there should be a mistmatch between the effective declared type and the logical object type.
+             * (If not a mismatch then some case is not yet implemented.)
+             * Hopefully the checker software will detect the type mismatch and report it.
+             */
+            return logicalObject;
         }
-        return createFloughLogicalObjectPlain(xDeclared.item.tsObjectType, x.item.keyToType);
+        logicalObject.tsType = edType as UnionType | IntersectionType | ObjectType;
+        return logicalObject;
+        // //assertCastType<FloughLogicalObject>(xDeclared);
+        // if (!isFloughLogicalObjectPlain(logicalObject)) Debug.fail("unexpected (or not yet implemented?)[x]");
+        // //if (!isFloughLogicalObjectPlain(xDeclared)) Debug.fail("unexpected (or not yet implemented?)[xDeclared]");
+        // // if the exclusive categories of type do not match then we cannot map the types, but the checker software should detect the type mismatch and report it
+        // if (logicalObject.item.tsObjectType===edType) return logicalObject;
+        // if (checker.isArrayOrTupleType(logicalObject.item.tsObjectType)!==checker.isArrayOrTupleType(edType)) return logicalObject;
+        // // Exception: declared is array, but instance is tuple, then we can force map the tuple down to the array
+        // //if (checker.isArrayType(x.item.tsObjectType)!==checker.isArrayType(xDeclared.item.tsObjectType)) return x;
+        // if (checker.isArrayOrTupleType(edType)) {
+        //     if (checker.isArrayType(edType)){
+        //         if (checker.isTupleType(edType)){
+        //             Debug.fail("not yet implemented: tuple->array mapping");
+        //         }
+        //         else {
+        //             // both arrays
+        //             const etx = checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType);
+        //             const etxDeclared = checker.getElementTypeOfArrayType(edType);
+        //             if (etx===etxDeclared) return createFloughLogicalObjectPlain(edType);
+        //             const eltFloughType = floughTypeModule.createRefTypesType(etx);
+        //             const ret = createFloughLogicalObjectPlain(edType, new Map([[0,eltFloughType]]));
+        //             return ret;
+        //         }
+        //     }
+        //     else { // declared is tuple
+        //         // Mismatched types: cannot set declaredType of Array to Tuple
+        //         if (checker.isArrayType(logicalObject.item.tsObjectType)){
+        //             return logicalObject; // hope the checker software will detect the type mismatch and report it
+        //         }
+        //         // both tuples
+        //         // x.item.keyToType; // if exists, use it. otherwise, use the resolvedTypeArguments
+        //         // x.item.tsObjectType.resolvedTypeArguments;
+        //         if (logicalObject.item.keyToType) return createFloughLogicalObjectPlain(edType, logicalObject.item.keyToType);
+        //         else {
+        //             const args = (logicalObject.item.tsObjectType as TupleTypeReference)
+        //                 .resolvedTypeArguments?.map((x,i)=>[i,floughTypeModule.createRefTypesType(x)] as [number,FloughType]);
+        //             return createFloughLogicalObjectPlain(edType, args?new Map(args):undefined);
+        //         }
+        //     }
+        // }
+        // if (edType.flags & TypeFlags.Object) {
+        //     return createFloughLogicalObjectPlain(edType as ObjectType, logicalObject.item.keyToType);
+        // }
+        // /**
+        //  * Cannot change the effective declared type so there should be a mistmatch between the effective declared type and the logical object type.
+        //  * (If not a mismatch then some case is not yet implemented.)
+        //  * Hopefully the checker software will detect the type mismatch and report it.
+        //  */
+        // return logicalObject;
     }
 
-    export function isFloughLogicalObject(x: any): x is FloughLogicalObject {
-        return !!x?.[essymbolFloughLogicalObject];
-    }
+    // export function isFloughLogicalObject(x: any): x is FloughLogicalObject {
+    //     return !!x?.[essymbolFloughLogicalObject];
+    // }
 
     //arg1?: Readonly<[PropertyKeyType,FloughType][]> | Readonly<ESMap<PropertyKeyType,FloughType>>,
-    export function createFloughLogicalObjectPlain(tstype: ObjectType, arg1?: Readonly<ESMap<PropertyKeyType,FloughType>>){
+    export function createFloughLogicalObjectPlain(tstype: ObjectType, arg1?: Readonly<ESMap<PropertyKeyType,FloughType>>): FloughLogicalObjectPlain{
         return {
             kind: FloughLogicalObjectKind.plain,
+            tsType: tstype,
             item: createFloughObjectTypeInstance(tstype, arg1),
             [essymbolFloughLogicalObject]: true
         };
@@ -190,26 +235,38 @@ namespace ts {
      * Recurively filters out all non-(UnionType | IntersectionType | ObjectType) elements from each type.types array recursively
      * Return undefined if all types are filtered out.
      * Otherwise, return the type tree converted to a FloughLogicalObject tree.
+     * NOTE: Types of object properties/elements are not converted here.
      */
     export function createFloughLogicalObject(tsType: Type): FloughLogicalObjectIF | undefined{
         //assertCastType<FloughLogicalObject>(logicalObject);
         //createFloughLogicalObject(getTsTypeFromLogicalObject(logicalObject));
-        function filterAndMapItems(items: Type[]): FloughLogicalObjectIF[] {
+        function filterAndMapItems(items: Type[]): FloughLogicalTsObject[] {
+            //let objectItems: Type[] = items.filter(x=>x.flags & (TypeFlags.Object | TypeFlags.Union | TypeFlags.Intersection));
             return items.filter(x=>x.flags & (TypeFlags.Object | TypeFlags.Union | TypeFlags.Intersection))
-                .map(x=>createFloughLogicalObject(x as UnionType | IntersectionType | ObjectType)!)
-                .filter(x=>!!x);
+                .map(x=>createFloughLogicalObject(x as UnionType | IntersectionType | ObjectType) as undefined | FloughLogicalTsObject)
+                .filter(x=>!!x) as FloughLogicalTsObject[];
         }
         if (tsType.flags & TypeFlags.Union) {
             const items = filterAndMapItems((tsType as UnionType).types);
             if (items.length===0) return undefined;
             else if (items.length===1) return items[0];
+            else if (enableReSectionSubsetOfTsUnionAndIntersection && items.length !== (tsType as UnionType).types.length) {
+                // if some types are filtered out, then we need to resection the types
+                const aType = items.map(x=>x.tsType);
+                tsType = checker.getUnionType(aType);
+            }
             return createFloughLogicalObjectTsunion(tsType as UnionType, items);
         }
         else if (tsType.flags & TypeFlags.Intersection) {
             const items = filterAndMapItems((tsType as UnionType).types);
             if (items.length===0) return undefined;
             else if (items.length===1) return items[0];
-            return createFloughLogicalObjectTsintersection(tsType as IntersectionType, filterAndMapItems((tsType as IntersectionType).types));
+            else if (enableReSectionSubsetOfTsUnionAndIntersection && items.length !== (tsType as UnionType).types.length) {
+                // if some types are filtered out, then we need to resection the types
+                const aType = items.map(x=>x.tsType);
+                tsType = checker.getIntersectionType(aType);
+            }
+            return createFloughLogicalObjectTsintersection(tsType as IntersectionType, items);
         }
         else if (tsType.flags & TypeFlags.Object) {
             return createFloughLogicalObjectPlain(tsType as ObjectType);
@@ -217,7 +274,7 @@ namespace ts {
         else {
             return undefined;
         }
-     }
+    }
 
 
     export function unionOfFloughLogicalObject(a: FloughLogicalObjectIF, b: FloughLogicalObjectIF): FloughLogicalObject {
@@ -272,6 +329,19 @@ namespace ts {
             [essymbolFloughLogicalObject]: true
         };
     }
+
+    /**
+     *
+     * @param arrlogobj This wont work.
+     * @returns
+     */
+    export function intersectionAndSimplifyLogicalObjects(arrlogobj: FloughLogicalObjectIF[]): FloughLogicalObjectIF | undefined{
+        assertCastType<FloughLogicalObject[]>(arrlogobj);
+        const logobj = intersectionOfFloughLogicalObjects(...arrlogobj);
+        return logobj;
+        //return createFloughLogicalObject(getEffectiveDeclaredTsTypeFromLogicalObject(logobj));
+    }
+
 
 
     type LogicalObjectVisitor<ResultType,StateType, VTorRtnType = [StateType | undefined,ResultType | undefined, FloughLogicalObject | undefined]> = & {
@@ -446,14 +516,24 @@ namespace ts {
      * @returns
      */
 
+    /**
+     * type DiscriminantF:
+     * returns true if the type is to be included in the result, or false if it is to be excluded, or a FloughType if it is to be replaced by that type.
+     */
+    export type DiscriminantFn = (type: Readonly<FloughType>) => FloughType | boolean;
+    // export type DiscriminantResultPart = & { arrBaseAndPropertyType: [base:FloughType,property:FloughType][], type: FloughType };
+    // export type DiscriminantResult = & { passing: DiscriminantResultPart, failing?: DiscriminantResultPart };
+
     export function logicalObjectForEachTypeOfPropertyLookup(
-        logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType, _crit?: undefined
+        logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType,
     ): { arrBaseAndPropertyType: [base:FloughType,property:FloughType][], type: FloughType } {
         const { objToType, type } = logicalObjectForEachTypeOfPropertyLookupInternal(logicalObjectTop,lookupkey);
         const ret = { arrBaseAndPropertyType: [] as [base:FloughType,property:FloughType][], type: floughTypeModule.createNeverType() };
+
         objToType.forEach((pt,oi)=>{
-            const logicalObject: FloughLogicalObject = {
+            const logicalObject: FloughLogicalTsObject = {
                 kind: FloughLogicalObjectKind.plain,
+                tsType: oi.tsObjectType,
                 item: oi,
                 [essymbolFloughLogicalObject]: true
             };
@@ -467,7 +547,7 @@ namespace ts {
     type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<FloughType>>;
     type LogicalObjectForEachTypeOfProperyLookupReturnType = & { objToType: ObjToTypeMap; type: Readonly<FloughType> };
     function logicalObjectForEachTypeOfPropertyLookupInternal(
-        logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType, _crit?: InferCrit
+        logicalObjectTop: Readonly<FloughLogicalObjectIF>, lookupkey: PropertyKeyType, discriminantFn?: DiscriminantFn
     ): LogicalObjectForEachTypeOfProperyLookupReturnType {
         assertCastType<FloughLogicalObject>(logicalObjectTop);
         type Result = LogicalObjectForEachTypeOfProperyLookupReturnType;
@@ -496,6 +576,12 @@ namespace ts {
                         // by convention, the instance of an array kill keep the instance type value (if it exists) as element 0.
                         let type = logicalObject.item.keyToType.get(0);
                         if (!type) type = floughTypeModule.createRefTypesType(checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType));
+                        if (discriminantFn){
+                            const ret = discriminantFn(type);
+                            if (ret === false) return createEmptyState();
+                            if (ret !== true) type = ret;
+                            // else type stay the same
+                        }
                         if (type) return { objToType: newMap([logicalObject.item, type]), type };
                         // const tsElementType = checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType);
                         // type = tsElementType ? floughTypeModule.createFromTsType(tsElementType) : Debug.fail("not yet implemented (any type?)");
@@ -592,12 +678,15 @@ namespace ts {
                         state = result;
                     }
                     else {
-                        result.objToType.forEach((t, objectInstance) => {
+                        result.objToType.forEach((t1, objectInstance) => {
                             assertCastType<State>(state);
-                            if (!state.objToType.get(objectInstance)) state.objToType.set(objectInstance, t);
-                            else {
-                                Debug.fail("does this really happen?");
-                            }
+                            const t2 = state.objToType.get(objectInstance);
+                            if (!t2) state.objToType.set(objectInstance, t1);
+                            // else {
+                            //     t1 = floughTypeModule.intersectionWithFloughTypeMutate(t1,t2);
+                            //     state.objToType.set(objectInstance, t1);
+                            //     Debug.fail("does this really happen?");
+                            // }
                         });
                         state.type = floughTypeModule.intersectionWithFloughTypeMutate(result.type,state.type);
                     }
@@ -607,10 +696,10 @@ namespace ts {
                      * The intersection type is incrementally computed for each itemsIndex, but the type is not set to the map until the last itemsIndex.
                      * Now that the type is set, we can set the type for all the object instances.
                      */
-                    state.objToType.forEach((t, objectInstance) => {
+                    state.objToType.forEach((_t, objectInstance) => {
                         assertCastType<State>(state);
-                        const finalType = floughTypeModule.intersectionWithFloughTypeMutate(t,state.type);
-                        state.objToType.set(objectInstance, finalType);
+                        //const finalType = floughTypeModule.intersectionWithFloughTypeMutate(t,state.type);
+                        state.objToType.set(objectInstance, state.type);
                     });
                     return [undefined, state, undefined];
                 }
@@ -633,8 +722,8 @@ namespace ts {
                     // const lesserSubtrahend = floughTypeModule.intersectionWithFloughTypeMutate(result.type,state.type);
                     state.objToType.forEach((_t, objectInstance) => {
                         assertCastType<State>(state);
-                        const finalType = floughTypeModule.differenceWithFloughTypeMutate(result.type,_t);
-                        state.objToType.set(objectInstance, finalType);
+                        const diffType = floughTypeModule.differenceWithFloughTypeMutate(result.type,_t);
+                        state.objToType.set(objectInstance, diffType);
                     });
                     state.type = floughTypeModule.differenceWithFloughTypeMutate(result.type,state.type);;
                     return [undefined, state, undefined];
@@ -646,6 +735,9 @@ namespace ts {
             function onTsintersection(logicalObject: Readonly<FloughLogicalObjectTsintersection>, result: Result, state: State | undefined, itemsIndex: number): OnReturnType {
                 /**
                  * This is now a hack to get things running. A tsintersection is a actually a single compound type, not a union of types.
+                 * A ts-intersection type has internal respesentation of the properties of the intersection type, and we can access those instead of calling union.
+                 * The ts-intersection property types are the intersection of property types of the intersection component types, not the union of the property types.
+                 * When such an intersection of property types is never, the whole intersection type is never, so the difference with union is consequential.
                  */
                 return onUnion({
                     ...logicalObject, kind: FloughLogicalObjectKind.union},
@@ -666,13 +758,14 @@ namespace ts {
         return result;
     } // end of logicalObjectForEachTypeOfProperyLookup
 
-    export function getTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Set<Type> {
+    export function getEffectiveDeclaredTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Set<Type> {
         assertCastType<Readonly<FloughLogicalObject>>(logicalObjectTop);
         type Result = Set<Type>;
         type State = Set<Type>;
         type OnReturnType = [state:State | undefined, result:Result | undefined, push:FloughLogicalObject | undefined];
         function createLogicalObjectVisitorForGetTsTypeFromLogicalObject(): LogicalObjectVisitor<Result, State>{
             function onUnion(logicalObject: Readonly<FloughLogicalObjectUnion | FloughLogicalObjectTsunion>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
+                if (logicalObject.tsType) return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
                 if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
                 Debug.assert(state && result);
                 result.forEach(t => state.add(t));
@@ -681,10 +774,11 @@ namespace ts {
             }
             return {
                 onPlain(logicalObject: Readonly<FloughLogicalObjectPlain>) {
-                    return new Set<Type>([logicalObject.item.tsObjectType]);
+                    return new Set<Type>([logicalObject.tsType]);
                 },
                 onUnion,
                 onIntersection(logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
+                    if (logicalObject.tsType) return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
                     if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
                     Debug.assert(state && result);
                     if (itemsIndex===0) {
@@ -705,6 +799,7 @@ namespace ts {
                     return [state,undefined, logicalObject.items[itemsIndex+1]];
                 },
                 onDifference(logicalObject: Readonly<FloughLogicalObjectDifference>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
+                    if (logicalObject.tsType) return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
                     Debug.assert(logicalObject.items.length === 2);
                     if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
                     Debug.assert(state && result);
@@ -719,8 +814,9 @@ namespace ts {
                         return [undefined,state, undefined];
                     }
                 },
-                onTsunion(logicalObject: Readonly<FloughLogicalObjectTsunion>, result: Result | undefined, state: State | undefined, itemsIndex: number) {
-                    return onUnion(logicalObject, result,state,itemsIndex);
+                onTsunion(logicalObject: Readonly<FloughLogicalObjectTsunion>, _result: Result | undefined, _state: State | undefined, _itemsIndex: number) {
+                    return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
+                    //return onUnion(logicalObject, result,state,itemsIndex);
 
                 },
                 onTsintersection(logicalObject: Readonly<FloughLogicalObjectTsintersection>, _result: Result | undefined, _state: State | undefined, _itemsIndex: number) {
@@ -736,15 +832,17 @@ namespace ts {
         return result;
     }
 
-    export function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type {
+    export function getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type {
         assertCastType<FloughLogicalObject>(logicalObjectTop);
         const at: Type[] = [];
-        const typeSet = getTsTypeSetFromLogicalObject(logicalObjectTop);
+        const typeSet = getEffectiveDeclaredTsTypeSetFromLogicalObject(logicalObjectTop);
         typeSet.forEach(t => at.push(t));
-        if (logicalObjectTop.kind === "tsunion"){
-            if (logicalObjectTop.items.length===at.length){
-                // the types in the original tsType map 1-1 to those in the type set, so return the input.
-                if (logicalObjectTop.tsType.types.every(t => typeSet.has(t))) return logicalObjectTop.tsType;
+        if (!enableReSectionSubsetOfTsUnionAndIntersection){
+            if (logicalObjectTop.kind === "tsunion"){
+                if (logicalObjectTop.items.length===at.length){
+                    // the types in the original tsType map 1-1 to those in the type set, so return the input.
+                    if ((logicalObjectTop.tsType as UnionType).types.every(t => typeSet.has(t))) return logicalObjectTop.tsType;
+                }
             }
         }
         if (at.length===0) return checker.getNeverType();
@@ -752,18 +850,11 @@ namespace ts {
         const ut = checker.getUnionType(at);
         return ut;
     }
-    export function getTsTypesFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type[] {
-        const at: Type[] = [];
-        getTsTypeSetFromLogicalObject(logicalObjectTop).forEach(t => at.push(t));
-        return at;
-    }
-
-
-    export function intersectionAndSimplifyLogicalObjects(arrlogobj: FloughLogicalObjectIF[]): FloughLogicalObjectIF | undefined{
-        assertCastType<FloughLogicalObject[]>(arrlogobj);
-        const logobj = intersectionOfFloughLogicalObjects(...arrlogobj);
-        return createFloughLogicalObject(getTsTypeFromLogicalObject(logobj));
-    }
+    // export function getEffectiveDeclaredTsTypesFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type[] {
+    //     const at: Type[] = [];
+    //     getEffectiveDeclaredTsTypeSetFromLogicalObject(logicalObjectTop).forEach(t => at.push(t));
+    //     return at;
+    // }
 
     export function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[] {
         const as: string[] = [];

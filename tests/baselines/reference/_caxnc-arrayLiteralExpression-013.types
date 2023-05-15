@@ -18,35 +18,36 @@ const x: readonly[boolean,boolean] = c ? [c,c] as const : [c,c] as const;
 if (c) {
 >c : boolean
 
+    c;
+>c : true
+
     x;
->x : readonly [true, true]
+>x : readonly [boolean, boolean]
 
     x[0];
 >x[0] : true
->x : readonly [true, true]
+>x : readonly [boolean, boolean]
 >0 : 0
 
     x[1];
 >x[1] : true
->x : readonly [true, true]
+>x : readonly [boolean, boolean]
 >1 : 1
+}
+else {
+    c;
+>c : false
 
-    let x0 = x[0];
->x0 : true
->x[0] : true
->x : readonly [true, true]
+    x;
+>x : readonly [boolean, boolean]
+
+    x[0];
+>x[0] : false
+>x : readonly [boolean, boolean]
 >0 : 0
 
-    let x1 = x[1];
->x1 : true
->x[1] : true
->x : readonly [true, true]
+    x[1];
+>x[1] : false
+>x : readonly [boolean, boolean]
 >1 : 1
-
-    x0;
->x0 : true
-
-    x1;
->x1 : true
 }
-

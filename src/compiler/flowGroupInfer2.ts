@@ -1,6 +1,9 @@
 /* eslint-disable no-double-space */
 namespace ts {
 
+    export const enableMapReplayedObjectTypesToSymbolFlowInfoTypes = true;
+
+
     export interface MrNarrow {
         flough({ sci, expr, crit, qdotfallout, inferStatus }: FloughArgs): FloughReturn;
         createRefTypesSymtab(): RefTypesSymtab;
@@ -291,6 +294,7 @@ namespace ts {
         //     return as;
         // }
 
+        // @ts-expect-error
         function widenLiteralOrBoolean(tstype: Readonly<Type>): Type[] {
             if (!(tstype.flags & (TypeFlags.Literal | TypeFlags.BooleanLiteral))) return [tstype];
             if (tstype.flags & TypeFlags.BooleanLiteral) return [trueType, falseType];
@@ -302,75 +306,87 @@ namespace ts {
         }
 
         function widenDeclarationOrAssignmentRhs(rawRhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>,
-            options: {floughDoNotWidenInitalizedFlowType?: boolean}): RefTypesType {
+            /*options: {floughDoNotWidenInitalizedFlowType?: boolean}*/): RefTypesType {
+            //let type = rawRhsType;
 
+            // TODO: should be no TypeFlags.EnumLiteral.
             if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & (TypeFlags.EnumLiteral | TypeFlags.Literal)) return rawRhsType;
 
-            const atypeMaybeWidened: Type[] = [];
-            let someWidened = false;
-           floughTypeModule.forEachRefTypesTypeType(rawRhsType, tstype=>{
-                /**
-                 * In case of tstype is Object, and when the lhsSymbolFlowInfo.effectiveTsType is the, or a union of, "canonical" types,
-                 * then, for each "canonical" type, we use checker.isTypeRelatedTo to detect if tstype is assignable to that "canonical" type,
-                 * and if so, push that "canonical" type onto atypeMaybeWidened, setting someWidened=true.
-                 * If there was no match to any canonical type, instead tstype onto atypeMaybeWidened without setting someWidened - that
-                 * might correspond to an error at the checkExpression level but it doesn't matter here.
-                 */
-                if (tstype.flags & TypeFlags.Object && !isArrayOrTupleType(tstype)){
-                    let someMatch = false;
-                    if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & TypeFlags.Union){
-                        (lhsSymbolFlowInfo.effectiveDeclaredTsType as UnionType).types.forEach(declaredType=>{
-                            if (checker.isTypeAssignableTo(tstype,declaredType)) {
-                                atypeMaybeWidened.push(declaredType);
-                                someWidened = true;
-                                someMatch = true;
-                            }
-                        });
-                    }
-                    else {
-                        if (checker.isTypeAssignableTo(tstype,lhsSymbolFlowInfo.effectiveDeclaredTsType)) {
-                            atypeMaybeWidened.push(lhsSymbolFlowInfo.effectiveDeclaredTsType);
-                            someWidened = true;
-                            someMatch = true;
-                        }
-                    }
-                    if (!someMatch){
-                        atypeMaybeWidened.push(tstype);
-                    }
-                    return;
-                }
+            return floughTypeModule.widenTypeByEffectiveDeclaredType(rawRhsType, lhsSymbolFlowInfo.effectiveDeclaredTsType);
+                //{ floughDoNotWidenNonObject: options.floughDoNotWidenInitalizedFlowType, floughDoNotWidenObject: true });
 
-                if (options.floughDoNotWidenInitalizedFlowType){
-                    atypeMaybeWidened.push(tstype);
-                    return;
-                }
-                if (!(tstype.flags & (TypeFlags.Literal | TypeFlags.BooleanLiteral))) {
-                    atypeMaybeWidened.push(tstype);
-                    return;
-                }
-                const matchesDeclaredTypeRegularType = (declaredTsType: Type): boolean =>{
-                    return ((declaredTsType as any).regularType
-                        && (declaredTsType as any).regularType===(tstype as any).regularType);
-                };
-                if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & TypeFlags.Union){
-                    if ((lhsSymbolFlowInfo.effectiveDeclaredTsType as UnionType).types.some(dt=>matchesDeclaredTypeRegularType(dt))){
-                        atypeMaybeWidened.push(tstype);
-                        return;
-                    }
-                }
-                else {
-                    if (matchesDeclaredTypeRegularType(lhsSymbolFlowInfo.effectiveDeclaredTsType)) {
-                        atypeMaybeWidened.push(tstype);
-                        return;
-                    }
-                }
-                // Why is the rhsExpr required as an argument to widenTypeInferredFromInitializer?  Can it not be done from type alone? (JSDoc?)
-                //atypeMaybeWidened.push(checker.widenTypeInferredFromInitializer(rhsExpr,checker.getFreshTypeOfLiteralType(tstype)));
-                atypeMaybeWidened.push(...widenLiteralOrBoolean(tstype));
-                someWidened = true;
-            });
-            if (someWidened) return floughTypeModule.createRefTypesType(atypeMaybeWidened);
-            return rawRhsType;
+            // if (enableMapReplayedObjectTypesToSymbolFlowInfoTypes && floughTypeModule.hasLogicalObject(rawRhsType)){
+            //     type = floughTypeModule.modifyFloughTypeObjectEffectiveDeclaredType(type, lhsSymbolFlowInfo.effectiveDeclaredTsType);
+            // }
+            // if (options.floughDoNotWidenInitalizedFlowType) return type;
+            // const atypeMaybeWidened: Type[] = [];
+            // let someWidened = false;
+            // floughTypeModule.forEachNonObjectTsType(rawRhsType, tstype=>{
+            //     /**
+            //      * In case of tstype is Object, and when the lhsSymbolFlowInfo.effectiveTsType is the, or a union of, "canonical" types,
+            //      * then, for each "canonical" type, we use checker.isTypeRelatedTo to detect if tstype is assignable to that "canonical" type,
+            //      * and if so, push that "canonical" type onto atypeMaybeWidened, setting someWidened=true.
+            //      * If there was no match to any canonical type, instead tstype onto atypeMaybeWidened without setting someWidened - that
+            //      * might correspond to an error at the checkExpression level but it doesn't matter here.
+            //      */
+            //     if (tstype.flags & (TypeFlags.Object | TypeFlags.Union | TypeFlags.Intersection) {
+            //         Debug.fail("unexpected");
+            //     }
+            //     if (tstype.flags & TypeFlags.Object && !isArrayOrTupleType(tstype)){
+            //         let someMatch = false;
+            //         if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & TypeFlags.Union){
+            //             (lhsSymbolFlowInfo.effectiveDeclaredTsType as UnionType).types.forEach(declaredType=>{
+            //                 if (checker.isTypeAssignableTo(tstype,declaredType)) {
+            //                     atypeMaybeWidened.push(declaredType);
+            //                     someWidened = true;
+            //                     someMatch = true;
+            //                 }
+            //             });
+            //         }
+            //         else {
+            //             if (checker.isTypeAssignableTo(tstype,lhsSymbolFlowInfo.effectiveDeclaredTsType)) {
+            //                 atypeMaybeWidened.push(lhsSymbolFlowInfo.effectiveDeclaredTsType);
+            //                 someWidened = true;
+            //                 someMatch = true;
+            //             }
+            //         }
+            //         if (!someMatch){
+            //             atypeMaybeWidened.push(tstype);
+            //         }
+            //         return;
+            //     }
+
+            //     // if (options.floughDoNotWidenInitalizedFlowType){
+            //     //     atypeMaybeWidened.push(tstype);
+            //     //     return;
+            //     // }
+            //     if (!(tstype.flags & (TypeFlags.Literal | TypeFlags.BooleanLiteral))) {
+            //         atypeMaybeWidened.push(tstype);
+            //         return;
+            //     }
+            //     const matchesDeclaredTypeRegularType = (declaredTsType: Type): boolean =>{
+            //         return ((declaredTsType as any).regularType
+            //             && (declaredTsType as any).regularType===(tstype as any).regularType);
+            //     };
+            //     if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & TypeFlags.Union){
+            //         if ((lhsSymbolFlowInfo.effectiveDeclaredTsType as UnionType).types.some(dt=>matchesDeclaredTypeRegularType(dt))){
+            //             atypeMaybeWidened.push(tstype);
+            //             return;
+            //         }
+            //     }
+            //     else {
+            //         if (matchesDeclaredTypeRegularType(lhsSymbolFlowInfo.effectiveDeclaredTsType)) {
+            //             atypeMaybeWidened.push(tstype);
+            //             return;
+            //         }
+            //     }
+            //     // Why is the rhsExpr required as an argument to widenTypeInferredFromInitializer?  Can it not be done from type alone? (JSDoc?)
+            //     //atypeMaybeWidened.push(checker.widenTypeInferredFromInitializer(rhsExpr,checker.getFreshTypeOfLiteralType(tstype)));
+            //     atypeMaybeWidened.push(...widenLiteralOrBoolean(tstype));
+            //     someWidened = true;
+            // });
+            // if (someWidened) return floughTypeModule.createRefTypesType(atypeMaybeWidened);
+            // return rawRhsType;
         }
 
 
@@ -984,7 +1000,7 @@ namespace ts {
             }*/);
 
             function floughIdentifier(): FloughReturn {
-                if (getMyDebug()) consoleGroup(`mrNarrowIdentifier [in] ${dbgNodeToString(expr)}`);
+                if (getMyDebug()) consoleGroup(`floughIdentifier[in] ${dbgNodeToString(expr)}`);
                 function floughIdentifierAux(): FloughReturn {
                     Debug.assert(isIdentifier(expr));
 
@@ -1027,7 +1043,7 @@ namespace ts {
 
                     if (inferStatus.replayables.has(symbol)){
                         if (getMyDebug()){
-                            consoleLog(`floughInner[dbg]: start replay for ${dbgSymbolToStringSimple(symbol)}, ${dbgNodeToString(expr)}`);
+                            consoleLog(`floughIdentifier[dbg]: start replay for ${dbgSymbolToStringSimple(symbol)}, ${dbgNodeToString(expr)}`);
                         }
                         const replayable = inferStatus.replayables.get(symbol)!;
                         /**
@@ -1046,7 +1062,7 @@ namespace ts {
                             inferStatus: { ...inferStatus, inCondition:true, currentReplayableItem:replayable, groupNodeToTypeMap: dummyNodeToTypeMap }
                         });
                         if (getMyDebug()){
-                            consoleLog(`floughInner[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}, ${dbgNodeToString(expr)}`);
+                            consoleLog(`floughIdentifier[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}, ${dbgNodeToString(expr)}`);
                         }
 
                         /**
@@ -1064,7 +1080,7 @@ namespace ts {
 
                         {
                             const unmerged: RefTypesTableReturn[] = [];
-                            mntr.unmerged.forEach((rttr)=>{
+                            mntr.unmerged.forEach((rttr, _rttridx)=>{
                                 /**
                                  * In the case where the rhs of the replayable is an object (possible a union tree), the lhs type id might/will not match the rhs type id.
                                  * The lhs type was established by the checker module after the rhs was processed, and it recorded in the current variable `symbolFlowInfo`.
@@ -1076,19 +1092,29 @@ namespace ts {
                                  * It would be good if we could (figuratively) map the Node values in literal object to the types they became in the symbolFlowInfo.tsType tree.
                                  *
                                  */
-                                const enableMapReplayedObjectTypesToSymbolFlowInfoTypes = false;
-                                if (enableMapReplayedObjectTypesToSymbolFlowInfoTypes && rttr.type && floughTypeModule.hasLogicalObject(rttr.type)){
-                                    const effectiveDeclaredType = getEffectiveDeclaredType(symbolFlowInfo!);
-                                    const mappedType = floughTypeModule.mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(rttr.type, effectiveDeclaredType);
-                                    if (getMyDebug()){
-                                        consoleLog(`floughInner[dbg]: mapped ${dbgRefTypesTypeToString(rttr.type)} to ${dbgRefTypesTypeToString(mappedType)} with ${dbgRefTypesTypeToString(effectiveDeclaredType)}`);
-                                    }
-                                    rttr.type = mappedType;
+                                const rhsType = rttr.type;
+                                rttr.type = widenDeclarationOrAssignmentRhs(rttr.type, symbolFlowInfo!);
+                                if (getMyDebug()){
+                                    consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
                                 }
+                                // if (enableMapReplayedObjectTypesToSymbolFlowInfoTypes && rttr.type && floughTypeModule.hasLogicalObject(rttr.type)){
+                                //     if (getMyDebug()) {
+                                //         dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`----  floughIdentifier[dbg,${_rttridx}]: before : ${s}`));
+                                //     }
+                                //     const effectiveDeclaredTsType = symbolFlowInfo!.effectiveDeclaredTsType;
+                                //     const mappedType = floughTypeModule.modifyFloughTypeObjectEffectiveDeclaredType(rttr.type, effectiveDeclaredTsType);
+                                //     if (getMyDebug()){
+                                //         consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rttr.type)} to ${dbgRefTypesTypeToString(mappedType)} with ${dbgTypeToString(effectiveDeclaredTsType)}`);
+                                //     }
+                                //     rttr.type = mappedType;
+                                //     if (getMyDebug()) {
+                                //         dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`----  floughIdentifier[dbg,${_rttridx}]: after : ${s}`));
+                                //     }
+                                // }
                                 let narrowerTypeOut: FloughType | undefined;
                                 if (replayableInType){
-                                    const narrowerTsTypeOut = floughTypeModule.getTypeFromRefTypesType(floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType));
-                                    narrowerTypeOut = floughTypeModule.createRefTypesType(narrowerTsTypeOut);
+                                    narrowerTypeOut = floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType);
+                                    //narrowerTypeOut = floughTypeModule.createRefTypesType(narrowerTsTypeOut);
                                 }
                                 // const narrowerTypeOut = (replayableInType /* && !isASubsetOfB(rttr.type,replayableInType) */ && floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType)) || undefined;
                                 if (narrowerTypeOut &&floughTypeModule.isNeverType(narrowerTypeOut)) return;
@@ -1099,10 +1125,10 @@ namespace ts {
                                 //     isconst: replayable.isconst,
                                 //     ...(narrowerTypeOut ? { type:narrowerTypeOut } : {})
                                 // });
-                                let type = narrowerTypeOut ?? rttr.type;
+                                const type = narrowerTypeOut ?? rttr.type;
                                 // After replay, the type must be widened just as if it were a variable declaration or assignment.
-                                type = widenDeclarationOrAssignmentRhs(type, symbolFlowInfo!,
-                                    { floughDoNotWidenInitalizedFlowType: compilerOptions.floughDoNotWidenInitalizedFlowType });
+                                // TODO: move this to the top of the block
+                                    //{ floughDoNotWidenInitalizedFlowType: compilerOptions.floughDoNotWidenInitalizedFlowType });
                                 unmerged.push({
                                     ...rttr,
                                     symbol,
@@ -1156,20 +1182,20 @@ namespace ts {
 
                 if (getMyDebug()) {
                     ret.unmerged.forEach((rttr,i)=>{
-                        dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  flough[dbg]: unmerged[${i}]: ${s}`));
+                        dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`floughIdentifier[out]: unmerged[${i}]: ${s}`));
                     });
-                    consoleLog(`mrNarrowIdentifier[out] floughReturn.typeof: ${ret.typeof}`);
+                    consoleLog(`floughIdentifier[out] floughReturn.typeof: ${ret.typeof}`);
 
-                    consoleLog(`mrNarrowIdentifier[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
+                    consoleLog(`floughIdentifier[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
                     inferStatus.groupNodeToTypeMap.forEach((t,n)=>{
                         for(let ntmp = n; ntmp.kind!==SyntaxKind.SourceFile; ntmp=ntmp.parent){
                             if (ntmp===expr){
-                                consoleLog(`mrNarrowIdentifier[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
+                                consoleLog(`floughIdentifier[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
                                 break;
                             }
                         }
                     });
-                    consoleLog(`mrNarrowIdentifier [out] ${dbgNodeToString(expr)}`);
+                    consoleLog(`floughIdentifier[out] ${dbgNodeToString(expr)}`);
                     consoleGroupEnd();
                 }
                 return ret;
@@ -1592,18 +1618,19 @@ namespace ts {
                      * true -------------- true ---------------
                      */
                     // Debug.assert(expr.initializer);  in-flow VariableDeclaration always has initizer
-                    const rhsWidenedType = widenDeclarationOrAssignmentRhs(rhs.type, symbolFlowInfo,
-                        { floughDoNotWidenInitalizedFlowType:compilerOptions.floughDoNotWidenInitalizedFlowType });
+                    // const rhsWidenedType = widenDeclarationOrAssignmentRhs(rhs.type, symbolFlowInfo,
+                    //     { floughDoNotWidenInitalizedFlowType:compilerOptions.floughDoNotWidenInitalizedFlowType });
+                    const rhsWidenedType = widenDeclarationOrAssignmentRhs(rhs.type, symbolFlowInfo);
                     if (false && extraAsserts && !compilerOptions.floughDoNotWidenInitalizedFlowType){
-                            // This assertion would show that widenDeclarationOrAssignmentRhs is (so far) giving the same results as checker.widenTypeInferredFromInitializer.
-                            // However, it actually -sometimes- fails for both cases !expr.type and !!expr.node, meaning it doesn't match non-flough behavior.
-                            // @ts-ignore
-                            if (!expr.type) {
-                            Debug.assert(checker.isTypeRelatedTo(floughTypeModule.getTypeFromRefTypesType(rhsWidenedType),
-                                symbolFlowInfo!.effectiveDeclaredTsType, checker.getRelations().identityRelation),"case !expr.type",
-                                (()=>`({rhsWidenedType}:${dbgRefTypesTypeToString(rhsWidenedType)})`
-                                    +`!==`
-                                    +`({symbolFlowInfo.effectiveDeclaredTsType}:${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)})`));
+                        // This assertion would show that widenDeclarationOrAssignmentRhs is (so far) giving the same results as checker.widenTypeInferredFromInitializer.
+                        // However, it actually -sometimes- fails for both cases !expr.type and !!expr.node, meaning it doesn't match non-flough behavior.
+                        // @ts-ignore
+                        if (!expr.type) {
+                        Debug.assert(checker.isTypeRelatedTo(floughTypeModule.getTypeFromRefTypesType(rhsWidenedType),
+                            symbolFlowInfo!.effectiveDeclaredTsType, checker.getRelations().identityRelation),"case !expr.type",
+                            (()=>`({rhsWidenedType}:${dbgRefTypesTypeToString(rhsWidenedType)})`
+                                +`!==`
+                                +`({symbolFlowInfo.effectiveDeclaredTsType}:${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)})`));
                         }
                         else {
                             // @ts-ignore
@@ -2263,8 +2290,9 @@ namespace ts {
                     if (extraAsserts && compilerOptions.enableTSDevExpectString) {
                         debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                     }
-                    const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo,
-                        { floughDoNotWidenInitalizedFlowType:compilerOptions.floughDoNotWidenInitalizedFlowType });
+                    const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
+                    // const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo,
+                    //     { floughDoNotWidenInitalizedFlowType:compilerOptions.floughDoNotWidenInitalizedFlowType });
                     return { unmerged: [{
                         ...passing,
                         type: rhsType,
@@ -2289,8 +2317,9 @@ namespace ts {
                         const lhsSymbol = lhsRttr.symbol;
                         const lhsSymbolFlowInfo = _mrState.symbolFlowInfoMap.get(lhsSymbol);
                         Debug.assert(lhsSymbolFlowInfo);
-                        const rhsType = widenDeclarationOrAssignmentRhs(rhsUnion.type,lhsSymbolFlowInfo,
-                                { floughDoNotWidenInitalizedFlowType:compilerOptions.floughDoNotWidenInitalizedFlowType });
+                        const rhsType = widenDeclarationOrAssignmentRhs(rhsUnion.type,lhsSymbolFlowInfo);
+                        // const rhsType = widenDeclarationOrAssignmentRhs(rhsUnion.type,lhsSymbolFlowInfo,
+                        //     { floughDoNotWidenInitalizedFlowType:compilerOptions.floughDoNotWidenInitalizedFlowType });
                         unmerged.push({
                             ...lhsRttr,
                             type: rhsType,

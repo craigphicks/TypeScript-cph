@@ -15,6 +15,9 @@ const x: readonly[boolean,boolean] = c ? [c,c] as const : [c,c] as const;
 if (c) {
 >c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-013.ts, 0, 13))
 
+    c;
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-013.ts, 0, 13))
+
     x;
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-013.ts, 2, 5))
 
@@ -25,21 +28,19 @@ if (c) {
     x[1];
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-013.ts, 2, 5))
 >1 : Symbol(1)
+}
+else {
+    c;
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-013.ts, 0, 13))
 
-    let x0 = x[0];
->x0 : Symbol(x0, Decl(_caxnc-arrayLiteralExpression-013.ts, 8, 7))
+    x;
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-013.ts, 2, 5))
+
+    x[0];
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-013.ts, 2, 5))
 >0 : Symbol(0)
 
-    let x1 = x[1];
->x1 : Symbol(x1, Decl(_caxnc-arrayLiteralExpression-013.ts, 9, 7))
+    x[1];
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-013.ts, 2, 5))
 >1 : Symbol(1)
-
-    x0;
->x0 : Symbol(x0, Decl(_caxnc-arrayLiteralExpression-013.ts, 8, 7))
-
-    x1;
->x1 : Symbol(x1, Decl(_caxnc-arrayLiteralExpression-013.ts, 9, 7))
 }
-

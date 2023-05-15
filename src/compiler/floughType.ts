@@ -35,7 +35,8 @@ namespace ts {
          * Prefered interface for FloughType
          * @param ft
          */
-        createFromTsType(tstype: Readonly<Type>): FloughType;
+        //createFromTsTypeAndLogicalObject(tstype: Readonly<Type>, logicalObject: FloughLogicalObjectIF): FloughType;
+        createFromTsType(tstype: Readonly<Type>, logicalObject?: FloughLogicalObjectIF): FloughType;
         unionWithTsTypeMutate(tstype: Readonly<Type>, ft: FloughType): FloughType;
         cloneType(ft: Readonly<FloughType>): FloughType;
         createNeverType(): FloughType;
@@ -51,7 +52,9 @@ namespace ts {
         intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType;
         hasLogicalObject(ft: Readonly<FloughType>): boolean;
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
-        mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectiveDeclaredType: Readonly<FloughType>): FloughType;
+        //modifyFloughTypeObjectEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredType: Type): FloughType;
+
+        widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
 
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
         dbgFloughTypeToString(type: Readonly<FloughType>): string;
@@ -195,9 +198,11 @@ namespace ts {
         intersectionWithObjectSimplification,
         hasLogicalObject,
         getLogicalObject,
-        mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectiveDeclaredType: Readonly<FloughType>): FloughType {
-            return mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft,ftEffectiveDeclaredType);
-        },
+        //modifyFloughTypeObjectEffectiveDeclaredType,
+        // mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectiveDeclaredType: Readonly<FloughType>): FloughType {
+        //     return mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft,ftEffectiveDeclaredType);
+        // },
+        widenTypeByEffectiveDeclaredType,
         createFromTsType,
         unionWithTsTypeMutate,
         cloneType,
@@ -231,9 +236,11 @@ namespace ts {
     //export const floughTypeModule = floughTypeModuleTmp;
 
     const checker = 0 as any as TypeChecker;
+    const compilerOptions = 0 as any as CompilerOptions;
 
-    export function initFloughTypeModule(checkerIn: TypeChecker): void {
+    export function initFloughTypeModule(checkerIn: TypeChecker, compilerOptionsIn: CompilerOptions): void {
         (checker as any) = checkerIn;
+        (compilerOptions as any) = compilerOptionsIn;
     }
 
     type FloughTypeNobj= & {
@@ -316,7 +323,7 @@ namespace ts {
         const at = getTsTypesFromFloughTypeNobj(ft.nobj);
         // Now for the objects.
         if (ft.logicalObject) {
-            at.push(getTsTypeFromLogicalObject(ft.logicalObject));
+            at.push(getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
         }
         if (at.length === 0) return checker.getNeverType();
         if (at.length === 1) return at[0];
@@ -329,7 +336,7 @@ namespace ts {
         // Now for the objects.
         if (ft.logicalObject) {
             // TODO: return nonunion types?
-            at.push(getTsTypeFromLogicalObject(ft.logicalObject));
+            at.push(getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
         }
         if (at.length === 0) return [checker.getNeverType()];
         return at;
@@ -1142,8 +1149,8 @@ namespace ts {
         if (isNeverType(ai)||isNeverType(bi)) return [];
         if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
 
-        const leftTsType = ai.logicalObject ? getTsTypeFromLogicalObject(ai.logicalObject) : undefined;
-        const rightTsType = bi.logicalObject ? getTsTypeFromLogicalObject(bi.logicalObject) : undefined;
+        const leftTsType = ai.logicalObject ? getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
+        const rightTsType = bi.logicalObject ? getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
 
 
         const symset = new Set<string | LiteralType>();
@@ -1182,13 +1189,57 @@ namespace ts {
         castReadonlyFloughTypei(ft);
         return ft.logicalObject;
     }
-    function mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectDeclaredType: Readonly<FloughType>): FloughTypei {
-        castReadonlyFloughTypei(ft);
-        castReadonlyFloughTypei(ftEffectDeclaredType);
-        if (ft.logicalObject===undefined) return ft;
-        if (ftEffectDeclaredType.logicalObject===undefined) Debug.fail("unexpected: ftEffectDeclaredType.logicalObject===undefined");
-        const logicalObject = mapFloughLogicalObjectToEffectiveDeclaredLogicalObject(ft.logicalObject, ftEffectDeclaredType.logicalObject);
-        return { nobj: ft.nobj, logicalObject };
+
+    // deprecated
+    // function modifyFloughTypeObjectEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredType: Type): FloughTypei {
+    //     castReadonlyFloughTypei(ft);
+    //     if (ft.logicalObject===undefined) return ft;
+    //     const logicalObject = modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject, effectiveDeclaredType, { doNotWidenPropertyTypes:true });
+    //     return { nobj: ft.nobj, logicalObject };
+    // }
+    function widenTypeByEffectiveDeclaredType(ftin: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType {
+        castReadonlyFloughTypei(ftin);
+        if (isAnyType(ftin) || isUnknownType(ftin)) return ftin;
+        //let ft: FloughTypei | undefined; // = cloneType(ftin);
+        // const fn1 = (k: "string" | "number" | "bigint"): void => {
+        //     if (ftin.nobj[k] && ftin.nobj[k]!==true) {
+        //         if (ft===undefined) ft = cloneType(ftin);
+        //         ft.nobj[k]=true;
+        //     }
+        // };
+
+        if (!compilerOptions.floughDoNotWidenNonObject){
+            return createFromTsType(effectiveDeclaredTsType);
+        }
+        else {
+            const logicalObject = ftin.logicalObject;
+            if (!logicalObject) return ftin;
+            return {
+                ...ftin,
+                logicalObject: modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject, effectiveDeclaredTsType)
+            };
+        }
+        // if (!compilerOptions.floughDoNotWidenNonObject){
+        //     fn1("string");
+        //     fn1("number");
+        //     fn1("bigint");
+        //     if (ftin.nobj.boolFalse !== ftin.nobj.boolTrue) {
+        //         if (ft===undefined) ft = cloneType(ftin);
+        //         ft.nobj.boolFalse = true;
+        //         ft.nobj.boolTrue = true;
+        //     }
+        // }
+        // if (ftin.logicalObject){
+        //     if (compilerOptions.floughDoNotWidenLogicalObject){
+        //         if (ft===undefined) ft = cloneType(ftin);
+        //         ft.logicalObject = modifyFloughLogicalObjectEffectiveDeclaredType(ftin.logicalObject, effectiveDeclaredTsType, { doNotWidenPropertyTypes:true });
+        //     }
+        //     else {
+        //         if (ft===undefined) ft = cloneType(ftin);
+        //         ft.logicalObject = createFloughLogicalObject(effectiveDeclaredTsType);
+        //     }
+        // }
+        // return ft ?? ftin;
     }
 
 
