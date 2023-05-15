@@ -25,12 +25,12 @@ if (c) {
 >x : readonly [boolean, boolean]
 
     x[0];
->x[0] : true
+>x[0] : boolean
 >x : readonly [boolean, boolean]
 >0 : 0
 
     x[1];
->x[1] : true
+>x[1] : boolean
 >x : readonly [boolean, boolean]
 >1 : 1
 }
@@ -42,12 +42,12 @@ else {
 >x : readonly [boolean, boolean]
 
     x[0];
->x[0] : false
+>x[0] : boolean
 >x : readonly [boolean, boolean]
 >0 : 0
 
     x[1];
->x[1] : false
+>x[1] : boolean
 >x : readonly [boolean, boolean]
 >1 : 1
 }

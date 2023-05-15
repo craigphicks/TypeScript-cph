@@ -66,7 +66,7 @@ if (v[0]) {
 >1 : 1
 }
 if (w[0]) {
->w[0] : true
+>w[0] : boolean
 >w : readonly [boolean, boolean]
 >0 : 0
 
@@ -79,12 +79,12 @@ if (w[0]) {
 >0 : 0
 
     w[1];
->w[1] : true
+>w[1] : boolean
 >w : readonly [boolean, boolean]
 >1 : 1
 }
 if (x[0]) {
->x[0] : true
+>x[0] : boolean
 >x : readonly [boolean, boolean]
 >0 : 0
 
@@ -97,7 +97,7 @@ if (x[0]) {
 >0 : 0
 
     x[1];
->x[1] : true
+>x[1] : boolean
 >x : readonly [boolean, boolean]
 >1 : 1
 }

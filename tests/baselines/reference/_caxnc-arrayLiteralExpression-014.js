@@ -9,12 +9,24 @@ if (x[0]) {
     x[0];
     x[1];
 }
-
+else
+{
+    c;
+    x;
+    x[0];
+    x[1];
+}
 
 //// [_caxnc-arrayLiteralExpression-014.js]
 "use strict";
 var x = c ? [c, c] : [c, c];
 if (x[0]) {
+    c;
+    x;
+    x[0];
+    x[1];
+}
+else {
     c;
     x;
     x[0];

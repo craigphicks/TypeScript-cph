@@ -1,0 +1,17 @@
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-020.ts ===
+declare const c: boolean;
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-020.ts, 0, 13))
+
+let x: readonly[boolean] = [c];
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-020.ts, 2, 3))
+>c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-020.ts, 0, 13))
+
+if (x[0]) {
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-020.ts, 2, 3))
+>0 : Symbol(0)
+
+    x[0];
+>x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-020.ts, 2, 3))
+>0 : Symbol(0)
+}
+

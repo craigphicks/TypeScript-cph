@@ -17,23 +17,40 @@ const x: readonly[boolean,boolean] = c ? [c,c] as const : [c,c] as const;
 
 if (x[0]) {
 >x[0] : boolean
->x : readonly [true, true] | readonly [false, false]
+>x : readonly [boolean, boolean]
 >0 : 0
 
     c;
->c : true
+>c : boolean
 
     x;
->x : readonly [true, true]
+>x : readonly [boolean, boolean]
 
     x[0];
 >x[0] : true
->x : readonly [true, true]
+>x : readonly [boolean, boolean]
 >0 : 0
 
     x[1];
->x[1] : true
->x : readonly [true, true]
+>x[1] : boolean
+>x : readonly [boolean, boolean]
 >1 : 1
 }
+else
+{
+    c;
+>c : boolean
 
+    x;
+>x : readonly [boolean, boolean]
+
+    x[0];
+>x[0] : false
+>x : readonly [boolean, boolean]
+>0 : 0
+
+    x[1];
+>x[1] : boolean
+>x : readonly [boolean, boolean]
+>1 : 1
+}
