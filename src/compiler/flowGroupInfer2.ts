@@ -2486,6 +2486,10 @@ namespace ts {
                 const nomativeFalseType = floughTypeModule.createRefTypesType(negateEq ? trueType : falseType);
                 const trueAndFalseType = floughTypeModule.createRefTypesType([trueType,falseType]);
 
+                // TODO: PropertyAccessExpression and has be inlcuded, but working through ElementAccessExpression test cases first.
+                // if (leftExpr.kind===SyntaxKind.ElementAccessExpression || rightExpr.kind===SyntaxKind.ElementAccessExpression){
+
+                // }
 
                 const leftMntr = flough({
                     expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
@@ -2663,9 +2667,6 @@ namespace ts {
                 }
                 const {expression, argumentExpression} = expr;
 
-                // const fir: FloughInnerReturn = {
-                //     unmerged: [],
-                // };
                 const unmerged: RefTypesTableReturnNoSymbol[] = [];
 
                 const leftMntr = flough({
@@ -2683,15 +2684,28 @@ namespace ts {
                         expr:argumentExpression, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
                         sci: leftSci
                     });
-                    argMntr.unmerged.forEach((argMntr0,_argidx)=>{
-                        const {type: argType, sci:argSci} = applyCritNoneToOne(argMntr0,argMntr.nodeForMap, inferStatus.groupNodeToTypeMap);
+                    const { type: argType, sci: argSci } = applyCritNoneUnion(argMntr, inferStatus.groupNodeToTypeMap);
 
-                            const itemsTable: LogicalObjectForEachTypeOfPropertyLookupItem[] = [];
-                            // const nullOrUndefined = floughTypeModule.createRefTypesType([checker.getNullType(), checker.getUndefinedType()]);
-                            const discriminantFnTrue: DiscriminantFn = (ft: FloughType): FloughType | true | undefined => {
+                    let discriminantFnTrue: DiscriminantFn | undefined;
+                    let discriminantFnFalse: DiscriminantFn | undefined;
+
+                    if (crit.kind !== InferCritKind.none) {
+                        discriminantFnTrue = (ft: FloughType): FloughType | true | undefined => {
+                            const atpassing: Type[] = [];
+                            let anyNotPass = false;
+                            applyCritToRefTypesType(ft,{ ...crit, alsoFailing:false },(tstype, pass)=>{
+                                if (pass) atpassing.push(tstype);
+                                else anyNotPass = true;
+                            });
+                            if (atpassing.length === 0) return undefined;
+                            if (!anyNotPass) return true;
+                            return floughTypeModule.createRefTypesType(atpassing);
+                        };
+                        if (crit.alsoFailing){
+                            discriminantFnFalse = (ft: FloughType): FloughType | true | undefined => {
                                 const atpassing: Type[] = [];
                                 let anyNotPass = false;
-                                applyCritToRefTypesType(ft,{ ...crit, alsoFailing:false },(tstype, pass)=>{
+                                applyCritToRefTypesType(ft,{ ...crit, alsoFailing:false, negate:!crit.negate },(tstype, pass)=>{
                                     if (pass) atpassing.push(tstype);
                                     else anyNotPass = true;
                                 });
@@ -2699,57 +2713,113 @@ namespace ts {
                                 if (!anyNotPass) return true;
                                 return floughTypeModule.createRefTypesType(atpassing);
                             };
-                            // @ ts-ignore
-                            /*const _utype =*/ floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnTrue);
-                            itemsTable.forEach(({ logicalObject:baseLogicalObject, type:elementType})=>{
-                                //const baseType = floughTypeModule.createFrom(LogicalObject(logicalObject);
-                                if (getMyDebug()){
-                                    consoleLog(`floughElementAccessExpression[dbg,${_leftidx},${_argidx}] `
-                                    +`baseLogicalObject:${floughLogicalObjectModule.dbgLogicalObjectToStrings(baseLogicalObject)}, elementType:${dbgRefTypesTypeToString(elementType)}`);
-                                }
-                                //let chainTmp = leftRttr0;
-                                const alink: LogicalObjectLink[] = [
-                                    { keys: , logicalObject: baseLogicalObject, type: elementType }
-                                ];
+                        }
+                    }
+                    /**
+                     * TODO: add in non-undefined itemTable when appropriate,  That would only be for the endmost key of the chain,
+                     * in order to prevent exponential complexity.  Need a depth counter to know when to do that.
+                     */
+                    const itemsTable: LogicalObjectForEachTypeOfPropertyLookupItem[] | undefined = undefined;
 
-                                // while (!chainTmp.symbol && chainTmp.chain) chainTmp = chainTmp.chain;
-                                // if (chainTmp.symbol){
-                                // }
-
-                                unmerged.push({
-                                    type: elementType,
-                                    sci:argSci,
-                                    chain: leftRttr0
-                                });
-                                /**
-                                 * If there is a criterion, then we can process the chain, get a symbol, create a narrowed object type,
-                                 * and associate the symbol with the narrowed object type.
-                                 */
-                                // if (leftRttr0.symbol){
-                                //     /**
-                                //      * What if leftRttr0.symbol is a property symbol? TODO: don't set property symbols to RefTypesTable
-                                //      * What if argumentExpression set the value of leftRttr0.symbol? That situation should be detected, and
-                                //      * that would precedence.  However, for now, we don't detect that situation, and go ahead and possibly narrow the type
-                                //      * of leftRttr0.symbol in argSci here.
-                                //      */
-                                //     const {type: _baseType1, sc: sc1} = andSymbolTypeIntoSymtabConstraint({
-                                //         symbol:leftRttr0.symbol,
-                                //         isconst:leftRttr0.isconst,
-                                //         //isAssign: leftRttr0.isAssign, // false, because narrowing
-                                //         type: baseType,
-                                //         sc:argSci,
-                                //         getDeclaredType,
-                                //         mrNarrow
-                                //     });
-                                //     unmerged.push({
-                                //         type: elementType,
-                                //         //chain:[{symbol:leftRttr0.symbol, isconst:leftRttr0.isconst, sc:sctmp}],
-                                //         sci:sc1
-                                //     });
-                                // }
-
+                    // @ ts-ignore
+                    const passing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnTrue);
+                    if (passing){
+                        const [logicalObject, type] = passing;
+                        // if a symbol is available, bind logicalObject (which is a shallow clone) to the symbol, before pushing to unmerged.
+                        if (leftRttr0.symbol) {
+                            // do not have to call andSymbolTypeIntoSymtabConstraint, just clone and replace.
+                            argSci.symtab = mrNarrow.copyRefTypesSymtab(argSci.symtab!).set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(logicalObject));
+                        }
+                        unmerged.push({
+                            critsense: "passing",
+                            type,
+                            sci: argSci
                         });
-                    });
+                    }
+                    if (discriminantFnFalse) {
+                        const passing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnFalse);
+                        if (passing){
+                            const [logicalObject, type] = passing;
+                            // if a symbol is available, bind logicalObject (which is a shallow clone) to the symbol, before pushing to unmerged.
+                            if (leftRttr0.symbol) {
+                                // do not have to call andSymbolTypeIntoSymtabConstraint, just clone and replace.
+                                argSci.symtab = mrNarrow.copyRefTypesSymtab(argSci.symtab!).set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(logicalObject));
+                            }
+                            unmerged.push({
+                                critsense: "failing",
+                                type,
+                                sci: argSci
+                            });
+                        }
+                    }
+
+                    // argMntr.unmerged.forEach((argMntr0,_argidx)=>{
+                    //     const {type: argType, sci:argSci} = applyCritNoneToOne(argMntr0,argMntr.nodeForMap, inferStatus.groupNodeToTypeMap);
+
+                    //         const itemsTable: LogicalObjectForEachTypeOfPropertyLookupItem[] = [];
+                    //         // const nullOrUndefined = floughTypeModule.createRefTypesType([checker.getNullType(), checker.getUndefinedType()]);
+                    //         const discriminantFnTrue: DiscriminantFn = (ft: FloughType): FloughType | true | undefined => {
+                    //             const atpassing: Type[] = [];
+                    //             let anyNotPass = false;
+                    //             applyCritToRefTypesType(ft,{ ...crit, alsoFailing:false },(tstype, pass)=>{
+                    //                 if (pass) atpassing.push(tstype);
+                    //                 else anyNotPass = true;
+                    //             });
+                    //             if (atpassing.length === 0) return undefined;
+                    //             if (!anyNotPass) return true;
+                    //             return floughTypeModule.createRefTypesType(atpassing);
+                    //         };
+                    //         // @ ts-ignore
+                    //         /*const _utype =*/ floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnTrue);
+                    //         itemsTable.forEach(({ logicalObject:baseLogicalObject, type:elementType})=>{
+                    //             //const baseType = floughTypeModule.createFrom(LogicalObject(logicalObject);
+                    //             if (getMyDebug()){
+                    //                 consoleLog(`floughElementAccessExpression[dbg,${_leftidx},${_argidx}] `
+                    //                 +`baseLogicalObject:${floughLogicalObjectModule.dbgLogicalObjectToStrings(baseLogicalObject)}, elementType:${dbgRefTypesTypeToString(elementType)}`);
+                    //             }
+                    //             //let chainTmp = leftRttr0;
+                    //             const alink: LogicalObjectLink[] = [
+                    //                 { keys: , logicalObject: baseLogicalObject, type: elementType }
+                    //             ];
+
+                    //             // while (!chainTmp.symbol && chainTmp.chain) chainTmp = chainTmp.chain;
+                    //             // if (chainTmp.symbol){
+                    //             // }
+
+                    //             unmerged.push({
+                    //                 type: elementType,
+                    //                 sci:argSci,
+                    //                 chain: leftRttr0
+                    //             });
+                    //             /**
+                    //              * If there is a criterion, then we can process the chain, get a symbol, create a narrowed object type,
+                    //              * and associate the symbol with the narrowed object type.
+                    //              */
+                    //             // if (leftRttr0.symbol){
+                    //             //     /**
+                    //             //      * What if leftRttr0.symbol is a property symbol? TODO: don't set property symbols to RefTypesTable
+                    //             //      * What if argumentExpression set the value of leftRttr0.symbol? That situation should be detected, and
+                    //             //      * that would precedence.  However, for now, we don't detect that situation, and go ahead and possibly narrow the type
+                    //             //      * of leftRttr0.symbol in argSci here.
+                    //             //      */
+                    //             //     const {type: _baseType1, sc: sc1} = andSymbolTypeIntoSymtabConstraint({
+                    //             //         symbol:leftRttr0.symbol,
+                    //             //         isconst:leftRttr0.isconst,
+                    //             //         //isAssign: leftRttr0.isAssign, // false, because narrowing
+                    //             //         type: baseType,
+                    //             //         sc:argSci,
+                    //             //         getDeclaredType,
+                    //             //         mrNarrow
+                    //             //     });
+                    //             //     unmerged.push({
+                    //             //         type: elementType,
+                    //             //         //chain:[{symbol:leftRttr0.symbol, isconst:leftRttr0.isconst, sc:sctmp}],
+                    //             //         sci:sc1
+                    //             //     });
+                    //             // }
+
+                    //     });
+                    // });
                 });
                 if (getMyDebug()){
                     consoleLog(`floughElementAccessExpression[out] expr: ${dbgsModule.dbgNodeToString(expr)}`);

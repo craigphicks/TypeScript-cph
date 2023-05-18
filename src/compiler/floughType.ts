@@ -52,6 +52,7 @@ namespace ts {
         intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType;
         hasLogicalObject(ft: Readonly<FloughType>): boolean;
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
+        createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined): FloughType ;
         //modifyFloughTypeObjectEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredType: Type): FloughType;
 
         widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
@@ -202,10 +203,7 @@ namespace ts {
         intersectionWithObjectSimplification,
         hasLogicalObject,
         getLogicalObject,
-        //modifyFloughTypeObjectEffectiveDeclaredType,
-        // mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft: Readonly<FloughType>, ftEffectiveDeclaredType: Readonly<FloughType>): FloughType {
-        //     return mapFloughTypeObjectToEffectiveDeclaredFloughTypeObject(ft,ftEffectiveDeclaredType);
-        // },
+        createTypeFromLogicalObject,
         widenTypeByEffectiveDeclaredType,
         createFromTsType,
         unionWithTsTypeMutate,
@@ -1223,6 +1221,9 @@ namespace ts {
     function getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined {
         castReadonlyFloughTypei(ft);
         return ft.logicalObject;
+    }
+    function createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF>): FloughTypei {
+        return { nobj:{}, logicalObject };
     }
 
     // deprecated

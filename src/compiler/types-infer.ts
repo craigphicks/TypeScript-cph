@@ -18,23 +18,16 @@ namespace ts {
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
+        critsense?: "passing" | "failing";
         type: RefTypesType;
-        chain?: RefTypesTable;
         sci: RefTypesSymtabConstraintItem
-    };
-    export type LogicalObjectLink = & {
-        keys: LiteralType[];
-        parent: {
-            logicalObject: FloughLogicalObjectIF;
-            rttr: RefTypesTable;
-        };
     };
     export type RefTypesTableReturn = & {
         symbol?: Symbol | undefined;
         isconst?: boolean;
         isAssign?: boolean; // don't need assignType because it will always be whole type.
+        critsense?: "passing" | "failing";
         type: RefTypesType;
-        link?: LogicalObjectLink;
         sci: RefTypesSymtabConstraintItem
     };
     export enum InferCritKind {

@@ -162,7 +162,9 @@ namespace ts {
          * Note "has been" and not "wiil be" - because the object chains are flow-processed from the from the end of the chain to the start.
          * E.g. a.b.c is processed as c then b then a.
          * We only do this for unique keys, because if the key is not unique, it could require too many variations to be created (exponential growth with chain length).
-         * Note also that, external to this module, the root logicalObject is cloned and must be associated with a symbol - if it has no symbol, there is no way to reference it.
+         * The key patch, along with the shallow below, is enough.
+         * Note also that, when a discrimant is passed, the return shallow-cloned and patched logicalObject must be associated with a symbol
+         * - if it has no symbol, there is no way to reference it.
          * ```
          * if (createMyObject(random()).kind==="a") {
          *     // oops, no way to reference the object created by createMyObject() - it has no symbol.
