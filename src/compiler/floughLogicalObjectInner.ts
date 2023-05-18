@@ -30,10 +30,10 @@ namespace ts {
 
 
     export type LogicalObjectInnerForEachTypeOfPropertyLookupItem = & {
-        logicalObject: FloughLogicalObjectInner | undefined, // undefined <=> logicalObject was trimmed
-        key: LiteralType | undefined, // undefined <=> logicalObject was NOT trimmed
+        logicalObject: FloughLogicalObjectInner | undefined, // undefined <=> logically trimmed
+        key: LiteralType | undefined, // undefined <=> lookupkey not a unique literal key ()
         type: FloughType // neverType <=> logicalObject was trimmed
-        isNarrowed?: boolean  // true <=> logicalObject was NOT trimmed && type was narrowed but is not neverType // TODO: kill this?
+        //isNarrowed?: boolean  // true <=> logicalObject was NOT trimmed && type was narrowed but is not neverType // TODO: kill this?
     };
 
     export interface FloughLogicalObjectInnerModule {
@@ -552,19 +552,10 @@ namespace ts {
      * So a recusrive implementation would be fine.  However, the stack implementation might be more general, and useful in other places.
      * A recusrive implementation could be done with callback functions.
      * @param logicalObjectTop  - the logical object to search
-     * @param lookupkey - the property key to look up
-     * @param _crit - the criteria to apply to the type (TODO: not implemented yet, it's a significant optimization)
-     * @returns
+     * @param lookupkey - the property key(s) to look up
+     * @returns LogicalObjectInnerForEachTypeOfPropertyLookupItem
+     *
      */
-
-    /**
-     * type DiscriminantF:
-     * returns true if the type is to be included in the result, or false if it is to be excluded, or a FloughType if it is to be replaced by that type.
-     */
-    // export type DiscriminantResultPart = & { arrBaseAndPropertyType: [base:FloughType,property:FloughType][], type: FloughType };
-    // export type DiscriminantResult = & { passing: DiscriminantResultPart, failing?: DiscriminantResultPart };
-
-
     function logicalObjectForEachTypeOfPropertyLookup(logicalObjectTop: Readonly<FloughLogicalObjectInner>, lookupkey: FloughType,
         lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined, discriminantFn?: DiscriminantFn): LogicalObjectInnerForEachTypeOfPropertyLookupItem {
 
@@ -662,7 +653,7 @@ namespace ts {
                             const dtype = discriminantFn(type);
                             let item: PropertyItem;
                             if (!dtype) {
-                                item = { logicalObject, key, type: floughTypeModule.createNeverType() };
+                                item = { logicalObject: undefined, key, type: floughTypeModule.createNeverType() };
                             }
                             else{
                                 //if (dtype!==true) type = dtype;
@@ -698,18 +689,27 @@ namespace ts {
 
                     }
                     // TODO: generic string type, number type, template strings?
+                    let item: PropertyItem;
                     if (!akey || akey.length === 0) {
-                        return [logicalObject, floughTypeModule.getNeverType()];
+                        item = { logicalObject, key: undefined, type:floughTypeModule.getNeverType() };
                     }
-                    const type = (at.length===1) ? floughTypeModule.createFromTsType(at[0]) : floughTypeModule.createFromTsType(checker.getUnionType(at));
-                    const tmp = discriminantFn(type);
-                    if (!tmp) return [undefined,undefined];
-                    else{
-                        if (lookupItemTable){
-                            lookupItemTable.push({ logicalObject, keys:akeyType!, type, isNarrowed:tmp!==true });
+                    else {
+                        Debug.assert(akeyType?.length === akey?.length);
+                        const [key,type] = (at.length===1) ? [akeyType[0],floughTypeModule.createFromTsType(at[0])] : [undefined,floughTypeModule.createFromTsType(checker.getUnionType(at))];
+                        if (discriminantFn) {
+                            const dtype = discriminantFn(type);
+                            item = {
+                                logicalObject: dtype===undefined ? undefined : logicalObject,
+                                key,
+                                type: dtype===undefined ? floughTypeModule.getNeverType() : dtype===true ? type : dtype
+                            };
                         }
-                        return [logicalObject, type];
+                        else {
+                            item = { logicalObject, key, type };
+                        }
                     }
+                    if (lookupItemTable) lookupItemTable.push(item);
+                    return item;
                 }
             }
             else if (logicalObject.kind === FloughLogicalObjectKind.tsintersection) {
@@ -717,26 +717,19 @@ namespace ts {
                 Debug.fail("not yet implemented");
             }
             else if (logicalObject.kind === FloughLogicalObjectKind.tsunion || logicalObject.kind === FloughLogicalObjectKind.union) {
-                const ar = logicalObject.items.map(worker).filter(x=>x[0]!==undefined) as [FloughLogicalObjectInner, FloughType][];
-                const type = floughTypeModule.unionOfRefTypesType(ar.map(x=>x[1]));
-                if (ar.length!==logicalObject.items.length || ar.some((r,i)=>logicalObject.items[i]!==r[0])){
-                    return [createFloughLogicalObjectUnion(ar.map(x=>x[0])), type];
-                }
-                else return [logicalObject, type];
+                const propItems = logicalObject.items.map(worker);
+                if (extraAsserts) Debug.assert(propItems.every(x=>x.key===propItems[0].key));
+                const key = propItems[0].key;
+                const type = propItems.length===1 ? propItems[0].type : floughTypeModule.unionOfRefTypesType(propItems.map(x=>x.type));
+                const item: PropertyItem = { logicalObject, key, type };
+                if (lookupItemTable) lookupItemTable.push(item);
+                return item;
             }
             else {
                 Debug.fail("unexpected");
             }
-
-        }
-
-        if (discriminantFn){
-            return worker(logicalObjectTop);
-        }
-        else {
-            Debug.fail("not yet implemented");
-        }
-
+        } // end of worker
+        return worker(logicalObjectTop);
     } // end of logicalObjectForEachTypeOfPropertyLookupInternal
 
 

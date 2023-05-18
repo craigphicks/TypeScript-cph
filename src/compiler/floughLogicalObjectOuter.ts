@@ -139,11 +139,15 @@ namespace ts {
         //const x = !!(discriminantFn || lookupItemsIn);
         const lookupItemsInner: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined = (discriminantFn || lookupItemsIn) ? [] : undefined;
         // const lookupItems: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] = (!!(discriminantFn || lookupItemsIn)) ? [] : undefined;
-        const [logicalObjectInner, type] = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn);
+        const { logicalObject:logicalObjectInner, key, type } = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn);
 
-        if (logicalObjectInner === undefined) return undefined;
+        if (logicalObjectInner === undefined) {
+            Debug.assert(floughTypeModule.isNeverType(type));
+            return undefined;
+        }
         if (!discriminantFn) {
-            Debug.assert(type);
+            Debug.assert(logicalObjectInner);
+            Debug.assert(!floughTypeModule.isNeverType(type));
             return [logicalObject, type];
         }
         Debug.assert(lookupItemsInner);
@@ -151,21 +155,25 @@ namespace ts {
         let { effectiveDeclaredType, variations } = logicalObject;
 
         /**
-         * Do stuff with lookupItemsInner, extract the variations,
+         * By setting the key->type in the variations,
+         * we patching the logicalObject with an override for a specific key, while allowing the other keys to ramain the same.
+         * Therefore a cloneLogicalObject() function is not required.
+         * This is especially important when the property for the key is an object which **has been** trimmed.
+         * Note "has been" and not "wiil be" - because the object chains are flow-processed from the from the end of the chain to the start.
+         * E.g. a.b.c is processed as c then b then a.
+         * We only do this for unique keys, because if the key is not unique, it could require too many variations to be created (exponential growth with chain length).
+         * Note also that, external to this module, the root logicalObject is cloned and must be associated with a symbol - if it has no symbol, there is no way to reference it.
+         * ```
+         * if (createMyObject(random()).kind==="a") {
+         *     // oops, no way to reference the object created by createMyObject() - it has no symbol.
+         * }
+         * ```
          */
-        //const variations: FloughLogicalObjectOuter[] = [];
-        if (lookupItemsInner.length){
+        if (key){
             if (!variations) variations = new Map<LiteralType,FloughType>();
-            for (const lookupItem of lookupItemsInner){
-                if (lookupItem.isNarrowed && lookupItem.keys) {
-                    for (const key of lookupItem.keys){
-                        const got = variations.get(key);
-                        if (!got) variations.set(key,lookupItem.type);
-                        else variations.set(key,floughTypeModule.intersectionWithFloughTypeMutate(lookupItem.type, got));
-                    }
-                }
-            }
-            if (variations.size===0) variations = undefined;
+            const got = variations.get(key);
+            if (!got) variations.set(key, type);
+            else variations.set(key,floughTypeModule.intersectionWithFloughTypeMutate(type, floughTypeModule.cloneType(got)));
         }
         return type ? [
             { inner: logicalObjectInner, effectiveDeclaredType, variations },
