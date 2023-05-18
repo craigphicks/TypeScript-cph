@@ -55,6 +55,10 @@ namespace ts {
         //modifyFloughTypeObjectEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredType: Type): FloughType;
 
         widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
+        getLiteralNumberTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
+        getLiteralStringTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
+        hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
+        hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
 
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
         dbgFloughTypeToString(type: Readonly<FloughType>): string;
@@ -215,6 +219,30 @@ namespace ts {
         createUndefinedType(): FloughType {
             return { nobj: { undefined: true } };
         },
+        getLiteralNumberTypes(ft: Readonly<FloughType>): LiteralType[] | undefined{
+            castReadonlyFloughTypei(ft);
+            if (ft.nobj.number && ft.nobj.number!==true) return setToArray(ft.nobj.number);
+            return undefined;
+        },
+        getLiteralStringTypes(ft: Readonly<FloughType>): LiteralType[] | undefined{
+            castReadonlyFloughTypei(ft);
+            if (ft.nobj.string && ft.nobj.string!==true) return setToArray(ft.nobj.string);
+            return undefined;
+        },
+        hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean {
+            castReadonlyFloughTypei(ft);
+            if (!ft.nobj.number) return false;
+            if (ft.nobj.number===true) return true;
+            if (intrinsicNumberTypeOnly) return false;
+            return true; // returning true even though it is not an intrinsic number type, but a set of literal numbers
+        },
+        hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean {
+            castReadonlyFloughTypei(ft);
+            if (!ft.nobj.string) return false;
+            if (ft.nobj.string===true) return true;
+            if (intrinsicStringTypeOnly) return false;
+            return true; // returning true even though it is not an intrinsic number type, but a set of literal numbers
+        },
         dbgFloughTypeToStrings,
         dbgFloughTypeToString,
     };
@@ -227,6 +255,13 @@ namespace ts {
         }
     };
 
+    function setToArray<T>(set: Set<T>): T[] {
+        const result: T[] = [];
+        set.forEach((value: T)=>{
+            result.push(value);
+        });
+        return result;
+    }
 
     function castFloughTypei(_ft: FloughType): asserts _ft is FloughTypei {}
     function castReadonlyFloughTypei(_ft: FloughType): asserts _ft is Readonly<FloughTypei> {}
@@ -323,7 +358,7 @@ namespace ts {
         const at = getTsTypesFromFloughTypeNobj(ft.nobj);
         // Now for the objects.
         if (ft.logicalObject) {
-            at.push(getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
+            at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
         }
         if (at.length === 0) return checker.getNeverType();
         if (at.length === 1) return at[0];
@@ -336,14 +371,14 @@ namespace ts {
         // Now for the objects.
         if (ft.logicalObject) {
             // TODO: return nonunion types?
-            at.push(getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
+            at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
         }
         if (at.length === 0) return [checker.getNeverType()];
         return at;
     }
 
-    function intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType {
-        if (types.length === 0) return createNeverType();
+    function intersectionWithObjectSimplification(types: [Readonly<FloughType>,Readonly<FloughType>]): FloughType {
+        //if (types.length === 0) return createNeverType();
         castReadonlyFloughTypei(types[0]);
         const arrlogobj: FloughLogicalObjectIF[] = [];
         let blogobj = false;
@@ -365,7 +400,7 @@ namespace ts {
             ft = intersectionWithFloughTypeMutate(t,ft);
         };
         if (!blogobj) return ft;
-        ft.logicalObject = intersectionAndSimplifyLogicalObjects(arrlogobj); // note that this may return undefined.
+        ft.logicalObject = floughLogicalObjectModule.intersectionAndSimplifyLogicalObjects(types[0],types[1]); // note that this may return undefined.
         if (!ft.logicalObject) delete ft.logicalObject; // delete the undefined member.
         return ft;
     }
@@ -525,10 +560,10 @@ namespace ts {
             }
             if (t.flags & TypeFlags.Object) {
                 if (!logicalObject) {
-                    logicalObject = createFloughLogicalObjectPlain(t as ObjectType);
+                    logicalObject = floughLogicalObjectModule.createFloughLogicalObjectPlain(t as ObjectType);
                 }
                 else{
-                    logicalObject = unionOfFloughLogicalObject(logicalObject, createFloughLogicalObjectPlain(t as ObjectType));
+                    logicalObject = floughLogicalObjectModule.unionOfFloughLogicalObject(logicalObject, floughLogicalObjectModule.createFloughLogicalObjectPlain(t as ObjectType));
                 }
                 return;
             }
@@ -555,7 +590,7 @@ namespace ts {
                 }
                 t.types.forEach(tsub => {
                     if (hasAny || hasUnknown) return;
-                    if ((tsub.flags & TypeFlags.Object)) arrlogobj.push(createFloughLogicalObjectPlain(tsub as ObjectType));
+                    if ((tsub.flags & TypeFlags.Object)) arrlogobj.push(floughLogicalObjectModule.createFloughLogicalObjectPlain(tsub as ObjectType));
                     else if (tsub.flags & (TypeFlags.Union|TypeFlags.Intersection)) {
                         const ftsub  = createFromTsType(tsub);
                         if (ftsub.any || ftsub.unknown) {
@@ -575,12 +610,12 @@ namespace ts {
                     return;
                 }
                 if (arrlogobj.length!==0) {
-                    const logobj = createFloughLogicalObjectTsunion(t,arrlogobj);
+                    const logobj = floughLogicalObjectModule.createFloughLogicalObjectTsunion(t,arrlogobj);
                     if (!logicalObject) {
                         logicalObject = logobj;
                     }
                     else {
-                        logicalObject = unionOfFloughLogicalObject(logicalObject, logobj);
+                        logicalObject = floughLogicalObjectModule.unionOfFloughLogicalObject(logicalObject, logobj);
                     }
                 }
                 return;
@@ -610,7 +645,7 @@ namespace ts {
                 let nobjSubjIsect: FloughTypeNobj | undefined;
                 t.types.forEach(tsub => {
                     if (tsub.flags & (TypeFlags.Any|TypeFlags.Unknown)) return;
-                    if ((tsub.flags & TypeFlags.Object)) arrlogobj.push(createFloughLogicalObjectPlain(tsub as ObjectType));
+                    if ((tsub.flags & TypeFlags.Object)) arrlogobj.push(floughLogicalObjectModule.createFloughLogicalObjectPlain(tsub as ObjectType));
                     else if (tsub.flags & (TypeFlags.Union|TypeFlags.Intersection)) {
                         const {logicalObject:logicalObjectSub, nobj:nobjSub}  = createFromTsType(tsub);
                         if (!nobjSubjIsect) nobjSubjIsect = nobjSub;
@@ -634,12 +669,12 @@ namespace ts {
                     nobj = unionWithFloughTypeNobjMutate(nobjSubjIsect, nobj);
                 }
                 if (arrlogobj.length!==0) {
-                    const logobj = createFloughLogicalObjectTsintersection(t,arrlogobj);
+                    const logobj = floughLogicalObjectModule.createFloughLogicalObjectTsintersection(t,arrlogobj);
                     if (!logicalObject) {
                         logicalObject = logobj;
                     }
                     else {
-                        logicalObject = unionOfFloughLogicalObject(logicalObject, logobj);
+                        logicalObject = floughLogicalObjectModule.unionOfFloughLogicalObject(logicalObject, logobj);
                     }
                 }
                 return;
@@ -665,7 +700,7 @@ namespace ts {
         ft1.nobj = unionWithFloughTypeNobjMutate(ft0.nobj, ft1.nobj);
         if (ft0.logicalObject){
             if (ft1.logicalObject) {
-                ft1.logicalObject = unionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
+                ft1.logicalObject = floughLogicalObjectModule.unionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
             }
             else {
                 ft1.logicalObject = ft0.logicalObject;
@@ -733,7 +768,7 @@ namespace ts {
             delete ft1.logicalObject; // no error if not present
         }
         else if (ft1.logicalObject) {
-            ft1.logicalObject = intersectionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
+            ft1.logicalObject = floughLogicalObjectModule.intersectionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
         }
         return ft1;
     }
@@ -815,7 +850,7 @@ namespace ts {
         if (minuend.unknown) return minuend; // no way to represent not-subtrahend
         minuend.nobj = differenceWithFloughTypeNobjMutate(subtrahend.nobj, minuend.nobj);
         if (subtrahend.logicalObject && minuend.logicalObject) {
-            minuend.logicalObject = differenceOfFloughLogicalObject(subtrahend.logicalObject, minuend.logicalObject);
+            minuend.logicalObject = floughLogicalObjectModule.differenceOfFloughLogicalObject(subtrahend.logicalObject, minuend.logicalObject);
         }
         return minuend;
     }
@@ -1149,8 +1184,8 @@ namespace ts {
         if (isNeverType(ai)||isNeverType(bi)) return [];
         if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
 
-        const leftTsType = ai.logicalObject ? getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
-        const rightTsType = bi.logicalObject ? getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
+        const leftTsType = ai.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
+        const rightTsType = bi.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
 
 
         const symset = new Set<string | LiteralType>();
@@ -1216,7 +1251,7 @@ namespace ts {
             if (!logicalObject) return ftin;
             return {
                 ...ftin,
-                logicalObject: modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject, effectiveDeclaredTsType)
+                logicalObject: floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject, effectiveDeclaredTsType)
             };
         }
         // if (!compilerOptions.floughDoNotWidenNonObject){
@@ -1272,7 +1307,7 @@ namespace ts {
             }
         }
         if (ft.logicalObject) {
-            dbgLogicalObjectToStrings(ft.logicalObject).forEach((s)=>arr.push("logicalObject:"+s));
+            floughLogicalObjectModule.dbgLogicalObjectToStrings(ft.logicalObject).forEach((s)=>arr.push("logicalObject:"+s));
         }
         return arr;
     }

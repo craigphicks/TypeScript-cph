@@ -15,125 +15,38 @@ namespace ts {
 
     export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
 
-    // export type PartitionForEqualityCompareItem = & {
-    //     left?: Readonly<RefTypesType>;
-    //     right?: Readonly<RefTypesType>;
-    //     both?: Readonly<RefTypesType>;
-    //     leftts?: Type[];
-    //     rightts?: Type[];
-    //     bothts?: Type;
-    //     true?: boolean;
-    //     false?: boolean;
-    // };
-
-    // export interface AliasAssignableState {
-    //     readonly node: Node;
-    //     readonly valueReadonly: boolean;
-    //     readonly constVariable: boolean;
-    //     readonly aliasable: boolean; // constVariable && valueReadonly && !antecedentIsJoin
-    //     readonly lhsType: Type;
-    //     readonly declarationType: Type | undefined;
-    //     readonly initializerType: Type | undefined;
-    //     readonly preferredType: Type;
-    //     inUse: boolean; // to prevent recursion of aliases
-    // };
-
-    export enum RefTypesTableKind {
-        leaf = "leaf",
-        nonLeaf = "nonLeaf",
-        return = "return"
-    };
-    declare function isRefTypesTableReturn(x: RefTypesTable): x is RefTypesTableReturn;
-    // export enum RefTypesTypeFlags {
-    //     none=0,
-    //     any=1,
-    //     unknown=2,
-    // };
-    // export interface RefTypesTypeNormal {
-    //     _flags: RefTypesTypeFlags.none;
-    //     _set: Set<Type>;
-    //     _mapLiteral: ESMap<Type, Set<LiteralType>>;
-    // };
-    // export interface RefTypesTypeAny {
-    //     _flags: RefTypesTypeFlags.any;
-    //     _set: undefined;
-    //     _mapLiteral: undefined;
-    // };
-    // export interface RefTypesTypeUnknown {
-    //     _flags: RefTypesTypeFlags.unknown;
-    //     _set: undefined;
-    //     _mapLiteral: undefined;
-    // };
-    //export type RefTypesType = RefTypesTypeNormal | RefTypesTypeAny | RefTypesTypeUnknown ;
-    // export type RefTypesType = FloughType;
-
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
-        // kind: RefTypesTableKind.return;
         type: RefTypesType;
-        //typeConstraintItem?: ConstraintItem;
-        // symtab: RefTypesSymtab;
-        // constraintItem: ConstraintItem;
+        chain?: RefTypesTable;
         sci: RefTypesSymtabConstraintItem
     };
-    export type RefTypesTableReturnNoSymbolNotNever = & {
-        // kind: RefTypesTableKind.return;
-        type: RefTypesType;
-        //typeConstraintItem?: ConstraintItem;
-        // symtab: RefTypesSymtab;
-        // constraintItem: ConstraintItem;
-        sci: RefTypesSymtabConstraintItemNotNever
+    export type LogicalObjectLink = & {
+        keys: LiteralType[];
+        parent: {
+            logicalObject: FloughLogicalObjectIF;
+            rttr: RefTypesTable;
+        };
     };
     export type RefTypesTableReturn = & {
-        // kind: RefTypesTableKind.return;
         symbol?: Symbol | undefined;
         isconst?: boolean;
         isAssign?: boolean; // don't need assignType because it will always be whole type.
         type: RefTypesType;
-        //typeConstraintItem: ConstraintItem;
-        // symtab?: RefTypesSymtab;
-        // constraintItem: ConstraintItem;
+        link?: LogicalObjectLink;
         sci: RefTypesSymtabConstraintItem
-    };
-    export type RefTypesTableReturnNotNever = & {
-        // kind: RefTypesTableKind.return;
-        symbol?: Symbol | undefined;
-        isconst?: boolean;
-        //isAssign?: boolean;
-        type: RefTypesType;
-        //typeConstraintItem: ConstraintItem;
-        // symtab?: RefTypesSymtab;
-        // constraintItem: ConstraintItem;
-        sci: RefTypesSymtabConstraintItemNotNever
     };
     export enum InferCritKind {
         none= "none",
         truthy= "truthy",
         notnullundef= "notnullundef",
         assignable= "assignable",
-        // typeof= "typeof",
-        // twocrit= "twocrit"
+        subtype= "subtype",
+        equal= "equal",
     };
-
-    export enum InferCritTypeofStrings {
-        undefined = "undefined",
-        boolean = "boolean",
-        number = "number",
-        bigint = "bigint",
-        string = "string",
-        symbol = "symbol",
-        function = "function",
-        object = "object"
-    };
-
     export type InferCrit =
     (
-        // | {
-        //     kind: typeof InferCritKind.twocrit // this is just to get the resulting type without any criteria
-        //     negate?: false;
-        //     crits: [InferCrit & {alsoFailing?: false}, InferCrit]
-        // }
         | {
             kind: typeof InferCritKind.none // this is just to get the resulting type without any criteria
             negate?: false;
@@ -151,9 +64,16 @@ namespace ts {
             negate?: boolean;
             target: Type;
         }
-        // | {
-        //     kind: typeof InferCritKind.typeof;
-        // }
+        | {
+            kind: typeof InferCritKind.subtype;
+            negate?: boolean;
+            target: Type;
+        }
+        | {
+            kind: typeof InferCritKind.equal;
+            negate?: boolean;
+            target: Type;
+        }
     )
     & {alsoFailing?: boolean}; // also output failing, in addition to passing
 

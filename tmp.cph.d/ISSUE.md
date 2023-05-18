@@ -6,7 +6,33 @@
 
 ### Priority: High
 
-0. Rewrite logicalObjectVisitor so that the supervisor is not aware of a logicalObject's items and visitor return a additional value which, if not undefined, is the next item to be placed on the stack.
+0. LogicalObject
+
+    0. effectiveDeclaredType to be kept on outside, not inside.  Then no need for tsType member on set-unions
+
+    0. LogicalObjectOuter to hold variations (narrowed key properties) - how will this work with union and intersection?
+
+        0. ~~Another way to use LogicalObjectOuter would be invalidate the handle contents (set inner to null) when a LogicalObject is mutated, to prevent accidental usage.  Work backwards from the error to figure out where clone is required. Then the object variations could kept in the plain objects (original plan).~~
+
+        0. However, a condition imposed on a key property, (which does not purely narrow types), can apply to multiple plain objects - so a key to flough type map on the outside seems like a clean representation (current plan).
+
+        0. Intersection: intersection of the insides, then union of the outside variation keys, intersection of their properties - any never intersection results in a total never result. Then evaluate each key - any never evalution results in a never result.
+
+        0. Union: Eval each variation key over the other union operand to get new value.  Then union of insides + union of outside variations.
+
+    0. Unclear on semantics of subsetRelation vs asignableRelation
+
+    0. Ordering of objects could be an optimization, probably.
+
+0. AndSymbolTypeIntoSymtabContraint, reduce number of calls.
+
+    0. Required for conditions
+
+    0. Required for the lhs of a constant replay when the lhs symbol has been narrowed by a condition.
+
+    0. not required for not-const non-conditions
+
+0. For a group which is non-replay and non-assign, the current branch input can be used as output.
 
 0. Property assignment
 

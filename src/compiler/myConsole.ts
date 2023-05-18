@@ -92,7 +92,7 @@ namespace ts {
     export interface Dbgs {
         dbgGetNodeText: (node: Node) => any;
         dbgFlowToString: (flow: FlowNode | undefined, withAntecedants?: boolean) => string;
-        dbgFlowTypeToString: (flowType: FlowType) => string;
+        dbgFloughTypeToString: (flowType: FloughType) => string;
         dbgTypeToString: (type: Type) => string;
         dbgTypeToStringDetail: (type: Type) => string[];
         dbgNodeToString: (node: Node | undefined) => string;
@@ -165,7 +165,7 @@ namespace ts {
             if (as.length===1) return as;
             else return ["[", ...as, "]"];
         };
-        const dbgFlowTypeToString = (flowType: FlowType): string => {
+        const dbgFloughTypeToString = (flowType: FlowType): string => {
             if (!flowType.flags) return "IncompleteType";
             return checker.typeToString(flowType as Type);
         };
@@ -188,7 +188,7 @@ namespace ts {
         const ret: Dbgs = {
             dbgGetNodeText,
             dbgFlowToString,
-            dbgFlowTypeToString,
+            dbgFloughTypeToString,
             dbgTypeToString,
             dbgTypeToStringDetail,
             dbgNodeToString,
