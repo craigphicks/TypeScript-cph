@@ -2,14 +2,16 @@ namespace ts {
 
     //export type PropertyKeyType = IntrinsicType | LiteralType; // IntrinsicType is numberType/stringType, TemplateLiteral also possible, but not yet supported.
     export type DiscriminantFn = (type: Readonly<FloughType>) => FloughType | true | undefined; // true means type doesn't change, undefined means type becomes never, else become FloughType
-    export interface FloughLogicalObjectIF {};
+    const essymbolfloughLogicalObjectOuter = Symbol("floughLogicalObjectIF");
+    export interface FloughLogicalObjectIF {[essymbolfloughLogicalObjectOuter]?: void};
 
 
     type Variations = ESMap<LiteralType,FloughType>;
     interface FloughLogicalObjectOuter {
         inner: FloughLogicalObjectInnerIF;
-        effectiveDeclaredType?: Type; // should be stripped of primitive types, and only have object and operator types.
+        effectiveDeclaredTsType?: Type; // should be stripped of primitive types, and only have object and operator types.
         variations?: Variations;
+        [essymbolfloughLogicalObjectOuter]?: void
     };
 
     // const {
@@ -65,12 +67,12 @@ namespace ts {
     };
 
     function getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectOuter>): Type {
-        return logicalObjectTop.effectiveDeclaredType || floughLogicalObjectInnerModule.getTsTypeFromLogicalObject(logicalObjectTop.inner);
+        return logicalObjectTop.effectiveDeclaredTsType || floughLogicalObjectInnerModule.getTsTypeFromLogicalObject(logicalObjectTop.inner);
     }
 
 
     function modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject: FloughLogicalObjectOuter, edType: Readonly<Type>): void {
-        logicalObject.effectiveDeclaredType = edType;
+        logicalObject.effectiveDeclaredTsType = edType;
     };
     function createFloughLogicalObjectPlain(tstype: ObjectType): FloughLogicalObjectOuter {
         return {
@@ -78,17 +80,17 @@ namespace ts {
             //effectiveDeclaredType: tstype,
         };
     }
-    function createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectOuter {
-        return { inner: floughLogicalObjectInnerModule.createFloughLogicalObjectTsunion(unionType, items) };
+    function createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectOuter[]>): FloughLogicalObjectOuter {
+        return { inner: floughLogicalObjectInnerModule.createFloughLogicalObjectTsunion(unionType, items.map(x=>x.inner)) };
     }
-    function createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectOuter {
-        return { inner: floughLogicalObjectInnerModule.createFloughLogicalObjectTsintersection(intersectionType, items) };
+    function createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectOuter[]>): FloughLogicalObjectOuter {
+        return { inner: floughLogicalObjectInnerModule.createFloughLogicalObjectTsintersection(intersectionType, items.map(x=>x.inner)) };
     }
-    function createFloughLogicalObject(tsType: Type): FloughLogicalObjectIF | undefined {
+    function createFloughLogicalObject(tsType: Type): FloughLogicalObjectOuter {
         return { inner: floughLogicalObjectInnerModule.createFloughLogicalObject(tsType) };
     }
     function intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter | undefined {
-        const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint);
+        const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
         if (inner === undefined) return undefined;
         // TODO: do the keys
         /***
@@ -101,7 +103,7 @@ namespace ts {
         const ret: FloughLogicalObjectOuter = {
             inner: floughLogicalObjectInnerModule.unionOfFloughLogicalObject(a.inner, b.inner)
         };
-        if (a.effectiveDeclaredType && a.effectiveDeclaredType===b.effectiveDeclaredType) ret.effectiveDeclaredType = a.effectiveDeclaredType;
+        if (a.effectiveDeclaredTsType && a.effectiveDeclaredTsType===b.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = a.effectiveDeclaredTsType;
         // TODO: The variations, and possibly the effective declared type.
         return ret;
     }
@@ -112,7 +114,7 @@ namespace ts {
         const ret: FloughLogicalObjectOuter = {
             inner
         };
-        if (logicalObject.effectiveDeclaredType) ret.effectiveDeclaredType = logicalObject.effectiveDeclaredType;
+        if (logicalObject.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = logicalObject.effectiveDeclaredTsType;
         // TODO: The variations, and possibly the effective declared type.
         return ret;
     }
@@ -121,7 +123,7 @@ namespace ts {
         const ret: FloughLogicalObjectOuter = {
             inner
         };
-        if (minuend.effectiveDeclaredType) ret.effectiveDeclaredType = minuend.effectiveDeclaredType;
+        if (minuend.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = minuend.effectiveDeclaredTsType;
         // TODO: The variations, and possibly the effective declared type.
         return ret;
     }
@@ -152,7 +154,7 @@ namespace ts {
         }
         Debug.assert(lookupItemsInner);
         // eslint-disable-next-line prefer-const
-        let { effectiveDeclaredType, variations } = logicalObject;
+        let { effectiveDeclaredTsType: effectiveDeclaredType, variations } = logicalObject;
 
         /**
          * By setting the key->type in the variations,
@@ -178,23 +180,22 @@ namespace ts {
             else variations.set(key,floughTypeModule.intersectionWithFloughTypeMutate(type, floughTypeModule.cloneType(got)));
         }
         return type ? [
-            { inner: logicalObjectInner, effectiveDeclaredType, variations },
+            { inner: logicalObjectInner, effectiveDeclaredTsType: effectiveDeclaredType, variations },
             type
         ] : undefined;
     }
 
     function dbgLogicalObjectToStrings(logicalObjectTop: Readonly<FloughLogicalObjectOuter>): string[] {
         const as: string[] = [];
-        const { inner, effectiveDeclaredType, variations } = logicalObjectTop;
+        const { inner, effectiveDeclaredTsType: effectiveDeclaredType, variations } = logicalObjectTop;
         if (effectiveDeclaredType) as.push(`effectiveDeclaredType: ${dbgsModule.dbgTypeToString(effectiveDeclaredType)}`);
         else as.push(`effectiveDeclaredType: <undef>`);
         if (variations) {
-            as.push(`variations:`);
             variations.forEach((value,key)=>{
-                as.push(`  ${key}: ${dbgsModule.dbgFloughTypeToString(value)}`);
+                as.push(`variation:  key:${dbgsModule.dbgTypeToString(key)}], value:${dbgsModule.dbgFloughTypeToString(value)}`);
             });
-            floughLogicalObjectInnerModule.dbgLogicalObjectToStrings(inner).forEach(s=>as.push(`inner: ${s}`));
         }
+        floughLogicalObjectInnerModule.dbgLogicalObjectToStrings(inner).forEach(s=>as.push(`inner: ${s}`));
         return as;
     }
 

@@ -1047,20 +1047,6 @@ namespace ts {
             const getDeclaredType = (symbol: Symbol) => {
                 return data.in.declaredSymbolTypes.get(symbol)!;
             };
-            if (getMyDebug()){
-                consoleGroup(`----${_iter}`);
-                mrNarrow.dbgConstraintItem(data.in.cin).forEach(s=> consoleLog(`in[${_iter}] ${s}`));
-                let sopIdx = 0;
-                visitSOP(data.in.cin, (map: Readonly<VisitSOPMap>)=>{
-                    let str = `out[${_iter}],[sop#${sopIdx++}]`;
-                    map.forEach((type,symbol)=>{
-                        floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(s=>str+=` ${mrNarrow.dbgSymbolToStringSimple(symbol)}:${s},`);
-                        // str += ` ${mrNarrow.dbgSymbolToStringSimple(symbol)}:${floughTypeModule.dbgRefTypesTypeToString(type)},`;
-                    });
-                    consoleLog(str);
-                }, mrNarrow, getDeclaredType);
-                consoleGroupEnd();
-            }
             const setOfInvolvedSymbols = new Set<Symbol>();
             for (let iter = data.in.declaredSymbolTypes.keys(), it=iter.next(); !it.done; it = iter.next()){
                 setOfInvolvedSymbols.add(it.value);

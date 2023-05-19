@@ -270,7 +270,8 @@ namespace ts {
         dataForGetTypeOfExpressionShallowRecursive?: {
             sc: Readonly<RefTypesSymtabConstraintItem>,
             tmpExprNodeToTypeMap: Readonly<ESMap<Node,Type>>;
-            expr: Expression | Node
+            expr: Expression | Node,
+            returnErrorTypeOnFail: boolean | undefined
         } | undefined;
         currentLoopDepth: number;
         currentLoopsInLoopScope: Set<GroupForFlow>;
@@ -549,11 +550,11 @@ namespace ts {
             replayables: sourceFileMrState.mrState.replayableItems,
             groupNodeToTypeMap,
             accumBranches,
-            getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression): Type {
-                return this.callCheckerFunctionWithShallowRecursion(expr, sc, mrState.checker.getTypeOfExpression, expr);
+            getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression, returnErrorTypeOnFail?: boolean): Type {
+                return this.callCheckerFunctionWithShallowRecursion(expr, sc, returnErrorTypeOnFail??false, mrState.checker.getTypeOfExpression, expr);
             },
-            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
-                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr, sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap };
+            callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, returnErrorTypeOnFail: boolean, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>{
+                mrState.dataForGetTypeOfExpressionShallowRecursive = { expr, sc, tmpExprNodeToTypeMap: this.groupNodeToTypeMap, returnErrorTypeOnFail };
                 try {
                    const ret: ReturnType<FN> = checkerFn.call(mrState.checker, ...args);
                    return ret;
@@ -1124,11 +1125,11 @@ namespace ts {
             sci: anteSCArg,
             expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
 
-        if (getMyDebug()) {
-            mntr.unmerged.forEach((rttr,i)=>{
-                mrNarrow.dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`---- resolveGroupForFlow[post flough]: mntr.unmerged[${i}]: ${s}`));
-            });
-        }
+        // if (getMyDebug()) {
+        //     mntr.unmerged.forEach((rttr,i)=>{
+        //         mrNarrow.dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`---- resolveGroupForFlow[post flough]: mntr.unmerged[${i}]: ${s}`));
+        //     });
+        // }
 
         if (!inferStatus.inCondition){
             scpassing = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap).sci;
@@ -1211,7 +1212,7 @@ namespace ts {
             const tstype = mrState.dataForGetTypeOfExpressionShallowRecursive.tmpExprNodeToTypeMap.get(expr);
             //Debug.assert(tstype);
             if (tstype) return tstype;
-            consoleLog(`getTypeByMrNarrowAux[dbg]: getTypeOfExpressionShallowRecursive failed, try groupNodeTo`);
+            consoleLog(`getTypeByMrNarrowAux[dbg]: getTypeOfExpressionShallowRecursive step 1 failed, trying groupsForFlow.nodeToGroupMap`);
         }
 
         const groupsForFlow = sourceFileMrState.groupsForFlow;
@@ -1252,6 +1253,14 @@ namespace ts {
             if (getMyDebug()) consoleLog(`getTypeByMrNarrowAux[dbg]: cache hit`);
             return cachedType;
         }
+
+        if (mrState.dataForGetTypeOfExpressionShallowRecursive?.returnErrorTypeOnFail){
+            if (getMyDebug()){
+                consoleLog(`getTypeByMrNarrowAux[dbg]: getTypeOfExpressionShallowRecursive step 2 failed, returnErrorTypeOnFail`);
+            }
+            return sourceFileMrState.mrState.checker.getErrorType();
+        }
+
         Debug.assert(sourceFileMrState.mrState.recursionLevel===0,"expected sourceFileMrState.mrState.recursionLevel===0");
         sourceFileMrState.mrState.recursionLevel++;
         updateHeapWithGroupForFlow(groupForFlow,sourceFileMrState, sourceFileMrState.mrState.forFlowTop);

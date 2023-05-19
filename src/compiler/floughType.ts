@@ -49,7 +49,7 @@ namespace ts {
         differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
 
         getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
-        intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType;
+        intersectionWithObjectSimplification(a: Readonly<FloughType>,b: Readonly<FloughType>): FloughType;
         hasLogicalObject(ft: Readonly<FloughType>): boolean;
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
         createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined): FloughType ;
@@ -375,7 +375,8 @@ namespace ts {
         return at;
     }
 
-    function intersectionWithObjectSimplification(types: [Readonly<FloughType>,Readonly<FloughType>]): FloughType {
+    function intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType {
+        Debug.assert(types.length === 2);
         //if (types.length === 0) return createNeverType();
         castReadonlyFloughTypei(types[0]);
         const arrlogobj: FloughLogicalObjectIF[] = [];
@@ -398,7 +399,7 @@ namespace ts {
             ft = intersectionWithFloughTypeMutate(t,ft);
         };
         if (!blogobj) return ft;
-        ft.logicalObject = floughLogicalObjectModule.intersectionAndSimplifyLogicalObjects(types[0],types[1]); // note that this may return undefined.
+        ft.logicalObject = floughLogicalObjectModule.intersectionAndSimplifyLogicalObjects(arrlogobj[0],arrlogobj[1]); // note that this may return undefined.
         if (!ft.logicalObject) delete ft.logicalObject; // delete the undefined member.
         return ft;
     }
@@ -1245,7 +1246,9 @@ namespace ts {
         // };
 
         if (!compilerOptions.floughDoNotWidenNonObject){
-            return createFromTsType(effectiveDeclaredTsType);
+            const ft = createFromTsType(effectiveDeclaredTsType);
+            floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject!, effectiveDeclaredTsType);
+            return ft;
         }
         else {
             const logicalObject = ftin.logicalObject;

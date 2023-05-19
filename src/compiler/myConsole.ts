@@ -165,9 +165,8 @@ namespace ts {
             if (as.length===1) return as;
             else return ["[", ...as, "]"];
         };
-        const dbgFloughTypeToString = (flowType: FlowType): string => {
-            if (!flowType.flags) return "IncompleteType";
-            return checker.typeToString(flowType as Type);
+        const dbgFloughTypeToString = (ft: FloughType): string => {
+            return floughTypeModule.dbgFloughTypeToString(ft);
         };
         const dbgNodeToString = (node: Node | undefined): string => {
             return !node?"<undef>":`[n${getNodeId(node)}] ${dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;

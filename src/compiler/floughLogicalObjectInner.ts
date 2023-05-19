@@ -43,7 +43,7 @@ namespace ts {
         createFloughLogicalObjectPlain(tstype: ObjectType): FloughLogicalObjectPlain;
         createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectInnerIF[]>): FloughLogicalObjectTsunion;
         createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectInnerIF[]>): FloughLogicalObjectTsintersection;
-        createFloughLogicalObject(tsType: Type): FloughLogicalObjectInnerIF | undefined;
+        createFloughLogicalObject(tsType: Type): FloughLogicalObjectInnerIF;
         unionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
         intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
         intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner;
@@ -169,7 +169,7 @@ namespace ts {
     /**
      * The FloughLogicalObjectIF is the handle for arguments and return values used in exported functions of this module.
      */
-    export interface FloughLogicalObjectInnerIF {}
+    export interface FloughLogicalObjectInnerIF {[essymbolFloughLogicalObject]: true;}
 
     // function modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject: FloughLogicalObjectInnerIF, edType: Type): FloughLogicalObjectInnerIF {
     //     assertCastType<FloughLogicalObjectInner>(logicalObject);
@@ -233,7 +233,7 @@ namespace ts {
      * Otherwise, return the type tree converted to a FloughLogicalObject tree.
      * NOTE: Types of object properties/elements are not converted here.
      */
-    function createFloughLogicalObject(tsType: Type): FloughLogicalObjectInnerIF | undefined{
+    function createFloughLogicalObject(tsType: Type): FloughLogicalObjectInnerIF{
         //assertCastType<FloughLogicalObject>(logicalObject);
         //createFloughLogicalObject(getTsTypeFromLogicalObject(logicalObject));
         function filterAndMapItems(items: Type[]): FloughLogicalTsObject[] {
@@ -244,7 +244,7 @@ namespace ts {
         }
         if (tsType.flags & TypeFlags.Union) {
             const items = filterAndMapItems((tsType as UnionType).types);
-            if (items.length===0) return undefined;
+            if (items.length===0) Debug.fail("unepxected");
             else if (items.length===1) return items[0];
             else if (enableReSectionSubsetOfTsUnionAndIntersection && items.length !== (tsType as UnionType).types.length) {
                 // if some types are filtered out, then we need to resection the types
@@ -255,7 +255,7 @@ namespace ts {
         }
         else if (tsType.flags & TypeFlags.Intersection) {
             const items = filterAndMapItems((tsType as UnionType).types);
-            if (items.length===0) return undefined;
+            if (items.length===0) Debug.fail("unepxected");
             else if (items.length===1) return items[0];
             else if (enableReSectionSubsetOfTsUnionAndIntersection && items.length !== (tsType as UnionType).types.length) {
                 // if some types are filtered out, then we need to resection the types
@@ -268,7 +268,8 @@ namespace ts {
             return createFloughLogicalObjectPlain(tsType as ObjectType);
         }
         else {
-            return undefined;
+            Debug.fail("unexpected");
+            //return undefined;
         }
     }
 
