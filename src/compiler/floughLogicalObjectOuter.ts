@@ -6,11 +6,10 @@ namespace ts {
     export interface FloughLogicalObjectIF {[essymbolfloughLogicalObjectOuter]?: void};
 
 
-    type Variations = ESMap<LiteralType,FloughType>;
     interface FloughLogicalObjectOuter {
         inner: FloughLogicalObjectInnerIF;
         effectiveDeclaredTsType?: Type; // should be stripped of primitive types, and only have object and operator types.
-        variations?: Variations;
+        //variations?: Variations;
         [essymbolfloughLogicalObjectOuter]?: void
     };
 
@@ -179,8 +178,8 @@ namespace ts {
 
 
         const lookupItemsInner: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined = (discriminantFn || lookupItemsIn) ? [] : undefined;
-        const { logicalObject:logicalObjectInner, key, type } = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(
-            logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn, logicalObject.variations);
+        const { logicalObject:logicalObjectInner, key:_key, type } = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(
+            logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn);
 
         // if (!lookupItemsIn && variationTypes?.length) {
         //     (type as any) = floughTypeModule.unionOfRefTypesType([...variationTypes, lookupkey]);
@@ -198,7 +197,7 @@ namespace ts {
         }
         Debug.assert(lookupItemsInner);
         // eslint-disable-next-line prefer-const
-        let { effectiveDeclaredTsType: effectiveDeclaredType, variations } = logicalObject;
+        let { effectiveDeclaredTsType: effectiveDeclaredType } = logicalObject;
 
         /**
          * By setting the key->type in the variations,
@@ -217,28 +216,28 @@ namespace ts {
          * }
          * ```
          */
-        if (key){
-            if (!variations) variations = new Map<LiteralType,FloughType>();
-            const got = variations.get(key);
-            if (!got) variations.set(key, type);
-            else variations.set(key,floughTypeModule.intersectionWithFloughTypeMutate(type, floughTypeModule.cloneType(got)));
-        }
+        // if (key){
+        //     if (!variations) variations = new Map<LiteralType,FloughType>();
+        //     const got = variations.get(key);
+        //     if (!got) variations.set(key, type);
+        //     else variations.set(key,floughTypeModule.intersectionWithFloughTypeMutate(type, floughTypeModule.cloneType(got)));
+        // }
         return type ? [
-            { inner: logicalObjectInner, effectiveDeclaredTsType: effectiveDeclaredType, variations },
+            { inner: logicalObjectInner, effectiveDeclaredTsType: effectiveDeclaredType },
             type
         ] : undefined;
     }
 
     function dbgLogicalObjectToStrings(logicalObjectTop: Readonly<FloughLogicalObjectOuter>): string[] {
         const as: string[] = [];
-        const { inner, effectiveDeclaredTsType: effectiveDeclaredType, variations } = logicalObjectTop;
+        const { inner, effectiveDeclaredTsType: effectiveDeclaredType } = logicalObjectTop;
         if (effectiveDeclaredType) as.push(`effectiveDeclaredType: ${dbgsModule.dbgTypeToString(effectiveDeclaredType)}`);
         else as.push(`effectiveDeclaredType: <undef>`);
-        if (variations) {
-            variations.forEach((value,key)=>{
-                as.push(`variation:  key:${dbgsModule.dbgTypeToString(key)}], value:${dbgsModule.dbgFloughTypeToString(value)}`);
-            });
-        }
+        // if (variations) {
+        //     variations.forEach((value,key)=>{
+        //         as.push(`variation: key:${dbgsModule.dbgTypeToString(key)}], value:${dbgsModule.dbgFloughTypeToString(value)}`);
+        //     });
+        // }
         floughLogicalObjectInnerModule.dbgLogicalObjectToStrings(inner).forEach(s=>as.push(`inner: ${s}`));
         return as;
     }

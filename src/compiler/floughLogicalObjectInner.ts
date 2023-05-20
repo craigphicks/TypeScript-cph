@@ -28,8 +28,9 @@ namespace ts {
 
     const enableReSectionSubsetOfTsUnionAndIntersection = true;
 
-    export type FloughLogicalObjectVariations = ESMap<LiteralType,FloughType>;
-    type Variations = FloughLogicalObjectVariations;
+    // export type FloughLogicalObjectVariations = ESMap<LiteralType,FloughType>;
+    // type Variations = FloughLogicalObjectVariations;
+    type Variations = ESMap<LiteralType,FloughType>;
 
 
     export type LogicalObjectInnerForEachTypeOfPropertyLookupItem = & {
@@ -54,7 +55,7 @@ namespace ts {
         intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInnerIF | undefined;
         //    intersectionAndSimplifyLogicalObjects(arrlogobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInnerIF | undefined;
         logicalObjectForEachTypeOfPropertyLookup(logicalObject: Readonly<FloughLogicalObjectInnerIF>, lookupkey: Readonly<FloughType>,
-            lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[], discriminantFn?: DiscriminantFn, variations?: Variations): LogicalObjectInnerForEachTypeOfPropertyLookupItem;
+            lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[], discriminantFn?: DiscriminantFn): LogicalObjectInnerForEachTypeOfPropertyLookupItem;
         // getEffectiveDeclaredTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Set<Type>;
         getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
@@ -150,6 +151,7 @@ namespace ts {
     type FloughLogicalObjectPlain = FloughLogicalTsObjectBase & {
         kind: FloughLogicalObjectKind.plain;
         item: FloughObjectTypeInstance;
+        variations?: Variations;
     };
     /**
      * Although FloughLogicalObjectTsintersection is a leaf node, it is not a FloughLogicalObjectPlain and it has member "items" because
@@ -159,6 +161,7 @@ namespace ts {
     type FloughLogicalObjectTsintersection = FloughLogicalTsObjectBase & {
         kind: FloughLogicalObjectKind.tsintersection;
         items: FloughLogicalObjectInner[];
+        variations?: Variations;
     };
     type FloughLogicalObjectTsunion = FloughLogicalTsObjectBase & {
         kind: FloughLogicalObjectKind.tsunion;
@@ -458,7 +461,7 @@ namespace ts {
     }
 
     function logicalObjectForEachTypeOfPropertyLookup(logicalObjectTop: Readonly<FloughLogicalObjectInner>, lookupkey: FloughType,
-        lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined, discriminantFn?: DiscriminantFn, variations?: Variations): LogicalObjectInnerForEachTypeOfPropertyLookupItem {
+        lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined, discriminantFn?: DiscriminantFn): LogicalObjectInnerForEachTypeOfPropertyLookupItem {
 
         type PropertyItem = LogicalObjectInnerForEachTypeOfPropertyLookupItem;
 
@@ -466,6 +469,52 @@ namespace ts {
 
         function worker(logicalObject: FloughLogicalObjectInner): PropertyItem {
             if (logicalObject.kind === FloughLogicalObjectKind.plain) {
+
+
+                const helper = (at: Type[], aftype: FloughType[], akeyType: LiteralType[]): PropertyItem => {
+                    assertCastType<Readonly<FloughLogicalObjectPlain>>(logicalObject);
+                    let type = aftype.length===0 ? floughTypeModule.createNeverType()
+                    : aftype.length===1 ? aftype[0]
+                    : floughTypeModule.unionOfRefTypesType(aftype);
+                    for (const t of at) type = floughTypeModule.unionWithTsTypeMutate(t, type);
+
+                    if (!discriminantFn){
+                        const item: PropertyItem = { logicalObject, key: undefined, type };
+                        if (lookupItemTable){
+                            lookupItemTable.push(item);
+                        }
+                        return item;
+                    }
+
+                    const key = akeyType.length===1 ? akeyType[0] : undefined;
+                    const dtype = discriminantFn(type);
+                    let item: PropertyItem;
+                    if (!dtype) {
+                        // logicalObject will be pruned, no point in setting variation
+                        item = { logicalObject: undefined, key, type: floughTypeModule.createNeverType() };
+                    }
+                    else{
+                        if (dtype!==true) {
+                            if (key) {
+                                /**
+                                 * Crucial: logical object must be re-shelled, because it's variation has diverged.
+                                 * The parent of logical object will detect that it has changed and will re-shell itself.
+                                 */
+                                const variations: Variations = new Map(logicalObject.variations);
+                                variations.set(key, dtype);
+                                (logicalObject = { ...logicalObject, variations });
+                            }
+                            type = dtype;
+                        }
+                        item = { logicalObject, key, type: dtype===true ? type : dtype };
+                    }
+                    if (lookupItemTable){
+                        lookupItemTable.push(item);
+                    }
+                    return item;
+                };
+
+
                 const objType = logicalObject.item.tsObjectType;
                 if (checker.isArrayOrTupleType(objType)) {
                     if (checker.isArrayType(objType)) {
@@ -522,10 +571,16 @@ namespace ts {
                         else {
                             Debug.assert(akeyType && akeyType.length === akey.length);
                             const at: Type[] = [];
+                            const aftype: FloughType[] = [];
                             let addUndefined = false;
                             // eslint-disable-next-line @typescript-eslint/prefer-for-of
                             for (let i=0; i<akey.length; i++) {
                             // for (const k of akey) {
+                                let ft;
+                                if (ft = logicalObject.variations?.get(akeyType[i])){
+                                    aftype.push(ft);
+                                    continue;
+                                }
                                 const k=akey[i];
                                 let t: Type | undefined;
                                 let undef: boolean | undefined;
@@ -542,49 +597,11 @@ namespace ts {
                                     // addUndefined = true;
                                 }
                                 else undef = true;
-                                // else addUndefined = true;
-                                let got;
-                                if (got = variations?.get(akeyType[i])) {
-                                    if (!t) t = checker.getNeverType();
-                                    //const v = variations.get(akeyType[i]);
-                                    t = undef ? checker.getUnionType([t, checker.getUndefinedType()]) : t;
-                                    let tmpType = floughTypeModule.createFromTsType(t);
-                                    //if (undef && !floughTypeModule.hasUndefined(got)) undef = false;
-                                    tmpType = floughTypeModule.intersectionWithFloughTypeMutate(got, tmpType);
-                                    t = floughTypeModule.getTypeFromRefTypesType(tmpType);
-                                    undef = false; // is already in t, if present.
-                                }
                                 if (t) at.push(t);
                                 addUndefined ||= undef;
                             }
                             if (addUndefined) at.push(checker.getUndefinedType());
-                            let tstype: Type;
-                            if (at.length===1) tstype = at[0];
-                            else tstype = checker.getUnionType(at);
-
-                            const type = floughTypeModule.createFromTsType(tstype);
-                            if (!discriminantFn || akey.length!==1){
-                                const item: PropertyItem = { logicalObject, key: undefined, type };
-                                if (lookupItemTable){
-                                    lookupItemTable.push(item);
-                                }
-                                return item;
-                            }
-
-                            const key = akeyType[0];
-                            const dtype = discriminantFn(type);
-                            let item: PropertyItem;
-                            if (!dtype) {
-                                item = { logicalObject: undefined, key, type: floughTypeModule.createNeverType() };
-                            }
-                            else{
-                                //if (dtype!==true) type = dtype;
-                                item = { logicalObject, key, type: dtype===true ? type : dtype };
-                            }
-                            if (lookupItemTable){
-                                lookupItemTable.push(item);
-                            }
-                            return item;
+                            return helper(at, aftype, akeyType);
                         }
                     }
                     Debug.fail("unexpected");
@@ -615,56 +632,45 @@ namespace ts {
                             return item;
                         }
                     }
-                    const at: Type[] = [];
-                    {
-                        let addUndefined = false;
-                        // eslint-disable-next-line @typescript-eslint/prefer-for-of
-                        for (let i=0; i<akey.length; i++) {
-                        // for (const keystring of akey) {
-                            const keystring = akey[i];
-                            const propSymbol = checker.getPropertyOfType(objType,keystring as string);
-                            let undef = false;
-                            let propType: Type = checker.getUndefinedType();
-                            if (propSymbol) {
-                                propType = checker.getTypeOfSymbol(propSymbol);
-                                undef = !!(propSymbol.flags & SymbolFlags.Optional);
-                                //at.push(propType);
+                    else {
+                        const at: Type[] = [];
+                        const aftype: FloughType[] = [];
+                        {
+                            let addUndefined = false;
+                            // eslint-disable-next-line @typescript-eslint/prefer-for-of
+                            for (let i=0; i<akey.length; i++) {
+                                let ft;
+                                if (ft = logicalObject.variations?.get(akeyType![i])){
+                                    aftype.push(ft);
+                                    continue;
+                                }
+                                const keystring = akey[i];
+                                const propSymbol = checker.getPropertyOfType(objType,keystring as string);
+                                let undef = false;
+                                let propType: Type = checker.getUndefinedType();
+                                if (propSymbol) {
+                                    propType = checker.getTypeOfSymbol(propSymbol);
+                                    undef = !!(propSymbol.flags & SymbolFlags.Optional);
+                                    //at.push(propType);
+                                }
+                                else addUndefined = true;
+                                // let got;
+                                // if (got = variations?.get(akeyType![i])) {
+                                //     if (!propType) propType = checker.getNeverType();
+                                //     if (undef) propType = checker.getUnionType([propType, checker.getUndefinedType()]);
+                                //     let tmpType = floughTypeModule.createFromTsType(propType);
+                                //     //if (undef && !floughTypeModule.hasUndefined(got)) undef = false;
+                                //     tmpType = floughTypeModule.intersectionWithFloughTypeMutate(got, tmpType);
+                                //     propType = floughTypeModule.getTypeFromRefTypesType(tmpType);
+                                //     undef = false; // is already in t, if present.
+                                // }
+                                at.push(propType);
+                                addUndefined ||= undef;
                             }
-                            else addUndefined = true;
-                            let got;
-                            if (got = variations?.get(akeyType![i])) {
-                                if (!propType) propType = checker.getNeverType();
-                                if (undef) propType = checker.getUnionType([propType, checker.getUndefinedType()]);
-                                let tmpType = floughTypeModule.createFromTsType(propType);
-                                //if (undef && !floughTypeModule.hasUndefined(got)) undef = false;
-                                tmpType = floughTypeModule.intersectionWithFloughTypeMutate(got, tmpType);
-                                propType = floughTypeModule.getTypeFromRefTypesType(tmpType);
-                                undef = false; // is already in t, if present.
-                            }
-                            at.push(propType);
-                            addUndefined ||= undef;
+                            if (addUndefined) at.push(checker.getUndefinedType());
                         }
-                        if (addUndefined) at.push(checker.getUndefinedType());
+                        return helper(at, aftype, akeyType!);
                     }
-                    let item: PropertyItem;
-                    {
-                        Debug.assert(akeyType?.length === akey?.length);
-                        const key = akeyType?.length===1 ? akeyType[0] : undefined;
-                        const type = floughTypeModule.createRefTypesType(at);
-                        if (discriminantFn) {
-                            const dtype = discriminantFn(type);
-                            item = {
-                                logicalObject: dtype===undefined ? undefined : logicalObject,
-                                key,
-                                type: dtype===undefined ? floughTypeModule.getNeverType() : dtype===true ? type : dtype
-                            };
-                        }
-                        else {
-                            item = { logicalObject, key, type };
-                        }
-                    }
-                    if (lookupItemTable) lookupItemTable.push(item);
-                    return item;
                 }
             }
             else if (logicalObject.kind === FloughLogicalObjectKind.tsintersection) {
@@ -800,10 +806,21 @@ namespace ts {
                 as.push(`  logicalObject.item.objectTypeInstanceId: ${logicalObject.item.objectTypeInstanceId}`);
                 as.push("  logicalObject.item.tsObjectType: "+dbgs.dbgTypeToString(logicalObject.item.tsObjectType));
             }
-            else {
+            if (logicalObject.kind === "tsintersection" || logicalObject.kind === "tsunion") {
+                as.push("  logicalObject.tsType: "+dbgs.dbgTypeToString(logicalObject.tsType));
+            }
+            if (logicalObject.kind === "plain" || logicalObject.kind === "tsintersection") {
+                if (logicalObject.variations) {
+                    logicalObject.variations.forEach((value,key)=>{
+                        as.push(`  variation:  key:${dbgsModule.dbgTypeToString(key)}], value:${dbgsModule.dbgFloughTypeToString(value)}`);
+                    });
+                }
+            }
+            if (logicalObject.kind !== "plain"){
                 as. push("  #items: "+logicalObject.items.length);
                 logicalObject.items.forEach(item=>dbgLogicalObjectToStringsAux(item));
             }
+
             for (let i=lenin; i<as.length; i++) as[i] = pad + as[i];
             indent-=4;
         }
