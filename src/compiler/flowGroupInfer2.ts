@@ -2415,10 +2415,15 @@ namespace ts {
             } // floughByTypeofExpression
 
             function attemptToGetTypeWithoutFlough(expr: Expression, inferStatus: InferStatus): Type | undefined{
+                if (getMyDebug()) consoleGroup(`attemptToGetTypeWithoutFlough[in] expr:${dbgNodeToString(expr)}`);
                 const emptysc = { symtab:mrNarrow.createRefTypesSymtab(), constraintItem:createFlowConstraintAlways() };
                 //createRefTypesSymtabConstraintWithEmptyInnerSymtab(inferStatus);
                 //createSymbolTable(inferStatus);
                 const type = inferStatus.getTypeOfExpressionShallowRecursion(emptysc,expr, /*returnErrorTypeOnFail*/ true);
+                if (getMyDebug()) {
+                    consoleLog(`attemptToGetTypeWithoutFlough[out] expr:${dbgNodeToString(expr)}, type:${dbgTypeToString(type)}`);
+                    consoleGroupEnd();
+                }
                 if (checker.getErrorType()===type) return undefined;
                 return type;
             }
@@ -2466,7 +2471,7 @@ namespace ts {
                         expr:leftExpr, crit:{ kind:InferCritKind.equal, target: rightQuickTsType, alsoFailing:true }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
                         sci
                     });
-                    //leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
+                    // IWOZERE
                 }
                 else {
                     leftQuickTsType = attemptToGetTypeWithoutFlough(leftExpr,inferStatus);
@@ -2749,31 +2754,31 @@ namespace ts {
                     // @ ts-ignore
                     const passing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnTrue);
                     if (passing){
-                        const [logicalObject, type] = passing;
+                        //const [logicalObject, type] = passing;
                         // if a symbol is available, bind logicalObject (which is a shallow clone) to the symbol, before pushing to unmerged.
+                        let sci = argSci;
                         if (leftRttr0.symbol) {
-                            // do not have to call andSymbolTypeIntoSymtabConstraint, just clone and replace.
-                            argSci.symtab = mrNarrow.copyRefTypesSymtab(argSci.symtab!).set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(logicalObject));
+                            // do not have to call andSymbolTypeIntoSymtabConstraint because we know passing[0] is a subset of the original, just replace.
+                            (sci = copyRefTypesSymtabConstraintItem(sci)).symtab?.set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(passing[0]));
                         }
                         unmerged.push({
                             critsense: "passing",
-                            type,
-                            sci: argSci
+                            type:passing[1],
+                            sci
                         });
                     }
                     if (discriminantFnFalse) {
-                        const passing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnFalse);
-                        if (passing){
-                            const [logicalObject, type] = passing;
-                            // if a symbol is available, bind logicalObject (which is a shallow clone) to the symbol, before pushing to unmerged.
+                        const failing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnFalse);
+                        if (failing){
+                            let sci = argSci;
                             if (leftRttr0.symbol) {
-                                // do not have to call andSymbolTypeIntoSymtabConstraint, just clone and replace.
-                                argSci.symtab = mrNarrow.copyRefTypesSymtab(argSci.symtab!).set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(logicalObject));
+                                // do not have to call andSymbolTypeIntoSymtabConstraint because we know passing[0] is a subset of the original, just replace.
+                                (sci = copyRefTypesSymtabConstraintItem(sci)).symtab?.set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(failing[0]));
                             }
                             unmerged.push({
                                 critsense: "failing",
-                                type,
-                                sci: argSci
+                                type:failing[1],
+                                sci
                             });
                         }
                     }

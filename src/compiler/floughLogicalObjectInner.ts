@@ -28,6 +28,9 @@ namespace ts {
 
     const enableReSectionSubsetOfTsUnionAndIntersection = true;
 
+    export type FloughLogicalObjectVariations = ESMap<LiteralType,FloughType>;
+    type Variations = FloughLogicalObjectVariations;
+
 
     export type LogicalObjectInnerForEachTypeOfPropertyLookupItem = & {
         logicalObject: FloughLogicalObjectInner | undefined, // undefined <=> logically trimmed
@@ -51,7 +54,7 @@ namespace ts {
         intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInnerIF | undefined;
         //    intersectionAndSimplifyLogicalObjects(arrlogobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInnerIF | undefined;
         logicalObjectForEachTypeOfPropertyLookup(logicalObject: Readonly<FloughLogicalObjectInnerIF>, lookupkey: Readonly<FloughType>,
-            lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[], discriminantFn?: DiscriminantFn): LogicalObjectInnerForEachTypeOfPropertyLookupItem;
+            lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[], discriminantFn?: DiscriminantFn, variations?: Variations): LogicalObjectInnerForEachTypeOfPropertyLookupItem;
         // getEffectiveDeclaredTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Set<Type>;
         getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
@@ -454,119 +457,14 @@ namespace ts {
         return result;
     }
 
-
-    /**
-     * This is a test function - we really want to get keys and types together, which it a bit more complicated.
-     * The resulting set of keys are the zero order result, meaning there is no correlation between the keys - just one set of all keys.
-     * @param logicalObjectTop
-     * TODO: These are only the keys that have been loaded into the logical object, not all keys of the type. Get all keys of the type.
-     */
-    // export function logicalObjectGetKeysZeroOrder(
-    //     logicalObjectTop: Readonly<FloughLogicalObject>,
-    // ): Set<PropertyKeyType> {
-    //     type Result = & {iter: Iterator<PropertyKeyType>, setof: Set<PropertyKeyType> | undefined};
-    //     type State = Set<PropertyKeyType>;
-    //     function createLogicalObjectVisitorForGetKeysZeroOrder():
-    //     LogicalObjectVisitor<Result, State>{
-    //         return {
-    //             onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => {
-    //                 // TODO: add ALL the keys
-    //                 const result: Result = { iter: logicalObject.item.keyToType.keys(), setof: undefined };
-    //                 return result;
-    //             },
-    //             onUnion(_logicalObject: Readonly<FloughLogicalObjectUnion>, result: Result, state: State | undefined, itemsIndex: number) {
-    //                 if (itemsIndex===0) {
-    //                     state = new Set<PropertyKeyType>();
-    //                 }
-    //                 for (let it=result.iter.next();!it.done; it=result.iter.next()) {
-    //                     state!.add(it.value);
-    //                 }
-    //                 if (itemsIndex===_logicalObject.items.length-1) return [undefined, { iter: state!.keys(), setof: state! }];
-    //                 return [state,undefined];
-    //             },
-    //             onIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result, stateIn: State | undefined, itemsIndex: number) {
-    //                 const stateOut = new Set<PropertyKeyType>();
-    //                 if (itemsIndex===0) {
-    //                     for (let it=result.iter.next();!it.done; it=result.iter.next()) {
-    //                         stateOut.add(it.value);
-    //                     }
-    //                 }
-    //                 else {
-    //                     Debug.assert(stateIn);
-    //                     for (let it=result.iter.next();!it.done; it=result.iter.next()) {
-    //                         if (stateIn.has(it.value)) stateOut.add(it.value);
-    //                     }
-    //                 }
-    //                 if (itemsIndex===_logicalObject.items.length-1) return [undefined, { iter: stateOut.keys(), setof: stateOut }];
-    //                 else return [stateOut,undefined];
-    //             },
-    //         };
-    //     }
-    //     const visitor = createLogicalObjectVisitorForGetKeysZeroOrder();
-    //     const dfltSet = new Set<PropertyKeyType>();
-    //     const result = logicalObjecVisit(logicalObjectTop, () => visitor, { iter: dfltSet.keys(), setof: dfltSet });
-    //     return result.setof!;
-    // }
-
-    /**
-     * For the given key "lookupkey", return an map of all object instances with property "lookupkey" and the corresponding type.
-     * It's not so simple because the object instances are in a tree, and the lookupkey may be in a union or intersection.
-     * However, the object instances are wanted so we can go back and trim the tree.
-     * The idea is that this replaces the old code action, in "floughByPropertyAccessExpression", where
-     * ```
-     * forEachFloughTypeTsType(prePassing.type, t => {
-     *   ...
-     *   const propSymbol = checker.getPropertyOfType(t, keystr);
-     *   if (propSymbol)
-     *            const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
-     *                {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc,
-     *                getDeclaredType, mrNarrow });
-     *            arrRttr.push({
-     *                symbol: propSymbol,
-     *                isconst: symbolFlowInfo.isconst,
-     *                type, //symbolFlowInfo.effectiveDeclaredType!,
-     *                sci: propSC
-     *            });
-     *    else
-     *           arrRttr.push({symbol: undefined, type: checker.getUndefinedType(), sci: sc});
-     * ```
-     * In the above code, t corresponds to the type of the object instance, and keystr corresponds to the lookupkey.
-     * In the new code, is we will be calling forEachFloughTypeObject, with iterates over its floughLogicalObjectTypeInstance-s. (or will there be just one?).
-     * When there are no intersections, it is simply a matter of adding each {baseObjectInstance, type} to the result array, so they are kept separate.
-     * Then, if a criteria is applied the result array, the corresponding object instances can be narrowed.  The criteria is applied to the type, which is updated in the object instance,
-     * and if the results type is never, the object instance is removed from the tree.
-     * When there are intersections of {baseObjectInstance1, type1}, {baseObjectInstance2, type2}, the result is
-     * {baseObjectInstance1, intersect(type1,type2)} and {baseObjectInstance2, intersect(type1,type2)} - both of which are added to the result array, since they are mutually constraining.
-     *
-     * It is possible that the result array will contain the same object more than once.  Therfore, it using Map<objectInstance, type>.
-     *
-     * Note that as a result of intersection constraining, some of the property types returned in the may be
-     * - undefined type even if that is not an allowed type for the property (might change this to never type)
-     * - never type (alway allowed, it is a flow description not really a type)
-     * - an unresolved intersection type of FloughtObjectTypesInstance-s. It is not always nevessary to know immediately whether the interseciton is truly emptpy or not.
-     *   It is not necceary to know immediately if the intersection is empty, because the intersection may be resolved later.
-     *
-     * Arrays and tuples are treated as objects with numeric keys.
-     *
-     * Notes:
-     * The stack implementation is not really necessary for speed or maximum depth (the depth of the tree is limited by the nummber of operators applied to the type.)
-     * So a recusrive implementation would be fine.  However, the stack implementation might be more general, and useful in other places.
-     * A recusrive implementation could be done with callback functions.
-     * @param logicalObjectTop  - the logical object to search
-     * @param lookupkey - the property key(s) to look up
-     * @returns LogicalObjectInnerForEachTypeOfPropertyLookupItem
-     *
-     */
     function logicalObjectForEachTypeOfPropertyLookup(logicalObjectTop: Readonly<FloughLogicalObjectInner>, lookupkey: FloughType,
-        lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined, discriminantFn?: DiscriminantFn): LogicalObjectInnerForEachTypeOfPropertyLookupItem {
+        lookupItemTable?: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined, discriminantFn?: DiscriminantFn, variations?: Variations): LogicalObjectInnerForEachTypeOfPropertyLookupItem {
 
         type PropertyItem = LogicalObjectInnerForEachTypeOfPropertyLookupItem;
 
-        //type WorkerReturnType = [base: FloughLogicalObjectInner | undefined, property: FloughType | undefined, propertyIsNarrowed?: boolean | undefined];
         Debug.assert(!floughTypeModule.isNeverType(lookupkey));
 
         function worker(logicalObject: FloughLogicalObjectInner): PropertyItem {
-            //assertCastType<DiscriminantFn>(discriminantFn);
             if (logicalObject.kind === FloughLogicalObjectKind.plain) {
                 const objType = logicalObject.item.tsObjectType;
                 if (checker.isArrayOrTupleType(objType)) {
@@ -604,7 +502,7 @@ namespace ts {
                             if (!floughTypeModule.hasNumberType(lookupkey)) {
                                 const type = floughTypeModule.createUndefinedType();
                                 const item: PropertyItem = { logicalObject, key: undefined, type };
-                                // The key type was not a number type, so the result is never.
+                                // The key type was not a number type, the checker may produce an error, but we treat it here as an undefined type.
                                 if (lookupItemTable) {
                                     lookupItemTable.push(item);
                                 }
@@ -625,16 +523,39 @@ namespace ts {
                             Debug.assert(akeyType && akeyType.length === akey.length);
                             const at: Type[] = [];
                             let addUndefined = false;
-                            for (const k of akey) {
+                            // eslint-disable-next-line @typescript-eslint/prefer-for-of
+                            for (let i=0; i<akey.length; i++) {
+                            // for (const k of akey) {
+                                const k=akey[i];
+                                let t: Type | undefined;
+                                let undef: boolean | undefined;
                                 if (k < tupleElements.length) {
-                                    at.push(tupleElements[k]);
-                                    addUndefined ||= !!(elementFlags[k] & (ElementFlags.Optional|ElementFlags.Rest));
+                                    t = tupleElements[k];
+                                    undef = !!(elementFlags[k] & (ElementFlags.Optional|ElementFlags.Rest));
+                                    // at.push(tupleElements[k]);
+                                    // addUndefined ||= !!(elementFlags[k] & (ElementFlags.Optional|ElementFlags.Rest));
                                 }
                                 else if (hasRest) {
-                                    at.push(tupleElements[tupleElements.length-1]);
-                                    addUndefined = true;
+                                    t = tupleElements[tupleElements.length-1];
+                                    undef = !!(elementFlags[elementFlags.length-1] & (ElementFlags.Optional|ElementFlags.Rest));
+                                    // at.push(tupleElements[tupleElements.length-1]);
+                                    // addUndefined = true;
                                 }
-                                else addUndefined = true;
+                                else undef = true;
+                                // else addUndefined = true;
+                                let got;
+                                if (got = variations?.get(akeyType[i])) {
+                                    if (!t) t = checker.getNeverType();
+                                    //const v = variations.get(akeyType[i]);
+                                    t = undef ? checker.getUnionType([t, checker.getUndefinedType()]) : t;
+                                    let tmpType = floughTypeModule.createFromTsType(t);
+                                    //if (undef && !floughTypeModule.hasUndefined(got)) undef = false;
+                                    tmpType = floughTypeModule.intersectionWithFloughTypeMutate(got, tmpType);
+                                    t = floughTypeModule.getTypeFromRefTypesType(tmpType);
+                                    undef = false; // is already in t, if present.
+                                }
+                                if (t) at.push(t);
+                                addUndefined ||= undef;
                             }
                             if (addUndefined) at.push(checker.getUndefinedType());
                             let tstype: Type;
@@ -672,31 +593,64 @@ namespace ts {
                     const objType = logicalObject.item.tsObjectType;
                     const akeyType = floughTypeModule.getLiteralStringTypes(lookupkey);
                     const akey = akeyType?.map(x=>x.value);
-                    let addUndefined = false;
+                    if (!akey || akey.length === 0) {
+                        if (!floughTypeModule.hasStringType(lookupkey)) {
+                            const type = floughTypeModule.createUndefinedType();
+                            const item: PropertyItem = { logicalObject, key: undefined, type };
+                            // The key type was not a string type, the checker may produce an error, but we treat it here as an undefined type.
+                            if (lookupItemTable) {
+                                lookupItemTable.push(item);
+                            }
+                            return item;
+                        }
+                        else {
+                            // Do the same thing for the union of ALL keys - assuming this an checker error, but we treat it here as an undefined type.
+                            // TODO: look up the string index type and return that.
+                            const type = floughTypeModule.createUndefinedType();
+                            const item: PropertyItem = { logicalObject, key: undefined, type };
+                            // The key type was not a string type, the checker may produce an error, but we treat it here as an undefined type.
+                            if (lookupItemTable) {
+                                lookupItemTable.push(item);
+                            }
+                            return item;
+                        }
+                    }
                     const at: Type[] = [];
-                    if (akey){
-                        //const props = checker.getPropertiesOfType(objType);
-                        for (const keystring of akey) {
+                    {
+                        let addUndefined = false;
+                        // eslint-disable-next-line @typescript-eslint/prefer-for-of
+                        for (let i=0; i<akey.length; i++) {
+                        // for (const keystring of akey) {
+                            const keystring = akey[i];
                             const propSymbol = checker.getPropertyOfType(objType,keystring as string);
-                            let propType: Type;
+                            let undef = false;
+                            let propType: Type = checker.getUndefinedType();
                             if (propSymbol) {
                                 propType = checker.getTypeOfSymbol(propSymbol);
-                                addUndefined ||= !!(propSymbol.flags & SymbolFlags.Optional);
-                                at.push(propType);
+                                undef = !!(propSymbol.flags & SymbolFlags.Optional);
+                                //at.push(propType);
                             }
                             else addUndefined = true;
+                            let got;
+                            if (got = variations?.get(akeyType![i])) {
+                                if (!propType) propType = checker.getNeverType();
+                                if (undef) propType = checker.getUnionType([propType, checker.getUndefinedType()]);
+                                let tmpType = floughTypeModule.createFromTsType(propType);
+                                //if (undef && !floughTypeModule.hasUndefined(got)) undef = false;
+                                tmpType = floughTypeModule.intersectionWithFloughTypeMutate(got, tmpType);
+                                propType = floughTypeModule.getTypeFromRefTypesType(tmpType);
+                                undef = false; // is already in t, if present.
+                            }
+                            at.push(propType);
+                            addUndefined ||= undef;
                         }
                         if (addUndefined) at.push(checker.getUndefinedType());
-
                     }
-                    // TODO: generic string type, number type, template strings?
                     let item: PropertyItem;
-                    if (!akey || akey.length === 0) {
-                        item = { logicalObject, key: undefined, type:floughTypeModule.getNeverType() };
-                    }
-                    else {
+                    {
                         Debug.assert(akeyType?.length === akey?.length);
-                        const [key,type] = (at.length===1) ? [akeyType[0],floughTypeModule.createFromTsType(at[0])] : [undefined,floughTypeModule.createFromTsType(checker.getUnionType(at))];
+                        const key = akeyType?.length===1 ? akeyType[0] : undefined;
+                        const type = floughTypeModule.createRefTypesType(at);
                         if (discriminantFn) {
                             const dtype = discriminantFn(type);
                             item = {
@@ -733,240 +687,6 @@ namespace ts {
         return worker(logicalObjectTop);
     } // end of logicalObjectForEachTypeOfPropertyLookupInternal
 
-
-
-    // function logicalObjectForEachTypeOfPropertyLookupX(
-    //     logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, lookupkey: PropertyKeyType, arrBaseAndPropertyType?: readonly LogicalObjectForEachTypeOfPropertyLookupItem[]): FloughType {
-
-    //     Debug.assert(arrBaseAndPropertyType);
-
-    //     const { objToType, type } = logicalObjectForEachTypeOfPropertyLookupInternal(logicalObjectTop,lookupkey);
-
-    //     objToType.forEach((pt,oi)=>{
-    //         const logicalObject: FloughLogicalTsObject = {
-    //             kind: FloughLogicalObjectKind.plain,
-    //             tsType: oi.tsObjectType,
-    //             item: oi,
-    //             [essymbolFloughLogicalObject]: true
-    //         };
-    //         arrBaseAndPropertyType.push([{logicalObject,pt]);
-    //     });
-    //     return type;
-    // }
-
-    //type ObjToTypeMap = ESMap<Readonly<FloughObjectTypeInstance>, Readonly<FloughType>>;
-    //type LogicalObjectForEachTypeOfProperyLookupReturnType = & { objToType: ObjToTypeMap; type: Readonly<FloughType> };
-    // function logicalObjectForEachTypeOfPropertyLookupInternal(
-    //     logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, lookupkey: PropertyKeyType, discriminantFn?: DiscriminantFn
-    // ): LogicalObjectForEachTypeOfProperyLookupReturnType {
-    //     assertCastType<FloughLogicalObjectInner>(logicalObjectTop);
-    //     type Result = LogicalObjectForEachTypeOfProperyLookupReturnType;
-    //     type State = & { objToType: ObjToTypeMap; type: Readonly<FloughType>/*, setOfObj?: Set<Readonly<FloughObjectTypeInstance>>*/ };
-    //     type OnReturnType = [State, undefined, FloughLogicalObjectInner] | [undefined, Result, undefined];
-    //     function newMap(x?: [objectTypeInstance: Readonly<FloughObjectTypeInstance>, type: FloughType]){
-    //         const map = new Map<Readonly<FloughObjectTypeInstance>, FloughType>(x?[x]:[]);
-    //         return map;
-    //     }
-    //     function createEmptyState(): State {
-    //         return { objToType: newMap(), type: floughTypeModule.getNeverType() };
-    //     }
-    //     /**
-    //      *
-    //      * @param lookupkey So far only handles literal keys, not computed keys or generic keys
-    //      * @returns
-    //      */
-    //     function createLogicalObjectVisitorForForEachTypeOfPropertyLookup(lookupkey: PropertyKeyType):
-    //         LogicalObjectVisitor<Result, State>{
-    //         function onPlain(logicalObject: Readonly<FloughLogicalObjectPlain>): Result {
-    //             if (checker.isArrayOrTupleType(logicalObject.item.tsObjectType)) {
-    //                 if (lookupkey === "length") {
-    //                     return { objToType: newMap([logicalObject.item, floughTypeModule.createNumberType()]), type: floughTypeModule.createNumberType() };
-    //                 }
-    //                 if (checker.isArrayType(logicalObject.item.tsObjectType)){
-    //                     // by convention, the instance of an array kill keep the instance type value (if it exists) as element 0.
-    //                     let type = logicalObject.item.keyToType.get(0);
-    //                     if (!type) type = floughTypeModule.createRefTypesType(checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType));
-    //                     if (discriminantFn){
-    //                         const ret = discriminantFn(type);
-    //                         if (ret === false) return createEmptyState();
-    //                         if (ret !== true) type = ret;
-    //                         // else type stay the same
-    //                     }
-    //                     if (type) return { objToType: newMap([logicalObject.item, type]), type };
-    //                     // const tsElementType = checker.getElementTypeOfArrayType(logicalObject.item.tsObjectType);
-    //                     // type = tsElementType ? floughTypeModule.createFromTsType(tsElementType) : Debug.fail("not yet implemented (any type?)");
-    //                     return { objToType: newMap([logicalObject.item, type]), type };
-    //                 }
-    //                 else { // tuple
-    //                     let n: number;
-    //                     if (typeof lookupkey === "string") {
-    //                         // might not need/want this
-    //                         n = parseInt(lookupkey);
-    //                         Debug.assert(!isNaN(n), "unexpected key for tuple: ", ()=>lookupkey);
-    //                     }
-    //                     else if (typeof lookupkey === "number") n = lookupkey;
-    //                     else if ((lookupkey as Type).flags & TypeFlags.NumberLiteral) n = (lookupkey as NumberLiteralType).value;
-    //                     else {
-    //                         Debug.assert(false, "not yet implemented key for tuple: ", ()=>dbgsModule.dbgTypeToString(lookupkey as Type));
-    //                     }
-
-    //                     assertCastType<TupleTypeReference>(logicalObject.item.tsObjectType);
-    //                     // TODO: rest element
-    //                     if (logicalObject.item.keyToType.has(n)) {
-    //                         const type = logicalObject.item.keyToType.get(n);
-    //                         if (type) return { objToType: newMap([logicalObject.item, type]), type };
-    //                     }
-    //                     if (logicalObject.item.tsObjectType.resolvedTypeArguments) {
-    //                         const tsTupleTypes = logicalObject.item.tsObjectType.resolvedTypeArguments;
-    //                         const type = (n < tsTupleTypes.length) ? floughTypeModule.createFromTsType(tsTupleTypes[n]) : undefined;
-    //                         if (type) return { objToType: newMap([logicalObject.item, type]), type };
-    //                     }
-    //                     {
-    //                         const type = floughTypeModule.createUndefinedType();
-    //                         return { objToType: newMap([logicalObject.item, type]), type };
-    //                     }
-    //                 }
-    //             }
-    //             else {
-    //                 Debug.assert(typeof lookupkey === "string", "unexpected non string key for object: ");
-    //                 let type = logicalObject.item.keyToType.get(lookupkey);
-    //                 if (!type) {
-    //                     // check if the key is in the base object, if so get the type from there
-    //                     const tsObjectType = logicalObject.item.tsObjectType;
-    //                     /**
-    //                      * Previously, this was done with
-    //                      * const propSymbol = checker.getPropertyOfType(t, keystr);
-    //                      * if (propSymbol.flags & SymbolFlags.EnumMember)
-    //                      *     treat it as a literal type, not a symbol
-    //                      *     const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
-    //                      * else // treat it as a symbol
-    //                      */
-    //                     const tsPropertyType = checker.getTypeOfPropertyOfType(tsObjectType, lookupkey);
-    //                     // TODO: apply crit
-    //                     if (tsPropertyType) type = floughTypeModule.createFromTsType(tsPropertyType);
-    //                     else {
-    //                         type = floughTypeModule.createUndefinedType();
-    //                     }
-    //                 }
-    //                 return { objToType:newMap([logicalObject.item, type]) , type };
-    //             }
-    //         }
-    //         function onUnion(logicalObject: Readonly<FloughLogicalObjectUnion | FloughLogicalObjectTsunion>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
-    //             if (itemsIndex===-1) return [createEmptyState(), undefined, logicalObject.items[0]];
-    //             else {
-    //                 Debug.assert(state && result);
-    //                 Debug.assert(itemsIndex<logicalObject.items.length);
-    //                 // eslint-disable-next-line prefer-const
-    //                 result.objToType.forEach((t, objectInstance) => {
-    //                     assertCastType<State>(state);
-    //                     if (!state.objToType.get(objectInstance)) state.objToType.set(objectInstance, t);
-    //                     else {
-    //                         // Probably pretty rare, but if the same object instance is in multiple branches of the union, we need to union the types.
-    //                         Debug.fail("does this really happen?");
-    //                         //state.objToType.set(objectInstance, floughTypeModule.unionWithFloughTypeMutate(t,state.objToType.get(objectInstance)!));
-    //                     }
-    //                     state.type = floughTypeModule.unionWithFloughTypeMutate(t,state.type);
-    //                 });
-    //             }
-    //             if (itemsIndex === logicalObject.items.length-1) return [undefined, state, undefined];
-    //             return [state, undefined, logicalObject.items[itemsIndex+1]];
-    //         };
-    //         function onIntersection(logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
-    //             /**
-    //              * Even if the intersection is empty, we still want to return the object instances to type map, so that they can be trimmed.
-    //              * TODO:ing: Therefore need "type" in the state - compute the intersection FloughType - if that becomes never type,
-    //              * we can stop computing intersections but the object instances mappings are still needed (for trimming) - but can we get by
-    //              * without making those mappings by assuming that empty mappings are mapping to never type? We can try that later,
-    //              * but for add all object mappings.  Worth noting that the same objects may be get mapped to a non-never type later in a union.
-    //              *
-    //              * The intersection type is incrementally computed for each itemsIndex, but the type is not set to the map until the last itemsIndex.
-    //              */
-    //             if (itemsIndex===-1) return [createEmptyState(), undefined, logicalObject.items[0]];
-    //             else {
-    //                 Debug.assert(state && result);
-    //                 if (itemsIndex===0) {
-    //                     state = result;
-    //                 }
-    //                 else {
-    //                     result.objToType.forEach((t1, objectInstance) => {
-    //                         assertCastType<State>(state);
-    //                         const t2 = state.objToType.get(objectInstance);
-    //                         if (!t2) state.objToType.set(objectInstance, t1);
-    //                         // else {
-    //                         //     t1 = floughTypeModule.intersectionWithFloughTypeMutate(t1,t2);
-    //                         //     state.objToType.set(objectInstance, t1);
-    //                         //     Debug.fail("does this really happen?");
-    //                         // }
-    //                     });
-    //                     state.type = floughTypeModule.intersectionWithFloughTypeMutate(result.type,state.type);
-    //                 }
-    //             }
-    //             if (itemsIndex === logicalObject.items.length - 1) {
-    //                 /**
-    //                  * The intersection type is incrementally computed for each itemsIndex, but the type is not set to the map until the last itemsIndex.
-    //                  * Now that the type is set, we can set the type for all the object instances.
-    //                  */
-    //                 state.objToType.forEach((_t, objectInstance) => {
-    //                     assertCastType<State>(state);
-    //                     //const finalType = floughTypeModule.intersectionWithFloughTypeMutate(t,state.type);
-    //                     state.objToType.set(objectInstance, state.type);
-    //                 });
-    //                 return [undefined, state, undefined];
-    //             }
-    //             return [state, undefined, logicalObject.items[itemsIndex+1]];
-    //         }
-    //         function onDifference(logicalObject: Readonly<FloughLogicalObjectDifference>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
-    //             Debug.assert(logicalObject.items.length === 2);
-    //             if (itemsIndex===-1) {
-    //                 state = result;
-    //                 return [createEmptyState(),undefined,logicalObject.items[0]];
-    //             }
-    //             if (itemsIndex===0) {
-    //                 Debug.assert(state && result);
-    //                 state = result;
-    //                 return [state,undefined,logicalObject.items[1]];
-    //             }
-    //             else {
-    //                 Debug.assert(state && result);
-    //                 // state is minuend, result is subtrahend
-    //                 // const lesserSubtrahend = floughTypeModule.intersectionWithFloughTypeMutate(result.type,state.type);
-    //                 state.objToType.forEach((_t, objectInstance) => {
-    //                     assertCastType<State>(state);
-    //                     const diffType = floughTypeModule.differenceWithFloughTypeMutate(result.type,_t);
-    //                     state.objToType.set(objectInstance, diffType);
-    //                 });
-    //                 state.type = floughTypeModule.differenceWithFloughTypeMutate(result.type,state.type);;
-    //                 return [undefined, state, undefined];
-    //             }
-    //         }
-    //         function onTsunion(logicalObject: Readonly<FloughLogicalObjectTsunion>, result: Result, state: State | undefined, itemsIndex: number): OnReturnType {
-    //             return onUnion(logicalObject,result, state, itemsIndex);
-    //         }
-    //         function onTsintersection(logicalObject: Readonly<FloughLogicalObjectTsintersection>, result: Result, state: State | undefined, itemsIndex: number): OnReturnType {
-    //             /**
-    //              * This is now a hack to get things running. A tsintersection is a actually a single compound type, not a union of types.
-    //              * A ts-intersection type has internal respesentation of the properties of the intersection type, and we can access those instead of calling union.
-    //              * The ts-intersection property types are the intersection of property types of the intersection component types, not the union of the property types.
-    //              * When such an intersection of property types is never, the whole intersection type is never, so the difference with union is consequential.
-    //              */
-    //             return onUnion({
-    //                 ...logicalObject, kind: FloughLogicalObjectKind.union},
-    //                 result, state, itemsIndex
-    //             );
-    //         }
-    //         return {
-    //             onPlain,
-    //             onUnion,
-    //             onIntersection,
-    //             onDifference,
-    //             onTsunion,
-    //             onTsintersection,
-    //         };
-    //     } // end of createLogicalObjectVisitorForForEachTypeOfProperyLookup
-    //     const visitor = createLogicalObjectVisitorForForEachTypeOfPropertyLookup(lookupkey);
-    //     const result = logicalObjecVisit(logicalObjectTop, () => visitor, { objToType: newMap(), type: floughTypeModule.createNeverType() });
-    //     return result;
-    // } // end of logicalObjectForEachTypeOfProperyLookup
 
     function getTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type> {
         assertCastType<Readonly<FloughLogicalObjectInner>>(logicalObjectTop);

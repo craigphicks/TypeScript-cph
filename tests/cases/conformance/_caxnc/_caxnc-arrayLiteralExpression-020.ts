@@ -5,9 +5,9 @@
 
 declare const c: boolean;
 
-// @ts-dev-debugger
 let x: readonly[boolean] = [c];
 
+// @ts-dev-debugger
 if (x[0]) {
     x[0];
 }

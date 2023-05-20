@@ -132,16 +132,60 @@ namespace ts {
         //keys?: LiteralType[] | undefined, // undefined if not input logicalObject was trimmed to nothing or if no literal keys were found
         type: FloughType // will be never if logicalItem is undefined, and visa versa.
     };
+
+    // function isNumberLikeOrStringLike(tstype: Type): boolean {
+    //     return !!(tstype.flags & (TypeFlags.NumberL | TypeFlags.StringLike));
+    // }
+
     function logicalObjectForEachTypeOfPropertyLookup(
         logicalObject: Readonly<FloughLogicalObjectOuter>,
         lookupkey: FloughType,
         lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
         discriminantFn?: DiscriminantFn): [FloughLogicalObjectOuter, FloughType] | undefined {
 
-        //const x = !!(discriminantFn || lookupItemsIn);
+        /**
+         * TODO: There might be an optimzation possible where we can just return the variations if the lookupkey is a literal type.
+         */
+        // let variationTypes: FloughType[] | undefined;
+        // let variationFilteredKeys: Type[] | undefined;
+        // if (!lookupItemsIn && logicalObject.variations){
+
+        //     /**
+        //      * If the key/s is/are all in the variations, then we can just return the corresponding variations.
+        //      * However, if lookupItemsIn is not undefined, then we need to do the lookup, because we need to know the base objects,
+        //      * and then apply the variations to the base objects after returning from inner.
+        //      */
+        //     variationTypes = [];
+        //     variationFilteredKeys=[];
+        //     floughTypeModule.forEachRefTypesTypeType(lookupkey, tstype=>{
+        //         if (!(tstype.flags & (TypeFlags.NumberLiteral|TypeFlags.StringLiteral))) {
+        //             variationFilteredKeys!.push(tstype);
+        //             return;
+        //         }
+        //         const got = logicalObject.variations!.has(tstype as LiteralType);
+        //         if (!got) {
+        //             variationFilteredKeys!.push(tstype);
+        //             return;
+        //         }
+        //         variationTypes!.push(got);
+        //     });
+        //     if (variationFilteredKeys.length===0) {
+        //         if (variationTypes.length===0) return undefined;
+        //         const type = variationTypes.length===1 ? variationTypes[0]: floughTypeModule.unionOfRefTypesType(variationTypes);
+        //         return [logicalObject, type]; // Early return
+        //     }
+        // }
+        // if (variationFilteredKeys?.length) lookupkey = floughTypeModule.createRefTypesType(variationFilteredKeys);
+
+
         const lookupItemsInner: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined = (discriminantFn || lookupItemsIn) ? [] : undefined;
-        // const lookupItems: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] = (!!(discriminantFn || lookupItemsIn)) ? [] : undefined;
-        const { logicalObject:logicalObjectInner, key, type } = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn);
+        const { logicalObject:logicalObjectInner, key, type } = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(
+            logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn, logicalObject.variations);
+
+        // if (!lookupItemsIn && variationTypes?.length) {
+        //     (type as any) = floughTypeModule.unionOfRefTypesType([...variationTypes, lookupkey]);
+        // }
+
 
         if (logicalObjectInner === undefined) {
             Debug.assert(floughTypeModule.isNeverType(type));
