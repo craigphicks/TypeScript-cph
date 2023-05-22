@@ -15,20 +15,28 @@ namespace ts {
 
     export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
 
+    export type FloughTypesTablePropLink = & {
+        rttr: RefTypesTable;
+        key: LiteralType | undefined;
+        logicalObject: FloughLogicalObjectIF;
+    };
+
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
-        critsense?: "passing" | "failing";
+        critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem
+        propLink?: FloughTypesTablePropLink;
     };
     export type RefTypesTableReturn = & {
         symbol?: Symbol | undefined;
         isconst?: boolean;
         isAssign?: boolean; // don't need assignType because it will always be whole type.
-        critsense?: "passing" | "failing";
+        critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
-        sci: RefTypesSymtabConstraintItem
+        sci: RefTypesSymtabConstraintItem;
+        propLink?: FloughTypesTablePropLink;
     };
     export enum InferCritKind {
         none= "none",
@@ -149,6 +157,7 @@ namespace ts {
         qdotfallout?: RefTypesTableReturn[],
         inferStatus: InferStatus,
         crit: InferCrit,
+        accessDepth?: number,
     };
 
     export type NodeToTypeMap = ESMap<Node, Type>;

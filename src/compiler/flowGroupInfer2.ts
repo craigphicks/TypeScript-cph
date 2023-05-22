@@ -973,31 +973,66 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function flough({sci, expr:expr, inferStatus, qdotfallout, crit }: FloughArgs): FloughReturn {
-            if (!sci.symtab){
-                Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
-                return {
-                    unmerged: [{
-                        type: floughTypeModule.createRefTypesType(), // never
-                        sci: createRefTypesSymtabConstraintItemNever()
-                    }],
-                    nodeForMap: expr,
-                };
+        function flough({sci, expr:expr, inferStatus, qdotfallout, crit, accessDepth }: FloughArgs): FloughReturn {
+
+            if (getMyDebug()) {
+                consoleGroup(`flough[in] expr:${dbgNodeToString(expr)}},`
+                +`crit:{kind:${crit.kind},alsoFailing:${crit.alsoFailing},negate:${crit.negate}, ${(crit as any).target ? dbgTypeToString((crit as any).target as Type): ""}},`
+                +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
+                +`qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}, `
+                +`accessDepth:${accessDepth}`);
+                consoleLog(`flough[in] refTypesSymtab:`);
+                if (sci.symtab) dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> consoleLog(`  ${str}`));
+                consoleLog(`flough[in] constraintItemIn:`);
+                dbgConstraintItem(sci.constraintItem).forEach(str=> consoleLog(`  ${str}`));
             }
-            assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-            if (expr.kind===SyntaxKind.Identifier){
-                return floughIdentifier();
-            }
-            if (expr.kind===SyntaxKind.ParenthesizedExpression){
-                const mntr = flough({
-                    expr:(expr as ParenthesizedExpression).expression,qdotfallout,sci,inferStatus, crit
+            const floughReturn: FloughReturn = (()=>{
+                if (!sci.symtab){
+                    Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
+                    return {
+                        unmerged: [{
+                            type: floughTypeModule.createRefTypesType(), // never
+                            sci: createRefTypesSymtabConstraintItemNever()
+                        }],
+                        nodeForMap: expr,
+                    };
+                }
+                assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
+                if (expr.kind===SyntaxKind.Identifier){
+                    return floughIdentifier();
+                }
+                if (expr.kind===SyntaxKind.ParenthesizedExpression){
+                    const mntr = flough({
+                        expr:(expr as ParenthesizedExpression).expression,qdotfallout,sci,inferStatus, crit
+                    });
+                    applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
+                    return mntr;
+                }
+                return floughAux();
+            })();
+
+            if (getMyDebug()) {
+                floughReturn.unmerged.forEach((rttr,i)=>{
+                        dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  flough[dbg]: unmerged[${i}]: ${s}`));
+                    });
+                // consoleGroup("flough[out] floughReturn.byNode:");
+                consoleLog(`flough[out] floughReturn.typeof: ${floughReturn.typeof ? "has" : "<undef>"}`);
+
+                consoleLog(`flough[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
+                inferStatus.groupNodeToTypeMap.forEach((t,n)=>{
+                    for(let ntmp = n; ntmp.kind!==SyntaxKind.SourceFile; ntmp=ntmp.parent){
+                        if (ntmp===expr){
+                            consoleLog(`flough[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
+                            break;
+                        }
+                    }
                 });
-                applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
-                return mntr;
+                // consoleGroupEnd();
+                consoleLog(`flough[out] ${dbgNodeToString(expr)}`);
+                consoleGroupEnd();
             }
-            return floughAux(/*{
-                expr,qdotfallout,sci,inferStatus, crit
-            }*/);
+            return floughReturn;
+
 
             function floughIdentifier(): FloughReturn {
                 if (getMyDebug()) consoleGroup(`floughIdentifier[in] ${dbgNodeToString(expr)}`);
@@ -1181,23 +1216,24 @@ namespace ts {
 
             function floughAux(/* { sci, expr, inferStatus, qdotfallout: qdotfallout }: floughArgs */): FloughReturn {
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-                if (getMyDebug()) {
-                    consoleGroup(`flough[in] expr:${dbgNodeToString(expr)}}, `
-                    +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
-                    +`qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}`);
-                    consoleLog(`flough[in] refTypesSymtab:`);
-                    dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> consoleLog(`  ${str}`));
-                    consoleLog(`flough[in] constraintItemIn:`);
-                    dbgConstraintItem(sci.constraintItem).forEach(str=> consoleLog(`  ${str}`));
-                }
+                // if (getMyDebug()) {
+                //     consoleGroup(`flough[in] expr:${dbgNodeToString(expr)}},`
+                //     +`crit:{kind:${crit.kind},alsoFailing:${crit.alsoFailing},negate:${crit.negate}, ${(crit as any).target ? dbgTypeToString((crit as any).target as Type): ""}},`
+                //     +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
+                //     +`qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}`);
+                //     consoleLog(`flough[in] refTypesSymtab:`);
+                //     dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> consoleLog(`  ${str}`));
+                //     consoleLog(`flough[in] constraintItemIn:`);
+                //     dbgConstraintItem(sci.constraintItem).forEach(str=> consoleLog(`  ${str}`));
+                // }
                 const qdotfallout1 = qdotfallout??([] as RefTypesTableReturn[]);
                 const innerret = floughInner(qdotfallout1);
                 let finalArrRefTypesTableReturn = innerret.unmerged;
                 if (getMyDebug()){
-                    consoleLog(`flough[dbg]: qdotfallout.length: ${qdotfallout1.length}`);
+                    consoleLog(`floughAux[dbg]: qdotfallout.length: ${qdotfallout1.length}`);
                     qdotfallout1.forEach((rttr,i)=>{
                         dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                            consoleLog(`flough[dbg]:  qdotfallout[${i}]: ${str}`);
+                            consoleLog(`floughAux[dbg]:  qdotfallout[${i}]: ${str}`);
                         });
                     });
                 }
@@ -1206,10 +1242,10 @@ namespace ts {
                      * !qdotfallout so merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit
                      */
                     if (getMyDebug()){
-                        consoleLog(`flough[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)`);
+                        consoleLog(`floughAux[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)`);
                         qdotfallout1.forEach((rttr,i)=>{
                             dbgRefTypesTableToStrings(rttr).forEach(str=>{
-                                consoleLog(`flough[dbg]:  qdotfallout[${i}]: ${str}`);
+                                consoleLog(`floughAux[dbg]:  qdotfallout[${i}]: ${str}`);
                             });
                         });
                     }
@@ -1221,26 +1257,26 @@ namespace ts {
                 };
                 if (innerret.typeof) floughReturn.typeof = innerret.typeof;
 
-                if (getMyDebug()) {
-                    floughReturn.unmerged.forEach((rttr,i)=>{
-                            dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  flough[dbg]: unmerged[${i}]: ${s}`));
-                        });
-                    // consoleGroup("flough[out] floughReturn.byNode:");
-                    consoleLog(`flough[out] floughReturn.typeof: ${floughReturn.typeof}`);
+                // if (getMyDebug()) {
+                //     floughReturn.unmerged.forEach((rttr,i)=>{
+                //             dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  flough[dbg]: unmerged[${i}]: ${s}`));
+                //         });
+                //     // consoleGroup("flough[out] floughReturn.byNode:");
+                //     consoleLog(`flough[out] floughReturn.typeof: ${floughReturn.typeof}`);
 
-                    consoleLog(`flough[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
-                    inferStatus.groupNodeToTypeMap.forEach((t,n)=>{
-                        for(let ntmp = n; ntmp.kind!==SyntaxKind.SourceFile; ntmp=ntmp.parent){
-                            if (ntmp===expr){
-                                consoleLog(`flough[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
-                                break;
-                            }
-                        }
-                    });
-                    // consoleGroupEnd();
-                    consoleLog(`flough[out] ${dbgNodeToString(expr)}`);
-                    consoleGroupEnd();
-                }
+                //     consoleLog(`flough[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
+                //     inferStatus.groupNodeToTypeMap.forEach((t,n)=>{
+                //         for(let ntmp = n; ntmp.kind!==SyntaxKind.SourceFile; ntmp=ntmp.parent){
+                //             if (ntmp===expr){
+                //                 consoleLog(`flough[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
+                //                 break;
+                //             }
+                //         }
+                //     });
+                //     // consoleGroupEnd();
+                //     consoleLog(`flough[out] ${dbgNodeToString(expr)}`);
+                //     consoleGroupEnd();
+                // }
                 return floughReturn;
             } // endof floughAux()
 
@@ -2690,18 +2726,20 @@ namespace ts {
                 return { unmerged: arrRefTypesTableReturn };
             } // floughByBinaryExpressionEqualCompare
 
+
             function floughElementAccessExpression(): FloughInnerReturn {
                 assertCastType<ElementAccessExpression>(expr);
                 if (getMyDebug()){
-                    consoleGroup(`floughElementAccessExpression[in] expr: ${dbgsModule.dbgNodeToString(expr)}`);
+                    consoleGroup(`floughElementAccessExpression[in] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth:${accessDepth}`);
                 }
+                if (!accessDepth) accessDepth = 0;
                 const {expression, argumentExpression} = expr;
 
                 const unmerged: RefTypesTableReturnNoSymbol[] = [];
 
                 const leftMntr = flough({
                     expr:expression, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
-                    sci
+                    sci, accessDepth: accessDepth+1
                 });
                 leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
                     const { type: leftType, sci: leftSci} = applyCritNoneToOne(leftRttr0, leftMntr.nodeForMap, inferStatus.groupNodeToTypeMap);
@@ -2716,26 +2754,149 @@ namespace ts {
                     });
                     const { type: argType, sci: argSci } = applyCritNoneUnion(argMntr, inferStatus.groupNodeToTypeMap);
 
-                    let discriminantFnTrue: DiscriminantFn | undefined;
-                    let discriminantFnFalse: DiscriminantFn | undefined;
+                    /**
+                     * TODO: add in non-undefined itemTable when appropriate,  That would only be for the endmost key of the chain,
+                     * in order to prevent exponential complexity.  Need a depth counter to know when to do that.
+                     */
+                    const accessKeys = floughTypeModule.getAccessKeys(argType);
+                    let singleLiteralKey: LiteralType | undefined;
+                    if (accessKeys.literals){
+                        const at: LiteralType[] = [];
+                        floughTypeModule.forEachRefTypesTypeType(accessKeys,t=>{
+                            at.push(t as LiteralType);
+                        });
+                        if (at.length === 1) singleLiteralKey = at[0];
+                    }
+                    if (!singleLiteralKey &&  !accessKeys.literals && !accessKeys.numberAndStringIntrinsics) return; // no valid keys
+                    const maybe = true;
+                    if (maybe){
+                        if (maybe) {
+                            const itemsTable: LogicalObjectForEachTypeOfPropertyLookupItem[] | undefined = [];
+                            // non-modifying lookup
+                            const passing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType,
+                                itemsTable, /*discriminantFn*/ undefined, /*inferStatus.inCondition*/ undefined);
+                            if (!passing) {
+                                Debug.fail("unexpected; already checked for no valid keys");
+                            }
+                            else {
+                                Debug.assert(logicalObject===passing[0]); // because discriminantFn and inCondition were undefined
+                                Debug.assert(itemsTable.length>=1);
+                                for (const itemx of itemsTable){
+                                    let {type,logicalObject} = itemx;
+                                    if (crit.kind !== InferCritKind.none) {
+                                        // just do the passing for now
+                                        const at: Type[] = [];
+                                        let allPass = true;
+                                        applyCritToRefTypesType(type, crit, (t,pass,_fail)=>{
+                                            if (pass) at.push(t);
+                                            else allPass = false;
+                                        });
+                                        type = floughTypeModule.createRefTypesType(at);
+                                        if (!allPass && singleLiteralKey) {
+                                            // logicalObjectDuplicateBaseAndJoinType will intersect the type with each lookup type, and if the intersection is empty, it will prune.
+                                            // The return logicalObject be undefined if every intersection is empty.
+                                            logicalObject = floughLogicalObjectModule.logicalObjectDuplicateBaseAndJoinType(
+                                                logicalObject, singleLiteralKey, type);
+                                        }
+                                        if (!logicalObject) continue;
+                                    }
+                                    const rttr: RefTypesTableReturnNoSymbol = {
+                                        type,
+                                        sci: argSci,
+                                        propLink:{
+                                            rttr: leftRttr0,
+                                            logicalObject,
+                                            key: singleLiteralKey
+                                        }
+                                    };
+                                    if (accessDepth===0){
+                                        /**
+                                         * Fathom the the propLink chain and if it is a valid chain with a symbol,
+                                         * then join the logicalObjects from the root and associate the symbol with the root.
+                                         */
+                                        let rttrtmp = rttr;
+                                        const arr: { propLink: FloughTypesTablePropLink, type: FloughType }[] = [];
+                                        while (rttrtmp.propLink?.key){
+                                            arr.push({ propLink: rttrtmp.propLink, type:rttrtmp.type });
+                                            // TODO: check for intermediate symbols and if so, join the logicalObjects and associate the symbol with the intermediate root.
+                                            rttrtmp = rttrtmp.propLink.rttr;
+                                        }
+                                        const lastIdx = arr.length-1;
+                                        const rootSymbol = (arr[lastIdx].propLink.rttr as RefTypesTableReturn).symbol;
+                                        if (arr.length && rootSymbol){
+                                            // we can do it.
+                                            let childBaseLogicalObject: FloughLogicalObjectIF | undefined; //= arr[0].propLink.logicalObject;
+                                            for (let i=0; i<=lastIdx; i++){
+                                                let nextType: FloughType;
+                                                if (childBaseLogicalObject) nextType = floughTypeModule.createTypeFromLogicalObject(childBaseLogicalObject);
+                                                else nextType = arr[i].type; // only occurs for i===0
+                                                //Debug.assert(nextLogicalObject);
+                                                /**
+                                                 * join prevLogicalObject and nextType
+                                                 * floughLogicalObjectModule.logicalObjectDuplicateBaseAndJoin(prevLogicalObject, arr[i].propLink.key, nextType);
+                                                 */
+                                                childBaseLogicalObject = floughLogicalObjectModule.logicalObjectDuplicateBaseAndJoinType(
+                                                    arr[i].propLink.logicalObject, arr[i].propLink.key, nextType);
 
-                    if (crit.kind !== InferCritKind.none) {
-                        discriminantFnTrue = (ft: FloughType): FloughType | true | undefined => {
-                            const atpassing: Type[] = [];
-                            let anyNotPass = false;
-                            applyCritToRefTypesType(ft,{ ...crit, alsoFailing:false },(tstype, pass)=>{
-                                if (pass) atpassing.push(tstype);
-                                else anyNotPass = true;
-                            });
-                            if (atpassing.length === 0) return undefined;
-                            if (!anyNotPass) return true;
-                            return floughTypeModule.createRefTypesType(atpassing);
-                        };
-                        if (crit.alsoFailing){
-                            discriminantFnFalse = (ft: FloughType): FloughType | true | undefined => {
+                                            }
+                                            // The child that has no parent is the root.
+                                            (rttr.sci = copyRefTypesSymtabConstraintItem(rttr.sci)).symtab!.set(
+                                                rootSymbol,floughTypeModule.createTypeFromLogicalObject(childBaseLogicalObject));
+                                        }
+                                        unmerged.push({ type,sci: argSci });
+                                    }
+                                    else unmerged.push(rttr);
+
+                                }
+                            }
+                        }
+                        // else {
+                        //     const itemsTable: LogicalObjectForEachTypeOfPropertyLookupItem[] | undefined = [];
+                        //     const passing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType,
+                        //         itemsTable, /*discriminantFnTrue*/ undefined, /*inCondition*/ undefined);
+                        //     for (const item of itemsTable){
+                        //         //const { logobj, key, type } = item;
+                        //         unmerged.push({
+                        //             type,
+                        //             sci,
+                        //             propLink:{
+                        //                 rttr: leftRttr0,
+                        //                 prop: item.prop
+                        //             }
+                        //         });
+                        //     }
+
+
+                        //     if (passing){
+                        //         //const [logicalObject, type] = passing;
+                        //         // if a symbol is available, bind logicalObject (which is a shallow clone) to the symbol, before pushing to unmerged.
+                        //         // let sci = argSci;
+                        //         // if (leftRttr0.symbol) {
+                        //         //     // do not have to call andSymbolTypeIntoSymtabConstraint because we know passing[0] is a subset of the original, just replace.
+                        //         //     (sci = copyRefTypesSymtabConstraintItem(sci)).symtab?.set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(passing[0]));
+                        //         // }
+                        //         unmerged.push({
+                        //             type:passing[1],
+                        //             sci,
+                        //             propLink:{
+                        //                 rttr: leftRttr0,
+
+                        //             }
+                        //         });
+                        //     }
+                        // }
+                    }
+                    else {
+                        const itemsTable: LogicalObjectForEachTypeOfPropertyLookupItem[] | undefined = undefined;
+
+                        let discriminantFnTrue: DiscriminantFn | undefined;
+                        let discriminantFnFalse: DiscriminantFn | undefined;
+
+                        if (crit.kind !== InferCritKind.none) {
+                            discriminantFnTrue = (ft: FloughType): FloughType | true | undefined => {
                                 const atpassing: Type[] = [];
                                 let anyNotPass = false;
-                                applyCritToRefTypesType(ft,{ ...crit, alsoFailing:false, negate:!crit.negate },(tstype, pass)=>{
+                                applyCritToRefTypesType(ft,{ ...crit, alsoFailing:false },(tstype, pass)=>{
                                     if (pass) atpassing.push(tstype);
                                     else anyNotPass = true;
                                 });
@@ -2743,46 +2904,54 @@ namespace ts {
                                 if (!anyNotPass) return true;
                                 return floughTypeModule.createRefTypesType(atpassing);
                             };
+                            if (crit.alsoFailing){
+                                discriminantFnFalse = (ft: FloughType): FloughType | true | undefined => {
+                                    const atpassing: Type[] = [];
+                                    let anyNotPass = false;
+                                    applyCritToRefTypesType(ft,{ ...crit, alsoFailing:false, negate:!crit.negate },(tstype, pass)=>{
+                                        if (pass) atpassing.push(tstype);
+                                        else anyNotPass = true;
+                                    });
+                                    if (atpassing.length === 0) return undefined;
+                                    if (!anyNotPass) return true;
+                                    return floughTypeModule.createRefTypesType(atpassing);
+                                };
+                            }
                         }
-                    }
-                    /**
-                     * TODO: add in non-undefined itemTable when appropriate,  That would only be for the endmost key of the chain,
-                     * in order to prevent exponential complexity.  Need a depth counter to know when to do that.
-                     */
-                    const itemsTable: LogicalObjectForEachTypeOfPropertyLookupItem[] | undefined = undefined;
 
-                    // @ ts-ignore
-                    const passing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnTrue);
-                    if (passing){
-                        //const [logicalObject, type] = passing;
-                        // if a symbol is available, bind logicalObject (which is a shallow clone) to the symbol, before pushing to unmerged.
-                        let sci = argSci;
-                        if (leftRttr0.symbol) {
-                            // do not have to call andSymbolTypeIntoSymtabConstraint because we know passing[0] is a subset of the original, just replace.
-                            (sci = copyRefTypesSymtabConstraintItem(sci)).symtab?.set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(passing[0]));
-                        }
-                        unmerged.push({
-                            critsense: "passing",
-                            type:passing[1],
-                            sci
-                        });
-                    }
-                    if (discriminantFnFalse) {
-                        const failing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnFalse);
-                        if (failing){
+
+                        // @ ts-ignore
+                        const passing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnTrue, inferStatus.inCondition);
+                        if (passing){
+                            //const [logicalObject, type] = passing;
+                            // if a symbol is available, bind logicalObject (which is a shallow clone) to the symbol, before pushing to unmerged.
                             let sci = argSci;
                             if (leftRttr0.symbol) {
                                 // do not have to call andSymbolTypeIntoSymtabConstraint because we know passing[0] is a subset of the original, just replace.
-                                (sci = copyRefTypesSymtabConstraintItem(sci)).symtab?.set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(failing[0]));
+                                (sci = copyRefTypesSymtabConstraintItem(sci)).symtab?.set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(passing[0]));
                             }
                             unmerged.push({
-                                critsense: "failing",
-                                type:failing[1],
+                                critsense: "passing",
+                                type:passing[1],
                                 sci
                             });
                         }
+                        if (discriminantFnFalse) {
+                            const failing = floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject,argType, itemsTable, discriminantFnFalse, inferStatus.inCondition);
+                            if (failing){
+                                let sci = argSci;
+                                if (leftRttr0.symbol) {
+                                    // do not have to call andSymbolTypeIntoSymtabConstraint because we know passing[0] is a subset of the original, just replace.
+                                    (sci = copyRefTypesSymtabConstraintItem(sci)).symtab?.set(leftRttr0.symbol,floughTypeModule.createTypeFromLogicalObject(failing[0]));
+                                }
+                                unmerged.push({
+                                    critsense: "failing",
+                                    type:failing[1],
+                                    sci
+                                });
+                            }
+                        }
                     }
-
                     // argMntr.unmerged.forEach((argMntr0,_argidx)=>{
                     //     const {type: argType, sci:argSci} = applyCritNoneToOne(argMntr0,argMntr.nodeForMap, inferStatus.groupNodeToTypeMap);
 

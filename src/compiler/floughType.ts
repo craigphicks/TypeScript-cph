@@ -53,13 +53,13 @@ namespace ts {
         hasLogicalObject(ft: Readonly<FloughType>): boolean;
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
         createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined): FloughType ;
-        //modifyFloughTypeObjectEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredType: Type): FloughType;
 
         widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
         getLiteralNumberTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
         getLiteralStringTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
         hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
+        getAccessKeys(ft: Readonly<FloughType>): { literals?: FloughType, numberAndStringIntrinsics?: FloughType, remaining?: FloughType };
 
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
         dbgFloughTypeToString(type: Readonly<FloughType>): string;
@@ -241,6 +241,7 @@ namespace ts {
             if (intrinsicStringTypeOnly) return false;
             return true; // returning true even though it is not an intrinsic number type, but a set of literal numbers
         },
+        getAccessKeys,
         dbgFloughTypeToStrings,
         dbgFloughTypeToString,
     };
@@ -1281,6 +1282,26 @@ namespace ts {
         // return ft ?? ftin;
     }
 
+    function getAccessKeys(ft: Readonly<FloughType>): { literals?: FloughType, numberAndStringIntrinsics?: FloughType, remaining?: FloughType } {
+        castReadonlyFloughTypei(ft);
+        if (ft.any || ft.unknown) return { remaining:ft };
+        let literals: FloughTypei | undefined;
+        let numberAndStringIntrinsics: FloughTypei | undefined;
+        let remaining: FloughTypei | undefined;
+        const ftrem = cloneType(ft);
+        if (ftrem.nobj.string){
+            if (ftrem.nobj.string===true) (numberAndStringIntrinsics ||={ nobj:{} }).nobj.string = true;
+            else (literals||={ nobj:{} }).nobj.string = ftrem.nobj.string;
+            delete ftrem.nobj.string;
+        }
+        if (ftrem.nobj.number){
+            if (ftrem.nobj.number===true) (numberAndStringIntrinsics ||={ nobj:{} }).nobj.number = true;
+            else (literals||={ nobj:{} }).nobj.number = ftrem.nobj.number;
+            delete ftrem.nobj.number;
+        }
+        if (!isNeverType(ftrem)) remaining = ftrem;
+        return { literals, numberAndStringIntrinsics, remaining };
+    }
 
     function dbgFloughTypeToStrings(ft: Readonly<FloughType>): string[] {
         castReadonlyFloughTypei(ft);

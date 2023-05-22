@@ -10,6 +10,7 @@ namespace ts {
         inner: FloughLogicalObjectInnerIF;
         effectiveDeclaredTsType?: Type; // should be stripped of primitive types, and only have object and operator types.
         //variations?: Variations;
+        id?: number;
         [essymbolfloughLogicalObjectOuter]?: void
     };
 
@@ -45,7 +46,7 @@ namespace ts {
             logicalObject: Readonly<FloughLogicalObjectIF>,
             lookupkey: Readonly<FloughType>,
             lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
-            discriminantFn?: DiscriminantFn): [FloughLogicalObjectIF, FloughType] | undefined;
+            discriminantFn?: DiscriminantFn, inCondition?: boolean): [FloughLogicalObjectIF, FloughType] | undefined;
         getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
@@ -132,105 +133,92 @@ namespace ts {
         type: FloughType // will be never if logicalItem is undefined, and visa versa.
     };
 
-    // function isNumberLikeOrStringLike(tstype: Type): boolean {
-    //     return !!(tstype.flags & (TypeFlags.NumberL | TypeFlags.StringLike));
-    // }
+    function logicalObjectDuplicateBaseAndJoinType(base: Readonly<FloughLogicalObjectOuter>, key: LiteralType, type: Readonly<FloughType>): FloughLogicalObjectOuter {
+        const inner = floughLogicalObjectInnerModule.logicalObjectDuplicateBaseAndJoinTypeInner(base.inner, key, type);
+        const ret: FloughLogicalObjectOuter = {
+            inner,
+            id: undefined,
+            effectiveDeclaredTsType: base.effectiveDeclaredTsType,
+        };
+        return ret;
+    }
 
     function logicalObjectForEachTypeOfPropertyLookup(
         logicalObject: Readonly<FloughLogicalObjectOuter>,
         lookupkey: FloughType,
         lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
-        discriminantFn?: DiscriminantFn): [FloughLogicalObjectOuter, FloughType] | undefined {
+        discriminantFn?: DiscriminantFn, inCondition?: boolean): [FloughLogicalObjectOuter, FloughType] | undefined {
 
-        /**
-         * TODO: There might be an optimzation possible where we can just return the variations if the lookupkey is a literal type.
-         */
-        // let variationTypes: FloughType[] | undefined;
-        // let variationFilteredKeys: Type[] | undefined;
-        // if (!lookupItemsIn && logicalObject.variations){
-
-        //     /**
-        //      * If the key/s is/are all in the variations, then we can just return the corresponding variations.
-        //      * However, if lookupItemsIn is not undefined, then we need to do the lookup, because we need to know the base objects,
-        //      * and then apply the variations to the base objects after returning from inner.
-        //      */
-        //     variationTypes = [];
-        //     variationFilteredKeys=[];
-        //     floughTypeModule.forEachRefTypesTypeType(lookupkey, tstype=>{
-        //         if (!(tstype.flags & (TypeFlags.NumberLiteral|TypeFlags.StringLiteral))) {
-        //             variationFilteredKeys!.push(tstype);
-        //             return;
-        //         }
-        //         const got = logicalObject.variations!.has(tstype as LiteralType);
-        //         if (!got) {
-        //             variationFilteredKeys!.push(tstype);
-        //             return;
-        //         }
-        //         variationTypes!.push(got);
-        //     });
-        //     if (variationFilteredKeys.length===0) {
-        //         if (variationTypes.length===0) return undefined;
-        //         const type = variationTypes.length===1 ? variationTypes[0]: floughTypeModule.unionOfRefTypesType(variationTypes);
-        //         return [logicalObject, type]; // Early return
-        //     }
-        // }
-        // if (variationFilteredKeys?.length) lookupkey = floughTypeModule.createRefTypesType(variationFilteredKeys);
+        if (getMyDebug()){
+            consoleGroup(`logicalObjectForEachTypeOfPropertyLookup[in] lookupkey: ${floughTypeModule.dbgFloughTypeToString(lookupkey)}, `
+            +`distcriminantFn: ${discriminantFn ? "yes" : "no"}, inCondition: ${inCondition}`);
+            dbgLogicalObjectToStrings(logicalObject).forEach(x=>consoleLog(`[in] logicalObject ${x}`));
+        }
 
 
         const lookupItemsInner: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined = (discriminantFn || lookupItemsIn) ? [] : undefined;
         const { logicalObject:logicalObjectInner, key:_key, type } = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(
-            logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn);
+            logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn, inCondition);
 
-        // if (!lookupItemsIn && variationTypes?.length) {
-        //     (type as any) = floughTypeModule.unionOfRefTypesType([...variationTypes, lookupkey]);
-        // }
-
+        let ret: ReturnType<typeof logicalObjectForEachTypeOfPropertyLookup>;
 
         if (logicalObjectInner === undefined) {
             Debug.assert(floughTypeModule.isNeverType(type));
-            return undefined;
+            ret = undefined;
         }
-        if (!discriminantFn) {
-            Debug.assert(logicalObjectInner);
+        else if (!discriminantFn) {
+            Debug.assert(inCondition === (logicalObjectInner !== logicalObject.inner));
             Debug.assert(!floughTypeModule.isNeverType(type));
-            return [logicalObject, type];
+            // if (getMyDebug()){
+            //     consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] (no discriminant) type: ${floughTypeModule.dbgFloughTypeToString(type)}`);
+            //     //dbgLogicalObjectToStrings(logicalObject).forEach(x=>consoleLog(`[in] logicalObject ${x}`));
+            //     consoleGroupEnd();
+            // }
+            ret = [inCondition ? { ...logicalObject, inner:logicalObjectInner, id:undefined } : logicalObject, type];
         }
-        Debug.assert(lookupItemsInner);
-        // eslint-disable-next-line prefer-const
-        let { effectiveDeclaredTsType: effectiveDeclaredType } = logicalObject;
-
-        /**
-         * By setting the key->type in the variations,
-         * we patching the logicalObject with an override for a specific key, while allowing the other keys to ramain the same.
-         * Therefore a cloneLogicalObject() function is not required.
-         * This is especially important when the property for the key is an object which **has been** trimmed.
-         * Note "has been" and not "wiil be" - because the object chains are flow-processed from the from the end of the chain to the start.
-         * E.g. a.b.c is processed as c then b then a.
-         * We only do this for unique keys, because if the key is not unique, it could require too many variations to be created (exponential growth with chain length).
-         * The key patch, along with the shallow below, is enough.
-         * Note also that, when a discrimant is passed, the return shallow-cloned and patched logicalObject must be associated with a symbol
-         * - if it has no symbol, there is no way to reference it.
-         * ```
-         * if (createMyObject(random()).kind==="a") {
-         *     // oops, no way to reference the object created by createMyObject() - it has no symbol.
-         * }
-         * ```
-         */
-        // if (key){
-        //     if (!variations) variations = new Map<LiteralType,FloughType>();
-        //     const got = variations.get(key);
-        //     if (!got) variations.set(key, type);
-        //     else variations.set(key,floughTypeModule.intersectionWithFloughTypeMutate(type, floughTypeModule.cloneType(got)));
-        // }
-        return type ? [
-            { inner: logicalObjectInner, effectiveDeclaredTsType: effectiveDeclaredType },
-            type
-        ] : undefined;
+        else {
+            Debug.assert(lookupItemsInner);
+            Debug.assert(!floughTypeModule.isNeverType(type));
+            // const { effectiveDeclaredTsType } = logicalObject;
+            const doNewLogicalObject = inCondition || logicalObjectInner !== logicalObject.inner;
+            if (doNewLogicalObject){
+                ret = [ { ...logicalObject, inner: logicalObjectInner, id:undefined }, type ];
+            }
+            else {
+                ret = [ logicalObject, type ];
+            }
+        }
+        if (getMyDebug()){
+            if (!ret) consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] ret: <undef>`);
+            else {
+                if (ret[0] !== logicalObject) {
+                    consoleLog(`[out] logicalObject changed`);
+                }
+                else {
+                    consoleLog(`[out] logicalObject not changed`);
+                }
+                if (ret[0].inner !== logicalObject.inner) {
+                    consoleLog(`[out] logicalObject.inner changed`);
+                    dbgLogicalObjectToStrings(ret[0]).forEach(x=>consoleLog(`[out] logicalObject ${x}`));
+                }
+                else consoleLog(`[out] logicalObject.inner not changed`);
+                consoleLog(`[out] _key: ${_key?dbgsModule.dbgTypeToString(_key):"<undef>"}`);
+            }
+            consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] type: ${floughTypeModule.dbgFloughTypeToString(type)}`);
+            if (floughTypeModule.hasLogicalObject(type)) {
+                dbgLogicalObjectToStrings(floughTypeModule.getLogicalObject(type) as FloughLogicalObjectOuter).forEach(x=>consoleLog(`[out] type::logicalObject: ${x}`));
+            }
+            consoleGroupEnd();
+        }
+        return ret;
     }
 
+    let nextLogicalObjectOuterId = 1;
     function dbgLogicalObjectToStrings(logicalObjectTop: Readonly<FloughLogicalObjectOuter>): string[] {
         const as: string[] = [];
-        const { inner, effectiveDeclaredTsType: effectiveDeclaredType } = logicalObjectTop;
+        if (!logicalObjectTop.id) (logicalObjectTop as FloughLogicalObjectOuter).id = nextLogicalObjectOuterId++;
+        const { inner, effectiveDeclaredTsType: effectiveDeclaredType, id } = logicalObjectTop;
+        as.push(`logicalObjectOuter:id: ${id}`);
         if (effectiveDeclaredType) as.push(`effectiveDeclaredType: ${dbgsModule.dbgTypeToString(effectiveDeclaredType)}`);
         else as.push(`effectiveDeclaredType: <undef>`);
         // if (variations) {
@@ -241,21 +229,5 @@ namespace ts {
         floughLogicalObjectInnerModule.dbgLogicalObjectToStrings(inner).forEach(s=>as.push(`inner: ${s}`));
         return as;
     }
-
-
-
-    // interface FloughLogicalObjectOuter {
-    //     effectiveDeclaredType?: Type; // should be stripped of primitive types, and only have object and operator types.
-    //     inner: FloughLogicalObjectInnerIF;
-    //     /**
-    //      * Generally, the operations are performed on inner and then narrowed by narrow, because an interscetion operation might have created a property narrower than in narrowed on inner.
-    //      * In some cases can checker narrowed first.
-    //      */
-    //     narrowed?: ESMap<PropertyKeyType,FloughType>;
-    // };
-
-    //function _modifyFloughLogicalObjectEffectiveDeclaredType
-
-
 
 }
