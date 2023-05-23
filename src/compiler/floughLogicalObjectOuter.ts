@@ -129,7 +129,7 @@ namespace ts {
     }
     export type LogicalObjectForEachTypeOfPropertyLookupItem = & {
         logicalObject: FloughLogicalObjectIF, // undefined if not input logicalObject was trimmed to nothing
-        //keys?: LiteralType[] | undefined, // undefined if not input logicalObject was trimmed to nothing or if no literal keys were found
+        key?: LiteralType | undefined, // undefined if not input logicalObject was trimmed to nothing or if no literal keys were found
         type: FloughType // will be never if logicalItem is undefined, and visa versa.
     };
 

@@ -228,6 +228,9 @@ namespace ts {
     export type ConstraintItemNotNever = ConstraintItemLeaf | ConstraintItemNode | ConstraintItemAlways;
     export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ConstraintItemNever | ConstraintItemAlways;
 
+    export type LiteralTypeNumber = LiteralType & { value: number };
+    export type LiteralTypeString = LiteralType & { value: string };
+
     export function everyForMap<K,V>(m: ESMap<K,V>, f: (v: V,k: K) => boolean): boolean {
         for (let iter=m.entries(),it=iter.next();!it.done;it=iter.next()){
             if (!f(it.value[1],it.value[0])) return false;
