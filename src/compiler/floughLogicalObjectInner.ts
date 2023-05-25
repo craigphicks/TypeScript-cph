@@ -71,6 +71,8 @@ namespace ts {
         // getEffectiveDeclaredTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Set<Type>;
         getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         logicalObjectDuplicateBaseAndJoinTypeInner(base: FloughLogicalObjectInnerIF, key: LiteralType, type: Readonly<FloughType>): FloughLogicalObjectInnerIF;
+        replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectInnerIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectInnerIF;
+        replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectInnerIF>, key: LiteralType, logicalObjectOldToNewMap: Readonly<ESMap<FloughLogicalObjectInnerIF,FloughLogicalObjectInnerIF>>): { logicalObject: FloughLogicalObjectInnerIF, type: FloughType };
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
     };
     export const floughLogicalObjectInnerModule: FloughLogicalObjectInnerModule = {
@@ -88,6 +90,8 @@ namespace ts {
         logicalObjectForEachTypeOfPropertyLookup,
         getTsTypeFromLogicalObject,
         logicalObjectDuplicateBaseAndJoinTypeInner,
+        replaceTypeAtKey,
+        replaceLogicalObjectsOfTypeAtKey,
         dbgLogicalObjectToStrings,
     };
 
@@ -895,11 +899,24 @@ namespace ts {
         const ut = checker.getUnionType(at);
         return ut;
     }
-    // export function getEffectiveDeclaredTsTypesFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type[] {
-    //     const at: Type[] = [];
-    //     getEffectiveDeclaredTsTypeSetFromLogicalObject(logicalObjectTop).forEach(t => at.push(t));
-    //     return at;
-    // }
+
+    function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectInner>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectInner {
+        if (logicalObject.kind!=="plain"){
+            Debug.fail("unexpected logicalObject.kind!=='plain'");
+        }
+        const variations = logicalObject.variations ? new Map(logicalObject.variations) : new Map();
+        variations.set(key, modifiedType);
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        return <FloughLogicalObjectPlain>{ ...logicalObject, variations, id:undefined };
+    }
+    function replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectInner>, key: LiteralType, logicalObjectOldToNewMap: Readonly<ESMap<FloughLogicalObjectInner,FloughLogicalObjectInner>>): { logicalObject: FloughLogicalObjectInner, type: FloughType } {
+        if (logicalObject.kind!=="plain"){
+            Debug.fail("unexpected logicalObject.kind!=='plain'");
+        }
+        Debug.fail("not yet implemented: TODO");
+    }
+
+
     let nextLogicalObjectInnerId = 1;
 
     function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[] {

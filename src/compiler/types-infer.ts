@@ -237,6 +237,12 @@ namespace ts {
         }
         return true;
     };
+    export function everyForSet<K>(m: Set<K>, f: (k: K) => boolean): boolean {
+        for (let iter=m.keys(),it=iter.next();!it.done;it=iter.next()){
+            if (!f(it.value)) return false;
+        }
+        return true;
+    };
 
     export function assertCastType<T>(_x: any): asserts _x is T {}
 

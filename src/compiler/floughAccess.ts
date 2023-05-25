@@ -5,8 +5,8 @@ namespace ts {
 
     export interface FloughAccessModule {
         logicalObjectAccess(root: Readonly<FloughLogicalObjectIF>, akey: FloughType[]): Readonly<FloughAccessResult>;
-        logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifiedTypes: (FloughType | true | undefined)[]): FloughLogicalObjectIF;
-    };
+        logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifedTypes: (Readonly<FloughType> | true | undefined)[]): {rootLogicalObject: FloughLogicalObjectIF, type: FloughType}[];
+        };
     export const floughAccessModule: FloughAccessModule = {
         logicalObjectAccess,
         logicalObjectModify,
@@ -73,9 +73,9 @@ namespace ts {
         let idxInStack = 0;
         while (true) {
 
-            if (idxInStack===akey.length){
-                Debug.fail("iwozere");
-            }
+            // if (idxInStack===akey.length){
+            //     Debug.fail("iwozere");
+            // }
             /**
              * Depth first
              * - first try to go deeper
@@ -118,7 +118,8 @@ namespace ts {
                 // eslint-disable-next-line @typescript-eslint/prefer-for-of
                 for (let i=0;i<lookupItems.length;i++){
                     // check if logicalItem is already in nextstate.links
-                    const existingIndex = nextstate.links.findIndex((link)=>floughLogicalObjectModule.equalLogicalObjects(link.item.logicalObject,lookupItems[i].logicalObject) as boolean);
+                    // "===" should suffice, but just in case
+                    const existingIndex = nextstate.links.findIndex((link)=>floughLogicalObjectModule.identicalLogicalObjects(link.item.logicalObject,lookupItems[i].logicalObject));
                     if (existingIndex===-1){
                         nextstate.links.push({ item: lookupItems[i], parents: [parentState.linkIndex] });
                     }
@@ -164,11 +165,121 @@ namespace ts {
      * Under the following conditions, the logicalObject of any returned {logicalObject,type} pair will correspond to an object that is a strict subset of the original object.
      * - each link for every path from the end type back to the root has a single literal key type.
      */
-    // @ts-expect-error
-    function logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifedTypes: (Readonly<FloughType> | true | undefined)[]): {logicalObject: FloughLogicalObjectIF, type: FloughType}[] {
-        //const { stack, root } = accessResult[essymbolAccessState].stack;
-        Debug.fail("not yet implemented");
-    }
+    // @ ts-expect-error
+    type FloughAccessLogicalObjectModifyResultItem = & {
+        rootLogicalObject: FloughLogicalObjectIF, type: FloughType //| Readonly<FloughType>
+    };
+    function logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifiedTypes: (Readonly<FloughType> | true | undefined)[]): {rootLogicalObject: FloughLogicalObjectIF, type: Readonly<FloughType>}[] {
+        type ResultItem = FloughAccessLogicalObjectModifyResultItem;
+
+        const { stack, root } = accessResult[essymbolAccessState];
+
+
+        // The final layer of access resullt
+        const lastLinks = stack[stack.length-1].links;
+        {
+            if (lastLinks.length!==modifiedTypes.length){
+                Debug.fail("programming error, expected links.length!==modifedTypes.length");
+            }
+        }
+        // Each modified final type will end up with its own root logical object
+        // eslint-disable-next-line @typescript-eslint/prefer-for-of
+        const resultItems: ResultItem[]=[];
+        for (let i=0;i<lastLinks.length;i++){
+            const modifiedType = modifiedTypes[i];
+            if (modifiedType===true) {
+                resultItems.push({ rootLogicalObject: root, type: lastLinks[i].item.type });
+            }
+            if (modifiedType===undefined) {
+                // do nothing: effectively trimmed
+            }
+            else {
+                // We have to make sure that every link on every possible path to root contains only a single literal key type.  Otherwise, we won't modify the logical object.
+                const stackOfParentItemIndices: number[][] = [];
+                let ok = true;
+                let setOfParentIndices: Set<number> = new Set([i]);
+                let nextSetOfParentIndices: Set<number> = new Set();
+                for (let stackIndex = stack.length-1;stackIndex>=0;stackIndex--){
+                    ok = everyForSet(setOfParentIndices, (parentIndex)=>{
+                        if (stack[stackIndex].links[parentIndex].item.key){
+                            stack[stackIndex].links[parentIndex].parents.forEach((nextParentIdx)=>{
+                                nextSetOfParentIndices.add(nextParentIdx);
+                            });
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    });
+                    if (!ok) break;
+
+                    const arrOfParentIndices: number[] = [];//Array.from(setOfParentIndices);
+                    setOfParentIndices.forEach((parentIndex)=>arrOfParentIndices.push(parentIndex));
+                    stackOfParentItemIndices[stackIndex]=arrOfParentIndices;
+
+                    setOfParentIndices = nextSetOfParentIndices;
+                    nextSetOfParentIndices = new Set();
+                }
+                if (!ok) {
+                    // We can't modify the logical object, so just return the original.???
+                    resultItems.push({ rootLogicalObject: root, type:modifiedType });
+                    continue;
+                }
+                let logicalObjectMap = new Map<FloughLogicalObjectIF,FloughLogicalObjectIF>();
+                for (let stackIndex = stack.length-1;stackIndex>=0;stackIndex--){
+                    const nextLogicalObjectMap = new Map<FloughLogicalObjectIF,FloughLogicalObjectIF>();
+                    const arrOfParentItemIndices = stackOfParentItemIndices[stackIndex];
+                    //const LookupItems: LookupItem[] =
+                    arrOfParentItemIndices.forEach((parentItemIndex)=>{
+                        const parentItem = stack[stackIndex].links[parentItemIndex].item;
+                        // const parentLogicalObject = parentItem.logicalObject;
+                        // const parentType = parentItem.type;
+                        // const parentKey = parentItem.key;
+                        if (stackIndex===stack.length-1){
+                            const newlogicalObject = floughLogicalObjectModule.replaceTypeAtKey(parentItem.logicalObject, parentItem.key, modifiedType) as FloughLogicalObjectIF;
+                            nextLogicalObjectMap.set(parentItem.logicalObject, newlogicalObject); // new could have fewer plain objects than original
+                        }
+                        else {
+                            const { logicalObject: newlogicalObject, type: newType } = floughLogicalObjectModule.replaceLogicalObjectOfTypeAtKey(
+                                parentItem.logicalObject, parentItem.key, logicalObjectMap) as { logicalObject: FloughLogicalObjectIF, type: FloughType };
+                            /**
+                             * TRIMMING is enforced as follows:
+                             * newlogicalObject will only have the plain objects that are in the logicalObjectsMap.
+                             * (Note: every key of logicalObjectsMap must be an exist plain objects in the type of parentItem.logicalObject.
+                             */
+                            if (stackIndex===0){
+                                // We have reached the root, so we can modify the logical object
+                                // const logicalObject = floughLogicalObjectModule.replaceTypeAtKey(links[i].item.logicalObject, links[i].item.key, modifiedType);
+                                resultItems.push({ rootLogicalObject: newlogicalObject, type: newType });
+                            }
+                            nextLogicalObjectMap.set(parentItem.logicalObject, newlogicalObject);
+                        }
+                        // const parentTypeLogicalObject = floughTypeModule.getLogicalObject(parentType);
+                        // if (!parentTypeLogicalObject){
+                        //     Debug.fail("programming error, expected parentTypeLogicalObject");
+                        // }
+                        // const lookupItems: LookupItem[]=[];
+                        // floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(parentTypeLogicalObject, parentItem.key!,lookupItems);
+                        // if (lookupItems.length===0){
+                        //     Debug.fail("programming error, expected lookupItems.length>0");
+                        // }
+                        if (stackIndex===0){
+                            // We have reached the root, so we can modify the logical object
+                            // const logicalObject = floughLogicalObjectModule.replaceTypeAtKey(links[i].item.logicalObject, links[i].item.key, modifiedType);
+                            // resultItems.push({ rootLogicalObject: logicalObject, type: links[i].item.type });
+                        }
+                        else {
+                            // We have not reached the root, so we can modify the logical object
+                            // const logicalObject = floughLogicalObjectModule.replaceTypeAtKey(links[i].item.logicalObject, links[i].item.key, modifiedType);
+                            // resultItems.push({ rootLogicalObject: logicalObject, type: links[i].item.type });
+                        }
+                    });
+                    logicalObjectMap = nextLogicalObjectMap;
+                } // for (let stackIndex = stack.length-1;stackIndex>=0;stackIndex--)
+            }
+        }
+        return resultItems;
+    } // function logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifiedTypes: (Readonly<FloughType> | true | undefined)[]): {rootLogicalObject: FloughLogicalObjectIF, type: Readonly<FloughType>}[]
 
 
 }
