@@ -96,10 +96,7 @@ namespace ts {
             }
 
             const parentState = stack[idxInStack];
-            if (parentState.linkIndex===parentState.links.length){
-                Debug.fail("iwozere");
-            }
-            else {
+            {
                 const parentItem = parentState.links[parentState.linkIndex].item;
                 const parentType = parentItem.type;
                 const parentTypeLogicalObject = floughTypeModule.getLogicalObject(parentType);
@@ -151,6 +148,19 @@ namespace ts {
     } // floughAccess
 
 
+    type OldToNewLogicalObjectMap = ESMap<FloughLogicalObjectInnerIF,FloughLogicalObjectInnerIF>;
+    function createLogicalObjectMap() {
+        return new Map<FloughLogicalObjectInnerIF,FloughLogicalObjectInnerIF>();
+    }
+    function setMap(map: OldToNewLogicalObjectMap, oldobj: Readonly<FloughLogicalObjectIF>, newobj: Readonly<FloughLogicalObjectIF>) {
+        const oldInner = floughLogicalObjectModule.getInnerIF(oldobj);
+        if (map.has(oldInner)) Debug.fail("unexpected");
+        map.set(oldInner,floughLogicalObjectModule.getInnerIF(newobj));
+    }
+    // @ ts-expect-error
+    type FloughAccessLogicalObjectModifyResultItem = & {
+        rootLogicalObject: FloughLogicalObjectIF, type: FloughType //| Readonly<FloughType>
+    };
     /**
      *
      * @param accessResult return value of logicalObjectAccess
@@ -165,10 +175,6 @@ namespace ts {
      * Under the following conditions, the logicalObject of any returned {logicalObject,type} pair will correspond to an object that is a strict subset of the original object.
      * - each link for every path from the end type back to the root has a single literal key type.
      */
-    // @ ts-expect-error
-    type FloughAccessLogicalObjectModifyResultItem = & {
-        rootLogicalObject: FloughLogicalObjectIF, type: FloughType //| Readonly<FloughType>
-    };
     function logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifiedTypes: (Readonly<FloughType> | true | undefined)[]): {rootLogicalObject: FloughLogicalObjectIF, type: Readonly<FloughType>}[] {
         type ResultItem = FloughAccessLogicalObjectModifyResultItem;
 
@@ -225,9 +231,9 @@ namespace ts {
                     resultItems.push({ rootLogicalObject: root, type:modifiedType });
                     continue;
                 }
-                let logicalObjectMap = new Map<FloughLogicalObjectIF,FloughLogicalObjectIF>();
+                let logicalObjectMap: OldToNewLogicalObjectMap;
                 for (let stackIndex = stack.length-1;stackIndex>=0;stackIndex--){
-                    const nextLogicalObjectMap = new Map<FloughLogicalObjectIF,FloughLogicalObjectIF>();
+                    const nextLogicalObjectMap = createLogicalObjectMap();
                     const arrOfParentItemIndices = stackOfParentItemIndices[stackIndex];
                     //const LookupItems: LookupItem[] =
                     arrOfParentItemIndices.forEach((parentItemIndex)=>{
@@ -235,43 +241,28 @@ namespace ts {
                         // const parentLogicalObject = parentItem.logicalObject;
                         // const parentType = parentItem.type;
                         // const parentKey = parentItem.key;
+                        Debug.assert(parentItem.key);
                         if (stackIndex===stack.length-1){
-                            const newlogicalObject = floughLogicalObjectModule.replaceTypeAtKey(parentItem.logicalObject, parentItem.key, modifiedType) as FloughLogicalObjectIF;
-                            nextLogicalObjectMap.set(parentItem.logicalObject, newlogicalObject); // new could have fewer plain objects than original
+                            const newlogicalObject = floughLogicalObjectModule.replaceTypeAtKey(parentItem.logicalObject, parentItem.key, modifiedType);
+                            setMap(nextLogicalObjectMap, parentItem.logicalObject, newlogicalObject); // new could have fewer plain objects than original
                         }
                         else {
-                            const { logicalObject: newlogicalObject, type: newType } = floughLogicalObjectModule.replaceLogicalObjectOfTypeAtKey(
-                                parentItem.logicalObject, parentItem.key, logicalObjectMap) as { logicalObject: FloughLogicalObjectIF, type: FloughType };
-                            /**
-                             * TRIMMING is enforced as follows:
-                             * newlogicalObject will only have the plain objects that are in the logicalObjectsMap.
-                             * (Note: every key of logicalObjectsMap must be an exist plain objects in the type of parentItem.logicalObject.
-                             */
-                            if (stackIndex===0){
-                                // We have reached the root, so we can modify the logical object
-                                // const logicalObject = floughLogicalObjectModule.replaceTypeAtKey(links[i].item.logicalObject, links[i].item.key, modifiedType);
-                                resultItems.push({ rootLogicalObject: newlogicalObject, type: newType });
+                            const x = floughLogicalObjectModule.replaceLogicalObjectsOfTypeAtKey(
+                                parentItem.logicalObject, parentItem.key, logicalObjectMap);
+                            if (x) {
+                                const { logicalObject: newlogicalObject, type: newType } = x;
+                                /**
+                                 * TRIMMING is enforced as follows:
+                                 * newlogicalObject will only have the plain objects that are in the logicalObjectsMap.
+                                 * (Note: every key of logicalObjectsMap must be an exist plain objects in the type of parentItem.logicalObject.
+                                 */
+                                if (stackIndex===0){
+                                    // We have reached the root, so we can modify the logical object
+                                    // const logicalObject = floughLogicalObjectModule.replaceTypeAtKey(links[i].item.logicalObject, links[i].item.key, modifiedType);
+                                    resultItems.push({ rootLogicalObject: newlogicalObject, type: newType });
+                                }
+                                setMap(nextLogicalObjectMap, parentItem.logicalObject, newlogicalObject);
                             }
-                            nextLogicalObjectMap.set(parentItem.logicalObject, newlogicalObject);
-                        }
-                        // const parentTypeLogicalObject = floughTypeModule.getLogicalObject(parentType);
-                        // if (!parentTypeLogicalObject){
-                        //     Debug.fail("programming error, expected parentTypeLogicalObject");
-                        // }
-                        // const lookupItems: LookupItem[]=[];
-                        // floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(parentTypeLogicalObject, parentItem.key!,lookupItems);
-                        // if (lookupItems.length===0){
-                        //     Debug.fail("programming error, expected lookupItems.length>0");
-                        // }
-                        if (stackIndex===0){
-                            // We have reached the root, so we can modify the logical object
-                            // const logicalObject = floughLogicalObjectModule.replaceTypeAtKey(links[i].item.logicalObject, links[i].item.key, modifiedType);
-                            // resultItems.push({ rootLogicalObject: logicalObject, type: links[i].item.type });
-                        }
-                        else {
-                            // We have not reached the root, so we can modify the logical object
-                            // const logicalObject = floughLogicalObjectModule.replaceTypeAtKey(links[i].item.logicalObject, links[i].item.key, modifiedType);
-                            // resultItems.push({ rootLogicalObject: logicalObject, type: links[i].item.type });
                         }
                     });
                     logicalObjectMap = nextLogicalObjectMap;

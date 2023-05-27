@@ -1,6 +1,5 @@
 namespace ts {
 
-    //export type PropertyKeyType = IntrinsicType | LiteralType; // IntrinsicType is numberType/stringType, TemplateLiteral also possible, but not yet supported.
     export type DiscriminantFn = (type: Readonly<FloughType>) => FloughType | true | undefined; // true means type doesn't change, undefined means type becomes never, else become FloughType
     const essymbolfloughLogicalObjectOuter = Symbol("floughLogicalObjectIF");
     export interface FloughLogicalObjectIF {[essymbolfloughLogicalObjectOuter]?: void};
@@ -9,27 +8,9 @@ namespace ts {
     interface FloughLogicalObjectOuter {
         inner: FloughLogicalObjectInnerIF;
         effectiveDeclaredTsType?: Type; // should be stripped of primitive types, and only have object and operator types.
-        //variations?: Variations;
         id: number;
         [essymbolfloughLogicalObjectOuter]?: void
     };
-
-    // const {
-    //     //modifyFloughLogicalObjectEffectiveDeclaredType,
-    //     // createFloughLogicalObjectPlain,
-    //     // createFloughLogicalObjectTsunion,
-    //     // createFloughLogicalObjectTsintersection,
-    //     // createFloughLogicalObject,
-    //     // unionOfFloughLogicalObject,
-    //     // intersectionOfFloughLogicalObject,
-    //     //intersectionOfFloughLogicalObjects,
-    //     differenceOfFloughLogicalObject,
-    //     //intersectionAndSimplifyLogicalObjects,
-    //     logicalObjectForEachTypeOfPropertyLookup,
-    //     getEffectiveDeclaredTsTypeFromLogicalObject,
-    //     dbgLogicalObjectToStrings,
-    // } = floughLogicalObjectInnerModule;
-
 
     export interface FloughLogicalObjectModule {
         modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject: FloughLogicalObjectIF, edType: Type): void;
@@ -50,7 +31,8 @@ namespace ts {
         getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type;
         identicalLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): boolean;
         replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectIF;
-        replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, logicalObjectOldToNewMap: Readonly<ESMap<FloughLogicalObjectIF,FloughLogicalObjectIF>>): { logicalObject: FloughLogicalObjectIF, type: FloughType };
+        replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, oldToNewLogicalObjectMap: Readonly<OldToNewLogicalObjectMap>): { logicalObject: FloughLogicalObjectIF, type: FloughType } | undefined;
+        getInnerIF(logicalObject: Readonly<FloughLogicalObjectIF>): Readonly<FloughLogicalObjectInnerIF>;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
 
@@ -69,6 +51,9 @@ namespace ts {
         identicalLogicalObjects,
         replaceTypeAtKey,
         replaceLogicalObjectsOfTypeAtKey,
+        getInnerIF(logicalObject: Readonly<FloughLogicalObjectIF>){
+            return (logicalObject as FloughLogicalObjectOuter).inner;
+        },
         dbgLogicalObjectToStrings,
     };
 
@@ -231,11 +216,23 @@ namespace ts {
         return ret;
     }
 
-    function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectIF {
-        Debug.fail("TODO");
+    function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectOuter>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectOuter {
+        const inner = floughLogicalObjectInnerModule.replaceTypeAtKey(logicalObject.inner, key, modifiedType);
+        return { ...logicalObject, inner, id: nextLogicalObjectOuterId++ };
     }
-    function replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, logicalObjectOldToNewMap: Readonly<ESMap<FloughLogicalObjectIF,FloughLogicalObjectIF>>): { logicalObject: FloughLogicalObjectIF, type: FloughType } {
-        Debug.fail("TODO");
+    function replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectOuter>, key: LiteralType, oldToNewLogicalObjectMap: Readonly<OldToNewLogicalObjectMap>): { logicalObject: FloughLogicalObjectOuter, type: FloughType } | undefined {
+        const type = floughLogicalObjectInnerModule.getVariationTypeAtIndexFromBase(logicalObject.inner, key);
+        if (!type) {
+            Debug.assert(false,"unexpected",()=>`replaceLogicalObjectsOfTypeAtKey: getVariationTypeAtIndexFromBase() not found for key: ${key.value}`);
+        }
+        const logicalObjectOfType = floughTypeModule.getLogicalObject(type) as FloughLogicalObjectOuter;
+        Debug.assert(logicalObjectOfType);
+        const newLogicalObjectInnerOfType = floughLogicalObjectInnerModule.replaceOrFilterLogicalObjects(logicalObjectOfType.inner, oldToNewLogicalObjectMap);
+        if (!newLogicalObjectInnerOfType) return undefined;
+        const newLogicalObjectOfType = { ...logicalObjectOfType, inner: newLogicalObjectInnerOfType, id: nextLogicalObjectOuterId++ };
+        const newType = floughTypeModule.createTypeFromLogicalObject(newLogicalObjectOfType);
+        const newLogicalObject = replaceTypeAtKey(logicalObject, key, newType);
+        return { logicalObject: newLogicalObject, type: newType };
     }
 
 

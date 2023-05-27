@@ -151,6 +151,10 @@ namespace ts {
     //     inferStatus: InferStatus,
     //     crit: InferCrit,
     // };
+    export type AccessItem = & {
+        logicalObject?: FloughLogicalObjectIF; // not present for last access item
+        keyType: FloughType;
+    };
     export type FloughArgs = & {
         sci: RefTypesSymtabConstraintItem,
         expr: Readonly<Node>,
@@ -158,6 +162,7 @@ namespace ts {
         inferStatus: InferStatus,
         crit: InferCrit,
         accessDepth?: number,
+        refAccessArgs?: [{root: FloughLogicalObjectIF, keyTypes: FloughType[]}], // a tuple of an array, only set by callees which are accessor expressions
     };
 
     export type NodeToTypeMap = ESMap<Node, Type>;

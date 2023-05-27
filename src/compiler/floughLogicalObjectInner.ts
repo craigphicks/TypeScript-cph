@@ -43,6 +43,7 @@ namespace ts {
     }
 
 
+    export type OldToNewLogicalObjectMap = ESMap<FloughLogicalObjectInnerIF,FloughLogicalObjectInnerIF>;
 
     export type LogicalObjectInnerForEachTypeOfPropertyLookupItem = & {
         logicalObject: FloughLogicalObjectInner | undefined, // undefined <=> logically trimmed
@@ -72,7 +73,8 @@ namespace ts {
         getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         logicalObjectDuplicateBaseAndJoinTypeInner(base: FloughLogicalObjectInnerIF, key: LiteralType, type: Readonly<FloughType>): FloughLogicalObjectInnerIF;
         replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectInnerIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectInnerIF;
-        replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectInnerIF>, key: LiteralType, logicalObjectOldToNewMap: Readonly<ESMap<FloughLogicalObjectInnerIF,FloughLogicalObjectInnerIF>>): { logicalObject: FloughLogicalObjectInnerIF, type: FloughType };
+        getVariationTypeAtIndexFromBase(logicalObjectBaseIn: Readonly<FloughLogicalObjectInnerIF>, key: LiteralType): FloughType | undefined ;
+        replaceOrFilterLogicalObjects(logicalObjectIn: Readonly<FloughLogicalObjectInnerIF>, logicalObjectOldToNewMap: Readonly<ESMap<FloughLogicalObjectInnerIF,FloughLogicalObjectInnerIF>>): FloughLogicalObjectInner | undefined;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
     };
     export const floughLogicalObjectInnerModule: FloughLogicalObjectInnerModule = {
@@ -91,7 +93,8 @@ namespace ts {
         getTsTypeFromLogicalObject,
         logicalObjectDuplicateBaseAndJoinTypeInner,
         replaceTypeAtKey,
-        replaceLogicalObjectsOfTypeAtKey,
+        getVariationTypeAtIndexFromBase,
+        replaceOrFilterLogicalObjects,
         dbgLogicalObjectToStrings,
     };
 
@@ -480,9 +483,45 @@ namespace ts {
         return result;
     }
 
+    // type TupleContext = & {
+    //     readonly tupleElements: Readonly<Type[]>;
+    //     readonly elementFlags: Readonly<ElementFlags[]>;
+    //     readonly hasRest: boolean;
+    // };
+    // function getTupleContext(objType: Readonly<ObjectType>): Readonly<TupleContext> {
+    //     assertCastType<TupleTypeReference>(objType);
+    //     const elementFlags = objType.target.elementFlags;
+    //     const hasRest = !!(elementFlags[elementFlags.length-1] & ElementFlags.Rest);
+    //     return {
+    //         tupleElements: checker.getTypeArguments(objType),
+    //         elementFlags,
+    //         hasRest,
+    //     } as TupleContext;
+    // }
+    // function getTupleElementType(objType: Readonly<ObjectType>, index: number, refTupleContext?: [TupleContext] | undefined): Type {
+    //     const tupleContext = refTupleContext ? (refTupleContext[0] || (refTupleContext[0] = getTupleContext(objType))) : getTupleContext(objType);
+    //     let undef = false;
+    //     let type: Type;
+    //     if (index<tupleContext.tupleElements.length) {
+    //         type = tupleContext.tupleElements[index];
+    //         undef = !!(tupleContext.elementFlags[index] & (ElementFlags.Optional | ElementFlags.Rest));
+    //     }
+    //     else if (tupleContext.hasRest) {
+    //         type = tupleContext.tupleElements[tupleContext.tupleElements.length-1];
+    //         undef = true;
+    //     }
+    //     else type = checker.getUndefinedType();
+    //     // is this necessary or is the undefined type already included in the tuple type?
+    //     if (undef) type = checker.getUnionType([type,checker.getUndefinedType()]);
+    //     return type;
 
-    // function getTypeOfTupleAtIndices(objType: Readonly<ObjectType>, variations: Variations | undefined, tt: Readonly<LiteralTypeNumber | LiteralTypeNumber[]>):
-    // FloughType {
+    //     /**
+    //      * TODO: if the type already included undefined, then we could do hte following:
+    //      */
+    //     // const type = tupleContext.tupleElements[index] ?? (tupleContext.hasRest ? tupleContext.tupleElements[tupleContext.tupleElements.length-1] : undefined);
+    // }
+
+    // function getTypeOfTupleAtIndices(objType: Readonly<ObjectType>, variations: Variations | undefined, tt: Readonly<LiteralTypeNumber | LiteralTypeNumber[]>): FloughType {
     //     if (extraAsserts) Debug.assert(checker.isTupleType(objType));
     //     assertCastType<TupleTypeReference>(objType);
     //     const tupleElements = checker.getTypeArguments(objType);
@@ -491,7 +530,7 @@ namespace ts {
     //     let undef = false;
     //     const at: Type[]=[];
     //     const aft: FloughType[]=[];
-    //     const doone = (klt: LiteralTypeNumber):void =>{
+    //     const doone = (klt: LiteralTypeNumber): void =>{
     //         if (variations){
     //             let ft;
     //             if (ft = variations.get(klt)){
@@ -507,8 +546,9 @@ namespace ts {
     //         else if (hasRest) {
     //             at.push(tupleElements[tupleElements.length-1]);
     //             undef ||= !!(elementFlags[elementFlags.length-1] & (ElementFlags.Optional|ElementFlags.Rest));
-    //         } else undef||=true;
-    //     }
+    //         }
+    //         else undef||=true;
+    //     };
     //     if (!isArray(tt)) {
     //         doone(tt);
     //     }
@@ -909,11 +949,39 @@ namespace ts {
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         return <FloughLogicalObjectPlain>{ ...logicalObject, variations, id:undefined };
     }
-    function replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectInner>, key: LiteralType, logicalObjectOldToNewMap: Readonly<ESMap<FloughLogicalObjectInner,FloughLogicalObjectInner>>): { logicalObject: FloughLogicalObjectInner, type: FloughType } {
-        if (logicalObject.kind!=="plain"){
+    function getVariationTypeAtIndexFromBase(logicalObjectBaseIn: Readonly<FloughLogicalObjectInner>, key: LiteralType): FloughType | undefined {
+        if (logicalObjectBaseIn.kind!=="plain"){
             Debug.fail("unexpected logicalObject.kind!=='plain'");
         }
-        Debug.fail("not yet implemented: TODO");
+        return logicalObjectBaseIn.variations?.get(key);
+    }
+    function replaceOrFilterLogicalObjects(logicalObjectIn: Readonly<FloughLogicalObjectInner>, logicalObjectOldToNewMap: Readonly<ESMap<FloughLogicalObjectInner,FloughLogicalObjectInner>>): FloughLogicalObjectInner | undefined {
+        function replaceOrFilter(logicalObject: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined{
+            if (logicalObject.kind==="plain"){
+                // replace or filter - not present in map means it should be filtered
+                const logicalObjectNew = logicalObjectOldToNewMap.get(logicalObject);
+                return logicalObjectNew;
+            }
+            else if (logicalObject.kind==="union" || logicalObject.kind==="tsunion"){
+                let change = false;
+                const items = logicalObject.items.map(x=>{
+                    const y = replaceOrFilter(x);
+                    if (x!==y) change = true;
+                    return y;
+                }).filter(x=>x!==undefined) as FloughLogicalObjectInner[];
+                if (!change) return logicalObject;
+                if (items.length===0) return undefined;
+                if (logicalObject.kind==="union" && items.length===1) return items[0]; // tsunion is preserved for its original tstype (unless empty)
+                return { ...logicalObject, items, id:undefined };
+            }
+            else if (logicalObject.kind==="intersection" || logicalObject.kind==="tsintersection"|| logicalObject.kind==="difference"){
+                Debug.fail("not yet implemented");
+            }
+            else {
+                Debug.fail("not yet implemented");
+            }
+        }
+        return replaceOrFilter(logicalObjectIn);
     }
 
 

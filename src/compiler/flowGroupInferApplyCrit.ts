@@ -83,7 +83,7 @@ namespace ts {
         return { symbol, isconst, isAssign };
     }
 
-    function orIntoNodeToTypeMap(type: Readonly<RefTypesType>, node: Node, nodeToTypeMap: NodeToTypeMap){
+    export function orIntoNodeToTypeMap(type: Readonly<RefTypesType>, node: Node, nodeToTypeMap: NodeToTypeMap){
         const tstype = floughTypeModule.getTypeFromRefTypesType(type);
         const got = nodeToTypeMap.get(node);
         if (!got) nodeToTypeMap.set(node,tstype);
