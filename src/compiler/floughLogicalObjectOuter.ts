@@ -19,6 +19,7 @@ namespace ts {
         createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         createFloughLogicalObject(tsType: Readonly<Type>): FloughLogicalObjectIF | undefined;
         unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
+        unionOfFloughLogicalObjects(arr: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         intersectionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
 
         differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectIF>, subtrahend: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
@@ -43,6 +44,7 @@ namespace ts {
         createFloughLogicalObjectTsintersection,
         createFloughLogicalObject,
         unionOfFloughLogicalObject,
+        unionOfFloughLogicalObjects,
         intersectionOfFloughLogicalObject,
         differenceOfFloughLogicalObject,
         intersectionAndSimplifyLogicalObjects,
@@ -105,7 +107,10 @@ namespace ts {
         // TODO: The variations, and possibly the effective declared type.
         return ret;
     }
-
+    function unionOfFloughLogicalObjects(arr: Readonly<FloughLogicalObjectOuter[]>): FloughLogicalObjectOuter {
+        const ret: FloughLogicalObjectOuter = arr.reduce((accumulator,currentValue)=>unionOfFloughLogicalObject(accumulator,currentValue));
+        return ret;
+    }
     function intersectionOfFloughLogicalObject(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectIF | undefined {
         const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
         if (inner === undefined) return undefined;

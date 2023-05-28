@@ -60,6 +60,7 @@ namespace ts {
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
         hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
         getAccessKeys(ft: Readonly<FloughType>): { literals?: FloughType, numberAndStringIntrinsics?: FloughType, remaining?: FloughType };
+        splitLogicalObject(ft: Readonly<FloughType>): { logicalObject?: FloughLogicalObjectIF, remaining?: FloughType };
 
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
         dbgFloughTypeToString(type: Readonly<FloughType>): string;
@@ -242,6 +243,7 @@ namespace ts {
             return true; // returning true even though it is not an intrinsic number type, but a set of literal numbers
         },
         getAccessKeys,
+        splitLogicalObject,
         dbgFloughTypeToStrings,
         dbgFloughTypeToString,
     };
@@ -1302,6 +1304,17 @@ namespace ts {
         if (!isNeverType(ftrem)) remaining = ftrem;
         return { literals, numberAndStringIntrinsics, remaining };
     }
+
+    function splitLogicalObject(ft: Readonly<FloughTypei>): { logicalObject?: FloughLogicalObjectIF, remaining?: FloughTypei } {
+        castReadonlyFloughTypei(ft);
+        if (ft.any || ft.unknown) return { remaining:ft };
+        if (!ft.logicalObject) return { remaining:ft };
+        const logicalObject = ft.logicalObject;
+        const remaining = cloneType(ft);
+        delete remaining.logicalObject;
+        return { logicalObject, remaining };
+    }
+
 
     function dbgFloughTypeToStrings(ft: Readonly<FloughType>): string[] {
         castReadonlyFloughTypei(ft);

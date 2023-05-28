@@ -4,7 +4,7 @@ namespace ts {
 
 
     export interface FloughAccessModule {
-        logicalObjectAccess(root: Readonly<FloughLogicalObjectIF>, akey: FloughType[]): Readonly<FloughAccessResult>;
+        logicalObjectAccess(roots: Readonly<FloughLogicalObjectIF[]>, akey: FloughType[]): Readonly<FloughAccessResult>;
         logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifedTypes: (Readonly<FloughType> | true | undefined)[]): {rootLogicalObject: FloughLogicalObjectIF, type: FloughType}[];
         };
     export const floughAccessModule: FloughAccessModule = {
@@ -48,7 +48,7 @@ namespace ts {
         [essymbolAccessState]: AccessState;
     };
 
-    function logicalObjectAccess(root: Readonly<FloughLogicalObjectIF>, akey: FloughType[]): Readonly<FloughAccessResult> {
+    function logicalObjectAccess(roots: Readonly<FloughLogicalObjectIF[]>, akey: FloughType[]): Readonly<FloughAccessResult> {
 
         const stack: LevelState[] = [];
 
@@ -61,11 +61,19 @@ namespace ts {
         function init(): LevelState {
             const state = createLevelState();
             const lookupItems: LogicalObjectForEachTypeOfPropertyLookupItem[]=[];
-            floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(root, akey[0], lookupItems);
-            // eslint-disable-next-line @typescript-eslint/prefer-for-of
-            for (let i=0;i<lookupItems.length;i++){
-                state.links.push({ item: lookupItems[i], parents: [] });
-            }
+
+            //const rootBaseLogicalObjects: FloughLogicalObjectIF[] = [];
+            roots.forEach((root, _iroot)=>{
+                const lookupItems2: LogicalObjectForEachTypeOfPropertyLookupItem[]=[];
+                floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(root, akey[0], lookupItems2);
+                // eslint-disable-next-line @typescript-eslint/prefer-for-of
+                for (let i=0;i<lookupItems.length;i++){
+                    const existingIndex = lookupItems.findIndex((item2)=>floughLogicalObjectModule.identicalLogicalObjects(item2.logicalObject,lookupItems[i].logicalObject));
+                    if (existingIndex===-1){
+                        lookupItems.push(lookupItems[i]);
+                    }
+                }
+            });
             return state;
         }
         stack.push(init());
@@ -135,7 +143,7 @@ namespace ts {
                 Debug.assert(levelState.links.length===levelState.linkIndex,"unexpected: ",()=>`level ${idx} is not complete`);
             });
         }
-
+        const root = floughLogicalObjectModule.unionOfFloughLogicalObjects(stack[0].links.map((link)=>link.item.logicalObject));
 
         return {
             types: stack[stack.length-1].links.map((link)=>link.item.type),

@@ -973,7 +973,7 @@ namespace ts {
          * @param param0
          * @returns
          */
-        function flough({sci, expr:expr, inferStatus, qdotfallout, crit, accessDepth, refAccessItems }: FloughArgs): FloughReturn {
+        function flough({sci, expr:expr, inferStatus, qdotfallout, crit, accessDepth, refAccessArgs }: FloughArgs): FloughReturn {
 
             if (getMyDebug()) {
                 consoleGroup(`flough[in] expr:${dbgNodeToString(expr)}},`
@@ -2732,10 +2732,10 @@ namespace ts {
                 if (getMyDebug()){
                     consoleGroup(`floughElementAccessExpression[in] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth:${accessDepth}`);
                 }
-                Debug.assert((accessDepth===undefined)===(refAccessItems===undefined));
-                if (!accessDepth || !refAccessItems) {
+                Debug.assert((accessDepth===undefined)===(refAccessArgs===undefined));
+                if (!accessDepth || !refAccessArgs) {
                     accessDepth = 0;
-                    refAccessItems = [[]];
+                    refAccessArgs = [{ roots: undefined, keyTypes: [], expressions: [] }];
                 }
                 const {expression, argumentExpression} = expr;
 
@@ -2743,9 +2743,12 @@ namespace ts {
 
                 const leftMntr = flough({
                     expr:expression, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
-                    sci, accessDepth: accessDepth+1, refAccessItems,
+                    sci, accessDepth: accessDepth+1, refAccessArgs,
                 });
-                if (refAccessItems[0].length===0) {
+                let leftSci: RefTypesSymtabConstraintItem = sci; // naughty!!!
+                const type: FloughType = undefined as any as FloughType; // naughty!!!
+                if (!refAccessArgs[0].roots) {
+                    refAccessArgs[0].roots = [];
                     // the return result in leftMntr is the root of the access chain
                     const leftLogicalObjects: FloughLogicalObjectIF[]=[];
                     const leftNonLogicalObjects: FloughType[]=[];
@@ -2765,25 +2768,41 @@ namespace ts {
                                 leftRttr.sci.symtab = copyRefTypesSymtab(leftRttr.sci.symtab).set(leftRttr.symbol,floughTypeModule.createTypeFromLogicalObject(logicalObject));
                             }
                         }
-                        leftScis.push(leftRttr.sci);
-                        //orIntoNodeToTypeMap(leftRttr.type,expression,inferStatus.groupNodeToTypeMap);
-                        //if (leftRttr.symbol)
+                        if (logicalObject) {
+                            leftScis.push(leftRttr.sci);
+                            const accessArgsRoot: AccessArgsRoot = {
+                                logicalObject,
+                            };
+                            if (leftRttr.symbol) {
+                                accessArgsRoot.symbolData = {
+                                    symbol:leftRttr.symbol,
+                                    isconst: leftRttr.isconst,
+                                    isAssign: leftRttr.isAssign,
+                                };
+                            }
+                            refAccessArgs![0].roots!.push(accessArgsRoot);
+                        }
                     });
+                    leftSci = orSymtabConstraints(leftScis, mrNarrow);
+                    /**
+                     * The nonobjects are being filtered out, but they must be written to groupNodeToTypeMap in order to be by checker type checking.
+                     */
                     if (leftNonLogicalObjects.length){
                         const u = floughTypeModule.unionOfRefTypesType(leftNonLogicalObjects);
                         orIntoNodeToTypeMap(u,expression,inferStatus.groupNodeToTypeMap);
                     }
-                    let leftLogicalObject: FloughLogicalObjectIF | undefined;
-                    if (leftLogicalObjects.length===1) leftLogicalObject = leftLogicalObjects[0];
-                    else if (leftLogicalObjects.length>1) {
-                        leftLogicalObject = floughLogicalObjectModule.unionOfFloughLogicalObjects(leftLogicalObjects) as FloughLogicalObjectIF;
-                    }
-                    if (leftLogicalObject) {
-                        const tsobjtype = floughLogicalObjectModule.getTsTypeFromFloughLogicalObject(leftLogicalObject);
-                        orTsTypeIntoNodeToTypeMap(tsobjtype,expression,inferStatus.groupNodeToTypeMap);
-                    }
-                    const leftSci = orSymtabConstraints(leftScis, mrNarrow);
-                    
+
+                    /** gets done inside access  */
+                    // let leftLogicalObject: FloughLogicalObjectIF | undefined;
+                    // if (leftLogicalObjects.length===1) leftLogicalObject = leftLogicalObjects[0];
+                    // else if (leftLogicalObjects.length>1) {
+                    //     leftLogicalObject = floughLogicalObjectModule.unionOfFloughLogicalObjects(leftLogicalObjects) as FloughLogicalObjectIF;
+                    // }
+                    // if (leftLogicalObject) {
+                    //     const tsobjtype = floughLogicalObjectModule.getTsTypeFromFloughLogicalObject(leftLogicalObject);
+                    //     orTsTypeIntoNodeToTypeMap(tsobjtype,expression,inferStatus.groupNodeToTypeMap);
+                    // }
+
                 }
 
                 const argMntr = flough({
@@ -2793,16 +2812,28 @@ namespace ts {
 
                 const argRttrUnion = applyCritNoneUnion(argMntr,inferStatus.groupNodeToTypeMap);
 
+                refAccessArgs[0].keyTypes.push(argRttrUnion.type);
+                refAccessArgs[0].expressions.push(expression);
+
                 if (accessDepth===0){
+                    const raccess = floughAccessModule.logicalObjectAccess(
+                        refAccessArgs[0].roots.map(r=>r.logicalObject),
+                        refAccessArgs[0].keyTypes);
+                    if (crit.kind!==InferCritKind.none){
+                        const modTypesPassing: FloughType[] = [];
+                        const modTypesFailing: FloughType[] | undefined =crit.alsoFailing ? [] : undefined;
+                        raccess.types.forEach(t0=>{
+                            const { pass, fail } = applyCritToType(t0,crit);
+                            modTypesPassing.push(pass);
+                            if (fail) modTypesFailing!.push(fail);
+                        });
+                        const rmodPassing = floughAccessModule.logicalObjectModify(raccess, modTypesPassing);
+                        unmerged.push({ type: rmodPassing, sci:leftSci });
+                    }
+
                 }
                 else {
-                    const accessItem: AccessItem = {
-                        keyType: argRttrUnion.type,
-                        logicalObject: leftLogicalObject,
-                    };
-                    accessItems!.push(accessItem);
-                    if (leftLogicalObject){
-                    }
+                    unmerged.push({ type, sci:leftSci });
                 }
 
                 if (getMyDebug()){

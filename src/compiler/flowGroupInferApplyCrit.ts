@@ -16,7 +16,15 @@ namespace ts {
         };
     }
 
-    function applyCritToType(rt: Readonly<RefTypesType>,crit: Readonly<InferCrit>, passtype: RefTypesType, failtype?: RefTypesType): void {
+    export function applyCritToType(rt: Readonly<RefTypesType>,crit: Readonly<InferCrit>): {pass: FloughType, fail?: FloughType} {
+        const passtype = floughTypeModule.createNeverType();
+        const failtype = crit.alsoFailing ? floughTypeModule.createNeverType() : undefined;
+        applyCritToTypeMutate(rt,crit,passtype,failtype);
+        return { pass: passtype, fail: failtype };
+    }
+
+
+    function applyCritToTypeMutate(rt: Readonly<RefTypesType>,crit: Readonly<InferCrit>, passtype: RefTypesType, failtype?: RefTypesType | undefined): void {
         Debug.assert(crit.kind!==InferCritKind.none);
         if (crit.kind===InferCritKind.truthy) {
             if (crit.alsoFailing){
@@ -172,7 +180,7 @@ namespace ts {
         }
         let passtype = floughTypeModule.createRefTypesType();
         let failtype = crit.alsoFailing ? floughTypeModule.createRefTypesType() : undefined;
-        applyCritToType(rttr.type,crit,passtype,failtype);
+        applyCritToTypeMutate(rttr.type,crit,passtype,failtype);
         let passsc = rttr.sci;
         let failsc = crit.alsoFailing ? rttr.sci : undefined;
         if (rttr.symbol){
@@ -239,7 +247,7 @@ namespace ts {
             }
             let passtype = floughTypeModule.createRefTypesType();
             let failtype = crit.alsoFailing ? floughTypeModule.createRefTypesType() : undefined;
-            applyCritToType(rttr.type,crit,passtype,failtype);
+            applyCritToTypeMutate(rttr.type,crit,passtype,failtype);
             if (!floughTypeModule.isNeverType(passtype)){
                 let passsc = rttr.sci;
                 if (rttr.symbol){

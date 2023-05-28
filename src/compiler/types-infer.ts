@@ -151,9 +151,28 @@ namespace ts {
     //     inferStatus: InferStatus,
     //     crit: InferCrit,
     // };
-    export type AccessItem = & {
-        logicalObject?: FloughLogicalObjectIF; // not present for last access item
-        keyType: FloughType;
+    // export type AccessItem = & {
+    //     logicalObject?: FloughLogicalObjectIF; // not present for last access item
+    //     keyType: FloughType;
+    // };
+    /**
+     * 'roots' is an array of entries to the access chain, not intermediate nodes.
+     * However, 'keyTypes' is an array of FloughTypes, each entry corresponding to one level of the access chain.
+     * 'roots' and 'keyTypes' may therefore be different lengths.
+     * 'expressions' are the nodes corresponding to the access chain objects, and are the same length as 'keyTypes'.
+     */
+    export type AccessArgsRoot = & {
+        logicalObject: FloughLogicalObjectIF,
+        symbolData?: {
+            symbol: Symbol,
+            isconst?: boolean | undefined,
+            isAssign?: boolean | undefined,
+        };
+    };
+    export type AccessArgs = & {
+        roots: AccessArgsRoot[] | undefined;
+        keyTypes: FloughType[];
+        expressions: Expression[];
     };
     export type FloughArgs = & {
         sci: RefTypesSymtabConstraintItem,
@@ -162,7 +181,7 @@ namespace ts {
         inferStatus: InferStatus,
         crit: InferCrit,
         accessDepth?: number,
-        refAccessArgs?: [{root: FloughLogicalObjectIF, keyTypes: FloughType[]}], // a tuple of an array, only set by callees which are accessor expressions
+        refAccessArgs?: [{roots: AccessArgsRoot[] | undefined, keyTypes: FloughType[], expressions: Expression[]}], // a tuple of an array, only set by callees which are accessor expressions
     };
 
     export type NodeToTypeMap = ESMap<Node, Type>;
