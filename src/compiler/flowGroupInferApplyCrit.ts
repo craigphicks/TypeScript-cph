@@ -16,15 +16,33 @@ namespace ts {
         };
     }
 
-    export function applyCritToType(rt: Readonly<RefTypesType>,crit: Readonly<InferCrit>): {pass: FloughType, fail?: FloughType} {
-        const passtype = floughTypeModule.createNeverType();
-        const failtype = crit.alsoFailing ? floughTypeModule.createNeverType() : undefined;
-        applyCritToTypeMutate(rt,crit,passtype,failtype);
-        return { pass: passtype, fail: failtype };
+    export type CritToTypeV2Result = FloughType | true | undefined;
+    export function applyCritToTypeV2(rt: Readonly<FloughType>,crit: Readonly<InferCrit>): {pass: CritToTypeV2Result, fail?: CritToTypeV2Result } {
+        //const crit = critIn;
+        const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(rt);
+        const arrtstype = floughTypeModule.getTsTypesFromFloughType(remaining);
+
+        function worker(crit: Readonly<InferCrit>){
+            if (crit.kind===InferCritKind.truthy) {
+                const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
+                const arrpass: Type[] = arrtstype.filter(t=>!(checker.getTypeFacts(t)&pfacts));
+                if (arrpass.length===arrtstype.length) return true;
+                else if (arrpass.length===0) return logicalObject ? floughTypeModule.createTypeFromLogicalObject(logicalObject) : undefined;
+                else return floughTypeModule.createFromTsTypes(arrpass, logicalObject);
+            }
+            else Debug.fail("not yet implemented: "+crit.kind);
+        }
+
+        const ret: ReturnType<typeof applyCritToTypeV2> = {
+            pass: worker(crit),
+        };
+        if (crit.alsoFailing) ret.fail = worker({ ...crit, negate:!crit.negate } as Readonly<InferCrit>);
+        (crit as any).done = true;
+        return ret;
     }
 
-
     function applyCritToTypeMutate(rt: Readonly<RefTypesType>,crit: Readonly<InferCrit>, passtype: RefTypesType, failtype?: RefTypesType | undefined): void {
+        Debug.assert(!crit.done);
         Debug.assert(crit.kind!==InferCritKind.none);
         if (crit.kind===InferCritKind.truthy) {
             if (crit.alsoFailing){
@@ -98,6 +116,15 @@ namespace ts {
         else nodeToTypeMap.set(node,checker.getUnionType([got,tstype],UnionReduction.Literal));
         if (getMyDebug()){
             consoleLog(`orIntoNodeToTypeMap(type:${floughTypeModule.dbgFloughTypeToString(type)},node:${dbgsModule.dbgNodeToString(node)})::`
+                +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node)!)}`);
+        }
+    }
+    export function orTsTypeIntoNodeToTypeMap(tstype: Readonly<Type>, node: Node, nodeToTypeMap: NodeToTypeMap){
+        const got = nodeToTypeMap.get(node);
+        if (!got) nodeToTypeMap.set(node,tstype);
+        else nodeToTypeMap.set(node,checker.getUnionType([got,tstype],UnionReduction.Literal));
+        if (getMyDebug()){
+            consoleLog(`orIntoNodeToTypeMap(type:${dbgsModule.dbgTypeToString(tstype)},node:${dbgsModule.dbgNodeToString(node)})::`
                 +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node)!)}`);
         }
     }

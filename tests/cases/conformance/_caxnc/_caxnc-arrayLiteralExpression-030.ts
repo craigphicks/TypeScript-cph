@@ -4,7 +4,10 @@
 // @declaration: true
 
 declare const c: boolean;
-let x: readonly[boolean] = [c];
-if (x[0]) {
-    x[0];
+
+let x: readonly[[boolean]] = [[c]];
+
+// @ts-dev-debugger
+if (x[0][0]) {
+    x[0][0];
 }

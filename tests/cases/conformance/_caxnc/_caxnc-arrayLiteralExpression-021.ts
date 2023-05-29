@@ -5,9 +5,11 @@
 
 declare const c: boolean;
 
-let x: readonly[[boolean]] = [[c]];
+let x: readonly[boolean] = [c];
 
-// @ts-dev-debugger
-if (x[0][0]) {
-    x[0][0];
+if (x[0]) {
+    x[0];
 }
+else x[0];
+
+// x[0];

@@ -76,7 +76,7 @@ namespace ts {
             target: Type;
         }
     )
-    & {alsoFailing?: boolean}; // also output failing, in addition to passing
+    & {alsoFailing?: boolean, done?: true}; // also output failing, in addition to passing
 
     export type ReplayableItem = & {
         symbol: Symbol;

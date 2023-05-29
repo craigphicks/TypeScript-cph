@@ -16,3 +16,12 @@ type Y2 = any | number; // any
 
 type X4 = unknown & number; // number !!!!
 type Y4 = unknown | number; // unknown
+
+declare const x5: unknown;
+
+if (x5){
+    x5; // const x5: {} : Strange, but true
+}
+else {
+    x5; // unknown
+}

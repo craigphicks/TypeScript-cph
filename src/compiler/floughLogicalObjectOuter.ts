@@ -28,12 +28,14 @@ namespace ts {
             logicalObject: Readonly<FloughLogicalObjectIF>,
             lookupkey: Readonly<FloughType>,
             lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
-            discriminantFn?: DiscriminantFn, inCondition?: boolean): [FloughLogicalObjectIF, FloughType] | undefined;
+        ): void;
         getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type;
         identicalLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): boolean;
         replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectIF;
         replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, oldToNewLogicalObjectMap: Readonly<OldToNewLogicalObjectMap>): { logicalObject: FloughLogicalObjectIF, type: FloughType } | undefined;
         getInnerIF(logicalObject: Readonly<FloughLogicalObjectIF>): Readonly<FloughLogicalObjectInnerIF>;
+        createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType: Type | undefined): FloughLogicalObjectIF;
+        getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF>): Type;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
 
@@ -56,6 +58,8 @@ namespace ts {
         getInnerIF(logicalObject: Readonly<FloughLogicalObjectIF>){
             return (logicalObject as FloughLogicalObjectOuter).inner;
         },
+        createFloughLogicalObjectFromInner,
+        getTypeFromAssumedBaseLogicalObject,
         dbgLogicalObjectToStrings,
     };
 
@@ -108,6 +112,7 @@ namespace ts {
         return ret;
     }
     function unionOfFloughLogicalObjects(arr: Readonly<FloughLogicalObjectOuter[]>): FloughLogicalObjectOuter {
+        Debug.assert(arr.length>0);
         const ret: FloughLogicalObjectOuter = arr.reduce((accumulator,currentValue)=>unionOfFloughLogicalObject(accumulator,currentValue));
         return ret;
     }
@@ -154,72 +159,113 @@ namespace ts {
     function logicalObjectForEachTypeOfPropertyLookup(
         logicalObject: Readonly<FloughLogicalObjectOuter>,
         lookupkey: FloughType,
-        lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
-        discriminantFn?: DiscriminantFn, inCondition?: boolean): [FloughLogicalObjectOuter, FloughType] | undefined {
-
-        if (getMyDebug()){
-            consoleGroup(`logicalObjectForEachTypeOfPropertyLookup[in] lookupkey: ${floughTypeModule.dbgFloughTypeToString(lookupkey)}, `
-            +`distcriminantFn: ${discriminantFn ? "yes" : "no"}, inCondition: ${inCondition}`);
-            dbgLogicalObjectToStrings(logicalObject).forEach(x=>consoleLog(`[in] logicalObject ${x}`));
-        }
-
-
-        const lookupItemsInner: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined = (discriminantFn || lookupItemsIn) ? [] : undefined;
-        const { logicalObject:logicalObjectInner, key:_key, type } = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(
-            logicalObject.inner, lookupkey, lookupItemsInner, discriminantFn, inCondition);
-
-        let ret: ReturnType<typeof logicalObjectForEachTypeOfPropertyLookup>;
-
-        if (logicalObjectInner === undefined) {
-            Debug.assert(floughTypeModule.isNeverType(type));
-            ret = undefined;
-        }
-        else if (!discriminantFn) {
-            Debug.assert(inCondition === (logicalObjectInner !== logicalObject.inner));
-            Debug.assert(!floughTypeModule.isNeverType(type));
-            // if (getMyDebug()){
-            //     consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] (no discriminant) type: ${floughTypeModule.dbgFloughTypeToString(type)}`);
-            //     //dbgLogicalObjectToStrings(logicalObject).forEach(x=>consoleLog(`[in] logicalObject ${x}`));
-            //     consoleGroupEnd();
-            // }
-            ret = [inCondition ? { ...logicalObject, inner:logicalObjectInner, id: nextLogicalObjectOuterId++ } : logicalObject, type];
-        }
-        else {
-            Debug.assert(lookupItemsInner);
-            Debug.assert(!floughTypeModule.isNeverType(type));
-            // const { effectiveDeclaredTsType } = logicalObject;
-            const doNewLogicalObject = inCondition || logicalObjectInner !== logicalObject.inner;
-            if (doNewLogicalObject){
-                ret = [ { ...logicalObject, inner: logicalObjectInner, id: nextLogicalObjectOuterId++ }, type ];
+        lookupItemsOuter: LogicalObjectForEachTypeOfPropertyLookupItem[],
+        ): void {
+            if (getMyDebug()){
+                consoleGroup(`logicalObjectForEachTypeOfPropertyLookup[in] lookupkey: ${floughTypeModule.dbgFloughTypeToString(lookupkey)}`);
+                dbgLogicalObjectToStrings(logicalObject).forEach(x=>consoleLog(`[in] logicalObject ${x}`));
             }
-            else {
-                ret = [ logicalObject, type ];
+            const lookupItemsInner: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] = [];
+            floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject.inner, lookupkey, lookupItemsInner);
+
+            lookupItemsInner?.forEach(({ logicalObject:inner, key:_key, type })=>{
+                const logicalObjectOuter: FloughLogicalObjectOuter = {
+                    inner,
+                    // perhaps it should inherit the effectiveDeclaredTsType from the outer logicalObject?
+                    //effectiveDeclaredTsType: inner.kind==="plain" ? inner.tsType : undefined,
+                    effectiveDeclaredTsType: logicalObject.effectiveDeclaredTsType,
+                    id: nextLogicalObjectOuterId++,
+                    //[essymbolfloughLogicalObjectOuter]: void
+                };
+                lookupItemsOuter.push({ logicalObject: logicalObjectOuter, key:_key, type });
+            });
+            if (getMyDebug()){
+                consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] lookupkey: ${floughTypeModule.dbgFloughTypeToString(lookupkey)}`);
+                dbgLogicalObjectToStrings(logicalObject).forEach(x=>consoleLog(`[out] logicalObject ${x}`));
+                consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] lookupItemsOuter: ${lookupItemsOuter.length}`);
+                lookupItemsOuter.forEach(({ logicalObject, key, type },idx)=>{
+                    dbgLogicalObjectToStrings(logicalObject as FloughLogicalObjectOuter).forEach(
+                        s=>consoleLog(`[out, ${idx}] logicalObjectOuter: ${s}`));
+                    consoleLog(`[out, ${idx}] key: ${key?dbgsModule.dbgTypeToString(key):"<undef>"}`);
+                    consoleLog(`[out, ${idx}] type: ${floughTypeModule.dbgFloughTypeToString(type)}`);
+                });
+                consoleGroupEnd();
             }
+            return;
         }
-        if (getMyDebug()){
-            if (!ret) consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] ret: <undef>`);
-            else {
-                if (ret[0] !== logicalObject) {
-                    consoleLog(`[out] logicalObject changed`);
-                }
-                else {
-                    consoleLog(`[out] logicalObject not changed`);
-                }
-                if (ret[0].inner !== logicalObject.inner) {
-                    consoleLog(`[out] logicalObject.inner changed`);
-                    dbgLogicalObjectToStrings(ret[0]).forEach(x=>consoleLog(`[out] logicalObject ${x}`));
-                }
-                else consoleLog(`[out] logicalObject.inner not changed`);
-                consoleLog(`[out] _key: ${_key?dbgsModule.dbgTypeToString(_key):"<undef>"}`);
-            }
-            consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] type: ${floughTypeModule.dbgFloughTypeToString(type)}`);
-            if (floughTypeModule.hasLogicalObject(type)) {
-                dbgLogicalObjectToStrings(floughTypeModule.getLogicalObject(type) as FloughLogicalObjectOuter).forEach(x=>consoleLog(`[out] type::logicalObject: ${x}`));
-            }
-            consoleGroupEnd();
-        }
-        return ret;
-    }
+
+    // @ ts-expect-error
+    // function logicalObjectForEachTypeOfPropertyLookupOLD(
+    //     logicalObject: Readonly<FloughLogicalObjectOuter>,
+    //     lookupkey: FloughType,
+    //     lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
+    //     inCondition?: boolean): [FloughLogicalObjectOuter, FloughType] | undefined {
+
+
+    //     if (getMyDebug()){
+    //         consoleGroup(`logicalObjectForEachTypeOfPropertyLookup[in] lookupkey: ${floughTypeModule.dbgFloughTypeToString(lookupkey)},`
+    //         /*+`distcriminantFn: ${discriminantFn ? "yes" : "no"},*/ + `inCondition: ${inCondition}`);
+    //         dbgLogicalObjectToStrings(logicalObject).forEach(x=>consoleLog(`[in] logicalObject ${x}`));
+    //     }
+
+    //     const lookupItemsInner: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] | undefined = lookupItemsIn ? [] : undefined;
+    //     const { logicalObject:logicalObjectInner, key:_key, type } = floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(
+    //         logicalObject.inner, lookupkey, lookupItemsInner, inCondition);
+
+
+
+    //     let ret: ReturnType<typeof logicalObjectForEachTypeOfPropertyLookup>;
+
+    //     if (logicalObjectInner === undefined) {
+    //         Debug.assert(floughTypeModule.isNeverType(type)); // what if the type is any or unknown?
+    //         ret = undefined;
+    //     }
+    //     else {
+    //         Debug.assert(!!inCondition === (logicalObjectInner !== logicalObject.inner));
+    //         Debug.assert(!floughTypeModule.isNeverType(type));
+    //         // if (getMyDebug()){
+    //         //     consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] (no discriminant) type: ${floughTypeModule.dbgFloughTypeToString(type)}`);
+    //         //     //dbgLogicalObjectToStrings(logicalObject).forEach(x=>consoleLog(`[in] logicalObject ${x}`));
+    //         //     consoleGroupEnd();
+    //         // }
+    //         ret = [inCondition ? { ...logicalObject, inner:logicalObjectInner, id: nextLogicalObjectOuterId++ } : logicalObject, type];
+    //     }
+    //     // else {
+    //     //     Debug.assert(lookupItemsInner);
+    //     //     Debug.assert(!floughTypeModule.isNeverType(type));
+    //     //     // const { effectiveDeclaredTsType } = logicalObject;
+    //     //     const doNewLogicalObject = inCondition || logicalObjectInner !== logicalObject.inner;
+    //     //     if (doNewLogicalObject){
+    //     //         ret = [ { ...logicalObject, inner: logicalObjectInner, id: nextLogicalObjectOuterId++ }, type ];
+    //     //     }
+    //     //     else {
+    //     //         ret = [ logicalObject, type ];
+    //     //     }
+    //     // }
+    //     if (getMyDebug()){
+    //         if (!ret) consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] ret: <undef>`);
+    //         else {
+    //             if (ret[0] !== logicalObject) {
+    //                 consoleLog(`[out] logicalObject changed`);
+    //             }
+    //             else {
+    //                 consoleLog(`[out] logicalObject not changed`);
+    //             }
+    //             if (ret[0].inner !== logicalObject.inner) {
+    //                 consoleLog(`[out] logicalObject.inner changed`);
+    //                 dbgLogicalObjectToStrings(ret[0]).forEach(x=>consoleLog(`[out] logicalObject ${x}`));
+    //             }
+    //             else consoleLog(`[out] logicalObject.inner not changed`);
+    //             consoleLog(`[out] _key: ${_key?dbgsModule.dbgTypeToString(_key):"<undef>"}`);
+    //         }
+    //         consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] type: ${floughTypeModule.dbgFloughTypeToString(type)}`);
+    //         if (floughTypeModule.hasLogicalObject(type)) {
+    //             dbgLogicalObjectToStrings(floughTypeModule.getLogicalObject(type) as FloughLogicalObjectOuter).forEach(x=>consoleLog(`[out] type::logicalObject: ${x}`));
+    //         }
+    //         consoleGroupEnd();
+    //     }
+    //     return ret;
+    // }
 
     function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectOuter>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectOuter {
         const inner = floughLogicalObjectInnerModule.replaceTypeAtKey(logicalObject.inner, key, modifiedType);
@@ -238,6 +284,14 @@ namespace ts {
         const newType = floughTypeModule.createTypeFromLogicalObject(newLogicalObjectOfType);
         const newLogicalObject = replaceTypeAtKey(logicalObject, key, newType);
         return { logicalObject: newLogicalObject, type: newType };
+    }
+
+    function createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType: Type | undefined): FloughLogicalObjectOuter {
+        return { inner, id: nextLogicalObjectOuterId++, effectiveDeclaredTsType: edType };
+    }
+
+    function getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectOuter>): Type {
+        return floughLogicalObjectInnerModule.getTypeFromAssumedBaseLogicalObject(logicalObject.inner);
     }
 
 

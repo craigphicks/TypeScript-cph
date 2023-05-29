@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-for-of */
 /* eslint-disable no-double-space */
 namespace ts {
 
@@ -89,7 +90,7 @@ namespace ts {
             mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
             unionArrRefTypesSymtab,
             getEffectiveDeclaredType,
-            getDeclaredType,
+            getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
             checker,
             compilerOptions,
             mrState: _mrState,
@@ -129,11 +130,16 @@ namespace ts {
          * @param symbol
          * @returns
          */
-        function getDeclaredType(symbol: Symbol): RefTypesType {
+        function getEffectiveDeclaredTypeFromSymbol(symbol: Symbol): RefTypesType {
             const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
             Debug.assert(symbolFlowInfo);
             return getEffectiveDeclaredType(symbolFlowInfo);
             //return getSymbolFlowInfoInitializerOrDeclaredType(symbol);
+        }
+        function getEffectiveDeclaredTsTypeFromSymbol(symbol: Symbol): Type {
+            const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
+            Debug.assert(symbolFlowInfo);
+            return symbolFlowInfo.effectiveDeclaredTsType;
         }
 
 
@@ -754,12 +760,12 @@ namespace ts {
                                     const type = floughTypeModule.createRefTypesType(tstype);
                                     const symbol: CallArgumentSymbol = createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,{ indexInTuple },type);
                                     const isconst = true;
-                                    ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:sctmp,mrNarrow,getDeclaredType }));
+                                    ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:sctmp,mrNarrow,getDeclaredType: getEffectiveDeclaredTypeFromSymbol }));
                                     // sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol, type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
                                     resolvedCallArguments.push({ tstype,type,symbol,isconst });
                                 });
                                 const tupleSymbol = symbolOuter ?? createTransientCallArgumentSymbol(cargidx, resolvedCallArguments.length,/**/ undefined, rttr.type);
-                                ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol:tupleSymbol, isconst:true, type:rttr.type,sc:sctmp,mrNarrow,getDeclaredType }));
+                                ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol:tupleSymbol, isconst:true, type:rttr.type,sc:sctmp,mrNarrow,getDeclaredType: getEffectiveDeclaredTypeFromSymbol }));
                                 //sctmp.constraintItem = andSymbolTypeIntoConstraint({ symbol:tupleSymbol, type:rttr.type, constraintItem:sctmp.constraintItem, getDeclaredType, mrNarrow });
                             }
                             else {
@@ -777,7 +783,7 @@ namespace ts {
                                 symbol = createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,/**/ undefined, type);
                             }
                             else Debug.assert(isconst!==undefined);
-                            ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:sctmp,mrNarrow,getDeclaredType }));
+                            ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:sctmp,mrNarrow,getDeclaredType: getEffectiveDeclaredTypeFromSymbol }));
                             resolvedCallArguments.push({ type,tstype,hasSpread:true, symbol, isconst });
                         }
                     }
@@ -807,7 +813,7 @@ namespace ts {
                         symbol = createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,/**/ undefined, type);
                     }
                     else Debug.assert(isconst!==undefined);
-                    ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:sctmp,mrNarrow,getDeclaredType }));
+                    ({sc:sctmp}=andSymbolTypeIntoSymtabConstraint({ symbol,isconst,type,sc:sctmp,mrNarrow,getDeclaredType: getEffectiveDeclaredTypeFromSymbol }));
                     resolvedCallArguments.push({ type,tstype,symbol,isconst });
                 }
             });
@@ -1898,7 +1904,7 @@ namespace ts {
                             if (prePassing.symbol) {
                                 ({type,sc}=andSymbolTypeIntoSymtabConstraint(
                                     {symbol:prePassing.symbol, type, isconst:prePassing.isconst, sc,
-                                    getDeclaredType, mrNarrow }));
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow }));
                             }
                             if (isArrayOrTupleType(t)||t===stringType) {
                                 if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
@@ -1958,7 +1964,7 @@ namespace ts {
                                 }
                                 const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
                                     {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc,
-                                    getDeclaredType, mrNarrow });
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow });
                                 arrRttr.push({
                                     symbol: propSymbol,
                                     isconst: symbolFlowInfo.isconst,
@@ -2067,7 +2073,7 @@ namespace ts {
                                 if (floughTypeModule.isNeverType(assignableType)){
                                     return false;
                                 }
-                                ({type: assignableType, sc:tmpSC}=andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol as Symbol,isconst:carg.isconst,type:assignableType,sc: tmpSC,getDeclaredType, mrNarrow }));
+                                ({type: assignableType, sc:tmpSC}=andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol as Symbol,isconst:carg.isconst,type:assignableType,sc: tmpSC,getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow }));
                                 // if (compilerOptions.mrNarrowConstraintsEnable){
                                 //     tmpArgsConstr = andSymbolTypeIntoConstraint({ symbol:carg.symbol as Symbol,type:assignableType, constraintItem:tmpArgsConstr,getDeclaredType,mrNarrow });
                                 //     if (isNeverConstraint(tmpArgsConstr)) {
@@ -2097,8 +2103,8 @@ namespace ts {
                                 }
                                 // check if the non assignable type is allowed.
                                 {
-                                    const {sc:checkSC} = andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol, isconst:carg.isconst, type:notAssignableType, sc: nextSC, getDeclaredType, mrNarrow });
-                                    const evaledNotAssignableType = evalSymbol(carg.symbol,checkSC,getDeclaredType,mrNarrow);
+                                    const {sc:checkSC} = andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol, isconst:carg.isconst, type:notAssignableType, sc: nextSC, getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow });
+                                    const evaledNotAssignableType = evalSymbol(carg.symbol,checkSC,getEffectiveDeclaredTypeFromSymbol,mrNarrow);
                                     if (getMyDebug()){
                                         consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) evaledNotAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(evaledNotAssignableType)}`);
                                     }
@@ -2170,10 +2176,10 @@ namespace ts {
                                         // but it is not so because it is the cross product of all inputs combinations that must be accounted for.
                                         // Each leftoverMapping is treated as a cross product, and the intesection of those cross products is what is calculated here.
                                         // If that is never, then all input cross products have been accounted for.
-                                        cumLeftoverConstraintItem = calculateNextLeftovers(oneLeftoverMapping,cumLeftoverConstraintItem,arrCargSymbols,getDeclaredType);
+                                        cumLeftoverConstraintItem = calculateNextLeftovers(oneLeftoverMapping,cumLeftoverConstraintItem,arrCargSymbols,getEffectiveDeclaredTypeFromSymbol);
                                         if (isNeverConstraint(cumLeftoverConstraintItem)) finished1 = true;
                                         if (!finished1){
-                                            nextConstraintItem = calculateNextLeftovers(oneLeftoverMapping,nextSC.constraintItem,arrCargSymbols,getDeclaredType);
+                                            nextConstraintItem = calculateNextLeftovers(oneLeftoverMapping,nextSC.constraintItem,arrCargSymbols,getEffectiveDeclaredTypeFromSymbol);
                                         }
                                     }
                                     nextSC = { symtab:nextSymtab, constraintItem:nextConstraintItem };
@@ -2643,7 +2649,7 @@ namespace ts {
                                     // isAssign: leftRttr0.isAssign, // pure narrowing here so do not set isAssign
                                     type: leftFt,
                                     sc:sctmp,
-                                    getDeclaredType,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
                                     mrNarrow
                                 }));
                             }
@@ -2666,7 +2672,7 @@ namespace ts {
                                     // isAssign: leftRttr0.isAssign,
                                     type: typeofArgSubType,// ?? floughTypeModule.getNeverType(),
                                     sc:sctmp,
-                                    getDeclaredType,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
                                     mrNarrow
                                 }));
                             }
@@ -2681,7 +2687,7 @@ namespace ts {
                                     // isAssign: rightRttr0.isAssign,
                                     type: rightFt ?? floughTypeModule.getNeverType(),
                                     sc:sctmp,
-                                    getDeclaredType,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
                                     mrNarrow
                                 }));
                             }
@@ -2704,7 +2710,7 @@ namespace ts {
                                     // isAssign: rightRttr0.isAssign,
                                     type: typeofArgSubType ?? floughTypeModule.getNeverType(),
                                     sc:sctmp,
-                                    getDeclaredType,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
                                     mrNarrow
                                 }));
                             }
@@ -2755,8 +2761,8 @@ namespace ts {
                     const leftScis: RefTypesSymtabConstraintItem[]=[];
                     leftMntr.unmerged.forEach(leftRttr=>{
                         Debug.assert(leftRttr.sci.symtab);
-                        const {logicalObject, nonObjType} = floughTypeModule.splitLogicalObject(leftRttr.type) as {logicalObject: FloughLogicalObjectIF | undefined, nonObjType: FloughType | undefined};
-                        if (nonObjType) leftNonLogicalObjects.push(nonObjType);
+                        const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(leftRttr.type);
+                        if (remaining) leftNonLogicalObjects.push(remaining);
                         if (logicalObject) {
                             leftLogicalObjects.push(logicalObject);
                             if (leftRttr.symbol){
@@ -2816,24 +2822,84 @@ namespace ts {
                 refAccessArgs[0].expressions.push(expression);
 
                 if (accessDepth===0){
+                    let allSymbolsSame = true;
+                    const symbolData = refAccessArgs[0].roots.reduce((accumulator,current)=>{
+                        if (current.symbolData?.symbol!==accumulator?.symbol) allSymbolsSame = false;
+                        return accumulator;
+                    },refAccessArgs[0].roots[0].symbolData);
+                    if (!allSymbolsSame){
+                        Debug.fail("not yet implemented, multiple disparate symbols (or lack of) for access roots");
+                    }
+
                     const raccess = floughAccessModule.logicalObjectAccess(
                         refAccessArgs[0].roots.map(r=>r.logicalObject),
-                        refAccessArgs[0].keyTypes);
+                        refAccessArgs[0].keyTypes,
+                        refAccessArgs[0].expressions,
+                        inferStatus.groupNodeToTypeMap);
+
+                    const critTypesPassing: CritToTypeV2Result[] = [];
+                    let critTypesFailing: CritToTypeV2Result[] | undefined;
                     if (crit.kind!==InferCritKind.none){
-                        const modTypesPassing: FloughType[] = [];
-                        const modTypesFailing: FloughType[] | undefined =crit.alsoFailing ? [] : undefined;
+                        critTypesFailing = crit.alsoFailing ? [] : undefined;
                         raccess.types.forEach(t0=>{
-                            const { pass, fail } = applyCritToType(t0,crit);
-                            modTypesPassing.push(pass);
-                            if (fail) modTypesFailing!.push(fail);
+                            const { pass, fail } = applyCritToTypeV2(t0,crit);
+                            critTypesPassing.push(pass);
+                            if (fail) critTypesFailing!.push(fail);
                         });
-                        const rmodPassing = floughAccessModule.logicalObjectModify(raccess, modTypesPassing);
-                        unmerged.push({ type: rmodPassing, sci:leftSci });
+                    }
+                    else {
+                        /**
+                         * If there is no symbol data we could optimize here by pushing directly to unmerged.
+                         */
+                        for (let i=0; i<raccess.types.length; ++i){
+                            critTypesPassing.push(true);
+                        }
+                    }
+
+                    if (symbolData){
+                        /**
+                         * The root type defaults to the symbol declared type.
+                         */
+                        // TODO: This might be unnecessary.
+                        orTsTypeIntoNodeToTypeMap(getEffectiveDeclaredTsTypeFromSymbol(symbolData.symbol), refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
+
+                        // passing bracnhes
+                        const rmodPassing = floughAccessModule.logicalObjectModify(raccess, critTypesPassing);
+                        rmodPassing.forEach(x=>{
+                            // if (symbolData){
+                            const sci = copyRefTypesSymtabConstraintItem(argRttrUnion.sci);
+                            sci.symtab!.set(
+                                symbolData.symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
+                            unmerged.push({ type:x.type, sci });
+                        });
+                        // failing bracnhes
+                        if (critTypesFailing) {
+                            const rmodFailing = floughAccessModule.logicalObjectModify(raccess, critTypesFailing);
+                            rmodFailing.forEach(x=>{
+                                // if (symbolData){
+                                const sci = copyRefTypesSymtabConstraintItem(argRttrUnion.sci);
+                                sci.symtab!.set(
+                                    symbolData.symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
+                                unmerged.push({ type:x.type, sci });
+                            });
+                        }
+                    }
+                    else {
+                        critTypesPassing.forEach((ctr,i)=>{
+                            if (!ctr) return;
+                            if (ctr===true) ctr = raccess.types[i];
+                            unmerged.push({ type: ctr, sci:argRttrUnion.sci });
+                        });
+                        // TODO: This might be unnecessary.
+                        orTsTypeIntoNodeToTypeMap(floughAccessModule.getTsTypeInChain(raccess,0), refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
+                    }
+                    for (let i=1; i<refAccessArgs[0].expressions.length; i++){
+                        orTsTypeIntoNodeToTypeMap(floughAccessModule.getTsTypeInChain(raccess,i), refAccessArgs[0].expressions[i], inferStatus.groupNodeToTypeMap);
                     }
 
                 }
                 else {
-                    unmerged.push({ type, sci:leftSci });
+                    unmerged.push({ type, sci:argRttrUnion.sci });
                 }
 
                 if (getMyDebug()){

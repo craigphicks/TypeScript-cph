@@ -36,7 +36,8 @@ namespace ts {
          * @param ft
          */
         //createFromTsTypeAndLogicalObject(tstype: Readonly<Type>, logicalObject: FloughLogicalObjectIF): FloughType;
-        createFromTsType(tstype: Readonly<Type>, logicalObject?: FloughLogicalObjectIF): FloughType;
+        createFromTsType(tstype: Readonly<Type>, logicalObject?: Readonly<FloughLogicalObjectIF> | undefined): FloughType;
+        createFromTsTypes(tstypes: Readonly<Type[]>, logicalObject?: Readonly<FloughLogicalObjectIF> | undefined): FloughType;
         unionWithTsTypeMutate(tstype: Readonly<Type>, ft: FloughType): FloughType;
         cloneType(ft: Readonly<FloughType>): FloughType;
         createNeverType(): FloughType;
@@ -60,7 +61,7 @@ namespace ts {
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
         hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
         getAccessKeys(ft: Readonly<FloughType>): { literals?: FloughType, numberAndStringIntrinsics?: FloughType, remaining?: FloughType };
-        splitLogicalObject(ft: Readonly<FloughType>): { logicalObject?: FloughLogicalObjectIF, remaining?: FloughType };
+        splitLogicalObject(ft: Readonly<FloughType>): { logicalObject?: FloughLogicalObjectIF | undefined, remaining: FloughType };
 
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
         dbgFloughTypeToString(type: Readonly<FloughType>): string;
@@ -207,6 +208,7 @@ namespace ts {
         createTypeFromLogicalObject,
         widenTypeByEffectiveDeclaredType,
         createFromTsType,
+        createFromTsTypes,
         unionWithTsTypeMutate,
         cloneType,
         differenceWithFloughTypeMutate,
@@ -458,8 +460,14 @@ namespace ts {
         return at;
     }
 
-    function createFromTsType(tstype: Readonly<Type>): FloughTypei {
-        return unionWithTsTypeMutate(tstype, createNeverType());
+    function createFromTsTypes(tstypes: Readonly<Type[]>, logicalObject?: Readonly<FloughLogicalObjectIF> | undefined): FloughTypei {
+        return tstypes.reduce((accum,current)=>{
+            return unionWithTsTypeMutate(current,accum);
+        }, logicalObject ? createTypeFromLogicalObject(logicalObject) : createNeverType());
+    }
+
+    function createFromTsType(tstype: Readonly<Type>, logicalObject?: Readonly<FloughLogicalObjectIF> | undefined): FloughTypei {
+        return unionWithTsTypeMutate(tstype, logicalObject ? createTypeFromLogicalObject(logicalObject) : createNeverType());
     }
     function unionWithTsTypeMutate(tstype: Readonly<Type>, ftin: FloughTypei): FloughTypei {
 
@@ -1305,7 +1313,7 @@ namespace ts {
         return { literals, numberAndStringIntrinsics, remaining };
     }
 
-    function splitLogicalObject(ft: Readonly<FloughTypei>): { logicalObject?: FloughLogicalObjectIF, remaining?: FloughTypei } {
+    function splitLogicalObject(ft: Readonly<FloughTypei>): { logicalObject?: FloughLogicalObjectIF | undefined, remaining: FloughTypei } {
         castReadonlyFloughTypei(ft);
         if (ft.any || ft.unknown) return { remaining:ft };
         if (!ft.logicalObject) return { remaining:ft };
