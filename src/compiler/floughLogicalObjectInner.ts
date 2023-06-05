@@ -1269,12 +1269,18 @@ namespace ts {
         }
     } // end of getTypeAtIndexFromBase
 
-    function replaceOrFilterLogicalObjects(logicalObjectIn: Readonly<FloughLogicalObjectInner>, mapTsTypeToLogicalObjectBasic: Readonly<ESMap<Type,FloughLogicalObjectBasic>>): FloughLogicalObjectInner | undefined {
+    function replaceOrFilterLogicalObjects1(
+        logicalObjectIn: Readonly<FloughLogicalObjectInner>,
+        tstype: Readonly<Type>,
+        newlogicalObjectBasic: Readonly<FloughLogicalObjectBasic>
+    ): FloughLogicalObjectInner | undefined {
         function replaceOrFilter(logicalObject: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined{
             if (logicalObject.kind==="plain"){
                 // replace or filter - not present in map means it should be filtered
-                const logicalObjectNew = mapTsTypeToLogicalObjectBasic.get(logicalObject.tsType);
-                return logicalObjectNew;
+                if (logicalObject.tsType===tstype) {
+                    return newlogicalObjectBasic;
+                }
+                return logicalObject;
             }
             else if (logicalObject.kind==="union" || logicalObject.kind==="tsunion"){
                 let change = false;
@@ -1297,6 +1303,41 @@ namespace ts {
         }
         return replaceOrFilter(logicalObjectIn);
     }
+    function replaceOrFilterLogicalObjectsM(
+        logicalObjectIn: Readonly<FloughLogicalObjectInner>,
+        map: Readonly<ESMap<Type,number>>,
+        arrNewlogicalObjectBasic: Readonly<FloughLogicalObjectBasic[]>
+    ): FloughLogicalObjectInner | undefined {
+        function replaceOrFilter(logicalObject: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined{
+            if (logicalObject.kind==="plain"){
+                // replace or filter - not present in map means it should be filtered
+                if (map.has(logicalObject.tsType)) {
+                    return arrNewlogicalObjectBasic[map.get(logicalObject.tsType)!];
+                }
+                return logicalObject;
+            }
+            else if (logicalObject.kind==="union" || logicalObject.kind==="tsunion"){
+                let change = false;
+                const items = logicalObject.items.map(x=>{
+                    const y = replaceOrFilter(x);
+                    if (x!==y) change = true;
+                    return y;
+                }).filter(x=>x!==undefined) as FloughLogicalObjectInner[];
+                if (!change) return logicalObject;
+                if (items.length===0) return undefined;
+                if (logicalObject.kind==="union" && items.length===1) return items[0]; // tsunion is preserved for its original tstype (unless empty)
+                return { ...logicalObject, items, id: nextLogicalObjectInnerId++ };
+            }
+            else if (logicalObject.kind==="intersection" || logicalObject.kind==="tsintersection"|| logicalObject.kind==="difference"){
+                Debug.fail("not yet implemented");
+            }
+            else {
+                Debug.fail("not yet implemented");
+            }
+        }
+        return replaceOrFilter(logicalObjectIn);
+    }
+
     function getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectInner>): Type {
         if (logicalObject.kind!=="plain"){
             Debug.fail("unexpected logicalObject.kind!=='plain'");
@@ -1391,7 +1432,7 @@ namespace ts {
         //const arrmap2: (ESMap<Type,FloughLogicalObjectBasic> | undefined)[]=[];
         const mapTsTypeToLogicalObjectsInIdx = new Map<Type,number[]>();
         logicalObjectsIn.forEach((root, _iroot)=>{
-            const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(root);
+            const {logicalObject,_remaining} = floughTypeModule.splitLogicalObject(root);
             if (logicalObject) {
                 if (_iroot===0) { //baseLogicalObjects.push(...getBaseLogicalObjects(root));
                     //const map2 = (arrmap2[_iroot] = getBaseLogicalObjects(root));
@@ -1543,29 +1584,33 @@ namespace ts {
              *
              */
             {
-                // First layer is irregular
                 let coll = state.collated[state.collated.length-1];
-                const oldLogicObjectBasic = coll.logicalObjectsPlainOut[modTypeIdx];
-                const newLogicalObjectBasic: (FloughLogicalObjectBasic | undefined) = modTypesIn[modTypeIdx] ? replaceTypeAtKey(
-                    coll.logicalObjectsPlainOut[modTypeIdx],
-                    state.finalTypes[modTypeIdx].literalKey!, modTypesIn[modTypeIdx]!) as FloughLogicalObjectPlain : undefined;
-                if (!newLogicalObjectBasic) {
-                    continue;
-                }
-                if (state.collated.length===1) {
-                    results.push({ rootLogicalObject: newLogicalObjectBasic, type: state.finalTypes[modTypeIdx].type });
-                    continue;
-                }
-                let arrChildLogicalObjectBasicIndxs: number[] = coll.mapTsTypeToLogicalObjectsInIdx.get(oldLogicObjectBasic.tsType)!;
+                let arrChildLogicalObjectBasicIndxs: number[];
                 let arrNewLogicalObjectIn: FloughLogicalObjectInner[];
-
-                arrChildLogicalObjectBasicIndxs.forEach(inIndx=>{
-                    const x = replaceOrFilterLogicalObjects(
-                        coll.logicalObjectsIn[inIndx],
-                        new Map<Type,FloughLogicalObjectBasic>([[oldLogicObjectBasic.tsType,newLogicalObjectBasic]])
-                    ) as FloughLogicalObjectInner;
-                    arrNewLogicalObjectIn[inIndx] = x;
-                });
+                {
+                    // First layer is irregular
+                    const oldLogicObjectBasic = coll.logicalObjectsPlainOut[modTypeIdx];
+                    const newLogicalObjectBasic: (FloughLogicalObjectBasic | undefined) = modTypesIn[modTypeIdx] ? replaceTypeAtKey(
+                        coll.logicalObjectsPlainOut[modTypeIdx],
+                        state.finalTypes[modTypeIdx].literalKey!, modTypesIn[modTypeIdx]!) as FloughLogicalObjectPlain : undefined;
+                    if (!newLogicalObjectBasic) {
+                        continue;
+                    }
+                    if (state.collated.length===1) {
+                        results.push({ rootLogicalObject: newLogicalObjectBasic, type: state.finalTypes[modTypeIdx].type });
+                        continue;
+                    }
+                    //let arrNewLogicalObjectIn: FloughLogicalObjectInner[];
+                    arrChildLogicalObjectBasicIndxs = coll.mapTsTypeToLogicalObjectsInIdx.get(oldLogicObjectBasic.tsType)!;
+                    arrChildLogicalObjectBasicIndxs.forEach(inIndx=>{
+                        const x = replaceOrFilterLogicalObjects(
+                            coll.logicalObjectsIn[inIndx],
+                            oldLogicObjectBasic.tsType,
+                            newLogicalObjectBasic
+                        ) as FloughLogicalObjectInner;
+                        arrNewLogicalObjectIn[inIndx] = x;
+                    });
+                }
 
 
                 // let coll = state.collated[state.collated.length-1];
@@ -1594,12 +1639,13 @@ namespace ts {
                     nextChildLogicalObjectBasicIndxs.forEach(x=>arrChildLogicalObjectBasicIndxs.push(x));
 
                     arrChildLogicalObjectBasicIndxs.forEach(inIndx=>{
-                    const x = replaceOrFilterLogicalObjects(
-                        coll.logicalObjectsIn[inIndx],
-                        new Map<Type,FloughLogicalObjectBasic>([[oldLogicObjectBasic.tsType,newLogicalObjectBasic]])
-                    ) as FloughLogicalObjectInner;
-                    arrNewLogicalObjectIn[inIndx] = x;
-                });
+                        const x = replaceOrFilterLogicalObjectsM(
+                            coll.logicalObjectsIn[inIndx],
+                            coll.mapTsTypeToLogicalObjectPlainOutIdx,
+                            arrNewLogicalObjectBasic
+                        ) as FloughLogicalObjectInner;
+                        arrNewLogicalObjectIn[inIndx] = x;
+                    });
 
                 }
             }
