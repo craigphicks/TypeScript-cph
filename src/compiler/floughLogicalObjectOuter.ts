@@ -139,6 +139,7 @@ namespace ts {
         logicalObject: FloughLogicalObjectIF, // undefined if not input logicalObject was trimmed to nothing
         key?: LiteralType | undefined, // undefined if not input logicalObject was trimmed to nothing or if no literal keys were found
         type: FloughType // will be never if logicalItem is undefined, and visa versa.
+        arrLogicalObjectBaseOfType: Readonly<FloughLogicalObjectInnerIF>[], // the base logicalObject that was used to create the logicalObject
     };
 
     // function logicalObjectDuplicateBaseAndJoinType(base: Readonly<FloughLogicalObjectOuter>, key: LiteralType, type: Readonly<FloughType>): FloughLogicalObjectOuter {
@@ -168,7 +169,7 @@ namespace ts {
             const lookupItemsInner: LogicalObjectInnerForEachTypeOfPropertyLookupItem[] = [];
             floughLogicalObjectInnerModule.logicalObjectForEachTypeOfPropertyLookup(logicalObject.inner, lookupkey, lookupItemsInner);
 
-            lookupItemsInner?.forEach(({ logicalObject:inner, key:_key, type })=>{
+            lookupItemsInner?.forEach(({ logicalObject:inner, key:_key, type, arrLogicalObjectBase })=>{
                 const logicalObjectOuter: FloughLogicalObjectOuter = {
                     inner,
                     // perhaps it should inherit the effectiveDeclaredTsType from the outer logicalObject?
@@ -177,7 +178,7 @@ namespace ts {
                     id: nextLogicalObjectOuterId++,
                     //[essymbolfloughLogicalObjectOuter]: void
                 };
-                lookupItemsOuter.push({ logicalObject: logicalObjectOuter, key:_key, type });
+                lookupItemsOuter.push({ logicalObject: logicalObjectOuter, key:_key, type, arrLogicalObjectBaseOfType: arrLogicalObjectBase });
             });
             if (getMyDebug()){
                 consoleLog(`logicalObjectForEachTypeOfPropertyLookup[out] lookupkey: ${floughTypeModule.dbgFloughTypeToString(lookupkey)}`);
@@ -272,10 +273,7 @@ namespace ts {
         return { ...logicalObject, inner, id: nextLogicalObjectOuterId++ };
     }
     function replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectOuter>, key: LiteralType, oldToNewLogicalObjectMap: Readonly<OldToNewLogicalObjectMap>): { logicalObject: FloughLogicalObjectOuter, type: FloughType } | undefined {
-        const type = floughLogicalObjectInnerModule.getVariationTypeAtIndexFromBase(logicalObject.inner, key);
-        if (!type) {
-            Debug.assert(false,"unexpected",()=>`replaceLogicalObjectsOfTypeAtKey: getVariationTypeAtIndexFromBase() not found for key: ${key.value}`);
-        }
+        const type = floughLogicalObjectInnerModule.getTypeAtIndexFromBase(logicalObject.inner, key);
         const logicalObjectOfType = floughTypeModule.getLogicalObject(type) as FloughLogicalObjectOuter;
         Debug.assert(logicalObjectOfType);
         const newLogicalObjectInnerOfType = floughLogicalObjectInnerModule.replaceOrFilterLogicalObjects(logicalObjectOfType.inner, oldToNewLogicalObjectMap);
@@ -302,11 +300,6 @@ namespace ts {
         as.push(`logicalObjectOuter:id: ${id}`);
         if (effectiveDeclaredType) as.push(`effectiveDeclaredType: ${dbgsModule.dbgTypeToString(effectiveDeclaredType)}`);
         else as.push(`effectiveDeclaredType: <undef>`);
-        // if (variations) {
-        //     variations.forEach((value,key)=>{
-        //         as.push(`variation: key:${dbgsModule.dbgTypeToString(key)}], value:${dbgsModule.dbgFloughTypeToString(value)}`);
-        //     });
-        // }
         floughLogicalObjectInnerModule.dbgLogicalObjectToStrings(inner).forEach(s=>as.push(`inner: ${s}`));
         return as;
     }

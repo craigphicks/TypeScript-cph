@@ -1,7 +1,7 @@
 namespace ts {
 
 
-    const checker = undefined as any as TypeChecker;
+//    const checker = undefined as any as TypeChecker;
 
     export interface FloughAccessModule {
         logicalObjectAccess(
@@ -11,18 +11,19 @@ namespace ts {
             groupNodeToTypeMap: ESMap<Node,Type>,
         ): Readonly<FloughAccessResult>;
         logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifedTypes: (Readonly<FloughType> | true | undefined)[]): {rootLogicalObject: FloughLogicalObjectIF, type: FloughType}[];
-        getTsTypeInChain(accessResult: Readonly<FloughAccessResult>, index: number): Type;
+        getTsTypesInChain(accessResult: Readonly<FloughAccessResult>, index: number): Type[];
     };
     export const floughAccessModule: FloughAccessModule = {
         logicalObjectAccess,
         logicalObjectModify,
-        getTsTypeInChain,
+        getTsTypesInChain,
     };
 
     /**
      * Depth-first search
      */
     const essymbolAccessState = Symbol("essymbolAccessState");
+    const essymbolAccessState2 = Symbol("essymbolAccessState2");
 
     type LookupItem = LogicalObjectForEachTypeOfPropertyLookupItem;
     // {
@@ -34,6 +35,7 @@ namespace ts {
     type Link = & {
         item: LookupItem;
         parents: number[];
+        parentsLogicalObjectIdxs?: { itemIdx: number, arrLogicalObjectIdx: number }[];
     };
 
     type LevelState = & {
@@ -47,12 +49,105 @@ namespace ts {
         root: Readonly<FloughLogicalObjectIF>;
         akey: Readonly <FloughType[]>;
         nonObjTypeStack: (FloughType | undefined)[];
+        logicalObjectAccessReturn: LogicalObjectAccessReturn;
     };
 
     export type FloughAccessResult = & {
         types: FloughType[];
         [essymbolAccessState]: AccessState;
+        [essymbolAccessState2]?: LogicalObjectAccessReturn;
     };
+
+    // function logicalObjectAccess2(
+    //     roots: Readonly<FloughLogicalObjectIF[]>,
+    //     akey: Readonly<FloughType[]>,
+    //     // aexpression: Readonly<Expression[]>,
+    //     // groupNodeToTypeMap: ESMap<Node,Type>,
+    // ): Readonly<FloughAccessResult> {
+    //     if (getMyDebug()) {
+    //         consoleGroup("logicalObjectAccess[in]");
+    //         consoleLog(`logicalObjectAccess[in] roots.length: ${roots.length}`);
+    //         consoleLog(`logicalObjectAccess[in] akey.length: ${akey.length}`);
+    //         // consoleLog("logicalObjectAccess[in] aexpression: ", aexpression);
+    //         // consoleLog("logicalObjectAccess[in] groupNodeToTypeMap: ", groupNodeToTypeMap);
+    //     }
+    //     const stack: LevelState[] = [];
+    //     const nonObjTypeStack: [...(FloughType | undefined)[]] = Array(akey.length);
+
+    //     function createLevelState(): LevelState {
+    //         return {
+    //             links: [],
+    //             linkIndex: 0,
+    //         };
+    //     }
+    //     function init(): LevelState {
+    //         const state = createLevelState();
+    //         const lookupItems: LogicalObjectForEachTypeOfPropertyLookupItem[]=[];
+
+    //         const rootBaseLogicalObjects: FloughLogicalObjectInnerIF[] = [];
+    //         const nonObjTypes: FloughType[]=[];
+    //         roots.forEach((root, _iroot)=>{
+    //             const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(root);
+    //             if (logicalObject) {
+    //                 if (_iroot===0) rootBaseLogicalObjects.push(...floughLogicalObjectInnerModule.getBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(logicalObject)));
+    //                 else {
+    //                     floughLogicalObjectInnerModule.getBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(logicalObject).forEach((lobi1,lobi1idx)=>{
+    //                         const findx = rootBaseLogicalObjects.findIndex((lobi0)=>floughLogicalObjectInnerModule.identicalBaseTypes(
+    //                             lobi0,lobi1));
+    //                     if (findx===-1) rootBaseLogicalObjects.push(lobi1);
+
+    //                 }
+
+
+    //             const lookupItems2: LogicalObjectForEachTypeOfPropertyLookupItem[]=[];
+    //             floughLogicalObjectModule.logicalObjectForEachTypeOfPropertyLookup(root, akey[0], lookupItems2);
+    //             // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    //             for (let i=0;i<lookupItems2.length;i++){
+    //                 const existingIndex = lookupItems.findIndex((item)=>floughLogicalObjectModule.identicalLogicalObjects(item.logicalObject,lookupItems2[i].logicalObject));
+    //                 if (existingIndex===-1){
+    //                     lookupItems.push(lookupItems2[i]);
+    //                 }
+    //             }
+    //         });
+    //         state.links = lookupItems.map((item)=>({ item, parents: [] }));
+    //         return state;
+    //     }
+    //     stack.push(init());
+
+
+    // }
+
+    function logicalObjectAccess2(
+        roots: Readonly<FloughLogicalObjectIF[]>,
+        akey: Readonly<FloughType[]>,
+        // aexpression: Readonly<Expression[]>,
+        // groupNodeToTypeMap: ESMap<Node,Type>,
+    ): Readonly<FloughAccessResult> {
+        if (getMyDebug()) {
+            consoleGroup("logicalObjectAccess[in]");
+            consoleLog(`logicalObjectAccess[in] roots.length: ${roots.length}`);
+            consoleLog(`logicalObjectAccess[in] akey.length: ${akey.length}`);
+            // consoleLog("logicalObjectAccess[in] aexpression: ", aexpression);
+            // consoleLog("logicalObjectAccess[in] groupNodeToTypeMap: ", groupNodeToTypeMap);
+        }
+        const inners = roots.map(r=>floughLogicalObjectModule.getInnerIF(r));
+        const x = floughLogicalObjectInnerModule.logicalObjectAccess(inners,akey);
+        const r: FloughAccessResult = {
+            types: x.finalTypes as FloughType[],
+            [essymbolAccessState]: 0 as any as AccessState,
+            [essymbolAccessState2]: x,
+        };
+        return r;
+    }
+
+    function logicalObjectModify(
+        types: Readonly<(FloughType | undefined)[]>,
+        state: LogicalObjectAccessReturn,
+    ): void {
+        
+    }
+
+
 
     function logicalObjectAccess(
         roots: Readonly<FloughLogicalObjectIF[]>,
@@ -60,8 +155,13 @@ namespace ts {
         // aexpression: Readonly<Expression[]>,
         // groupNodeToTypeMap: ESMap<Node,Type>,
     ): Readonly<FloughAccessResult> {
-        // TODO: make inCondition a parameter
-        //const inCondition = false;
+        if (getMyDebug()) {
+            consoleGroup("logicalObjectAccess[in]");
+            consoleLog(`logicalObjectAccess[in] roots.length: ${roots.length}`);
+            consoleLog(`logicalObjectAccess[in] akey.length: ${akey.length}`);
+            // consoleLog("logicalObjectAccess[in] aexpression: ", aexpression);
+            // consoleLog("logicalObjectAccess[in] groupNodeToTypeMap: ", groupNodeToTypeMap);
+        }
         const stack: LevelState[] = [];
         const nonObjTypeStack: [...(FloughType | undefined)[]] = Array(akey.length);
 
@@ -93,6 +193,8 @@ namespace ts {
         stack.push(init());
 
         let idxInStack = 0;
+        //const lastChildLevel = akey.length-1;
+        const lastParentLevel = akey.length-2; // may be -1
         while (true) {
 
             // if (idxInStack===akey.length){
@@ -101,21 +203,27 @@ namespace ts {
             /**
              * Depth first
              * - first try to go deeper
+             *   Does not descend into
              * - if not possible, go to next link
              * - if not possible, go to parent
              */
-            if (idxInStack<akey.length-1 && idxInStack+1<stack.length && stack[idxInStack+1].linkIndex<stack[idxInStack+1].links.length){
-                idxInStack++;
-                continue;
-            }
-            else if (idxInStack<akey.length-1 && idxInStack<stack.length && stack[idxInStack].linkIndex<stack[idxInStack].links.length){
-                // drop though
-            }
-            else {
-                if (idxInStack===0) break;
-                idxInStack--;
-                continue;
-            }
+            //const nextStackLevelNotYetCreated = (idxInStack+1)===stack.length;
+            if (extraAsserts) Debug.assert(idxInStack+1<=stack.length, "unexpected; idxInStack+1<=stack.length not true");
+            const nextStackLevelNotYetFullfilled = (idxInStack+1)===stack.length || stack[idxInStack+1].linkIndex<stack[idxInStack+1].links.length;
+            //if (idxInStack<=lastParentLevel) {
+                if (idxInStack<lastParentLevel && nextStackLevelNotYetFullfilled){
+                    idxInStack++;
+                    continue;
+                }
+                if (extraAsserts) Debug.assert(idxInStack<stack.length, "unexpected");
+                const thisStackLevelFullfilled = idxInStack===akey.length-1 || stack[idxInStack].linkIndex===stack[idxInStack].links.length;
+                if (thisStackLevelFullfilled){
+                    if (idxInStack===0) break;
+                    idxInStack--;
+                    continue;
+                }
+                // drop through to process at stack[idxInStack].linkIndex
+            //}
 
             const parentState = stack[idxInStack];
             {
@@ -128,6 +236,18 @@ namespace ts {
                 if (nonObjTypeStack[idxInStackPlus1]) floughTypeModule.unionWithFloughTypeMutate(remaining, nonObjTypeStack[idxInStackPlus1]!);
                 else nonObjTypeStack[idxInStackPlus1] = remaining;
 
+                Debug.assert(idxInStack>=0,"unexpected");
+                Debug.assert(idxInStack<=stack.length,"unexpected");
+                if (idxInStack+1===stack.length) stack.push(createLevelState());
+                // const nextstate = stack[idxInStack+1];
+
+                // const nextLogicalObjs: FloughLogicalObjectInnerIF[] = [];
+                // parentItem.arrLogicalObjectBaseOfType?.forEach((lob,_lobidx)=>{
+                //     const existingIndex = nextLogicalObjs.findIndex((nextlobj)=>floughLogicalObjectInnerModule.identicalBaseTypes(lob,nextlobj));
+
+                // });
+
+
                 if (!parentTypeLogicalObject){
                     parentState.linkIndex++;
                     continue;
@@ -138,12 +258,17 @@ namespace ts {
                     parentState.linkIndex++;
                     continue;
                 }
-                if (idxInStack===stack.length) stack.push(createLevelState());
+                Debug.assert(idxInStack>=0,"unexpected");
+                Debug.assert(idxInStack<=stack.length,"unexpected");
+                if (idxInStack+1===stack.length) stack.push(createLevelState());
                 const nextstate = stack[idxInStack+1];
+
+
                 // eslint-disable-next-line @typescript-eslint/prefer-for-of
                 for (let i=0;i<lookupItems.length;i++){
                     // check if logicalItem is already in nextstate.links
                     // "===" should suffice, but just in case
+                    Debug.assert(nextstate, "unexpected");
                     const existingIndex = nextstate.links.findIndex((link)=>floughLogicalObjectModule.identicalLogicalObjects(link.item.logicalObject,lookupItems[i].logicalObject));
                     if (existingIndex===-1){
                         nextstate.links.push({ item: lookupItems[i], parents: [parentState.linkIndex] });
@@ -168,6 +293,34 @@ namespace ts {
         const logicalObjectsForRoot = stack[0].links.map((link)=>link.item.logicalObject);
         Debug.assert(logicalObjectsForRoot.length>0,"unexpected");
         const root = floughLogicalObjectModule.unionOfFloughLogicalObjects(logicalObjectsForRoot);
+        if (getMyDebug()) {
+            stack.forEach((state,level)=>{
+                state.links.forEach((link,idx)=>{
+                    const { logicalObject, key, type, arrLogicalObjectBaseOfType: arrLogicalObjectBase } = link.item;
+                    const logicalObjectStrs = floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObject);
+                    logicalObjectStrs.forEach((str)=>consoleLog(`logicalObjectAccess[stack,${level},${idx}] ${str}`));
+                    consoleLog(`logicalObjectAccess[stack,${level},${idx}] key: ${key?.value ?? "<undef>"}`);
+                    consoleLog(`logicalObjectAccess[stack,${level},${idx}] type: ${dbgsModule.dbgFloughTypeToString(type)}`);
+                    const logicalObjectOfType = floughTypeModule.getLogicalObject(type);
+                    if (!logicalObjectOfType) consoleLog(`logicalObjectAccess[stack,${level},${idx}] type.logicalObject: <undef>`);
+                    else {
+                        floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObjectOfType).forEach((str)=>consoleLog(
+                            `logicalObjectAccess[stack,${level},${idx}] type.logicalObject: ${str}`));
+                    }
+                    if (arrLogicalObjectBase){
+                        arrLogicalObjectBase.forEach((lob,lobidx)=>{
+                            const arrLogicalObjectBaseStrs = floughLogicalObjectInnerModule.dbgLogicalObjectToStrings(lob);
+                            arrLogicalObjectBaseStrs.forEach((str)=>consoleLog(`logicalObjectAccess[stack,${level},${idx}] arrLogicalObjectBase[${lobidx}]: ${str}`));
+                        });
+                    }
+                    else {
+                        consoleLog(`logicalObjectAccess[stack,${level},${idx}] arrLogicalObjectBase: <undef>`);
+                    }
+                }); // just to make sure that the links are not empty
+            });
+            consoleLog("logicalObjectAccess[out]");
+            consoleGroupEnd();
+        }
 
         return {
             types: stack[stack.length-1].links.map((link)=>link.item.type),
@@ -189,6 +342,11 @@ namespace ts {
         const oldInner = floughLogicalObjectModule.getInnerIF(oldobj);
         if (map.has(oldInner)) Debug.fail("unexpected");
         map.set(oldInner,floughLogicalObjectModule.getInnerIF(newobj));
+        if (getMyDebug()) {
+            floughLogicalObjectModule.dbgLogicalObjectToStrings(oldobj).forEach((str)=>consoleLog(`setMap[in] oldobj: ${str}`));
+            floughLogicalObjectModule.dbgLogicalObjectToStrings(newobj).forEach((str)=>consoleLog(`setMap[in] newobj: ${str}`));
+            consoleLog(`setMap[out] map.size: ${map.size}`);
+        }
     }
     // @ ts-expect-error
     type FloughAccessLogicalObjectModifyResultItem = & {
@@ -312,8 +470,8 @@ namespace ts {
                     });
                     logicalObjectMap = nextLogicalObjectMap;
                 } // for (let stackIndex = stack.length-1;stackIndex>=0;stackIndex--)
-                Debug.assert(logicalObjectMap?.size===1,"unexpected, logicalObjectMap?.size!==1");
-                logicalObjectMap.forEach((newLogicalObject,_oldLogicalObject)=>{
+                Debug.assert(!logicalObjectMap || logicalObjectMap.size <=1,"expected !logicalObjectMap || logicalObjectMap.size <=1", ()=>`logicalObjectMap?.size: ${logicalObjectMap?.size}`);
+                logicalObjectMap?.forEach((newLogicalObject,_oldLogicalObject)=>{
                     resultItems.push({
                         rootLogicalObject: floughLogicalObjectModule.createFloughLogicalObjectFromInner(
                             newLogicalObject, floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(root)),
@@ -334,7 +492,7 @@ namespace ts {
        return resultItems;
     } // function logicalObjectModify(accessResult: Readonly<FloughAccessResult>, modifiedTypes: (Readonly<FloughType> | true | undefined)[]): {rootLogicalObject: FloughLogicalObjectIF, type: Readonly<FloughType>}[]
 
-    function getTsTypeInChain(accessResult: Readonly<FloughAccessResult>, index: number): Type {
+    function getTsTypesInChain(accessResult: Readonly<FloughAccessResult>, index: number): Type[] {
         const { stack, nonObjTypeStack } = accessResult[essymbolAccessState];
         const links = stack[index].links;
         const atstype = links.map((link)=>{
@@ -344,7 +502,7 @@ namespace ts {
         });
 
         if (nonObjTypeStack[index]) atstype.push(...floughTypeModule.getTsTypesFromFloughType(nonObjTypeStack[index]!));
-        return checker.getUnionType(atstype);
+        return atstype;
     }
 
 

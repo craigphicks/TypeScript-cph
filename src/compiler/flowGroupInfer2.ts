@@ -274,8 +274,11 @@ namespace ts {
             if ((rtt as any).symbol) as.push(`  symbol: ${dbgSymbolToStringSimple((rtt as any).symbol)},`);
             if ((rtt as any).isconst) as.push(`  isconst: ${(rtt as any).isconst},`);
             if ((rtt as RefTypesTableReturn).isAssign) as.push(`  isAssign: ${(rtt as any).isAssign},`);
-            Debug.assert(rtt.type);
-            as.push(`  type: ${dbgRefTypesTypeToString(rtt.type)}`);
+            if (!rtt.type) as.push(`  type: <undef>, // special access processing`);
+            else {
+                Debug.assert(rtt.type);
+                as.push(`  type: ${dbgRefTypesTypeToString(rtt.type)}`);
+            }
             if (true){
                 if (!rtt.sci.symtab) as.push("  symtab: <undef>");
                 else dbgRefTypesSymtabToStrings(rtt.sci.symtab).forEach((str,i)=>as.push(((i===0)?"  symtab: ":"  ")+str));
@@ -2861,7 +2864,7 @@ namespace ts {
                          * The root type defaults to the symbol declared type.
                          */
                         // TODO: This might be unnecessary.
-                        orTsTypeIntoNodeToTypeMap(getEffectiveDeclaredTsTypeFromSymbol(symbolData.symbol), refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
+                        orTsTypesIntoNodeToTypeMap([getEffectiveDeclaredTsTypeFromSymbol(symbolData.symbol)], refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
 
                         // passing bracnhes
                         const rmodPassing = floughAccessModule.logicalObjectModify(raccess, critTypesPassing);
@@ -2891,10 +2894,10 @@ namespace ts {
                             unmerged.push({ type: ctr, sci:argRttrUnion.sci });
                         });
                         // TODO: This might be unnecessary.
-                        orTsTypeIntoNodeToTypeMap(floughAccessModule.getTsTypeInChain(raccess,0), refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
+                        orTsTypesIntoNodeToTypeMap(floughAccessModule.getTsTypesInChain(raccess,0), refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
                     }
                     for (let i=1; i<refAccessArgs[0].expressions.length; i++){
-                        orTsTypeIntoNodeToTypeMap(floughAccessModule.getTsTypeInChain(raccess,i), refAccessArgs[0].expressions[i], inferStatus.groupNodeToTypeMap);
+                        orTsTypesIntoNodeToTypeMap(floughAccessModule.getTsTypesInChain(raccess,i), refAccessArgs[0].expressions[i], inferStatus.groupNodeToTypeMap);
                     }
 
                 }
