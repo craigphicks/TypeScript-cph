@@ -60,7 +60,10 @@ namespace ts {
         getLiteralStringTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
         hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
-        getAccessKeys(ft: Readonly<FloughType>): { literals?: FloughType, numberAndStringIntrinsics?: FloughType, remaining?: FloughType };
+        getAccessKeysMutable(ft: Readonly<FloughType>): {
+            number?: undefined | true | Set<LiteralTypeNumber>;
+            string?: undefined | true | Set<LiteralTypeString>;
+        };
         splitLogicalObject(ft: Readonly<FloughType>): { logicalObject?: FloughLogicalObjectIF | undefined, remaining: FloughType };
 
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
@@ -244,7 +247,7 @@ namespace ts {
             if (intrinsicStringTypeOnly) return false;
             return true; // returning true even though it is not an intrinsic number type, but a set of literal numbers
         },
-        getAccessKeys,
+        getAccessKeysMutable,
         splitLogicalObject,
         dbgFloughTypeToStrings,
         dbgFloughTypeToString,
@@ -1292,26 +1295,39 @@ namespace ts {
         // return ft ?? ftin;
     }
 
-    function getAccessKeys(ft: Readonly<FloughType>): { literals?: FloughType, numberAndStringIntrinsics?: FloughType, remaining?: FloughType } {
-        castReadonlyFloughTypei(ft);
-        if (ft.any || ft.unknown) return { remaining:ft };
-        let literals: FloughTypei | undefined;
-        let numberAndStringIntrinsics: FloughTypei | undefined;
-        let remaining: FloughTypei | undefined;
-        const ftrem = cloneType(ft);
-        if (ftrem.nobj.string){
-            if (ftrem.nobj.string===true) (numberAndStringIntrinsics ||={ nobj:{} }).nobj.string = true;
-            else (literals||={ nobj:{} }).nobj.string = ftrem.nobj.string;
-            delete ftrem.nobj.string;
-        }
-        if (ftrem.nobj.number){
-            if (ftrem.nobj.number===true) (numberAndStringIntrinsics ||={ nobj:{} }).nobj.number = true;
-            else (literals||={ nobj:{} }).nobj.number = ftrem.nobj.number;
-            delete ftrem.nobj.number;
-        }
-        if (!isNeverType(ftrem)) remaining = ftrem;
-        return { literals, numberAndStringIntrinsics, remaining };
+    function getAccessKeysMutable(ft: Readonly<FloughTypei>): {
+        number?: undefined | true | Set<LiteralTypeNumber>;
+        string?: undefined | true | Set<LiteralTypeString>;
+    } {
+        // TODO: ??? (ft.any||ft.unknown) => {number:true,string:true} ???
+        if (ft.any||ft.unknown) return {};
+        const res: ReturnType<typeof getAccessKeysMutable> = {};
+        if (ft.nobj.number) res.number = (ft.nobj.number===true) ? true : new Set<LiteralTypeNumber>(ft.nobj.number as Set<LiteralTypeNumber>);
+        if (ft.nobj.string) res.string = (ft.nobj.string===true) ? true : new Set<LiteralTypeString>(ft.nobj.number as Set<LiteralTypeString>);
+        return res;
     }
+
+
+    // function getAccessKeys(ft: Readonly<FloughType>): { literals?: FloughType, numberAndStringIntrinsics?: FloughType, remaining?: FloughType } {
+    //     castReadonlyFloughTypei(ft);
+    //     if (ft.any || ft.unknown) return { remaining:ft };
+    //     let literals: FloughTypei | undefined;
+    //     let numberAndStringIntrinsics: FloughTypei | undefined;
+    //     let remaining: FloughTypei | undefined;
+    //     const ftrem = cloneType(ft);
+    //     if (ftrem.nobj.string){
+    //         if (ftrem.nobj.string===true) (numberAndStringIntrinsics ||={ nobj:{} }).nobj.string = true;
+    //         else (literals||={ nobj:{} }).nobj.string = ftrem.nobj.string;
+    //         delete ftrem.nobj.string;
+    //     }
+    //     if (ftrem.nobj.number){
+    //         if (ftrem.nobj.number===true) (numberAndStringIntrinsics ||={ nobj:{} }).nobj.number = true;
+    //         else (literals||={ nobj:{} }).nobj.number = ftrem.nobj.number;
+    //         delete ftrem.nobj.number;
+    //     }
+    //     if (!isNeverType(ftrem)) remaining = ftrem;
+    //     return { literals, numberAndStringIntrinsics, remaining };
+    // }
 
     function splitLogicalObject(ft: Readonly<FloughTypei>): { logicalObject?: FloughLogicalObjectIF | undefined, remaining: FloughTypei } {
         castReadonlyFloughTypei(ft);

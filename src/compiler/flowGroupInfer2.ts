@@ -2834,17 +2834,16 @@ namespace ts {
                         Debug.fail("not yet implemented, multiple disparate symbols (or lack of) for access roots");
                     }
 
-                    const raccess = floughAccessModule.logicalObjectAccess(
+                    const raccess = floughLogicalObjectModule.logicalObjectAccess(
                         refAccessArgs[0].roots.map(r=>r.logicalObject),
-                        refAccessArgs[0].keyTypes,
-                        refAccessArgs[0].expressions,
-                        inferStatus.groupNodeToTypeMap);
+                        refAccessArgs[0].keyTypes);
 
                     const critTypesPassing: CritToTypeV2Result[] = [];
                     let critTypesFailing: CritToTypeV2Result[] | undefined;
+                    const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getTypesFromLogicalObjectAccessReturn(raccess);
                     if (crit.kind!==InferCritKind.none){
                         critTypesFailing = crit.alsoFailing ? [] : undefined;
-                        raccess.types.forEach(t0=>{
+                        finalTypes.forEach(t0=>{
                             const { pass, fail } = applyCritToTypeV2(t0,crit);
                             critTypesPassing.push(pass);
                             if (fail) critTypesFailing!.push(fail);
@@ -2854,7 +2853,7 @@ namespace ts {
                         /**
                          * If there is no symbol data we could optimize here by pushing directly to unmerged.
                          */
-                        for (let i=0; i<raccess.types.length; ++i){
+                        for (let i=0; i<finalTypes.length; ++i){
                             critTypesPassing.push(true);
                         }
                     }
@@ -2867,7 +2866,7 @@ namespace ts {
                         orTsTypesIntoNodeToTypeMap([getEffectiveDeclaredTsTypeFromSymbol(symbolData.symbol)], refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
 
                         // passing bracnhes
-                        const rmodPassing = floughAccessModule.logicalObjectModify(raccess, critTypesPassing);
+                        const rmodPassing = floughLogicalObjectModule.logicalObjectModify(critTypesPassing, raccess);
                         rmodPassing.forEach(x=>{
                             // if (symbolData){
                             const sci = copyRefTypesSymtabConstraintItem(argRttrUnion.sci);
@@ -2877,7 +2876,7 @@ namespace ts {
                         });
                         // failing bracnhes
                         if (critTypesFailing) {
-                            const rmodFailing = floughAccessModule.logicalObjectModify(raccess, critTypesFailing);
+                            const rmodFailing = floughLogicalObjectModule.logicalObjectModify(critTypesFailing, raccess);
                             rmodFailing.forEach(x=>{
                                 // if (symbolData){
                                 const sci = copyRefTypesSymtabConstraintItem(argRttrUnion.sci);
@@ -2890,14 +2889,17 @@ namespace ts {
                     else {
                         critTypesPassing.forEach((ctr,i)=>{
                             if (!ctr) return;
-                            if (ctr===true) ctr = raccess.types[i];
+                            if (ctr===true) ctr = finalTypes[i];
                             unmerged.push({ type: ctr, sci:argRttrUnion.sci });
                         });
                         // TODO: This might be unnecessary.
-                        orTsTypesIntoNodeToTypeMap(floughAccessModule.getTsTypesInChain(raccess,0), refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
+                        //orTsTypesIntoNodeToTypeMap(floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess,0), refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
                     }
-                    for (let i=1; i<refAccessArgs[0].expressions.length; i++){
-                        orTsTypesIntoNodeToTypeMap(floughAccessModule.getTsTypesInChain(raccess,i), refAccessArgs[0].expressions[i], inferStatus.groupNodeToTypeMap);
+                    {
+                        // Note: this does not include the rightmost expression of the chain
+                        floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess,0).forEach((atstype,idx)=>{
+                            orTsTypesIntoNodeToTypeMap(atstype, refAccessArgs![0].expressions[idx], inferStatus.groupNodeToTypeMap);
+                        });
                     }
 
                 }
