@@ -161,14 +161,15 @@ namespace ts {
      * 'roots' and 'keyTypes' may therefore be different lengths.
      * 'expressions' are the nodes corresponding to the access chain objects, and are the same length as 'keyTypes'.
      */
-    export type AccessArgsRoot = & {
-        logicalObject: FloughLogicalObjectIF,
-        symbolData?: {
-            symbol: Symbol,
-            isconst?: boolean | undefined,
-            isAssign?: boolean | undefined,
-        };
-    };
+    export type AccessArgsRoot = RefTypesTableReturn;
+    //     export type AccessArgsRoot = & {
+    //     type: FloughType,
+    //     symbolData?: {
+    //         symbol: Symbol,
+    //         isconst?: boolean | undefined,
+    //         isAssign?: boolean | undefined,
+    //     };
+    // };
     export type AccessArgs = & {
         roots: AccessArgsRoot[] | undefined;
         keyTypes: FloughType[];

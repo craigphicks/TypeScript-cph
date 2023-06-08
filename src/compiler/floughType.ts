@@ -359,6 +359,8 @@ namespace ts {
     }
 
     function getTsTypeFromFloughType(ft: Readonly<FloughTypei>): Type {
+        if (!ft) Debug.fail("getTsTypeFromFloughType: ft is undefined");
+        if (!ft.nobj) Debug.fail("getTsTypeFromFloughType: ft.nobj is undefined");
         if (ft.any) return checker.getAnyType();
         if (ft.unknown) return checker.getUnknownType();
         const at = getTsTypesFromFloughTypeNobj(ft.nobj);

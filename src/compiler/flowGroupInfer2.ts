@@ -2754,62 +2754,61 @@ namespace ts {
                     expr:expression, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
                     sci, accessDepth: accessDepth+1, refAccessArgs,
                 });
-                let leftSci: RefTypesSymtabConstraintItem = sci; // naughty!!!
+                const leftSci: RefTypesSymtabConstraintItem = sci; // naughty!!!
                 const type: FloughType = undefined as any as FloughType; // naughty!!!
                 if (!refAccessArgs[0].roots) {
-                    refAccessArgs[0].roots = [];
-                    // the return result in leftMntr is the root of the access chain
-                    const leftLogicalObjects: FloughLogicalObjectIF[]=[];
-                    const leftNonLogicalObjects: FloughType[]=[];
-                    const leftScis: RefTypesSymtabConstraintItem[]=[];
-                    leftMntr.unmerged.forEach(leftRttr=>{
-                        Debug.assert(leftRttr.sci.symtab);
-                        const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(leftRttr.type);
-                        if (remaining) leftNonLogicalObjects.push(remaining);
-                        if (logicalObject) {
-                            leftLogicalObjects.push(logicalObject);
-                            if (leftRttr.symbol){
-                                if (extraAsserts){
-                                    if (leftRttr.sci.symtab.has(leftRttr.symbol)){
-                                        // confirm that the symbol new value is a subset of old value, i.e., only narrowing.
-                                    }
-                                }
-                                leftRttr.sci.symtab = copyRefTypesSymtab(leftRttr.sci.symtab).set(leftRttr.symbol,floughTypeModule.createTypeFromLogicalObject(logicalObject));
-                            }
-                        }
-                        if (logicalObject) {
-                            leftScis.push(leftRttr.sci);
-                            const accessArgsRoot: AccessArgsRoot = {
-                                logicalObject,
-                            };
-                            if (leftRttr.symbol) {
-                                accessArgsRoot.symbolData = {
-                                    symbol:leftRttr.symbol,
-                                    isconst: leftRttr.isconst,
-                                    isAssign: leftRttr.isAssign,
-                                };
-                            }
-                            refAccessArgs![0].roots!.push(accessArgsRoot);
-                        }
-                    });
-                    leftSci = orSymtabConstraints(leftScis, mrNarrow);
-                    /**
-                     * The nonobjects are being filtered out, but they must be written to groupNodeToTypeMap in order to be by checker type checking.
-                     */
-                    if (leftNonLogicalObjects.length){
-                        const u = floughTypeModule.unionOfRefTypesType(leftNonLogicalObjects);
-                        orIntoNodeToTypeMap(u,expression,inferStatus.groupNodeToTypeMap);
-                    }
-
-                    /** gets done inside access  */
-                    // let leftLogicalObject: FloughLogicalObjectIF | undefined;
-                    // if (leftLogicalObjects.length===1) leftLogicalObject = leftLogicalObjects[0];
-                    // else if (leftLogicalObjects.length>1) {
-                    //     leftLogicalObject = floughLogicalObjectModule.unionOfFloughLogicalObjects(leftLogicalObjects) as FloughLogicalObjectIF;
+                    // const xxx = true;
+                    // if (xxx) {
+                        refAccessArgs[0].roots = leftMntr.unmerged as RefTypesTable[];
+                        // .map(leftRttr=>({
+                        //     type:leftRttr.type,
+                        //     ...leftRttr.symbol ?  { symbolData: { symbol:leftRttr.symbol, isconst: leftRttr.isconst, isAssign: leftRttr.isAssign } } : undefined
+                        // }));
                     // }
-                    // if (leftLogicalObject) {
-                    //     const tsobjtype = floughLogicalObjectModule.getTsTypeFromFloughLogicalObject(leftLogicalObject);
-                    //     orTsTypeIntoNodeToTypeMap(tsobjtype,expression,inferStatus.groupNodeToTypeMap);
+                    // else {
+                    //     refAccessArgs[0].roots = [];
+                    //     // the return result in leftMntr is the root of the access chain
+                    //     const leftLogicalObjects: FloughLogicalObjectIF[]=[];
+                    //     const leftNonLogicalObjects: FloughType[]=[];
+                    //     const leftScis: RefTypesSymtabConstraintItem[]=[];
+                    //     leftMntr.unmerged.forEach(leftRttr=>{
+                    //         Debug.assert(leftRttr.sci.symtab);
+                    //         const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(leftRttr.type);
+                    //         if (remaining) leftNonLogicalObjects.push(remaining);
+                    //         if (logicalObject) {
+                    //             leftLogicalObjects.push(logicalObject);
+                    //             if (leftRttr.symbol){
+                    //                 if (extraAsserts){
+                    //                     if (leftRttr.sci.symtab.has(leftRttr.symbol)){
+                    //                         // confirm that the symbol new value is a subset of old value, i.e., only narrowing.
+                    //                     }
+                    //                 }
+                    //                 leftRttr.sci.symtab = copyRefTypesSymtab(leftRttr.sci.symtab).set(leftRttr.symbol,floughTypeModule.createTypeFromLogicalObject(logicalObject));
+                    //             }
+                    //         }
+                    //         if (logicalObject) {
+                    //             leftScis.push(leftRttr.sci);
+                    //             const accessArgsRoot: AccessArgsRoot = {
+                    //                 logicalObject,
+                    //             };
+                    //             if (leftRttr.symbol) {
+                    //                 accessArgsRoot.symbolData = {
+                    //                     symbol:leftRttr.symbol,
+                    //                     isconst: leftRttr.isconst,
+                    //                     isAssign: leftRttr.isAssign,
+                    //                 };
+                    //             }
+                    //             refAccessArgs![0].roots!.push(accessArgsRoot);
+                    //         }
+                    //     });
+                    //     leftSci = orSymtabConstraints(leftScis, mrNarrow);
+                    //     /**
+                    //      * The nonobjects are being filtered out, but they must be written to groupNodeToTypeMap in order to be by checker type checking.
+                    //      */
+                    //     if (leftNonLogicalObjects.length){
+                    //         const u = floughTypeModule.unionOfRefTypesType(leftNonLogicalObjects);
+                    //         orIntoNodeToTypeMap(u,expression,inferStatus.groupNodeToTypeMap);
+                    //     }
                     // }
 
                 }
@@ -2825,17 +2824,22 @@ namespace ts {
                 refAccessArgs[0].expressions.push(expression);
 
                 if (accessDepth===0){
-                    let allSymbolsSame = true;
-                    const symbolData = refAccessArgs[0].roots.reduce((accumulator,current)=>{
-                        if (current.symbolData?.symbol!==accumulator?.symbol) allSymbolsSame = false;
-                        return accumulator;
-                    },refAccessArgs[0].roots[0].symbolData);
+                    assertCastType<AccessArgsRoot[]>(refAccessArgs[0].roots);
+                    const allSymbolsSame = refAccessArgs[0].roots.length < 2 || refAccessArgs[0].roots.every(r=>{
+                        assertCastType<AccessArgs[]>(refAccessArgs);
+                        assertCastType<AccessArgsRoot[]>(refAccessArgs[0].roots);
+                        return r.symbol===refAccessArgs[0].roots[0].symbol;
+                    });
+                    // const symbolData = refAccessArgs[0].roots.reduce((accumulator,current)=>{
+                    //     if (current.symbolData?.symbol!==accumulator?.symbol) allSymbolsSame = false;
+                    //     return accumulator;
+                    // },refAccessArgs[0].roots[0].symbolData);
                     if (!allSymbolsSame){
                         Debug.fail("not yet implemented, multiple disparate symbols (or lack of) for access roots");
                     }
 
                     const raccess = floughLogicalObjectModule.logicalObjectAccess(
-                        refAccessArgs[0].roots.map(r=>r.logicalObject),
+                        refAccessArgs[0].roots.map(r=>r.type),
                         refAccessArgs[0].keyTypes);
 
                     const critTypesPassing: CritToTypeV2Result[] = [];
@@ -2854,16 +2858,17 @@ namespace ts {
                          * If there is no symbol data we could optimize here by pushing directly to unmerged.
                          */
                         for (let i=0; i<finalTypes.length; ++i){
-                            critTypesPassing.push(true);
+                            critTypesPassing.push(/*true*/ finalTypes[i]);
                         }
                     }
 
-                    if (symbolData){
+                    if (refAccessArgs[0].roots[0].symbol){
+                        const symbol = refAccessArgs[0].roots[0].symbol;
                         /**
                          * The root type defaults to the symbol declared type.
                          */
                         // TODO: This might be unnecessary.
-                        orTsTypesIntoNodeToTypeMap([getEffectiveDeclaredTsTypeFromSymbol(symbolData.symbol)], refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
+                        orTsTypesIntoNodeToTypeMap([getEffectiveDeclaredTsTypeFromSymbol(symbol)], refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
 
                         // passing bracnhes
                         const rmodPassing = floughLogicalObjectModule.logicalObjectModify(critTypesPassing, raccess);
@@ -2871,7 +2876,7 @@ namespace ts {
                             // if (symbolData){
                             const sci = copyRefTypesSymtabConstraintItem(argRttrUnion.sci);
                             sci.symtab!.set(
-                                symbolData.symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
+                                symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
                             unmerged.push({ type:x.type, sci });
                         });
                         // failing bracnhes
@@ -2881,7 +2886,7 @@ namespace ts {
                                 // if (symbolData){
                                 const sci = copyRefTypesSymtabConstraintItem(argRttrUnion.sci);
                                 sci.symtab!.set(
-                                    symbolData.symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
+                                    symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
                                 unmerged.push({ type:x.type, sci });
                             });
                         }

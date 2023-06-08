@@ -16,7 +16,7 @@ namespace ts {
         };
     }
 
-    export type CritToTypeV2Result = FloughType | true | undefined;
+    export type CritToTypeV2Result = FloughType | /*true |*/ undefined;
     export function applyCritToTypeV2(rt: Readonly<FloughType>,crit: Readonly<InferCrit>): {pass: CritToTypeV2Result, fail?: CritToTypeV2Result } {
         //const crit = critIn;
         const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(rt);
@@ -26,7 +26,10 @@ namespace ts {
             if (crit.kind===InferCritKind.truthy) {
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
                 const arrpass: Type[] = arrtstype.filter(t=>!(checker.getTypeFacts(t)&pfacts));
-                if (arrpass.length===arrtstype.length) return true;
+                if (arrpass.length===arrtstype.length) {
+                    return rt; // no change,
+                    //return true; // not using the "true" optimization, because it is not clear if it is worth it
+                }
                 else if (arrpass.length===0) return logicalObject ? floughTypeModule.createTypeFromLogicalObject(logicalObject) : undefined;
                 else return floughTypeModule.createFromTsTypes(arrpass, logicalObject);
             }

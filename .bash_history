@@ -217,3 +217,22 @@ myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-02" 
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-030" 
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-030" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-030" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-020" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-020" -i
+. cleantmp.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-020" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-020" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-020"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-020"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-020"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-020"  
+node meldlocal.js 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-02"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-030"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-030"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-030"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-030"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-02"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-030"  
+gulp baseline-accept

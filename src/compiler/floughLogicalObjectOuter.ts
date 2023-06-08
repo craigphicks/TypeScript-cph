@@ -2,14 +2,14 @@ namespace ts {
 
     export type DiscriminantFn = (type: Readonly<FloughType>) => FloughType | true | undefined; // true means type doesn't change, undefined means type becomes never, else become FloughType
     const essymbolfloughLogicalObjectOuter = Symbol("floughLogicalObjectIF");
-    export interface FloughLogicalObjectIF {[essymbolfloughLogicalObjectOuter]?: void};
+    export interface FloughLogicalObjectIF {[essymbolfloughLogicalObjectOuter]: true};
 
     let nextLogicalObjectOuterId = 1;
     interface FloughLogicalObjectOuter {
         inner: FloughLogicalObjectInnerIF;
         effectiveDeclaredTsType?: Type; // should be stripped of primitive types, and only have object and operator types.
         id: number;
-        [essymbolfloughLogicalObjectOuter]?: void
+        [essymbolfloughLogicalObjectOuter]: true
     };
 
     export interface FloughLogicalObjectModule {
@@ -31,13 +31,13 @@ namespace ts {
         // ): void;
         getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type;
         identicalLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): boolean;
-        replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectIF;
+        //replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectIF;
         // replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, oldToNewLogicalObjectMap: Readonly<OldToNewLogicalObjectMap>): { logicalObject: FloughLogicalObjectIF, type: FloughType } | undefined;
         getInnerIF(logicalObject: Readonly<FloughLogicalObjectIF>): Readonly<FloughLogicalObjectInnerIF>;
         createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType: Type | undefined): FloughLogicalObjectIF;
         //getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF>): Type;
         logicalObjectAccess(
-            roots: Readonly<FloughLogicalObjectIF[]>,
+            roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
         ): LogicalObjectAccessReturn;
         getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>;
@@ -63,7 +63,7 @@ namespace ts {
         //logicalObjectForEachTypeOfPropertyLookup,
         getEffectiveDeclaredTsTypeFromLogicalObject,
         identicalLogicalObjects,
-        replaceTypeAtKey,
+        //replaceTypeAtKey,
         // replaceLogicalObjectsOfTypeAtKey,
         getInnerIF(logicalObject: Readonly<FloughLogicalObjectIF>){
             return (logicalObject as FloughLogicalObjectOuter).inner;
@@ -71,10 +71,10 @@ namespace ts {
         createFloughLogicalObjectFromInner,
         //getTypeFromAssumedBaseLogicalObject,
         logicalObjectAccess(
-            roots: Readonly<FloughLogicalObjectIF[]>,
+            roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
         ): LogicalObjectAccessReturn {
-            return floughLogicalObjectInnerModule.logicalObjectAccess(roots.map(x=>(x as FloughLogicalObjectOuter).inner), akey);
+            return floughLogicalObjectInnerModule.logicalObjectAccess(roots, akey);
         },
         getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>{
             return floughLogicalObjectInnerModule.getTypesFromLogicalObjectAccessReturn(loar);
@@ -104,21 +104,25 @@ namespace ts {
         return {
             inner: floughLogicalObjectInnerModule.createFloughLogicalObjectPlain(tstype),
             id: nextLogicalObjectOuterId++,
+            [essymbolfloughLogicalObjectOuter]: true,
         };
     }
     function createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectOuter[]>): FloughLogicalObjectOuter {
         return { inner: floughLogicalObjectInnerModule.createFloughLogicalObjectTsunion(unionType, items.map(x=>x.inner)),
             id: nextLogicalObjectOuterId++,
+            [essymbolfloughLogicalObjectOuter]: true,
         };
     }
     function createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectOuter[]>): FloughLogicalObjectOuter {
         return { inner: floughLogicalObjectInnerModule.createFloughLogicalObjectTsintersection(intersectionType, items.map(x=>x.inner)),
             id: nextLogicalObjectOuterId++,
+            [essymbolfloughLogicalObjectOuter]: true,
         };
     }
     function createFloughLogicalObject(tsType: Type): FloughLogicalObjectOuter {
         return { inner: floughLogicalObjectInnerModule.createFloughLogicalObject(tsType),
             id: nextLogicalObjectOuterId++,
+            [essymbolfloughLogicalObjectOuter]: true,
         };
     }
     function intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter | undefined {
@@ -135,6 +139,7 @@ namespace ts {
         const ret: FloughLogicalObjectOuter = {
             inner: floughLogicalObjectInnerModule.unionOfFloughLogicalObject(a.inner, b.inner),
             id: nextLogicalObjectOuterId++,
+            [essymbolfloughLogicalObjectOuter]: true,
         };
         if (a.effectiveDeclaredTsType && a.effectiveDeclaredTsType===b.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = a.effectiveDeclaredTsType;
         // TODO: The variations, and possibly the effective declared type.
@@ -149,7 +154,7 @@ namespace ts {
         const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
         if (inner === undefined) return undefined;
         const ret: FloughLogicalObjectOuter = {
-            inner, id: nextLogicalObjectOuterId++,
+            inner, id: nextLogicalObjectOuterId++, [essymbolfloughLogicalObjectOuter]: true,
         };
         if (logicalObject.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = logicalObject.effectiveDeclaredTsType;
         // TODO: The variations, and possibly the effective declared type.
@@ -159,6 +164,7 @@ namespace ts {
         const inner = floughLogicalObjectInnerModule.differenceOfFloughLogicalObject(minuend.inner, subtrahend.inner);
         const ret: FloughLogicalObjectOuter = {
             inner, id: nextLogicalObjectOuterId++,
+            [essymbolfloughLogicalObjectOuter]: true,
         };
         if (minuend.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = minuend.effectiveDeclaredTsType;
         // TODO: The variations, and possibly the effective declared type.
@@ -225,10 +231,10 @@ namespace ts {
     // }
 
 
-    function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectOuter>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectOuter {
-        const inner = floughLogicalObjectInnerModule.replaceTypeAtKey(logicalObject.inner, key, modifiedType);
-        return { ...logicalObject, inner, id: nextLogicalObjectOuterId++ };
-    }
+    // function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectOuter>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectOuter {
+    //     const inner = floughLogicalObjectInnerModule.replaceTypeAtKey(logicalObject.inner, key, modifiedType);
+    //     return { ...logicalObject, inner, id: nextLogicalObjectOuterId++ };
+    // }
     // function replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectOuter>, key: LiteralType, oldToNewLogicalObjectMap: Readonly<OldToNewLogicalObjectMap>): { logicalObject: FloughLogicalObjectOuter, type: FloughType } | undefined {
     //     const type = floughLogicalObjectInnerModule.getTypeAtIndexFromBase(logicalObject.inner, key);
     //     const logicalObjectOfType = floughTypeModule.getLogicalObject(type) as FloughLogicalObjectOuter;
@@ -242,7 +248,9 @@ namespace ts {
     // }
 
     function createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType: Type | undefined): FloughLogicalObjectOuter {
-        return { inner, id: nextLogicalObjectOuterId++, effectiveDeclaredTsType: edType };
+        return { inner, id: nextLogicalObjectOuterId++, effectiveDeclaredTsType: edType,
+            [essymbolfloughLogicalObjectOuter]: true,
+        };
     }
 
     // function getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectOuter>): Type {
