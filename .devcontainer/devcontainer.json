@@ -15,10 +15,11 @@
                 }
             },
             "extensions": [
-                "dbaeumer.vscode-eslint",
-                "GitHub.copilot",
-                "alefragnani.Bookmarks"
-            ]
+				"dbaeumer.vscode-eslint",
+				"GitHub.copilot",
+				"alefragnani.Bookmarks",
+				"ms-azuretools.vscode-docker"
+			]
         }
     }
 }

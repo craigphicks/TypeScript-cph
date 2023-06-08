@@ -10,3 +10,6 @@ let x: readonly[[boolean]] = [[c]];
 if (x[0][0]) {
     x[0][0];
 }
+else x[0][0];
+
+x[0][0];
