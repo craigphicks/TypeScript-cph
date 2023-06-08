@@ -1253,48 +1253,28 @@ namespace ts {
     function widenTypeByEffectiveDeclaredType(ftin: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType {
         castReadonlyFloughTypei(ftin);
         if (isAnyType(ftin) || isUnknownType(ftin)) return ftin;
-        //let ft: FloughTypei | undefined; // = cloneType(ftin);
-        // const fn1 = (k: "string" | "number" | "bigint"): void => {
-        //     if (ftin.nobj[k] && ftin.nobj[k]!==true) {
-        //         if (ft===undefined) ft = cloneType(ftin);
-        //         ft.nobj[k]=true;
-        //     }
-        // };
 
-        if (!compilerOptions.floughDoNotWidenNonObject){
-            const ft = createFromTsType(effectiveDeclaredTsType);
-            floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject!, effectiveDeclaredTsType);
-            return ft;
-        }
-        else {
-            const logicalObject = ftin.logicalObject;
-            if (!logicalObject) return ftin;
-            return {
-                ...ftin,
-                logicalObject: floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject, effectiveDeclaredTsType)
-            };
-        }
         // if (!compilerOptions.floughDoNotWidenNonObject){
-        //     fn1("string");
-        //     fn1("number");
-        //     fn1("bigint");
-        //     if (ftin.nobj.boolFalse !== ftin.nobj.boolTrue) {
-        //         if (ft===undefined) ft = cloneType(ftin);
-        //         ft.nobj.boolFalse = true;
-        //         ft.nobj.boolTrue = true;
-        //     }
+        const ft = createFromTsType(effectiveDeclaredTsType);
+        if (floughTypeModule.hasLogicalObject(ftin)) {
+            const edObjTypes: ObjectType[] = [];
+            checker.forEachType(effectiveDeclaredTsType, (t)=>{
+                if (t.flags & TypeFlags.Object) edObjTypes.push(t as ObjectType);
+            });
+            Debug.assert(edObjTypes.length>0);
+            const edType = checker.getUnionType(edObjTypes);
+            floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject!, edType);
+        }
+        return ft;
         // }
-        // if (ftin.logicalObject){
-        //     if (compilerOptions.floughDoNotWidenLogicalObject){
-        //         if (ft===undefined) ft = cloneType(ftin);
-        //         ft.logicalObject = modifyFloughLogicalObjectEffectiveDeclaredType(ftin.logicalObject, effectiveDeclaredTsType, { doNotWidenPropertyTypes:true });
-        //     }
-        //     else {
-        //         if (ft===undefined) ft = cloneType(ftin);
-        //         ft.logicalObject = createFloughLogicalObject(effectiveDeclaredTsType);
-        //     }
+        // else {
+        //     const logicalObject = ftin.logicalObject;
+        //     if (!logicalObject) return ftin;
+        //     return {
+        //         ...ftin,
+        //         logicalObject: floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject, effectiveDeclaredTsType)
+        //     };
         // }
-        // return ft ?? ftin;
     }
 
     function getAccessKeysMutable(ft: Readonly<FloughTypei>): {
@@ -1310,26 +1290,6 @@ namespace ts {
     }
 
 
-    // function getAccessKeys(ft: Readonly<FloughType>): { literals?: FloughType, numberAndStringIntrinsics?: FloughType, remaining?: FloughType } {
-    //     castReadonlyFloughTypei(ft);
-    //     if (ft.any || ft.unknown) return { remaining:ft };
-    //     let literals: FloughTypei | undefined;
-    //     let numberAndStringIntrinsics: FloughTypei | undefined;
-    //     let remaining: FloughTypei | undefined;
-    //     const ftrem = cloneType(ft);
-    //     if (ftrem.nobj.string){
-    //         if (ftrem.nobj.string===true) (numberAndStringIntrinsics ||={ nobj:{} }).nobj.string = true;
-    //         else (literals||={ nobj:{} }).nobj.string = ftrem.nobj.string;
-    //         delete ftrem.nobj.string;
-    //     }
-    //     if (ftrem.nobj.number){
-    //         if (ftrem.nobj.number===true) (numberAndStringIntrinsics ||={ nobj:{} }).nobj.number = true;
-    //         else (literals||={ nobj:{} }).nobj.number = ftrem.nobj.number;
-    //         delete ftrem.nobj.number;
-    //     }
-    //     if (!isNeverType(ftrem)) remaining = ftrem;
-    //     return { literals, numberAndStringIntrinsics, remaining };
-    // }
 
     function splitLogicalObject(ft: Readonly<FloughTypei>): { logicalObject?: FloughLogicalObjectIF | undefined, remaining: FloughTypei } {
         castReadonlyFloughTypei(ft);

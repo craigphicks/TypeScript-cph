@@ -314,88 +314,11 @@ namespace ts {
             return [tstype];
         }
 
-        function widenDeclarationOrAssignmentRhs(rawRhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>,
-            /*options: {floughDoNotWidenInitalizedFlowType?: boolean}*/): RefTypesType {
-            //let type = rawRhsType;
-
+        function widenDeclarationOrAssignmentRhs(rawRhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>,): RefTypesType {
             // TODO: should be no TypeFlags.EnumLiteral.
             if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & (TypeFlags.EnumLiteral | TypeFlags.Literal)) return rawRhsType;
-
+            if (compilerOptions.floughDoNotWidenInitalizedFlowType) return rawRhsType;
             return floughTypeModule.widenTypeByEffectiveDeclaredType(rawRhsType, lhsSymbolFlowInfo.effectiveDeclaredTsType);
-                //{ floughDoNotWidenNonObject: options.floughDoNotWidenInitalizedFlowType, floughDoNotWidenObject: true });
-
-            // if (enableMapReplayedObjectTypesToSymbolFlowInfoTypes && floughTypeModule.hasLogicalObject(rawRhsType)){
-            //     type = floughTypeModule.modifyFloughTypeObjectEffectiveDeclaredType(type, lhsSymbolFlowInfo.effectiveDeclaredTsType);
-            // }
-            // if (options.floughDoNotWidenInitalizedFlowType) return type;
-            // const atypeMaybeWidened: Type[] = [];
-            // let someWidened = false;
-            // floughTypeModule.forEachNonObjectTsType(rawRhsType, tstype=>{
-            //     /**
-            //      * In case of tstype is Object, and when the lhsSymbolFlowInfo.effectiveTsType is the, or a union of, "canonical" types,
-            //      * then, for each "canonical" type, we use checker.isTypeRelatedTo to detect if tstype is assignable to that "canonical" type,
-            //      * and if so, push that "canonical" type onto atypeMaybeWidened, setting someWidened=true.
-            //      * If there was no match to any canonical type, instead tstype onto atypeMaybeWidened without setting someWidened - that
-            //      * might correspond to an error at the checkExpression level but it doesn't matter here.
-            //      */
-            //     if (tstype.flags & (TypeFlags.Object | TypeFlags.Union | TypeFlags.Intersection) {
-            //         Debug.fail("unexpected");
-            //     }
-            //     if (tstype.flags & TypeFlags.Object && !isArrayOrTupleType(tstype)){
-            //         let someMatch = false;
-            //         if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & TypeFlags.Union){
-            //             (lhsSymbolFlowInfo.effectiveDeclaredTsType as UnionType).types.forEach(declaredType=>{
-            //                 if (checker.isTypeAssignableTo(tstype,declaredType)) {
-            //                     atypeMaybeWidened.push(declaredType);
-            //                     someWidened = true;
-            //                     someMatch = true;
-            //                 }
-            //             });
-            //         }
-            //         else {
-            //             if (checker.isTypeAssignableTo(tstype,lhsSymbolFlowInfo.effectiveDeclaredTsType)) {
-            //                 atypeMaybeWidened.push(lhsSymbolFlowInfo.effectiveDeclaredTsType);
-            //                 someWidened = true;
-            //                 someMatch = true;
-            //             }
-            //         }
-            //         if (!someMatch){
-            //             atypeMaybeWidened.push(tstype);
-            //         }
-            //         return;
-            //     }
-
-            //     // if (options.floughDoNotWidenInitalizedFlowType){
-            //     //     atypeMaybeWidened.push(tstype);
-            //     //     return;
-            //     // }
-            //     if (!(tstype.flags & (TypeFlags.Literal | TypeFlags.BooleanLiteral))) {
-            //         atypeMaybeWidened.push(tstype);
-            //         return;
-            //     }
-            //     const matchesDeclaredTypeRegularType = (declaredTsType: Type): boolean =>{
-            //         return ((declaredTsType as any).regularType
-            //             && (declaredTsType as any).regularType===(tstype as any).regularType);
-            //     };
-            //     if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & TypeFlags.Union){
-            //         if ((lhsSymbolFlowInfo.effectiveDeclaredTsType as UnionType).types.some(dt=>matchesDeclaredTypeRegularType(dt))){
-            //             atypeMaybeWidened.push(tstype);
-            //             return;
-            //         }
-            //     }
-            //     else {
-            //         if (matchesDeclaredTypeRegularType(lhsSymbolFlowInfo.effectiveDeclaredTsType)) {
-            //             atypeMaybeWidened.push(tstype);
-            //             return;
-            //         }
-            //     }
-            //     // Why is the rhsExpr required as an argument to widenTypeInferredFromInitializer?  Can it not be done from type alone? (JSDoc?)
-            //     //atypeMaybeWidened.push(checker.widenTypeInferredFromInitializer(rhsExpr,checker.getFreshTypeOfLiteralType(tstype)));
-            //     atypeMaybeWidened.push(...widenLiteralOrBoolean(tstype));
-            //     someWidened = true;
-            // });
-            // if (someWidened) return floughTypeModule.createRefTypesType(atypeMaybeWidened);
-            // return rawRhsType;
         }
 
 
@@ -1148,9 +1071,6 @@ namespace ts {
                                 if (narrowerTypeOut &&floughTypeModule.isNeverType(narrowerTypeOut)) return;
                                 rttr = applyCritNoneToOne({ ...rttr,type:narrowerTypeOut??rttr.type },expr,/**/ undefined); // don't write here because the original symbol is from replay.
                                 const type = narrowerTypeOut ?? rttr.type;
-                                // After replay, the type must be widened just as if it were a variable declaration or assignment.
-                                // TODO: move this to the top of the block
-                                    //{ floughDoNotWidenInitalizedFlowType: compilerOptions.floughDoNotWidenInitalizedFlowType });
                                 unmerged.push({
                                     ...rttr,
                                     symbol,
@@ -2285,8 +2205,6 @@ namespace ts {
                         debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                     }
                     const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
-                    // const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo,
-                    //     { floughDoNotWidenInitalizedFlowType:compilerOptions.floughDoNotWidenInitalizedFlowType });
                     return { unmerged: [{
                         ...passing,
                         type: rhsType,
@@ -2312,8 +2230,6 @@ namespace ts {
                         const lhsSymbolFlowInfo = _mrState.symbolFlowInfoMap.get(lhsSymbol);
                         Debug.assert(lhsSymbolFlowInfo);
                         const rhsType = widenDeclarationOrAssignmentRhs(rhsUnion.type,lhsSymbolFlowInfo);
-                        // const rhsType = widenDeclarationOrAssignmentRhs(rhsUnion.type,lhsSymbolFlowInfo,
-                        //     { floughDoNotWidenInitalizedFlowType:compilerOptions.floughDoNotWidenInitalizedFlowType });
                         unmerged.push({
                             ...lhsRttr,
                             type: rhsType,
