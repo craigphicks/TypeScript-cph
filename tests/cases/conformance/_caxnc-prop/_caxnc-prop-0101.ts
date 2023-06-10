@@ -12,6 +12,7 @@ declare type X = {
 declare const x:X;
 
 function prop0001(){
+    // @ts-dev-debugger
     if (x.foo){
         let y = x.foo;
         y;

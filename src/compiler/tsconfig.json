@@ -46,7 +46,6 @@
         "symbolWalker.ts",
         "checker.ts",
         "heaper.ts",
-        "floughAccess.ts",
         "floughType.ts",
         "floughLogicalObjectInner.ts",
         "floughLogicalObjectOuter.ts",

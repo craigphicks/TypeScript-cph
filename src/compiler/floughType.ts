@@ -488,6 +488,7 @@ namespace ts {
         let nobj = ftin.nobj;
         let logicalObject = ftin.logicalObject;
         function doUnionOne(t: Type, expectOnlyPrimitive?: true): void {
+            //if (t.flags & TypeFlags.Union) Debug.fail("unexpected: union in doUnionOne");
             if (t.flags & TypeFlags.Never) return;
             if (t.flags & TypeFlags.StringLike) {
                 if (t.flags & TypeFlags.String){
@@ -583,6 +584,13 @@ namespace ts {
                 return;
             }
             if (t.flags & TypeFlags.Union) {
+                if (t.flags & TypeFlags.EnumLiteral) {
+                    checker.forEachType(t, (tsub: Type) => {
+                        doUnionOne(tsub);
+                    });
+                    return;
+                }
+
                 /**
                  * Instead of recursing into the union, we just add each primitive type in the union to the current type,
                  * and put the non-primitive types into an array so that typescript-type maintains the union structure -

@@ -246,3 +246,28 @@ myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-00"
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0003"
 node meldlocal.js 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0003"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-00"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-01"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0101" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-0101" 
+. cleantmp.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-0101" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-0003" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0003" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-" 
+. cleantmp.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0101"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0101"  -i 
+. rt-testable.sh 
+. cleantmp.sh && . rt-testable.sh 
+. rt-testable.sh 
+. cleantmp.sh
+. rt-testable.sh 
+rm .failed-tests 
+. rt-testable.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-parens-0000" 
