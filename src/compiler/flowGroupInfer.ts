@@ -345,7 +345,7 @@ namespace ts {
         //if (getMyDebug()) breakpoint();;
         if (compilerOptions.floughConstraintsEnable===undefined) compilerOptions.floughConstraintsEnable = false;
         if (compilerOptions.enableTSDevExpectString===undefined) compilerOptions.enableTSDevExpectString = false;
-        /*if (compilerOptions.floughDoNotWidenInitalizedFlowTypes===undefined)*/ compilerOptions.floughDoNotWidenInitalizedFlowTypes = true;
+        /*if (compilerOptions.floughDoNotWidenInitalizedFlowTypes===undefined)*/ compilerOptions.floughDoNotWidenInitalizedFlowTypes = false;
         if (hardCodeEnableTSDevExpectStringFalse){
             compilerOptions.enableTSDevExpectString = false;
         }

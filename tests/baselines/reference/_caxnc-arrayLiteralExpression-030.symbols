@@ -6,7 +6,6 @@ let x: readonly[[boolean]] = [[c]];
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-030.ts, 2, 3))
 >c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-030.ts, 0, 13))
 
-// @ts-dev-debugger
 if (x[0][0]) {
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-030.ts, 2, 3))
 >0 : Symbol(0)

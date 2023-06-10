@@ -759,7 +759,9 @@ namespace ts {
 
             }
             else {
-                Debug.fail("not yet implemented; array type");
+                const tstype = checker.getElementTypeOfArrayType(baseType) ?? checker.getAnyType(); // apparently the result may be undefined;
+                return { type: floughTypeModule.createFromTsType(tstype) };
+                //Debug.fail("not yet implemented; array type");
             }
         }
         else {

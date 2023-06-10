@@ -8,7 +8,6 @@ let x: readonly[[boolean]] = [[c]];
 >[c] : [boolean]
 >c : boolean
 
-// @ts-dev-debugger
 if (x[0][0]) {
 >x[0][0] : boolean
 >x[0] : [boolean]

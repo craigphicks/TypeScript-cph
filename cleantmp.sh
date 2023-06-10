@@ -1,2 +1,2 @@
-#!/bin/bash 
-rm tmp.* isolate-*
+#!/bin/bash
+rm tmp.* isolate-* .failed-tests || true

@@ -6,6 +6,9 @@
 
 ### Priority: High
 
+0. Several of the tests _caxnc-arrayLiteralExpression- show overly complex types for objects such as `readonly [true, true] | readonly [boolean, boolean]`.  However the leaf access is working, so that over-complexity will be left for later to allow other progress.
+
+
 0. LogicalObject
 
     0. effectiveDeclaredType to be kept on outside, not inside.  Then no need for tsType member on set-unions
