@@ -2,8 +2,6 @@
 // @floughConstraintsEnable: false
 // @strict: true
 // @declaration: true
-// @floughDoNotWidenInitalizedFlowType: true
-// @floughDoNotWidenInitalizedFlowType: true
 
 declare const x: unknown;
 let a = 1;

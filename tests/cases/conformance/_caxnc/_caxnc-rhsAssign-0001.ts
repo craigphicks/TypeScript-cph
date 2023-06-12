@@ -1,5 +1,6 @@
-// @floughDoNotWidenInitalizedFlowType: true
-// @floughDoNotWidenInitalizedFlowType: true
+// @floughEnable: true
+// @floughConstraintsEnable: false
+// @strict: true
 
 function rhsAssign0001(){
     let a = 0;

@@ -6,11 +6,11 @@ declare const x:X|undefined;
 
 function prop0002(){
     if (x?.foo?.bar){
-        let y = x.foo.bar;
+        const y = x.foo.bar;
         y;
     }
     else {
-        let z = x?.foo?.bar;
+        const z = x?.foo?.bar;
         z;
     }
 }

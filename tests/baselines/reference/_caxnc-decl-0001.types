@@ -5,5 +5,5 @@ let x = 1;
 >1 : 1
 
 x;
->x : 1
+>x : number
 

@@ -6,3 +6,9 @@ let x: number|string = 1;
 x;
 >x : Symbol(x, Decl(_caxnc-decl-0004.ts, 1, 3))
 
+const y: number|string = 1;
+>y : Symbol(y, Decl(_caxnc-decl-0004.ts, 4, 5))
+
+y;
+>y : Symbol(y, Decl(_caxnc-decl-0004.ts, 4, 5))
+

@@ -10,3 +10,10 @@ let x = b?1:1;
 x;
 >x : Symbol(x, Decl(_caxnc-decl-0002.ts, 2, 3))
 
+const y = b?1:1;
+>y : Symbol(y, Decl(_caxnc-decl-0002.ts, 5, 5))
+>b : Symbol(b, Decl(_caxnc-decl-0002.ts, 0, 13))
+
+y;
+>y : Symbol(y, Decl(_caxnc-decl-0002.ts, 5, 5))
+

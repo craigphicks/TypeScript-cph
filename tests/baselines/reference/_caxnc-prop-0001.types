@@ -17,7 +17,7 @@ function prop0001(){
 >x : X
 >foo : boolean
 
-        let y = x.foo;
+        const y = x.foo;
 >y : true
 >x.foo : true
 >x : X
@@ -27,7 +27,7 @@ function prop0001(){
 >y : true
     }
     else {
-        let z = x.foo;
+        const z = x.foo;
 >z : false
 >x.foo : false
 >x : X

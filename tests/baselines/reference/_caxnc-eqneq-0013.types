@@ -53,19 +53,19 @@ if (aeqb&&beqc)
     c;
 >c : 3
 
-    let x1 = a===b;
+    const x1 = a===b;
 >x1 : boolean
 >a===b : boolean
 >a : 3
 >b : 3
 
-    let y1 = b===c;
+    const y1 = b===c;
 >y1 : boolean
 >b===c : boolean
 >b : 3
 >c : 3
 
-    let z1 = a===c;
+    const z1 = a===c;
 >z1 : boolean
 >a===c : boolean
 >a : 3
@@ -99,19 +99,19 @@ else {
     c;
 >c : 3 | 4 | 5
 
-    let x2 = a===b;
+    const x2 = a===b;
 >x2 : boolean
 >a===b : boolean
 >a : 1 | 2 | 3
 >b : 2 | 3 | 4
 
-    let y2 = b===c;
+    const y2 = b===c;
 >y2 : boolean
 >b===c : boolean
 >b : 2 | 3 | 4
 >c : 3 | 4 | 5
 
-    let z2 = a===c;
+    const z2 = a===c;
 >z2 : boolean
 >a===c : boolean
 >a : 1 | 2 | 3
@@ -147,19 +147,19 @@ else {
         c;
 >c : 3
 
-        let x3 = a===b;
+        const x3 = a===b;
 >x3 : boolean
 >a===b : boolean
 >a : 3
 >b : 2 | 3 | 4
 
-        let y3 = b===c;
+        const y3 = b===c;
 >y3 : boolean
 >b===c : boolean
 >b : 2 | 3 | 4
 >c : 3
 
-        let z3 = a===c;
+        const z3 = a===c;
 >z3 : boolean
 >a===c : boolean
 >a : 3

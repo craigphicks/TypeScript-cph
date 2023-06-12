@@ -18,9 +18,9 @@ if (aeqb&&beqc)
     a;
     b;
     c;
-    let x1 = a===b;
-    let y1 = b===c;
-    let z1 = a===c;
+    const x1 = a===b;
+    const y1 = b===c;
+    const z1 = a===c;
     x1;
     y1;
     z1;
@@ -32,9 +32,9 @@ else {
     a;
     b;
     c;
-    let x2 = a===b;
-    let y2 = b===c;
-    let z2 = a===c;
+    const x2 = a===b;
+    const y2 = b===c;
+    const z2 = a===c;
     x2;
     y2;
     z2;
@@ -45,9 +45,9 @@ else {
         a;
         b;
         c;
-        let x3 = a===b;
-        let y3 = b===c;
-        let z3 = a===c;
+        const x3 = a===b;
+        const y3 = b===c;
+        const z3 = a===c;
         x3;
         y3;
         z3;

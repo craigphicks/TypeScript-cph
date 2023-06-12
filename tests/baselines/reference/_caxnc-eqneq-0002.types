@@ -22,7 +22,7 @@ if (a===b&&b===c)
 >b : 2 | 3
 >c : 3 | 4 | 5
 {
-    let x = a===c;
+    const x = a===c;
 >x : boolean
 >a===c : boolean
 >a : 2 | 3
@@ -42,7 +42,7 @@ if (a===b&&b===c)
 
 }
 else {
-    let y = a===c;
+    const y = a===c;
 >y : boolean
 >a===c : boolean
 >a : 1 | 2 | 3
@@ -65,7 +65,7 @@ else {
 >a : 1 | 2 | 3
 >c : 3 | 4 | 5
 
-        let z = a===c;
+        const z = a===c;
 >z : boolean
 >a===c : boolean
 >a : 3

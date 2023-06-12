@@ -5,5 +5,12 @@ let x: number|string = 1;
 >1 : 1
 
 x;
->x : 1
+>x : string | number
+
+const y: number|string = 1;
+>y : string | number
+>1 : 1
+
+y;
+>y : 1
 

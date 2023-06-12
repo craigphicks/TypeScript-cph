@@ -24,7 +24,7 @@ function prop0001(){
 >foo : true
 
         y;
->y : true
+>y : boolean
     }
     else {
         let z = x.foo;
@@ -34,6 +34,6 @@ function prop0001(){
 >foo : false
 
         z;
->z : false
+>z : boolean
     }
 }

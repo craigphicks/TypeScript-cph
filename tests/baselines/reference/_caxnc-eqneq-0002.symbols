@@ -19,13 +19,13 @@ if (a===b&&b===c)
 >b : Symbol(b, Decl(_caxnc-eqneq-0002.ts, 5, 13))
 >c : Symbol(c, Decl(_caxnc-eqneq-0002.ts, 6, 13))
 {
-    let x = a===c;
->x : Symbol(x, Decl(_caxnc-eqneq-0002.ts, 10, 7))
+    const x = a===c;
+>x : Symbol(x, Decl(_caxnc-eqneq-0002.ts, 10, 9))
 >a : Symbol(a, Decl(_caxnc-eqneq-0002.ts, 4, 13))
 >c : Symbol(c, Decl(_caxnc-eqneq-0002.ts, 6, 13))
 
     x;
->x : Symbol(x, Decl(_caxnc-eqneq-0002.ts, 10, 7))
+>x : Symbol(x, Decl(_caxnc-eqneq-0002.ts, 10, 9))
 
     a;
 >a : Symbol(a, Decl(_caxnc-eqneq-0002.ts, 4, 13))
@@ -38,13 +38,13 @@ if (a===b&&b===c)
 
 }
 else {
-    let y = a===c;
->y : Symbol(y, Decl(_caxnc-eqneq-0002.ts, 18, 7))
+    const y = a===c;
+>y : Symbol(y, Decl(_caxnc-eqneq-0002.ts, 18, 9))
 >a : Symbol(a, Decl(_caxnc-eqneq-0002.ts, 4, 13))
 >c : Symbol(c, Decl(_caxnc-eqneq-0002.ts, 6, 13))
 
     y;
->y : Symbol(y, Decl(_caxnc-eqneq-0002.ts, 18, 7))
+>y : Symbol(y, Decl(_caxnc-eqneq-0002.ts, 18, 9))
 
     a;
 >a : Symbol(a, Decl(_caxnc-eqneq-0002.ts, 4, 13))
@@ -59,13 +59,13 @@ else {
 >a : Symbol(a, Decl(_caxnc-eqneq-0002.ts, 4, 13))
 >c : Symbol(c, Decl(_caxnc-eqneq-0002.ts, 6, 13))
 
-        let z = a===c;
->z : Symbol(z, Decl(_caxnc-eqneq-0002.ts, 24, 11))
+        const z = a===c;
+>z : Symbol(z, Decl(_caxnc-eqneq-0002.ts, 24, 13))
 >a : Symbol(a, Decl(_caxnc-eqneq-0002.ts, 4, 13))
 >c : Symbol(c, Decl(_caxnc-eqneq-0002.ts, 6, 13))
 
         z;
->z : Symbol(z, Decl(_caxnc-eqneq-0002.ts, 24, 11))
+>z : Symbol(z, Decl(_caxnc-eqneq-0002.ts, 24, 13))
 
         a;
 >a : Symbol(a, Decl(_caxnc-eqneq-0002.ts, 4, 13))

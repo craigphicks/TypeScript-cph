@@ -10,3 +10,18 @@ let x = [b?1:1];
 x;
 >x : Symbol(x, Decl(_caxnc-decl-0003.ts, 2, 3))
 
+const y = [b?1:1];
+>y : Symbol(y, Decl(_caxnc-decl-0003.ts, 5, 5))
+>b : Symbol(b, Decl(_caxnc-decl-0003.ts, 0, 13))
+
+y;
+>y : Symbol(y, Decl(_caxnc-decl-0003.ts, 5, 5))
+
+const z = [b?1:1] as const;
+>z : Symbol(z, Decl(_caxnc-decl-0003.ts, 8, 5))
+>b : Symbol(b, Decl(_caxnc-decl-0003.ts, 0, 13))
+>const : Symbol(const)
+
+z;
+>z : Symbol(z, Decl(_caxnc-decl-0003.ts, 8, 5))
+

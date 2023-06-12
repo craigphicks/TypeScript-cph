@@ -29,7 +29,7 @@ function prop0002(){
 >bar : true
 
         y;
->y : true
+>y : boolean
     }
     else {
         let z = x?.foo?.bar;

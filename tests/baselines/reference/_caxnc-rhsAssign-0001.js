@@ -19,6 +19,7 @@ function rhsAssign0003(){
 }
 
 //// [_caxnc-rhsAssign-0001.js]
+"use strict";
 function rhsAssign0001() {
     var a = 0;
     var b = (a = 1);

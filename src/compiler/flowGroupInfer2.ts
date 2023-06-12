@@ -345,7 +345,7 @@ namespace ts {
         function widenDeclarationOrAssignmentRhs(rawRhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>,): RefTypesType {
             // TODO: should be no TypeFlags.EnumLiteral.
             if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & (TypeFlags.EnumLiteral | TypeFlags.Literal)) return rawRhsType;
-            if (compilerOptions.floughDoNotWidenInitalizedFlowTypes) return rawRhsType;
+            if (compilerOptions.floughDoNotWidenInitalizedFlowType) return rawRhsType;
             return floughTypeModule.widenTypeByEffectiveDeclaredType(rawRhsType, lhsSymbolFlowInfo.effectiveDeclaredTsType);
         }
 
@@ -1087,14 +1087,24 @@ namespace ts {
                                  * It would be good if we could (figuratively) map the Node values in literal object to the types they became in the symbolFlowInfo.tsType tree.
                                  *
                                  */
-                                /**
-                                 * This shouldn't be happening here when the identifier is not part of a let or const declaration.
-                                 */
-                                //const rhsType = rttr.type;
-                                // rttr.type = widenDeclarationOrAssignmentRhs(rttr.type, symbolFlowInfo!);
-                                // if (getMyDebug()){
-                                //     consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
-                                // }
+                                const rhsType = rttr.type;
+                                let typeWithWidenedObject: FloughType | undefined;
+                                const { logicalObject:logicalObjectRhs, remaining:remainingRhs } = floughTypeModule.splitLogicalObject(rttr.type);
+                                if (logicalObjectRhs){
+                                    const { logicalObject:logicalObjectEd, /*remaining:remainingEd*/ } = floughTypeModule.splitLogicalObject(getEffectiveDeclaredType(symbolFlowInfo!));
+                                    if (logicalObjectEd && logicalObjectRhs){
+                                        if (getMyDebug()){
+                                            floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObjectEd).forEach(s=>consoleLog(`floughIdentifierAux[dbg]: logicalObjectEd: ${s}`));
+                                        }
+                                        typeWithWidenedObject = floughTypeModule.createTypeFromLogicalObject(logicalObjectEd);
+                                        floughTypeModule.unionWithFloughTypeMutate(remainingRhs, typeWithWidenedObject);
+                                        rttr.type = typeWithWidenedObject;
+                                    }
+                                }
+                                //rttr.type = widenDeclarationOrAssignmentRhs(rttr.type, symbolFlowInfo!);
+                                if (getMyDebug()){
+                                    consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
+                                }
                                 let narrowerTypeOut: FloughType | undefined;
                                 if (replayableInType){
                                     narrowerTypeOut = floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType);

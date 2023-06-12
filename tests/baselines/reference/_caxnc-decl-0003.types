@@ -14,3 +14,26 @@ let x = [b?1:1];
 x;
 >x : number[]
 
+const y = [b?1:1];
+>y : number[]
+>[b?1:1] : number[]
+>b?1:1 : 1
+>b : boolean
+>1 : 1
+>1 : 1
+
+y;
+>y : number[]
+
+const z = [b?1:1] as const;
+>z : readonly [1]
+>[b?1:1] as const : readonly [1]
+>[b?1:1] : readonly [1]
+>b?1:1 : 1
+>b : boolean
+>1 : 1
+>1 : 1
+
+z;
+>z : readonly [1]
+

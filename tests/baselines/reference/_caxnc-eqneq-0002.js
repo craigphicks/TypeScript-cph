@@ -9,7 +9,7 @@ declare const c: 3|4|5;
 //if (a!==b||b!==c)
 if (a===b&&b===c)
 {
-    let x = a===c;
+    const x = a===c;
     x;
     a;
     b;
@@ -17,13 +17,13 @@ if (a===b&&b===c)
 
 }
 else {
-    let y = a===c;
+    const y = a===c;
     y;
     a;
     b;
     c;
     if (a===c){
-        let z = a===c;
+        const z = a===c;
         z;
         a;
         b;

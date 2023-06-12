@@ -575,6 +575,7 @@ namespace ts {
                 Debug.fail("unexpected: expectOnlyPrimitive but has ",()=>Debug.formatTypeFlags(t.flags));
             }
             if (t.flags & TypeFlags.Object) {
+                if (t.flags & TypeFlags.EnumLiteral || t.flags & TypeFlags.Enum) Debug.fail("unexpected: enum in Object in doUnionOne");
                 if (!logicalObject) {
                     logicalObject = floughLogicalObjectModule.createFloughLogicalObjectPlain(t as ObjectType);
                 }

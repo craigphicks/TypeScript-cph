@@ -20,7 +20,7 @@ function prop0002(){
 >foo : { bar: boolean; } | undefined
 >bar : boolean | undefined
 
-        let y = x.foo.bar;
+        const y = x.foo.bar;
 >y : true
 >x.foo.bar : true
 >x.foo : { bar: boolean; }
@@ -32,7 +32,7 @@ function prop0002(){
 >y : true
     }
     else {
-        let z = x?.foo?.bar;
+        const z = x?.foo?.bar;
 >z : boolean | undefined
 >x?.foo?.bar : boolean | undefined
 >x?.foo : { bar: boolean; } | undefined

@@ -18,23 +18,23 @@ function prop0001(){
 >x : Symbol(x, Decl(_caxnc-prop-0001.ts, 3, 13))
 >foo : Symbol(foo, Decl(_caxnc-prop-0001.ts, 0, 18))
 
-        let y = x.foo;
->y : Symbol(y, Decl(_caxnc-prop-0001.ts, 7, 11))
+        const y = x.foo;
+>y : Symbol(y, Decl(_caxnc-prop-0001.ts, 7, 13))
 >x.foo : Symbol(foo, Decl(_caxnc-prop-0001.ts, 0, 18))
 >x : Symbol(x, Decl(_caxnc-prop-0001.ts, 3, 13))
 >foo : Symbol(foo, Decl(_caxnc-prop-0001.ts, 0, 18))
 
         y;
->y : Symbol(y, Decl(_caxnc-prop-0001.ts, 7, 11))
+>y : Symbol(y, Decl(_caxnc-prop-0001.ts, 7, 13))
     }
     else {
-        let z = x.foo;
->z : Symbol(z, Decl(_caxnc-prop-0001.ts, 11, 11))
+        const z = x.foo;
+>z : Symbol(z, Decl(_caxnc-prop-0001.ts, 11, 13))
 >x.foo : Symbol(foo, Decl(_caxnc-prop-0001.ts, 0, 18))
 >x : Symbol(x, Decl(_caxnc-prop-0001.ts, 3, 13))
 >foo : Symbol(foo, Decl(_caxnc-prop-0001.ts, 0, 18))
 
         z;
->z : Symbol(z, Decl(_caxnc-prop-0001.ts, 11, 11))
+>z : Symbol(z, Decl(_caxnc-prop-0001.ts, 11, 13))
     }
 }
