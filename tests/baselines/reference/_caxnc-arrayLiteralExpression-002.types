@@ -13,10 +13,34 @@ const x = c ? [c,c] : [c,c];
 >c : false
 >c : false
 
-if (c) x;
+if (c) {
 >c : boolean
->x : true[]
 
-else x;
->x : false[]
+    x;
+>x : true[] | false[]
+
+    x[0];
+>x[0] : true
+>x : true[] | false[]
+>0 : 0
+
+    x[1];
+>x[1] : true
+>x : true[] | false[]
+>1 : 1
+}
+else {
+    x;
+>x : true[] | false[]
+
+    x[0];
+>x[0] : false
+>x : true[] | false[]
+>0 : 0
+
+    x[1];
+>x[1] : false
+>x : true[] | false[]
+>1 : 1
+}
 

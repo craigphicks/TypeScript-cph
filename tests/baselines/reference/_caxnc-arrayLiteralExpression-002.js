@@ -2,17 +2,31 @@
 declare const c: boolean;
 const x = c ? [c,c] : [c,c];
 
-if (c) x;
-else x;
+if (c) {
+    x;
+    x[0];
+    x[1];
+}
+else {
+    x;
+    x[0];
+    x[1];
+}
 
 
 //// [_caxnc-arrayLiteralExpression-002.js]
 "use strict";
 var x = c ? [c, c] : [c, c];
-if (c)
+if (c) {
     x;
-else
+    x[0];
+    x[1];
+}
+else {
     x;
+    x[0];
+    x[1];
+}
 
 
 //// [_caxnc-arrayLiteralExpression-002.d.ts]

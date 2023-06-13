@@ -30,6 +30,7 @@ namespace ts {
         //     lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
         // ): void;
         getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type;
+        setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void;
         identicalLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): boolean;
         //replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectIF;
         // replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, oldToNewLogicalObjectMap: Readonly<OldToNewLogicalObjectMap>): { logicalObject: FloughLogicalObjectIF, type: FloughType } | undefined;
@@ -62,6 +63,9 @@ namespace ts {
         intersectionAndSimplifyLogicalObjects,
         //logicalObjectForEachTypeOfPropertyLookup,
         getEffectiveDeclaredTsTypeFromLogicalObject,
+        setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void {
+            (logicalObjectTop as FloughLogicalObjectOuter).effectiveDeclaredTsType = edType;
+        },
         identicalLogicalObjects,
         //replaceTypeAtKey,
         // replaceLogicalObjectsOfTypeAtKey,

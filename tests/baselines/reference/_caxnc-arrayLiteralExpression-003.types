@@ -13,10 +13,34 @@ const x:[boolean,boolean] = c ? [c,c] : [c,c];
 >c : false
 >c : false
 
-if (c) x;
+if (c) {
 >c : boolean
->x : [true, true]
 
-else x;
->x : [false, false]
+    x;
+>x : [boolean, boolean]
+
+    x[0];
+>x[0] : true
+>x : [boolean, boolean] | [true, true]
+>0 : 0
+
+    x[1];
+>x[1] : true
+>x : [boolean, boolean] | [true, true]
+>1 : 1
+}
+else {
+    x;
+>x : [boolean, boolean]
+
+    x[0];
+>x[0] : false
+>x : [boolean, boolean] | [false, false]
+>0 : 0
+
+    x[1];
+>x[1] : false
+>x : [boolean, boolean] | [false, false]
+>1 : 1
+}
 

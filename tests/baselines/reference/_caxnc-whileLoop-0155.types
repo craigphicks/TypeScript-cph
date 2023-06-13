@@ -80,7 +80,7 @@ function t55(){
 >d1 : number
 >d2 : number
 >d3 : number
->d4 : number
+>d4 : 0
 
                 if (d3===0) d3=1;
 >d3===0 : boolean
@@ -120,7 +120,7 @@ function t55(){
             d1; d2; d3;
 >d1 : number
 >d2 : number
->d3 : number
+>d3 : 0
 
             if (d2===0) d2=1;
 >d2===0 : boolean
@@ -159,7 +159,7 @@ function t55(){
         }
         d1; d2;
 >d1 : number
->d2 : number
+>d2 : 0
 
         if (d1===0) d1=1;
 >d1===0 : boolean
@@ -199,6 +199,6 @@ function t55(){
         }
     }
     d1;
->d1 : number
+>d1 : 0
 }
 

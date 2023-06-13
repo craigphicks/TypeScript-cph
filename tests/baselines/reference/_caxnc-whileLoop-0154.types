@@ -58,7 +58,7 @@ function t54(){
             }
         }
         d2;
->d2 : number
+>d2 : 0
 
         d1;
 >d1 : number
@@ -101,6 +101,6 @@ function t54(){
         }
     }
     d1;
->d1 : number
+>d1 : 0
 }
 

@@ -55,7 +55,8 @@ namespace ts {
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
         createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined): FloughType ;
 
-        widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
+        // widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
+        widenNobjTypeByEffectiveDeclaredNobjType(ftNobj: Readonly<FloughType>, effectiveDeclaredNobjType: Readonly<FloughType>): FloughType;
         getLiteralNumberTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
         getLiteralStringTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
@@ -209,7 +210,8 @@ namespace ts {
         hasLogicalObject,
         getLogicalObject,
         createTypeFromLogicalObject,
-        widenTypeByEffectiveDeclaredType,
+        // widenTypeByEffectiveDeclaredType,
+        widenNobjTypeByEffectiveDeclaredNobjType,
         createFromTsType,
         createFromTsTypes,
         unionWithTsTypeMutate,
@@ -1259,32 +1261,48 @@ namespace ts {
     //     const logicalObject = modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject, effectiveDeclaredType, { doNotWidenPropertyTypes:true });
     //     return { nobj: ft.nobj, logicalObject };
     // }
-    function widenTypeByEffectiveDeclaredType(ftin: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType {
-        castReadonlyFloughTypei(ftin);
-        if (isAnyType(ftin) || isUnknownType(ftin)) return ftin;
-
-        // if (!compilerOptions.floughDoNotWidenNonObject){
-        const ft = createFromTsType(effectiveDeclaredTsType);
-        if (floughTypeModule.hasLogicalObject(ftin)) {
-            const edObjTypes: ObjectType[] = [];
-            checker.forEachType(effectiveDeclaredTsType, (t)=>{
-                if (t.flags & TypeFlags.Object) edObjTypes.push(t as ObjectType);
-            });
-            Debug.assert(edObjTypes.length>0);
-            const edType = checker.getUnionType(edObjTypes);
-            floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject!, edType);
+    function widenNobjTypeByEffectiveDeclaredNobjType(ftin: Readonly<FloughTypei>, effectiveDeclaredType: Readonly<FloughTypei>): FloughTypei {
+        let ftout: FloughTypei | undefined;
+        const getFtOut = () => ftout ?? (ftout=cloneType(ftin));
+        if (effectiveDeclaredType.any || effectiveDeclaredType.unknown || effectiveDeclaredType.nobj.number===true){
+            if (ftin.nobj.number && ftin.nobj.number!==true) getFtOut().nobj.number = true;
         }
-        return ft;
-        // }
-        // else {
-        //     const logicalObject = ftin.logicalObject;
-        //     if (!logicalObject) return ftin;
-        //     return {
-        //         ...ftin,
-        //         logicalObject: floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject, effectiveDeclaredTsType)
-        //     };
-        // }
+        if (effectiveDeclaredType.any || effectiveDeclaredType.unknown || effectiveDeclaredType.nobj.string===true){
+            if (ftin.nobj.string && ftin.nobj.string!==true) getFtOut().nobj.string = true;
+        }
+        if (effectiveDeclaredType.any || effectiveDeclaredType.unknown || effectiveDeclaredType.nobj.bigint===true){
+            if (ftin.nobj.bigint && ftin.nobj.bigint!==true) getFtOut().nobj.bigint = true;
+        }
+        return ftout ?? ftin;
     }
+
+
+    // function widenTypeByEffectiveDeclaredType(ftin: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType {
+    //     castReadonlyFloughTypei(ftin);
+    //     if (isAnyType(ftin) || isUnknownType(ftin)) return ftin;
+
+    //     // if (!compilerOptions.floughDoNotWidenNonObject){
+    //     const ft = createFromTsType(effectiveDeclaredTsType);
+    //     if (floughTypeModule.hasLogicalObject(ftin)) {
+    //         const edObjTypes: ObjectType[] = [];
+    //         checker.forEachType(effectiveDeclaredTsType, (t)=>{
+    //             if (t.flags & TypeFlags.Object) edObjTypes.push(t as ObjectType);
+    //         });
+    //         Debug.assert(edObjTypes.length>0);
+    //         const edType = checker.getUnionType(edObjTypes);
+    //         floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject!, edType);
+    //     }
+    //     return ft;
+    //     // }
+    //     // else {
+    //     //     const logicalObject = ftin.logicalObject;
+    //     //     if (!logicalObject) return ftin;
+    //     //     return {
+    //     //         ...ftin,
+    //     //         logicalObject: floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject, effectiveDeclaredTsType)
+    //     //     };
+    //     // }
+    // }
 
     function getAccessKeysMutable(ft: Readonly<FloughTypei>): {
         number?: undefined | true | Set<LiteralTypeNumber>;

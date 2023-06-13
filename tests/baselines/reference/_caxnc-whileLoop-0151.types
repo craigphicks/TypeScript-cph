@@ -51,6 +51,6 @@ function t51(){
         }
     }
     d1;
->d1 : number
+>d1 : 0
 }
 

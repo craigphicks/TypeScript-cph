@@ -345,3 +345,51 @@ myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propAssign-0003" -i 
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propAssign-0003"
 gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propAssign"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow"
+. cleantmp.sh && . rt-testable.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-002" 
+. cleantmp.sh && . rt-testable.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propAssign-0003" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propAssign-0004" 
+. cleantmp.sh && . rt-testable.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-002" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-003" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-013" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-015" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression" 
+. cleantmp.sh && . rt-testable.sh 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-while" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0011" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-00" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-01" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0101" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0102" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0103" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0106" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0106" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0106" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0151" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0151" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0156" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0156" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0156" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0056" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0056" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0156" 
+. cleantmp.sh 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0144" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0144" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0144" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-0144" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-whileLoop-0144" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-01" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-whileLoop-" 

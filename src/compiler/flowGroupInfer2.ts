@@ -331,22 +331,53 @@ namespace ts {
         //     return as;
         // }
 
-        // @ts-expect-error
-        function widenLiteralOrBoolean(tstype: Readonly<Type>): Type[] {
-            if (!(tstype.flags & (TypeFlags.Literal | TypeFlags.BooleanLiteral))) return [tstype];
-            if (tstype.flags & TypeFlags.BooleanLiteral) return [trueType, falseType];
-            if (tstype.flags & TypeFlags.NumberLiteral) return [numberType];
-            if (tstype.flags & TypeFlags.StringLiteral) return [stringType];
-            if (tstype.flags & TypeFlags.BigIntLiteral) return [checker.getBigIntType()];
-            Debug.fail("unexpected");
-            return [tstype];
+        // @ ts-expect-error
+        // function widenLiteralOrBoolean(tstype: Readonly<Type>): Type[] {
+        //     if (!(tstype.flags & (TypeFlags.Literal | TypeFlags.BooleanLiteral))) return [tstype];
+        //     //if (tstype.flags & TypeFlags.BooleanLiteral) return [trueType, falseType];
+        //     if (tstype.flags & TypeFlags.NumberLiteral) return [numberType];
+        //     if (tstype.flags & TypeFlags.StringLiteral) return [stringType];
+        //     if (tstype.flags & TypeFlags.BigIntLiteral) return [checker.getBigIntType()];
+        //     Debug.fail("unexpected");
+        //     return [tstype];
+        // }
+
+        // function splitEffectiveDeclaredTsType(lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): {objType: Readonly<Type>[], nobjType: Readonly<Type>[] } {
+        //     const objType: Type[] = [];
+        //     const nobjType: Type[] = [];
+        //     checker.forEachType(lhsSymbolFlowInfo.effectiveDeclaredTsType,t=>{
+        //         if (t.flags & TypeFlags.Object && !(t.flags & TypeFlags.AnyOrUnknown) && !(t.flags & TypeFlags.EnumLiteral)){
+        //             objType.push(t);
+        //         }
+        //         else nobjType.push(t);
+        //     });
+        //     return { objType, nobjType };
+        // }
+
+        function setEffectiveDeclaredTsTypeOfLogicalObjectOfType(rhsType: FloughType, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): {logicalObjectRhsType: FloughType, nobjRhsType: FloughType, nobjEdtType: FloughType} {
+            const { logicalObject:logicalObjectRhs, remaining:remainingRhs } = floughTypeModule.splitLogicalObject(rhsType);
+            const { logicalObject:logicalObjectEdt , remaining: remainingEdt } = floughTypeModule.splitLogicalObject(getEffectiveDeclaredType(lhsSymbolFlowInfo));
+            if (logicalObjectRhs && logicalObjectEdt){
+                floughLogicalObjectModule.setEffectiveDeclaredTsType(logicalObjectRhs,floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectEdt));
+            }
+            return { logicalObjectRhsType:floughTypeModule.createTypeFromLogicalObject(logicalObjectRhs), nobjRhsType: remainingRhs, nobjEdtType: remainingEdt };
         }
 
-        function widenDeclarationOrAssignmentRhs(rawRhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>,): RefTypesType {
-            // TODO: should be no TypeFlags.EnumLiteral.
-            if (lhsSymbolFlowInfo.effectiveDeclaredTsType.flags & (TypeFlags.EnumLiteral | TypeFlags.Literal)) return rawRhsType;
-            if (compilerOptions.floughDoNotWidenInitalizedFlowType) return rawRhsType;
-            return floughTypeModule.widenTypeByEffectiveDeclaredType(rawRhsType, lhsSymbolFlowInfo.effectiveDeclaredTsType);
+        function widenDeclarationOrAssignmentRhs(rhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): RefTypesType {
+            const { logicalObjectRhsType: logicalObjectType, nobjRhsType:remainingRhs, nobjEdtType } = setEffectiveDeclaredTsTypeOfLogicalObjectOfType(rhsType, lhsSymbolFlowInfo);
+            if (!compilerOptions.floughDoNotWidenInitalizedFlowType) {
+                const widenedNobjType = floughTypeModule.widenNobjTypeByEffectiveDeclaredNobjType(remainingRhs, nobjEdtType);
+                if (logicalObjectType) {
+                    return floughTypeModule.unionWithFloughTypeMutate(widenedNobjType, logicalObjectType);
+                }
+                else {
+                    return widenedNobjType;
+                }
+
+            }
+            else {
+                return floughTypeModule.unionWithFloughTypeMutate(remainingRhs, logicalObjectType);
+            }
         }
 
 
@@ -593,7 +624,7 @@ namespace ts {
                     Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}"`);
                 }
                 if (getMyDebug()){
-                    consoleLog(`SyntaxKind.VariableDeclaration, passed ts-dev-expect-string "${actual}"`);
+                    consoleLog(`debugDevExpectEffectiveDeclaredType, passed ts-dev-expect-string "${actual}"`);
                 }
             }
         }
@@ -1088,22 +1119,22 @@ namespace ts {
                                  *
                                  */
                                 const rhsType = rttr.type;
-                                let typeWithWidenedObject: FloughType | undefined;
-                                const { logicalObject:logicalObjectRhs, remaining:remainingRhs } = floughTypeModule.splitLogicalObject(rttr.type);
+                                //let typeWithWidenedObject: FloughType | undefined;
+                                const { logicalObject:logicalObjectRhs, remaining:_remainingRhs } = floughTypeModule.splitLogicalObject(rttr.type);
                                 if (logicalObjectRhs){
-                                    const { logicalObject:logicalObjectEd, /*remaining:remainingEd*/ } = floughTypeModule.splitLogicalObject(getEffectiveDeclaredType(symbolFlowInfo!));
-                                    if (logicalObjectEd && logicalObjectRhs){
-                                        if (getMyDebug()){
-                                            floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObjectEd).forEach(s=>consoleLog(`floughIdentifierAux[dbg]: logicalObjectEd: ${s}`));
+                                    const effectDeclaredObjectTypes: Type[] = [];
+                                    checker.forEachType(symbolFlowInfo!.effectiveDeclaredTsType,t=>{
+                                        if (t.flags & TypeFlags.Object && !(t.flags & TypeFlags.AnyOrUnknown) && !(t.flags & TypeFlags.EnumLiteral)){
+                                            effectDeclaredObjectTypes.push(t);
                                         }
-                                        typeWithWidenedObject = floughTypeModule.createTypeFromLogicalObject(logicalObjectEd);
-                                        floughTypeModule.unionWithFloughTypeMutate(remainingRhs, typeWithWidenedObject);
-                                        rttr.type = typeWithWidenedObject;
+                                    });
+                                    floughLogicalObjectModule.setEffectiveDeclaredTsType(logicalObjectRhs, checker.getUnionType(effectDeclaredObjectTypes));
+                                    // if (getMyDebug()){
+                                    //     floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObjectRhs).forEach(s=>consoleLog(`floughIdentifierAux[dbg]: logicalObjectRhs: ${s}`));
+                                    // }
+                                    if (getMyDebug()){
+                                        consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
                                     }
-                                }
-                                //rttr.type = widenDeclarationOrAssignmentRhs(rttr.type, symbolFlowInfo!);
-                                if (getMyDebug()){
-                                    consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
                                 }
                                 let narrowerTypeOut: FloughType | undefined;
                                 if (replayableInType){
@@ -2245,10 +2276,10 @@ namespace ts {
                     if (extraAsserts && compilerOptions.enableTSDevExpectString) {
                         debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                     }
-                    const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
+                    //const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
                     return { unmerged: [{
                         ...passing,
-                        type: rhsType,
+                        //type: rhsType,
                         symbol, isAssign:true,
                     }]};
                 }

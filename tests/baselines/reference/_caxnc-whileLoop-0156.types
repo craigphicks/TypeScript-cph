@@ -30,7 +30,7 @@ function t56(){
 >1 : 1
 
             d1  ;
->d1 : number
+>d1 : 1
         }
         else if (d1===1) {
 >d1===1 : boolean
