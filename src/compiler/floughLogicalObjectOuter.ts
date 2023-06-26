@@ -30,7 +30,8 @@ namespace ts {
         //     lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
         // ): void;
         getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type;
-        setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void;
+        //setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void;
+        createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF;
         identicalLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): boolean;
         //replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectIF;
         // replaceLogicalObjectsOfTypeAtKey(logicalObject: Readonly<FloughLogicalObjectIF>, key: LiteralType, oldToNewLogicalObjectMap: Readonly<OldToNewLogicalObjectMap>): { logicalObject: FloughLogicalObjectIF, type: FloughType } | undefined;
@@ -46,7 +47,7 @@ namespace ts {
             types: Readonly<CritToTypeV2Result[]>,
             state: LogicalObjectAccessReturn,
         ): { rootLogicalObject: FloughLogicalObjectIF, type: Readonly<FloughType> }[];
-        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, idx: number): Type[][];
+        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
 
@@ -63,8 +64,18 @@ namespace ts {
         intersectionAndSimplifyLogicalObjects,
         //logicalObjectForEachTypeOfPropertyLookup,
         getEffectiveDeclaredTsTypeFromLogicalObject,
-        setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void {
-            (logicalObjectTop as FloughLogicalObjectOuter).effectiveDeclaredTsType = edType;
+        // setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void {
+        //     (logicalObjectTop as FloughLogicalObjectOuter).effectiveDeclaredTsType = edType;
+        // },
+        createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF {
+            assertCastType<FloughLogicalObjectOuter>(logicalObjectTop);
+            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+            return <FloughLogicalObjectOuter>({
+                effectiveDeclaredTsType: edType,
+                inner: logicalObjectTop.inner,
+                id: nextLogicalObjectOuterId++,
+                [essymbolfloughLogicalObjectOuter]: true,
+            });
         },
         identicalLogicalObjects,
         //replaceTypeAtKey,
@@ -90,8 +101,8 @@ namespace ts {
             const x = floughLogicalObjectInnerModule.logicalObjectModify(types, state);
             return x.map(({ rootLogicalObject, type })=>({ rootLogicalObject: createFloughLogicalObjectFromInner(rootLogicalObject, /* edType */ undefined), type }));
         },
-        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, idx: number): Type[][] {
-            return floughLogicalObjectInnerModule.getTsTypesInChainOfLogicalObjectAccessReturn(loar, idx);
+        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
+            return floughLogicalObjectInnerModule.getTsTypesInChainOfLogicalObjectAccessReturn(loar);
         },
         dbgLogicalObjectToStrings,
     };

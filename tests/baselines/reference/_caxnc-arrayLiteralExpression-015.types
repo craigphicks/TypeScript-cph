@@ -50,12 +50,12 @@ if (c) {
 
     w[0];
 >w[0] : true
->w : readonly [boolean, boolean] | [true, true]
+>w : readonly [boolean, boolean]
 >0 : 0
 
     x[0];
 >x[0] : true
->x : readonly [true, true] | readonly [boolean, boolean]
+>x : readonly [boolean, boolean]
 >0 : 0
 }
 

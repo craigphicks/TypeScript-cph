@@ -24694,7 +24694,7 @@ namespace ts {
                     Debug.assert(checker.getSourceFileInferState());
                     const sourceFileInferState = checker.getSourceFileInferState();
                     const typeByMrNarrow = getTypeByMrNarrow(reference, sourceFileInferState);
-                    if (typeByMrNarrow && typeByMrNarrow!==errorType){
+                    if (typeByMrNarrow && (typeByMrNarrow!==errorType || sourceFileInferState.mrState.dataForGetTypeOfExpressionShallowRecursive?.returnErrorTypeOnFail)){
                         if (myDebug) {
                             consoleLog(`getFlowTypeOfReference[out]: ${dbgstr}, return: ${typeToString(typeByMrNarrow)}`);
                             consoleGroupEnd();

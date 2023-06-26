@@ -14,7 +14,7 @@ function rhsAssign0001(){
 >1 : 1
 
     a;b; // expecting 1,1
->a : number
+>a : 1
 >b : number
 }
 
@@ -43,8 +43,8 @@ function rhsAssign0002(){
 >2 : 2
 
     a;b;c; // expecting 2,2,2
->a : number
->b : number
+>a : 2
+>b : 2
 >c : number
 }
 

@@ -45,6 +45,8 @@ namespace ts {
         getNeverType(): Readonly<FloughType>;
         createNumberType(): Readonly<FloughType>;
         createUndefinedType(): Readonly<FloughType>;
+        createTrueType(): Readonly<FloughType>;
+        createFalseType(): Readonly<FloughType>;
         intersectionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
@@ -90,6 +92,12 @@ namespace ts {
         },
         createNeverType(): FloughType {
             return { nobj:{} };
+        },
+        createTrueType(): Readonly<FloughType> {
+            return { nobj: { boolTrue: true } };
+        },
+        createFalseType(): Readonly<FloughType> {
+            return { nobj: { boolFalse: true } };
         },
         getNeverType(){
                 return uniqueNeverType;
@@ -1210,9 +1218,25 @@ namespace ts {
         if (isNeverType(ai)||isNeverType(bi)) return [];
         if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
 
-        const leftTsType = ai.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
-        const rightTsType = bi.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
+        // const leftTsType = ai.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
+        // const rightTsType = bi.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
+        // const leftTsType = ai.logicalObject ? createTypeFromLogicalObject(ai.logicalObject) : undefined;
+        // const rightTsType = bi.logicalObject ? createTypeFromLogicalObject(bi.logicalObject) : undefined;
+        const leftTsTypeSet = ai.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(ai.logicalObject)) : undefined;
+        let leftTsType: Type | undefined;
+        if (leftTsTypeSet) {
+            const leftTsTypeArr: Type[] = [];
+            leftTsTypeSet.forEach((v)=>leftTsTypeArr.push(v));
+            leftTsType = checker.getUnionType(leftTsTypeArr);
+        }
 
+        const rightTsTypeSet = bi.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(bi.logicalObject)) : undefined;
+        let rightTsType: Type | undefined;
+        if (rightTsTypeSet) {
+            const rightTsTypeArr: Type[] = [];
+            rightTsTypeSet.forEach((v)=>rightTsTypeArr.push(v));
+            rightTsType = checker.getUnionType(rightTsTypeArr);
+        }
 
         const symset = new Set<string | LiteralType>();
         const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
@@ -1233,11 +1257,15 @@ namespace ts {
             if (rightTsType) pi.rightts ? pi.rightts.push(rightTsType) : pi.rightts = [rightTsType];
             partarr.push(pi);
         }
-        if (leftTsType && rightTsType) {
-            const subtLofR = checker.isTypeRelatedTo(leftTsType, rightTsType, checker.getRelations().subtypeRelation);
-            const subtRofL = checker.isTypeRelatedTo(rightTsType, leftTsType, checker.getRelations().subtypeRelation);
-            const sometimesEqual = subtLofR || subtRofL;
-            partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:sometimesEqual, false:true });
+        if (leftTsTypeSet && rightTsTypeSet) {
+            leftTsTypeSet.forEach((leftTsType)=>{
+                rightTsTypeSet.forEach((rightTsType)=>{
+                    const subtLofR = checker.isTypeRelatedTo(leftTsType, rightTsType, checker.getRelations().subtypeRelation);
+                    partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtLofR, false:true });
+                    const subtRofL = checker.isTypeRelatedTo(rightTsType, leftTsType, checker.getRelations().subtypeRelation);
+                    partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtRofL, false:true });
+                });
+            });
         }
         return partarr;
     }

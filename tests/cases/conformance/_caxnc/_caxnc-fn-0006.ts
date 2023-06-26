@@ -18,8 +18,10 @@ declare const b: boolean;
 const obj = b? obja : objb
 
 if (obj===obja){
-    obj; // expect FooA
+    obj; // expect FooA | FooB
+    obj.foo
 }
 else {
     obj; // expect FooA | FooB (even if left and right are FooA, the comparison result could still be false)
+    obj.foo
 }

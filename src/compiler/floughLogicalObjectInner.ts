@@ -72,7 +72,8 @@ namespace ts {
             types: Readonly<(FloughType | undefined)[]>,
             state: LogicalObjectAccessReturn,
         ): { rootLogicalObject: FloughLogicalObjectInner, type: Readonly<FloughType> }[];
-        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, idx: number): Type[][];
+        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
+        getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
     };
     export const floughLogicalObjectInnerModule: FloughLogicalObjectInnerModule = {
@@ -90,6 +91,7 @@ namespace ts {
         getTypesFromLogicalObjectAccessReturn,
         logicalObjectModify,
         getTsTypesInChainOfLogicalObjectAccessReturn,
+        getTsTypesOfBaseLogicalObjects,
         dbgLogicalObjectToStrings,
     };
 
@@ -874,6 +876,12 @@ namespace ts {
         }
         worker(logicalObjectTop);
         return result;
+    }
+    function getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInner>): Set<Type> {
+        const x = getBaseLogicalObjects(logicalObjectTop);
+        const r = new Set<Type>();
+        x.forEach((_,k)=>r.add(k));
+        return r;
     }
 
 

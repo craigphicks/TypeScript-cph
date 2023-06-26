@@ -44,7 +44,7 @@ namespace ts {
         notnullundef= "notnullundef",
         assignable= "assignable",
         subtype= "subtype",
-        equal= "equal",
+        equalLiteral= "equalLiteral",
     };
     export type InferCrit =
     (
@@ -71,9 +71,9 @@ namespace ts {
             target: Type;
         }
         | {
-            kind: typeof InferCritKind.equal;
+            kind: typeof InferCritKind.equalLiteral;
             negate?: boolean;
-            target: Type;
+            targetFloughType: FloughType;
         }
     )
     & {alsoFailing?: boolean, done?: true}; // also output failing, in addition to passing

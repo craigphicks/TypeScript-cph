@@ -143,6 +143,7 @@ namespace ts {
         }
 
 
+        // TODO: change name to normalizeLiterals
         function projectTsTypeEnumLiteralsToPlainLiterals(tstype: Type): Type {
             const setFromEnum = new Set<LiteralType>();
             let tOtherCount = 0;
@@ -158,6 +159,9 @@ namespace ts {
                     }
                     else Debug.fail("unexpected");
                 }
+                else if (t.flags & TypeFlags.Literal){
+                    setFromEnum.add((t as LiteralType).regularType);
+                }
                 else tOtherCount++;
             });
             if (setFromEnum.size===0) return tstype;
@@ -165,7 +169,7 @@ namespace ts {
             setFromEnum.forEach(lt=>at.push(lt));
             if (tOtherCount!==0) {
                 checker.forEachType(tstype, (t)=>{
-                    if (!(t.flags & TypeFlags.EnumLiteral)) at.push(t);
+                    if (!(t.flags & (TypeFlags.EnumLiteral | TypeFlags.Literal))) at.push(t);
                 });
             }
             return checker.getUnionType(at);
@@ -355,12 +359,13 @@ namespace ts {
         // }
 
         function setEffectiveDeclaredTsTypeOfLogicalObjectOfType(rhsType: FloughType, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): {logicalObjectRhsType: FloughType, nobjRhsType: FloughType, nobjEdtType: FloughType} {
-            const { logicalObject:logicalObjectRhs, remaining:remainingRhs } = floughTypeModule.splitLogicalObject(rhsType);
+            const splitRhs = floughTypeModule.splitLogicalObject(rhsType);
+            let { logicalObject:logicalObjectRhs } = splitRhs;
             const { logicalObject:logicalObjectEdt , remaining: remainingEdt } = floughTypeModule.splitLogicalObject(getEffectiveDeclaredType(lhsSymbolFlowInfo));
             if (logicalObjectRhs && logicalObjectEdt){
-                floughLogicalObjectModule.setEffectiveDeclaredTsType(logicalObjectRhs,floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectEdt));
+                logicalObjectRhs = floughLogicalObjectModule.createCloneWithEffectiveDeclaredTsType(logicalObjectRhs,floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectEdt));
             }
-            return { logicalObjectRhsType:floughTypeModule.createTypeFromLogicalObject(logicalObjectRhs), nobjRhsType: remainingRhs, nobjEdtType: remainingEdt };
+            return { logicalObjectRhsType:floughTypeModule.createTypeFromLogicalObject(logicalObjectRhs), nobjRhsType: splitRhs.remaining, nobjEdtType: remainingEdt };
         }
 
         function widenDeclarationOrAssignmentRhs(rhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): RefTypesType {
@@ -960,6 +965,29 @@ namespace ts {
             }
         }
 
+        function getQuickIdentifierOrIsReplayableItem(expr: Expression, inferStatus: Readonly<InferStatus>): { symbol: Symbol, type?: FloughType | undefined, isReplayable?: boolean | undefined } {
+            if (expr.kind!==SyntaxKind.Identifier) Debug.fail("unexpected");
+            Debug.assert(isIdentifier(expr));
+
+            const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
+            let type: FloughType | undefined;
+            let isReplayable: boolean | undefined;
+            if (symbol.flags & SymbolFlags.RegularEnum){
+                type = floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol));
+            }
+            // There is a unique symbol for the type undefined - that gets converted directly to the undefined type here.
+            else if (checker.isUndefinedSymbol(symbol)){
+                type = floughTypeModule.createRefTypesType(undefinedType);
+            }
+            else if (symbol.flags & SymbolFlags.Function){
+                type = floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol));
+            }
+            else {
+                isReplayable = inferStatus.replayables.has(symbol);
+            }
+            return { symbol, type, isReplayable };
+        }
+
         /**
          * @param param0
          * @returns
@@ -1030,31 +1058,40 @@ namespace ts {
                 function floughIdentifierAux(): FloughReturn {
                     Debug.assert(isIdentifier(expr));
 
-                    const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
-
-                    if (symbol.flags & SymbolFlags.RegularEnum){
+                    const {symbol, type: quickType, isReplayable: isReplayable} = getQuickIdentifierOrIsReplayableItem(expr, inferStatus); //: { symbol: Symbol, type?: FloughType | undefined, isReplayableItem?: boolean | undefined } {
+                    if (quickType){
                         return createfloughReturn([createRefTypesTableReturn(
-                            floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol)),
+                            quickType,
                             sci)],
                             expr,
                         );
                     }
 
-                    // There is a unique symbol for the type undefined - that gets converted directly to the undefined type here.
-                    if (checker.isUndefinedSymbol(symbol)){
-                        return createfloughReturn([createRefTypesTableReturn(
-                            floughTypeModule.createRefTypesType(undefinedType),
-                            sci)],
-                            expr,
-                        );
-                    }
-                    if (symbol.flags & SymbolFlags.Function){
-                        return createfloughReturn([createRefTypesTableReturn(
-                            floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol)),
-                            sci)],
-                            expr,
-                        );
-                    }
+                    // const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
+
+                    // if (symbol.flags & SymbolFlags.RegularEnum){
+                    //     return createfloughReturn([createRefTypesTableReturn(
+                    //         floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol)),
+                    //         sci)],
+                    //         expr,
+                    //     );
+                    // }
+
+                    // // There is a unique symbol for the type undefined - that gets converted directly to the undefined type here.
+                    // if (checker.isUndefinedSymbol(symbol)){
+                    //     return createfloughReturn([createRefTypesTableReturn(
+                    //         floughTypeModule.createRefTypesType(undefinedType),
+                    //         sci)],
+                    //         expr,
+                    //     );
+                    // }
+                    // if (symbol.flags & SymbolFlags.Function){
+                    //     return createfloughReturn([createRefTypesTableReturn(
+                    //         floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol)),
+                    //         sci)],
+                    //         expr,
+                    //     );
+                    // }
                     let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
                     if (!symbolFlowInfo){
                         const effectiveDeclaredTsType = floughGetTsTypeOfSymbol(symbol);
@@ -1067,7 +1104,7 @@ namespace ts {
                         _mrState.symbolFlowInfoMap.set(symbol,symbolFlowInfo);
                     }
 
-                    if (inferStatus.replayables.has(symbol)){
+                    if (isReplayable){
                         if (getMyDebug()){
                             consoleLog(`floughIdentifier[dbg]: start replay for ${dbgSymbolToStringSimple(symbol)}, ${dbgNodeToString(expr)}`);
                         }
@@ -1118,24 +1155,29 @@ namespace ts {
                                  * It would be good if we could (figuratively) map the Node values in literal object to the types they became in the symbolFlowInfo.tsType tree.
                                  *
                                  */
-                                const rhsType = rttr.type;
-                                //let typeWithWidenedObject: FloughType | undefined;
-                                const { logicalObject:logicalObjectRhs, remaining:_remainingRhs } = floughTypeModule.splitLogicalObject(rttr.type);
-                                if (logicalObjectRhs){
-                                    const effectDeclaredObjectTypes: Type[] = [];
-                                    checker.forEachType(symbolFlowInfo!.effectiveDeclaredTsType,t=>{
-                                        if (t.flags & TypeFlags.Object && !(t.flags & TypeFlags.AnyOrUnknown) && !(t.flags & TypeFlags.EnumLiteral)){
-                                            effectDeclaredObjectTypes.push(t);
-                                        }
-                                    });
-                                    floughLogicalObjectModule.setEffectiveDeclaredTsType(logicalObjectRhs, checker.getUnionType(effectDeclaredObjectTypes));
-                                    // if (getMyDebug()){
-                                    //     floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObjectRhs).forEach(s=>consoleLog(`floughIdentifierAux[dbg]: logicalObjectRhs: ${s}`));
-                                    // }
+                                if (floughTypeModule.hasLogicalObject(rttr.type)){
+                                    const rhsType = rttr.type;
+                                    const xxx = setEffectiveDeclaredTsTypeOfLogicalObjectOfType(rttr.type,symbolFlowInfo!);
+                                    rttr.type = floughTypeModule.unionWithFloughTypeMutate(xxx.logicalObjectRhsType,xxx.nobjRhsType);
                                     if (getMyDebug()){
                                         consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
                                     }
                                 }
+                                // const rhsType = rttr.type;
+                                // //let typeWithWidenedObject: FloughType | undefined;
+                                // const { logicalObject:logicalObjectRhs, remaining:_remainingRhs } = floughTypeModule.splitLogicalObject(rttr.type);
+                                // if (logicalObjectRhs){
+                                //     const effectDeclaredObjectTypes: Type[] = [];
+                                //     checker.forEachType(symbolFlowInfo!.effectiveDeclaredTsType,t=>{
+                                //         if (t.flags & TypeFlags.Object && !(t.flags & TypeFlags.AnyOrUnknown) && !(t.flags & TypeFlags.EnumLiteral)){
+                                //             effectDeclaredObjectTypes.push(t);
+                                //         }
+                                //     });
+                                //     floughLogicalObjectModule.setEffectiveDeclaredTsType(logicalObjectRhs, checker.getUnionType(effectDeclaredObjectTypes));
+                                //     // if (getMyDebug()){
+                                //     //     floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObjectRhs).forEach(s=>consoleLog(`floughIdentifierAux[dbg]: logicalObjectRhs: ${s}`));
+                                //     // }
+                                // }
                                 let narrowerTypeOut: FloughType | undefined;
                                 if (replayableInType){
                                     narrowerTypeOut = floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType);
@@ -1387,7 +1429,7 @@ namespace ts {
                     case SyntaxKind.ExclamationEqualsEqualsToken:
                     case SyntaxKind.EqualsEqualsToken:
                     case SyntaxKind.EqualsEqualsEqualsToken:{
-                        return floughByBinaryExpressionEqualsCompare();
+                        return floughByBinaryExpressionEqualsCompareV2();
                     }
                     break;
                     case SyntaxKind.InstanceOfKeyword:
@@ -2452,209 +2494,18 @@ namespace ts {
                 const emptysc = { symtab:mrNarrow.createRefTypesSymtab(), constraintItem:createFlowConstraintAlways() };
                 //createRefTypesSymtabConstraintWithEmptyInnerSymtab(inferStatus);
                 //createSymbolTable(inferStatus);
-                const type = inferStatus.getTypeOfExpressionShallowRecursion(emptysc,expr, /*returnErrorTypeOnFail*/ true);
+                let type: Type | undefined = inferStatus.getTypeOfExpressionShallowRecursion(emptysc,expr, /*returnErrorTypeOnFail*/ true);
+                if (checker.getErrorType()===type) type = undefined;
+                else type = projectTsTypeEnumLiteralsToPlainLiterals(type);
                 if (getMyDebug()) {
-                    consoleLog(`attemptToGetTypeWithoutFlough[out] expr:${dbgNodeToString(expr)}, type:${dbgTypeToString(type)}`);
+                    consoleLog(`attemptToGetTypeWithoutFlough[out] expr:${dbgNodeToString(expr)}, type:${!type ? "<undef>" : dbgTypeToString(type)}`);
                     consoleGroupEnd();
                 }
-                if (checker.getErrorType()===type) return undefined;
-                return projectTsTypeEnumLiteralsToPlainLiterals(type);
-                //return type;
+                return type;
             }
 
+            // @ts-ignore
             function floughByBinaryExpressionEqualsCompare(
-                ): FloughInnerReturn {
-                    assertCastType<BinaryExpression>(expr);
-                    const {left:leftExpr,operatorToken,right:rightExpr} = expr;
-                    if (getMyDebug()) {
-                        consoleGroup(`floughByBinaryExpressionEqualCompare[in] expr:${dbgNodeToString(expr)}`);
-                    }
-                    if (![
-                        SyntaxKind.EqualsEqualsEqualsToken,
-                        SyntaxKind.EqualsEqualsToken,
-                        SyntaxKind.ExclamationEqualsEqualsToken,
-                        SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind)){
-                        Debug.fail("unexpected");
-                    }
-                    const negateEq = [
-                        SyntaxKind.ExclamationEqualsEqualsToken,
-                        SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind);
-                    const nomativeTrueType = floughTypeModule.createRefTypesType(negateEq ? falseType : trueType);
-                    const nomativeFalseType = floughTypeModule.createRefTypesType(negateEq ? trueType : falseType);
-                    const trueAndFalseType = floughTypeModule.createRefTypesType([trueType,falseType]);
-
-
-                    const leftMntr = flough({
-                        expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                        sci
-                    });
-
-                    /**
-                     * It's too expensive to compute flough seperately for every indepent leftMntr.unmerged, so it is done on leftRttrUnion instead.
-                     * However, if the rhs is a readonly operation, then the lhs and rhs can be treated as independently calculated, post fact.
-                     */
-                    const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
-
-                    const assignCountBeforeRhs = leftRttrUnion.sci.symtab?.getAssignCount() ?? -1;
-                    if (getMyDebug()){
-                        consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: ${assignCountBeforeRhs}`);
-                    }
-                    const rightMntr = flough({
-                        expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                        sci: leftRttrUnion.sci
-                    });
-                    if (getMyDebug()){
-                        consoleLog(`floughByBinaryExpressionEqualCompare[dbg] rightMntr done`);
-                    }
-
-                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
-                    leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
-                        const leftRttr = applyCritNoneToOne(leftRttr0,leftExpr,inferStatus.groupNodeToTypeMap);
-                        if (getMyDebug()){
-                            floughTypeModule.dbgRefTypesTypeToStrings(leftRttr.type).forEach(str=>{
-                                consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
-                            });
-                        }
-                        rightMntr.unmerged.forEach((rightRttr0, _rightidx)=>{
-                            const rightRttr = applyCritNoneToOne(rightRttr0,rightExpr,inferStatus.groupNodeToTypeMap);
-                            const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
-                            const leftRightIdependent = assignCountBeforeRhs===assignCountAfterRhs;
-                            if (getMyDebug()){
-                                floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str=>{
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
-                                });
-                            }
-
-                            if (getMyDebug()){
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: ${assignCountBeforeRhs}, leftRightIndependent: ${leftRightIdependent}`);
-                            }
-                            if (getMyDebug()){
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
-                            }
-                            const aeqcmp = floughTypeModule.partitionForEqualityCompare(leftRttr.type,rightRttr.type);
-                            if (getMyDebug()){
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] aeqcmp.length:${aeqcmp.length}`);
-                            }
-                            aeqcmp.forEach((ec,_i)=>{
-                                const {leftts,rightts,bothts,left,right,both,true:pass,false:fail} = ec;
-                                // function createLeftFloughTypeFromPart(part: PartitionForEqualityCompareItemTpl<FloughType>): FloughType {
-                                //     const leftFt = both ?? left ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
-                                //     return leftFt;
-                                // }
-                                // function createRightFloughTypeFromPart(part: PartitionForEqualityCompareItemTpl<FloughType>): FloughType {
-                                //     const rightFt = both ?? right ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                //     return rightFt;
-                                // }
-                                let leftFt: RefTypesType | undefined;
-                                let rightFt: RefTypesType | undefined;
-                                function f2at(x: FloughType | undefined): Type[] | undefined {
-                                    if (!x) return undefined;
-                                    return floughTypeModule.getTsTypesFromFloughType(x);
-                                }
-                                if (getMyDebug()) {
-                                    const leftFt = both ?? left ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
-                                    //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
-                                    const rightFt = both ?? right ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                    //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] -- before`
-                                    +`[${_i}][0] left:${dbgRefTypesTypeToString(leftFt)}, right:${dbgRefTypesTypeToString(rightFt)}, pass:${pass},fail:${fail}`);
-                                }
-
-                                let sctmp = leftRightIdependent ? leftRttr.sci : rightRttr.sci;
-                                const tftype = pass ? (fail ? trueAndFalseType : nomativeTrueType) : nomativeFalseType;
-                                if (leftRttr0.symbol){
-                                    leftFt = both ?? left ?? floughTypeModule.createRefTypesType(bothts ?? leftts ?? (Debug.assert(leftts),undefined));
-                                    //leftFt = both ?? left ?? (bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts)));
-                                    ({type:leftFt, sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
-                                        symbol:leftRttr0.symbol,
-                                        isconst:leftRttr0.isconst,
-                                        // isAssign: leftRttr0.isAssign, // pure narrowing here so do not set isAssign
-                                        type: leftFt,
-                                        sc:sctmp,
-                                        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
-                                        mrNarrow
-                                    }));
-                                }
-                                if (leftMntr.typeof){
-                                    const leftTypeOfArgSymbol = leftMntr.typeof.argSymbol;
-                                    const tsTypes = f2at(both) ?? f2at(left) ?? bothts ?? leftts;
-                                    Debug.assert(tsTypes);
-                                    let typeofArgSubType: FloughType | undefined;
-                                    if (!isArray(tsTypes)) typeofArgSubType = leftMntr.typeof.map.get(tsTypes);
-                                    else if (tsTypes.length) {
-                                        if (tsTypes.length=1) typeofArgSubType = leftMntr.typeof.map.get(tsTypes[0]);
-                                        else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>leftMntr.typeof!.map.get(tstype)!));
-                                    }
-                                    Debug.assert(typeofArgSubType);
-                                    // const typeofArgSubType = (bothts ? leftMntr.typeof.map.get(bothts)! : floughTypeModule.unionOfRefTypesType(leftts!.map(tstype=>leftMntr.typeof!.map.get(tstype)!)));
-                                    ({sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
-                                        symbol:leftTypeOfArgSymbol,
-                                        isconst:_mrState.symbolFlowInfoMap.get(leftTypeOfArgSymbol)!.isconst,
-                                        // isAssign: leftRttr0.isAssign,
-                                        type: typeofArgSubType,// ?? floughTypeModule.getNeverType(),
-                                        sc:sctmp,
-                                        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
-                                        mrNarrow
-                                    }));
-                                }
-
-                                if (rightRttr0.symbol){
-                                    rightFt = both ?? right ?? floughTypeModule.createRefTypesType(bothts ?? rightts ?? (Debug.assert(rightts),undefined));
-                                    //rightFt = both ?? right ?? floughTypeModule.createRefTypesType(f2at(bothts) ?? f2at(rightts) ?? (Debug.assert(rightts),undefined));
-                                    //rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                    ({type:rightFt, sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
-                                        symbol:rightRttr0.symbol,
-                                        isconst:rightRttr0.isconst,
-                                        // isAssign: rightRttr0.isAssign,
-                                        type: rightFt ?? floughTypeModule.getNeverType(),
-                                        sc:sctmp,
-                                        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
-                                        mrNarrow
-                                    }));
-                                }
-                                if (rightMntr.typeof){
-                                    const rightTypeOfArgSymbol = rightMntr.typeof.argSymbol;
-
-                                    const tsTypes = f2at(both) ?? f2at(right) ?? bothts ?? rightts;
-                                    Debug.assert(tsTypes);
-                                    let typeofArgSubType: FloughType | undefined;
-                                    if (!isArray(tsTypes)) typeofArgSubType = rightMntr.typeof.map.get(tsTypes);
-                                    else if (tsTypes.length) {
-                                        if (tsTypes.length=1) typeofArgSubType = rightMntr.typeof.map.get(tsTypes[0]);
-                                        else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>rightMntr.typeof!.map.get(tstype)!));
-                                    }
-                                    Debug.assert(typeofArgSubType);
-                                    ({sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
-                                        symbol:rightTypeOfArgSymbol,
-                                        isconst:_mrState.symbolFlowInfoMap.get(rightTypeOfArgSymbol)!.isconst,
-                                        // isAssign: rightRttr0.isAssign,
-                                        type: typeofArgSubType ?? floughTypeModule.getNeverType(),
-                                        sc:sctmp,
-                                        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
-                                        mrNarrow
-                                    }));
-                                }
-                                if (getMyDebug()) {
-                                    const leftx = both ?? left ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
-                                    //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
-                                    const rightx = both ?? right ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                    //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] `
-                                    +`[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`);
-                                }
-                                arrRefTypesTableReturn.push({
-                                    type: tftype,
-                                    sci:sctmp
-                                });
-                            });
-                        });
-                    });
-                    return { unmerged: arrRefTypesTableReturn };
-                } // floughByBinaryExpressionEqualCompare
-
-            // @ts-expect-error
-            function floughByBinaryExpressionEqualsCompareV2(
             ): FloughInnerReturn {
                 assertCastType<BinaryExpression>(expr);
                 const {left:leftExpr,operatorToken,right:rightExpr} = expr;
@@ -2675,72 +2526,258 @@ namespace ts {
                 const nomativeFalseType = floughTypeModule.createRefTypesType(negateEq ? trueType : falseType);
                 const trueAndFalseType = floughTypeModule.createRefTypesType([trueType,falseType]);
 
+
+                const leftMntr = flough({
+                    expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                    sci
+                });
+
                 /**
-                 * If one side is object and the other is easy, then we can use as a criteria for the other side.
+                 * It's too expensive to compute flough seperately for every indepent leftMntr.unmerged, so it is done on leftRttrUnion instead.
+                 * However, if the rhs is a readonly operation, then the lhs and rhs can be treated as independently calculated, post fact.
                  */
-                //const leftQuickType = attemptToGetTypeWithoutFlough(leftExpr,inferStatus);
-                const rightQuickTsType = attemptToGetTypeWithoutFlough(rightExpr,inferStatus);
-                let leftQuickTsType: Type | undefined;
+                const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
+
+                const assignCountBeforeRhs = leftRttrUnion.sci.symtab?.getAssignCount() ?? -1;
+                if (getMyDebug()){
+                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: ${assignCountBeforeRhs}`);
+                }
+                const rightMntr = flough({
+                    expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                    sci: leftRttrUnion.sci
+                });
+                if (getMyDebug()){
+                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] rightMntr done`);
+                }
+
+                const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
+                    const leftRttr = applyCritNoneToOne(leftRttr0,leftExpr,inferStatus.groupNodeToTypeMap);
+                    if (getMyDebug()){
+                        floughTypeModule.dbgRefTypesTypeToStrings(leftRttr.type).forEach(str=>{
+                            consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
+                        });
+                    }
+                    rightMntr.unmerged.forEach((rightRttr0, _rightidx)=>{
+                        const rightRttr = applyCritNoneToOne(rightRttr0,rightExpr,inferStatus.groupNodeToTypeMap);
+                        const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
+                        const leftRightIdependent = assignCountBeforeRhs===assignCountAfterRhs;
+                        if (getMyDebug()){
+                            floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str=>{
+                                consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
+                            });
+                        }
+
+                        if (getMyDebug()){
+                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: ${assignCountBeforeRhs}, leftRightIndependent: ${leftRightIdependent}`);
+                        }
+                        if (getMyDebug()){
+                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
+                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
+                        }
+                        const aeqcmp = floughTypeModule.partitionForEqualityCompare(leftRttr.type,rightRttr.type);
+                        if (getMyDebug()){
+                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] aeqcmp.length:${aeqcmp.length}`);
+                        }
+                        aeqcmp.forEach((ec,_i)=>{
+                            const {leftts,rightts,bothts,left,right,both,true:pass,false:fail} = ec;
+                            // function createLeftFloughTypeFromPart(part: PartitionForEqualityCompareItemTpl<FloughType>): FloughType {
+                            //     const leftFt = both ?? left ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
+                            //     return leftFt;
+                            // }
+                            // function createRightFloughTypeFromPart(part: PartitionForEqualityCompareItemTpl<FloughType>): FloughType {
+                            //     const rightFt = both ?? right ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                            //     return rightFt;
+                            // }
+                            let leftFt: RefTypesType | undefined;
+                            let rightFt: RefTypesType | undefined;
+                            function f2at(x: FloughType | undefined): Type[] | undefined {
+                                if (!x) return undefined;
+                                return floughTypeModule.getTsTypesFromFloughType(x);
+                            }
+                            if (getMyDebug()) {
+                                const leftFt = both ?? left ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
+                                //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
+                                const rightFt = both ?? right ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                                //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] -- before`
+                                +`[${_i}][0] left:${dbgRefTypesTypeToString(leftFt)}, right:${dbgRefTypesTypeToString(rightFt)}, pass:${pass},fail:${fail}`);
+                            }
+
+                            let sctmp = leftRightIdependent ? leftRttr.sci : rightRttr.sci;
+                            const tftype = pass ? (fail ? trueAndFalseType : nomativeTrueType) : nomativeFalseType;
+                            if (leftRttr0.symbol){
+                                leftFt = both ?? left ?? floughTypeModule.createRefTypesType(bothts ?? leftts ?? (Debug.assert(leftts),undefined));
+                                //leftFt = both ?? left ?? (bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts)));
+                                ({type:leftFt, sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:leftRttr0.symbol,
+                                    isconst:leftRttr0.isconst,
+                                    // isAssign: leftRttr0.isAssign, // pure narrowing here so do not set isAssign
+                                    type: leftFt,
+                                    sc:sctmp,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+                                    mrNarrow
+                                }));
+                            }
+                            if (leftMntr.typeof){
+                                const leftTypeOfArgSymbol = leftMntr.typeof.argSymbol;
+                                const tsTypes = f2at(both) ?? f2at(left) ?? bothts ?? leftts;
+                                Debug.assert(tsTypes);
+                                let typeofArgSubType: FloughType | undefined;
+                                if (!isArray(tsTypes)) typeofArgSubType = leftMntr.typeof.map.get(tsTypes);
+                                else if (tsTypes.length) {
+                                    if (tsTypes.length=1) typeofArgSubType = leftMntr.typeof.map.get(tsTypes[0]);
+                                    else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>leftMntr.typeof!.map.get(tstype)!));
+                                }
+                                Debug.assert(typeofArgSubType);
+                                // const typeofArgSubType = (bothts ? leftMntr.typeof.map.get(bothts)! : floughTypeModule.unionOfRefTypesType(leftts!.map(tstype=>leftMntr.typeof!.map.get(tstype)!)));
+                                ({sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:leftTypeOfArgSymbol,
+                                    isconst:_mrState.symbolFlowInfoMap.get(leftTypeOfArgSymbol)!.isconst,
+                                    // isAssign: leftRttr0.isAssign,
+                                    type: typeofArgSubType,// ?? floughTypeModule.getNeverType(),
+                                    sc:sctmp,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+                                    mrNarrow
+                                }));
+                            }
+
+                            if (rightRttr0.symbol){
+                                rightFt = both ?? right ?? floughTypeModule.createRefTypesType(bothts ?? rightts ?? (Debug.assert(rightts),undefined));
+                                //rightFt = both ?? right ?? floughTypeModule.createRefTypesType(f2at(bothts) ?? f2at(rightts) ?? (Debug.assert(rightts),undefined));
+                                //rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                                ({type:rightFt, sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:rightRttr0.symbol,
+                                    isconst:rightRttr0.isconst,
+                                    // isAssign: rightRttr0.isAssign,
+                                    type: rightFt ?? floughTypeModule.getNeverType(),
+                                    sc:sctmp,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+                                    mrNarrow
+                                }));
+                            }
+                            if (rightMntr.typeof){
+                                const rightTypeOfArgSymbol = rightMntr.typeof.argSymbol;
+
+                                const tsTypes = f2at(both) ?? f2at(right) ?? bothts ?? rightts;
+                                Debug.assert(tsTypes);
+                                let typeofArgSubType: FloughType | undefined;
+                                if (!isArray(tsTypes)) typeofArgSubType = rightMntr.typeof.map.get(tsTypes);
+                                else if (tsTypes.length) {
+                                    if (tsTypes.length=1) typeofArgSubType = rightMntr.typeof.map.get(tsTypes[0]);
+                                    else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>rightMntr.typeof!.map.get(tstype)!));
+                                }
+                                Debug.assert(typeofArgSubType);
+                                ({sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:rightTypeOfArgSymbol,
+                                    isconst:_mrState.symbolFlowInfoMap.get(rightTypeOfArgSymbol)!.isconst,
+                                    // isAssign: rightRttr0.isAssign,
+                                    type: typeofArgSubType ?? floughTypeModule.getNeverType(),
+                                    sc:sctmp,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+                                    mrNarrow
+                                }));
+                            }
+                            if (getMyDebug()) {
+                                const leftx = both ?? left ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
+                                //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
+                                const rightx = both ?? right ?? bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                                //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] `
+                                +`[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`);
+                            }
+                            arrRefTypesTableReturn.push({
+                                type: tftype,
+                                sci:sctmp
+                            });
+                        });
+                    });
+                });
+                return { unmerged: arrRefTypesTableReturn };
+            } // floughByBinaryExpressionEqualCompare
+
+            // @ts-ignore
+            function floughByBinaryExpressionEqualsCompareV2(
+            ): FloughInnerReturn {
+                assertCastType<BinaryExpression>(expr);
+                const {left:leftExpr,operatorToken,right:rightExpr} = expr;
+                if (getMyDebug()) {
+                    consoleGroup(`floughByBinaryExpressionEqualCompareV2[in] expr:${dbgNodeToString(expr)}`);
+                }
+                if (![
+                    SyntaxKind.EqualsEqualsEqualsToken,
+                    SyntaxKind.EqualsEqualsToken,
+                    SyntaxKind.ExclamationEqualsEqualsToken,
+                    SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind)){
+                    Debug.fail("unexpected");
+                }
+                const negateEq = [
+                    SyntaxKind.ExclamationEqualsEqualsToken,
+                    SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind);
+                const nomativeTrueType = floughTypeModule.createRefTypesType(negateEq ? falseType : trueType);
+                const nomativeFalseType = floughTypeModule.createRefTypesType(negateEq ? trueType : falseType);
+                const trueAndFalseType = floughTypeModule.createRefTypesType([trueType,falseType]);
+
+
+                // const getQuick = (e: Expression) => {
+                //     let isNonReplayableIdentifier = false;
+                //     let quickType: FloughType | undefined;
+                //     if (rightExpr.kind===SyntaxKind.Identifier) {
+                //         const {symbol:_symbol, type: quickType, isReplayable} = getQuickIdentifierOrIsReplayableItem(e,inferStatus);
+                //         if (!quickType) isNonReplayableIdentifier = !isReplayable;
+                //     }
+                //     if (!quickType && isNonReplayableIdentifier===false){
+                //         const tsType = attemptToGetTypeWithoutFlough(e,inferStatus);
+                //         if (tsType) quickType = floughTypeModule.createFromTsType(tsType);
+                //     }
+                // };
 
                 // TODO: PropertyAccessExpression and has be inlcuded, but working through ElementAccessExpression test cases first.
-                // if (leftExpr.kind===SyntaxKind.ElementAccessExpression || rightExpr.kind===SyntaxKind.ElementAccessExpression){
+                if (leftExpr.kind===SyntaxKind.ElementAccessExpression || rightExpr.kind===SyntaxKind.ElementAccessExpression){
+                    if (leftExpr.kind===SyntaxKind.ElementAccessExpression){
+                        let rightIsNonReplayableIdentifier = false;
+                        let rightQuickType: FloughType | undefined;
+                        if (rightExpr.kind===SyntaxKind.Identifier) {
+                            const {symbol:_symbol, type: rightQuickType, isReplayable} = getQuickIdentifierOrIsReplayableItem(rightExpr,inferStatus);
+                            if (!rightQuickType) rightIsNonReplayableIdentifier = !isReplayable;
+                        }
+                        if (!rightQuickType && rightIsNonReplayableIdentifier===false){
+                            const tsType = attemptToGetTypeWithoutFlough(rightExpr,inferStatus);
+                            if (tsType) rightQuickType = floughTypeModule.createFromTsType(tsType);
+                        }
+                        if (rightQuickType){
+                            const leftMntr = flough({
+                                expr:leftExpr, crit:{ kind:InferCritKind.equalLiteral, targetFloughType:rightQuickType, alsoFailing:true },
+                                qdotfallout: undefined, inferStatus,
+                                sci
+                            });
+                            const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                            leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
+                                const leftRttr = applyCritNoneToOne(leftRttr0,leftExpr,inferStatus.groupNodeToTypeMap);
+                                Debug.assert(leftRttr.critsense);
+                                leftRttr.type = leftRttr.critsense==="passing" ? floughTypeModule.createTrueType() : floughTypeModule.createFalseType();
+                                arrRefTypesTableReturn.push(leftRttr);
+                            });
+                            if (getMyDebug()) {
+                                consoleGroup(`floughByBinaryExpressionEqualCompareV2[out] expr:${dbgNodeToString(expr)}`);
+                            }
+                            return { unmerged: arrRefTypesTableReturn };
+                        }
+                    }
+                }
 
-                // }
 
-
-                let leftMntr: FloughReturn | undefined;
-                let rightMntr: FloughReturn | undefined;
                 let leftRttrUnion: RefTypesTableReturnNoSymbol | undefined;
-                let rightRttrUnion: RefTypesTableReturnNoSymbol | undefined;
-                if (rightQuickTsType){
-                    leftMntr = flough({
-                        expr:leftExpr, crit:{ kind:InferCritKind.equal, target: rightQuickTsType, alsoFailing:true }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                        sci
-                    });
-                    // IWOZERE
-                }
-                else {
-                    leftQuickTsType = attemptToGetTypeWithoutFlough(leftExpr,inferStatus);
-                    if (leftQuickTsType){
-                        rightMntr = flough({
-                            expr:rightExpr, crit:{ kind:InferCritKind.equal, target: leftQuickTsType, alsoFailing:true }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                            sci
-                        });
-                        rightRttrUnion = applyCritNoneUnion(rightMntr,inferStatus.groupNodeToTypeMap);
-                    }
-                    else {
-                        leftMntr = flough({
-                            expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                            sci
-                        });
-                    }
-                }
-                if (leftQuickTsType){
-                    Debug.assert(leftMntr===undefined);
-                    Debug.assert(rightMntr!==undefined && rightRttrUnion!==undefined);
-                    leftMntr = {
-                        unmerged:[{
-                            type: floughTypeModule.createFromTsType(leftQuickTsType),
-                            sci
-                        }],
-                        nodeForMap: leftExpr,
-                    };
-                }
+                //let rightRttrUnion: RefTypesTableReturnNoSymbol | undefined;
+                let rightMntr: FloughReturn | undefined;
+                const leftMntr = flough({
+                    expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                    sci
+                });
+
                 Debug.assert(leftMntr!==undefined);
                 // eslint-disable-next-line prefer-const
                 leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
-
-                if (rightQuickTsType){
-                    Debug.assert(rightMntr===undefined);
-                    Debug.assert(leftMntr!==undefined && leftRttrUnion!==undefined);
-                    rightMntr = {
-                        unmerged:[{
-                            type: floughTypeModule.createFromTsType(rightQuickTsType),
-                            sci
-                        }],
-                        nodeForMap: rightExpr,
-                    };
-                }
 
 
                 /**
@@ -2846,7 +2883,7 @@ namespace ts {
                                 if (!isArray(tsTypes)) typeofArgSubType = leftMntr.typeof.map.get(tsTypes);
                                 else if (tsTypes.length) {
                                     if (tsTypes.length=1) typeofArgSubType = leftMntr.typeof.map.get(tsTypes[0]);
-                                    else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>leftMntr!.typeof!.map.get(tstype)!));
+                                    else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>leftMntr.typeof!.map.get(tstype)!));
                                 }
                                 Debug.assert(typeofArgSubType);
                                 // const typeofArgSubType = (bothts ? leftMntr.typeof.map.get(bothts)! : floughTypeModule.unionOfRefTypesType(leftts!.map(tstype=>leftMntr.typeof!.map.get(tstype)!)));
@@ -2973,12 +3010,49 @@ namespace ts {
                     const critTypesPassing: CritToTypeV2Result[] = [];
                     let critTypesFailing: CritToTypeV2Result[] | undefined;
                     const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getTypesFromLogicalObjectAccessReturn(raccess);
-                    if (crit.kind!==InferCritKind.none){
+                    let doingCrit = false;
+                    if (crit.kind===InferCritKind.truthy){
+                        doingCrit = true;
                         critTypesFailing = crit.alsoFailing ? [] : undefined;
                         finalTypes.forEach(t0=>{
                             const { pass, fail } = applyCritToTypeV2(t0,crit);
                             critTypesPassing.push(pass);
                             if (crit.alsoFailing) critTypesFailing!.push(fail);
+                        });
+                    }
+                    else if (crit.kind===InferCritKind.equalLiteral){
+                        doingCrit = true;
+                        critTypesFailing = crit.alsoFailing ? [] : undefined;
+                        finalTypes.forEach(t0=>{
+                            const apart = floughTypeModule.partitionForEqualityCompare(t0,crit.targetFloughType);
+                            // merge partition into a single type
+                            const aft: [FloughType[],FloughType[]] = [[],[]];
+                            const atst: [Type[],Type[]] = [[],[]];
+                            apart.forEach((pa)=>{
+                                if (pa.true){
+                                    if (pa.left||pa.both) aft[0].push(pa.left||pa.both!);
+                                    else {
+                                        Debug.assert(pa.bothts||pa.leftts?.length);
+                                        if (pa.leftts?.length) atst[0].push(...pa.leftts);
+                                        else atst[0].push(pa.bothts!);
+                                    }
+                                }
+                                if (pa.false){
+                                    if (pa.left||pa.both) aft[1].push(pa.left||pa.both!);
+                                    else {
+                                        Debug.assert(pa.bothts||pa.leftts?.length);
+                                        if (pa.leftts?.length) atst[1].push(...pa.leftts);
+                                        else atst[1].push(pa.bothts!);
+                                    }
+                                }
+                            });
+                            if (atst[0].length) aft[0].push(floughTypeModule.createFromTsTypes(atst[0]));
+                            if (atst[1].length) aft[1].push(floughTypeModule.createFromTsTypes(atst[1]));
+                            Debug.assert(aft[0].length);
+                            critTypesPassing.push(floughTypeModule.unionOfRefTypesType(aft[0]));
+                            if (crit.alsoFailing){
+                                critTypesFailing!.push(floughTypeModule.unionOfRefTypesType(aft[1]));
+                            }
                         });
                     }
                     else {
@@ -3005,7 +3079,8 @@ namespace ts {
                             const sci = copyRefTypesSymtabConstraintItem(argRttrUnion.sci);
                             sci.symtab!.set(
                                 symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
-                            unmerged.push({ type:x.type, sci });
+                            unmerged.push({ type:x.type, sci, critsense: "passing" });
+                            //unmerged.push({ type: floughTypeModule.createTrueType(), sci });
                         });
                         // failing bracnhes
                         if (critTypesFailing) {
@@ -3015,22 +3090,39 @@ namespace ts {
                                 const sci = copyRefTypesSymtabConstraintItem(argRttrUnion.sci);
                                 sci.symtab!.set(
                                     symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
-                                unmerged.push({ type:x.type, sci });
+                                unmerged.push({ type:x.type, sci, critsense: "failing" });
+                                //unmerged.push({ type: floughTypeModule.createFalseType(), sci });
                             });
                         }
                     }
                     else {
-                        critTypesPassing.forEach((ctr,i)=>{
-                            if (!ctr) return;
-                            if (ctr===true) ctr = finalTypes[i];
-                            unmerged.push({ type: ctr, sci:argRttrUnion.sci });
-                        });
+                        // if (!doingCrit) {
+                            critTypesPassing.forEach((ctr,i)=>{
+                                if (!ctr) return;
+                                if (ctr===true) ctr = finalTypes[i]; // TODO: not needed, not using ctr===true anymore
+                                if (!doingCrit){
+                                    unmerged.push({ type: ctr, sci:argRttrUnion.sci });
+                                }
+                                else {
+                                    unmerged.push({ type: ctr, sci:argRttrUnion.sci, critsense: "passing" });
+                                    unmerged.push({ type: ctr, sci:argRttrUnion.sci, critsense: "failing" });
+                                }
+                            });
+                        // }
+                        // else {
+                        //     critTypesPassing.forEach((ctr)=>{
+                        //         if (!ctr) return;
+                        //         unmerged.push({ type: floughTypeModule.createTrueType(), sci:argRttrUnion.sci });
+                        //         unmerged.push({ type: floughTypeModule.createFalseType(), sci:argRttrUnion.sci });
+                        //     });
+                        // }
                         // TODO: This might be unnecessary.
                         //orTsTypesIntoNodeToTypeMap(floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess,0), refAccessArgs[0].expressions[0], inferStatus.groupNodeToTypeMap);
                     }
                     {
                         // Note: this does not include the rightmost expression of the chain
-                        floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess,0).forEach((atstype,idx)=>{
+                        floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess).forEach((atstype,idx)=>{
+                            if (idx===0) return; // skip the root because we got a better type already from the symbol
                             orTsTypesIntoNodeToTypeMap(atstype, refAccessArgs![0].expressions[idx], inferStatus.groupNodeToTypeMap);
                         });
                     }
@@ -3156,7 +3248,8 @@ namespace ts {
                     }
                     {
                         // Note: this does not include the rightmost expression of the chain
-                        floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess,0).forEach((atstype,idx)=>{
+                        floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess).forEach((atstype,idx)=>{
+                            if (idx===0) return; // skip the root because we got a better type already from the symbol
                             orTsTypesIntoNodeToTypeMap(atstype, refAccessArgs![0].expressions[idx], inferStatus.groupNodeToTypeMap);
                         });
                     }
