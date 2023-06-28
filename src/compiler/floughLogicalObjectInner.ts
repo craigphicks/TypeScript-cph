@@ -37,7 +37,7 @@ namespace ts {
     function isLiteralTypeNumber(x: LiteralType): x is LiteralTypeNumber {
         return x.value !== undefined && typeof x.value === "number";
     }
-    // @ts-expect-error
+    // @ ts-expect-error
     function isLiteralTypeString(x: LiteralType): x is LiteralTypeString {
         return x.value !== undefined && typeof x.value === "string";
     }
@@ -767,7 +767,17 @@ namespace ts {
             }
         }
         else {
-            Debug.fail("not yet implemented; non-array/tuple object type");
+            if (!isLiteralTypeString(key)) {
+                return { type: floughTypeModule.createUndefinedType() };
+            }
+            assertCastType<ObjectType>(baseType);
+            const keystr = key.value as string;
+            const propSymbol = checker.getPropertyOfType(logicalObjectBaseIn.tsType, keystr);
+            Debug.assert(propSymbol);
+            // TODO: case enum type
+            const tstype = checker.getTypeOfSymbol(propSymbol);
+            if (extraAsserts) Debug.assert(tstype!==checker.getErrorType());
+            return { type: floughTypeModule.createFromTsType(tstype), literalKey: key };
         }
     } // end of getTypeAtIndexFromBase
 

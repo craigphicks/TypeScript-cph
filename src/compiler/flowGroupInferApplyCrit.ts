@@ -25,7 +25,7 @@ namespace ts {
         function worker(crit: Readonly<InferCrit>){
             if (crit.kind===InferCritKind.truthy) {
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
-                const arrpass: Type[] = arrtstype.filter(t=>!(checker.getTypeFacts(t)&pfacts));
+                const arrpass: Type[] = arrtstype.filter(t=>(checker.getTypeFacts(t)&pfacts));
                 if (arrpass.length===arrtstype.length) {
                     return rt; // no change,
                     //return true; // not using the "true" optimization, because it is not clear if it is worth it

@@ -47,6 +47,7 @@ namespace ts {
         createUndefinedType(): Readonly<FloughType>;
         createTrueType(): Readonly<FloughType>;
         createFalseType(): Readonly<FloughType>;
+        createLiteralStringType(s: string): Readonly<FloughType>;
         intersectionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
@@ -98,6 +99,9 @@ namespace ts {
         },
         createFalseType(): Readonly<FloughType> {
             return { nobj: { boolFalse: true } };
+        },
+        createLiteralStringType(s: string): Readonly<FloughType> {
+            return { nobj: { string: new Set<LiteralType>([checker.getStringLiteralType(s)]) } } as FloughType;
         },
         getNeverType(){
                 return uniqueNeverType;
