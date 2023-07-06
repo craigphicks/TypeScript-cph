@@ -56,19 +56,23 @@ namespace ts {
         intersectionWithObjectSimplification(a: Readonly<FloughType>,b: Readonly<FloughType>): FloughType;
         hasLogicalObject(ft: Readonly<FloughType>): boolean;
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
-        createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined): FloughType ;
-
+        createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined): FloughType;
+        setLogicalObjectMutate(logicalObject: Readonly<FloughLogicalObjectIF>, ft: FloughType): void;
         // widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
         widenNobjTypeByEffectiveDeclaredNobjType(ftNobj: Readonly<FloughType>, effectiveDeclaredNobjType: Readonly<FloughType>): FloughType;
         getLiteralNumberTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
         getLiteralStringTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
         hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
+        hasUndefinedType(ft: Readonly<FloughType>): boolean;
         getAccessKeysMutable(ft: Readonly<FloughType>): {
             number?: undefined | true | Set<LiteralTypeNumber>;
             string?: undefined | true | Set<LiteralTypeString>;
         };
         splitLogicalObject(ft: Readonly<FloughType>): { logicalObject?: FloughLogicalObjectIF | undefined, remaining: FloughType };
+        removeUndefinedNullMutate(ft: FloughType): void;
+        addUndefinedTypeMutate(ft: FloughType): void;
+        intersectionWithUndefinedNull(ft: Readonly<FloughType>): FloughType | undefined;
 
         dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
         dbgFloughTypeToString(type: Readonly<FloughType>): string;
@@ -222,7 +226,7 @@ namespace ts {
         hasLogicalObject,
         getLogicalObject,
         createTypeFromLogicalObject,
-        // widenTypeByEffectiveDeclaredType,
+        setLogicalObjectMutate,
         widenNobjTypeByEffectiveDeclaredNobjType,
         createFromTsType,
         createFromTsTypes,
@@ -261,8 +265,35 @@ namespace ts {
             if (intrinsicStringTypeOnly) return false;
             return true; // returning true even though it is not an intrinsic number type, but a set of literal numbers
         },
+        hasUndefinedType(ft: Readonly<FloughType>): boolean {
+            return !!(ft as FloughTypei).nobj.undefined;
+        },
         getAccessKeysMutable,
         splitLogicalObject,
+        removeUndefinedNullMutate(ft: FloughType): void {
+            castFloughTypei(ft);
+            delete ft.nobj.undefined;
+            delete ft.nobj.null;
+        },
+        addUndefinedTypeMutate(ft: FloughType): void {
+            castFloughTypei(ft);
+            ft.nobj.undefined = true;
+        },
+        intersectionWithUndefinedNull(ft: Readonly<FloughType>): FloughType | undefined {
+            castFloughTypei(ft);
+            const rt: FloughTypei = { nobj:{} };
+            let zilch = true;
+            if (ft.nobj.undefined) {
+                rt.nobj.undefined=true;
+                zilch = false;
+            }
+            if (ft.nobj.null) {
+                rt.nobj.null=true;
+                zilch = false;
+            }
+            if (zilch) return undefined;
+            return rt;
+        },
         dbgFloughTypeToStrings,
         dbgFloughTypeToString,
     };
@@ -484,7 +515,9 @@ namespace ts {
             return unionWithTsTypeMutate(current,accum);
         }, logicalObject ? createTypeFromLogicalObject(logicalObject) : createNeverType());
     }
-
+    function setLogicalObjectMutate(logicalObject: Readonly<FloughLogicalObjectIF>, ft: FloughTypei): void {
+        ft.logicalObject = logicalObject;
+    }
     function createFromTsType(tstype: Readonly<Type>, logicalObject?: Readonly<FloughLogicalObjectIF> | undefined): FloughTypei {
         return unionWithTsTypeMutate(tstype, logicalObject ? createTypeFromLogicalObject(logicalObject) : createNeverType());
     }
@@ -1355,9 +1388,12 @@ namespace ts {
         if (ft.any || ft.unknown) return { remaining:ft };
         if (!ft.logicalObject) return { remaining:ft };
         const logicalObject = ft.logicalObject;
-        const remaining = cloneType(ft);
-        delete remaining.logicalObject;
-        return { logicalObject, remaining };
+        const remaining = cloneTypeNobj(ft.nobj);
+        // delete remaining.logicalObject;
+        return {
+            logicalObject,
+            remaining: { nobj:remaining }
+        };
     }
 
 

@@ -1,0 +1,1051 @@
+myDebug=true, myDisableInfer=false, myDisable=true, myNoAliasAction=true, myTestFilename=, currentTestFile=_caxnc-prop-0021.ts
+  checkSourceElement[in] node: [n20] declare type X = {
+    foo?: { bar: boolean };
+};, [0,49], TypeAliasDeclaration
+    checkSourceElement[in] node: [n21] {
+    foo?: { bar: boolean };
+}, [16,48], TypeLiteral
+      checkSourceElement[in] node: [n23] foo?: { bar: boolean };, [18,46], PropertySignature
+        checkVariableLikeDeclaration[in]: node: [n23] foo?: { bar: boolean };, [18,46], PropertySignature
+          checkSourceElement[in] node: [n22] { bar: boolean }, [28,45], TypeLiteral
+            checkSourceElement[in] node: [n24] bar: boolean, [30,43], PropertySignature
+              checkVariableLikeDeclaration[in]: node: [n24] bar: boolean, [30,43], PropertySignature
+                checkSourceElement[in] node: [n25] boolean, [35,43], BooleanKeyword
+                checkSourceElement[out]: nodeid: 25
+              checkVariableLikeDeclaration[out]: node: [n24] bar: boolean, [30,43], PropertySignature
+            checkSourceElement[out]: nodeid: 24
+          checkSourceElement[out]: nodeid: 22
+        checkVariableLikeDeclaration[out]: node: [n23] foo?: { bar: boolean };, [18,46], PropertySignature
+      checkSourceElement[out]: nodeid: 23
+    checkSourceElement[out]: nodeid: 21
+  checkSourceElement[out]: nodeid: 20
+  checkSourceElement[in] node: [n26] declare const x:X;, [49,68], VariableStatement
+    checkSourceElement[in] node: [n27] x:X, [63,67], VariableDeclaration
+      checkVariableLikeDeclaration[in]: node: [n27] x:X, [63,67], VariableDeclaration
+        checkSourceElement[in] node: [n28] X, [66,67], TypeReference
+        checkSourceElement[out]: nodeid: 28
+      checkVariableLikeDeclaration[out]: node: [n27] x:X, [63,67], VariableDeclaration
+    checkSourceElement[out]: nodeid: 27
+  checkSourceElement[out]: nodeid: 26
+  checkSourceElement[in] node: [n19] function prop0021(){
+    if (x.foo?.bar){
+        x;
+        x.foo;
+        // const y = x.foo?.bar;
+        // y;
+    }
+}, [68,192], FunctionDeclaration
+    checkSourceElement[in] node: [n29] {
+    if (x.foo?.bar){
+        x;
+        x.foo;
+        // const y = x.foo?.bar;
+        // y;
+    }
+}, [89,192], Block
+      checkSourceElement[in] node: [n30] if (x.foo?.bar){
+        x;
+        x.foo;
+        // const y = x.foo?.bar;
+        // y;
+    }, [90,190], IfStatement
+        checkExpression[in] node: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+          checkExpression[in] node: [n14] x.foo, [99,104], PropertyAccessExpression
+            checkExpression[in] node: [n31] x, [99,100], Identifier
+              getFlowTypeOfReference[in]: reference [n31] x, [99,100], Identifier, declaredType: X, initialType: X, flowContainer: 19, flowNode: [f12], Start|Referenced, [gftor call depth:0
+                getTypeByMrNarrow[in] expr: [n31] x, [99,100], Identifier
+                getTypeByMrNarrowAux[dbg]: reference: [n31] x, [99,100], Identifier, maximalNode: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+                  updateHeapWithGroupForFlow[in]: group: {groupIdx: 0, maximalNode: [n13] x.foo?.bar, [99,109], PropertyAccessExpression}. minGroupIdxToAdd: undefined
+                    updateHeapWithGroupForFlow[dbg] heap[1=>0] [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+                  updateHeapWithGroupForFlow[out]: group: {maximalNode: [n13] x.foo?.bar, [99,109], PropertyAccessExpression}
+                  resolveGroupForFlow[in]: [n13] x.foo?.bar, [99,109], PropertyAccessExpression, groupIndex:0, kind:ifexpr, maximalNode.parent.kind:IfStatement, 
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap.size:0
+                  resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:
+                  resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
+                  resolveGroupForFlow[dbg] symtab: [
+                  resolveGroupForFlow[dbg] symtab: ]
+                  resolveGroupForFlow[dbg] constraintItem: {
+                  resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled:
+                  resolveGroupForFlow[dbg] constraintItem:  kind: always,
+                  resolveGroupForFlow[dbg] constraintItem: },
+                  resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():
+                    flough[in] expr:[n13] x.foo?.bar, [99,109], PropertyAccessExpression},crit:{kind:truthy,alsoFailing:true,negate:undefined, },inferStatus:{inCondition:true, currentReplayable:undefined}, qdotfalloutIn: <undef>, accessDepth:undefined
+                    flough[in] refTypesSymtab:
+                      [
+                      ]
+                    flough[in] constraintItemIn:
+                      {
+                       symbolsInvoled:
+                       kind: always,
+                      },
+                      floughInner[in] expr:[n13] x.foo?.bar, [99,109], PropertyAccessExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                      floughInner[in] refTypesSymtab:
+                      floughInner[in] refTypesSymtab:  [
+                      floughInner[in] refTypesSymtab:  ]
+                      floughInner[in] constraintItemIn:
+                      floughInner[in] constraintItemIn:  {
+                      floughInner[in] constraintItemIn:   symbolsInvoled:
+                      floughInner[in] constraintItemIn:   kind: always,
+                      floughInner[in] constraintItemIn:  },
+                        floughElementAccessExpression[in] expr: [n13] x.foo?.bar, [99,109], PropertyAccessExpression, accessDepth:undefined
+                          flough[in] expr:[n14] x.foo, [99,104], PropertyAccessExpression},crit:{kind:none,alsoFailing:undefined,negate:undefined, },inferStatus:{inCondition:true, currentReplayable:undefined}, qdotfalloutIn: <undef>, accessDepth:1
+                          flough[in] refTypesSymtab:
+                            [
+                            ]
+                          flough[in] constraintItemIn:
+                            {
+                             symbolsInvoled:
+                             kind: always,
+                            },
+                            floughInner[in] expr:[n14] x.foo, [99,104], PropertyAccessExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                            floughInner[in] refTypesSymtab:
+                            floughInner[in] refTypesSymtab:  [
+                            floughInner[in] refTypesSymtab:  ]
+                            floughInner[in] constraintItemIn:
+                            floughInner[in] constraintItemIn:  {
+                            floughInner[in] constraintItemIn:   symbolsInvoled:
+                            floughInner[in] constraintItemIn:   kind: always,
+                            floughInner[in] constraintItemIn:  },
+                              floughElementAccessExpression[in] expr: [n14] x.foo, [99,104], PropertyAccessExpression, accessDepth:1
+                                flough[in] expr:[n31] x, [99,100], Identifier},crit:{kind:none,alsoFailing:undefined,negate:undefined, },inferStatus:{inCondition:true, currentReplayable:undefined}, qdotfalloutIn: <undef>, accessDepth:2
+                                flough[in] refTypesSymtab:
+                                  [
+                                  ]
+                                flough[in] constraintItemIn:
+                                  {
+                                   symbolsInvoled:
+                                   kind: always,
+                                  },
+                                  floughIdentifier[in] [n31] x, [99,100], Identifier
+                                  floughIdentifier[out]: unmerged[0]: {
+                                  floughIdentifier[out]: unmerged[0]:   symbol: { id:21, ename: x },
+                                  floughIdentifier[out]: unmerged[0]:   isconst: true,
+                                  floughIdentifier[out]: unmerged[0]:   type: X:[83]
+                                  floughIdentifier[out]: unmerged[0]:   symtab: [
+                                  floughIdentifier[out]: unmerged[0]:   ]
+                                  floughIdentifier[out]: unmerged[0]:   constraintItem: {
+                                  floughIdentifier[out]: unmerged[0]:      symbolsInvoled:
+                                  floughIdentifier[out]: unmerged[0]:      kind: always,
+                                  floughIdentifier[out]: unmerged[0]:     },
+                                  floughIdentifier[out]: unmerged[0]: }
+                                  floughIdentifier[out] floughReturn.typeof: undefined
+                                  floughIdentifier[out] groupNodeToTypeMap.size: 0
+                                  floughIdentifier[out] [n31] x, [99,100], Identifier
+                                  flough[dbg]: unmerged[0]: {
+                                  flough[dbg]: unmerged[0]:   symbol: { id:21, ename: x },
+                                  flough[dbg]: unmerged[0]:   isconst: true,
+                                  flough[dbg]: unmerged[0]:   type: X:[83]
+                                  flough[dbg]: unmerged[0]:   symtab: [
+                                  flough[dbg]: unmerged[0]:   ]
+                                  flough[dbg]: unmerged[0]:   constraintItem: {
+                                  flough[dbg]: unmerged[0]:      symbolsInvoled:
+                                  flough[dbg]: unmerged[0]:      kind: always,
+                                  flough[dbg]: unmerged[0]:     },
+                                  flough[dbg]: unmerged[0]: }
+                                flough[out] floughReturn.typeof: <undef>
+                                flough[out] groupNodeToTypeMap.size: 0
+                                flough[out] [n31] x, [99,100], Identifier
+                              floughElementAccessExpression[out] expr: [n14] x.foo, [99,104], PropertyAccessExpression
+                            floughInner[out]:  innerret.unmerged[0]: {
+                            floughInner[out]:  innerret.unmerged[0]:   type: <undef>, // special access processing
+                            floughInner[out]:  innerret.unmerged[0]:   symtab: [
+                            floughInner[out]:  innerret.unmerged[0]:   ]
+                            floughInner[out]:  innerret.unmerged[0]:   constraintItem: {
+                            floughInner[out]:  innerret.unmerged[0]:      symbolsInvoled:
+                            floughInner[out]:  innerret.unmerged[0]:      kind: always,
+                            floughInner[out]:  innerret.unmerged[0]:     },
+                            floughInner[out]:  innerret.unmerged[0]: }
+                            floughInner[out] expr:[n14] x.foo, [99,104], PropertyAccessExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                          floughAux[dbg]: qdotfallout.length: 0
+                          floughAux[dbg]: [n14] x.foo, [99,104], PropertyAccessExpression: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)
+                            flough[dbg]: unmerged[0]: {
+                            flough[dbg]: unmerged[0]:   type: <undef>, // special access processing
+                            flough[dbg]: unmerged[0]:   symtab: [
+                            flough[dbg]: unmerged[0]:   ]
+                            flough[dbg]: unmerged[0]:   constraintItem: {
+                            flough[dbg]: unmerged[0]:      symbolsInvoled:
+                            flough[dbg]: unmerged[0]:      kind: always,
+                            flough[dbg]: unmerged[0]:     },
+                            flough[dbg]: unmerged[0]: }
+                          flough[out] floughReturn.typeof: <undef>
+                          flough[out] groupNodeToTypeMap.size: 0
+                          flough[out] [n14] x.foo, [99,104], PropertyAccessExpression
+                        accessResult: aLiterals:foobar
+                        accessResult: finalTypes[0] literalKey: bar
+                        accessResult: finalTypes[0] type:nobj.boolTrue:true
+                        accessResult: finalTypes[0] type:nobj.boolFalse:true
+                        accessResult: finalTypes[0] type:nobj.undefined:true
+                        accessResult: roots[0] type:logicalObject:logicalObjectOuter:id: 1
+                        accessResult: roots[0] type:logicalObject:effectiveDeclaredType: <undef>
+                        accessResult: roots[0] type:logicalObject:inner: id: 1
+                        accessResult: roots[0] type:logicalObject:inner:   kind: plain
+                        accessResult: roots[0] type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                        accessResult: collated[0].logicalObjectsIn[0]: id: 1
+                        accessResult: collated[0].logicalObjectsIn[0]:   kind: plain
+                        accessResult: collated[0].logicalObjectsIn[0]:   logicalObject.tsType: X:[83]
+                        accessResult: collated[0].logicalObjectsPlainOut[0]: id: 1
+                        accessResult: collated[0].logicalObjectsPlainOut[0]:   kind: plain
+                        accessResult: collated[0].logicalObjectsPlainOut[0]:   logicalObject.tsType: X:[83]
+                        accessResult: collated[0].remainingNonObjType: never
+                        accessResult: collated[1].logicalObjectsIn[0]: id: 3
+                        accessResult: collated[1].logicalObjectsIn[0]:   kind: tsunion
+                        accessResult: collated[1].logicalObjectsIn[0]:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                        accessResult: collated[1].logicalObjectsIn[0]:   #items: 1
+                        accessResult: collated[1].logicalObjectsIn[0]:         id: 2
+                        accessResult: collated[1].logicalObjectsIn[0]:       kind: plain
+                        accessResult: collated[1].logicalObjectsIn[0]:       logicalObject.tsType: { bar: boolean; }:[81]
+                        accessResult: collated[1].logicalObjectsPlainOut[0]: id: 2
+                        accessResult: collated[1].logicalObjectsPlainOut[0]:   kind: plain
+                        accessResult: collated[1].logicalObjectsPlainOut[0]:   logicalObject.tsType: { bar: boolean; }:[81]
+                        accessResult: collated[1].remainingNonObjType: nobj.undefined:true
+                        orIntoNodeToTypeMap(types:X:[83],node:[n31] x, [99,100], Identifier)::*->X:[83]
+                        orIntoNodeToTypeMap(types:{ bar: boolean; } | undefined:[82],node:[n14] x.foo, [99,104], PropertyAccessExpression)::*->{ bar: boolean; } | undefined:[82]
+                        floughElementAccessExpression[out] expr: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+                      floughInner[out]:  innerret.unmerged[0]: {
+                      floughInner[out]:  innerret.unmerged[0]:   type: true:[19]
+                      floughInner[out]:  innerret.unmerged[0]:   symtab: [
+                      floughInner[out]:  innerret.unmerged[0]:     symbol:{ id:21, ename: x }, 
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:logicalObjectOuter:id: 5
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:effectiveDeclaredType: <undef>
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner: id: 6
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   kind: plain
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                      floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                      floughInner[out]:  innerret.unmerged[0]:   ]
+                      floughInner[out]:  innerret.unmerged[0]:   constraintItem: {
+                      floughInner[out]:  innerret.unmerged[0]:      symbolsInvoled:
+                      floughInner[out]:  innerret.unmerged[0]:      kind: always,
+                      floughInner[out]:  innerret.unmerged[0]:     },
+                      floughInner[out]:  innerret.unmerged[0]: }
+                      floughInner[out]:  innerret.byNode: { node: [n31] x, [99,100], Identifier, type: X
+                      floughInner[out]:  innerret.byNode: { node: [n14] x.foo, [99,104], PropertyAccessExpression, type: { bar: boolean; } | undefined
+                      floughInner[out] expr:[n13] x.foo?.bar, [99,109], PropertyAccessExpression, inferStatus:{inCondition:true, currentReplayableItem:undefined
+                    floughAux[dbg]: qdotfallout.length: 0
+                    floughAux[dbg]: [n13] x.foo?.bar, [99,109], PropertyAccessExpression: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)
+                      flough[dbg]: unmerged[0]: {
+                      flough[dbg]: unmerged[0]:   type: true:[19]
+                      flough[dbg]: unmerged[0]:   symtab: [
+                      flough[dbg]: unmerged[0]:     symbol:{ id:21, ename: x }, 
+                      flough[dbg]: unmerged[0]:       type:logicalObject:logicalObjectOuter:id: 5
+                      flough[dbg]: unmerged[0]:       type:logicalObject:effectiveDeclaredType: <undef>
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner: id: 6
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   kind: plain
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                      flough[dbg]: unmerged[0]:   ]
+                      flough[dbg]: unmerged[0]:   constraintItem: {
+                      flough[dbg]: unmerged[0]:      symbolsInvoled:
+                      flough[dbg]: unmerged[0]:      kind: always,
+                      flough[dbg]: unmerged[0]:     },
+                      flough[dbg]: unmerged[0]: }
+                    flough[out] floughReturn.typeof: <undef>
+                    flough[out] groupNodeToTypeMap.size: 2
+                    flough[out] groupNodeToTypeMap: node: [n31] x, [99,100], Identifier, type: X
+                    flough[out] groupNodeToTypeMap: node: [n14] x.foo, [99,104], PropertyAccessExpression, type: { bar: boolean; } | undefined
+                    flough[out] [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+                  orIntoNodeToTypeMap(type:true:[19],node:[n13] x.foo?.bar, [99,109], PropertyAccessExpression)::*->true:[19]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap.size:1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n13] x.foo?.bar, [99,109], PropertyAccessExpression]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:0
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:2
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     true:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         [
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:21, ename: x }, 
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:logicalObjectOuter:id: 5
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner: id: 6
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   kind: plain
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         ]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     false:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n31] x, [99,100], Identifier] -> type:X:[83]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n14] x.foo, [99,104], PropertyAccessExpression] -> type:{ bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n13] x.foo?.bar, [99,109], PropertyAccessExpression] -> type:true:[19]
+                  resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:
+                  resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n31] x, [99,100], Identifier] -> type:X:[83]
+                  resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n14] x.foo, [99,104], PropertyAccessExpression] -> type:{ bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n13] x.foo?.bar, [99,109], PropertyAccessExpression] -> type:true:[19]
+                  resolveGroupForFlow[out]: [n13] x.foo?.bar, [99,109], PropertyAccessExpression, 
+                getTypeByMrNarrow[out] expr: [n31] x, [99,100], Identifier -> X:[83]
+              getFlowTypeOfReference[out]: reference [n31] x, [99,100], Identifier, declaredType: X, initialType: X, flowContainer: 19, flowNode: [f12], Start|Referenced, [gftor call depth:0, return: X
+            In getIdentifier(), getFlowTypeOfReference returned X
+            checkExpression[out]: [n31] x, [99,100], Identifier -> X
+            getFlowTypeOfReference[in]: reference [n14] x.foo, [99,104], PropertyAccessExpression, declaredType: { bar: boolean; } | undefined, initialType: { bar: boolean; } | undefined, flowContainer: -1, flowNode: [f12], Start|Referenced, [gftor call depth:0
+              getTypeByMrNarrow[in] expr: [n14] x.foo, [99,104], PropertyAccessExpression
+              getTypeByMrNarrowAux[dbg]: reference: [n14] x.foo, [99,104], PropertyAccessExpression, maximalNode: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+              getTypeByMrNarrowAux[dbg]: cache hit
+              getTypeByMrNarrow[out] expr: [n14] x.foo, [99,104], PropertyAccessExpression -> { bar: boolean; } | undefined:[82]
+            getFlowTypeOfReference[out]: reference [n14] x.foo, [99,104], PropertyAccessExpression, declaredType: { bar: boolean; } | undefined, initialType: { bar: boolean; } | undefined, flowContainer: -1, flowNode: [f12], Start|Referenced, [gftor call depth:0, return: { bar: boolean; } | undefined
+          checkExpression[out]: [n14] x.foo, [99,104], PropertyAccessExpression -> { bar: boolean; } | undefined
+          getFlowTypeOfReference[in]: reference [n13] x.foo?.bar, [99,109], PropertyAccessExpression, declaredType: boolean, initialType: boolean, flowContainer: -1, flowNode: [f12], Start|Referenced, [gftor call depth:0
+            getTypeByMrNarrow[in] expr: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+            getTypeByMrNarrowAux[dbg]: reference: [n13] x.foo?.bar, [99,109], PropertyAccessExpression, maximalNode: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+            getTypeByMrNarrowAux[dbg]: cache hit
+            getTypeByMrNarrow[out] expr: [n13] x.foo?.bar, [99,109], PropertyAccessExpression -> true:[19]
+          getFlowTypeOfReference[out]: reference [n13] x.foo?.bar, [99,109], PropertyAccessExpression, declaredType: boolean, initialType: boolean, flowContainer: -1, flowNode: [f12], Start|Referenced, [gftor call depth:0, return: true
+        checkExpression[out]: [n13] x.foo?.bar, [99,109], PropertyAccessExpression -> true | undefined
+        checkExpression[in] node: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+          checkExpression[in] node: [n14] x.foo, [99,104], PropertyAccessExpression
+            checkExpression[in] node: [n31] x, [99,100], Identifier
+              getFlowTypeOfReference[in]: reference [n31] x, [99,100], Identifier, declaredType: X, initialType: X, flowContainer: 19, flowNode: [f12], Start|Referenced, [gftor call depth:0
+                getTypeByMrNarrow[in] expr: [n31] x, [99,100], Identifier
+                getTypeByMrNarrowAux[dbg]: reference: [n31] x, [99,100], Identifier, maximalNode: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+                getTypeByMrNarrowAux[dbg]: cache hit
+                getTypeByMrNarrow[out] expr: [n31] x, [99,100], Identifier -> X:[83]
+              getFlowTypeOfReference[out]: reference [n31] x, [99,100], Identifier, declaredType: X, initialType: X, flowContainer: 19, flowNode: [f12], Start|Referenced, [gftor call depth:0, return: X
+            In getIdentifier(), getFlowTypeOfReference returned X
+            checkExpression[out]: [n31] x, [99,100], Identifier -> X
+            getFlowTypeOfReference[in]: reference [n14] x.foo, [99,104], PropertyAccessExpression, declaredType: { bar: boolean; } | undefined, initialType: { bar: boolean; } | undefined, flowContainer: -1, flowNode: [f12], Start|Referenced, [gftor call depth:0
+              getTypeByMrNarrow[in] expr: [n14] x.foo, [99,104], PropertyAccessExpression
+              getTypeByMrNarrowAux[dbg]: reference: [n14] x.foo, [99,104], PropertyAccessExpression, maximalNode: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+              getTypeByMrNarrowAux[dbg]: cache hit
+              getTypeByMrNarrow[out] expr: [n14] x.foo, [99,104], PropertyAccessExpression -> { bar: boolean; } | undefined:[82]
+            getFlowTypeOfReference[out]: reference [n14] x.foo, [99,104], PropertyAccessExpression, declaredType: { bar: boolean; } | undefined, initialType: { bar: boolean; } | undefined, flowContainer: -1, flowNode: [f12], Start|Referenced, [gftor call depth:0, return: { bar: boolean; } | undefined
+          checkExpression[out]: [n14] x.foo, [99,104], PropertyAccessExpression -> { bar: boolean; } | undefined
+          getFlowTypeOfReference[in]: reference [n13] x.foo?.bar, [99,109], PropertyAccessExpression, declaredType: boolean, initialType: boolean, flowContainer: -1, flowNode: [f12], Start|Referenced, [gftor call depth:0
+            getTypeByMrNarrow[in] expr: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+            getTypeByMrNarrowAux[dbg]: reference: [n13] x.foo?.bar, [99,109], PropertyAccessExpression, maximalNode: [n13] x.foo?.bar, [99,109], PropertyAccessExpression
+            getTypeByMrNarrowAux[dbg]: cache hit
+            getTypeByMrNarrow[out] expr: [n13] x.foo?.bar, [99,109], PropertyAccessExpression -> true:[19]
+          getFlowTypeOfReference[out]: reference [n13] x.foo?.bar, [99,109], PropertyAccessExpression, declaredType: boolean, initialType: boolean, flowContainer: -1, flowNode: [f12], Start|Referenced, [gftor call depth:0, return: true
+        checkExpression[out]: [n13] x.foo?.bar, [99,109], PropertyAccessExpression -> true | undefined
+        checkSourceElement[in] node: [n36] {
+        x;
+        x.foo;
+        // const y = x.foo?.bar;
+        // y;
+    }, [110,190], Block
+          checkSourceElement[in] node: [n37] x;, [111,122], ExpressionStatement
+            checkExpression[in] node: [n12] x, [111,121], Identifier
+              getFlowTypeOfReference[in]: reference [n12] x, [111,121], Identifier, declaredType: X, initialType: X, flowContainer: 19, flowNode: [f7], BranchLabel|Label|Referenced, branchKind:then, [gftor call depth:0
+                getTypeByMrNarrow[in] expr: [n12] x, [111,121], Identifier
+                getTypeByMrNarrowAux[dbg]: reference: [n12] x, [111,121], Identifier, maximalNode: [n12] x, [111,121], Identifier
+                  updateHeapWithGroupForFlow[in]: group: {groupIdx: 1, maximalNode: [n12] x, [111,121], Identifier}. minGroupIdxToAdd: undefined
+                    updateHeapWithGroupForFlow[dbg] heap[1=>1] [n12] x, [111,121], Identifier
+                  updateHeapWithGroupForFlow[out]: group: {maximalNode: [n12] x, [111,121], Identifier}
+                  resolveGroupForFlow[in]: [n12] x, [111,121], Identifier, groupIndex:1, kind:plain, maximalNode.parent.kind:ExpressionStatement, 
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap.size:1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap: [[n13] x.foo?.bar, [99,109], PropertyAccessExpression]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   groupIdx:0
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   cbe.kind:2
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     true:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         [
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:21, ename: x }, 
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:logicalObjectOuter:id: 5
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner: id: 6
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   kind: plain
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         ]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     false:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n31] x, [99,100], Identifier] -> type:X:[83]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n14] x.foo, [99,104], PropertyAccessExpression] -> type:{ bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n13] x.foo?.bar, [99,109], PropertyAccessExpression] -> type:true:[19]
+                  resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:
+                  CurrentBranchesMapC[0].delete(groupIdx:0,[then,]),  size before delete:1
+                  resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
+                  resolveGroupForFlow[dbg] symtab: [
+                  resolveGroupForFlow[dbg] symtab:   symbol:{ id:21, ename: x }, 
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:logicalObjectOuter:id: 5
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner: id: 6
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   kind: plain
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                  resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                  resolveGroupForFlow[dbg] symtab: ]
+                  resolveGroupForFlow[dbg] constraintItem: {
+                  resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled:
+                  resolveGroupForFlow[dbg] constraintItem:  kind: always,
+                  resolveGroupForFlow[dbg] constraintItem: },
+                  resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():
+                    flough[in] expr:[n12] x, [111,121], Identifier},crit:{kind:none,alsoFailing:undefined,negate:undefined, },inferStatus:{inCondition:false, currentReplayable:undefined}, qdotfalloutIn: <undef>, accessDepth:undefined
+                    flough[in] refTypesSymtab:
+                      [
+                        symbol:{ id:21, ename: x }, 
+                          type:logicalObject:logicalObjectOuter:id: 5
+                          type:logicalObject:effectiveDeclaredType: <undef>
+                          type:logicalObject:inner: id: 6
+                          type:logicalObject:inner:   kind: plain
+                          type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                          type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                      ]
+                    flough[in] constraintItemIn:
+                      {
+                       symbolsInvoled:
+                       kind: always,
+                      },
+                      floughIdentifier[in] [n12] x, [111,121], Identifier
+                      floughIdentifier[out]: unmerged[0]: {
+                      floughIdentifier[out]: unmerged[0]:   symbol: { id:21, ename: x },
+                      floughIdentifier[out]: unmerged[0]:   isconst: true,
+                      floughIdentifier[out]: unmerged[0]:   type: X:[83]
+                      floughIdentifier[out]: unmerged[0]:   symtab: [
+                      floughIdentifier[out]: unmerged[0]:     symbol:{ id:21, ename: x }, 
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:logicalObjectOuter:id: 5
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:effectiveDeclaredType: <undef>
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner: id: 6
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   kind: plain
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                      floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                      floughIdentifier[out]: unmerged[0]:   ]
+                      floughIdentifier[out]: unmerged[0]:   constraintItem: {
+                      floughIdentifier[out]: unmerged[0]:      symbolsInvoled:
+                      floughIdentifier[out]: unmerged[0]:      kind: always,
+                      floughIdentifier[out]: unmerged[0]:     },
+                      floughIdentifier[out]: unmerged[0]: }
+                      floughIdentifier[out] floughReturn.typeof: undefined
+                      floughIdentifier[out] groupNodeToTypeMap.size: 0
+                      floughIdentifier[out] [n12] x, [111,121], Identifier
+                      flough[dbg]: unmerged[0]: {
+                      flough[dbg]: unmerged[0]:   symbol: { id:21, ename: x },
+                      flough[dbg]: unmerged[0]:   isconst: true,
+                      flough[dbg]: unmerged[0]:   type: X:[83]
+                      flough[dbg]: unmerged[0]:   symtab: [
+                      flough[dbg]: unmerged[0]:     symbol:{ id:21, ename: x }, 
+                      flough[dbg]: unmerged[0]:       type:logicalObject:logicalObjectOuter:id: 5
+                      flough[dbg]: unmerged[0]:       type:logicalObject:effectiveDeclaredType: <undef>
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner: id: 6
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   kind: plain
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                      flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                      flough[dbg]: unmerged[0]:   ]
+                      flough[dbg]: unmerged[0]:   constraintItem: {
+                      flough[dbg]: unmerged[0]:      symbolsInvoled:
+                      flough[dbg]: unmerged[0]:      kind: always,
+                      flough[dbg]: unmerged[0]:     },
+                      flough[dbg]: unmerged[0]: }
+                    flough[out] floughReturn.typeof: <undef>
+                    flough[out] groupNodeToTypeMap.size: 0
+                    flough[out] [n12] x, [111,121], Identifier
+                  orIntoNodeToTypeMap(type:X:[83],node:[n12] x, [111,121], Identifier)::*->X:[83]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap.size:2
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n13] x.foo?.bar, [99,109], PropertyAccessExpression]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:0
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:2
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     true:[deleted]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         [
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:21, ename: x }, 
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:logicalObjectOuter:id: 5
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner: id: 6
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   kind: plain
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         ]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     false:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n12] x, [111,121], Identifier]:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:         [
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:           symbol:{ id:21, ename: x }, 
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:logicalObjectOuter:id: 6
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner: id: 6
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   kind: plain
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:         ]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: {
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled:
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  kind: always,
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: },
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n31] x, [99,100], Identifier] -> type:X:[83]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n14] x.foo, [99,104], PropertyAccessExpression] -> type:{ bar: boolean; } | undefined:[82]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n13] x.foo?.bar, [99,109], PropertyAccessExpression] -> type:true:[19]
+                  resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:1: [node:[n12] x, [111,121], Identifier] -> type:X:[83]
+                  resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:
+                  resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n12] x, [111,121], Identifier] -> type:X:[83]
+                  resolveGroupForFlow[out]: [n12] x, [111,121], Identifier, 
+                getTypeByMrNarrow[out] expr: [n12] x, [111,121], Identifier -> X:[83]
+              getFlowTypeOfReference[out]: reference [n12] x, [111,121], Identifier, declaredType: X, initialType: X, flowContainer: 19, flowNode: [f7], BranchLabel|Label|Referenced, branchKind:then, [gftor call depth:0, return: X
+            In getIdentifier(), getFlowTypeOfReference returned X
+            checkExpression[out]: [n12] x, [111,121], Identifier -> X
+          checkSourceElement[out]: nodeid: 37
+          checkSourceElement[in] node: [n38] x.foo;, [122,137], ExpressionStatement
+            checkExpression[in] node: [n11] x.foo, [122,136], PropertyAccessExpression
+              checkExpression[in] node: [n16] x, [122,132], Identifier
+                getFlowTypeOfReference[in]: reference [n16] x, [122,132], Identifier, declaredType: X, initialType: X, flowContainer: 19, flowNode: [f5], Referenced|ExpressionStatement, [n12] x, [111,121], Identifier[gftor call depth:0
+                  getTypeByMrNarrow[in] expr: [n16] x, [122,132], Identifier
+                  getTypeByMrNarrowAux[dbg]: reference: [n16] x, [122,132], Identifier, maximalNode: [n11] x.foo, [122,136], PropertyAccessExpression
+                    updateHeapWithGroupForFlow[in]: group: {groupIdx: 2, maximalNode: [n11] x.foo, [122,136], PropertyAccessExpression}. minGroupIdxToAdd: undefined
+                      updateHeapWithGroupForFlow[dbg] heap[1=>2] [n11] x.foo, [122,136], PropertyAccessExpression
+                    updateHeapWithGroupForFlow[out]: group: {maximalNode: [n11] x.foo, [122,136], PropertyAccessExpression}
+                    resolveGroupForFlow[in]: [n11] x.foo, [122,136], PropertyAccessExpression, groupIndex:2, kind:plain, maximalNode.parent.kind:ExpressionStatement, 
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap.size:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap: [[n13] x.foo?.bar, [99,109], PropertyAccessExpression]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   groupIdx:0
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   cbe.kind:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     true:[deleted]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         [
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:21, ename: x }, 
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:logicalObjectOuter:id: 5
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner: id: 6
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   kind: plain
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab:         ]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     false:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       symtab: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:       constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap: [[n12] x, [111,121], Identifier]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   groupIdx:1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:   cbe.kind:1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:         [
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:           symbol:{ id:21, ename: x }, 
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:logicalObjectOuter:id: 6
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner: id: 6
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   kind: plain
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     symtab:         ]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem:  kind: always,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap:     constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n31] x, [99,100], Identifier] -> type:X:[83]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n14] x.foo, [99,104], PropertyAccessExpression] -> type:{ bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:0: [node:[n13] x.foo?.bar, [99,109], PropertyAccessExpression] -> type:true:[19]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[before]: groupIdx:1: [node:[n12] x, [111,121], Identifier] -> type:X:[83]
+                    resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:
+                    CurrentBranchesMapC[0].delete(groupIdx:1,<undefined>),  size before delete:2
+                    resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
+                    resolveGroupForFlow[dbg] symtab: [
+                    resolveGroupForFlow[dbg] symtab:   symbol:{ id:21, ename: x }, 
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:logicalObjectOuter:id: 6
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner: id: 6
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   kind: plain
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                    resolveGroupForFlow[dbg] symtab:     type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                    resolveGroupForFlow[dbg] symtab: ]
+                    resolveGroupForFlow[dbg] constraintItem: {
+                    resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled:
+                    resolveGroupForFlow[dbg] constraintItem:  kind: always,
+                    resolveGroupForFlow[dbg] constraintItem: },
+                    resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():
+                      flough[in] expr:[n11] x.foo, [122,136], PropertyAccessExpression},crit:{kind:none,alsoFailing:undefined,negate:undefined, },inferStatus:{inCondition:false, currentReplayable:undefined}, qdotfalloutIn: <undef>, accessDepth:undefined
+                      flough[in] refTypesSymtab:
+                        [
+                          symbol:{ id:21, ename: x }, 
+                            type:logicalObject:logicalObjectOuter:id: 6
+                            type:logicalObject:effectiveDeclaredType: <undef>
+                            type:logicalObject:inner: id: 6
+                            type:logicalObject:inner:   kind: plain
+                            type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                            type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                        ]
+                      flough[in] constraintItemIn:
+                        {
+                         symbolsInvoled:
+                         kind: always,
+                        },
+                        floughInner[in] expr:[n11] x.foo, [122,136], PropertyAccessExpression, inferStatus:{inCondition:false, currentReplayableItem:undefined
+                        floughInner[in] refTypesSymtab:
+                        floughInner[in] refTypesSymtab:  [
+                        floughInner[in] refTypesSymtab:    symbol:{ id:21, ename: x }, 
+                        floughInner[in] refTypesSymtab:      type:logicalObject:logicalObjectOuter:id: 6
+                        floughInner[in] refTypesSymtab:      type:logicalObject:effectiveDeclaredType: <undef>
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner: id: 6
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   kind: plain
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                        floughInner[in] refTypesSymtab:      type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                        floughInner[in] refTypesSymtab:  ]
+                        floughInner[in] constraintItemIn:
+                        floughInner[in] constraintItemIn:  {
+                        floughInner[in] constraintItemIn:   symbolsInvoled:
+                        floughInner[in] constraintItemIn:   kind: always,
+                        floughInner[in] constraintItemIn:  },
+                          floughElementAccessExpression[in] expr: [n11] x.foo, [122,136], PropertyAccessExpression, accessDepth:undefined
+                            flough[in] expr:[n16] x, [122,132], Identifier},crit:{kind:none,alsoFailing:undefined,negate:undefined, },inferStatus:{inCondition:false, currentReplayable:undefined}, qdotfalloutIn: <undef>, accessDepth:1
+                            flough[in] refTypesSymtab:
+                              [
+                                symbol:{ id:21, ename: x }, 
+                                  type:logicalObject:logicalObjectOuter:id: 6
+                                  type:logicalObject:effectiveDeclaredType: <undef>
+                                  type:logicalObject:inner: id: 6
+                                  type:logicalObject:inner:   kind: plain
+                                  type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                                  type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                              ]
+                            flough[in] constraintItemIn:
+                              {
+                               symbolsInvoled:
+                               kind: always,
+                              },
+                              floughIdentifier[in] [n16] x, [122,132], Identifier
+                              floughIdentifier[out]: unmerged[0]: {
+                              floughIdentifier[out]: unmerged[0]:   symbol: { id:21, ename: x },
+                              floughIdentifier[out]: unmerged[0]:   isconst: true,
+                              floughIdentifier[out]: unmerged[0]:   type: X:[83]
+                              floughIdentifier[out]: unmerged[0]:   symtab: [
+                              floughIdentifier[out]: unmerged[0]:     symbol:{ id:21, ename: x }, 
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:logicalObjectOuter:id: 6
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:effectiveDeclaredType: <undef>
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner: id: 6
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   kind: plain
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                              floughIdentifier[out]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                              floughIdentifier[out]: unmerged[0]:   ]
+                              floughIdentifier[out]: unmerged[0]:   constraintItem: {
+                              floughIdentifier[out]: unmerged[0]:      symbolsInvoled:
+                              floughIdentifier[out]: unmerged[0]:      kind: always,
+                              floughIdentifier[out]: unmerged[0]:     },
+                              floughIdentifier[out]: unmerged[0]: }
+                              floughIdentifier[out] floughReturn.typeof: undefined
+                              floughIdentifier[out] groupNodeToTypeMap.size: 0
+                              floughIdentifier[out] [n16] x, [122,132], Identifier
+                              flough[dbg]: unmerged[0]: {
+                              flough[dbg]: unmerged[0]:   symbol: { id:21, ename: x },
+                              flough[dbg]: unmerged[0]:   isconst: true,
+                              flough[dbg]: unmerged[0]:   type: X:[83]
+                              flough[dbg]: unmerged[0]:   symtab: [
+                              flough[dbg]: unmerged[0]:     symbol:{ id:21, ename: x }, 
+                              flough[dbg]: unmerged[0]:       type:logicalObject:logicalObjectOuter:id: 6
+                              flough[dbg]: unmerged[0]:       type:logicalObject:effectiveDeclaredType: <undef>
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner: id: 6
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   kind: plain
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                              flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                              flough[dbg]: unmerged[0]:   ]
+                              flough[dbg]: unmerged[0]:   constraintItem: {
+                              flough[dbg]: unmerged[0]:      symbolsInvoled:
+                              flough[dbg]: unmerged[0]:      kind: always,
+                              flough[dbg]: unmerged[0]:     },
+                              flough[dbg]: unmerged[0]: }
+                            flough[out] floughReturn.typeof: <undef>
+                            flough[out] groupNodeToTypeMap.size: 0
+                            flough[out] [n16] x, [122,132], Identifier
+                          accessResult: aLiterals:foo
+                          accessResult: finalTypes[0] literalKey: <undef>
+                          accessResult: finalTypes[0] type:nobj.undefined:true
+                          accessResult: finalTypes[0] type:logicalObject:logicalObjectOuter:id: 4
+                          accessResult: finalTypes[0] type:logicalObject:effectiveDeclaredType: <undef>
+                          accessResult: finalTypes[0] type:logicalObject:inner: id: 5
+                          accessResult: finalTypes[0] type:logicalObject:inner:   kind: tsunion
+                          accessResult: finalTypes[0] type:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                          accessResult: finalTypes[0] type:logicalObject:inner:   #items: 1
+                          accessResult: finalTypes[0] type:logicalObject:inner:         id: 4
+                          accessResult: finalTypes[0] type:logicalObject:inner:       kind: plain
+                          accessResult: finalTypes[0] type:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                          accessResult: finalTypes[0] type:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                          accessResult: roots[0] type:logicalObject:logicalObjectOuter:id: 6
+                          accessResult: roots[0] type:logicalObject:effectiveDeclaredType: <undef>
+                          accessResult: roots[0] type:logicalObject:inner: id: 6
+                          accessResult: roots[0] type:logicalObject:inner:   kind: plain
+                          accessResult: roots[0] type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                          accessResult: roots[0] type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                          accessResult: collated[0].logicalObjectsIn[0]: id: 6
+                          accessResult: collated[0].logicalObjectsIn[0]:   kind: plain
+                          accessResult: collated[0].logicalObjectsIn[0]:   logicalObject.tsType: X:[83]
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                          accessResult: collated[0].logicalObjectsIn[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                          accessResult: collated[0].logicalObjectsPlainOut[0]: id: 6
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   kind: plain
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   logicalObject.tsType: X:[83]
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                          accessResult: collated[0].logicalObjectsPlainOut[0]:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                          accessResult: collated[0].remainingNonObjType: never
+                          orIntoNodeToTypeMap(types:X:[83],node:[n16] x, [122,132], Identifier)::*->X:[83]
+                          floughElementAccessExpression[out] expr: [n11] x.foo, [122,136], PropertyAccessExpression
+                        floughInner[out]:  innerret.unmerged[0]: {
+                        floughInner[out]:  innerret.unmerged[0]:   type: undefined:[10] | { bar: boolean; }:[81]
+                        floughInner[out]:  innerret.unmerged[0]:   symtab: [
+                        floughInner[out]:  innerret.unmerged[0]:     symbol:{ id:21, ename: x }, 
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:logicalObjectOuter:id: 7
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:effectiveDeclaredType: <undef>
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner: id: 6
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   kind: plain
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                        floughInner[out]:  innerret.unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                        floughInner[out]:  innerret.unmerged[0]:   ]
+                        floughInner[out]:  innerret.unmerged[0]:   constraintItem: {
+                        floughInner[out]:  innerret.unmerged[0]:      symbolsInvoled:
+                        floughInner[out]:  innerret.unmerged[0]:      kind: always,
+                        floughInner[out]:  innerret.unmerged[0]:     },
+                        floughInner[out]:  innerret.unmerged[0]: }
+                        floughInner[out]:  innerret.byNode: { node: [n16] x, [122,132], Identifier, type: X
+                        floughInner[out] expr:[n11] x.foo, [122,136], PropertyAccessExpression, inferStatus:{inCondition:false, currentReplayableItem:undefined
+                      floughAux[dbg]: qdotfallout.length: 0
+                      floughAux[dbg]: [n11] x.foo, [122,136], PropertyAccessExpression: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)
+                        flough[dbg]: unmerged[0]: {
+                        flough[dbg]: unmerged[0]:   type: undefined:[10] | { bar: boolean; }:[81]
+                        flough[dbg]: unmerged[0]:   symtab: [
+                        flough[dbg]: unmerged[0]:     symbol:{ id:21, ename: x }, 
+                        flough[dbg]: unmerged[0]:       type:logicalObject:logicalObjectOuter:id: 7
+                        flough[dbg]: unmerged[0]:       type:logicalObject:effectiveDeclaredType: <undef>
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner: id: 6
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   kind: plain
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                        flough[dbg]: unmerged[0]:       type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                        flough[dbg]: unmerged[0]:   ]
+                        flough[dbg]: unmerged[0]:   constraintItem: {
+                        flough[dbg]: unmerged[0]:      symbolsInvoled:
+                        flough[dbg]: unmerged[0]:      kind: always,
+                        flough[dbg]: unmerged[0]:     },
+                        flough[dbg]: unmerged[0]: }
+                      flough[out] floughReturn.typeof: <undef>
+                      flough[out] groupNodeToTypeMap.size: 1
+                      flough[out] groupNodeToTypeMap: node: [n16] x, [122,132], Identifier, type: X
+                      flough[out] [n11] x.foo, [122,136], PropertyAccessExpression
+                    orIntoNodeToTypeMap(type:{ bar: boolean; } | undefined:[82],node:[n11] x.foo, [122,136], PropertyAccessExpression)::*->{ bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap.size:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n13] x.foo?.bar, [99,109], PropertyAccessExpression]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:0
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     true:[deleted]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         [
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:           symbol:{ id:21, ename: x }, 
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:logicalObjectOuter:id: 5
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner: id: 6
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   kind: plain
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab:         ]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: always,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     false:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       symtab: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  symbolsInvoled: <undefined>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem:  kind: never,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:       constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap: [[n11] x.foo, [122,136], PropertyAccessExpression]:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   groupIdx:2
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:   cbe.kind:1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:         [
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:           symbol:{ id:21, ename: x }, 
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:logicalObjectOuter:id: 7
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner: id: 6
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   kind: plain
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   logicalObject.tsType: X:[83]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:nobj.undefined:true
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:logicalObjectOuter:id: 4
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:effectiveDeclaredType: <undef>
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner: id: 5
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   kind: tsunion
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   logicalObject.tsType: { bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:   #items: 1
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:         id: 4
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       kind: plain
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       logicalObject.tsType: { bar: boolean; }:[81]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:             type:logicalObject:inner:   variation:  key:"foo":[84]], value:logicalObject:inner:       variation:  key:"bar":[85]], value:nobj.boolTrue:true
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     symtab:         ]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: {
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  symbolsInvoled:
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem:  kind: always,
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: forFlow.currentBranchesMap:     constraintItem: },
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n31] x, [99,100], Identifier] -> type:X:[83]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n14] x.foo, [99,104], PropertyAccessExpression] -> type:{ bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:0: [node:[n13] x.foo?.bar, [99,109], PropertyAccessExpression] -> type:true:[19]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:1: [node:[n12] x, [111,121], Identifier] -> type:X:[83]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:2: [node:[n16] x, [122,132], Identifier] -> type:X:[83]
+                    resolveGroupForFlow[dbg:] currentBranchesMap[after]: groupIdx:2: [node:[n11] x.foo, [122,136], PropertyAccessExpression] -> type:{ bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:
+                    resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n16] x, [122,132], Identifier] -> type:X:[83]
+                    resolveGroupForFlow[dbg] groupNodeToTypeMap: [node:[n11] x.foo, [122,136], PropertyAccessExpression] -> type:{ bar: boolean; } | undefined:[82]
+                    resolveGroupForFlow[out]: [n11] x.foo, [122,136], PropertyAccessExpression, 
+                  getTypeByMrNarrow[out] expr: [n16] x, [122,132], Identifier -> X:[83]
+                getFlowTypeOfReference[out]: reference [n16] x, [122,132], Identifier, declaredType: X, initialType: X, flowContainer: 19, flowNode: [f5], Referenced|ExpressionStatement, [n12] x, [111,121], Identifier[gftor call depth:0, return: X
+              In getIdentifier(), getFlowTypeOfReference returned X
+              checkExpression[out]: [n16] x, [122,132], Identifier -> X
+              getFlowTypeOfReference[in]: reference [n11] x.foo, [122,136], PropertyAccessExpression, declaredType: { bar: boolean; } | undefined, initialType: { bar: boolean; } | undefined, flowContainer: -1, flowNode: [f5], Referenced|ExpressionStatement, [n12] x, [111,121], Identifier[gftor call depth:0
+                getTypeByMrNarrow[in] expr: [n11] x.foo, [122,136], PropertyAccessExpression
+                getTypeByMrNarrowAux[dbg]: reference: [n11] x.foo, [122,136], PropertyAccessExpression, maximalNode: [n11] x.foo, [122,136], PropertyAccessExpression
+                getTypeByMrNarrowAux[dbg]: cache hit
+                getTypeByMrNarrow[out] expr: [n11] x.foo, [122,136], PropertyAccessExpression -> { bar: boolean; } | undefined:[82]
+              getFlowTypeOfReference[out]: reference [n11] x.foo, [122,136], PropertyAccessExpression, declaredType: { bar: boolean; } | undefined, initialType: { bar: boolean; } | undefined, flowContainer: -1, flowNode: [f5], Referenced|ExpressionStatement, [n12] x, [111,121], Identifier[gftor call depth:0, return: { bar: boolean; } | undefined
+            checkExpression[out]: [n11] x.foo, [122,136], PropertyAccessExpression -> { bar: boolean; } | undefined
+          checkSourceElement[out]: nodeid: 38
+        checkSourceElement[out]: nodeid: 36
+      checkSourceElement[out]: nodeid: 30
+    checkSourceElement[out]: nodeid: 29
+  checkSourceElement[out]: nodeid: 19
+  checkSourceElement[in] node: [n39] , [192,192], EndOfFileToken
+  checkSourceElement[out]: nodeid: 39
+_caxnc-prop-0021.ts, time(ms): 83, myMaxDepth: 0

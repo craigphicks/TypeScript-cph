@@ -41,6 +41,7 @@ namespace ts {
         logicalObjectAccess(
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
+            aexpression: Readonly<Expression[]>
         ): LogicalObjectAccessReturn;
         getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>;
         logicalObjectModify(
@@ -88,8 +89,9 @@ namespace ts {
         logicalObjectAccess(
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
+            aexpression: Readonly<Expression[]>
         ): LogicalObjectAccessReturn {
-            return floughLogicalObjectInnerModule.logicalObjectAccess(roots, akey);
+            return floughLogicalObjectInnerModule.logicalObjectAccess(roots, akey, aexpression);
         },
         getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>{
             return floughLogicalObjectInnerModule.getTypesFromLogicalObjectAccessReturn(loar);

@@ -1,0 +1,43 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0020.ts ===
+declare type X = {
+>X : { foo?: { bar: boolean; } | undefined; }
+
+    foo?: { bar: boolean };
+>foo : { bar: boolean; } | undefined
+>bar : boolean
+
+};
+declare const x:X;
+>x : X
+
+function prop0020(){
+>prop0020 : () => void
+
+    if (x.foo?.bar){
+>x.foo?.bar : boolean | undefined
+>x.foo : { bar: boolean; } | undefined
+>x : X
+>foo : { bar: boolean; } | undefined
+>bar : boolean | undefined
+    }
+    else {
+        x;
+>x : X
+
+        x.foo;
+>x.foo : { bar: boolean; } | undefined
+>x : X
+>foo : { bar: boolean; } | undefined
+
+        const z = x.foo?.bar;
+>z : boolean | undefined
+>x.foo?.bar : boolean | undefined
+>x.foo : { bar: boolean; } | undefined
+>x : X
+>foo : { bar: boolean; } | undefined
+>bar : boolean | undefined
+
+        z;
+>z : boolean | undefined
+    }
+}

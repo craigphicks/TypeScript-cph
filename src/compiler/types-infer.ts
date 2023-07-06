@@ -182,7 +182,10 @@ namespace ts {
         inferStatus: InferStatus,
         crit: InferCrit,
         accessDepth?: number,
-        refAccessArgs?: [{roots: AccessArgsRoot[] | undefined, keyTypes: FloughType[], expressions: Expression[]}], // a tuple of an array, only set by callees which are accessor expressions
+        refAccessArgs?: [{
+            roots: AccessArgsRoot[] | undefined, keyTypes: FloughType[],
+            expressions: (ElementAccessExpression | PropertyAccessExpression)[]
+        }], // a tuple of an array, only set by callees which are accessor expressions
     };
 
     export type NodeToTypeMap = ESMap<Node, Type>;
