@@ -590,42 +590,42 @@ namespace ts {
         return ut;
     }
 
-    function hasNonObjectType(top: Readonly<FloughLogicalObjectInner>): boolean {
-        function helper(lobj: Readonly<FloughLogicalObjectInner>): boolean {
-            if (lobj.kind===FloughLogicalObjectKind.plain){
-                {
-                    const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(lobj.tsType);
-                    if (!floughTypeModule.isNeverType(remaining)) return true;
-                    Debug.assert(logicalObject);
-                }
-                let some = false;
-                lobj.variations?.forEach((ft: FloughType) =>{
-                    const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(ft);
-                    if (!floughTypeModule.isNeverType(remaining)) some = true;
-                    Debug.assert(logicalObject);
-                });
-                return some;
-            }
-            else if (lobj.kind===FloughLogicalObjectKind.union){
-                return lobj.items.some(helper);
-            }
-            else Debug.fail("");
-        }
-        return helper(top);
-    }
+    // function hasNonObjectType(top: Readonly<FloughLogicalObjectInner>): boolean {
+    //     function helper(lobj: Readonly<FloughLogicalObjectInner>): boolean {
+    //         if (lobj.kind===FloughLogicalObjectKind.plain){
+    //             {
+    //                 const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(lobj.tsType);
+    //                 if (!floughTypeModule.isNeverType(remaining)) return true;
+    //                 Debug.assert(logicalObject);
+    //             }
+    //             let some = false;
+    //             lobj.variations?.forEach((ft: FloughType) =>{
+    //                 const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(ft);
+    //                 if (!floughTypeModule.isNeverType(remaining)) some = true;
+    //                 Debug.assert(logicalObject);
+    //             });
+    //             return some;
+    //         }
+    //         else if (lobj.kind===FloughLogicalObjectKind.union){
+    //             return lobj.items.some(helper);
+    //         }
+    //         else Debug.fail("");
+    //     }
+    //     return helper(top);
+    // }
 
     function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectBasic>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectBasic {
         if (logicalObject.kind!=="plain"){
             Debug.fail("unexpected logicalObject.kind!=='plain'");
         }
-        if (extraAsserts){
-            const {logicalObject:modLogicalObjectOuter,remaining:_modRemaining} = floughTypeModule.splitLogicalObject(modifiedType);
-            let modLogicalObject: FloughLogicalObjectInner | undefined;
-            if (modLogicalObjectOuter){
-                modLogicalObject = floughLogicalObjectModule.getInnerIF(modLogicalObjectOuter) as FloughLogicalObjectInner;
-                if (hasNonObjectType(modLogicalObject)) Debug.fail("hasNonObjectType");
-            }
-        }
+        // if (extraAsserts){
+        //     const {logicalObject:modLogicalObjectOuter,remaining:_modRemaining} = floughTypeModule.splitLogicalObject(modifiedType);
+        //     let modLogicalObject: FloughLogicalObjectInner | undefined;
+        //     if (modLogicalObjectOuter){
+        //         modLogicalObject = floughLogicalObjectModule.getInnerIF(modLogicalObjectOuter) as FloughLogicalObjectInner;
+        //         if (hasNonObjectType(modLogicalObject)) Debug.fail("hasNonObjectType");
+        //     }
+        // }
         const variations = logicalObject.variations ? new Map(logicalObject.variations) : new Map<LiteralType,FloughType>();
         variations.set(key, modifiedType);
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -653,14 +653,14 @@ namespace ts {
         if (logicalObjectBasic.kind!=="plain"){
             Debug.fail("unexpected logicalObject.kind!=='plain'");
         }
-        if (extraAsserts){
-            const {logicalObject:modLogicalObjectOuter,remaining:_modRemaining} = floughTypeModule.splitLogicalObject(newLogicalObjectAtKey);
-            let modLogicalObject: FloughLogicalObjectInner | undefined;
-            if (modLogicalObjectOuter){
-                modLogicalObject = floughLogicalObjectModule.getInnerIF(modLogicalObjectOuter) as FloughLogicalObjectInner;
-                if (hasNonObjectType(modLogicalObject)) Debug.fail("hasNonObjectType");
-            }
-        }
+        // if (extraAsserts){
+        //     const {logicalObject:modLogicalObjectOuter,remaining:_modRemaining} = floughTypeModule.splitLogicalObject(newLogicalObjectAtKey);
+        //     let modLogicalObject: FloughLogicalObjectInner | undefined;
+        //     if (modLogicalObjectOuter){
+        //         modLogicalObject = floughLogicalObjectModule.getInnerIF(modLogicalObjectOuter) as FloughLogicalObjectInner;
+        //         if (hasNonObjectType(modLogicalObject)) Debug.fail("hasNonObjectType");
+        //     }
+        // }
         let nobjTypeToAdd: FloughType | undefined;
         if (newNobjType && finalTypeContainsUndefined && (expr as PropertyAccessExpression)?.questionDotToken){
             nobjTypeToAdd=floughTypeModule.intersectionWithUndefinedNull(newNobjType);
@@ -697,7 +697,7 @@ namespace ts {
             variations.forEach((v,k)=>{
                 if (k.flags & TypeFlags.Number){
                     if (accessKeys.number) {
-                        if (accessKeys.number===true) aft.push(v);
+                        if (accessKeys.number===true) aft.push(floughTypeModule.cloneType(v));
                         else {
                             assertCastType<LiteralTypeNumber>(k);
                             if (accessKeys.number.has(k)){
@@ -709,7 +709,7 @@ namespace ts {
                 }
                 else if (k.flags & TypeFlags.String){
                     if (accessKeys.string) {
-                        if (accessKeys.string===true) aft.push(v);
+                        if (accessKeys.string===true) aft.push(floughTypeModule.cloneType(v));
                         else {
                             assertCastType<LiteralTypeString>(k);
                             if (accessKeys.string.has(k)){
@@ -779,17 +779,20 @@ namespace ts {
         Debug.fail("");
     }
 
-    function getTypeAtIndexFromBase(logicalObjectBaseIn: Readonly<FloughLogicalObjectInner>, key: LiteralType): { literalKey?: LiteralType | undefined, type: FloughType } {
-        function typeContainsUndefined(type: Readonly<Type>): boolean {
-            return !!(((type.flags & TypeFlags.Union) && (type as UnionType).types.some(x=>!!(x.flags & TypeFlags.Undefined)))
-            || (type.flags & TypeFlags.Undefined));
+    function getTypeAtIndexFromBase(logicalObjectBaseIn: Readonly<FloughLogicalObjectInner>, key: LiteralType): { literalKey?: LiteralType | undefined, type: Readonly<FloughType> } {
+        let typeContainsUndefined: ((type: Readonly<Type>) => boolean) | undefined;
+        if (extraAsserts) {
+            typeContainsUndefined = (type: Readonly<Type>): boolean => {
+                return !!(((type.flags & TypeFlags.Union) && (type as UnionType).types.some(x=>!!(x.flags & TypeFlags.Undefined)))
+                || (type.flags & TypeFlags.Undefined));
+            };
         }
         if (logicalObjectBaseIn.kind!=="plain"){
             Debug.fail("unexpected logicalObject.kind!=='plain'");
         }
         {
             const type = logicalObjectBaseIn.variations?.get(key);
-            if (type) return { type };
+            if (type) return { literalKey: key, type: floughTypeModule.cloneType(type) };
         }
         const baseType = logicalObjectBaseIn.tsType;
         if (checker.isArrayOrTupleType(baseType)){
@@ -808,14 +811,14 @@ namespace ts {
                     tstype = tupleElements[index];
                     undef = !!(elementFlags[index] & (ElementFlags.Optional | ElementFlags.Rest));
                     if (extraAsserts) {
-                        if (undef) Debug.assert(typeContainsUndefined(tstype), "tuple type does not include undefined");
+                        if (undef) Debug.assert(typeContainsUndefined!(tstype), "tuple type does not include undefined");
                     }
                 }
                 else if (hasRest) {
                     tstype = tupleElements[tupleElements.length-1];
                     undef = true;
                     if (extraAsserts) {
-                        if (undef) Debug.assert(typeContainsUndefined(tstype), "tuple type does not include undefined");
+                        if (undef) Debug.assert(typeContainsUndefined!(tstype), "tuple type does not include undefined");
                     }
                 }
                 else tstype = checker.getUndefinedType();
@@ -1109,10 +1112,10 @@ namespace ts {
         const acollated: Collated[] = [collated0];
         const aLiterals: (LiteralType | undefined)[] = [];
         let finalLiteralKeyAndType: { literalKey?: LiteralType | undefined, type: FloughType }[];
-        const aqdot: boolean[] = aexpression.map(e=>!!(e as PropertyAccessExpression).questionDotToken);
+        //const aqdot: boolean[] = aexpression.map(e=>!!(e as PropertyAccessExpression).questionDotToken);
         // Temporary test - does not examine each type for null/undefined
         // @ ts-expect-error
-        const addUndefinedToFinal = aqdot.some(b=>b);
+        let addUndefinedToFinal = false; //aqdot.some(b=>b);
 
         for (let i=0, ie=akey.length; i!==ie; i++){
             const nextKey = getLiteralKey(akey[i]);
@@ -1120,14 +1123,30 @@ namespace ts {
             //const nextTypes: FloughType[] = [];
             // TODO: or note: literalKey value is identical for all members of nextKeyAndType array. That is redundant.
             const nextKeyAndType: { literalKey?: LiteralType | undefined, type: FloughType }[] = [];
+            if (collated0.nobjTypeOut){
+                for (let j=0, je=collated0.logicalObjectsPlainOut.length; j!==je; j++){
+                    let type;
+                    if ((type=collated0.nobjTypeOut[j]) && floughTypeModule.hasUndefinedOrNullType(type)){
+                        addUndefinedToFinal = true;
+                    }
+                }
+            }
             if (nextKey){
                 for (let j=0, je=collated0.logicalObjectsPlainOut.length; j!==je; j++){
-                    nextKeyAndType.push(getTypeAtIndexFromBase(collated0.logicalObjectsPlainOut[j], nextKey));
+                    const { type, literalKey } = getTypeAtIndexFromBase(collated0.logicalObjectsPlainOut[j], nextKey);
+                    // if (aexpression[i].questionDotToken && floughTypeModule.hasUndefinedOrNullType(type)){
+                    //     addUndefinedToFinal = true;
+                    // }
+                    nextKeyAndType.push({ type, literalKey });
                 }
             }
             else {
                 for (let j=0, je=collated0.logicalObjectsPlainOut.length; j!==je; j++){
-                    nextKeyAndType.push({ type: getTypeOverIndicesFromBase(collated0.logicalObjectsPlainOut[j], akey[i]) as FloughType });
+                    const type = getTypeOverIndicesFromBase(collated0.logicalObjectsPlainOut[j], akey[i]);
+                    // if (aexpression[i].questionDotToken && floughTypeModule.hasUndefinedOrNullType(type)){
+                    //     addUndefinedToFinal = true;
+                    // }
+                    nextKeyAndType.push({ type });
                 }
             }
             if (i<akey.length-1){
@@ -1136,9 +1155,7 @@ namespace ts {
                 acollated.push(collated0);
             }
             else {
-                /**
-                 * Undefined is added to all final types whenever a questionDotToken was in the expression chain.
-                 */
+                // undefined is added to all final types, perhaps adding could be restricted through accurate propogation.
                 if (addUndefinedToFinal){
                     nextKeyAndType.forEach(x=>{
                         floughTypeModule.addUndefinedTypeMutate(x.type);

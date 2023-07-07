@@ -12,9 +12,10 @@ declare const x:X;
 function prop0021(){
     if (x.foo?.bar){
         x;
-        // @ts-dev-debugger
         x.foo;
-        // const y = x.foo?.bar;
-        // y;
+        x.foo.bar; 
+        x.foo?.bar; // The ? should be non-performative, expect { bar: boolean }
+        const y = x.foo.bar;
+        y;
     }
 }

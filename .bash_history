@@ -502,3 +502,24 @@ myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  -i
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-0021"  
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-0021"  
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0020"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0020"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0020"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0020"  
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-0020"  
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0020"  
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-prop-0021"  
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0021"  
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-002"  

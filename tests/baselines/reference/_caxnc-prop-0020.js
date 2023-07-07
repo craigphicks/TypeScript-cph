@@ -10,6 +10,7 @@ function prop0020(){
     else {
         x;
         x.foo;
+        x.foo?.bar;
         const z = x.foo?.bar;
         z;
     }
@@ -18,13 +19,14 @@ function prop0020(){
 //// [_caxnc-prop-0020.js]
 "use strict";
 function prop0020() {
-    var _a, _b;
+    var _a, _b, _c;
     if ((_a = x.foo) === null || _a === void 0 ? void 0 : _a.bar) {
     }
     else {
         x;
         x.foo;
-        var z = (_b = x.foo) === null || _b === void 0 ? void 0 : _b.bar;
+        (_b = x.foo) === null || _b === void 0 ? void 0 : _b.bar;
+        var z = (_c = x.foo) === null || _c === void 0 ? void 0 : _c.bar;
         z;
     }
 }

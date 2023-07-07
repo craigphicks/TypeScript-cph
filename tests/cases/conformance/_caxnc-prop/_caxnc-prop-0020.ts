@@ -15,6 +15,7 @@ function prop0020(){
     else {
         x;
         x.foo;
+        x.foo?.bar;
         const z = x.foo?.bar;
         z;
     }

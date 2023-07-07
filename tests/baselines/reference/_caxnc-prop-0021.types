@@ -28,7 +28,29 @@ function prop0021(){
 >x : X
 >foo : { bar: boolean; }
 
-        // const y = x.foo?.bar;
-        // y;
+        x.foo.bar; 
+>x.foo.bar : true
+>x.foo : { bar: boolean; }
+>x : X
+>foo : { bar: boolean; }
+>bar : true
+
+        x.foo?.bar; // The ? should be non-performative, expect { bar: boolean }
+>x.foo?.bar : true
+>x.foo : { bar: boolean; }
+>x : X
+>foo : { bar: boolean; }
+>bar : true
+
+        const y = x.foo.bar;
+>y : true
+>x.foo.bar : true
+>x.foo : { bar: boolean; }
+>x : X
+>foo : { bar: boolean; }
+>bar : true
+
+        y;
+>y : true
     }
 }

@@ -30,8 +30,15 @@ function prop0020(){
 >x : Symbol(x, Decl(_caxnc-prop-0020.ts, 3, 13))
 >foo : Symbol(foo, Decl(_caxnc-prop-0020.ts, 0, 18))
 
+        x.foo?.bar;
+>x.foo?.bar : Symbol(bar, Decl(_caxnc-prop-0020.ts, 1, 11))
+>x.foo : Symbol(foo, Decl(_caxnc-prop-0020.ts, 0, 18))
+>x : Symbol(x, Decl(_caxnc-prop-0020.ts, 3, 13))
+>foo : Symbol(foo, Decl(_caxnc-prop-0020.ts, 0, 18))
+>bar : Symbol(bar, Decl(_caxnc-prop-0020.ts, 1, 11))
+
         const z = x.foo?.bar;
->z : Symbol(z, Decl(_caxnc-prop-0020.ts, 11, 13))
+>z : Symbol(z, Decl(_caxnc-prop-0020.ts, 12, 13))
 >x.foo?.bar : Symbol(bar, Decl(_caxnc-prop-0020.ts, 1, 11))
 >x.foo : Symbol(foo, Decl(_caxnc-prop-0020.ts, 0, 18))
 >x : Symbol(x, Decl(_caxnc-prop-0020.ts, 3, 13))
@@ -39,6 +46,6 @@ function prop0020(){
 >bar : Symbol(bar, Decl(_caxnc-prop-0020.ts, 1, 11))
 
         z;
->z : Symbol(z, Decl(_caxnc-prop-0020.ts, 11, 13))
+>z : Symbol(z, Decl(_caxnc-prop-0020.ts, 12, 13))
     }
 }

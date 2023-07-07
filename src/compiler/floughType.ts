@@ -65,6 +65,7 @@ namespace ts {
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
         hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
         hasUndefinedType(ft: Readonly<FloughType>): boolean;
+        hasUndefinedOrNullType(ft: Readonly<FloughType>): boolean;
         getAccessKeysMutable(ft: Readonly<FloughType>): {
             number?: undefined | true | Set<LiteralTypeNumber>;
             string?: undefined | true | Set<LiteralTypeString>;
@@ -267,6 +268,10 @@ namespace ts {
         },
         hasUndefinedType(ft: Readonly<FloughType>): boolean {
             return !!(ft as FloughTypei).nobj.undefined;
+        },
+        hasUndefinedOrNullType(ft: Readonly<FloughType>): boolean {
+            castFloughTypei(ft);
+            return !!(ft.nobj.undefined || ft.nobj.null);
         },
         getAccessKeysMutable,
         splitLogicalObject,
@@ -659,21 +664,43 @@ namespace ts {
                     if (hasUnknown) ftin = createUnknownType();
                     return;
                 }
-                t.types.forEach(tsub => {
+                checker.forEachType(t,tsub=> {
+                //t.types.forEach(tsub => {
                     if (hasAny || hasUnknown) return;
-                    if ((tsub.flags & TypeFlags.Object)) arrlogobj.push(floughLogicalObjectModule.createFloughLogicalObjectPlain(tsub as ObjectType));
-                    else if (tsub.flags & (TypeFlags.Union|TypeFlags.Intersection)) {
-                        const ftsub  = createFromTsType(tsub);
-                        if (ftsub.any || ftsub.unknown) {
-                            if (ftsub.any) hasAny=true;
-                            if (ftsub.unknown) hasUnknown=true;
-                            return;
-                        }
-                        const {logicalObject:logicalObjectSub, nobj: nobjSub} = ftsub;
-                        nobj = unionWithFloughTypeNobjMutate(nobjSub, nobj);
-                        if (logicalObjectSub) arrlogobj.push(logicalObjectSub);
+                    if (t.flags & TypeFlags.EnumLiteral || t.flags & TypeFlags.Enum) Debug.fail("unexpected: [2] enum in Object in doUnionOne");
+                    if ((tsub.flags & TypeFlags.Object)) {
+                        arrlogobj.push(floughLogicalObjectModule.createFloughLogicalObjectPlain(tsub as ObjectType));
+                        return;
                     }
-                    else doUnionOne(tsub, /* expectOnlyPrimitive */ true);
+                    if ((tsub.flags & TypeFlags.Intersection)) {
+                        const isectarrlogobj: FloughLogicalObjectIF[] = [];
+                        (tsub as IntersectionType).types.forEach(itsub=>{
+                            if (!(itsub.flags & TypeFlags.Object) || (t.flags & TypeFlags.EnumLiteral || t.flags & TypeFlags.Enum)){
+                                Debug.fail("unexpected insterscetion member");
+                            }
+                            isectarrlogobj.push(floughLogicalObjectModule.createFloughLogicalObjectPlain(itsub as ObjectType));
+                        });
+                        arrlogobj.push(floughLogicalObjectModule.createFloughLogicalObjectTsintersection(
+                            tsub as IntersectionType, isectarrlogobj));
+                        return;
+                    }
+                    if ((tsub.flags & TypeFlags.Union)) Debug.fail("unexpected: union in union");
+                    // if (!(tsub.flags & TypeFlags.Object)){
+                    //     doUnionOne(tsub);
+                    //     return;
+                    // }
+                    // else if (tsub.flags & (TypeFlags.Union|TypeFlags.Intersection)) {
+                    //     const ftsub  = createFromTsType(tsub);
+                    //     if (ftsub.any || ftsub.unknown) {
+                    //         if (ftsub.any) hasAny=true;
+                    //         if (ftsub.unknown) hasUnknown=true;
+                    //         return;
+                    //     }
+                    //     const {logicalObject:logicalObjectSub, nobj: nobjSub} = ftsub;
+                    //     nobj = unionWithFloughTypeNobjMutate(nobjSub, nobj);
+                    //     if (logicalObjectSub) arrlogobj.push(logicalObjectSub);
+                    // }
+                    doUnionOne(tsub, /* expectOnlyPrimitive */ true);
                 });
                 if (hasAny||hasUnknown) {
                     if (hasAny) ftin = createAnyType();
@@ -681,7 +708,13 @@ namespace ts {
                     return;
                 }
                 if (arrlogobj.length!==0) {
-                    const logobj = floughLogicalObjectModule.createFloughLogicalObjectTsunion(t,arrlogobj);
+                    let logobj;
+                    if (arrlogobj.length===t.types.length){
+                        logobj = floughLogicalObjectModule.createFloughLogicalObjectTsunion(t,arrlogobj);
+                    }
+                    else {
+                        logobj = floughLogicalObjectModule.unionOfFloughLogicalObjects(arrlogobj)!;
+                    }
                     if (!logicalObject) {
                         logicalObject = logobj;
                     }
