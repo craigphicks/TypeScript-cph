@@ -1020,7 +1020,7 @@ namespace ts {
         nobjTypeOut: Readonly<FloughType | undefined>[];
         mapTsTypeToLogicalObjectPlainOutIdx: ESMap<Type,number>;
         mapTsTypeToLogicalObjectsInIdx: ESMap<Type,number[]>;
-        remainingNonObjType: FloughType;
+        //remainingNonObjType: FloughType;
         //reverseMap: { inIdx: number, idxInIn: number }[][]; //
     };
 
@@ -1033,11 +1033,11 @@ namespace ts {
         //const remap = new Map<FloughLogicalObjectBasic,FloughLogicalObjectBasic>();
         //const arrmap2: (ESMap<Type,FloughLogicalObjectBasic> | undefined)[]=[];
         const mapTsTypeToLogicalObjectsInIdx = new Map<Type,number[]>();
-        const nonObjType: FloughType = floughTypeModule.createNeverType(); //
+        //const nonObjType: FloughType = floughTypeModule.createNeverType(); //
         const logicalObjectsIn: FloughLogicalObjectInner[] = [];
         typesIn.forEach((root, _iroot)=>{
             const {logicalObject:logicalObjectOuterIF,remaining} = floughTypeModule.splitLogicalObject(root);
-            floughTypeModule.unionWithFloughTypeMutate(remaining, nonObjType);
+            //floughTypeModule.unionWithFloughTypeMutate(remaining, nonObjType);
             if (logicalObjectOuterIF) {
                 const logicalObject = floughLogicalObjectModule.getInnerIF(logicalObjectOuterIF) as FloughLogicalObjectInner;
                 logicalObjectsIn.push(logicalObject);
@@ -1068,7 +1068,7 @@ namespace ts {
             nobjTypeOut: [],
             mapTsTypeToLogicalObjectPlainOutIdx: new Map(),
             mapTsTypeToLogicalObjectsInIdx,
-            remainingNonObjType: nonObjType,
+            //remainingNonObjType: nonObjType,
         };
         map.forEach((value,_key)=>{
             if (value.length===1) {
@@ -1172,9 +1172,12 @@ namespace ts {
     function getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
         const results: Type[][] = loar.collated.map(collated=>{
             const result: Type[] = [];//[collated.remainingNonObjType];
-            if (!floughTypeModule.isNeverType(collated.remainingNonObjType)){
-                floughTypeModule.getTsTypesFromFloughType(collated.remainingNonObjType).forEach(x=>result.push(x));
-            }
+            // if (!floughTypeModule.isNeverType(collated.remainingNonObjType)){
+            //     floughTypeModule.getTsTypesFromFloughType(collated.remainingNonObjType).forEach(x=>result.push(x));
+            // }
+            collated.nobjTypeOut.forEach(x=>{
+                if (x) floughTypeModule.getTsTypesFromFloughType(x).forEach(x=>result.push(x));
+            });
             collated.logicalObjectsPlainOut.forEach(x=>{
                 // TODO: this shouldn't work when the object has been modified and the nobj separated out into a variation type?
                 // TODO: ie, probably logicalObject creation should not use tsunion in cases where it includes nobj type.
@@ -1390,7 +1393,7 @@ namespace ts {
                 if (!x) astr.push(`collated[${idx0}].nobjTypeOut[${idx1}]: <undef>`);
                 else floughTypeModule.dbgFloughTypeToStrings(x).forEach(s=>astr.push(`collated[${idx0}].nobjTypeOut[${idx1}]: ${s}`));
             });
-            floughTypeModule.dbgFloughTypeToStrings(c.remainingNonObjType).forEach(s=>astr.push(`collated[${idx0}].remainingNonObjType: ${s}`));
+            //floughTypeModule.dbgFloughTypeToStrings(c.remainingNonObjType).forEach(s=>astr.push(`collated[${idx0}].remainingNonObjType: ${s}`));
         });
         loar.aexpression.forEach((expr,idx)=>{
             astr.push(`aexpression[${idx}]: ${Debug.formatSyntaxKind(expr.kind)}, <hasqdot>:${!!(expr as PropertyAccessExpression).questionDotToken}`);
