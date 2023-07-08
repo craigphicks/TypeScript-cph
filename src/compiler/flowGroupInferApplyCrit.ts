@@ -128,7 +128,7 @@ namespace ts {
         else nodeToTypeMap.set(node,checker.getUnionType([got,...tstypes as Type[]],UnionReduction.Literal));
         if (getMyDebug()){
             const dbgTstype = checker.getUnionType(tstypes as Type[], UnionReduction.Literal);
-            consoleLog(`orIntoNodeToTypeMap(types:${dbgsModule.dbgTypeToString(dbgTstype)},node:${dbgsModule.dbgNodeToString(node)})::`
+            consoleLog(`orTsTypesIntoNodeToTypeMap(types:${dbgsModule.dbgTypeToString(dbgTstype)},node:${dbgsModule.dbgNodeToString(node)})::`
                 +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node)!)}`);
         }
     }
@@ -182,7 +182,7 @@ namespace ts {
         });
         const type = floughTypeModule.unionOfRefTypesType(atype);
         if (nodeToTypeMap) orIntoNodeToTypeMap(type,nodeForMap,nodeToTypeMap);
-        const sci = orSymtabConstraints(asc,mrNarrow);
+        const sci = orSymtabConstraints(asc/*,mrNarrow*/);
         return {
             type, sci
         };
@@ -197,6 +197,7 @@ namespace ts {
     export function applyCrit1ToOne(rttr: Readonly<RefTypesTableReturn>, crit: Readonly<InferCrit>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
+        if (nodeToTypeMap) orIntoNodeToTypeMap(rttr.type,nodeForMap,nodeToTypeMap);
         if (floughTypeModule.isNeverType(rttr.type)){
             if (extraAsserts){
                 Debug.assert(isRefTypesSymtabConstraintItemNever(rttr.sci));
@@ -252,7 +253,7 @@ namespace ts {
                 sci: failsc!
             };
         }
-        if (nodeToTypeMap) orIntoNodeToTypeMap(floughTypeModule.unionOfRefTypesType([passing.type,failing.type]),nodeForMap,nodeToTypeMap);
+        // if (nodeToTypeMap) orIntoNodeToTypeMap(floughTypeModule.unionOfRefTypesType([passing.type,failing.type]),nodeForMap,nodeToTypeMap);
         return { passing,failing };
     }
 
@@ -261,7 +262,18 @@ namespace ts {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
         if (arrRttr.length===0) return { passing: createNever(), failing: crit.alsoFailing? createNever() : undefined };
-        if (arrRttr.length===1) return applyCrit1ToOne(arrRttr[0],crit,nodeForMap,nodeToTypeMap);
+        if (arrRttr.length===1) {
+            Debug.assert(!arrRttr[0].critsense);
+            return applyCrit1ToOne(arrRttr[0],crit,nodeForMap,nodeToTypeMap);
+        }
+        if (arrRttr.length===2 && (arrRttr[0].critsense || arrRttr[1].critsense)){
+            if (extraAsserts){
+                Debug.assert(arrRttr[0].critsense==="passing" && arrRttr[1].critsense==="failing");
+            }
+            const passing = applyCritNoneToOne(arrRttr[0],nodeForMap,nodeToTypeMap);
+            const failing = applyCritNoneToOne(arrRttr[1],nodeForMap,nodeToTypeMap);
+            return { passing,failing };
+        }
         const arrPassType: RefTypesType[]=[];
         const arrFailType: RefTypesType[]=[];
         const arrPassSC: RefTypesSymtabConstraintItemNotNever[]=[];
@@ -324,7 +336,7 @@ namespace ts {
         else {
             passing = {
                 type: floughTypeModule.unionOfRefTypesType(arrPassType),
-                sci: orSymtabConstraints(arrPassSC,mrNarrow)
+                sci: orSymtabConstraints(arrPassSC/*,mrNarrow*/)
             };
         }
         if (crit.alsoFailing) {
@@ -332,7 +344,7 @@ namespace ts {
             else {
                 failing = {
                     type: floughTypeModule.unionOfRefTypesType(arrFailType),
-                    sci: orSymtabConstraints(arrFailSC,mrNarrow)
+                    sci: orSymtabConstraints(arrFailSC/*,mrNarrow*/)
                 };
             }
         }

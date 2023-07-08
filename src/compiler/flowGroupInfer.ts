@@ -673,7 +673,7 @@ namespace ts {
         Debug.assert(loopGroup.kind===GroupForFlowKind.loop);
         const anteGroupLabel: FlowGroupLabel = loopGroup.anteGroupLabels[0];
         Debug.assert(anteGroupLabel.kind===FlowGroupLabelKind.loop);
-        const mrNarrow = sourceFileMrState.mrNarrow;
+        //const mrNarrow = sourceFileMrState.mrNarrow;
 
         const setOfKeysToDeleteFromCurrentBranchesMap = new Map<GroupForFlow,Set<"then" | "else"> | undefined>();
 
@@ -771,7 +771,7 @@ namespace ts {
             setOfKeysToDeleteFromCurrentBranchesMap.clear();
 
             if (true) {
-                const scForConditionContinue = orSymtabConstraints(arrSCForLoopContinue, mrNarrow);
+                const scForConditionContinue = orSymtabConstraints(arrSCForLoopContinue/*, mrNarrow*/);
                 if (loopState.invocations===0){
                     loopState.symbolsAssignedRange = scForConditionContinue.symtab
                         ? getSymbolsAssignedRange(scForConditionContinue.symtab) : undefined;
@@ -931,7 +931,7 @@ namespace ts {
                 case FlowGroupLabelKind.loop:{
                     const sc0 = doFlowGroupLabelAux(fglab.antePrevious);
                     const asc = fglab.arrAnteContinue.map(x=>doFlowGroupLabelAux(x));
-                    return orSymtabConstraints([sc0, ...asc], mrNarrow);
+                    return orSymtabConstraints([sc0, ...asc]/*, mrNarrow*/);
                 }
                 case FlowGroupLabelKind.loopThen:
                     return doThenElse(fglab.loopGroupIdx, /*truthy*/ true);
@@ -951,7 +951,7 @@ namespace ts {
 
                     // if (!doProxySymtabSqueezing) return orSymtabConstraints([sc0, ...asc], mrNarrow);
                     if (asc.length===0) return { constraintItem: createFlowConstraintNever() };
-                    const oredsc = orSymtabConstraints(asc, mrNarrow);
+                    const oredsc = orSymtabConstraints(asc/*, mrNarrow*/);
                     return createSuperloopRefTypesSymtabConstraintItem(oredsc);
                 }
                 case FlowGroupLabelKind.block:
@@ -1039,7 +1039,7 @@ namespace ts {
             //         };
             //     }
             // }
-            return orSymtabConstraints(arrsc, mrNarrow);
+            return orSymtabConstraints(arrsc/*, mrNarrow*/);
         };
     }
 

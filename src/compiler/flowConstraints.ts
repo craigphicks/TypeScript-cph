@@ -394,13 +394,13 @@ namespace ts {
         if (ac.length===1) return ac[0];
         return createFlowConstraintNodeOr({ constraints:ac });
     }
-    function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow): RefTypesSymtabConstraintItem{
+    function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[]/*, mrNarrow: MrNarrow*/): RefTypesSymtabConstraintItem{
         if (asc.length===0) Debug.fail("unexpected"); //return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
         if (asc.length===1) return asc[0];
         const asc1 = asc.filter(sc=>!isNeverConstraint(sc.constraintItem));
         if (asc1.length===0) return createRefTypesSymtabConstraintItemNever(); // assuming or of nevers is never
         if (asc1.length===1) return asc1[0];
-        const unionSymtab = mrNarrow.unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x=>x.symtab));
+        const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x=>x.symtab));
         const oredConstraint = createFlowConstraintAlways(); // orConstraints(asc.map(x=>x.constraintItem));
         // const symbolsInvolved = new Set<Symbol>();
         // asc.forEach(x=>{
@@ -411,9 +411,9 @@ namespace ts {
         return { symtab: unionSymtab, constraintItem: oredConstraint };
     }
     // called from flowGroupInfer.ts when merging branches post-if
-    export function orSymtabs(asc: Readonly<RefTypesSymtab[]>,mrNarrow: MrNarrow): RefTypesSymtab {
-        return mrNarrow.unionArrRefTypesSymtab(asc);
-    }
+    // export function orSymtabs(asc: Readonly<RefTypesSymtab[]>,mrNarrow: MrNarrow): RefTypesSymtab {
+    //     return unionArrRefTypesSymtab(asc);
+    // }
     export function orConstraints(asc: Readonly<ConstraintItem>[]): ConstraintItem{
         const symbolsInvolved = new Set<Symbol>();
         asc.forEach(x=>{
@@ -423,8 +423,8 @@ namespace ts {
         constraintItem.symbolsInvolved = symbolsInvolved;
         return constraintItem;
     }
-    export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], mrNarrow: MrNarrow /*, getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
-        return orSymtabConstraintsV2(asc, mrNarrow);
+    export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[]/*, mrNarrow: MrNarrow , getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem{
+        return orSymtabConstraintsV2(asc/*, mrNarrow*/);
     }
 
 

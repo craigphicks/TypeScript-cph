@@ -1,0 +1,21 @@
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-101.ts ===
+let x = [0,1] as const;
+>x : readonly [0, 1]
+>[0,1] as const : readonly [0, 1]
+>[0,1] : readonly [0, 1]
+>0 : 0
+>1 : 1
+
+if (x[0]===0) {
+>x[0]===0 : boolean
+>x[0] : 0
+>x : readonly [0, 1]
+>0 : 0
+>0 : 0
+
+    x[0];
+>x[0] : 0
+>x : readonly [0, 1]
+>0 : 0
+}
+

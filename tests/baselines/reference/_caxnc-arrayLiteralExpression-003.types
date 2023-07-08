@@ -21,12 +21,12 @@ if (c) {
 
     x[0];
 >x[0] : true
->x : [boolean, boolean]
+>x : [true, true]
 >0 : 0
 
     x[1];
 >x[1] : true
->x : [boolean, boolean]
+>x : [true, true]
 >1 : 1
 }
 else {
@@ -35,12 +35,12 @@ else {
 
     x[0];
 >x[0] : false
->x : [boolean, boolean]
+>x : [false, false]
 >0 : 0
 
     x[1];
 >x[1] : false
->x : [boolean, boolean]
+>x : [false, false]
 >1 : 1
 }
 

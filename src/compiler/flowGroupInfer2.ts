@@ -16,7 +16,7 @@ namespace ts {
         dbgNodeToString(node: Node): string;
         createNodeToTypeMap(): NodeToTypeMap,
         mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void,
-        unionArrRefTypesSymtab(arr: Readonly<Readonly<RefTypesSymtab>[]>): RefTypesSymtab,
+        //unionArrRefTypesSymtab(arr: Readonly<Readonly<RefTypesSymtab>[]>): RefTypesSymtab,
         getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo): RefTypesType;
         getDeclaredType(symbol: Symbol): RefTypesType;
         checker: TypeChecker,
@@ -88,7 +88,7 @@ namespace ts {
             //mergeArrRefTypesTableReturnToRefTypesTableReturn,
             createNodeToTypeMap,
             mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
-            unionArrRefTypesSymtab,
+            //unionArrRefTypesSymtab,
             getEffectiveDeclaredType,
             getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
             checker,
