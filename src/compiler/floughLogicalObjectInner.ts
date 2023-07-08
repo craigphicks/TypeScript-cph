@@ -72,7 +72,7 @@ namespace ts {
         logicalObjectModify(
             types: Readonly<(FloughType | undefined)[]>,
             state: LogicalObjectAccessReturn,
-        ): { rootLogicalObject: FloughLogicalObjectInner, type: Readonly<FloughType> }[];
+        ): { rootLogicalObject: FloughLogicalObjectInner, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[];
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
@@ -1190,22 +1190,51 @@ namespace ts {
         return results;
     }
 
+        // TODO - decided when to incorporate coll.nobjTypeOut[basicIdx] and when not to.
+        // It should be incorporated if and only if coll.nobjTypeOut[basicIdx] equals (undefined|null) with qdot and undefined was part of state.finalTypes[modTypeIdx].type
+        /**
+         * if (finalTypeHasUndefined) remove undefined and null from nonObj
+         * else do nothing
+         * @param nonObj
+         * @param finalTypeHasUndefined
+         */
+    // function calcNonObjWithQdot(nonObj: Readonly<FloughType>, finalTypeHasUndefined: boolean): FloughType {
+
+    // }
+
     function logicalObjectModify(
         modTypesIn: Readonly<(FloughType | undefined)[]>,
         state: LogicalObjectAccessReturn,
-    ): { rootLogicalObject: FloughLogicalObjectInner, type: Readonly<FloughType> }[] {
+    ): { rootLogicalObject: FloughLogicalObjectInner, rootNonObj: FloughType | undefined; type: Readonly<FloughType> }[] {
+        function unionOfNonObj(anonobj: Readonly<(FloughType | undefined)[]>) {
+            return anonobj.reduce((accum,curr)=>{
+                if (!curr) return accum;
+                if (!accum) return floughTypeModule.cloneType(curr);
+                else return floughTypeModule.unionWithFloughTypeMutate(curr,accum);
+            });
+        }
+        function calcNonObjWithQdot(nonObj: Readonly<FloughType> | undefined, level: number, finalTypeHasUndefined: boolean): FloughType | undefined{
+            if (nonObj && state.aexpression[level].questionDotToken && !finalTypeHasUndefined){
+                const r = floughTypeModule.cloneType(nonObj);
+                floughTypeModule.removeUndefinedNullMutate(r);
+                return r;
+            }
+            return nonObj;
+        }
 
-        const results: { rootLogicalObject: FloughLogicalObjectInner, type: Readonly<FloughType> }[] = [];
-
-        let defaultRoot: FloughLogicalObjectInner | undefined;
-        function calcDefaultRoot(): FloughLogicalObjectInner {
+        let defaultRoot: { rootLogicalObject: FloughLogicalObjectInner, rootNonObj: FloughType | undefined } | undefined;
+        function calcDefaultRoot(): { rootLogicalObject: FloughLogicalObjectInner, rootNonObj: FloughType | undefined } {
             if (defaultRoot) return defaultRoot;
             Debug.assert(state.collated[0].logicalObjectsPlainOut.length!==0);
-            if (state.collated[0].logicalObjectsPlainOut.length===1){
-                return (defaultRoot = state.collated[0].logicalObjectsPlainOut[0]);
-            }
-            return (defaultRoot=unionOfFloughLogicalObjects(state.collated[0].logicalObjectsPlainOut));
+            // if (state.collated[0].logicalObjectsPlainOut.length===1){
+            //     return (defaultRoot = state.collated[0].logicalObjectsPlainOut[0]);
+            // }
+            return defaultRoot = {
+                rootLogicalObject: unionOfFloughLogicalObjects(state.collated[0].logicalObjectsPlainOut),
+                rootNonObj: unionOfNonObj(state.collated[0].nobjTypeOut)
+            };
         }
+        const results: ReturnType<typeof logicalObjectModify> = [];
 
         Debug.assert(modTypesIn.length===state.finalTypes.length);
         Debug.assert(state.collated[state.collated.length-1].logicalObjectsPlainOut.length ===state.finalTypes.length);
@@ -1213,7 +1242,7 @@ namespace ts {
         for (let modTypeIdx = 0; modTypeIdx<modTypesIn.length; modTypeIdx++){
             // check presence of keys all the way down
             if (state.finalTypes[modTypeIdx].literalKey===undefined) {
-                results.push({ rootLogicalObject: calcDefaultRoot(), type: state.finalTypes[modTypeIdx].type });
+                results.push({ ...calcDefaultRoot(), type: state.finalTypes[modTypeIdx].type });
                 continue;
             }
             if (!modTypesIn[modTypeIdx]) continue;
@@ -1246,7 +1275,7 @@ namespace ts {
                 }
                 if (!ok) {
                     // TODO: output original root, and modified type
-                    results.push({ rootLogicalObject: calcDefaultRoot(), type: modTypesIn[modTypeIdx]! });
+                    results.push({ ...calcDefaultRoot(), type: modTypesIn[modTypeIdx]! });
                     continue;
                 }
             }
@@ -1255,6 +1284,14 @@ namespace ts {
              *
              */
             {
+
+                let rootNonObj;
+                {
+                    const x = unionOfNonObj(state.collated[0].nobjTypeOut);
+                    rootNonObj = calcNonObjWithQdot(x,0,finalTypeHasUndefined);
+                }
+
+
                 let coll = state.collated[state.collated.length-1];
                 let arrChildLogicalObjectBasicIndxs: number[];
                 let arrNewLogicalObjectIn: FloughLogicalObjectInner[]=[];
@@ -1268,7 +1305,7 @@ namespace ts {
                         continue;
                     }
                     if (state.collated.length===1) {
-                        results.push({ rootLogicalObject: newLogicalObjectBasic, type: modTypesIn[modTypeIdx]! });
+                        results.push({ rootLogicalObject: newLogicalObjectBasic, rootNonObj, type: modTypesIn[modTypeIdx]! });
                         continue;
                     }
                     //let arrNewLogicalObjectIn: FloughLogicalObjectInner[];
@@ -1294,12 +1331,23 @@ namespace ts {
                         arrNewLogicalObjectBasic[basicIdx] = replaceLogicalObjectOfTypeAtKey(
                             coll.logicalObjectsPlainOut[basicIdx],
                             childcoll.arrLiteralKeyIn![basicIdx]!,
-                            arrNewLogicalObjectIn[basicIdx], childcoll.nobjTypeOut[basicIdx], state.aexpression[lev+1], finalTypeHasUndefined);
+                            arrNewLogicalObjectIn[basicIdx], // TODO: index is wrong, arrNewLogicalObjectIn not necc. same length as coll.logicalObjectsPlainOut
+                            childcoll.nobjTypeOut[basicIdx], state.aexpression[lev+1], finalTypeHasUndefined);
                     });
                     if (lev===0) {
                         const arr: FloughLogicalObjectBasic[] = [];
                         arrChildLogicalObjectBasicIndxs.forEach(basicIdx=>arr.push(arrNewLogicalObjectBasic[basicIdx]));
-                        results.push({ rootLogicalObject: unionOfFloughLogicalObjects(arr), type: modTypesIn[modTypeIdx]! });
+                        // const rootNonObjTmp = coll.nobjTypeOut?.reduce((accum,curr)=>{
+                        //     if (!curr) return accum;
+                        //     if (!accum) return floughTypeModule.cloneType(curr);
+                        //     else return floughTypeModule.unionWithFloughTypeMutate(curr,accum);
+                        // }, /*initialValue*/ undefined);
+                        // if (rootNonObjTmp && state.aexpression[0].questionDotToken){
+                        //     if (!finalTypeHasUndefined){
+                        //         floughTypeModule.removeUndefinedNullMutate(rootNonObjTmp);
+                        //     }
+                        // }
+                        results.push({ rootLogicalObject: unionOfFloughLogicalObjects(arr), rootNonObj, type: modTypesIn[modTypeIdx]! });
                         break;
                     }
                     const nextChildLogicalObjectBasicIndxs = new Set<number>();

@@ -307,6 +307,7 @@ namespace ts {
             if ((rtt as any).symbol) as.push(`  symbol: ${dbgSymbolToStringSimple((rtt as any).symbol)},`);
             if ((rtt as any).isconst) as.push(`  isconst: ${(rtt as any).isconst},`);
             if ((rtt as RefTypesTableReturn).isAssign) as.push(`  isAssign: ${(rtt as any).isAssign},`);
+            if (rtt.critsense) as.push(`  critsense: ${rtt.critsense}`);
             if (!rtt.type) as.push(`  type: <undef>, // special access processing`);
             else {
                 Debug.assert(rtt.type);
@@ -3123,7 +3124,7 @@ namespace ts {
                             // if (symbolData){
                             const sci = copyRefTypesSymtabConstraintItem(sciFinal);
                             sci.symtab!.set(
-                                symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
+                                symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject, x.rootNonObj));
                             unmerged.push({ type:x.type, sci, critsense: "passing" });
                             //unmerged.push({ type: floughTypeModule.createTrueType(), sci });
                         });
@@ -3134,7 +3135,7 @@ namespace ts {
                                 // if (symbolData){
                                 const sci = copyRefTypesSymtabConstraintItem(sciFinal);
                                 sci.symtab!.set(
-                                    symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject));
+                                    symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject, x.rootNonObj));
                                 unmerged.push({ type:x.type, sci, critsense: "failing" });
                                 //unmerged.push({ type: floughTypeModule.createFalseType(), sci });
                             });

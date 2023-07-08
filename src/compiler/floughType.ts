@@ -56,7 +56,7 @@ namespace ts {
         intersectionWithObjectSimplification(a: Readonly<FloughType>,b: Readonly<FloughType>): FloughType;
         hasLogicalObject(ft: Readonly<FloughType>): boolean;
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
-        createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined): FloughType;
+        createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined, nonObj?: Readonly<FloughType> | undefined): FloughType;
         setLogicalObjectMutate(logicalObject: Readonly<FloughLogicalObjectIF>, ft: FloughType): void;
         // widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
         widenNobjTypeByEffectiveDeclaredNobjType(ftNobj: Readonly<FloughType>, effectiveDeclaredNobjType: Readonly<FloughType>): FloughType;
@@ -368,12 +368,12 @@ namespace ts {
         return { unknown: true, nobj:{} };
     }
 
-    function cloneTypeNobj(ft: Readonly<FloughTypeNobj>): FloughTypeNobj {
-        const ft1 = { ...ft };
-        if (ft1.string && ft1.string !== true) ft1.string = new Set(ft1.string);
-        if (ft1.number && ft1.number !== true) ft1.number = new Set(ft1.number);
-        if (ft1.bigint && ft1.bigint !== true) ft1.bigint = new Set(ft1.bigint);
-        return ft1;
+    function cloneTypeNobj(nobj: Readonly<FloughTypeNobj>): FloughTypeNobj {
+        const nobj1 = { ...nobj };
+        if (nobj1.string && nobj1.string !== true) nobj1.string = new Set(nobj1.string);
+        if (nobj1.number && nobj1.number !== true) nobj1.number = new Set(nobj1.number);
+        if (nobj1.bigint && nobj1.bigint !== true) nobj1.bigint = new Set(nobj1.bigint);
+        return nobj1;
     }
     function cloneType(ft: Readonly<FloughTypei>): FloughTypei {
         const { nobj, ...ftRest } = ft;
@@ -1348,8 +1348,12 @@ namespace ts {
         castReadonlyFloughTypei(ft);
         return ft.logicalObject;
     }
-    function createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF>): FloughTypei {
-        return { nobj:{}, logicalObject };
+    function createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF>, nonObj?: Readonly<FloughTypei> | undefined): FloughTypei {
+        const nobj = nonObj ? cloneTypeNobj(nonObj.nobj) : undefined;
+        return {
+            logicalObject,
+            nobj: { ...nobj }
+        };
     }
 
     // deprecated

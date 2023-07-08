@@ -47,7 +47,7 @@ namespace ts {
         logicalObjectModify(
             types: Readonly<CritToTypeV2Result[]>,
             state: LogicalObjectAccessReturn,
-        ): { rootLogicalObject: FloughLogicalObjectIF, type: Readonly<FloughType> }[];
+        ): { rootLogicalObject: FloughLogicalObjectIF, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[];
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
@@ -63,11 +63,7 @@ namespace ts {
         intersectionOfFloughLogicalObject,
         differenceOfFloughLogicalObject,
         intersectionAndSimplifyLogicalObjects,
-        //logicalObjectForEachTypeOfPropertyLookup,
         getEffectiveDeclaredTsTypeFromLogicalObject,
-        // setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void {
-        //     (logicalObjectTop as FloughLogicalObjectOuter).effectiveDeclaredTsType = edType;
-        // },
         createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF {
             assertCastType<FloughLogicalObjectOuter>(logicalObjectTop);
             // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -79,13 +75,10 @@ namespace ts {
             });
         },
         identicalLogicalObjects,
-        //replaceTypeAtKey,
-        // replaceLogicalObjectsOfTypeAtKey,
         getInnerIF(logicalObject: Readonly<FloughLogicalObjectIF>){
             return (logicalObject as FloughLogicalObjectOuter).inner;
         },
         createFloughLogicalObjectFromInner,
-        //getTypeFromAssumedBaseLogicalObject,
         logicalObjectAccess(
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
@@ -99,9 +92,9 @@ namespace ts {
         logicalObjectModify(
             types: Readonly<(CritToTypeV2Result)[]>,
             state: LogicalObjectAccessReturn,
-        ): { rootLogicalObject: FloughLogicalObjectIF, type: Readonly<FloughType> }[] {
+        ): { rootLogicalObject: FloughLogicalObjectIF, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[] {
             const x = floughLogicalObjectInnerModule.logicalObjectModify(types, state);
-            return x.map(({ rootLogicalObject, type })=>({ rootLogicalObject: createFloughLogicalObjectFromInner(rootLogicalObject, /* edType */ undefined), type }));
+            return x.map(({ rootLogicalObject, rootNonObj, type })=>({ rootLogicalObject: createFloughLogicalObjectFromInner(rootLogicalObject, /* edType */ undefined), rootNonObj, type }));
         },
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
             return floughLogicalObjectInnerModule.getTsTypesInChainOfLogicalObjectAccessReturn(loar);

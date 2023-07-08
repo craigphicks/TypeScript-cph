@@ -1,4 +1,4 @@
-=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0002.ts ===
+=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0104.ts ===
 declare type X = {
 >X : { foo?: { bar: boolean; } | undefined; }
 
@@ -10,37 +10,22 @@ declare type X = {
 declare const x:X|undefined;
 >x : X | undefined
 
-function prop0002(){
->prop0002 : () => void
+function prop0104(){
+>prop0104 : () => void
 
-    if (x?.foo?.bar){
+    if (!x?.foo?.bar){
+>!x?.foo?.bar : boolean
 >x?.foo?.bar : boolean | undefined
 >x?.foo : { bar: boolean; } | undefined
 >x : X | undefined
 >foo : { bar: boolean; } | undefined
 >bar : boolean | undefined
 
-        const y = x.foo.bar;
->y : true
->x.foo.bar : true
->x.foo : { bar: boolean; }
->x : X
->foo : { bar: boolean; }
->bar : true
-
-        y;
->y : true
-    }
-    else {
-        const z = x?.foo?.bar;
->z : false | undefined
+        x?.foo?.bar;
 >x?.foo?.bar : false | undefined
 >x?.foo : { bar: boolean; } | undefined
 >x : X | undefined
 >foo : { bar: boolean; } | undefined
 >bar : false | undefined
-
-        z;
->z : false | undefined
     }
 }

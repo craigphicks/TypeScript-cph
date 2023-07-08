@@ -36,7 +36,7 @@ function prop0002(){
 >z : false | undefined
 >x?.foo?.bar : false | undefined
 >x?.foo : { bar: boolean; } | undefined
->x : X
+>x : X | undefined
 >foo : { bar: boolean; } | undefined
 >bar : false | undefined
 
