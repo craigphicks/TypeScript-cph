@@ -33,14 +33,14 @@ function prop0002(){
     }
     else {
         let z = x?.foo?.bar;
->z : boolean | undefined
->x?.foo?.bar : boolean | undefined
+>z : false | undefined
+>x?.foo?.bar : false | undefined
 >x?.foo : { bar: boolean; } | undefined
->x : X | undefined
+>x : X
 >foo : { bar: boolean; } | undefined
->bar : boolean | undefined
+>bar : false | undefined
 
         z;
->z : boolean | undefined
+>z : false | undefined
     }
 }
