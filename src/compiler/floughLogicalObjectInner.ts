@@ -845,7 +845,7 @@ namespace ts {
             }
             assertCastType<ObjectType>(baseType);
             const keystr = key.value as string;
-            const propSymbol = checker.getPropertyOfType(logicalObjectBaseIn.tsType, keystr);
+            const propSymbol = checker.getPropertyOfType(/*logicalObjectBaseIn.tsType*/ baseType, keystr);
             Debug.assert(propSymbol);
             // TODO: case enum type
             const tstype = checker.getTypeOfSymbol(propSymbol);

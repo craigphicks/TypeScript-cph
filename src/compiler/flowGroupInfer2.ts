@@ -186,6 +186,7 @@ namespace ts {
         }
 
         function floughGetTsTypeOfSymbol(symbol: Symbol): Type {
+            Debug.assert(!(symbol.flags & SymbolFlags.RegularEnum));
             const type = checker.getTypeOfSymbol(symbol);
             return projectTsTypeEnumLiteralsToPlainLiterals(type);
             // const setFromEnum = new Set<LiteralType>();
@@ -1380,8 +1381,31 @@ namespace ts {
                     break;
                 case SyntaxKind.ConditionalExpression:
                     return floughInnerConditionalExpression();
-                case SyntaxKind.PropertyAccessExpression:
-                    //return floughByPropertyAccessExpression();
+                case SyntaxKind.PropertyAccessExpression:{
+                    assertCastType<PropertyAccessExpression>(expr);
+                    if (expr.expression.kind===SyntaxKind.Identifier && expr.name.kind===SyntaxKind.Identifier){
+                        const sym0 = checker.getResolvedSymbol(expr.expression as Identifier);
+                        if (sym0.flags & SymbolFlags.RegularEnum){
+                            const type0 = checker.getTypeOfSymbol(sym0);
+                            const sym1 = checker.getPropertyOfType(type0, expr.name.escapedText as string);
+                            //const type1enum = checker.getTypeOfSymbol(sym1);
+                            const type1lit = enumMemberSymbolToLiteralTsType(sym1!);
+                            orTsTypesIntoNodeToTypeMap([type0],expr.expression,inferStatus.groupNodeToTypeMap);
+                            const ret: FloughInnerReturn = {
+                                unmerged: [{
+                                    type: floughTypeModule.createFromTsType(type1lit),
+                                    sci,
+                                }]
+                            };
+                            if (getMyDebug()){
+                                const sym0f = Debug.formatSymbolFlags(sym0.flags);
+                                const sym1f = Debug.formatSymbolFlags(sym1!.flags);
+                                consoleLog(`PropertyAccessExpression: Enum ${sym0.escapedName}.flags:${sym0f}, ${sym1!.escapedName}.flags:${sym1f}`);
+                            }
+                            return ret;
+                        }
+                    }
+                }
                     // fall through
                 case SyntaxKind.ElementAccessExpression:
                     return floughElementAccessExpression();
@@ -2722,53 +2746,73 @@ namespace ts {
                 const nomativeFalseType = floughTypeModule.createRefTypesType(negateEq ? trueType : falseType);
                 const trueAndFalseType = floughTypeModule.createRefTypesType([trueType,falseType]);
 
-
-                // const getQuick = (e: Expression) => {
-                //     let isNonReplayableIdentifier = false;
-                //     let quickType: FloughType | undefined;
-                //     if (rightExpr.kind===SyntaxKind.Identifier) {
-                //         const {symbol:_symbol, type: quickType, isReplayable} = getQuickIdentifierOrIsReplayableItem(e,inferStatus);
-                //         if (!quickType) isNonReplayableIdentifier = !isReplayable;
-                //     }
-                //     if (!quickType && isNonReplayableIdentifier===false){
-                //         const tsType = attemptToGetTypeWithoutFlough(e,inferStatus);
-                //         if (tsType) quickType = floughTypeModule.createFromTsType(tsType);
-                //     }
-                // };
-
-                // TODO: PropertyAccessExpression and has be inlcuded, but working through ElementAccessExpression test cases first.
-                if (leftExpr.kind===SyntaxKind.ElementAccessExpression || rightExpr.kind===SyntaxKind.ElementAccessExpression){
-                    if (leftExpr.kind===SyntaxKind.ElementAccessExpression){
-                        let rightIsNonReplayableIdentifier = false;
-                        let rightQuickType: FloughType | undefined;
-                        if (rightExpr.kind===SyntaxKind.Identifier) {
-                            const {symbol:_symbol, type: rightQuickType, isReplayable} = getQuickIdentifierOrIsReplayableItem(rightExpr,inferStatus);
-                            if (!rightQuickType) rightIsNonReplayableIdentifier = !isReplayable;
-                        }
-                        if (!rightQuickType && rightIsNonReplayableIdentifier===false){
-                            const tsType = attemptToGetTypeWithoutFlough(rightExpr,inferStatus);
-                            if (tsType) rightQuickType = floughTypeModule.createFromTsType(tsType);
-                        }
-                        if (rightQuickType){
-                            const leftMntr = flough({
-                                expr:leftExpr, crit:{ kind:InferCritKind.equalLiteral, targetFloughType:rightQuickType, alsoFailing:true },
-                                qdotfallout: undefined, inferStatus,
-                                sci
-                            });
-                            const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
-                            leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
-                                const leftRttr = applyCritNoneToOne(leftRttr0,leftExpr,inferStatus.groupNodeToTypeMap);
-                                Debug.assert(leftRttr.critsense);
-                                leftRttr.type = leftRttr.critsense==="passing" ? floughTypeModule.createTrueType() : floughTypeModule.createFalseType();
-                                arrRefTypesTableReturn.push(leftRttr);
-                            });
-                            if (getMyDebug()) {
-                                consoleGroup(`floughByBinaryExpressionEqualCompareV2[out] expr:${dbgNodeToString(expr)}`);
-                            }
-                            return { unmerged: arrRefTypesTableReturn };
-                        }
+                const getQuick = (e: Expression): FloughType | undefined => {
+                    let isNonReplayableIdentifier = false; // TODO: check this sense!
+                    let quickType: FloughType | undefined;
+                    if (e.kind===SyntaxKind.Identifier) {
+                        const {symbol:_symbol, type: quickType, isReplayable} = getQuickIdentifierOrIsReplayableItem(e,inferStatus);
+                        if (!quickType) isNonReplayableIdentifier = !isReplayable;
                     }
+                    // TODO: should this be isNonReplayableIdentifier===true
+                    if (!quickType && isNonReplayableIdentifier===false){
+                        const tsType = attemptToGetTypeWithoutFlough(e,inferStatus);
+                        if (tsType) quickType = floughTypeModule.createFromTsType(tsType);
+                    }
+                    return quickType;
+                };
+                const isAccessExpression = (e: Expression) => (e.kind===SyntaxKind.ElementAccessExpression || e.kind===SyntaxKind.PropertyAccessExpression);
+                const leftQuickType = getQuick(leftExpr);
+                const rightQuickType = getQuick(rightExpr);
+
+
+                if (!leftQuickType && rightQuickType && isAccessExpression(leftExpr)){
+                    const leftMntr = flough({
+                        expr:leftExpr, crit:{ kind:InferCritKind.equalLiteral, targetFloughType:rightQuickType, alsoFailing:true },
+                        qdotfallout: undefined, inferStatus,
+                        sci
+                    });
+                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                    leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
+                        const rttr = applyCritNoneToOne(leftRttr0,leftExpr,inferStatus.groupNodeToTypeMap);
+                        Debug.assert(rttr.critsense);
+                        rttr.type = rttr.critsense==="passing" ? floughTypeModule.createTrueType() : floughTypeModule.createFalseType();
+                        arrRefTypesTableReturn.push(rttr);
+                    });
+                    if (getMyDebug()) {
+                        consoleGroup(`floughByBinaryExpressionEqualCompareV2[out,leftAccess,rightQuick] expr:${dbgNodeToString(expr)}`);
+                    }
+                    return { unmerged: arrRefTypesTableReturn };
                 }
+                if (!rightQuickType && leftQuickType && isAccessExpression(rightExpr)){
+                    const rightMntr = flough({
+                        expr:rightExpr, crit:{ kind:InferCritKind.equalLiteral, targetFloughType:leftQuickType, alsoFailing:true },
+                        qdotfallout: undefined, inferStatus,
+                        sci
+                    });
+                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                    rightMntr.unmerged.forEach((rttr0,_idx)=>{
+                        const rttr = applyCritNoneToOne(rttr0,rightExpr,inferStatus.groupNodeToTypeMap);
+                        Debug.assert(rttr.critsense);
+                        rttr.type = rttr.critsense==="passing" ? floughTypeModule.createTrueType() : floughTypeModule.createFalseType();
+                        arrRefTypesTableReturn.push(rttr);
+                    });
+                    if (getMyDebug()) {
+                        consoleGroup(`floughByBinaryExpressionEqualCompareV2[out,rightAccess,leftQuick] expr:${dbgNodeToString(expr)}`);
+                    }
+                    return { unmerged: arrRefTypesTableReturn };
+                }
+                // TODO: if leftQuickType/rightQuickType are null, let it usurp the corresponding flough call be creating assembling a simple mntr
+                // let leftMntrq: FloughReturn | undefined;
+                // if (leftQuickType){
+                //     leftMntrq = {
+                //         unmerged: [{
+                //             type: leftQuickType,
+                //             sci,
+                //         }],
+                //         nodeForMap: leftExpr,
+                //     };
+                // }
+
 
 
                 let leftRttrUnion: RefTypesTableReturnNoSymbol | undefined;
