@@ -47,7 +47,7 @@ namespace ts {
         logicalObjectModify(
             types: Readonly<CritToTypeV2Result[]>,
             state: LogicalObjectAccessReturn,
-        ): { rootLogicalObject: FloughLogicalObjectIF, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[];
+        ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[];
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
@@ -92,9 +92,13 @@ namespace ts {
         logicalObjectModify(
             types: Readonly<(CritToTypeV2Result)[]>,
             state: LogicalObjectAccessReturn,
-        ): { rootLogicalObject: FloughLogicalObjectIF, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[] {
+        ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[] {
             const x = floughLogicalObjectInnerModule.logicalObjectModify(types, state);
-            return x.map(({ rootLogicalObject, rootNonObj, type })=>({ rootLogicalObject: createFloughLogicalObjectFromInner(rootLogicalObject, /* edType */ undefined), rootNonObj, type }));
+            return x.map(({ rootLogicalObject, rootNonObj, type })=>({
+                rootLogicalObject: rootLogicalObject ? createFloughLogicalObjectFromInner(rootLogicalObject, /* edType */ undefined) : undefined,
+                    rootNonObj,
+                    type
+            }));
         },
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
             return floughLogicalObjectInnerModule.getTsTypesInChainOfLogicalObjectAccessReturn(loar);

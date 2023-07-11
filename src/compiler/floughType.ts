@@ -1156,17 +1156,17 @@ namespace ts {
         //const neither = differenceWithFloughTypeNobjMutate(both,cloneTypeNobj(a));
         const bcount = itemCountFloughTypeNobj(b) + (blogobj ? 1 : 0);
         // TODO: f1 is simpler to write, but expanding out each case would probably be faster
-        function f1(k: string){
+        function f1(k: string, notUniqueType=true){
             assertCastType<Record<string,boolean>>(a);
             assertCastType<Record<string,boolean>>(b);
             if (a[k]) {
                 if (b[k]) {
                     if (pass===0) {
-                        arr.push({ both:{ [k]:true }, true:true, false:true });
+                        arr.push({ both:{ [k]:true }, true:true, false:notUniqueType });
                         symset.add(k);
                     }
                     else if (!symset.has(k)) {
-                        arr.push({ both:{ [k]:true }, true:true, false:true });
+                        arr.push({ both:{ [k]:true }, true:true, false:notUniqueType });
                     }
                     if (bcount>1){
                         const bd = cloneTypeNobj(b) as Record<string,boolean>;
@@ -1179,13 +1179,14 @@ namespace ts {
                 }
             }
         }
-        f1("boolFalse");
-        f1("boolTrue");
+        f1("boolFalse",/*notUniqueType*/ false);
+        f1("boolTrue",/*notUniqueType*/ false);
         f1("symbol");
         f1("uniqueSymbol");
-        f1("null");
-        f1("undefined");
-        f1("void");
+        f1("null",/*notUniqueType*/ false);
+        f1("undefined",/*notUniqueType*/ false);
+        Debug.assert(!a.void && !b.void);
+        //f1("void");
 
         function f2(k: "string" | "number" | "bigint"){
             const ak = a[k];

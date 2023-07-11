@@ -9,33 +9,55 @@ let y = { a: 1 as const };
 >1 as const : 1
 >1 : 1
 
-let z = { a: 2 as const, b: 2 };
->z : { a: 2; b: number; }
->{ a: 2 as const, b: 2 } : { a: 2; b: number; }
+let z = { a: 2 as const, b: 2 as const };
+>z : { a: 2; b: 2; }
+>{ a: 2 as const, b: 2 as const } : { a: 2; b: 2; }
 >a : 2
 >2 as const : 2
 >2 : 2
->b : number
+>b : 2
+>2 as const : 2
 >2 : 2
 
-// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: 1; } | { a: 2; b: number; }"
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: 1; } | { a: 2; b: 2; }"
 let r = x ?  y : z;
->r : { a: 1; b?: undefined; } | { a: 2; b: number; }
->x ?  y : z : { a: 1; } | { a: 2; b: number; }
+>r : { a: 1; b?: undefined; } | { a: 2; b: 2; }
+>x ?  y : z : { a: 1; } | { a: 2; b: 2; }
 >x : boolean
 >y : { a: 1; }
->z : { a: 2; b: number; }
+>z : { a: 2; b: 2; }
 
 if (r.b){
->r.b : number | undefined
->r : { a: 1; } | { a: 2; b: number; }
->b : number | undefined
+>r.b : 2 | undefined
+>r : { a: 1; } | { a: 2; b: 2; }
+>b : 2 | undefined
 
     r;
->r : { a: 2; b: number; }
+>r : { a: 2; b: 2; }
+
+    r.a;
+>r.a : 2
+>r : { a: 2; b: 2; }
+>a : 2
+
+    r.b;
+>r.b : 2
+>r : { a: 2; b: 2; }
+>b : 2
 }
 else {
     r;
->r : { a: 1; } | { a: 2; b: number; }
+>r : { a: 1; }
+
+    r.a;
+>r.a : 1
+>r : { a: 1; }
+>a : 1
+
+    // @ts-expect-error
+    r.b;
+>r.b : error
+>r : { a: 1; }
+>b : any
 }
 

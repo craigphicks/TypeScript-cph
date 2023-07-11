@@ -12,7 +12,12 @@ let z = { a: "one", b: "two"};
 let r = x ? y : z;
 if (r.b===undefined){
     r;
+    r.a;
+    // @ts-expect-error
+    r.b;
 }
 else {
     r;
+    r.a;
+    r.b;
 }

@@ -1,0 +1,16 @@
+=== tests/cases/conformance/_caxnc/_caxnc-eqneq-0020.ts ===
+declare const a: string | undefined;
+>a : Symbol(a, Decl(_caxnc-eqneq-0020.ts, 0, 13))
+
+if (a===undefined)
+>a : Symbol(a, Decl(_caxnc-eqneq-0020.ts, 0, 13))
+>undefined : Symbol(undefined)
+{
+    a;
+>a : Symbol(a, Decl(_caxnc-eqneq-0020.ts, 0, 13))
+}
+else {
+    a;
+>a : Symbol(a, Decl(_caxnc-eqneq-0020.ts, 0, 13))
+}
+

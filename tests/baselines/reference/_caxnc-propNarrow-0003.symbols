@@ -16,11 +16,30 @@ if (r.b===undefined){
 >b : Symbol(b, Decl(_caxnc-propNarrow-0003.ts, 3, 33))
 >undefined : Symbol(undefined)
 
-    r;
+    r; // expect { a: number; }
+>r : Symbol(r, Decl(_caxnc-propNarrow-0003.ts, 3, 3))
+
+    r.a; // expect number
+>r.a : Symbol(a, Decl(_caxnc-propNarrow-0003.ts, 3, 13))
+>r : Symbol(r, Decl(_caxnc-propNarrow-0003.ts, 3, 3))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0003.ts, 3, 13))
+
+    // @ts-expect-error
+    r.b; // expect error
 >r : Symbol(r, Decl(_caxnc-propNarrow-0003.ts, 3, 3))
 }
 else {
-    r;
+    r; // expect { a: string; b: string; }
 >r : Symbol(r, Decl(_caxnc-propNarrow-0003.ts, 3, 3))
+
+    r.a; // expect string
+>r.a : Symbol(a, Decl(_caxnc-propNarrow-0003.ts, 3, 23))
+>r : Symbol(r, Decl(_caxnc-propNarrow-0003.ts, 3, 3))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0003.ts, 3, 23))
+
+    r.b; // expect string
+>r.b : Symbol(b, Decl(_caxnc-propNarrow-0003.ts, 3, 33))
+>r : Symbol(r, Decl(_caxnc-propNarrow-0003.ts, 3, 3))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0003.ts, 3, 33))
 }
 

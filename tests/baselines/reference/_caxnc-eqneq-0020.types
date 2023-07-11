@@ -1,0 +1,17 @@
+=== tests/cases/conformance/_caxnc/_caxnc-eqneq-0020.ts ===
+declare const a: string | undefined;
+>a : string | undefined
+
+if (a===undefined)
+>a===undefined : boolean
+>a : string | undefined
+>undefined : undefined
+{
+    a;
+>a : undefined
+}
+else {
+    a;
+>a : string
+}
+

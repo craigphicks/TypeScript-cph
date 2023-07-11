@@ -23,11 +23,32 @@ if (r.b===undefined){
 >b : string | undefined
 >undefined : undefined
 
-    r;
+    r; // expect { a: number; }
 >r : { a: number; }
+
+    r.a; // expect number
+>r.a : number
+>r : { a: number; }
+>a : number
+
+    // @ts-expect-error
+    r.b; // expect error
+>r.b : error
+>r : { a: number; }
+>b : any
 }
 else {
-    r;
+    r; // expect { a: string; b: string; }
 >r : { a: string; b: string; }
+
+    r.a; // expect string
+>r.a : string
+>r : { a: string; b: string; }
+>a : string
+
+    r.b; // expect string
+>r.b : string
+>r : { a: string; b: string; }
+>b : string
 }
 
