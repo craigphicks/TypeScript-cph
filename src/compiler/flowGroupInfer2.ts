@@ -1870,7 +1870,7 @@ namespace ts {
                 if (isIdentifier(propName)){
                     const propSymbol = getSymbolOfNode(expr);
                     Debug.assert(propSymbol);
-                    const isconst = checker.isReadonlyProperty(propSymbol);
+                    //const isconst = checker.isReadonlyProperty(propSymbol);
                     const rhs = applyCritNoneUnion(flough({
                         sci,
                         expr:initializer,
@@ -1881,28 +1881,28 @@ namespace ts {
                     /**
                      * Add to symbolFlowInfoMap
                      */
-                    // @ts-ignore
-                    let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(propSymbol);
-                    if (!symbolFlowInfo){
-                        const declaredTypeOfSymbol = floughGetTsTypeOfSymbol(propSymbol); // could it end up in a recusive call error? But not always.
-                        Debug.assert(declaredTypeOfSymbol);
-                        const effectiveDeclaredTsType = declaredTypeOfSymbol;
-                        const isconst = checker.isConstantReference(expr);
-                        symbolFlowInfo = {
-                            passCount:0,
-                            effectiveDeclaredTsType,
-                            isconst
-                        };
-                        _mrState.symbolFlowInfoMap.set(propSymbol,symbolFlowInfo);
-                    }
+                    // @ ts-ignore
+                    // let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(propSymbol);
+                    // if (!symbolFlowInfo){
+                    //     const declaredTypeOfSymbol = floughGetTsTypeOfSymbol(propSymbol); // could it end up in a recusive call error? But not always.
+                    //     Debug.assert(declaredTypeOfSymbol);
+                    //     const effectiveDeclaredTsType = declaredTypeOfSymbol;
+                    //     const isconst = checker.isConstantReference(expr);
+                    //     symbolFlowInfo = {
+                    //         passCount:0,
+                    //         effectiveDeclaredTsType,
+                    //         isconst
+                    //     };
+                    //     _mrState.symbolFlowInfoMap.set(propSymbol,symbolFlowInfo);
+                    // }
 
                     // TODO: do we want to widen property types?
 
                     return {
                         unmerged: [{
-                            symbol: propSymbol,
-                            isconst,
-                            isAssign: true,
+                            // symbol: propSymbol,
+                            // isconst,
+                            // isAssign: true,
                             type: rhs.type,
                             sci:rhs.sci
                         }]
