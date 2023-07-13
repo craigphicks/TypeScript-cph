@@ -3202,6 +3202,14 @@ namespace ts {
                         // const atstype0 = tstype0.flags & TypeFlags.Union ? (tstype0 as UnionType).types : [tstype0];
                         // orTsTypesIntoNodeToTypeMap(atstype0, refAccessArgs[0].expressions[0].expression, inferStatus.groupNodeToTypeMap);
 
+                        // function umodres(arr: LogicalObjectModifyReturnType[]): LogicalObjectModifyReturnType {
+                        //     return {
+                        //         type: floughTypeModule.unionOfRefTypesType(arr.map(x=>x.type)),
+                        //         rootNonObj: floughTypeModule.unionOfRefTypesType(arr.map(x=>x.rootNonObj).filter(x=>x) as FloughType[]),
+                        //         rootLogicalObject: floughLogicalObjectModule.unionOfFloughLogicalObjectWithTypeMerging(arr.map(x=>x.rootLogicalObject));
+                        //     }
+                        // }
+
                         // passing bracnhes
                         const rmodPassing = floughLogicalObjectModule.logicalObjectModify(critTypesPassing, raccess);
                         rmodPassing.forEach(x=>{

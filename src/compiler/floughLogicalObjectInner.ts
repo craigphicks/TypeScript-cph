@@ -75,6 +75,8 @@ namespace ts {
         ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[];
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
+        //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
+
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
         dbgLogicalObjectAccessResult(loar: Readonly<LogicalObjectAccessReturn>): string[];
     }
@@ -94,6 +96,7 @@ namespace ts {
         logicalObjectModify,
         getTsTypesInChainOfLogicalObjectAccessReturn,
         getTsTypesOfBaseLogicalObjects,
+        //unionOfFloughLogicalObjectWithTypeMerging,
         dbgLogicalObjectToStrings,
         dbgLogicalObjectAccessResult
     };
@@ -153,6 +156,11 @@ namespace ts {
         //item: FloughObjectTypeInstance;
         variations?: Variations;
     };
+    /**
+     * TODO: FloughLogicalObjectBasic will include FloughLogicalObjectTsintersection
+     */
+    type FloughLogicalObjectBasic = FloughLogicalObjectPlain;
+
     /**
      * Although FloughLogicalObjectTsintersection is a leaf node, it is not a FloughLogicalObjectPlain and it has member "items" because
      * TS may include non-objects in intersections (even though result is never), but these are always raised to the top level in FloughType.
@@ -268,6 +276,42 @@ namespace ts {
         }
     }
 
+    // function unionOfFloughLogicalObjectWithReductionPlainIntoUnion(a: Readonly<FloughLogicalObjectInner>, b: Readonly<FloughLogicalObjectUnion>): FloughLogicalObjectInner {
+
+    // }
+
+
+    function unionOfFloughLogicalObjectWithTypeMerging(arr: (Readonly<FloughLogicalObjectInner> | undefined)[]): FloughLogicalObjectInner | undefined{
+        const map = new Map<Type,FloughLogicalObjectBasic[]>();
+        arr.forEach(o=>{
+            if (o===undefined) return;
+            if (o.kind===FloughLogicalObjectKind.plain){
+                const got = map.get(o.tsType);
+                if (!got) map.set(o.tsType,[o]);
+                else got.push(o);
+            }
+            else if (o.kind===FloughLogicalObjectKind.union){
+                o.items.forEach(ob=>{
+                    Debug.assert(ob.kind===FloughLogicalObjectKind.plain);
+                    const got = map.get(ob.tsType);
+                    if (!got) map.set(ob.tsType,[ob]);
+                    else got.push(ob);
+                });
+            }
+        });
+        const items: FloughLogicalObjectBasic[]=[];
+        map.forEach(a=>{
+            items.push(unionOfSameBaseTypesWithVariationsV2(a));
+        });
+        if (items.length===0) return undefined;
+        if (items.length===1) return items[0];
+        return {
+            kind: FloughLogicalObjectKind.union,
+            items,
+            id: nextLogicalObjectInnerId++,
+            [essymbolFloughLogicalObject]: true
+        };
+    }
 
     function unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectInner>, b: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner {
         // assertCastType<FloughLogicalObjectInner>(a);
@@ -525,51 +569,6 @@ namespace ts {
         return result;
     }
 
-    // function logicalObjectDuplicateBaseAndJoinTypeInner(
-    //     logicalObjectTop: Readonly<FloughLogicalObjectInner>,
-    //     key: LiteralTypeNumber | LiteralTypeString,
-    //     lookupItemTable: Readonly<LogicalObjectInnerForEachTypeOfPropertyLookupItem[]>):
-    // FloughLogicalObjectInner {
-    //     //type LookupItem = LogicalObjectInnerForEachTypeOfPropertyLookupItem;
-    //     function worker(logicalObject: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner {
-    //         const lookupItem = lookupItemTable.find(x=>x.logicalObject===logicalObject);
-    //         if (!lookupItem?.key) return logicalObject;
-
-    //         if (logicalObject.kind==="plain"){
-    //             if (checker.isArrayOrTupleType(logicalObject.tsType)){
-    //                 if (extraAsserts){
-    //                     Debug.assert(isLiteralTypeNumber(key));
-    //                     Debug.assert(checker.isTupleType(logicalObject.tsType));
-    //                 }
-    //                 const variations: Variations = logicalObject.variations ? new Map(logicalObject.variations) : new Map();
-    //                 variations.set(key, lookupItem.type);
-    //                 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    //                 return <FloughLogicalObjectPlain>{ ...logicalObject, variations, id: nextLogicalObjectInnerId++ };
-    //             }
-    //             else {
-    //                 Debug.fail("not yet implemented");
-    //             }
-    //         }
-    //         else if (logicalObject.kind==="union" || logicalObject.kind==="tsunion"){
-    //             let change = false;
-    //             const items = logicalObject.items.map(x=>{
-    //                 const y = worker(x);
-    //                 if (x!==y) change = true;
-    //                 return y;
-    //             });
-    //             if (!change) return logicalObject;
-    //             return { ...logicalObject, items, id: nextLogicalObjectInnerId++ };
-    //         }
-    //         else if (logicalObject.kind==="intersection" || logicalObject.kind==="tsintersection"|| logicalObject.kind==="difference"){
-    //             Debug.fail("not yet implemented");
-    //         }
-    //         else {
-    //             Debug.fail("not yet implemented");
-    //         }
-    //     }
-    //     return worker(logicalObjectTop);
-    // }
-
 
     function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type {
         assertCastType<FloughLogicalObjectInner>(logicalObjectTop);
@@ -590,29 +589,6 @@ namespace ts {
         return ut;
     }
 
-    // function hasNonObjectType(top: Readonly<FloughLogicalObjectInner>): boolean {
-    //     function helper(lobj: Readonly<FloughLogicalObjectInner>): boolean {
-    //         if (lobj.kind===FloughLogicalObjectKind.plain){
-    //             {
-    //                 const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(lobj.tsType);
-    //                 if (!floughTypeModule.isNeverType(remaining)) return true;
-    //                 Debug.assert(logicalObject);
-    //             }
-    //             let some = false;
-    //             lobj.variations?.forEach((ft: FloughType) =>{
-    //                 const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(ft);
-    //                 if (!floughTypeModule.isNeverType(remaining)) some = true;
-    //                 Debug.assert(logicalObject);
-    //             });
-    //             return some;
-    //         }
-    //         else if (lobj.kind===FloughLogicalObjectKind.union){
-    //             return lobj.items.some(helper);
-    //         }
-    //         else Debug.fail("");
-    //     }
-    //     return helper(top);
-    // }
 
     function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectBasic>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectBasic {
         if (logicalObject.kind!=="plain"){
@@ -938,7 +914,6 @@ namespace ts {
     //     return false;
     // }
 
-    type FloughLogicalObjectBasic = FloughLogicalObjectPlain;
     function getBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInner>): ESMap<Type, FloughLogicalObjectBasic> {
         const result = new Map<Type,FloughLogicalObjectBasic>();
         function worker(logicalObject: Readonly<FloughLogicalObjectInner>): void {
@@ -965,29 +940,27 @@ namespace ts {
         return r;
     }
 
-
-
-    function unionOfSameBaseTypesWithVariations(arr: Readonly<IndexingBasic[]>): { logicalObjectBasic: FloughLogicalObjectPlain } {
+    function unionOfSameBaseTypesWithVariationsV2(arr: Readonly<FloughLogicalObjectBasic[]>): FloughLogicalObjectBasic {
         //assertCastType<Readonly<FloughLogicalObjectPlain[]>>(arr);
         if (arr.length===0) Debug.fail("unexpected arr.length===0");
         if (extraAsserts){
-            for (const iban of arr){
-                const logicalObject = iban.logicalObjectBasic;
+            for (const logicalObject of arr){
+                //const logicalObject = iban.logicalObjectBasic;
                 if (logicalObject.kind!=="plain"){
                     Debug.fail("unexpected logicalObject.kind!=='plain'");
                 }
-                if (logicalObject.tsType!==arr[0].logicalObjectBasic.tsType) Debug.fail("unexpected !logicalObject.variations");
+                if (logicalObject.tsType!==arr[0].tsType) Debug.fail("unexpected !logicalObject.variations");
             }
         }
-        if (arr.length===1) return { logicalObjectBasic: arr[0].logicalObjectBasic };
+        if (arr.length===1) return arr[0];
         //const nobjType = floughTypeModule.unionOfRefTypesType(arr.map(x=>x.nobjType).filter(x=>x) as FloughType[]);
         // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let i=0; i<arr.length; i++){
-            if (arr[i].logicalObjectBasic.variations===undefined) return { logicalObjectBasic: arr[i].logicalObjectBasic };
+            if (arr[i].variations===undefined) return arr[i];
         }
-        const isect: Variations = arr[0].logicalObjectBasic.variations!;
+        const isect: Variations = arr[0].variations!;
         for (let i=1; isect.size!==0 && i<arr.length; i++){
-            const vari = arr[i].logicalObjectBasic.variations!;
+            const vari = arr[i].variations!;
             for (let iter=isect.entries(), next=iter.next(); !next.done; next=iter.next()){
                 const got = vari.get(next.value[0]);
                 if (got===undefined) {
@@ -1004,12 +977,56 @@ namespace ts {
         const ret: FloughLogicalObjectPlain = {
             kind: FloughLogicalObjectKind.plain,
             id: nextLogicalObjectInnerId++,
-            tsType: arr[0].logicalObjectBasic.tsType,
+            tsType: arr[0].tsType,
             [essymbolFloughLogicalObject]: true
         };
         if (isect.size!==0) ret.variations = isect;
-        return { logicalObjectBasic: ret };
+        return ret;
     }
+
+    // function unionOfSameBaseTypesWithVariations(arr: Readonly<IndexingBasic[]>): { logicalObjectBasic: FloughLogicalObjectPlain } {
+    //     //assertCastType<Readonly<FloughLogicalObjectPlain[]>>(arr);
+    //     if (arr.length===0) Debug.fail("unexpected arr.length===0");
+    //     if (extraAsserts){
+    //         for (const iban of arr){
+    //             const logicalObject = iban.logicalObjectBasic;
+    //             if (logicalObject.kind!=="plain"){
+    //                 Debug.fail("unexpected logicalObject.kind!=='plain'");
+    //             }
+    //             if (logicalObject.tsType!==arr[0].logicalObjectBasic.tsType) Debug.fail("unexpected !logicalObject.variations");
+    //         }
+    //     }
+    //     if (arr.length===1) return { logicalObjectBasic: arr[0].logicalObjectBasic };
+    //     //const nobjType = floughTypeModule.unionOfRefTypesType(arr.map(x=>x.nobjType).filter(x=>x) as FloughType[]);
+    //     // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    //     for (let i=0; i<arr.length; i++){
+    //         if (arr[i].logicalObjectBasic.variations===undefined) return { logicalObjectBasic: arr[i].logicalObjectBasic };
+    //     }
+    //     const isect: Variations = arr[0].logicalObjectBasic.variations!;
+    //     for (let i=1; isect.size!==0 && i<arr.length; i++){
+    //         const vari = arr[i].logicalObjectBasic.variations!;
+    //         for (let iter=isect.entries(), next=iter.next(); !next.done; next=iter.next()){
+    //             const got = vari.get(next.value[0]);
+    //             if (got===undefined) {
+    //                 isect.delete(next.value[0]);
+    //             }
+    //             else {
+    //                 const type = floughTypeModule.cloneRefTypesType(next.value[1]);
+    //                 floughTypeModule.intersectionWithFloughTypeMutate(got, type);
+    //                 if (floughTypeModule.isNeverType(type)) isect.delete(next.value[0]);
+    //                 else isect.set(next.value[0], type);
+    //             }
+    //         }
+    //     }
+    //     const ret: FloughLogicalObjectPlain = {
+    //         kind: FloughLogicalObjectKind.plain,
+    //         id: nextLogicalObjectInnerId++,
+    //         tsType: arr[0].logicalObjectBasic.tsType,
+    //         [essymbolFloughLogicalObject]: true
+    //     };
+    //     if (isect.size!==0) ret.variations = isect;
+    //     return { logicalObjectBasic: ret };
+    // }
 
     type Collated = & {
         arrLiteralKeyIn?: (LiteralType | undefined)[]; // TODO: kill??
@@ -1081,8 +1098,8 @@ namespace ts {
             }
             else {
                 collated.mapTsTypeToLogicalObjectPlainOutIdx.set(value[0].logicalObjectBasic.tsType, collated.logicalObjectsPlainOut.length);
-                const u = unionOfSameBaseTypesWithVariations(value);
-                collated.logicalObjectsPlainOut.push(u.logicalObjectBasic);
+                const u = unionOfSameBaseTypesWithVariationsV2(value.map(x=>x.logicalObjectBasic)); // TODO: change value to array of logical object
+                collated.logicalObjectsPlainOut.push(u);
                 //collated.nobjTypeOut.push(u.nobjType);
             }
         });
@@ -1209,6 +1226,11 @@ namespace ts {
 
     // }
 
+    export type LogicalObjectModifyInnerReturnType = & {
+        rootLogicalObject: FloughLogicalObjectInner | undefined,
+        rootNonObj: FloughType | undefined;
+        type: Readonly<FloughType>
+    };
     function logicalObjectModify(
         modTypesIn: Readonly<(FloughType | undefined)[]>,
         state: LogicalObjectAccessReturn,
@@ -1404,6 +1426,13 @@ namespace ts {
                 }
             }
         }
+        // @ts-ignore
+        const ret: LogicalObjectModifyInnerReturnType = {
+            type: floughTypeModule.unionOfRefTypesType(results.map(x=>x.type)),
+            rootNonObj: floughTypeModule.unionOfRefTypesType(results.map(x=>x.rootNonObj).filter(x=>x) as FloughType[]),
+            rootLogicalObject: unionOfFloughLogicalObjectWithTypeMerging(results.map(x=>x.rootLogicalObject))
+        };
+
         if (getMyDebug()){
             if (doLog){
                 results.forEach((r,ridx)=>{
@@ -1415,12 +1444,22 @@ namespace ts {
                     if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s=>consoleLog(`${hstr} rootLogicalObject: ${s}`));
                     else consoleLog(`${hstr} rootLogicalObject: <undef>`);
                 });
+                {
+                    consoleLog("logicalObjectModify[out] --- unionized");
+                    const hstr = `logicalObjectModify[out] [union]`;
+                    const r = ret;
+                    if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>consoleLog(`${hstr} type: ${s}`));
+                    else consoleLog(`${hstr} type: <undef>`);
+                    if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s=>consoleLog(`${hstr} rootNonObj: ${s}`));
+                    else consoleLog(`${hstr} rootNonObj: <undef>`);
+                    if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s=>consoleLog(`${hstr} rootLogicalObject: ${s}`));
+                    else consoleLog(`${hstr} rootLogicalObject: <undef>`);
+                }
                 consoleGroupEnd();
             }
         }
-
-        return results;
-
+        return [ret];
+        //return results;
     }
 
 

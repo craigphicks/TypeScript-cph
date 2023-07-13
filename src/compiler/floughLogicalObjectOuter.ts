@@ -49,8 +49,16 @@ namespace ts {
             state: LogicalObjectAccessReturn,
         ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[];
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
+        //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectIF | undefined>[]): FloughLogicalObjectIF;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
+
+    export type LogicalObjectModifyReturnType = & {
+        rootLogicalObject: FloughLogicalObjectIF | undefined,
+        rootNonObj: FloughType | undefined;
+        type: Readonly<FloughType>
+    };
+
 
     export const floughLogicalObjectModule: FloughLogicalObjectModule = {
         modifyFloughLogicalObjectEffectiveDeclaredType,
@@ -92,7 +100,7 @@ namespace ts {
         logicalObjectModify(
             types: Readonly<(CritToTypeV2Result)[]>,
             state: LogicalObjectAccessReturn,
-        ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[] {
+        ): LogicalObjectModifyReturnType[] {
             const x = floughLogicalObjectInnerModule.logicalObjectModify(types, state);
             return x.map(({ rootLogicalObject, rootNonObj, type })=>({
                 rootLogicalObject: rootLogicalObject ? createFloughLogicalObjectFromInner(rootLogicalObject, /* edType */ undefined) : undefined,
@@ -103,8 +111,21 @@ namespace ts {
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
             return floughLogicalObjectInnerModule.getTsTypesInChainOfLogicalObjectAccessReturn(loar);
         },
+        //unionOfFloughLogicalObjectWithTypeMerging,
         dbgLogicalObjectToStrings,
     };
+
+    // function unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectOuter>[]): FloughLogicalObjectOuter {
+    //     Debug.assert(arr.length);
+    //     const arri = arr.map(ob=>ob.inner);
+    //     const inner = floughLogicalObjectInnerModule.unionOfFloughLogicalObjectWithTypeMerging(arri);
+    //     //type = checker.unionType() TODO: add union of effectiveDeclaredTsType as new effectiveDeclaredTsType
+    //     return {
+    //         inner,
+    //         id: nextLogicalObjectOuterId++,
+    //         [essymbolfloughLogicalObjectOuter]: true,
+    //     };
+    // }
 
     function getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectOuter>): Type {
         return logicalObjectTop.effectiveDeclaredTsType || floughLogicalObjectInnerModule.getTsTypeFromLogicalObject(logicalObjectTop.inner);
