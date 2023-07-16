@@ -61,9 +61,13 @@ async function main(){
                 const tmp = de.name+"";
                 return tmp.match(re);
             })) return;
+            if (de.name.endsWith(".symbols")) return;
             console.log(`de.name:${de.name}`);
             const right = dir+de.name;
-            const left = right.replace("local","reference");
+            let left = right.replace("local","reference");
+            if (left.endsWith("errors.txt.delete")){
+                left = left.replace("errors.txt.delete","errors.txt");
+            }
             const cmd = `meld ${left} ${right}`;
             console.log(cmd);
             cp.execSync(cmd);
