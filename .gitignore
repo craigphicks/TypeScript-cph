@@ -101,3 +101,4 @@ tests/cases/user/prettier/prettier
 .eslintcache
 tmp.*
 !tmp.cph.d/
+.bash_history

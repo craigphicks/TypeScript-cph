@@ -36,14 +36,13 @@ if (r.b===undefined){
 
     r.a;
 >r.a : number
->r : { a: number; }
+>r : { a: number; } | { a: string; b: string; }
 >a : number
 
-    // @ts-expect-error
     r.b;
->r.b : error
->r : { a: number; }
->b : any
+>r.b : undefined
+>r : { a: number; } | { a: string; b: string; }
+>b : undefined
 }
 else {
     r;
@@ -51,12 +50,12 @@ else {
 
     r.a;
 >r.a : string
->r : { a: string; b: string; }
+>r : { a: number; } | { a: string; b: string; }
 >a : string
 
     r.b;
 >r.b : string
->r : { a: string; b: string; }
+>r : { a: number; } | { a: string; b: string; }
 >b : string
 }
 

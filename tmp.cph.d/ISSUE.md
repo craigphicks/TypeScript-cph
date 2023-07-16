@@ -8,6 +8,10 @@
 
 0. "readonly" attribute is lost in object types, arrayLiteralExpression-0xx where xx > 13
 
+  0. -arrayLiteralExpression-030.ts : type readonly[[boolean]] appearing as readonly[readonly[boolean]].  It seems that setting (tuple type).target.readonly=true has side effects.
+
+  0.  Instead, let's use the logicalObject of the effectiveDeclaredType and the nobj of the narrowed type.  
+
 0.  floughByBinaryExpressionEqualsCompareV2 / Either side as Identifier - Identifier is fast as long as it does not involve replay.  Even if does involve replay, it should not change the symbol table.  Therefore in the case where lhs is Identifier and also a replayable, and the rhs is identifier, but not a replayable, we can do the rhs first.
 
 0. Several of the tests _caxnc-arrayLiteralExpression- show overly complex types for objects such as `readonly [true, true] | readonly [boolean, boolean]`.  However the leaf access is working, so that over-complexity will be left for later to allow other progress. -- Fixed

@@ -37,12 +37,12 @@ if (r.b){
 
     r.a;
 >r.a : 2
->r : { a: 2; b: 2; }
+>r : { a: 1; } | { a: 2; b: 2; }
 >a : 2
 
     r.b;
 >r.b : 2
->r : { a: 2; b: 2; }
+>r : { a: 1; } | { a: 2; b: 2; }
 >b : 2
 }
 else {
@@ -51,13 +51,12 @@ else {
 
     r.a;
 >r.a : 1
->r : { a: 1; }
+>r : { a: 1; } | { a: 2; b: 2; }
 >a : 1
 
-    // @ts-expect-error
     r.b;
->r.b : error
->r : { a: 1; }
->b : any
+>r.b : undefined
+>r : { a: 1; } | { a: 2; b: 2; }
+>b : undefined
 }
 

@@ -16,6 +16,5 @@ if (r.b){
 else {
     r;
     r.a;
-    // @ts-expect-error
     r.b;
 }

@@ -29,9 +29,9 @@ if (r.b){
 >r : Symbol(r, Decl(_caxnc-propNarrow-0012.ts, 5, 3))
 
     r.a;
->r.a : Symbol(a, Decl(_caxnc-propNarrow-0012.ts, 3, 9))
+>r.a : Symbol(a, Decl(_caxnc-propNarrow-0012.ts, 2, 9), Decl(_caxnc-propNarrow-0012.ts, 3, 9))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0012.ts, 5, 3))
->a : Symbol(a, Decl(_caxnc-propNarrow-0012.ts, 3, 9))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0012.ts, 2, 9), Decl(_caxnc-propNarrow-0012.ts, 3, 9))
 
     r.b;
 >r.b : Symbol(b, Decl(_caxnc-propNarrow-0012.ts, 3, 24))

@@ -136,7 +136,7 @@ namespace ts {
             return getEffectiveDeclaredType(symbolFlowInfo);
             //return getSymbolFlowInfoInitializerOrDeclaredType(symbol);
         }
-        // @ts-expect-error
+        // @ ts-expect-error
         function getEffectiveDeclaredTsTypeFromSymbol(symbol: Symbol): Type {
             const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
             Debug.assert(symbolFlowInfo);
@@ -1164,6 +1164,10 @@ namespace ts {
                                     rttr.type = floughTypeModule.unionWithFloughTypeMutate(xxx.logicalObjectRhsType,xxx.nobjRhsType);
                                     if (getMyDebug()){
                                         consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
+                                        floughTypeModule.dbgFloughTypeToStrings(rhsType).forEach(s=>consoleLog(`floughIdentifier[dbg]: orig: ${s}`));
+                                        consoleLog(`floughIdentifier[dbg]: effectiveDeclaredTsType: ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
+                                        //floughTypeModule.dbgFloughTypeToStrings(symbolFlowInfo!.effectiveDeclaredType).forEach(s=>consoleLog(`floughIdentifier[dbg]: effectiveDeclaredTsType: ${s}`));
+                                        floughTypeModule.dbgFloughTypeToStrings(rttr.type).forEach(s=>consoleLog(`floughIdentifier[dbg]: final: ${s}`));
                                     }
                                 }
                                 // const rhsType = rttr.type;
@@ -3248,13 +3252,76 @@ namespace ts {
                     }
                     {
                         // Note: this does not include the rightmost expression of the chain
-                        floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess).forEach((atstype,idx)=>{
-                            //if (idx===0) return; // skip the root because we got a better type already from the symbol
+                        const chain = floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess); //.forEach((atstype,idx)=>{
+                        chain.forEach((atstype,idx)=>{
+                        //floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess).forEach((atstype,idx)=>{
+                            if (idx===0){
+                                if (refAccessArgs![0].roots![0].symbol){
+                                    const edtstype = getEffectiveDeclaredTsTypeFromSymbol(refAccessArgs![0].roots![0].symbol);
+                                    const mix: Type[] = [];
+                                    checker.forEachType(edtstype, t=>{
+                                        if (t.flags & TypeFlags.Object) {
+                                            mix.push(t);
+                                            return;
+                                        }
+                                        if (t.flags & TypeFlags.Intersection) {
+                                            Debug.fail("not yet implemented: interseciton");
+                                        }
+                                        if (extraAsserts){
+                                            if (t.flags & TypeFlags.Union){
+                                                Debug.fail("unexpected");
+                                            }
+                                        }
+                                    });
+                                    //const { logicalObject: logicalObjectEdt, nobj: nobjEdt } = floughTypeModule.splitLogicalObject(edtype);
+                                    atstype.forEach(t=>{
+                                        if (t.flags & TypeFlags.Object) return;
+                                        if (t.flags & (TypeFlags.Intersection | TypeFlags.Union)) Debug.fail("unexpected | not yet implemented");
+                                        mix.push(t);
+                                    });
+                                    atstype = mix;
+
+                                //     let ronlyForArr = false;
+                                //     let ronlyForTuple = false;
+                                //     checker.forEachType(edtstype, edt=>{
+                                //         if (extraAsserts){
+                                //             Debug.assert(!(edt.flags & TypeFlags.Intersection), "not yet implemented: edt.flags & TypeFlags.Intersection");
+                                //             Debug.assert(!(edt.flags & TypeFlags.Union), "unexpected: edt.flags & TypeFlags.Union");
+                                //         }
+                                //         if (!(edt.flags & TypeFlags.Object)) return;
+                                //         if (checker.isArrayOrTupleType(edt)){
+                                //             if (checker.isTupleType(edt)) {
+                                //                 ronlyForTuple ||= (edt.target as TupleType).readonly;
+                                //             }
+                                //             else {
+                                //                 ronlyForArr ||= checker.isReadonlyArrayType(edt);
+                                //             }
+                                //         }
+                                //         else {
+                                //             // prop obj fall through
+                                //         }
+                                //     });
+                                //     atstype.forEach(t=>{
+                                //         if (checker.isArrayOrTupleType(t)){
+                                //             if (checker.isTupleType(t)){
+                                //                 if (ronlyForTuple) (t.target as TupleType).readonly = true;
+                                //             }
+                                //             else {
+                                //                 if (ronlyForArr) checker.setArrayTypeToReadonly(t);
+                                //             }
+                                //         }
+                                //     });
+                                //     //orTsTypesIntoNodeToTypeMap([edtstype], refAccessArgs![0].expressions[idx].expression, inferStatus.groupNodeToTypeMap);
+                                //     //return;
+                                }
+                                // else fall through
+                            }
+                            // TODO: maybe we want to output the delared types of property symbols instead of passibly narrowed types. (need to make test cases)
                             orTsTypesIntoNodeToTypeMap(atstype, refAccessArgs![0].expressions[idx].expression, inferStatus.groupNodeToTypeMap);
                         });
                     }
 
-                }
+                } // if (accessDepth===0)
                 else {
                     unmerged.push({ type, sci:sciFinal });
                 }

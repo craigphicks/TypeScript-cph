@@ -676,7 +676,8 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
-            //getTypeFromTypeNode,
+            setArrayTypeToReadonly,
+            isReadonlyArrayType,
             getFreshTypeOfLiteralType,
             widenTypeInferredFromInitializer,
             // getReducedType,
@@ -21451,6 +21452,9 @@ namespace ts {
 
         function isReadonlyArrayType(type: Type): boolean {
             return !!(getObjectFlags(type) & ObjectFlags.Reference) && (type as TypeReference).target === globalReadonlyArrayType;
+        }
+        function setArrayTypeToReadonly(type: Type): void {
+            (type as TypeReference).target = globalReadonlyArrayType;
         }
 
         function isArrayOrTupleType(type: Type): type is TypeReference {

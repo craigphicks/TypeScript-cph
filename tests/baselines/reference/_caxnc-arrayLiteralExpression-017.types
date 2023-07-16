@@ -1,0 +1,23 @@
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-017.ts ===
+declare const c: true;
+>c : true
+>true : true
+
+const w: readonly[boolean,boolean] = [c,c];
+>w : readonly [boolean, boolean]
+>[c,c] : [true, true]
+>c : true
+>c : true
+
+if (c) {
+>c : true
+
+    w;
+>w : readonly [boolean, boolean]
+
+    w[0];
+>w[0] : true
+>w : readonly [boolean, boolean]
+>0 : 0
+}
+

@@ -372,7 +372,8 @@ namespace ts {
         initializeFlowGroupRefTypesSymtabModule(mrNarrow);
         initFlowGroupInferApplyCrit(checker, mrNarrow);
         initFloughTypeModule(checker,compilerOptions);
-        initFloughLogicalObject(checker,dbgs,mrNarrow);
+        initFloughLogicalObjectOuter(checker);
+        initFloughLogicalObjectInner(checker,dbgs,mrNarrow);
         return {
             sourceFile,
             groupsForFlow,

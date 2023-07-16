@@ -76,6 +76,7 @@ namespace ts {
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
+        //inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop: FloughLogicalObjectInnerIF, edType: Readonly<Type>): FloughLogicalObjectInnerIF;
 
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
         dbgLogicalObjectAccessResult(loar: Readonly<LogicalObjectAccessReturn>): string[];
@@ -96,7 +97,7 @@ namespace ts {
         logicalObjectModify,
         getTsTypesInChainOfLogicalObjectAccessReturn,
         getTsTypesOfBaseLogicalObjects,
-        //unionOfFloughLogicalObjectWithTypeMerging,
+        //inheritReadonlyFromEffectiveDeclaredTsTypeModify,
         dbgLogicalObjectToStrings,
         dbgLogicalObjectAccessResult
     };
@@ -105,7 +106,7 @@ namespace ts {
     const checker = undefined as any as TypeChecker; // TODO: intialize;
     const dbgs = undefined as any as Dbgs;
     const mrNarrow = undefined as any as MrNarrow;
-    export function initFloughLogicalObject(checkerIn: TypeChecker, dbgsIn: Dbgs, mrNarrowIn: MrNarrow) {
+    export function initFloughLogicalObjectInner(checkerIn: TypeChecker, dbgsIn: Dbgs, mrNarrowIn: MrNarrow) {
         (checker as any) = checkerIn;
         //(refTypesTypeModule as any) = refTypesTypeModuleIn;
         (dbgs as any) = dbgsIn;
@@ -588,6 +589,94 @@ namespace ts {
         const ut = checker.getUnionType(at);
         return ut;
     }
+
+    // @ts-expect-error
+    function forEachLogicalObjectBasicModify(topIn: FloughLogicalObjectInner, f: (bobj: FloughLogicalObjectBasic) => void): FloughLogicalObjectInner {
+        Debug.fail("unused");
+        function worker(lobj: FloughLogicalObjectInner): void {
+            if (lobj.kind===FloughLogicalObjectKind.plain){
+                f(lobj);
+            }
+            else if (lobj.kind===FloughLogicalObjectKind.union){
+                lobj.items.forEach(worker);
+            }
+        }
+        worker(topIn);
+        return topIn;
+    }
+
+    /**
+     * Modify "logicalObjectTop" so that it inherits readonly attributes from edType.
+     * Note1: When "logicalObjectTop" is a uhion of object types, some which are readonly and some not, matching the inheritance properly
+     * would require testing for subtype relations. In order not to have to test for subtype relations, this implementation takes short cuts:
+     * - If any "edType" union member is a readonly tuple, all union members of "logicalObjectTop" which tuples are set to readonly.
+     * - Suppose a (possibly intermediate) path "x.y[n].z"
+     * checks if some union member of "logicalObjectTop" is readonly, and iff that is true, then sets all union members of logicalObjectTop to be readonly.
+     * @param logicalObjectTop
+     * @param edType
+     * @returns
+     * // C.f. https://www.typescriptlang.org/play?#code/FAGwpgLgBA9gRgKwIxQFxSgbygJzAQwBMYA7EATygA91tz0SBXAWzjBwF8OoBeLGzPSRcA3MHjJe-VINQAmUVAD0SqAHkA0uMRIAdFSmyFI5aoDC+EiRjR8AZzsBLAOYkoEGFADkVL1DYAxviMdmBQjtCOdlD4uASEALSkFFAADjgwqewQ5LrayPq6lHxyJirqWqCQsIgADGgY2DRYcUTJlPRQTKzsXIYCQqL59XyYA-KK5ZrD+ob0xqYVM1RFUqWLFlY2MQ4ubh7e5H6BwaHhkdGxeERJZJTpmdm5wC-l9lABpHbQABbv1lAwAAzIFgALQUhpDKpGoIMEQOx5cAQxByBotZp0BgsNicbijcbCbjvT4kb5iCRogkyeaTVTTSmzUa0sr0rSMlbFKDrKaVZGwgDM6KatCgnW6uL61Nkwh2Hy+0A4FMQQultKViwZKqZWBZG0s1lsu1c7k8PmOYNOYQi4UurUS7ShjxwOTyEgFhS5PLZLyAA
+     * Notes: TS-v5.5 behavior
+     * let obj1: { readonly x: { y: number}} = {x:{y:1}};
+     *
+     * obj1 = {x:{y:2}}; // OK
+     * obj1.x = {y:2}; // Cannot assign to 'x' because it is a read-only property.
+     * obj1.x.y = 2; // OK
+     *
+     * let obj0: { x: { readonly y: number}} = {x:{y:1}};
+     * obj0 = {x:{y:2}}; // OK
+     * obj0.x = {y:2}; // OK
+     * obj0.x.y = 2; // Cannot assign to 'y' because it is a read-only property.
+     *
+     *
+     * // as const has no effect on prop objects.
+     * let obj2: { x: { y: number}} = {x:{y:1}} as const;
+     * obj2 = {x:{y:2}}; // OK
+     * obj2.x = {y:2}; // OK
+     * obj2.x.y = 2; // OK
+     *
+     * let obj3: { x: { y: number}} = {x:{y:1} as const };
+     * obj3 = {x:{y:2}}; // OK
+     * obj3.x = {y:2}; // Cannot assign to 'x' because it is a read-only property.
+     * obj3.x.y = 2; // OK
+     *
+     *
+     */
+    // function inheritReadonlyFromEffectiveDeclaredTsTypeModify(
+    //     logicalObjectTop: FloughLogicalObjectInner,
+    //     edType: Readonly<Type>):
+    // FloughLogicalObjectInner {
+    //     let ronly = false;
+    //     checker.forEachType(edType, edt=>{
+    //         if (extraAsserts){
+    //             Debug.assert(!(edt.flags & TypeFlags.Intersection), "not yet implemented: edt.flags & TypeFlags.Intersection");
+    //             Debug.assert(!(edt.flags & TypeFlags.Union), "unexpected: edt.flags & TypeFlags.Union");
+    //         }
+    //         if (!(edt.flags & TypeFlags.Object)) return;
+    //         if (checker.isArrayOrTupleType(edType)){
+    //             if (checker.isTupleType(edType)) {
+    //                 ronly ||= (edType.target as TupleType).readonly;
+    //             }
+    //             else {
+    //                 ronly ||= checker.isReadonlyArrayType(edType);
+    //                 Debug.fail("not yet implemented");
+    //             }
+    //         }
+    //         else {
+
+    //         }
+    //     });
+
+    //     if (checker.isTupleType(edType) && (((edType as TypeReference).target) as TupleType).readonly) {
+    //         // The rhs could be a union of TupleTypes
+    //         // Debug.assert(logicalObjectTop.kind===FloughLogicalObjectKind.plain);
+    //         // Debug.assert(checker.isTupleType(logicalObjectTop.tsType));
+
+    //         ((logicalObjectTop.tsType as TypeReference).target as TupleType).readonly = true;
+    //     }
+    //     return logicalObjectTop;
+    // }
+
 
 
     function replaceTypeAtKey(logicalObject: Readonly<FloughLogicalObjectBasic>, key: LiteralType, modifiedType: Readonly<FloughType>): FloughLogicalObjectBasic {

@@ -36,12 +36,12 @@ if (r.b){
 
     r.a;
 >r.a : 2
->r : { a: 2; b: number; }
+>r : { a: 1; } | { a: 2; b: number; }
 >a : 2
 
     r.b;
 >r.b : number
->r : { a: 2; b: number; }
+>r : { a: 1; } | { a: 2; b: number; }
 >b : number
 }
 else {

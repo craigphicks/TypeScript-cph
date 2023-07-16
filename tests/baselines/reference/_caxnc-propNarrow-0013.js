@@ -8,7 +8,6 @@ let r = x ? y : z;
 if (r.b===undefined){
     r;
     r.a;
-    // @ts-expect-error
     r.b;
 }
 else {
@@ -27,7 +26,6 @@ var r = x ? y : z;
 if (r.b === undefined) {
     r;
     r.a;
-    // @ts-expect-error
     r.b;
 }
 else {

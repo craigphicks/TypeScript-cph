@@ -4328,6 +4328,8 @@ namespace ts {
         narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     }
     export interface TypeChecker {
+        /* @internal */ setArrayTypeToReadonly(type: Type): void;
+        /* @internal */ isReadonlyArrayType(type: Type): boolean;
         ///* @internal */ getTypeFromTypeNode(node: TypeNode): Type;
         /* @internal */ getFreshTypeOfLiteralType(type: Type): Type;
         /* @internal */ widenTypeInferredFromInitializer(declaration: HasExpressionInitializer, type: Type): Type;

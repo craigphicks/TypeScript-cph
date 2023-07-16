@@ -1,5 +1,16 @@
 namespace ts {
 
+    const checker = undefined as any as TypeChecker; // TODO: intialize;
+    // const dbgs = undefined as any as Dbgs;
+    // const mrNarrow = undefined as any as MrNarrow;
+    export function initFloughLogicalObjectOuter(checkerIn: TypeChecker) {
+        (checker as any) = checkerIn;
+        //(refTypesTypeModule as any) = refTypesTypeModuleIn;
+        // (dbgs as any) = dbgsIn;
+        // (mrNarrow as any) = mrNarrowIn;
+    }
+
+
     export type DiscriminantFn = (type: Readonly<FloughType>) => FloughType | true | undefined; // true means type doesn't change, undefined means type becomes never, else become FloughType
     const essymbolfloughLogicalObjectOuter = Symbol("floughLogicalObjectIF");
     export interface FloughLogicalObjectIF {[essymbolfloughLogicalObjectOuter]: true};
@@ -9,6 +20,7 @@ namespace ts {
         inner: FloughLogicalObjectInnerIF;
         effectiveDeclaredTsType?: Type; // should be stripped of primitive types, and only have object and operator types.
         id: number;
+        readonly?: boolean;
         [essymbolfloughLogicalObjectOuter]: true
     };
 
@@ -75,12 +87,13 @@ namespace ts {
         createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF {
             assertCastType<FloughLogicalObjectOuter>(logicalObjectTop);
             // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-            return <FloughLogicalObjectOuter>({
+            //const castedReadOnlyInner = floughLogicalObjectInnerModule.inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop.inner, edType);
+            return ({
                 effectiveDeclaredTsType: edType,
                 inner: logicalObjectTop.inner,
                 id: nextLogicalObjectOuterId++,
                 [essymbolfloughLogicalObjectOuter]: true,
-            });
+            }) as FloughLogicalObjectOuter;
         },
         identicalLogicalObjects,
         getInnerIF(logicalObject: Readonly<FloughLogicalObjectIF>){
