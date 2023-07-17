@@ -2335,7 +2335,11 @@ namespace ts {
 
 
             function floughByBinaryExpresionAssign(): FloughInnerReturn {
-                const {left:leftExpr,right:rightExpr} = expr as BinaryExpression;
+                assertCastType<BinaryExpression>(expr);
+                if (getMyDebug()){
+                    consoleGroup(`floughByBinaryExpresionAssign[in] ${Debug.formatSyntaxKind(expr.left.kind)}`);
+                }
+                const {left:leftExpr,right:rightExpr} = expr;
                 //const {sci:{symtab:refTypesSymtab,constraintItem}} = args;
                 // const rhs = flough({
                 //     sci,
@@ -2388,6 +2392,9 @@ namespace ts {
                         debugDevExpectEffectiveDeclaredType(leftExpr.parent,symbolFlowInfo);
                     }
                     //const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
+                    if (getMyDebug()){
+                        consoleGroupEnd();
+                    }
                     return { unmerged: [{
                         ...passing,
                         //type: rhsType,
@@ -2419,10 +2426,16 @@ namespace ts {
                             isAssign:true,
                         });
                     });
+                    if (getMyDebug()){
+                        consoleGroupEnd();
+                    }
                     return { unmerged, };
                 }
                 else Debug.fail("not yet implemented");
-            }
+                if (getMyDebug()){
+                    consoleGroupEnd();
+                }
+        }
 
 
 

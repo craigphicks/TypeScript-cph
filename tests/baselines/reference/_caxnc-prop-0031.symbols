@@ -1,0 +1,51 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0031.ts ===
+declare type X = {
+>X : Symbol(X, Decl(_caxnc-prop-0031.ts, 0, 0))
+
+    a1?:{a2?:{a3?:1|2}};
+>a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+>a2 : Symbol(a2, Decl(_caxnc-prop-0031.ts, 1, 9))
+>a3 : Symbol(a3, Decl(_caxnc-prop-0031.ts, 1, 14))
+
+};
+declare const x:X|null;
+>x : Symbol(x, Decl(_caxnc-prop-0031.ts, 3, 13))
+>X : Symbol(X, Decl(_caxnc-prop-0031.ts, 0, 0))
+
+function prop0021(){
+>prop0021 : Symbol(prop0021, Decl(_caxnc-prop-0031.ts, 3, 23))
+
+    if (x?.a1?.a2?.a3){
+>x?.a1?.a2?.a3 : Symbol(a3, Decl(_caxnc-prop-0031.ts, 1, 14))
+>x?.a1?.a2 : Symbol(a2, Decl(_caxnc-prop-0031.ts, 1, 9))
+>x?.a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+>x : Symbol(x, Decl(_caxnc-prop-0031.ts, 3, 13))
+>a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+>a2 : Symbol(a2, Decl(_caxnc-prop-0031.ts, 1, 9))
+>a3 : Symbol(a3, Decl(_caxnc-prop-0031.ts, 1, 14))
+
+        x;
+>x : Symbol(x, Decl(_caxnc-prop-0031.ts, 3, 13))
+
+        x.a1;
+>x.a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+>x : Symbol(x, Decl(_caxnc-prop-0031.ts, 3, 13))
+>a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+
+        x.a1.a2;
+>x.a1.a2 : Symbol(a2, Decl(_caxnc-prop-0031.ts, 1, 9))
+>x.a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+>x : Symbol(x, Decl(_caxnc-prop-0031.ts, 3, 13))
+>a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+>a2 : Symbol(a2, Decl(_caxnc-prop-0031.ts, 1, 9))
+
+        x.a1.a2.a3;
+>x.a1.a2.a3 : Symbol(a3, Decl(_caxnc-prop-0031.ts, 1, 14))
+>x.a1.a2 : Symbol(a2, Decl(_caxnc-prop-0031.ts, 1, 9))
+>x.a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+>x : Symbol(x, Decl(_caxnc-prop-0031.ts, 3, 13))
+>a1 : Symbol(a1, Decl(_caxnc-prop-0031.ts, 0, 18))
+>a2 : Symbol(a2, Decl(_caxnc-prop-0031.ts, 1, 9))
+>a3 : Symbol(a3, Decl(_caxnc-prop-0031.ts, 1, 14))
+    }
+}

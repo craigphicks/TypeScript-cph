@@ -1,0 +1,51 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0031.ts ===
+declare type X = {
+>X : { a1?: { a2?: { a3?: 1 | 2 | undefined; } | undefined; } | undefined; }
+
+    a1?:{a2?:{a3?:1|2}};
+>a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; } | undefined
+>a2 : { a3?: 1 | 2 | undefined; } | undefined
+>a3 : 1 | 2 | undefined
+
+};
+declare const x:X|null;
+>x : X | null
+>null : null
+
+function prop0021(){
+>prop0021 : () => void
+
+    if (x?.a1?.a2?.a3){
+>x?.a1?.a2?.a3 : 1 | 2 | undefined
+>x?.a1?.a2 : { a3?: 1 | 2 | undefined; } | undefined
+>x?.a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; } | undefined
+>x : X | null
+>a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; } | undefined
+>a2 : { a3?: 1 | 2 | undefined; } | undefined
+>a3 : 1 | 2 | undefined
+
+        x;
+>x : X
+
+        x.a1;
+>x.a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; }
+>x : X
+>a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; }
+
+        x.a1.a2;
+>x.a1.a2 : { a3?: 1 | 2 | undefined; }
+>x.a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; }
+>x : X
+>a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; }
+>a2 : { a3?: 1 | 2 | undefined; }
+
+        x.a1.a2.a3;
+>x.a1.a2.a3 : 1 | 2
+>x.a1.a2 : { a3?: 1 | 2 | undefined; }
+>x.a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; }
+>x : X
+>a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; }
+>a2 : { a3?: 1 | 2 | undefined; }
+>a3 : 1 | 2
+    }
+}
