@@ -3060,39 +3060,15 @@ namespace ts {
 
 
             function floughAccessExpression(): FloughInnerReturn {
-                // function filterNullUndef(tstype0: Readonly<Type>): Type {
-                //     let qdotFilteredTypes: Type[] | undefined;
-                //     checker.forEachType(tstype0, t=>{
-                //         if (t.flags & TypeFlags.Undefined | TypeFlags.Null) return (qdotFilteredTypes = []); // forEachType will break on non-null return
-                //     });
-                //     if (qdotFilteredTypes){
-                //         checker.forEachType(tstype0, t=>{
-                //             if (!(t.flags & TypeFlags.Undefined | TypeFlags.Null)) qdotFilteredTypes?.push(t); // forEachType will break on non-null return
-                //         });
-                //         return checker.getUnionType(qdotFilteredTypes);
-                //     }
-                //     return tstype0;
-                // }
-
                 assertCastType<ElementAccessExpression | PropertyAccessExpression>(expr);
                 if (getMyDebug()){
                     consoleGroup(`floughAccessExpression[in] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth:${accessDepth}`);
                 }
-                // let elementAccessExpression: ElementAccessExpression | undefined;
-                // let propertyAccessExpression: PropertyAccessExpression | undefined;
-                // if (expr.kind===SyntaxKind.ElementAccessExpression){
-                //     elementAccessExpression = expr;
-                // }
-                // else {
-                //     propertyAccessExpression = expr;
-
-                // }
                 Debug.assert((accessDepth===undefined)===(refAccessArgs===undefined));
                 if (!accessDepth || !refAccessArgs) {
                     accessDepth = 0;
                     refAccessArgs = [{ roots: undefined, keyTypes: [], expressions: [] }];
                 }
-                //const {expression, argumentExpression} = expr;
 
                 const unmerged: RefTypesTableReturnNoSymbol[] = [];
 
@@ -3133,10 +3109,6 @@ namespace ts {
                         assertCastType<AccessArgsRoot[]>(refAccessArgs[0].roots);
                         return r.symbol===refAccessArgs[0].roots[0].symbol;
                     });
-                    // const symbolData = refAccessArgs[0].roots.reduce((accumulator,current)=>{
-                    //     if (current.symbolData?.symbol!==accumulator?.symbol) allSymbolsSame = false;
-                    //     return accumulator;
-                    // },refAccessArgs[0].roots[0].symbolData);
                     if (!allSymbolsSame){
                         Debug.fail("not yet implemented, multiple disparate symbols (or lack of) for access roots");
                     }
@@ -3208,24 +3180,11 @@ namespace ts {
                         }
                     }
 
-                    //let qdotCarryUndefined = false;
                     if (refAccessArgs[0].roots[0].symbol){
                         const symbol = refAccessArgs[0].roots[0].symbol;
                         /**
                          * The root type defaults to the symbol declared type.
                          */
-
-                        // const tstype0 = getEffectiveDeclaredTsTypeFromSymbol(symbol);
-                        // const atstype0 = tstype0.flags & TypeFlags.Union ? (tstype0 as UnionType).types : [tstype0];
-                        // orTsTypesIntoNodeToTypeMap(atstype0, refAccessArgs[0].expressions[0].expression, inferStatus.groupNodeToTypeMap);
-
-                        // function umodres(arr: LogicalObjectModifyReturnType[]): LogicalObjectModifyReturnType {
-                        //     return {
-                        //         type: floughTypeModule.unionOfRefTypesType(arr.map(x=>x.type)),
-                        //         rootNonObj: floughTypeModule.unionOfRefTypesType(arr.map(x=>x.rootNonObj).filter(x=>x) as FloughType[]),
-                        //         rootLogicalObject: floughLogicalObjectModule.unionOfFloughLogicalObjectWithTypeMerging(arr.map(x=>x.rootLogicalObject));
-                        //     }
-                        // }
 
                         // passing bracnhes
                         const rmodPassing = floughLogicalObjectModule.logicalObjectModify(critTypesPassing, raccess);
@@ -3235,7 +3194,6 @@ namespace ts {
                             sci.symtab!.set(
                                 symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject, x.rootNonObj));
                             unmerged.push({ type:x.type, sci, critsense: "passing" });
-                            //unmerged.push({ type: floughTypeModule.createTrueType(), sci });
                         });
                         // failing bracnhes
                         if (critTypesFailing) {
@@ -3246,7 +3204,6 @@ namespace ts {
                                 sci.symtab!.set(
                                     symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject, x.rootNonObj));
                                 unmerged.push({ type:x.type, sci, critsense: "failing" });
-                                //unmerged.push({ type: floughTypeModule.createFalseType(), sci });
                             });
                         }
                     }
@@ -3267,7 +3224,6 @@ namespace ts {
                         // Note: this does not include the rightmost expression of the chain
                         const chain = floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess); //.forEach((atstype,idx)=>{
                         chain.forEach((atstype,idx)=>{
-                        //floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess).forEach((atstype,idx)=>{
                             if (idx===0){
                                 if (refAccessArgs![0].roots![0].symbol){
                                     const edtstype = getEffectiveDeclaredTsTypeFromSymbol(refAccessArgs![0].roots![0].symbol);
@@ -3293,43 +3249,9 @@ namespace ts {
                                         mix.push(t);
                                     });
                                     atstype = mix;
-
-                                //     let ronlyForArr = false;
-                                //     let ronlyForTuple = false;
-                                //     checker.forEachType(edtstype, edt=>{
-                                //         if (extraAsserts){
-                                //             Debug.assert(!(edt.flags & TypeFlags.Intersection), "not yet implemented: edt.flags & TypeFlags.Intersection");
-                                //             Debug.assert(!(edt.flags & TypeFlags.Union), "unexpected: edt.flags & TypeFlags.Union");
-                                //         }
-                                //         if (!(edt.flags & TypeFlags.Object)) return;
-                                //         if (checker.isArrayOrTupleType(edt)){
-                                //             if (checker.isTupleType(edt)) {
-                                //                 ronlyForTuple ||= (edt.target as TupleType).readonly;
-                                //             }
-                                //             else {
-                                //                 ronlyForArr ||= checker.isReadonlyArrayType(edt);
-                                //             }
-                                //         }
-                                //         else {
-                                //             // prop obj fall through
-                                //         }
-                                //     });
-                                //     atstype.forEach(t=>{
-                                //         if (checker.isArrayOrTupleType(t)){
-                                //             if (checker.isTupleType(t)){
-                                //                 if (ronlyForTuple) (t.target as TupleType).readonly = true;
-                                //             }
-                                //             else {
-                                //                 if (ronlyForArr) checker.setArrayTypeToReadonly(t);
-                                //             }
-                                //         }
-                                //     });
-                                //     //orTsTypesIntoNodeToTypeMap([edtstype], refAccessArgs![0].expressions[idx].expression, inferStatus.groupNodeToTypeMap);
-                                //     //return;
                                 }
                                 // else fall through
                             }
-                            // TODO: maybe we want to output the delared types of property symbols instead of passibly narrowed types. (need to make test cases)
                             orTsTypesIntoNodeToTypeMap(atstype, refAccessArgs![0].expressions[idx].expression, inferStatus.groupNodeToTypeMap);
                         });
                     }
@@ -3345,9 +3267,6 @@ namespace ts {
                 }
                 return { unmerged };
             } // endof floughAccessExpression
-
-
-
         } // endof floughInnerAux()
     } // endof floughInner()
 } // endof flough()
