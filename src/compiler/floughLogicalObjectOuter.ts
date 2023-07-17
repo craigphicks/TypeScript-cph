@@ -51,6 +51,7 @@ namespace ts {
         createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType: Type | undefined): FloughLogicalObjectIF;
         //getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF>): Type;
         logicalObjectAccess(
+            rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined}[]>,
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>
@@ -101,11 +102,12 @@ namespace ts {
         },
         createFloughLogicalObjectFromInner,
         logicalObjectAccess(
+            rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol}[]>,
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>
         ): LogicalObjectAccessReturn {
-            return floughLogicalObjectInnerModule.logicalObjectAccess(roots, akey, aexpression);
+            return floughLogicalObjectInnerModule.logicalObjectAccess(rootsWithSymbols, roots, akey, aexpression);
         },
         getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>{
             return floughLogicalObjectInnerModule.getTypesFromLogicalObjectAccessReturn(loar);

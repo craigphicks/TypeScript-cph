@@ -1449,6 +1449,9 @@ namespace ts {
                 }
                     // fall through
                 case SyntaxKind.ElementAccessExpression:
+                    if (crit.kind===InferCritKind.none){
+                        return floughAccessExpressionCritNone();
+                    }
                     return floughAccessExpression();
                 case SyntaxKind.CallExpression:{
                     return floughByCallExpression();
@@ -3114,6 +3117,7 @@ namespace ts {
                     }
 
                     const raccess = floughLogicalObjectModule.logicalObjectAccess(
+                        refAccessArgs[0].roots.map(r=>({ type:r.type,symbol:r.symbol })),
                         refAccessArgs[0].roots.map(r=>r.type),
                         refAccessArgs[0].keyTypes, refAccessArgs[0].expressions);
 
@@ -3267,6 +3271,142 @@ namespace ts {
                 }
                 return { unmerged };
             } // endof floughAccessExpression
+
+            // @ts-ignore
+            function floughAccessExpressionCritNone(): FloughInnerReturn {
+                assertCastType<ElementAccessExpression | PropertyAccessExpression>(expr);
+                if (getMyDebug()){
+                    consoleGroup(`floughAccessExpression[in] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth:${accessDepth}`);
+                }
+                Debug.assert(crit.kind===InferCritKind.none);
+                Debug.assert((accessDepth===undefined)===(refAccessArgs===undefined));
+                if (!accessDepth || !refAccessArgs) {
+                    accessDepth = 0;
+                    refAccessArgs = [{ roots: undefined, keyTypes: [], expressions: [] }];
+                }
+
+                const unmerged: RefTypesTableReturnNoSymbol[] = [];
+
+                const leftMntr = flough({
+                    expr:expr.expression, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
+                    sci, accessDepth: accessDepth+1, refAccessArgs,
+                });
+                const leftSci: RefTypesSymtabConstraintItem = sci; // naughty!!!
+                const type: FloughType = undefined as any as FloughType; // naughty!!!
+                if (!refAccessArgs[0].roots) {
+                        refAccessArgs[0].roots = leftMntr.unmerged as RefTypesTable[];
+                }
+
+                let sciFinal: RefTypesSymtabConstraintItem;
+                if (expr.kind===SyntaxKind.ElementAccessExpression){
+                    const argMntr = flough({
+                        expr:expr.argumentExpression, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
+                        sci: leftSci
+                    });
+                    const argRttrUnion = applyCritNoneUnion(argMntr,inferStatus.groupNodeToTypeMap);
+                    sciFinal = argRttrUnion.sci;
+                    refAccessArgs[0].keyTypes.push(argRttrUnion.type);
+                    refAccessArgs[0].expressions.push(expr);
+                }
+                else {
+                    const keystr = expr.name.escapedText as string;
+                    const keyType = floughTypeModule.createLiteralStringType(keystr);
+                    sciFinal = leftSci;
+                    refAccessArgs[0].keyTypes.push(keyType);
+                    refAccessArgs[0].expressions.push(expr);
+                }
+
+
+                if (accessDepth===0){
+                    const allSymbolsSame = refAccessArgs[0].roots.length < 2 || refAccessArgs[0].roots.every(r=>{
+                        assertCastType<AccessArgs[]>(refAccessArgs);
+                        assertCastType<AccessArgsRoot[]>(refAccessArgs[0].roots);
+                        return r.symbol===refAccessArgs[0].roots[0].symbol;
+                    });
+                    if (!allSymbolsSame){
+                        Debug.fail("not yet implemented, multiple disparate symbols (or lack of) for access roots");
+                    }
+
+
+                    assertCastType<AccessArgsRoot[]>(refAccessArgs[0].roots);
+
+                    const raccess = floughLogicalObjectModule.logicalObjectAccess(
+                        refAccessArgs[0].roots.map(r=>({ type:r.type, symbol: r.symbol })),
+                        refAccessArgs[0].roots.map(r=>r.type),
+                        refAccessArgs[0].keyTypes, refAccessArgs[0].expressions);
+
+                    if (getMyDebug()){
+                        floughLogicalObjectInnerModule.dbgLogicalObjectAccessResult(raccess).forEach(s=>{
+                            consoleLog(`accessResult: ${s}`);
+                        });
+                    }
+                    {
+                        const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getTypesFromLogicalObjectAccessReturn(raccess);
+
+                        // setting type to undefined because it is not calculated yet
+                        finalTypes.forEach(ft=> {
+                            unmerged.push({
+                                sci: sciFinal,
+                                type: ft,
+                                logicalObjectAccessReturn: raccess
+                            });
+                        });
+                    }
+
+                    // write to nodeToTYpeMap
+                    {
+                        // Note: this does not include the rightmost expression of the chain
+                        const chain = floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess); //.forEach((atstype,idx)=>{
+                        chain.forEach((atstype,idx)=>{
+                            if (idx===0){
+                                if (refAccessArgs![0].roots![0].symbol){
+                                    const edtstype = getEffectiveDeclaredTsTypeFromSymbol(refAccessArgs![0].roots![0].symbol);
+                                    const mix: Type[] = [];
+                                    checker.forEachType(edtstype, t=>{
+                                        if (t.flags & TypeFlags.Object) {
+                                            mix.push(t);
+                                            return;
+                                        }
+                                        if (t.flags & TypeFlags.Intersection) {
+                                            Debug.fail("not yet implemented: interseciton");
+                                        }
+                                        if (extraAsserts){
+                                            if (t.flags & TypeFlags.Union){
+                                                Debug.fail("unexpected");
+                                            }
+                                        }
+                                    });
+                                    //const { logicalObject: logicalObjectEdt, nobj: nobjEdt } = floughTypeModule.splitLogicalObject(edtype);
+                                    atstype.forEach(t=>{
+                                        if (t.flags & TypeFlags.Object) return;
+                                        if (t.flags & (TypeFlags.Intersection | TypeFlags.Union)) Debug.fail("unexpected | not yet implemented");
+                                        mix.push(t);
+                                    });
+                                    atstype = mix;
+                                }
+                                // else fall through
+                            }
+                            orTsTypesIntoNodeToTypeMap(atstype, refAccessArgs![0].expressions[idx].expression, inferStatus.groupNodeToTypeMap);
+                        });
+                    }
+
+                    ///////////////////////////////////////////////////////////////////////////
+                    ///////////////////////////////////////////////////////////////////////////
+                    ///////////////////////////////////////////////////////////////////////////
+
+
+                } // if (accessDepth===0)
+                else {
+                    unmerged.push({ type, sci:sciFinal });
+                }
+
+                if (getMyDebug()){
+                    consoleLog(`floughAccessExpression[out] expr: ${dbgsModule.dbgNodeToString(expr)}`);
+                    consoleGroupEnd();
+                }
+                return { unmerged };
+            } // endof floughAccessExpressionCritNone
+
         } // endof floughInnerAux()
     } // endof floughInner()
 } // endof flough()

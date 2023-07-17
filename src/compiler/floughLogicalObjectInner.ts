@@ -64,6 +64,7 @@ namespace ts {
         intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInnerIF | undefined;
         getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         logicalObjectAccess(
+            rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>,
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>,
@@ -1198,6 +1199,7 @@ namespace ts {
 
     export type LiteralKeyAndType = & { literalKey?: LiteralType | undefined, type: FloughType };
     export type LogicalObjectAccessReturn = & {
+        rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>;
         roots: Readonly<FloughType[]>;
         collated: Readonly<Collated[]>;
         aLiterals: (LiteralType | undefined)[];
@@ -1205,6 +1207,7 @@ namespace ts {
         aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>
     };
     function logicalObjectAccess(
+        rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>,
         roots: Readonly<FloughType[]>,
         akey: Readonly<FloughType[]>,
         aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>,
@@ -1274,7 +1277,7 @@ namespace ts {
                 });
             }
         }
-        return { roots, collated: acollated, aLiterals, finalTypes: finalLiteralKeyAndType!, aexpression };
+        return { rootsWithSymbols, roots, collated: acollated, aLiterals, finalTypes: finalLiteralKeyAndType!, aexpression };
     }
     function getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]> {
         return loar.finalTypes.map(x=>x.type);
@@ -1605,6 +1608,11 @@ namespace ts {
         });
         loar.roots.forEach((x,idx)=>{
             floughTypeModule.dbgFloughTypeToStrings(x).forEach(s=>astr.push(`roots[${idx}] type:${s}`));
+        });
+        loar.rootsWithSymbols.forEach((x,idx)=>{
+            floughTypeModule.dbgFloughTypeToStrings(x.type).forEach(s=>astr.push(`rootsWithSymbols[${idx}] type:${s} `));
+            const s = dbgs.dbgSymbolToStringSimple(x.symbol);
+            astr.push(`rootsWithSymbols[${idx}] symbol:${s} `);
         });
         loar.collated.forEach((c,idx0)=>{
             //c.arrLiteralKeyIn;

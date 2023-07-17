@@ -15,11 +15,11 @@ namespace ts {
 
     export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
 
-    export type FloughTypesTablePropLink = & {
-        rttr: RefTypesTable;
-        key: LiteralType | undefined;
-        logicalObject: FloughLogicalObjectIF;
-    };
+    // export type FloughTypesTablePropLink = & {
+    //     rttr: RefTypesTable;
+    //     key: LiteralType | undefined;
+    //     logicalObject: FloughLogicalObjectIF;
+    // };
 
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
@@ -27,7 +27,8 @@ namespace ts {
         critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem
-        propLink?: FloughTypesTablePropLink;
+        logicalObjectAccessReturn?: LogicalObjectAccessReturn;
+        // propLink?: FloughTypesTablePropLink;
     };
     export type RefTypesTableReturn = & {
         symbol?: Symbol | undefined;
@@ -36,7 +37,7 @@ namespace ts {
         critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem;
-        propLink?: FloughTypesTablePropLink;
+        // propLink?: FloughTypesTablePropLink;
     };
     export enum InferCritKind {
         none= "none",
