@@ -15,7 +15,7 @@ const result = x ? { a: 1 } as const : { a: 1, b: 2 } as const;
 >b : Symbol(b, Decl(_caxnc-unionObj-0002.ts, 6, 46))
 >const : Symbol(const)
 
-result.b; // expect 2 | undefined,  (checkExpression level does not emit error because probably because it adds the optional 'b' to the type.)
+result.b; // expect 2 | undefined
 >result.b : Symbol(b, Decl(_caxnc-unionObj-0002.ts, 6, 46))
 >result : Symbol(result, Decl(_caxnc-unionObj-0002.ts, 6, 5))
 >b : Symbol(b, Decl(_caxnc-unionObj-0002.ts, 6, 46))

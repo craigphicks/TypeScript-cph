@@ -6,8 +6,7 @@ declare const x: boolean;
 // Note: result is displayed in '.types' file as a union of two types: { a: 1, b?: 2} | { a: 1, b: 2 }, but flough-level code does not add the optional 'b'.
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { readonly a: 1; } | { readonly a: 1; readonly b: 2; }"
 const result = x ? { a: 1 } as const : { a: 1, b: 2 } as const;
-result.b; // expect 2 | undefined,  (checkExpression level does not emit error because probably because it adds the optional 'b' to the type.)
-
+result.b; // expect 2 | undefined
 
 //// [_caxnc-unionObj-0002.js]
 "use strict";
@@ -15,7 +14,7 @@ result.b; // expect 2 | undefined,  (checkExpression level does not emit error b
 // Note: result is displayed in '.types' file as a union of two types: { a: 1, b?: 2} | { a: 1, b: 2 }, but flough-level code does not add the optional 'b'.
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { readonly a: 1; } | { readonly a: 1; readonly b: 2; }"
 var result = x ? { a: 1 } : { a: 1, b: 2 };
-result.b; // expect 2 | undefined,  (checkExpression level does not emit error because probably because it adds the optional 'b' to the type.)
+result.b; // expect 2 | undefined
 
 
 //// [_caxnc-unionObj-0002.d.ts]

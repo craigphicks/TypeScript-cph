@@ -21,7 +21,7 @@ const result = x ? { a: 1 } as const : { a: 1, b: 2 } as const;
 >b : 2
 >2 : 2
 
-result.b; // expect 2 | undefined,  (checkExpression level does not emit error because probably because it adds the optional 'b' to the type.)
+result.b; // expect 2 | undefined
 >result.b : 2 | undefined
 >result : { readonly a: 1; } | { readonly a: 1; readonly b: 2; }
 >b : 2 | undefined
