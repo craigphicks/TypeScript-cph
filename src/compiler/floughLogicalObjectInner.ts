@@ -69,7 +69,13 @@ namespace ts {
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>,
         ): LogicalObjectAccessReturn;
-        getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>;
+        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>;
+        assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): {
+            rootLogicalObject: FloughLogicalObjectInnerIF, rootNobj: FloughType
+        };
+        getRootAtLevelFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): {
+            rootLogicalObject: Readonly<FloughLogicalObjectInner>, rootNobj: Readonly<FloughType>
+        };
         logicalObjectModify(
             types: Readonly<(FloughType | undefined)[]>,
             state: LogicalObjectAccessReturn,
@@ -94,7 +100,9 @@ namespace ts {
         intersectionWithLogicalObjectConstraint,
         getTsTypeFromLogicalObject,
         logicalObjectAccess,
-        getTypesFromLogicalObjectAccessReturn,
+        getRootAtLevelFromLogicalObjectAccessReturn,
+        getFinalTypesFromLogicalObjectAccessReturn,
+        assignFinalTypeToLogicalObjectAccessReturn,
         logicalObjectModify,
         getTsTypesInChainOfLogicalObjectAccessReturn,
         getTsTypesOfBaseLogicalObjects,
@@ -292,13 +300,16 @@ namespace ts {
                 if (!got) map.set(o.tsType,[o]);
                 else got.push(o);
             }
-            else if (o.kind===FloughLogicalObjectKind.union){
+            else if (o.kind===FloughLogicalObjectKind.union||o.kind===FloughLogicalObjectKind.tsunion){
                 o.items.forEach(ob=>{
                     Debug.assert(ob.kind===FloughLogicalObjectKind.plain);
                     const got = map.get(ob.tsType);
                     if (!got) map.set(ob.tsType,[ob]);
                     else got.push(ob);
                 });
+            }
+            else {
+                Debug.assert(false,"unionOfFloughLogicalObjectWithTypeMerging",()=>`: unexpected kind: ${o.kind}`);
             }
         });
         const items: FloughLogicalObjectBasic[]=[];
@@ -1279,9 +1290,29 @@ namespace ts {
         }
         return { rootsWithSymbols, roots, collated: acollated, aLiterals, finalTypes: finalLiteralKeyAndType!, aexpression };
     }
-    function getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]> {
+    function getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]> {
         return loar.finalTypes.map(x=>x.type);
     }
+    function assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): {
+        rootLogicalObject: FloughLogicalObjectInner, rootNobj: FloughType
+    }{
+        const aft: FloughType[] = Array(loar.finalTypes.length).fill(type);
+        const x = logicalObjectModify(aft,loar);
+        // const x: {
+        //     rootLogicalObject: FloughLogicalObjectInner | undefined;
+        //     rootNonObj: FloughType | undefined;
+        //     type: Readonly<FloughType>;
+        // }[]
+        const rootLogicalObject = unionOfFloughLogicalObjectWithTypeMerging(x.map(y=>y.rootLogicalObject))!;
+        const rootNobj = floughTypeModule.unionOfRefTypesType(x.map(y=>y.rootNonObj).filter(y=>y) as FloughType[]);
+        return { rootLogicalObject,rootNobj };
+    }
+    function getRootAtLevelFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): {rootLogicalObject: Readonly<FloughLogicalObjectInner>, rootNobj: Readonly<FloughType> } {
+        const rootLogicalObject = unionOfFloughLogicalObjectWithTypeMerging((loar.collated[level].logicalObjectsIn.filter(x=>x) as FloughLogicalObjectInner[]));
+        const rootNobj = floughTypeModule.unionOfRefTypesType(loar.collated[level].nobjTypesIn.filter(y=>y) as FloughType[]);
+        return { rootLogicalObject: rootLogicalObject!,rootNobj };
+    }
+
     function getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
         const results: Type[][] = loar.collated.map(collated=>{
             const result: Type[] = [];//[collated.remainingNonObjType];

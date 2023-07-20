@@ -5,9 +5,10 @@
 
 declare type T = { p: number };
 declare const t:T;
-function propAssign0001_1(): any {
+function propAssign0000_1() {
     t.p = 0;
     t;
     t.p;
     return t;
 }
+

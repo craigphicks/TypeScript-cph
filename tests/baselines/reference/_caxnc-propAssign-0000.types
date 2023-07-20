@@ -1,0 +1,31 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0000.ts ===
+declare type T = { p: number };
+>T : { p: number; }
+>p : number
+
+declare const t:T;
+>t : T
+
+function propAssign0000_1() {
+>propAssign0000_1 : () => T
+
+    t.p = 0;
+>t.p = 0 : 0
+>t.p : number
+>t : T
+>p : number
+>0 : 0
+
+    t;
+>t : T
+
+    t.p;
+>t.p : 0
+>t : T
+>p : 0
+
+    return t;
+>t : T
+}
+
+

@@ -27,7 +27,6 @@ namespace ts {
         critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem
-        logicalObjectAccessReturn?: LogicalObjectAccessReturn;
         // propLink?: FloughTypesTablePropLink;
     };
     export type RefTypesTableReturn = & {
@@ -193,6 +192,7 @@ namespace ts {
     export type FloughReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
         nodeForMap: Readonly<Node>;
+        logicalObjectAccessReturn?: LogicalObjectAccessReturn;
         typeof?: {
             map: ESMap<Type,RefTypesType>;
             argSymbol: Symbol;
@@ -207,6 +207,7 @@ namespace ts {
     };
     export type FloughInnerReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
+        logicalObjectAccessReturn?: LogicalObjectAccessReturn;
         typeof?: {
             map: ESMap<Type,RefTypesType>;
             argSymbol: Symbol;

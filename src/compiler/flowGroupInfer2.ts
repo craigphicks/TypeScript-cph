@@ -1306,6 +1306,7 @@ namespace ts {
                     nodeForMap: expr,
                 };
                 if (innerret.typeof) floughReturn.typeof = innerret.typeof;
+                if (innerret.logicalObjectAccessReturn) floughReturn.logicalObjectAccessReturn = innerret.logicalObjectAccessReturn;
 
                 // if (getMyDebug()) {
                 //     floughReturn.unmerged.forEach((rttr,i)=>{
@@ -2343,13 +2344,6 @@ namespace ts {
                     consoleGroup(`floughByBinaryExpresionAssign[in] ${Debug.formatSyntaxKind(expr.left.kind)}`);
                 }
                 const {left:leftExpr,right:rightExpr} = expr;
-                //const {sci:{symtab:refTypesSymtab,constraintItem}} = args;
-                // const rhs = flough({
-                //     sci,
-                //     crit: { kind:InferCritKind.none },
-                //     expr: rightExpr,
-                //     inferStatus,
-                // });
                 if (leftExpr.kind===SyntaxKind.Identifier) {
                     const rhs = flough({
                         sci,
@@ -2408,28 +2402,54 @@ namespace ts {
                     // left hand side is fully evaluated before right
                     const unmerged: RefTypesTableReturn[] = [];
                     const lhs = flough({ expr:leftExpr,sci,crit: { kind:InferCritKind.none }, inferStatus });
-                    const lhsUnion = applyCritNoneUnion(lhs,inferStatus.groupNodeToTypeMap);
+                    const logicalObjectAccessReturn = lhs.logicalObjectAccessReturn;
+                    Debug.assert(logicalObjectAccessReturn);
+
+                    // It is expected that lhs was processed by floughAccessExpressionCritNone and all the sci are identical objects.
+                    const leftSci = lhs.unmerged[0].sci;
+                    const leftSymbol = logicalObjectAccessReturn.rootsWithSymbols[0].symbol;
+                    if (extraAsserts){
+                        Debug.assert(lhs.unmerged.slice(1).every(rttr=>rttr.sci===leftSci));
+                        Debug.assert(logicalObjectAccessReturn.rootsWithSymbols.every(r=>r.symbol=leftSymbol));
+                    }
+
+                    //const lhsUnion = applyCritNoneUnion(lhs,inferStatus.groupNodeToTypeMap);
                     const rhs = flough({
-                        sci: lhsUnion.sci,
+                        sci: leftSci,
                         crit: { kind:InferCritKind.none },
                         expr: rightExpr,
                         inferStatus,
                     });
+
                     const rhsUnion = applyCritNoneUnion(rhs,inferStatus.groupNodeToTypeMap);
-                    lhs.unmerged.forEach(lhsRttr=>{
-                        if (!lhsRttr.symbol) return; // should correspond to a checker error at a higher level.
-                        //const lhsSA: SymbolWithAttributes = { symbol:lhsRttr.symbol, isconst: lhsRttr.isconst, isAssign: lhsRttr.isAssign };
-                        const lhsSymbol = lhsRttr.symbol;
-                        const lhsSymbolFlowInfo = _mrState.symbolFlowInfoMap.get(lhsSymbol);
-                        Debug.assert(lhsSymbolFlowInfo);
-                        const rhsType = widenDeclarationOrAssignmentRhs(rhsUnion.type,lhsSymbolFlowInfo);
+                    let sciFinal = rhsUnion.sci;
+
+                    /**
+                     * - symbolTable must be updated with leftSymbol->newRootType
+                     * - however, the return is symbol-less, with type: rhsUnion.type
+                     *
+                     */
+                    if (leftSymbol){
+                        const { newRootType } = floughLogicalObjectModule.assignFinalTypeToLogicalObjectAccessReturn(logicalObjectAccessReturn, rhsUnion.type);
+                        sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
+                        sciFinal.symtab!.setAsAssigned(leftSymbol,newRootType);
+
                         unmerged.push({
-                            ...lhsRttr,
-                            type: rhsType,
-                            isAssign:true,
+                            // symbol: leftSymbol,
+                            // isconst: lhs.unmerged[0].isconst,
+                            // isAssign: true,
+                            type: rhsUnion.type,
+                            sci:sciFinal
                         });
-                    });
+                    }
+                    else {
+                        unmerged.push({
+                            type: rhsUnion.type,
+                            sci:sciFinal
+                        });
+                    }
                     if (getMyDebug()){
+                        consoleLog(`floughByBinaryExpresionAssign[out] ${Debug.formatSyntaxKind(expr.left.kind)}`);
                         consoleGroupEnd();
                     }
                     return { unmerged, };
@@ -3129,7 +3149,7 @@ namespace ts {
 
                     const critTypesPassing: CritToTypeV2Result[] = [];
                     let critTypesFailing: CritToTypeV2Result[] | undefined;
-                    const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getTypesFromLogicalObjectAccessReturn(raccess);
+                    const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getFinalTypesFromLogicalObjectAccessReturn(raccess);
                     let doingCrit = false;
                     if (crit.kind===InferCritKind.truthy){
                         doingCrit = true;
@@ -3276,7 +3296,7 @@ namespace ts {
             function floughAccessExpressionCritNone(): FloughInnerReturn {
                 assertCastType<ElementAccessExpression | PropertyAccessExpression>(expr);
                 if (getMyDebug()){
-                    consoleGroup(`floughAccessExpression[in] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth:${accessDepth}`);
+                    consoleGroup(`floughAccessExpressionCritNone[in] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth:${accessDepth}`);
                 }
                 Debug.assert(crit.kind===InferCritKind.none);
                 Debug.assert((accessDepth===undefined)===(refAccessArgs===undefined));
@@ -3317,6 +3337,7 @@ namespace ts {
                 }
 
 
+                let raccess: LogicalObjectAccessReturn | undefined;
                 if (accessDepth===0){
                     const allSymbolsSame = refAccessArgs[0].roots.length < 2 || refAccessArgs[0].roots.every(r=>{
                         assertCastType<AccessArgs[]>(refAccessArgs);
@@ -3326,11 +3347,11 @@ namespace ts {
                     if (!allSymbolsSame){
                         Debug.fail("not yet implemented, multiple disparate symbols (or lack of) for access roots");
                     }
-
+                    const symbol = refAccessArgs[0].roots[0].symbol;
 
                     assertCastType<AccessArgsRoot[]>(refAccessArgs[0].roots);
 
-                    const raccess = floughLogicalObjectModule.logicalObjectAccess(
+                    raccess = floughLogicalObjectModule.logicalObjectAccess(
                         refAccessArgs[0].roots.map(r=>({ type:r.type, symbol: r.symbol })),
                         refAccessArgs[0].roots.map(r=>r.type),
                         refAccessArgs[0].keyTypes, refAccessArgs[0].expressions);
@@ -3340,15 +3361,21 @@ namespace ts {
                             consoleLog(`accessResult: ${s}`);
                         });
                     }
-                    {
-                        const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getTypesFromLogicalObjectAccessReturn(raccess);
 
+                    {
+                        if (symbol && !sciFinal.symtab?.get(symbol)){
+                            // nothing changed symbol value so only add if not already present.
+                            const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess,0);
+                            sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
+                            sciFinal.symtab!.set(symbol,newRootType);
+                        }
+
+                        const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getFinalTypesFromLogicalObjectAccessReturn(raccess);
                         // setting type to undefined because it is not calculated yet
                         finalTypes.forEach(ft=> {
                             unmerged.push({
                                 sci: sciFinal,
                                 type: ft,
-                                logicalObjectAccessReturn: raccess
                             });
                         });
                     }
@@ -3401,10 +3428,10 @@ namespace ts {
                 }
 
                 if (getMyDebug()){
-                    consoleLog(`floughAccessExpression[out] expr: ${dbgsModule.dbgNodeToString(expr)}`);
+                    consoleLog(`floughAccessExpressionCritNone[out] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth: ${accessDepth}`);
                     consoleGroupEnd();
                 }
-                return { unmerged };
+                return { unmerged, ...(raccess?{ logicalObjectAccessReturn:raccess }:{}) };
             } // endof floughAccessExpressionCritNone
 
         } // endof floughInnerAux()

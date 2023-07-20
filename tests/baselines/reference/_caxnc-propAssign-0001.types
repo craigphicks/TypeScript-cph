@@ -3,40 +3,18 @@ declare type T = { p: number };
 >T : { p: number; }
 >p : number
 
-declare type U = { p: number };
->U : { p: number; }
+declare type U = { p: number, q:number };
+>U : { p: number; q: number; }
 >p : number
-
-declare const t:T;
->t : T
+>q : number
 
 declare const tu:T | U;
 >tu : T | U
 
-function propAssign0001_1(): any {
->propAssign0001_1 : () => any
-
-    t.p = 0;
->t.p = 0 : 0
->t.p : number
->t : T
->p : number
->0 : 0
-
-    t;
->t : T
-
-    t.p;
->t.p : number
->t : T
->p : number
-
-    return t;
->t : T
-}
 function propAssign0001_2(): any {
 >propAssign0001_2 : () => any
 
+    // @ts-dev-debugger
     tu.p = 0;
 >tu.p = 0 : 0
 >tu.p : number
@@ -48,9 +26,9 @@ function propAssign0001_2(): any {
 >tu : T | U
 
     tu.p;
->tu.p : number
+>tu.p : 0
 >tu : T | U
->p : number
+>p : 0
 
     return tu;
 >tu : T | U

@@ -3,55 +3,34 @@ declare type T = { p: number };
 >T : Symbol(T, Decl(_caxnc-propAssign-0001.ts, 0, 0))
 >p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18))
 
-declare type U = { p: number };
+declare type U = { p: number, q:number };
 >U : Symbol(U, Decl(_caxnc-propAssign-0001.ts, 0, 31))
 >p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 1, 18))
-
-declare const t:T;
->t : Symbol(t, Decl(_caxnc-propAssign-0001.ts, 2, 13))
->T : Symbol(T, Decl(_caxnc-propAssign-0001.ts, 0, 0))
+>q : Symbol(q, Decl(_caxnc-propAssign-0001.ts, 1, 29))
 
 declare const tu:T | U;
->tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 3, 13))
+>tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 2, 13))
 >T : Symbol(T, Decl(_caxnc-propAssign-0001.ts, 0, 0))
 >U : Symbol(U, Decl(_caxnc-propAssign-0001.ts, 0, 31))
 
-function propAssign0001_1(): any {
->propAssign0001_1 : Symbol(propAssign0001_1, Decl(_caxnc-propAssign-0001.ts, 3, 23))
-
-    t.p = 0;
->t.p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18))
->t : Symbol(t, Decl(_caxnc-propAssign-0001.ts, 2, 13))
->p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18))
-
-    t;
->t : Symbol(t, Decl(_caxnc-propAssign-0001.ts, 2, 13))
-
-    t.p;
->t.p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18))
->t : Symbol(t, Decl(_caxnc-propAssign-0001.ts, 2, 13))
->p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18))
-
-    return t;
->t : Symbol(t, Decl(_caxnc-propAssign-0001.ts, 2, 13))
-}
 function propAssign0001_2(): any {
->propAssign0001_2 : Symbol(propAssign0001_2, Decl(_caxnc-propAssign-0001.ts, 9, 1))
+>propAssign0001_2 : Symbol(propAssign0001_2, Decl(_caxnc-propAssign-0001.ts, 2, 23))
 
+    // @ts-dev-debugger
     tu.p = 0;
 >tu.p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18), Decl(_caxnc-propAssign-0001.ts, 1, 18))
->tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 3, 13))
+>tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 2, 13))
 >p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18), Decl(_caxnc-propAssign-0001.ts, 1, 18))
 
     tu;
->tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 3, 13))
+>tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 2, 13))
 
     tu.p;
 >tu.p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18), Decl(_caxnc-propAssign-0001.ts, 1, 18))
->tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 3, 13))
+>tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 2, 13))
 >p : Symbol(p, Decl(_caxnc-propAssign-0001.ts, 0, 18), Decl(_caxnc-propAssign-0001.ts, 1, 18))
 
     return tu;
->tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 3, 13))
+>tu : Symbol(tu, Decl(_caxnc-propAssign-0001.ts, 2, 13))
 }
 

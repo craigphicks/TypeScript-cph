@@ -56,7 +56,9 @@ namespace ts {
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>
         ): LogicalObjectAccessReturn;
-        getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>;
+        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>;
+        assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): { newRootType: FloughType };
+        getRootTypeAtLevelFromFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): { newRootType: FloughType }
         logicalObjectModify(
             types: Readonly<CritToTypeV2Result[]>,
             state: LogicalObjectAccessReturn,
@@ -109,8 +111,30 @@ namespace ts {
         ): LogicalObjectAccessReturn {
             return floughLogicalObjectInnerModule.logicalObjectAccess(rootsWithSymbols, roots, akey, aexpression);
         },
-        getTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>{
-            return floughLogicalObjectInnerModule.getTypesFromLogicalObjectAccessReturn(loar);
+        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>{
+            return floughLogicalObjectInnerModule.getFinalTypesFromLogicalObjectAccessReturn(loar);
+        },
+        assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): { newRootType: FloughType }{
+            const {rootLogicalObject:inner,rootNobj} = floughLogicalObjectInnerModule.assignFinalTypeToLogicalObjectAccessReturn(loar,type);
+            Debug.assert(inner);
+            const outer: FloughLogicalObjectOuter = {
+                inner,
+                id: nextLogicalObjectOuterId++,
+                [essymbolfloughLogicalObjectOuter]: true,
+            };
+            const newRootType = floughTypeModule.createTypeFromLogicalObject(outer,rootNobj);
+            return { newRootType };
+        },
+        getRootTypeAtLevelFromFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): { newRootType: FloughType }{
+            const {rootLogicalObject:inner,rootNobj} = floughLogicalObjectInnerModule.getRootAtLevelFromLogicalObjectAccessReturn(loar,level);
+            Debug.assert(inner);
+            const outer: FloughLogicalObjectOuter = {
+                inner,
+                id: nextLogicalObjectOuterId++,
+                [essymbolfloughLogicalObjectOuter]: true,
+            };
+            const newRootType = floughTypeModule.createTypeFromLogicalObject(outer,rootNobj);
+            return { newRootType };
         },
         logicalObjectModify(
             types: Readonly<(CritToTypeV2Result)[]>,
