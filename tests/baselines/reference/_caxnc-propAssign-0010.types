@@ -1,0 +1,68 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0010.ts ===
+declare type T = { u: U, t: T };
+>T : { u: U; t: T; }
+>u : U
+>t : T
+
+declare type U = { u?: U, t: T };
+>U : { u?: U | undefined; t: T; }
+>u : U | undefined
+>t : T
+
+declare const tu1:T | U | undefined;
+>tu1 : U | T | undefined
+
+//declare const tu2:T | U;
+function propAssign0001_2(): any {
+>propAssign0001_2 : () => any
+
+    if (tu1?.u?.t.u.u){
+>tu1?.u?.t.u.u : U | undefined
+>tu1?.u?.t.u : U | undefined
+>tu1?.u?.t : T | undefined
+>tu1?.u : U | undefined
+>tu1 : U | T | undefined
+>u : U | undefined
+>t : T | undefined
+>u : U | undefined
+>u : U | undefined
+
+        // tu1;
+        // tu1.u;
+        // tu1.u.t;
+        // tu1.u.t.u;
+        // tu1.u.t.u.u;
+        tu1.u.t.u.u = undefined;
+>tu1.u.t.u.u = undefined : undefined
+>tu1.u.t.u.u : U | undefined
+>tu1.u.t.u : U
+>tu1.u.t : T
+>tu1.u : U
+>tu1 : U | T
+>u : U
+>t : T
+>u : U
+>u : U | undefined
+>undefined : undefined
+
+        // @ts-dev-debugger
+        tu1.u.t.u.u;
+>tu1.u.t.u.u : undefined
+>tu1.u.t.u : U
+>tu1.u.t : T
+>tu1.u : U
+>tu1 : U | T
+>u : U
+>t : T
+>u : U
+>u : undefined
+
+        // tu1;
+        // tu1.u;
+        // tu1.u.t;
+        // tu1.u.t.u;
+        // tu1.u.t.u.u;
+        // return tu1;
+    }
+}
+
