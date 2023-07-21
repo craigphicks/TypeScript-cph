@@ -15,6 +15,6 @@ if (r.b){
 }
 else {
     r;
-    r.a
-    r.b
+    r.a // 1 | 2
+    r.b // undefined | number
 }

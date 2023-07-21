@@ -1309,7 +1309,10 @@ namespace ts {
         return { rootLogicalObject:x.rootLogicalObject ,rootNobj:x.rootNonObj??floughTypeModule.getNeverType() };
     }
     function getRootAtLevelFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): {rootLogicalObject: Readonly<FloughLogicalObjectInner> | undefined, rootNobj: Readonly<FloughType> } {
-        const rootLogicalObject = unionOfFloughLogicalObjects((loar.collated[level].logicalObjectsPlainOut.filter(x=>x) as FloughLogicalObjectInner[]));
+        const arrNonNullLogicalObjects = loar.collated[level].logicalObjectsPlainOut.filter(x=>x) as FloughLogicalObjectInner[];
+        const rootLogicalObject = arrNonNullLogicalObjects.length ?
+            unionOfFloughLogicalObjects((loar.collated[level].logicalObjectsPlainOut.filter(x=>x) as FloughLogicalObjectInner[]))
+            : undefined;
         const rootNobj = floughTypeModule.unionOfRefTypesType(loar.collated[level].nobjTypesIn.filter(y=>y) as FloughType[]);
         return { rootLogicalObject,rootNobj };
     }

@@ -6,11 +6,21 @@
 
 ### Priority: High
 
-0. "readonly" attribute is lost in object types, arrayLiteralExpression-0xx where xx > 13
+0. "readonly" attribute is lost in object types when the ro attribute is only the lhs side type declaration (as opposed to `as const` or `readonly` on the rhs.)
 
-  0. -arrayLiteralExpression-030.ts : type readonly[[boolean]] appearing as readonly[readonly[boolean]].  It seems that setting (tuple type).target.readonly=true has side effects.
+Currently fail readonly
+```
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-015.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-015.ts
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-016.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-016.ts
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-017.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-017.ts
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-020.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-020.ts
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-021.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-021.ts
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-022.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-022.ts
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-030.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-030.ts
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-031.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-031.ts
+conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-032.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-032.ts
+```
 
-  0.  Instead, let's use the logicalObject of the effectiveDeclaredType and the nobj of the narrowed type.  
 
 0.  floughByBinaryExpressionEqualsCompareV2 / Either side as Identifier - Identifier is fast as long as it does not involve replay.  Even if does involve replay, it should not change the symbol table.  Therefore in the case where lhs is Identifier and also a replayable, and the rhs is identifier, but not a replayable, we can do the rhs first.
 

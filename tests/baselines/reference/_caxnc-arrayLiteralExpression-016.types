@@ -67,7 +67,7 @@ if (v[0]) {
 }
 if (w[0]) {
 >w[0] : true
->w : readonly [boolean, boolean]
+>w : readonly [true, true]
 >0 : 0
 
     w;
@@ -75,17 +75,17 @@ if (w[0]) {
 
     w[0];
 >w[0] : true
->w : readonly [boolean, boolean]
+>w : readonly [true, true]
 >0 : 0
 
     w[1];
 >w[1] : true
->w : readonly [boolean, boolean]
+>w : readonly [true, true]
 >1 : 1
 }
 if (x[0]) {
 >x[0] : true
->x : readonly [boolean, boolean]
+>x : readonly [true, true]
 >0 : 0
 
     x;
@@ -93,12 +93,12 @@ if (x[0]) {
 
     x[0];
 >x[0] : true
->x : readonly [boolean, boolean]
+>x : readonly [true, true]
 >0 : 0
 
     x[1];
 >x[1] : true
->x : readonly [boolean, boolean]
+>x : readonly [true, true]
 >1 : 1
 }
 

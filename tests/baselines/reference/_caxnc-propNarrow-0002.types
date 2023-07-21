@@ -28,12 +28,12 @@ if (r.b){
 
     r.a;
 >r.a : 2
->r : { readonly a: 1; } | { readonly a: 2; readonly b: 2; }
+>r : { readonly a: 2; readonly b: 2; }
 >a : 2
 
     r.b;
 >r.b : 2
->r : { readonly a: 1; } | { readonly a: 2; readonly b: 2; }
+>r : { readonly a: 2; readonly b: 2; }
 >b : 2
 }
 else {
@@ -42,12 +42,13 @@ else {
 
     r.a;
 >r.a : 1
->r : { readonly a: 1; } | { readonly a: 2; readonly b: 2; }
+>r : { readonly a: 1; }
 >a : 1
 
+    // @ts-expect-error
     r.b;
->r.b : undefined
->r : { readonly a: 1; } | { readonly a: 2; readonly b: 2; }
->b : undefined
+>r.b : error
+>r : { readonly a: 1; }
+>b : any
 }
 

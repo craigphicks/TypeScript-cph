@@ -14,7 +14,6 @@ if (x[0]===0) {
 else {
     x[0];
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-102.ts, 0, 3))
->0 : Symbol(0)
 }
 x[0];
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-102.ts, 0, 3))

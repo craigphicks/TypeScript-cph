@@ -12,8 +12,8 @@ if (r.b){
 }
 else {
     r;
-    r.a;
-    r.b;
+    r.a; // expect 1|2
+    r.b; // expect undefined|number
 }
 
 
@@ -30,8 +30,8 @@ if (r.b) {
 }
 else {
     r;
-    r.a;
-    r.b;
+    r.a; // expect 1|2
+    r.b; // expect undefined|number
 }
 
 

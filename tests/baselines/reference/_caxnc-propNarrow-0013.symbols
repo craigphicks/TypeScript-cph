@@ -28,23 +28,22 @@ if (r.b===undefined){
 >r : Symbol(r, Decl(_caxnc-propNarrow-0013.ts, 5, 3))
 
     r.a;
->r.a : Symbol(a, Decl(_caxnc-propNarrow-0013.ts, 2, 9), Decl(_caxnc-propNarrow-0013.ts, 3, 9))
+>r.a : Symbol(a, Decl(_caxnc-propNarrow-0013.ts, 2, 9))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0013.ts, 5, 3))
->a : Symbol(a, Decl(_caxnc-propNarrow-0013.ts, 2, 9), Decl(_caxnc-propNarrow-0013.ts, 3, 9))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0013.ts, 2, 9))
 
+    // @ts-expect-error
     r.b;
->r.b : Symbol(b, Decl(_caxnc-propNarrow-0013.ts, 3, 19))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0013.ts, 5, 3))
->b : Symbol(b, Decl(_caxnc-propNarrow-0013.ts, 3, 19))
 }
 else {
     r;
 >r : Symbol(r, Decl(_caxnc-propNarrow-0013.ts, 5, 3))
 
     r.a;
->r.a : Symbol(a, Decl(_caxnc-propNarrow-0013.ts, 2, 9), Decl(_caxnc-propNarrow-0013.ts, 3, 9))
+>r.a : Symbol(a, Decl(_caxnc-propNarrow-0013.ts, 3, 9))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0013.ts, 5, 3))
->a : Symbol(a, Decl(_caxnc-propNarrow-0013.ts, 2, 9), Decl(_caxnc-propNarrow-0013.ts, 3, 9))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0013.ts, 3, 9))
 
     r.b;
 >r.b : Symbol(b, Decl(_caxnc-propNarrow-0013.ts, 3, 19))
