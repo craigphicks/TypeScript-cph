@@ -136,7 +136,7 @@ namespace ts {
             return getEffectiveDeclaredType(symbolFlowInfo);
             //return getSymbolFlowInfoInitializerOrDeclaredType(symbol);
         }
-        // @ ts-expect-error
+        // @ts-expect-error
         function getEffectiveDeclaredTsTypeFromSymbol(symbol: Symbol): Type {
             const symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
             Debug.assert(symbolFlowInfo);
@@ -3210,25 +3210,22 @@ namespace ts {
                          * The root type defaults to the symbol declared type.
                          */
 
-                        // passing bracnhes
-                        const rmodPassing = floughLogicalObjectModule.logicalObjectModify(critTypesPassing, raccess);
-                        rmodPassing.forEach(x=>{
-                            // if (symbolData){
-                            const sci = copyRefTypesSymtabConstraintItem(sciFinal);
-                            sci.symtab!.set(
-                                symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject, x.rootNonObj));
-                            unmerged.push({ type:x.type, sci, critsense: "passing" });
-                        });
-                        // failing bracnhes
+                        // passing branch
+                        {
+                            const { rootLogicalObject, rootNonObj} = floughLogicalObjectModule.logicalObjectModify(critTypesPassing, raccess);
+                            const rootType = floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj);
+                            const sciPassing = copyRefTypesSymtabConstraintItem(sciFinal);
+                            sciPassing.symtab!.set(symbol,rootType);
+                            const typePassing = floughTypeModule.unionOfRefTypesType(critTypesPassing.filter(x=>x) as FloughType[]);
+                            unmerged.push({ type:typePassing, sci:sciPassing, critsense: "passing" });
+                        }
                         if (critTypesFailing) {
-                            const rmodFailing = floughLogicalObjectModule.logicalObjectModify(critTypesFailing, raccess);
-                            rmodFailing.forEach(x=>{
-                                // if (symbolData){
-                                const sci = copyRefTypesSymtabConstraintItem(sciFinal);
-                                sci.symtab!.set(
-                                    symbol,floughTypeModule.createTypeFromLogicalObject(x.rootLogicalObject, x.rootNonObj));
-                                unmerged.push({ type:x.type, sci, critsense: "failing" });
-                            });
+                            const { rootLogicalObject, rootNonObj} = floughLogicalObjectModule.logicalObjectModify(critTypesFailing, raccess);
+                            const rootType = floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj);
+                            const sciFailing = copyRefTypesSymtabConstraintItem(sciFinal);
+                            sciFailing.symtab!.set(symbol,rootType);
+                            const typeFailing = floughTypeModule.unionOfRefTypesType(critTypesFailing.filter(x=>x) as FloughType[]);
+                            unmerged.push({ type:typeFailing, sci:sciFailing, critsense: "failing" });
                         }
                     }
                     else {
@@ -3245,39 +3242,13 @@ namespace ts {
                         });
                     }
                     {
-                        // Note: this does not include the rightmost expression of the chain
-                        const chain = floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess); //.forEach((atstype,idx)=>{
-                        chain.forEach((atstype,idx)=>{
-                            if (idx===0){
-                                if (refAccessArgs![0].roots![0].symbol){
-                                    const edtstype = getEffectiveDeclaredTsTypeFromSymbol(refAccessArgs![0].roots![0].symbol);
-                                    const mix: Type[] = [];
-                                    checker.forEachType(edtstype, t=>{
-                                        if (t.flags & TypeFlags.Object) {
-                                            mix.push(t);
-                                            return;
-                                        }
-                                        if (t.flags & TypeFlags.Intersection) {
-                                            Debug.fail("not yet implemented: interseciton");
-                                        }
-                                        if (extraAsserts){
-                                            if (t.flags & TypeFlags.Union){
-                                                Debug.fail("unexpected");
-                                            }
-                                        }
-                                    });
-                                    //const { logicalObject: logicalObjectEdt, nobj: nobjEdt } = floughTypeModule.splitLogicalObject(edtype);
-                                    atstype.forEach(t=>{
-                                        if (t.flags & TypeFlags.Object) return;
-                                        if (t.flags & (TypeFlags.Intersection | TypeFlags.Union)) Debug.fail("unexpected | not yet implemented");
-                                        mix.push(t);
-                                    });
-                                    atstype = mix;
-                                }
-                                // else fall through
-                            }
-                            orTsTypesIntoNodeToTypeMap(atstype, refAccessArgs![0].expressions[idx].expression, inferStatus.groupNodeToTypeMap);
-                        });
+                        for (let level=0, nlevel=raccess.collated.length; level!==nlevel; level++){
+                            const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess,level);
+                            orIntoNodeToTypeMap(newRootType,refAccessArgs[0].expressions[level].expression, inferStatus.groupNodeToTypeMap);
+                        }
+                        orIntoNodeToTypeMap(
+                            floughLogicalObjectModule.getFinalTypeFromLogicalObjectAccessReturn(raccess),
+                            expr, inferStatus.groupNodeToTypeMap);
                     }
 
                 } // if (accessDepth===0)
@@ -3362,65 +3333,23 @@ namespace ts {
                         });
                     }
 
-                    {
-                        if (symbol && !sciFinal.symtab?.get(symbol)){
-                            // nothing changed symbol value so only add if not already present.
-                            const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess,0);
-                            sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
-                            sciFinal.symtab!.set(symbol,newRootType);
-                        }
-
-                        const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getFinalTypesFromLogicalObjectAccessReturn(raccess);
-                        // setting type to undefined because it is not calculated yet
-                        finalTypes.forEach(ft=> {
-                            unmerged.push({
-                                sci: sciFinal,
-                                type: ft,
-                            });
-                        });
+                    if (symbol && !sciFinal.symtab?.get(symbol)){
+                        // nothing changed symbol value so only add if not already present.
+                        const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess,0);
+                        sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
+                        sciFinal.symtab!.set(symbol,newRootType);
                     }
 
-                    // write to nodeToTYpeMap
-                    {
-                        // Note: this does not include the rightmost expression of the chain
-                        const chain = floughLogicalObjectModule.getTsTypesInChainOfLogicalObjectAccessReturn(raccess); //.forEach((atstype,idx)=>{
-                        chain.forEach((atstype,idx)=>{
-                            if (idx===0){
-                                if (refAccessArgs![0].roots![0].symbol){
-                                    const edtstype = getEffectiveDeclaredTsTypeFromSymbol(refAccessArgs![0].roots![0].symbol);
-                                    const mix: Type[] = [];
-                                    checker.forEachType(edtstype, t=>{
-                                        if (t.flags & TypeFlags.Object) {
-                                            mix.push(t);
-                                            return;
-                                        }
-                                        if (t.flags & TypeFlags.Intersection) {
-                                            Debug.fail("not yet implemented: interseciton");
-                                        }
-                                        if (extraAsserts){
-                                            if (t.flags & TypeFlags.Union){
-                                                Debug.fail("unexpected");
-                                            }
-                                        }
-                                    });
-                                    //const { logicalObject: logicalObjectEdt, nobj: nobjEdt } = floughTypeModule.splitLogicalObject(edtype);
-                                    atstype.forEach(t=>{
-                                        if (t.flags & TypeFlags.Object) return;
-                                        if (t.flags & (TypeFlags.Intersection | TypeFlags.Union)) Debug.fail("unexpected | not yet implemented");
-                                        mix.push(t);
-                                    });
-                                    atstype = mix;
-                                }
-                                // else fall through
-                            }
-                            orTsTypesIntoNodeToTypeMap(atstype, refAccessArgs![0].expressions[idx].expression, inferStatus.groupNodeToTypeMap);
-                        });
+                    const finalType: Readonly<FloughType> = floughLogicalObjectModule.getFinalTypeFromLogicalObjectAccessReturn(raccess);
+                    unmerged.push({
+                        sci: sciFinal,
+                        type: finalType
+                    });
+                    for (let level=0, nlevel=raccess.collated.length; level!==nlevel; level++){
+                        const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess,level);
+                        orIntoNodeToTypeMap(newRootType,refAccessArgs[0].expressions[level].expression, inferStatus.groupNodeToTypeMap);
                     }
-
-                    ///////////////////////////////////////////////////////////////////////////
-                    ///////////////////////////////////////////////////////////////////////////
-                    ///////////////////////////////////////////////////////////////////////////
-
+                    orIntoNodeToTypeMap(finalType,expr, inferStatus.groupNodeToTypeMap);
 
                 } // if (accessDepth===0)
                 else {

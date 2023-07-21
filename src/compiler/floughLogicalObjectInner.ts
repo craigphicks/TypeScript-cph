@@ -74,12 +74,12 @@ namespace ts {
             rootLogicalObject: FloughLogicalObjectInnerIF, rootNobj: FloughType
         };
         getRootAtLevelFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): {
-            rootLogicalObject: Readonly<FloughLogicalObjectInner>, rootNobj: Readonly<FloughType>
+            rootLogicalObject: Readonly<FloughLogicalObjectInner> | undefined, rootNobj: Readonly<FloughType>
         };
         logicalObjectModify(
             types: Readonly<(FloughType | undefined)[]>,
             state: LogicalObjectAccessReturn,
-        ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> }[];
+        ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> };
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
@@ -1303,28 +1303,24 @@ namespace ts {
         //     rootNonObj: FloughType | undefined;
         //     type: Readonly<FloughType>;
         // }[]
-        const rootLogicalObject = unionOfFloughLogicalObjectWithTypeMerging(x.map(y=>y.rootLogicalObject))!;
-        const rootNobj = floughTypeModule.unionOfRefTypesType(x.map(y=>y.rootNonObj).filter(y=>y) as FloughType[]);
-        return { rootLogicalObject,rootNobj };
+        // const rootLogicalObject =
+        // const rootNobj = floughTypeModule.unionOfRefTypesType(x.map(y=>y.rootNonObj).filter(y=>y) as FloughType[]);
+        Debug.assert(x.rootLogicalObject);
+        return { rootLogicalObject:x.rootLogicalObject ,rootNobj:x.rootNonObj??floughTypeModule.getNeverType() };
     }
-    function getRootAtLevelFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): {rootLogicalObject: Readonly<FloughLogicalObjectInner>, rootNobj: Readonly<FloughType> } {
-        const rootLogicalObject = unionOfFloughLogicalObjectWithTypeMerging((loar.collated[level].logicalObjectsIn.filter(x=>x) as FloughLogicalObjectInner[]));
+    function getRootAtLevelFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): {rootLogicalObject: Readonly<FloughLogicalObjectInner> | undefined, rootNobj: Readonly<FloughType> } {
+        const rootLogicalObject = unionOfFloughLogicalObjects((loar.collated[level].logicalObjectsPlainOut.filter(x=>x) as FloughLogicalObjectInner[]));
         const rootNobj = floughTypeModule.unionOfRefTypesType(loar.collated[level].nobjTypesIn.filter(y=>y) as FloughType[]);
-        return { rootLogicalObject: rootLogicalObject!,rootNobj };
+        return { rootLogicalObject,rootNobj };
     }
 
     function getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
         const results: Type[][] = loar.collated.map(collated=>{
             const result: Type[] = [];//[collated.remainingNonObjType];
-            // if (!floughTypeModule.isNeverType(collated.remainingNonObjType)){
-            //     floughTypeModule.getTsTypesFromFloughType(collated.remainingNonObjType).forEach(x=>result.push(x));
-            // }
             collated.nobjTypesIn.forEach(x=>{
                 if (x) floughTypeModule.getTsTypesFromFloughType(x).forEach(x=>result.push(x));
             });
             collated.logicalObjectsPlainOut.forEach(x=>{
-                // TODO: this shouldn't work when the object has been modified and the nobj separated out into a variation type?
-                // TODO: ie, probably logicalObject creation should not use tsunion in cases where it includes nobj type.
                 checker.forEachType(x.tsType, t=>{
                     if (extraAsserts){
                         Debug.assert((t.flags & TypeFlags.Object));
@@ -1337,18 +1333,6 @@ namespace ts {
         return results;
     }
 
-        // TODO - decided when to incorporate coll.nobjTypeOut[basicIdx] and when not to.
-        // It should be incorporated if and only if coll.nobjTypeOut[basicIdx] equals (undefined|null) with qdot and undefined was part of state.finalTypes[modTypeIdx].type
-        /**
-         * if (finalTypeHasUndefined) remove undefined and null from nonObj
-         * else do nothing
-         * @param nonObj
-         * @param finalTypeHasUndefined
-         */
-    // function calcNonObjWithQdot(nonObj: Readonly<FloughType>, finalTypeHasUndefined: boolean): FloughType {
-
-    // }
-
     export type LogicalObjectModifyInnerReturnType = & {
         rootLogicalObject: FloughLogicalObjectInner | undefined,
         rootNonObj: FloughType | undefined;
@@ -1357,7 +1341,7 @@ namespace ts {
     function logicalObjectModify(
         modTypesIn: Readonly<(FloughType | undefined)[]>,
         state: LogicalObjectAccessReturn,
-    ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined; type: Readonly<FloughType> }[] {
+    ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined; type: Readonly<FloughType> } {
         if (extraAsserts) Debug.assert(state.finalTypes.length===modTypesIn.length);
         const doLog = true;
         if (getMyDebug()){
@@ -1407,7 +1391,7 @@ namespace ts {
                 rootNonObj: unionOfNonObj(state.collated[0].nobjTypesIn)
             };
         }
-        const results: ReturnType<typeof logicalObjectModify> = [];
+        const results: ReturnType<typeof logicalObjectModify>[] = [];
 
         Debug.assert(modTypesIn.length===state.finalTypes.length);
         Debug.assert(state.collated[state.collated.length-1].logicalObjectsPlainOut.length ===state.finalTypes.length);
@@ -1581,7 +1565,7 @@ namespace ts {
                 consoleGroupEnd();
             }
         }
-        return [ret];
+        return ret;
         //return results;
     }
 
