@@ -4328,7 +4328,7 @@ namespace ts {
         narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     }
     export interface TypeChecker {
-        /* @internal */ setArrayTypeToReadonly(type: Type): void;
+        ///* @internal */ createReaonlyTupleTypeFromTupleType(type: Readonly<TupleTypeReference>): TupleTypeReference;
         /* @internal */ isReadonlyArrayType(type: Type): boolean;
         ///* @internal */ getTypeFromTypeNode(node: TypeNode): Type;
         /* @internal */ getFreshTypeOfLiteralType(type: Type): Type;

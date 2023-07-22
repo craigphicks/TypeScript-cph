@@ -852,3 +852,10 @@ myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 . cleantmp.sh 
 . rt-testable.sh 
 git status .failed-tests 
+. rt-testable.sh 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-0015"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-015"
+find tests/baselines/ "_caxnc-arrayLiteralExpression-015*"
+find tests/baselines/  -name "_caxnc-arrayLiteralExpression-015*"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-012"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-012" -i

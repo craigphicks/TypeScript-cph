@@ -374,6 +374,17 @@ namespace ts {
         function widenDeclarationOrAssignmentRhs(rhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): RefTypesType {
             const { logicalObjectRhsType: logicalObjectType, nobjRhsType:remainingRhs, nobjEdtType } = setEffectiveDeclaredTsTypeOfLogicalObjectOfType(rhsType, lhsSymbolFlowInfo);
             if (!compilerOptions.floughDoNotWidenInitalizedFlowType) {
+                const edtstype = lhsSymbolFlowInfo.effectiveDeclaredTsType;
+                if (checker.isArrayOrTupleType(edtstype)){
+                    if (checker.isArrayType(edtstype)){
+                        //
+                    }
+                    else {
+                        if ((edtstype.target as TupleType).readonly){
+                            checker.createTuple
+                        }
+                    }
+                }
                 const widenedNobjType = floughTypeModule.widenNobjTypeByEffectiveDeclaredNobjType(remainingRhs, nobjEdtType);
                 if (logicalObjectType) {
                     return floughTypeModule.unionWithFloughTypeMutate(widenedNobjType, logicalObjectType);
@@ -1069,32 +1080,6 @@ namespace ts {
                             expr,
                         );
                     }
-
-                    // const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
-
-                    // if (symbol.flags & SymbolFlags.RegularEnum){
-                    //     return createfloughReturn([createRefTypesTableReturn(
-                    //         floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol)),
-                    //         sci)],
-                    //         expr,
-                    //     );
-                    // }
-
-                    // // There is a unique symbol for the type undefined - that gets converted directly to the undefined type here.
-                    // if (checker.isUndefinedSymbol(symbol)){
-                    //     return createfloughReturn([createRefTypesTableReturn(
-                    //         floughTypeModule.createRefTypesType(undefinedType),
-                    //         sci)],
-                    //         expr,
-                    //     );
-                    // }
-                    // if (symbol.flags & SymbolFlags.Function){
-                    //     return createfloughReturn([createRefTypesTableReturn(
-                    //         floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol)),
-                    //         sci)],
-                    //         expr,
-                    //     );
-                    // }
                     let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(symbol);
                     if (!symbolFlowInfo){
                         const effectiveDeclaredTsType = floughGetTsTypeOfSymbol(symbol);

@@ -676,7 +676,7 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
-            setArrayTypeToReadonly,
+            //createReaonlyTupleTypeFromTupleType,
             isReadonlyArrayType,
             getFreshTypeOfLiteralType,
             widenTypeInferredFromInitializer,
@@ -14762,13 +14762,17 @@ namespace ts {
             }
         }
 
-        function sliceTupleType(type: TupleTypeReference, index: number, endSkipCount = 0) {
+        function sliceTupleType(type: TupleTypeReference, index: number, endSkipCount = 0, readonly = false): {
             const target = type.target;
             const endIndex = getTypeReferenceArity(type) - endSkipCount;
             return index > target.fixedLength ? getRestArrayTypeOfTupleType(type) || createTupleType(emptyArray) :
                 createTupleType(getTypeArguments(type).slice(index, endIndex), target.elementFlags.slice(index, endIndex),
-                    /*readonly*/ false, target.labeledElementDeclarations && target.labeledElementDeclarations.slice(index, endIndex));
+                    readonly, target.labeledElementDeclarations && target.labeledElementDeclarations.slice(index, endIndex));
         }
+
+        // function createReaonlyTupleTypeFromTupleType(type: Readonly<TupleTypeReference>): TupleTypeReference {
+        //     return sliceTupleType(type,0,0,true);
+        // }
 
         function getKnownKeysOfTupleType(type: TupleTypeReference) {
             return getUnionType(append(arrayOf(type.target.fixedLength, i => getStringLiteralType("" + i)),
