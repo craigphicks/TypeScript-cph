@@ -83,7 +83,7 @@ namespace ts {
         getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
-        //inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop: FloughLogicalObjectInnerIF, edType: Readonly<Type>): FloughLogicalObjectInnerIF;
+        inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop: FloughLogicalObjectInnerIF, edType: Readonly<Type>): FloughLogicalObjectInnerIF;
 
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
         dbgLogicalObjectAccessResult(loar: Readonly<LogicalObjectAccessReturn>): string[];
@@ -106,7 +106,7 @@ namespace ts {
         logicalObjectModify,
         getTsTypesInChainOfLogicalObjectAccessReturn,
         getTsTypesOfBaseLogicalObjects,
-        //inheritReadonlyFromEffectiveDeclaredTsTypeModify,
+        inheritReadonlyFromEffectiveDeclaredTsTypeModify,
         dbgLogicalObjectToStrings,
         dbgLogicalObjectAccessResult
     };
@@ -602,9 +602,8 @@ namespace ts {
         return ut;
     }
 
-    // @ts-expect-error
-    function forEachLogicalObjectBasicModify(topIn: FloughLogicalObjectInner, f: (bobj: FloughLogicalObjectBasic) => void): FloughLogicalObjectInner {
-        Debug.fail("unused");
+    // @ ts-expect-error
+    function forEachLogicalObjectBasic(topIn: FloughLogicalObjectInner, f: (bobj: FloughLogicalObjectBasic) => void): FloughLogicalObjectInner {
         function worker(lobj: FloughLogicalObjectInner): void {
             if (lobj.kind===FloughLogicalObjectKind.plain){
                 f(lobj);
@@ -612,18 +611,23 @@ namespace ts {
             else if (lobj.kind===FloughLogicalObjectKind.union){
                 lobj.items.forEach(worker);
             }
+            else {
+                Debug.fail("not yet implemented");
+            }
         }
         worker(topIn);
         return topIn;
     }
 
+
     /**
-     * Modify "logicalObjectTop" so that it inherits readonly attributes from edType.
+     * Modify "logicalObjectTop" so that it inherits readonly attributes from edType, and returns the modified "logicalObjectTop".
      * Note1: When "logicalObjectTop" is a uhion of object types, some which are readonly and some not, matching the inheritance properly
      * would require testing for subtype relations. In order not to have to test for subtype relations, this implementation takes short cuts:
      * - If any "edType" union member is a readonly tuple, all union members of "logicalObjectTop" which tuples are set to readonly.
      * - Suppose a (possibly intermediate) path "x.y[n].z"
-     * checks if some union member of "logicalObjectTop" is readonly, and iff that is true, then sets all union members of logicalObjectTop to be readonly.
+     * checks if some union member of "logicalObjectTop" is readonly, and iff that is true, then sets all items of logicalObjectTop to be readonly versions of themselves.
+     * Note2: Curently returns original "logicalObjectTop" possibly with different tstypes, but might want to return new object instead.
      * @param logicalObjectTop
      * @param edType
      * @returns
@@ -654,40 +658,66 @@ namespace ts {
      *
      *
      */
-    // function inheritReadonlyFromEffectiveDeclaredTsTypeModify(
-    //     logicalObjectTop: FloughLogicalObjectInner,
-    //     edType: Readonly<Type>):
-    // FloughLogicalObjectInner {
-    //     let ronly = false;
-    //     checker.forEachType(edType, edt=>{
-    //         if (extraAsserts){
-    //             Debug.assert(!(edt.flags & TypeFlags.Intersection), "not yet implemented: edt.flags & TypeFlags.Intersection");
-    //             Debug.assert(!(edt.flags & TypeFlags.Union), "unexpected: edt.flags & TypeFlags.Union");
-    //         }
-    //         if (!(edt.flags & TypeFlags.Object)) return;
-    //         if (checker.isArrayOrTupleType(edType)){
-    //             if (checker.isTupleType(edType)) {
-    //                 ronly ||= (edType.target as TupleType).readonly;
-    //             }
-    //             else {
-    //                 ronly ||= checker.isReadonlyArrayType(edType);
-    //                 Debug.fail("not yet implemented");
-    //             }
-    //         }
-    //         else {
+    function inheritReadonlyFromEffectiveDeclaredTsTypeModify(
+        logicalObjectTop: FloughLogicalObjectInner,
+        edType: Readonly<Type>):
+    FloughLogicalObjectInner {
+        let roTuple = false;
+        let roArray = false;
 
-    //         }
-    //     });
+        //const items: FloughLogicalObjectBasic[] | undefined;
+        checker.forEachType(edType, edt=>{
+            if (extraAsserts){
+                Debug.assert(!(edt.flags & TypeFlags.Intersection), "not yet implemented: edt.flags & TypeFlags.Intersection");
+                Debug.assert(!(edt.flags & TypeFlags.Union), "unexpected: edt.flags & TypeFlags.Union");
+            }
+            if (!(edt.flags & TypeFlags.Object)) return;
+            if (checker.isArrayOrTupleType(edType)){
+                if (checker.isTupleType(edType)) {
+                    //checker.createReaonlyTupleTypeFromTupleType()
+                    roTuple ||= (edType.target as TupleType).readonly;
+                }
+                else {
+                    roArray ||= checker.isReadonlyArrayType(edType);
+                }
+            }
+            else {
+                // continue
+            }
+        });
+        if (roTuple||roArray){
+            forEachLogicalObjectBasic(logicalObjectTop,(obj: FloughLogicalObjectBasic)=>{
+                if (obj.kind===FloughLogicalObjectKind.plain){
+                    if (checker.isArrayOrTupleType(obj.tsType)){
+                        if (checker.isTupleType(obj.tsType)){
+                            if (roTuple) {
+                                const roTsType = checker.createReaonlyTupleTypeFromTupleType(obj.tsType as TupleTypeReference);
+                                // TODO: overwrite the old or create a new inner with new tsType
+                                obj.tsType = roTsType;
+                            }
+                        }
+                        else { // ArrayType
+                            if (roArray) {
+                                const roTsType = checker.createArrayType(checker.getElementTypeOfArrayType(obj.tsType)??checker.getUndefinedType(),/*readonly*/ true);
+                                Debug.assert(checker.isReadonlyArrayType(roTsType));
+                                assertCastType<TypeReference>(roTsType);
+                                obj.tsType = roTsType;
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-    //     if (checker.isTupleType(edType) && (((edType as TypeReference).target) as TupleType).readonly) {
-    //         // The rhs could be a union of TupleTypes
-    //         // Debug.assert(logicalObjectTop.kind===FloughLogicalObjectKind.plain);
-    //         // Debug.assert(checker.isTupleType(logicalObjectTop.tsType));
+        // if (checker.isTupleType(edType) && (((edType as TypeReference).target) as TupleType).readonly) {
+        //     // The rhs could be a union of TupleTypes
+        //     // Debug.assert(logicalObjectTop.kind===FloughLogicalObjectKind.plain);
+        //     // Debug.assert(checker.isTupleType(logicalObjectTop.tsType));
 
-    //         ((logicalObjectTop.tsType as TypeReference).target as TupleType).readonly = true;
-    //     }
-    //     return logicalObjectTop;
-    // }
+        //     ((logicalObjectTop.tsType as TypeReference).target as TupleType).readonly = true;
+        // }
+        return logicalObjectTop;
+    }
 
 
 

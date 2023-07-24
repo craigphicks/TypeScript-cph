@@ -373,18 +373,42 @@ namespace ts {
 
         function widenDeclarationOrAssignmentRhs(rhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): RefTypesType {
             const { logicalObjectRhsType: logicalObjectType, nobjRhsType:remainingRhs, nobjEdtType } = setEffectiveDeclaredTsTypeOfLogicalObjectOfType(rhsType, lhsSymbolFlowInfo);
-            if (!compilerOptions.floughDoNotWidenInitalizedFlowType) {
-                const edtstype = lhsSymbolFlowInfo.effectiveDeclaredTsType;
-                if (checker.isArrayOrTupleType(edtstype)){
-                    if (checker.isArrayType(edtstype)){
-                        //
-                    }
-                    else {
-                        if ((edtstype.target as TupleType).readonly){
-                            checker.createTuple
+            let roArray = false;
+            let roTuple = false;
+            if (logicalObjectType){
+                checker.forEachType(lhsSymbolFlowInfo.effectiveDeclaredTsType,t=>{
+                    if (t.flags & TypeFlags.Object){
+                        if (checker.isArrayOrTupleType(t)){
+                            if (checker.isArrayType(t)){
+                                if (checker.isReadonlyArrayType(t)){
+                                    roArray = true;
+                                }
+                            }
+                            else {
+                                if ((t as TupleType).readonly){
+                                    roTuple = true;
+                                }
+                            }
                         }
                     }
+                });
+                if (roTuple||roArray){
+                    //
                 }
+            }
+            if (!compilerOptions.floughDoNotWidenInitalizedFlowType) {
+                // const edtstype = lhsSymbolFlowInfo.effectiveDeclaredTsType;
+                // if (checker.isArrayOrTupleType(edtstype)){
+                //     if (checker.isArrayType(edtstype)){
+                //         //
+                //     }
+                //     else {
+                //         if ((edtstype.target as TupleType).readonly){
+                //             logicalObjectType
+                //             checker.createReaonlyTupleTypeFromTupleType()
+                //         }
+                //     }
+                // }
                 const widenedNobjType = floughTypeModule.widenNobjTypeByEffectiveDeclaredNobjType(remainingRhs, nobjEdtType);
                 if (logicalObjectType) {
                     return floughTypeModule.unionWithFloughTypeMutate(widenedNobjType, logicalObjectType);

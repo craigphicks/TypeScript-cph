@@ -91,10 +91,10 @@ namespace ts {
         createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF {
             assertCastType<FloughLogicalObjectOuter>(logicalObjectTop);
             // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-            //const castedReadOnlyInner = floughLogicalObjectInnerModule.inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop.inner, edType);
+            const maybeReadOnlyInner = floughLogicalObjectInnerModule.inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop.inner, edType);
             return ({
                 effectiveDeclaredTsType: edType,
-                inner: logicalObjectTop.inner,
+                inner: maybeReadOnlyInner, //logicalObjectTop.inner,
                 id: nextLogicalObjectOuterId++,
                 [essymbolfloughLogicalObjectOuter]: true,
             }) as FloughLogicalObjectOuter;

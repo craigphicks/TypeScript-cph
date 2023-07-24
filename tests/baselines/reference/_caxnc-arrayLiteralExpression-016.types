@@ -71,7 +71,7 @@ if (w[0]) {
 >0 : 0
 
     w;
->w : [true, true]
+>w : readonly [true, true]
 
     w[0];
 >w[0] : true

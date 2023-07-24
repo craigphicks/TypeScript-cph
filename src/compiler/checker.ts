@@ -676,7 +676,7 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
-            //createReaonlyTupleTypeFromTupleType,
+            createReaonlyTupleTypeFromTupleType,
             isReadonlyArrayType,
             getFreshTypeOfLiteralType,
             widenTypeInferredFromInitializer,
@@ -14762,7 +14762,7 @@ namespace ts {
             }
         }
 
-        function sliceTupleType(type: TupleTypeReference, index: number, endSkipCount = 0, readonly = false): {
+        function sliceTupleType(type: TupleTypeReference, index: number, endSkipCount = 0, readonly = false) {
             const target = type.target;
             const endIndex = getTypeReferenceArity(type) - endSkipCount;
             return index > target.fixedLength ? getRestArrayTypeOfTupleType(type) || createTupleType(emptyArray) :
@@ -14770,9 +14770,9 @@ namespace ts {
                     readonly, target.labeledElementDeclarations && target.labeledElementDeclarations.slice(index, endIndex));
         }
 
-        // function createReaonlyTupleTypeFromTupleType(type: Readonly<TupleTypeReference>): TupleTypeReference {
-        //     return sliceTupleType(type,0,0,true);
-        // }
+        function createReaonlyTupleTypeFromTupleType(type: Readonly<TupleTypeReference>): TupleTypeReference {
+            return sliceTupleType(type,0,0,/*readonly*/ true) as TupleTypeReference;
+        }
 
         function getKnownKeysOfTupleType(type: TupleTypeReference) {
             return getUnionType(append(arrayOf(type.target.fixedLength, i => getStringLiteralType("" + i)),
@@ -21457,9 +21457,9 @@ namespace ts {
         function isReadonlyArrayType(type: Type): boolean {
             return !!(getObjectFlags(type) & ObjectFlags.Reference) && (type as TypeReference).target === globalReadonlyArrayType;
         }
-        function setArrayTypeToReadonly(type: Type): void {
-            (type as TypeReference).target = globalReadonlyArrayType;
-        }
+        // function setArrayTypeToReadonly(type: Type): void {
+        //     (type as TypeReference).target = globalReadonlyArrayType;
+        // }
 
         function isArrayOrTupleType(type: Type): type is TypeReference {
             return isArrayType(type) || isTupleType(type);
