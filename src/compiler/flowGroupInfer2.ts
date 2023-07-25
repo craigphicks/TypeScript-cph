@@ -43,8 +43,8 @@ namespace ts {
         // const unknownType = checker.getUnknownType();
         //const errorType = checker.getErrorType();
         const nullType = checker.getNullType();
-        const stringType = checker.getStringType();
-        const numberType = checker.getNumberType();
+        // const stringType = checker.getStringType();
+        // const numberType = checker.getNumberType();
         // const bigintType = checker.getBigIntType();
         //const booleanType = checker.getBooleanType();
         // @ts-ignore
@@ -53,7 +53,7 @@ namespace ts {
         const falseType = checker.getFalseType();
         const typeToString = checker.typeToString;
         const isArrayType = checker.isArrayType;
-        const isArrayOrTupleType = checker.isArrayOrTupleType;
+        //const isArrayOrTupleType = checker.isArrayOrTupleType;
         const getElementTypeOfArrayType = checker.getElementTypeOfArrayType;
         //const getReturnTypeOfSignature = checker.getReturnTypeOfSignature;
         //const isReadonlyProperty = checker.isReadonlyProperty;
@@ -1963,163 +1963,163 @@ namespace ts {
             } // floughInnerAsExpression
 
             // @ts-ignore
-            function floughByPropertyAccessExpression():
-            FloughInnerReturn {
-                function floughByPropertyAccessExpressionAux(): FloughInnerReturn {
-                    assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-                    /**
-                     * It doesn't really make much sense for the PropertyAccessExpression to have a symbol because the property name is simply a key
-                     * that may be used to lookup across totally unrelated objects that are present only ambiently in the code - unless the precursor is a constant.
-                     * In that way it not so much different from a call expression, which never has a symbol.
-                     *
-                     * On the other hand, if the looked up properties are symbols - which the standard case - then it doesn't make sense to ignore those symbols because they may correspond to
-                     * identifiers with symbol and constrained values that should be added to the refTypes if not already there -
-                     * and if already existing in refTypes then the possibly narrowed existing type range should be
-                     * used to constrain the return value (rather than the declared value.)
-                     *
-                     * For the above reasons we will ignore the symbol `getNodeLinks(condExpr).resolvedSymbol;`
-                     * but address any looked-up property symbols as discussed above.
-                     *
-                     * An implication is that constraints imposed by crit or successor NonNullExpression (!) operator must be applied to multiple symbols if neccesary,
-                     * so `symbolOfRtnType` must be changed `symbolsOfRtnType`.
-                     */
-                    Debug.assert(isPropertyAccessExpression(expr));
-                    Debug.assert(expr.expression);
-                    const pre = InferRefTypesPreAccess({ sci/*:{ symtab:refTypesSymtabIn,constraintItem: constraintItemIn }*/, expr, /* crit,*/ qdotfallout: qdotfalloutInner, inferStatus });
-                    if (pre.kind==="immediateReturn") {
-                        return pre.retval;
-                    }
-                    /**
-                     * Each lookup should be treated as a separate virtual branch, with it's own RefTypesReturn, because the crit might distinguish between them.
-                     * We get by here with arrTypeSymtab, only because the symtab is added to directly: `refTypesSymtab.set(propSymbol, value); `
-                     *
-                     * In replayMode, we don't use the node type from byNode here for two reasons -
-                     * (1) The node type is already squashed so the infer info is lost
-                     * (2) We don't need it, because the types passed back from preAccess must be correct - identical to what is here (only squashed). Can be verified.
-        .             * */
-                    // const accessedTypes: {baseType: Type, type: Type, declaredType?: Type, lookupFail?: true, optional: boolean, readonlyProp?: boolean, narrowable?: boolean}[]=[];
-                    const keystr = expr.name.escapedText as string;
-                    //const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = []; //
-                    const arrRttr: RefTypesTableReturn[]=[];
+        //     function floughByPropertyAccessExpression():
+        //     FloughInnerReturn {
+        //         function floughByPropertyAccessExpressionAux(): FloughInnerReturn {
+        //             assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
+        //             /**
+        //              * It doesn't really make much sense for the PropertyAccessExpression to have a symbol because the property name is simply a key
+        //              * that may be used to lookup across totally unrelated objects that are present only ambiently in the code - unless the precursor is a constant.
+        //              * In that way it not so much different from a call expression, which never has a symbol.
+        //              *
+        //              * On the other hand, if the looked up properties are symbols - which the standard case - then it doesn't make sense to ignore those symbols because they may correspond to
+        //              * identifiers with symbol and constrained values that should be added to the refTypes if not already there -
+        //              * and if already existing in refTypes then the possibly narrowed existing type range should be
+        //              * used to constrain the return value (rather than the declared value.)
+        //              *
+        //              * For the above reasons we will ignore the symbol `getNodeLinks(condExpr).resolvedSymbol;`
+        //              * but address any looked-up property symbols as discussed above.
+        //              *
+        //              * An implication is that constraints imposed by crit or successor NonNullExpression (!) operator must be applied to multiple symbols if neccesary,
+        //              * so `symbolOfRtnType` must be changed `symbolsOfRtnType`.
+        //              */
+        //             Debug.assert(isPropertyAccessExpression(expr));
+        //             Debug.assert(expr.expression);
+        //             const pre = InferRefTypesPreAccess({ sci/*:{ symtab:refTypesSymtabIn,constraintItem: constraintItemIn }*/, expr, /* crit,*/ qdotfallout: qdotfalloutInner, inferStatus });
+        //             if (pre.kind==="immediateReturn") {
+        //                 return pre.retval;
+        //             }
+        //             /**
+        //              * Each lookup should be treated as a separate virtual branch, with it's own RefTypesReturn, because the crit might distinguish between them.
+        //              * We get by here with arrTypeSymtab, only because the symtab is added to directly: `refTypesSymtab.set(propSymbol, value); `
+        //              *
+        //              * In replayMode, we don't use the node type from byNode here for two reasons -
+        //              * (1) The node type is already squashed so the infer info is lost
+        //              * (2) We don't need it, because the types passed back from preAccess must be correct - identical to what is here (only squashed). Can be verified.
+        // .             * */
+        //             // const accessedTypes: {baseType: Type, type: Type, declaredType?: Type, lookupFail?: true, optional: boolean, readonlyProp?: boolean, narrowable?: boolean}[]=[];
+        //             const keystr = expr.name.escapedText as string;
+        //             //const arrTypeSymtab: [RefTypesType,RefTypesSymtab][] = []; //
+        //             const arrRttr: RefTypesTableReturn[]=[];
 
-                    // nope
-                    //const {symbol: sfiPropSymbol, symbolFlowInfo } = getSymbolFlowInfoForIdentifier(expr.name,_mrState);
+        //             // nope
+        //             //const {symbol: sfiPropSymbol, symbolFlowInfo } = getSymbolFlowInfoForIdentifier(expr.name,_mrState);
 
-                    pre.unmergedPassing.forEach(prePassing=>{
-                        if (isRefTypesSymtabConstraintItemNever(prePassing.sci)) return;
-                        /**
-                         * Each prePassing.type is a potential compound type.  For each primitive type of that compound type, a new branch is generated.
-                         * For each new branch a RefTypesTableReturn is created and pushed to arrRttr.
-                         *
-                         */
-                       floughTypeModule.forEachRefTypesTypeType(prePassing.type, t => {
-                            if (t===undefinedType||t===nullType) {
-                                return;
-                            }
-                            // let symtab = prePassing.sci.symtab!;
-                            // let constraintItem = prePassing.sci.constraintItem;
-                            let sc = prePassing.sci;
-                            let type = floughTypeModule.createRefTypesType(t);
-                            if (prePassing.symbol) {
-                                ({type,sc}=andSymbolTypeIntoSymtabConstraint(
-                                    {symbol:prePassing.symbol, type, isconst:prePassing.isconst, sc,
-                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow }));
-                            }
-                            if (isArrayOrTupleType(t)||t===stringType) {
-                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
-                                if (keystr==="length") {
-                                    arrRttr.push({
-                                        symbol: undefined,
-                                        type: floughTypeModule.createRefTypesType(numberType),
-                                        sci:sc,
-                                    });
-                                }
-                                else {
-                                    Debug.fail("not yet implemented ");
-                                    // arrRttr.push({
-                                    //     kind: RefTypesTableKind.return,
-                                    //     symbol: undefined,
-                                    //     type: floughTypeModule.createRefTypesType(undefinedType),
-                                    //     symtab,
-                                    //     constraintItem
-                                    // });
-                                };
-                                return;
-                            }
-                            /**
-                             * Add propSymbol, resolvedType to a copy of refTypesSymtab
-                             *
-                             */
-                            const propSymbol = checker.getPropertyOfType(t, keystr);
-                            if (propSymbol) {
-                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
-                                if (propSymbol.flags & SymbolFlags.EnumMember){
-                                    // treat it as a literal type, not a symbol
-                                    const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
-                                    arrRttr.push({
-                                        type: floughTypeModule.createRefTypesType(tstype),
-                                        sci:sc,
-                                    });
-                                    return;
-                                }
-                                let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(propSymbol);
-                                if (!symbolFlowInfo){
-                                    const effectiveDeclaredTsType = floughGetTsTypeOfSymbol(propSymbol);
-                                    symbolFlowInfo = {
-                                        passCount: 0,
-                                        isconst: checker.isReadonlyProperty(propSymbol),
-                                        effectiveDeclaredTsType,
-                                        effectiveDeclaredType: floughTypeModule.createRefTypesType(effectiveDeclaredTsType),
-                                    };
-                                    _mrState.symbolFlowInfoMap.set(propSymbol,symbolFlowInfo);
-                                }
-                                else {
-                                    if (extraAsserts){
-                                        Debug.assert(symbolFlowInfo.effectiveDeclaredTsType===floughGetTsTypeOfSymbol(propSymbol));
-                                    }
-                                }
-                                if (extraAsserts && compilerOptions.enableTSDevExpectString){
-                                    debugDevExpectEffectiveDeclaredType(expr,symbolFlowInfo);
-                                }
-                                const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
-                                    {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc,
-                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow });
-                                arrRttr.push({
-                                    symbol: propSymbol,
-                                    isconst: symbolFlowInfo.isconst,
-                                    type, //symbolFlowInfo.effectiveDeclaredType!,
-                                    sci: propSC
-                                });
-                                return;
-                            }
-                            else {
-                                // The keystring corresponded to no proptery of t.
-                                // Return undefinedType
-                                if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] lookup of propSymbol failed for "${keystr}" in ${dbgTypeToString(t)}, return undefined type`);
-                                const type = floughTypeModule.createRefTypesType(undefinedType);
-                                arrRttr.push({
-                                    type,
-                                    sci:sc
-                                });
-                                return;
-                            }
-                            Debug.fail("unexpected");
-                        });
-                    });
-                    return { unmerged: arrRttr };
-                } // floughByPropertyAccessExpression_aux
+        //             pre.unmergedPassing.forEach(prePassing=>{
+        //                 if (isRefTypesSymtabConstraintItemNever(prePassing.sci)) return;
+        //                 /**
+        //                  * Each prePassing.type is a potential compound type.  For each primitive type of that compound type, a new branch is generated.
+        //                  * For each new branch a RefTypesTableReturn is created and pushed to arrRttr.
+        //                  *
+        //                  */
+        //                floughTypeModule.forEachRefTypesTypeType(prePassing.type, t => {
+        //                     if (t===undefinedType||t===nullType) {
+        //                         return;
+        //                     }
+        //                     // let symtab = prePassing.sci.symtab!;
+        //                     // let constraintItem = prePassing.sci.constraintItem;
+        //                     let sc = prePassing.sci;
+        //                     let type = floughTypeModule.createRefTypesType(t);
+        //                     if (prePassing.symbol) {
+        //                         ({type,sc}=andSymbolTypeIntoSymtabConstraint(
+        //                             {symbol:prePassing.symbol, type, isconst:prePassing.isconst, sc,
+        //                             getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow }));
+        //                     }
+        //                     if (isArrayOrTupleType(t)||t===stringType) {
+        //                         if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] isArrayOrTupleType(t)||t===stringType`);
+        //                         if (keystr==="length") {
+        //                             arrRttr.push({
+        //                                 symbol: undefined,
+        //                                 type: floughTypeModule.createRefTypesType(numberType),
+        //                                 sci:sc,
+        //                             });
+        //                         }
+        //                         else {
+        //                             Debug.fail("not yet implemented ");
+        //                             // arrRttr.push({
+        //                             //     kind: RefTypesTableKind.return,
+        //                             //     symbol: undefined,
+        //                             //     type: floughTypeModule.createRefTypesType(undefinedType),
+        //                             //     symtab,
+        //                             //     constraintItem
+        //                             // });
+        //                         };
+        //                         return;
+        //                     }
+        //                     /**
+        //                      * Add propSymbol, resolvedType to a copy of refTypesSymtab
+        //                      *
+        //                      */
+        //                     const propSymbol = checker.getPropertyOfType(t, keystr);
+        //                     if (propSymbol) {
+        //                         if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] propSymbol ${dbgSymbolToStringSimple(propSymbol)}, ${Debug.formatSymbolFlags(propSymbol.flags)}`);
+        //                         if (propSymbol.flags & SymbolFlags.EnumMember){
+        //                             // treat it as a literal type, not a symbol
+        //                             const tstype = enumMemberSymbolToLiteralTsType(propSymbol);
+        //                             arrRttr.push({
+        //                                 type: floughTypeModule.createRefTypesType(tstype),
+        //                                 sci:sc,
+        //                             });
+        //                             return;
+        //                         }
+        //                         let symbolFlowInfo = _mrState.symbolFlowInfoMap.get(propSymbol);
+        //                         if (!symbolFlowInfo){
+        //                             const effectiveDeclaredTsType = floughGetTsTypeOfSymbol(propSymbol);
+        //                             symbolFlowInfo = {
+        //                                 passCount: 0,
+        //                                 isconst: checker.isReadonlyProperty(propSymbol),
+        //                                 effectiveDeclaredTsType,
+        //                                 effectiveDeclaredType: floughTypeModule.createRefTypesType(effectiveDeclaredTsType),
+        //                             };
+        //                             _mrState.symbolFlowInfoMap.set(propSymbol,symbolFlowInfo);
+        //                         }
+        //                         else {
+        //                             if (extraAsserts){
+        //                                 Debug.assert(symbolFlowInfo.effectiveDeclaredTsType===floughGetTsTypeOfSymbol(propSymbol));
+        //                             }
+        //                         }
+        //                         if (extraAsserts && compilerOptions.enableTSDevExpectString){
+        //                             debugDevExpectEffectiveDeclaredType(expr,symbolFlowInfo);
+        //                         }
+        //                         const {type, sc:propSC} = andSymbolTypeIntoSymtabConstraint(
+        //                             {symbol:propSymbol, type:symbolFlowInfo.effectiveDeclaredType!, isconst: symbolFlowInfo.isconst, sc,
+        //                             getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow });
+        //                         arrRttr.push({
+        //                             symbol: propSymbol,
+        //                             isconst: symbolFlowInfo.isconst,
+        //                             type, //symbolFlowInfo.effectiveDeclaredType!,
+        //                             sci: propSC
+        //                         });
+        //                         return;
+        //                     }
+        //                     else {
+        //                         // The keystring corresponded to no proptery of t.
+        //                         // Return undefinedType
+        //                         if (getMyDebug()) consoleLog(`floughByPropertyAccessExpression[dbg] lookup of propSymbol failed for "${keystr}" in ${dbgTypeToString(t)}, return undefined type`);
+        //                         const type = floughTypeModule.createRefTypesType(undefinedType);
+        //                         arrRttr.push({
+        //                             type,
+        //                             sci:sc
+        //                         });
+        //                         return;
+        //                     }
+        //                     Debug.fail("unexpected");
+        //                 });
+        //             });
+        //             return { unmerged: arrRttr };
+        //         } // floughByPropertyAccessExpression_aux
 
-                if (getMyDebug()) consoleGroup(`floughByPropertyAccessExpression[in]`);
-                const r = floughByPropertyAccessExpressionAux();
-                if (getMyDebug()) {
-                    r.unmerged.forEach((rttr,idx)=>{
-                        dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`floughByPropertyAccessExpression[out] arrRefTypesTableReturn[${idx}] ${s}`));
-                    });
-                    consoleLog(`floughByPropertyAccessExpression[out]`);
-                    consoleGroupEnd();
-                }
-                return r;
-            } // floughByPropertyAccessExpression
+        //         if (getMyDebug()) consoleGroup(`floughByPropertyAccessExpression[in]`);
+        //         const r = floughByPropertyAccessExpressionAux();
+        //         if (getMyDebug()) {
+        //             r.unmerged.forEach((rttr,idx)=>{
+        //                 dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`floughByPropertyAccessExpression[out] arrRefTypesTableReturn[${idx}] ${s}`));
+        //             });
+        //             consoleLog(`floughByPropertyAccessExpression[out]`);
+        //             consoleGroupEnd();
+        //         }
+        //         return r;
+        //     } // floughByPropertyAccessExpression
 
             function floughByCallExpression(): FloughInnerReturn {
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
@@ -3158,7 +3158,8 @@ namespace ts {
 
                     const critTypesPassing: CritToTypeV2Result[] = [];
                     let critTypesFailing: CritToTypeV2Result[] | undefined;
-                    const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getFinalTypesFromLogicalObjectAccessReturn(raccess);
+                    const finalTypes: Readonly<FloughType[]> = floughLogicalObjectModule.getFinalTypesFromLogicalObjectAccessReturn(
+                        raccess, /*includeQDotUndefined*/ true);
                     let doingCrit = false;
                     if (crit.kind===InferCritKind.truthy){
                         doingCrit = true;
@@ -3256,7 +3257,7 @@ namespace ts {
                             orIntoNodeToTypeMap(newRootType,refAccessArgs[0].expressions[level].expression, inferStatus.groupNodeToTypeMap);
                         }
                         orIntoNodeToTypeMap(
-                            floughLogicalObjectModule.getFinalTypeFromLogicalObjectAccessReturn(raccess),
+                            floughLogicalObjectModule.getFinalTypeFromLogicalObjectAccessReturn(raccess, /*includeQDotUndefined*/ true),
                             expr, inferStatus.groupNodeToTypeMap);
                     }
 
@@ -3349,7 +3350,7 @@ namespace ts {
                         sciFinal.symtab!.set(symbol,newRootType);
                     }
 
-                    const finalType: Readonly<FloughType> = floughLogicalObjectModule.getFinalTypeFromLogicalObjectAccessReturn(raccess);
+                    const finalType: Readonly<FloughType> = floughLogicalObjectModule.getFinalTypeFromLogicalObjectAccessReturn(raccess, /*includeQDotUndefined*/ true);
                     unmerged.push({
                         sci: sciFinal,
                         type: finalType

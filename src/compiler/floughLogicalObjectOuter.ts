@@ -56,15 +56,15 @@ namespace ts {
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>
         ): LogicalObjectAccessReturn;
-        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>;
-        getFinalTypeFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType>;
+        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, includeQDotUndefined: boolean): Readonly<FloughType[]>;
+        getFinalTypeFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, includeQDotUndefined: boolean): Readonly<FloughType>;
         assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): { newRootType: FloughType };
         getRootTypeAtLevelFromFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): { newRootType: FloughType }
         logicalObjectModify(
             types: Readonly<CritToTypeV2Result[]>,
             state: LogicalObjectAccessReturn,
         ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined };
-        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
+        // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectIF | undefined>[]): FloughLogicalObjectIF;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
@@ -112,11 +112,11 @@ namespace ts {
         ): LogicalObjectAccessReturn {
             return floughLogicalObjectInnerModule.logicalObjectAccess(rootsWithSymbols, roots, akey, aexpression);
         },
-        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>{
-            return floughLogicalObjectInnerModule.getFinalTypesFromLogicalObjectAccessReturn(loar);
+        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, includeQDotUndefined: boolean): Readonly<FloughType[]>{
+            return floughLogicalObjectInnerModule.getFinalTypesFromLogicalObjectAccessReturn(loar, includeQDotUndefined);
         },
-        getFinalTypeFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType>{
-            const types = floughLogicalObjectInnerModule.getFinalTypesFromLogicalObjectAccessReturn(loar);
+        getFinalTypeFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, includeQDotUndefined: boolean): Readonly<FloughType>{
+            const types = floughLogicalObjectInnerModule.getFinalTypesFromLogicalObjectAccessReturn(loar, includeQDotUndefined);
             return floughTypeModule.unionOfRefTypesType(types);
         },
         assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): { newRootType: FloughType }{
@@ -154,9 +154,9 @@ namespace ts {
             //         type
             // }));
         },
-        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
-            return floughLogicalObjectInnerModule.getTsTypesInChainOfLogicalObjectAccessReturn(loar);
-        },
+        // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
+        //     return floughLogicalObjectInnerModule.getTsTypesInChainOfLogicalObjectAccessReturn(loar);
+        // },
         //unionOfFloughLogicalObjectWithTypeMerging,
         dbgLogicalObjectToStrings,
     };

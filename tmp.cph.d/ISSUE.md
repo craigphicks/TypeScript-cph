@@ -6,20 +6,45 @@
 
 ### Priority: High
 
-0. "readonly" attribute is lost in object types when the ro attribute is only the lhs side type declaration (as opposed to `as const` or `readonly` on the rhs.)
 
-Currently fail readonly
-```
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-015.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-015.ts
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-016.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-016.ts
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-017.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-017.ts
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-020.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-020.ts
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-021.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-021.ts
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-022.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-022.ts
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-030.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-030.ts
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-031.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-031.ts
-conformance tests conformance tests for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-032.ts Correct type/symbol baselines for tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-032.ts
-```
+| stem contains `?.` | call return type contains null/undefined | crit accepts/rejects undefined | remove null/undefined before `?.` |
+| --- | ---- | --- | ---|
+| Y                  | N                                   | A                              | N |
+| Y                  | N                                   | R                              | Y |
+| Y                  | Y                                   | A                              | N |
+| Y                  | Y                                   | R                              | Y |
+
+
+0.  floughByCallExpression and logical objects
+
+    0. Any deferred `undefined` due to a `?.` on the left side of the `(...)` of the call expression should be added to the result type of the call.  Therefore it is necessary to distinguish between an undefered lhs final `undefined` and a deferred `?.` undefined, which is not currently being distinguished in `LogicalObjectAccessReturn`.  We can add a `hasFinalQdotUndefined` member to `loar` for that purpose.
+
+    0. Before any crit is applied to the return type of the call, it is not known whether the crit will accept `undefined` or not.
+
+    0. In addition, if the stem contains only one `?.` and the call return does not contain null/undefined, and the crit accepts only undefined, then the `?.` predicate should exclude any types except null or undefined.  However, this should be postponed as a task.
+
+    0. Add `hasFinalQdotUndefined` to `LogicalObjectAccessReturn`.
+
+    0. Add additional arguments to ``
+
+        0.
+
+
+
+    0. The call to `InferRefTypesPreAccess` is no longer needed, just as it is not used in the cases of `ProperyAccessExpression` and  `ArrayAccessExpression`.
+
+
+
+
+0. TODO for assignFinalTypeToLogicalObjectAccessReturn
+    > Modifies loar by calling logicalObjectModify as though all final types are "type" and are target criteria result.
+TODO: This could be problematic with regards to propagation of undefined with qdots,
+because it will allow undefined to be removed from intermediate types in the access chain, but it shouldn't.
+That can be fixed by removing any `undefined` from the final types before calling `logicalObjectModify`,
+and then adding adding it back in to the final type afterwards.
+
+0.  The `LogicalObjectAccessReturn` construction is expensive, and currently it constructed and abandoned immediately. This could be optimized by caching in the type, although it doesn't need to be completely cloned every time the type is cloned.
+
 
 
 0.  floughByBinaryExpressionEqualsCompareV2 / Either side as Identifier - Identifier is fast as long as it does not involve replay.  Even if does involve replay, it should not change the symbol table.  Therefore in the case where lhs is Identifier and also a replayable, and the rhs is identifier, but not a replayable, we can do the rhs first.
@@ -111,6 +136,12 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+
+0. "readonly" attribute is lost in object types when the ro attribute is only the lhs side type declaration (as opposed to `as const` or `readonly` on the rhs.)
+
+    - Solved by using checker.createReadonlyTuple() (new) and checker.createArray().
+
 
 0. _caxnc-whileLoop-005x series: currently when initializer is a naked literal with no type, the intializer is set to (* check it), flow value is set to the initializer, and ored literal types remain as literal types instead of being widened.  This does not match the original (not mrNarrow) flow specs where a literal intializer without a type becomes the widened initializer.  Make the default behavior match the existing specs but allow the non-widening behavior with a parameter setting.
 

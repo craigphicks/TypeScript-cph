@@ -69,7 +69,7 @@ namespace ts {
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>,
         ): LogicalObjectAccessReturn;
-        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]>;
+        getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, includeQDotUndefined: boolean): Readonly<FloughType[]>;
         assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): {
             rootLogicalObject: FloughLogicalObjectInnerIF, rootNobj: FloughType
         };
@@ -80,7 +80,7 @@ namespace ts {
             types: Readonly<(FloughType | undefined)[]>,
             state: LogicalObjectAccessReturn,
         ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> };
-        getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
+        // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
         inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop: FloughLogicalObjectInnerIF, edType: Readonly<Type>): FloughLogicalObjectInnerIF;
@@ -104,7 +104,7 @@ namespace ts {
         getFinalTypesFromLogicalObjectAccessReturn,
         assignFinalTypeToLogicalObjectAccessReturn,
         logicalObjectModify,
-        getTsTypesInChainOfLogicalObjectAccessReturn,
+        // getTsTypesInChainOfLogicalObjectAccessReturn,
         getTsTypesOfBaseLogicalObjects,
         inheritReadonlyFromEffectiveDeclaredTsTypeModify,
         dbgLogicalObjectToStrings,
@@ -1268,7 +1268,7 @@ namespace ts {
         //const aqdot: boolean[] = aexpression.map(e=>!!(e as PropertyAccessExpression).questionDotToken);
         // Temporary test - does not examine each type for null/undefined
         // @ ts-expect-error
-        let addUndefinedToFinal = false; //aqdot.some(b=>b);
+        let propogateQDotUndefined = false; //aqdot.some(b=>b);
 
         for (let i=0, ie=akey.length; i!==ie; i++){
             const nextKey = getLiteralKey(akey[i]);
@@ -1279,7 +1279,9 @@ namespace ts {
                 for (let j=0, je=collated0.nobjTypesIn.length; j!==je; j++){
                     let type;
                     if ((type=collated0.nobjTypesIn[j]) && floughTypeModule.hasUndefinedOrNullType(type)){
-                        addUndefinedToFinal = true;
+                        propogateQDotUndefined = true;
+                        // Note: Should the undefined type be removed from collated0.nobjTypesIn[j]?
+                        // - No.  It's removed in modify if and only if the propagated undefined is accepted by the criteria.
                     }
                 }
             if (nextKey){
@@ -1306,14 +1308,14 @@ namespace ts {
                 acollated.push(collated0);
             }
             else {
-                // undefined is added to all final types, perhaps adding could be restricted through accurate propogation.
-                if (addUndefinedToFinal){
+                // TODO: undefined is added to all final types, perhaps adding should be restricted through accurate propogation.
+                if (propogateQDotUndefined){
                     nextKeyAndType.forEach(x=>{
                         if (x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
                     });
                 }
                 finalLiteralKeyAndType = nextKeyAndType.map(x=>{
-                    if (addUndefinedToFinal && x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
+                    if (propogateQDotUndefined && x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
                     return { type:x.type??floughTypeModule.createUndefinedType(), literalKey:x.literalKey };
                 });
             }
@@ -1323,6 +1325,17 @@ namespace ts {
     function getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]> {
         return loar.finalTypes.map(x=>x.type);
     }
+    /**
+     * Modifies loar by calling logicalObjectModify as though all final types are "type" and are target criteria result.
+     * This is done because logicalObjectModify will handle the making new logical objects objects and setting `variations` properly.
+     * TODO: This could be problematic with regards to propagation of undefined with qdots,
+     * because it will allow undefined to be removed from intermediate types in the access chain, but it shouldn't.
+     * That can be fixed by removing any `undefined` from the final types before calling `logicalObjectModify`,
+     * and then adding adding it back in to the final type afterwards.
+     * @param loar
+     * @param type
+     * @returns
+     */
     function assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): {
         rootLogicalObject: FloughLogicalObjectInner, rootNobj: FloughType
     }{
@@ -1347,24 +1360,24 @@ namespace ts {
         return { rootLogicalObject,rootNobj };
     }
 
-    function getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
-        const results: Type[][] = loar.collated.map(collated=>{
-            const result: Type[] = [];//[collated.remainingNonObjType];
-            collated.nobjTypesIn.forEach(x=>{
-                if (x) floughTypeModule.getTsTypesFromFloughType(x).forEach(x=>result.push(x));
-            });
-            collated.logicalObjectsPlainOut.forEach(x=>{
-                checker.forEachType(x.tsType, t=>{
-                    if (extraAsserts){
-                        Debug.assert((t.flags & TypeFlags.Object));
-                    }
-                    result.push(t);
-                });
-            });
-            return result;
-        });
-        return results;
-    }
+    // function getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
+    //     const results: Type[][] = loar.collated.map(collated=>{
+    //         const result: Type[] = [];//[collated.remainingNonObjType];
+    //         collated.nobjTypesIn.forEach(x=>{
+    //             if (x) floughTypeModule.getTsTypesFromFloughType(x).forEach(x=>result.push(x));
+    //         });
+    //         collated.logicalObjectsPlainOut.forEach(x=>{
+    //             checker.forEachType(x.tsType, t=>{
+    //                 if (extraAsserts){
+    //                     Debug.assert((t.flags & TypeFlags.Object));
+    //                 }
+    //                 result.push(t);
+    //             });
+    //         });
+    //         return result;
+    //     });
+    //     return results;
+    // }
 
     export type LogicalObjectModifyInnerReturnType = & {
         rootLogicalObject: FloughLogicalObjectInner | undefined,
