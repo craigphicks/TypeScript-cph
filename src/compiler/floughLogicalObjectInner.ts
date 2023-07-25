@@ -1245,7 +1245,8 @@ namespace ts {
         collated: Readonly<Collated[]>;
         aLiterals: (LiteralType | undefined)[];
         finalTypes: Readonly<LiteralKeyAndType[]>;
-        aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>
+        aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>;
+        hasFinalQdotUndefined: boolean;
     };
     function logicalObjectAccess(
         rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>,
@@ -1268,7 +1269,7 @@ namespace ts {
         //const aqdot: boolean[] = aexpression.map(e=>!!(e as PropertyAccessExpression).questionDotToken);
         // Temporary test - does not examine each type for null/undefined
         // @ ts-expect-error
-        let propogateQDotUndefined = false; //aqdot.some(b=>b);
+        let hasFinalQdotUndefined = false; //aqdot.some(b=>b);
 
         for (let i=0, ie=akey.length; i!==ie; i++){
             const nextKey = getLiteralKey(akey[i]);
@@ -1279,7 +1280,7 @@ namespace ts {
                 for (let j=0, je=collated0.nobjTypesIn.length; j!==je; j++){
                     let type;
                     if ((type=collated0.nobjTypesIn[j]) && floughTypeModule.hasUndefinedOrNullType(type)){
-                        propogateQDotUndefined = true;
+                        hasFinalQdotUndefined = true;
                         // Note: Should the undefined type be removed from collated0.nobjTypesIn[j]?
                         // - No.  It's removed in modify if and only if the propagated undefined is accepted by the criteria.
                     }
@@ -1308,21 +1309,29 @@ namespace ts {
                 acollated.push(collated0);
             }
             else {
+                // Note: hasFinalQdotUndefined is now included within getFinalTypesFromLogicalObjectAccessReturn()
                 // TODO: undefined is added to all final types, perhaps adding should be restricted through accurate propogation.
-                if (propogateQDotUndefined){
-                    nextKeyAndType.forEach(x=>{
-                        if (x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
-                    });
-                }
+                // if (hasFinalQdotUndefined){
+                //     nextKeyAndType.forEach(x=>{
+                //         if (x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
+                //     });
+                // }
                 finalLiteralKeyAndType = nextKeyAndType.map(x=>{
-                    if (propogateQDotUndefined && x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
+                    if (hasFinalQdotUndefined && x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
                     return { type:x.type??floughTypeModule.createUndefinedType(), literalKey:x.literalKey };
                 });
             }
         }
-        return { rootsWithSymbols, roots, collated: acollated, aLiterals, finalTypes: finalLiteralKeyAndType!, aexpression };
+        return { rootsWithSymbols, roots, collated: acollated, aLiterals, finalTypes: finalLiteralKeyAndType!, aexpression, hasFinalQdotUndefined };
     }
-    function getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Readonly<FloughType[]> {
+    function getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, includeQDotUndefined: boolean): Readonly<FloughType[]> {
+        if (includeQDotUndefined && loar.hasFinalQdotUndefined){
+            return loar.finalTypes.map(x=>{
+                const type = floughTypeModule.cloneRefTypesType(x.type);
+                floughTypeModule.addUndefinedTypeMutate(type);
+                return type;
+            });
+        }
         return loar.finalTypes.map(x=>x.type);
     }
     /**
