@@ -25,26 +25,27 @@
 
     0. Add `hasFinalQdotUndefined` to `LogicalObjectAccessReturn`.
 
-    0. Add additional arguments to ``
-
-        0.
-
-
-
     0. The call to `InferRefTypesPreAccess` is no longer needed, just as it is not used in the cases of `ProperyAccessExpression` and  `ArrayAccessExpression`.
 
+    0. `floughByCallExpression` will call `flough` on callExpression.expression, which may be an access expression, in which case -
+
+        0.  There may be muliple functions in the return. There are two prure scenarios (1) Seperable: Each function corresponds to an independent root object, (2) Mixed: All functions correspond to the same set of root objects, which must be greater of equal to the number of functions.  Besides the pure cases 1 and 2, a mix of both is possible.  Under case 1 (seperable), a seperate return table will returned for each (indep root, func, func return type) set.  Otherwise, a single return table is prepared.
+
+        0. crit - assuming crit is deferred, along with `rttr.logicalObjectAccessReturn`, info to distingish between plain access and call expression must be supplied.  In the case of call expression, the effect of the crit on the logical object is indirect and limited:
+
+            0. (1) `never` will exclude a result branch,
+
+            0. (2) if crit rejects `undefined` then any `?.` in the predecessor chains of that result should have their `undefined` removed.
+
+        0. 
+
+        0.  Currently `logicalObjectModify` returns a single result - needs to be modified to return multiple for the completely seperable case, or one otherwise.
+
+        0. The rest of call expression doesn't have to change, although a faster version is probably advisable.
 
 
-
-0. TODO for assignFinalTypeToLogicalObjectAccessReturn
-    > Modifies loar by calling logicalObjectModify as though all final types are "type" and are target criteria result.
-TODO: This could be problematic with regards to propagation of undefined with qdots,
-because it will allow undefined to be removed from intermediate types in the access chain, but it shouldn't.
-That can be fixed by removing any `undefined` from the final types before calling `logicalObjectModify`,
-and then adding adding it back in to the final type afterwards.
 
 0.  The `LogicalObjectAccessReturn` construction is expensive, and currently it constructed and abandoned immediately. This could be optimized by caching in the type, although it doesn't need to be completely cloned every time the type is cloned.
-
 
 
 0.  floughByBinaryExpressionEqualsCompareV2 / Either side as Identifier - Identifier is fast as long as it does not involve replay.  Even if does involve replay, it should not change the symbol table.  Therefore in the case where lhs is Identifier and also a replayable, and the rhs is identifier, but not a replayable, we can do the rhs first.

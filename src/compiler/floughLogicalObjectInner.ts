@@ -1685,7 +1685,12 @@ namespace ts {
             astr.push(`rootsWithSymbols[${idx}] symbol:${s} `);
         });
         loar.collated.forEach((c,idx0)=>{
-            //c.arrLiteralKeyIn;
+            c.mapTsTypeToLogicalObjectPlainOutIdx.forEach((idx,type)=>{
+                astr.push(`collated[${idx0}].mapTsTypeToLogicalObjectPlainOutIdx: ${type.id}->${idx}`);
+            });
+            c.mapTsTypeToLogicalObjectsInIdx.forEach((idx,type)=>{
+                astr.push(`collated[${idx0}].mapTsTypeToLogicalObjectsInIdx: ${type.id}->${idx}`);
+            });
             c.logicalObjectsIn.forEach((x,idx1)=>{
                 if (x) dbgLogicalObjectToStrings(x).forEach(s=>astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: ${s}`));
                 else astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: <undef>`);
