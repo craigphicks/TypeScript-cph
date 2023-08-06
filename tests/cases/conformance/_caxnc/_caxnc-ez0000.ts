@@ -1,0 +1,8 @@
+// @floughEnable: true
+// @floughConstraintsEnable: false
+// @strict: true
+// @declaration: true
+
+declare type Foo = { readonly foo: (x?:number)=>number[] };
+declare const obj: Foo | undefined;
+const isFoo = obj?.foo();

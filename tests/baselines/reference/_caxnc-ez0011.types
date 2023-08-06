@@ -1,0 +1,34 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0011.ts ===
+/**
+ * Mix object and non-object function root types
+ */
+
+type Foo = () => number[];
+>Foo : () => number[]
+
+type ObjFoo = { foo: () => string[]; }
+>ObjFoo : { foo: () => string[]; }
+>foo : () => string[]
+
+declare const b: boolean;
+>b : boolean
+
+let v = b ? (undefined as any as Foo) : (undefined as any as ObjFoo).foo;
+>v : (() => string[]) | Foo
+>b ? (undefined as any as Foo) : (undefined as any as ObjFoo).foo : (() => string[]) | Foo
+>b : boolean
+>(undefined as any as Foo) : Foo
+>undefined as any as Foo : Foo
+>undefined as any : any
+>undefined : undefined
+>(undefined as any as ObjFoo).foo : () => string[]
+>(undefined as any as ObjFoo) : ObjFoo
+>undefined as any as ObjFoo : ObjFoo
+>undefined as any : any
+>undefined : undefined
+>foo : () => string[]
+
+v();
+>v() : string[] | number[]
+>v : (() => string[]) | Foo
+

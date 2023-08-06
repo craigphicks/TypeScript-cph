@@ -1,0 +1,41 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0012.ts ===
+/**
+ * Mix object and non-object function root types.
+ * Checker type of v outside of the if statement includes undefined.
+ */
+
+type Foo = () => number[];
+>Foo : () => number[]
+
+type ObjFoo = { foo: () => string[]; }
+>ObjFoo : { foo: () => string[]; }
+>foo : () => string[]
+
+declare const b: boolean;
+>b : boolean
+
+let v = b ? (undefined as any as Foo) : (undefined as any as (ObjFoo|undefined))?.foo;
+>v : (() => string[]) | Foo | undefined
+>b ? (undefined as any as Foo) : (undefined as any as (ObjFoo|undefined))?.foo : (() => string[]) | Foo | undefined
+>b : boolean
+>(undefined as any as Foo) : Foo
+>undefined as any as Foo : Foo
+>undefined as any : any
+>undefined : undefined
+>(undefined as any as (ObjFoo|undefined))?.foo : (() => string[]) | undefined
+>(undefined as any as (ObjFoo|undefined)) : ObjFoo | undefined
+>undefined as any as (ObjFoo|undefined) : ObjFoo | undefined
+>undefined as any : any
+>undefined : undefined
+>foo : (() => string[]) | undefined
+
+if (v) {
+>v : (() => string[]) | Foo | undefined
+
+    v();
+>v() : string[] | number[]
+>v : (() => string[]) | Foo
+}
+v;
+>v : (() => string[]) | Foo | undefined
+

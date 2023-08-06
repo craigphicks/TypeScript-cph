@@ -1,0 +1,16 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0000.ts ===
+declare type Foo = { readonly foo: (x?:number)=>number[] };
+>Foo : { readonly foo: (x?: number) => number[]; }
+>foo : (x?: number) => number[]
+>x : number | undefined
+
+declare const obj: Foo | undefined;
+>obj : Foo | undefined
+
+const isFoo = obj?.foo();
+>isFoo : number[] | undefined
+>obj?.foo() : number[] | undefined
+>obj?.foo : ((x?: number | undefined) => number[]) | undefined
+>obj : Foo | undefined
+>foo : ((x?: number | undefined) => number[]) | undefined
+

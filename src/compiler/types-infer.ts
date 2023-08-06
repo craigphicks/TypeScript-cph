@@ -188,11 +188,29 @@ namespace ts {
         }], // a tuple of an array, only set by callees which are accessor expressions
     };
 
+    export type CallExpressionResultPerSig = & {
+        signature: Signature; //
+        rttr: RefTypesTableReturn,
+    };
+    export type CallExpressionResultPerFunc = & {
+        functionTsObject: Type | undefined; // undefined in case of error
+        perSigs: CallExpressionResultPerSig[]; // empty in case of error
+        // qdotUndefined?: boolean; // redundant assuming it is in logicalObjectAccessReturn?
+    };
+    export type CallExpressionResult = & {
+        perFuncs: CallExpressionResultPerFunc[]; // includes error cases where functionTsObject is undefined or perSigs is empty
+    };
+
+
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type FloughReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
         nodeForMap: Readonly<Node>;
-        logicalObjectAccessReturn?: LogicalObjectAccessReturn;
+        forCrit?: {
+            logicalObjectAccessReturn?: LogicalObjectAccessReturn;
+            //isCallExpression?: boolean;
+            callExpressionResult?: CallExpressionResult;
+        },
         typeof?: {
             map: ESMap<Type,RefTypesType>;
             argSymbol: Symbol;
@@ -205,9 +223,14 @@ namespace ts {
         qdotfallout?: RefTypesTableReturn[] | undefined,
         inferStatus: InferStatus,
     };
+
     export type FloughInnerReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
-        logicalObjectAccessReturn?: LogicalObjectAccessReturn;
+        forCrit?: {
+            logicalObjectAccessReturn?: LogicalObjectAccessReturn;
+            //isCallExpression?: boolean; // replaced by callExpressionResult TODO kill
+            callExpressionResult?: CallExpressionResult;
+        },
         typeof?: {
             map: ESMap<Type,RefTypesType>;
             argSymbol: Symbol;

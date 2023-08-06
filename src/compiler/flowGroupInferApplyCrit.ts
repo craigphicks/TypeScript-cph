@@ -16,7 +16,7 @@ namespace ts {
         };
     }
 
-    export type CritToTypeV2Result = FloughType | /*true |*/ undefined;
+    export type CritToTypeV2Result = FloughType | undefined;
     export function applyCritToTypeV2(rt: Readonly<FloughType>,crit: Readonly<InferCrit>): {pass: CritToTypeV2Result, fail?: CritToTypeV2Result } {
         //const crit = critIn;
         const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(rt);
@@ -188,9 +188,117 @@ namespace ts {
         };
     }
 
+    function applyCritV2(x: Readonly<FloughReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
+        passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
+    } {
+        x.unmerged.forEach(rttr=>{
+            applyCritNoneToOne(rttr,x.nodeForMap,nodeToTypeMap);
+        });
+
+
+        Debug.assert(x.forCrit?.logicalObjectAccessReturn);
+        Debug.assert(crit.kind!==InferCritKind.none);
+        Debug.assert(!crit.done!);
+        const loar = x.forCrit.logicalObjectAccessReturn;
+        //Debug.assert(loar.finalTypes.length===x.unmerged.length);
+        if (crit.kind===InferCritKind.truthy) {
+            if (x.forCrit.callExpressionResult){
+                const callExpressionResult = x.forCrit.callExpressionResult;
+                Debug.assert(callExpressionResult.perFuncs.length===loar.finalTypes.length);
+                // set up a passs,fail type pair for each perFunc
+
+                const passTypes0: FloughType[] = [];
+                const passScis0: RefTypesSymtabConstraintItem[] = [];
+                const passModifyArgs0: FloughType[] = [];
+                const failTypes0: FloughType[] = [];
+                const failScis0: RefTypesSymtabConstraintItem[] = [];
+                const failModifyArgs0: FloughType[] = [];
+                let indexFunc = -1;
+                for (const perFunc of x.forCrit.callExpressionResult.perFuncs){
+                    indexFunc++;
+                    if (!perFunc.functionTsObject) continue;
+                    const passTypes: FloughType[] = [];
+                    const failTypes: FloughType[] = [];
+                    const passScis: RefTypesSymtabConstraintItem[] = [];
+                    const failScis: RefTypesSymtabConstraintItem[] = [];
+                    for (const perSig of perFunc.perSigs){
+                        if (floughTypeModule.isNeverType(perSig.rttr.type)) continue;
+                        const {pass,fail} = applyCritToTypeV2(perSig.rttr.type, crit);
+                        if (pass && !floughTypeModule.isNeverType(pass)) {
+                            passTypes.push(pass);
+                            passScis.push(perSig.rttr.sci);
+                        }
+                        if (fail && !floughTypeModule.isNeverType(fail)) {
+                            failTypes.push(fail);
+                            failScis.push(perSig.rttr.sci);
+                        }
+                    }
+                    const orsig = (types: FloughType[], scis: RefTypesSymtabConstraintItem[]): [FloughType,RefTypesSymtabConstraintItem, FloughType] => {
+                        if (types.length===0) {
+                            return [floughTypeModule.getNeverType(), createRefTypesSymtabConstraintItemNever(), floughTypeModule.getNeverType()];
+                        }
+                        else {
+                            const ut = floughTypeModule.unionOfRefTypesType(types);
+                            const modLogObj = floughTypeModule.getLogicalObject(loar.finalTypes[indexFunc].type);
+                            Debug.assert(modLogObj);
+                            const utNonObj = floughTypeModule.hasUndefinedType(ut) ? floughTypeModule.createUndefinedType() : floughTypeModule.getNeverType();
+                            const modifyArgType = floughTypeModule.createTypeFromLogicalObject(modLogObj, utNonObj);
+                            return [ut, orSymtabConstraints(scis), modifyArgType];
+                        }
+                    };
+                    {
+                        const x = orsig(passTypes,passScis);
+                        passTypes0.push(x[0]);
+                        passScis0.push(x[1]);
+                        passModifyArgs0.push(x[2]);
+                    }
+                    if (crit.alsoFailing){
+                        const x = orsig(failTypes,failScis);
+                        failTypes0.push(x[0]);
+                        failScis0.push(x[1]);
+                        failModifyArgs0.push(x[2]);
+                    }
+                }
+                const makeRttr = (types: FloughType[], scis: RefTypesSymtabConstraintItem[], modifyArgs: FloughType[]): RefTypesTableReturnNoSymbol => {
+                    const { rootLogicalObject, rootNonObj } = floughLogicalObjectModule.logicalObjectModify(modifyArgs, loar);
+                    const sci = copyRefTypesSymtabConstraintItem(orSymtabConstraints(scis));
+                    sci.symtab!.set(
+                        loar.rootsWithSymbols[0].symbol!,
+                        floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj));
+                    const type = floughTypeModule.unionOfRefTypesType(types);
+                    return { type, sci };
+                };
+                return { passing:makeRttr(passTypes0,passScis0,passModifyArgs0),failing:makeRttr(failTypes0,failScis0,failModifyArgs0) };
+            }
+            else Debug.fail("not yet implemented");
+        }
+        else Debug.fail("not yet implemented");
+
+
+        // {
+        //     const { rootLogicalObject, rootNonObj} = floughLogicalObjectModule.logicalObjectModify(critTypesPassing, raccess);
+        //     const rootType = floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj);
+        //     const sciPassing = copyRefTypesSymtabConstraintItem(sciFinal);
+        //     sciPassing.symtab!.set(symbol,rootType);
+        //     const typePassing = floughTypeModule.unionOfRefTypesType(critTypesPassing.filter(x=>x) as FloughType[]);
+        //     unmerged.push({ type:typePassing, sci:sciPassing, critsense: "passing" });
+        // }
+        // if (critTypesFailing) {
+        //     const { rootLogicalObject, rootNonObj} = floughLogicalObjectModule.logicalObjectModify(critTypesFailing, raccess);
+        //     const rootType = floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj);
+        //     const sciFailing = copyRefTypesSymtabConstraintItem(sciFinal);
+        //     sciFailing.symtab!.set(symbol,rootType);
+        //     const typeFailing = floughTypeModule.unionOfRefTypesType(critTypesFailing.filter(x=>x) as FloughType[]);
+        //     unmerged.push({ type:typeFailing, sci:sciFailing, critsense: "failing" });
+        // }
+    }
+
     export function applyCrit(x: Readonly<FloughReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
+        if (x.forCrit){
+            return applyCritV2(x,crit,nodeToTypeMap);
+        }
         return applyCrit1(x.unmerged, crit, x.nodeForMap, nodeToTypeMap);
     }
 

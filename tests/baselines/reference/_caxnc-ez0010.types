@@ -1,0 +1,14 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0010.ts ===
+type Foo = (x?:number) => number[];
+>Foo : (x?: number) => number[]
+>x : number | undefined
+
+//type Boo = (x?:bigint) => bigint[]
+declare const f: Foo;
+>f : Foo
+
+const v = f();
+>v : number[]
+>f() : number[]
+>f : Foo
+

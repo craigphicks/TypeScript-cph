@@ -6,6 +6,11 @@
 
 ### Priority: High
 
+0. `floughByCallExpression` - call arguments should be processed only once, and there should be a single SymtabConstraint resulting from that.
+Individual signatures may say something about constraints on inputs (postpone this feature.)
+
+
+
 
 | stem contains `?.` | call return type contains null/undefined | crit accepts/rejects undefined | remove null/undefined before `?.` |
 | --- | ---- | --- | ---|
@@ -13,6 +18,76 @@
 | Y                  | N                                   | R                              | Y |
 | Y                  | Y                                   | A                              | N |
 | Y                  | Y                                   | R                              | Y |
+
+
+```
+type A = { kind: 1, x?: A|B}
+type B = { kind: 2, x?: A|B}
+type U = A|B;
+const u:U;
+if (u.x.kind===2){
+   //
+}
+```
+
+```
+original:
+typesin   typeplain index:x              index:kind   final
+A|B       A                  A|B    A                 1
+          B                  A|B    B                 2
+
+modified:
+typesin   typeplain index:x              index:kind        final
+A|B       A                 (A->never)|B    A->never      never
+          B                 (A->never)|B    B              2
+```
+```
+type A = { kind: 1, x?: A}
+type B = { kind: 2, x?: B}
+type U = A|B;
+const u:U;
+if (u.x.kind===1){
+   //
+}
+```
+```
+original:
+typesin   typeplain index:x           index:kind   final
+A|B       A                  A    A                   1
+          B                  B    B                   2
+
+modified:
+typesin   typeplain index:x                        index:kind       final
+A->never|B A->never          A->never    A->never                    never
+           B                 B           B                           2
+```
+
+0. Implement never rules.
+
+
+0. Never Rules:
+
+    0. The type t in a "typesbasic"-column is "never"-ed when t[index] is "never".
+
+    0. The type in a "typesin"-column is "never"-ed when all of it's basic-types are "never".
+
+0. Because we are using types as a key in "typesplain", we dont want to erase that.  Instead add a "nevered" property.
+
+0. Can a type that was not seperable on input become seperable due to nevering???
+
+    0. If no, then separable may be computed during `floughLogiclaObjectAccess()`.
+
+    0. Else it may be recomputed after `floughLogiclaObjectModify()`
+
+    0. For now, assume no.
+
+0. Non separable can narrowed to fewer root types, which is different - e.g.
+
+```
+type A = { x?: A| B}
+type B = { x?: B}
+if (u.x.kind===1) //
+```
 
 
 0.  floughByCallExpression and logical objects
@@ -37,11 +112,13 @@
 
             0. (2) if crit rejects `undefined` then any `?.` in the predecessor chains of that result should have their `undefined` removed.
 
-        0. 
+        0. In the case of separable, each should have it's own `hasFinalQdotUndefined` - each being in 1-1 corespondance with the seperable root.  The effect of any qdot flows up to the root.
 
-        0.  Currently `logicalObjectModify` returns a single result - needs to be modified to return multiple for the completely seperable case, or one otherwise.
+        0. Currently `logicalObjectModify` returns a single result - needs to be modified to return multiple for the completely seperable case, or one otherwise.
 
         0. The rest of call expression doesn't have to change, although a faster version is probably advisable.
+
+    0. How to represent a narrowed type -
 
 
 

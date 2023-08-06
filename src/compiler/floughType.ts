@@ -416,6 +416,7 @@ namespace ts {
         const at = getTsTypesFromFloughTypeNobj(ft.nobj);
         // Now for the objects.
         if (ft.logicalObject) {
+            // TODO: return the narrowed types.
             at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
         }
         if (at.length === 0) return checker.getNeverType();
@@ -428,7 +429,7 @@ namespace ts {
         const at = getTsTypesFromFloughTypeNobj(ft.nobj);
         // Now for the objects.
         if (ft.logicalObject) {
-            // TODO: return nonunion types?
+            // TODO: return the narrowed types.
             at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
         }
         if (at.length === 0) return [checker.getNeverType()];

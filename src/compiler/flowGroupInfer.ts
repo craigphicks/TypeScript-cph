@@ -1126,11 +1126,12 @@ namespace ts {
             sci: anteSCArg,
             expr:maximalNode, crit, qdotfallout: undefined, inferStatus });
 
-        // if (getMyDebug()) {
-        //     mntr.unmerged.forEach((rttr,i)=>{
-        //         mrNarrow.dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`---- resolveGroupForFlow[post flough]: mntr.unmerged[${i}]: ${s}`));
-        //     });
-        // }
+        if (getMyDebug()) {
+            consoleLog(`resolveGroupForFlow[after flough]${dbgs?.dbgNodeToString(maximalNode)}`);
+            // mntr.unmerged.forEach((rttr,i)=>{
+            //     mrNarrow.dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`---- resolveGroupForFlow[post flough]: mntr.unmerged[${i}]: ${s}`));
+            // });
+        }
 
         if (!inferStatus.inCondition){
             scpassing = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap).sci;

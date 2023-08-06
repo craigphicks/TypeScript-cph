@@ -1,0 +1,14 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0010.ts ===
+type Foo = (x?:number) => number[];
+>Foo : Symbol(Foo, Decl(_caxnc-ez0010.ts, 0, 0))
+>x : Symbol(x, Decl(_caxnc-ez0010.ts, 0, 12))
+
+//type Boo = (x?:bigint) => bigint[]
+declare const f: Foo;
+>f : Symbol(f, Decl(_caxnc-ez0010.ts, 2, 13))
+>Foo : Symbol(Foo, Decl(_caxnc-ez0010.ts, 0, 0))
+
+const v = f();
+>v : Symbol(v, Decl(_caxnc-ez0010.ts, 3, 5))
+>f : Symbol(f, Decl(_caxnc-ez0010.ts, 2, 13))
+

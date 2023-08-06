@@ -1,0 +1,26 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0014.ts ===
+declare type Boo = {
+>Boo : { foo(): bigint[]; }
+
+    foo():bigint[]
+>foo : () => bigint[]
+
+};
+declare const obj: Readonly<Boo> | undefined;
+>obj : Readonly<Boo> | undefined
+
+const isFoo = obj?.foo();
+>isFoo : bigint[] | undefined
+>obj?.foo() : bigint[] | undefined
+>obj?.foo : (() => bigint[]) | undefined
+>obj : Readonly<Boo> | undefined
+>foo : (() => bigint[]) | undefined
+
+if (isFoo) {
+>isFoo : bigint[] | undefined
+
+    // check merge after end if scope
+}
+isFoo; // isFoo should be bigint[] | undefined
+>isFoo : bigint[] | undefined
+

@@ -142,7 +142,7 @@ namespace ts {
             return { newRootType };
         },
         logicalObjectModify(
-            types: Readonly<(CritToTypeV2Result)[]>,
+            types: Readonly<(FloughType | undefined)[]>,
             state: LogicalObjectAccessReturn,
         ): LogicalObjectModifyReturnType {
             const x = floughLogicalObjectInnerModule.logicalObjectModify(types, state);
