@@ -191,7 +191,8 @@ namespace ts {
     function applyCritV2(x: Readonly<FloughReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
-        x.unmerged.forEach(rttr=>{
+        // @ts-expect-error
+        const unmerged = x.unmerged.map(rttr=>{
             applyCritNoneToOne(rttr,x.nodeForMap,nodeToTypeMap);
         });
 
@@ -209,10 +210,10 @@ namespace ts {
 
                 const passTypes0: FloughType[] = [];
                 const passScis0: RefTypesSymtabConstraintItem[] = [];
-                const passModifyArgs0: FloughType[] = [];
+                const passModifyArgs0: (FloughType | undefined)[] = [];
                 const failTypes0: FloughType[] = [];
                 const failScis0: RefTypesSymtabConstraintItem[] = [];
-                const failModifyArgs0: FloughType[] = [];
+                const failModifyArgs0: (FloughType | undefined)[] = [];
                 let indexFunc = -1;
                 for (const perFunc of x.forCrit.callExpressionResult.perFuncs){
                     indexFunc++;
@@ -221,7 +222,9 @@ namespace ts {
                     const failTypes: FloughType[] = [];
                     const passScis: RefTypesSymtabConstraintItem[] = [];
                     const failScis: RefTypesSymtabConstraintItem[] = [];
+                    const sigReturnTsTypes: Type[] = [];
                     for (const perSig of perFunc.perSigs){
+                        sigReturnTsTypes.push(perSig.signatureReturnType);
                         if (floughTypeModule.isNeverType(perSig.rttr.type)) continue;
                         const {pass,fail} = applyCritToTypeV2(perSig.rttr.type, crit);
                         if (pass && !floughTypeModule.isNeverType(pass)) {
@@ -233,7 +236,9 @@ namespace ts {
                             failScis.push(perSig.rttr.sci);
                         }
                     }
-                    const orsig = (types: FloughType[], scis: RefTypesSymtabConstraintItem[]): [FloughType,RefTypesSymtabConstraintItem, FloughType] => {
+                    const usigSigReturnTsType = checker.getUnionType(sigReturnTsTypes, UnionReduction.Literal);
+                    const usigReturnTypeHasUndefined = checker.getTypeFacts(usigSigReturnTsType) & TypeFacts.EQUndefined;
+                    const orsig = (types: FloughType[], scis: RefTypesSymtabConstraintItem[]): [FloughType,RefTypesSymtabConstraintItem, FloughType | undefined] => {
                         if (types.length===0) {
                             return [floughTypeModule.getNeverType(), createRefTypesSymtabConstraintItemNever(), floughTypeModule.getNeverType()];
                         }
@@ -242,8 +247,12 @@ namespace ts {
                             const modLogObj = floughTypeModule.getLogicalObject(loar.finalTypes[indexFunc].type);
                             Debug.assert(modLogObj);
                             const utNonObj = floughTypeModule.hasUndefinedType(ut) ? floughTypeModule.createUndefinedType() : floughTypeModule.getNeverType();
-                            const modifyArgType = floughTypeModule.createTypeFromLogicalObject(modLogObj, utNonObj);
-                            return [ut, orSymtabConstraints(scis), modifyArgType];
+                            // If ut contains undefined, but the signature(s) (i.e. the sigs corresponding to modLogObj) return type(s) do not, then
+                            // modLogObj should be undefined
+                            if (usigReturnTypeHasUndefined===0 && floughTypeModule.hasUndefinedType(ut)){
+                                return [ut, orSymtabConstraints(scis), undefined /*floughTypeModule.getNeverType()*/];
+                            }
+                            return [ut, orSymtabConstraints(scis), floughTypeModule.createTypeFromLogicalObject(modLogObj, utNonObj)];
                         }
                     };
                     {
@@ -259,7 +268,7 @@ namespace ts {
                         failModifyArgs0.push(x[2]);
                     }
                 }
-                const makeRttr = (types: FloughType[], scis: RefTypesSymtabConstraintItem[], modifyArgs: FloughType[]): RefTypesTableReturnNoSymbol => {
+                const makeRttr = (types: FloughType[], scis: RefTypesSymtabConstraintItem[], modifyArgs: (FloughType | undefined)[]): RefTypesTableReturnNoSymbol => {
                     const { rootLogicalObject, rootNonObj } = floughLogicalObjectModule.logicalObjectModify(modifyArgs, loar);
                     const sci = copyRefTypesSymtabConstraintItem(orSymtabConstraints(scis));
                     sci.symtab!.set(

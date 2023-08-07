@@ -326,9 +326,29 @@ namespace ts {
                     ciss.slice(1).forEach(s=>as.push("    "+s));
                 }
             }
+            if (rtt.logicalObjectIdexing){
+                as.push(`  logicalObjectIdexing: {logobjidx:${rtt.logicalObjectIdexing.logobjidx},sigidx:${rtt.logicalObjectIdexing.sigidx}}`);
+            }
             as.push("}");
             return as;
         }
+        function dbgCallExpressionResult(cer: Readonly<CallExpressionResult>): string[]{
+            const as: string[] = [];
+            cer.perFuncs.forEach((pf, ipf)=>{
+                as.push(`perFuncs[${ipf}].functionTsObject: ${pf.functionTsObject ? dbgTypeToString(pf.functionTsObject): "<undef>"}`);
+                pf.perSigs.forEach((ps, ips)=>{
+                    as.push(`perFuncs[${ipf}].perSigs[${ips}].signature: ${checker.signatureToString(ps.signature)})`);
+                    as.push(`perFuncs[${ipf}].perSigs[${ips}].signatureReturnType: ${dbgTypeToString(ps.signatureReturnType)})`);
+                    //as.push(`perFuncs[${ipf}].perSigs[${ips}].returnType: ${dbgRefTypesTypeToString(ps.type)}`);
+                    dbgRefTypesTableToStrings(ps.rttr).forEach(s=>as.push(`perFuncs[${ipf}].perSigs[${ips}].rttr: `+s));
+                });
+            });
+            return as;
+        }
+
+
+
+
         // function dbgRefTypesSymtabToStrings(x: RefTypesSymtab): string[] {
         //     const as: string[]=["["];
         //     x.forEach((t,s)=>{
@@ -2401,21 +2421,21 @@ namespace ts {
                 // if (pre.kind==="immediateReturn") return pre.retval;
                 // assertCastType<CallExpression>(expr);
 
-                const objectTypeAndRttr: [tstype:Type | undefined,rttr:RefTypesTableReturnNoSymbol, islogobj?:boolean, logobjidx?: number][] = [];
+                const objectTypeAndRttr: [functionTsObject:Type | undefined,rttr:RefTypesTableReturnNoSymbol, islogobj?:boolean, logobjidx?: number][] = [];
 
                 let callExpressionResult: Partial<CallExpressionResult> | undefined; //= { perFuncs:[] };
                 if (leftMntr.forCrit?.logicalObjectAccessReturn) {
                     //callExpressionResult = { perFuncs:[] };
                     const perFuncs: CallExpressionResultPerFunc[] = leftMntr.forCrit.logicalObjectAccessReturn.finalTypes.map((x,logobjidx)=>{
                         const { logicalObject, remaining:_nobjType } = floughTypeModule.splitLogicalObject(x.type);
-                        let tstype: Type | undefined;
+                        let functionTsObject: Type | undefined;
                         if (logicalObject) {
                             const inner = floughLogicalObjectModule.getInnerIF(logicalObject);
-                            tstype = floughLogicalObjectInnerModule.getTsTypeOfBasicLogicalObject(inner);
+                            functionTsObject = floughLogicalObjectInnerModule.getTsTypeOfBasicLogicalObject(inner);
                         }
 
-                        objectTypeAndRttr.push([tstype, undefined as any as RefTypesTableReturnNoSymbol,true,logobjidx]);
-                        return { functionTsObject: tstype, perSigs:[] };
+                        objectTypeAndRttr.push([functionTsObject, undefined as any as RefTypesTableReturnNoSymbol,true,logobjidx]);
+                        return { functionTsObject, perSigs:[] };
                     });
                     callExpressionResult = { perFuncs };
                 }
@@ -2503,7 +2523,12 @@ namespace ts {
                     if (perFunc){
                         for (let i = 0; i!==arrsig.length; i++) {
                             // Set the default return type to never.
-                            perFunc.perSigs.push({ signature: arrsig[i], rttr: { type: floughTypeModule.getNeverType(), sci: createRefTypesSymtabConstraintItemNever() } });
+                            perFunc.perSigs.push({
+                                signature: arrsig[i],
+                                signatureReturnType: arrsigrettype[i],
+                                rttr: { type: floughTypeModule.getNeverType(),
+                                sci: createRefTypesSymtabConstraintItemNever() }
+                            });
                         }
                     }
 
@@ -2615,11 +2640,17 @@ namespace ts {
                                 if (islogobj && leftMntr.forCrit!.logicalObjectAccessReturn!.hasFinalQdotUndefined) {
                                     floughTypeModule.addUndefinedTypeMutate(retType);
                                 }
-                                arrRefTypesTableReturn.push({
+                                /////////////////////////////////////////////////
+                                const rttr: RefTypesTableReturnNoSymbol = {
                                     type: retType,
-                                    sci: tmpSC,
-                                });
-                                if (perFunc) perFunc.perSigs[sigidx] = { signature: arrsig[sigidx], rttr: { type: retType, sci: tmpSC } };
+                                    sci: tmpSC
+                                };
+                                if (islogobj) {
+                                    rttr.logicalObjectIdexing = { logobjidx: logobjidx!, sigidx };
+                                }
+                                arrRefTypesTableReturn.push(rttr);
+                                /////////////////////////////////////////////////
+                                if (perFunc) perFunc.perSigs[sigidx] = { signature: arrsig[sigidx], signatureReturnType: arrsigrettype[sigidx], rttr: { type: retType, sci: tmpSC } };
 
                                 finished1 = oneLeftoverMapping.every(oneNotType=>floughTypeModule.isNeverType(oneNotType));
                                 if (!finished1){
@@ -2696,7 +2727,6 @@ namespace ts {
                 setOfTransientCallArgumentSymbol.forEach(symbol=>_mrState.symbolFlowInfoMap.delete(symbol));
                 if (getMyDebug()){
                     consoleLog(`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${functionTypesUnmerged.length}`);
-                    consoleGroupEnd();
                 }
                 // In the case the expr.expression is access expression, leftMntr.logicalObjectAccessReturn is carried
                 const unmerged = aarrRefTypesTableReturn0.map((arrRttr)=>{
@@ -2706,7 +2736,9 @@ namespace ts {
                         floughTypeModule.addUndefinedTypeMutate(type);
                     }
                     const sci =  orSymtabConstraints(arrRttr.map(rttr=>rttr.sci));
-                    return { type, sci };
+                    const rttr: RefTypesTableReturnNoSymbol = { type, sci };
+                    if (arrRttr.length && arrRttr[0].logicalObjectIdexing) rttr.logicalObjectIdexing = arrRttr[0].logicalObjectIdexing;
+                    return rttr;
                 });
                 const floughInnerReturn: FloughInnerReturn = { unmerged };
                 if (leftMntr.forCrit?.logicalObjectAccessReturn) {
@@ -2714,6 +2746,12 @@ namespace ts {
                     Debug.assert(callExpressionResult);
                     assertCastType<CallExpressionResult>(callExpressionResult);
                     floughInnerReturn.forCrit = { logicalObjectAccessReturn: leftMntr.forCrit.logicalObjectAccessReturn, callExpressionResult };
+                    if (getMyDebug()){
+                        dbgCallExpressionResult(callExpressionResult).forEach(s=>consoleLog(`floughByCallExpression callExpressionResult: ${s}`));
+                    }
+                }
+                if (getMyDebug()){
+                    consoleGroupEnd();
                 }
                 return floughInnerReturn;
             } // floughByCallExpressionV2
@@ -3204,6 +3242,7 @@ namespace ts {
                 const trueAndFalseType = floughTypeModule.createRefTypesType([trueType,falseType]);
 
                 const getQuick = (e: Expression): FloughType | undefined => {
+                    if (e.kind===SyntaxKind.TypeOfExpression) return undefined;
                     let isNonReplayableIdentifier = false; // TODO: check this sense!
                     let quickType: FloughType | undefined;
                     if (e.kind===SyntaxKind.Identifier) {
@@ -3217,6 +3256,7 @@ namespace ts {
                     // TODO: should this be isNonReplayableIdentifier===true
                     if (!quickType && isNonReplayableIdentifier===false){
                         const tsType = attemptToGetTypeWithoutFlough(e,inferStatus);
+                        // @ts-ignore
                         if (tsType) quickType = floughTypeModule.createFromTsType(tsType);
                     }
                     return quickType;

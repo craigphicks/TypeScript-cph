@@ -15,19 +15,13 @@ namespace ts {
 
     export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
 
-    // export type FloughTypesTablePropLink = & {
-    //     rttr: RefTypesTable;
-    //     key: LiteralType | undefined;
-    //     logicalObject: FloughLogicalObjectIF;
-    // };
-
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
         critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
-        sci: RefTypesSymtabConstraintItem
-        // propLink?: FloughTypesTablePropLink;
+        sci: RefTypesSymtabConstraintItem;
+        logicalObjectIdexing?: { logobjidx: number, sigidx: number };
     };
     export type RefTypesTableReturn = & {
         symbol?: Symbol | undefined;
@@ -36,7 +30,7 @@ namespace ts {
         critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem;
-        // propLink?: FloughTypesTablePropLink;
+        logicalObjectIdexing?: { logobjidx: number, sigidx: number };
     };
     export enum InferCritKind {
         none= "none",
@@ -190,10 +184,13 @@ namespace ts {
 
     export type CallExpressionResultPerSig = & {
         signature: Signature; //
+        signatureReturnType: Type;
+        type?: FloughType;
         rttr: RefTypesTableReturn,
     };
     export type CallExpressionResultPerFunc = & {
         functionTsObject: Type | undefined; // undefined in case of error
+        functionReturnType?: Type | undefined; // undefined in case of error
         perSigs: CallExpressionResultPerSig[]; // empty in case of error
         // qdotUndefined?: boolean; // redundant assuming it is in logicalObjectAccessReturn?
     };

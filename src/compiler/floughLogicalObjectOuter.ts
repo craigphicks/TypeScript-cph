@@ -61,7 +61,7 @@ namespace ts {
         assignFinalTypeToLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, type: Readonly<FloughType>): { newRootType: FloughType };
         getRootTypeAtLevelFromFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, level: number): { newRootType: FloughType }
         logicalObjectModify(
-            types: Readonly<CritToTypeV2Result[]>,
+            types: Readonly<(FloughType | undefined)[]>,
             state: LogicalObjectAccessReturn,
         ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined };
         // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
