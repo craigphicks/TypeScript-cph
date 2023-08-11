@@ -77,8 +77,9 @@ namespace ts {
             rootLogicalObject: Readonly<FloughLogicalObjectInner> | undefined, rootNobj: Readonly<FloughType>
         };
         logicalObjectModify(
-            types: Readonly<(FloughType | undefined)[]>,
+            types: Readonly<(FloughType | undefined)[]> | undefined,
             state: LogicalObjectAccessReturn,
+            arrCallUndefinedAllowed?: Readonly<boolean[]>,
         ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> };
         // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
@@ -1137,6 +1138,7 @@ namespace ts {
         logicalObjectsIn: Readonly<(FloughLogicalObjectInner | undefined)[]>; // each may be union of obj, but no nobj types
         nobjTypesIn: Readonly<(FloughType | undefined)[]>; // nobj, same length as logicalObjectsIn
         logicalObjectsPlainOut: Readonly<FloughLogicalObjectPlain>[]; // each of the unique plain obj over union of logicalObjectsIn
+        carriedQdotUndefinedsOut: boolean[]; // same length as logicalObjectsPlainOut, always all false for first level collated[0]
         //nobjTypeOut: Readonly<FloughType | undefined>[]; // TODO: KILL this
         mapTsTypeToLogicalObjectPlainOutIdx: ESMap<Type,number>; // length=logicalObjectsPlainOut.length
         mapTsTypeToLogicalObjectsInIdx: ESMap<Type,number[]>; // length=logicalObjectsPlainOut.length
@@ -1150,14 +1152,18 @@ namespace ts {
         collated: Readonly<Collated[]>;
         aLiterals: (LiteralType | undefined)[];
         finalTypes: Readonly<LiteralKeyAndType[]>;
-        //finalCarriedQdotUndefined: boolean[]; // same length as finalTypes
+        //finalQdotUndefineds: (boolean | undefined)[]; // use collated[last].carriedQdotUndefinedsOut instead <------ !!!!
         aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>;
-        hasFinalQdotUndefined: boolean;
+        //hasFinalQdotUndefined: boolean;
     };
 
-    type IndexingBasic = & { logicalObjectBasic: FloughLogicalObjectBasic };
-    function collateByBaseType(typesIn: Readonly<FloughType[]>): Collated {
+    /***
+     *
+     */
+    function collateByBaseType(typesIn: Readonly<FloughType[]>, expr: Expression, prevArrCarryQdotUndefined?: (boolean | undefined)[]): Collated {
+        type IndexingBasic = & { logicalObjectBasic: FloughLogicalObjectBasic, carryQdotUndefined: boolean };
 
+        const qdot = (expr as AccessExpression)?.questionDotToken;
         // const baseLogicalObjects: FloughLogicalObjectInnerIF[] = [];
         // const nonObjTypes: FloughType[]=[];
         //type Value = & { rootIdx: number, idxInRoot: number, logicalObject: FloughLogicalObjectPlain };
@@ -1171,7 +1177,10 @@ namespace ts {
         typesIn.forEach((root, _iroot)=>{
             const {logicalObject:logicalObjectOuterIF,remaining} = floughTypeModule.splitLogicalObject(root);
             nobjTypesIn.push(remaining);
-            //floughTypeModule.unionWithFloughTypeMutate(remaining, nonObjType);
+            let carryQdotUndefined = false;
+            if ((remaining && qdot && floughTypeModule.hasUndefinedOrNullType(remaining) === true) || prevArrCarryQdotUndefined?.[_iroot]){
+                carryQdotUndefined = true;
+            }
             if (logicalObjectOuterIF) {
                 const logicalObject = floughLogicalObjectModule.getInnerIF(logicalObjectOuterIF) as FloughLogicalObjectInner;
                 logicalObjectsIn.push(logicalObject);
@@ -1179,13 +1188,13 @@ namespace ts {
                     const map2 = getBaseLogicalObjects(logicalObject);
                     map2.forEach((logobj,tsType)=>{
                         mapTsTypeToLogicalObjectsInIdx.set(tsType,[_iroot]);
-                        map.set(tsType, [{ logicalObjectBasic: logobj }]);
+                        map.set(tsType, [{ logicalObjectBasic: logobj, carryQdotUndefined }]);
                     });
                 }
                 else {
                     const map2 = getBaseLogicalObjects(logicalObject);
                     map2.forEach((logobj,tsType)=>{
-                        const entry: IndexingBasic = { logicalObjectBasic: logobj };
+                        const entry: IndexingBasic = { logicalObjectBasic: logobj, carryQdotUndefined };
                         const got = map.get(logobj.tsType);
                         if (!got) map.set(logobj.tsType, [entry]);
                         else got.push(entry);
@@ -1203,18 +1212,21 @@ namespace ts {
             //nobjTypeOut: [],
             mapTsTypeToLogicalObjectPlainOutIdx: new Map(),
             mapTsTypeToLogicalObjectsInIdx,
+            carriedQdotUndefinedsOut: [],
             //remainingNonObjType: nonObjType,
         };
         map.forEach((value,_key)=>{
             if (value.length===1) {
                 collated.mapTsTypeToLogicalObjectPlainOutIdx.set(value[0].logicalObjectBasic.tsType, collated.logicalObjectsPlainOut.length);
                 collated.logicalObjectsPlainOut.push(value[0].logicalObjectBasic);
+                collated.carriedQdotUndefinedsOut.push(value[0].carryQdotUndefined);
                 //collated.nobjTypeOut.push(value[0].nobjType);
             }
             else {
                 collated.mapTsTypeToLogicalObjectPlainOutIdx.set(value[0].logicalObjectBasic.tsType, collated.logicalObjectsPlainOut.length);
                 const u = unionOfSameBaseTypesWithVariationsV2(value.map(x=>x.logicalObjectBasic)); // TODO: change value to array of logical object
                 collated.logicalObjectsPlainOut.push(u);
+                collated.carriedQdotUndefinedsOut.push(value.some(x=>x.carryQdotUndefined));
                 //collated.nobjTypeOut.push(u.nobjType);
             }
         });
@@ -1236,14 +1248,15 @@ namespace ts {
             return undefined;
         }
 
-        let collated0 = collateByBaseType(roots);
+        let collated0 = collateByBaseType(roots, aexpression[0]);
         const acollated: Collated[] = [collated0];
         const aLiterals: (LiteralType | undefined)[] = [];
         let finalLiteralKeyAndType: { literalKey?: LiteralType | undefined, type: FloughType }[];
         //const aqdot: boolean[] = aexpression.map(e=>!!(e as PropertyAccessExpression).questionDotToken);
         // Temporary test - does not examine each type for null/undefined
         // @ ts-expect-error
-        let hasFinalQdotUndefined = false; //aqdot.some(b=>b);
+        //let hasFinalQdotUndefined = false; //aqdot.some(b=>b);
+        //const finalCarriedQdotUndefineds: (boolean | undefined)[] = [];
 
         for (let i=0, ie=akey.length; i!==ie; i++){
             const nextKey = getLiteralKey(akey[i]);
@@ -1251,14 +1264,14 @@ namespace ts {
             //const nextTypes: FloughType[] = [];
             // TODO: or note: literalKey value is identical for all members of nextKeyAndType array. That is redundant.
             const nextKeyAndType: { literalKey?: LiteralType | undefined, type: FloughType | undefined }[] = [];
-                for (let j=0, je=collated0.nobjTypesIn.length; j!==je; j++){
-                    let type;
-                    if ((type=collated0.nobjTypesIn[j]) && floughTypeModule.hasUndefinedOrNullType(type)){
-                        hasFinalQdotUndefined = true;
-                        // Note: Should the undefined type be removed from collated0.nobjTypesIn[j]?
-                        // - No.  It's removed in modify if and only if the propagated undefined is accepted by the criteria.
-                    }
-                }
+            // for (let j=0, je=collated0.nobjTypesIn.length; j!==je; j++){
+            //     let type;
+            //     if ((type=collated0.nobjTypesIn[j]) && floughTypeModule.hasUndefinedOrNullType(type)){
+            //         hasFinalQdotUndefined = true;
+            //         // Note: Should the undefined type be removed from collated0.nobjTypesIn[j]?
+            //         // - No.  It's removed in modify if and only if the propagated undefined is accepted by the criteria.
+            //     }
+            // }
             if (nextKey){
                 for (let j=0, je=collated0.logicalObjectsPlainOut.length; j!==je; j++){
                     const { type, literalKey } = getTypeAtIndexFromBase(collated0.logicalObjectsPlainOut[j], nextKey);
@@ -1278,7 +1291,7 @@ namespace ts {
                 }
             }
             if (i<akey.length-1){
-                collated0 = collateByBaseType(nextKeyAndType.map(x=>x.type??floughTypeModule.createUndefinedType()) as FloughLogicalObjectInner[]);
+                collated0 = collateByBaseType(nextKeyAndType.map(x=>x.type??floughTypeModule.createUndefinedType()) as FloughLogicalObjectInner[], aexpression[i+1]);
                 collated0.arrLiteralKeyIn = nextKeyAndType.map(x=>x.literalKey);
                 acollated.push(collated0);
             }
@@ -1294,15 +1307,18 @@ namespace ts {
                     //if (hasFinalQdotUndefined && x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
                     return { type:x.type??floughTypeModule.createUndefinedType(), literalKey:x.literalKey };
                 });
+                // finalCarriedQdotUndefineds would just be an exact copy, no need.
+                //finalCarriedQdotUndefineds = acollated[akey.length-1].carriedQdotUndefinedOut;
             }
         }
-        return { rootsWithSymbols, roots, collated: acollated, aLiterals, finalTypes: finalLiteralKeyAndType!, aexpression, hasFinalQdotUndefined };
+        return { rootsWithSymbols, roots, collated: acollated, aLiterals, finalTypes: finalLiteralKeyAndType!, aexpression };
     }
     function getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, includeQDotUndefined: boolean): Readonly<FloughType[]> {
-        if (includeQDotUndefined && loar.hasFinalQdotUndefined){
-            return loar.finalTypes.map(x=>{
+        if (includeQDotUndefined){
+            const finalCarriedQdotUndefineds = loar.collated[loar.collated.length-1].carriedQdotUndefinedsOut;
+            return loar.finalTypes.map((x,idx)=>{
                 const type = floughTypeModule.cloneRefTypesType(x.type);
-                floughTypeModule.addUndefinedTypeMutate(type);
+                if (finalCarriedQdotUndefineds[idx]) floughTypeModule.addUndefinedTypeMutate(type);
                 return type;
             });
         }
@@ -1378,15 +1394,19 @@ namespace ts {
     function replaceOrFilterLogicalObjectsM(
         logicalObjectIn: Readonly<FloughLogicalObjectInner>,
         map: Readonly<ESMap<Type,number>>,
-        arrNewlogicalObjectBasic: Readonly<FloughLogicalObjectBasic[]>
+        arrNewlogicalObjectBasic: Readonly<(FloughLogicalObjectBasic | undefined)[]>
     ): FloughLogicalObjectInner | undefined {
         function replaceOrFilter(logicalObject: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined{
             if (logicalObject.kind==="plain"){
-                // replace or filter - not present in map means it should be filtered
-                if (map.has(logicalObject.tsType)) {
-                    return arrNewlogicalObjectBasic[map.get(logicalObject.tsType)!];
+                if (extraAsserts){
+                    Debug.assert(map.has(logicalObject.tsType));
                 }
-                return logicalObject; // TODO: this be undefined? Or mark as filtered.
+                return arrNewlogicalObjectBasic[map.get(logicalObject.tsType)!];
+                // replace or filter - not present in map means it should be filtered
+                // if (map.has(logicalObject.tsType)) {
+                //     return arrNewlogicalObjectBasic[map.get(logicalObject.tsType)!];
+                // }
+                // return logicalObject; // TODO: this be undefined? Or mark as filtered.
             }
             else if (logicalObject.kind==="union" || logicalObject.kind==="tsunion"){
                 let change = false;
@@ -1420,7 +1440,8 @@ namespace ts {
     };
     function logicalObjectModify(
         modTypesIn: Readonly<(FloughType | undefined)[]>,
-        state: LogicalObjectAccessReturn,
+        state: LogicalObjectAccessReturn, // same length as modTypesIn
+        arrCallUndefinedAllowed?: Readonly<boolean[]>, // same length as modTypesIn
     ): LogicalObjectModifyInnerReturnType {
         if (extraAsserts) Debug.assert(state.finalTypes.length===modTypesIn.length);
         const doLog = true;
@@ -1431,17 +1452,19 @@ namespace ts {
                     const st = state.finalTypes[idx].type;
                     if (mt){
                         floughTypeModule.dbgFloughTypeToStrings(mt).forEach(s=>{
-                            consoleLog(`logicalObjectModify[in] [${idx}]: modType: ${s}`);
+                            consoleLog(`logicalObjectModify[in] modTypesIn[${idx}]: ${s}`);
                         });
                     }
-                    else consoleLog(`logicalObjectModify[in] [${idx}]: modType: <undef>`);
+                    else consoleLog(`logicalObjectModify[in] modTypesIn[${idx}]: <undef>`);
                     floughTypeModule.dbgFloughTypeToStrings(st).forEach(s=>{
-                        consoleLog(`logicalObjectModify[in] [${idx}]: staType: ${s}`);
+                        consoleLog(`logicalObjectModify[in] state.finalTypes[${idx}]: ${s}`);
                     });
+                    if (arrCallUndefinedAllowed){
+                        consoleLog(`logicalObjectModify[in] arrCallUndefinedAllowed[${idx}]: ${arrCallUndefinedAllowed[idx]}`);
+                    }
                 });
             }
         }
-
 
         function unionOfNonObj(anonobj: Readonly<(FloughType | undefined)[]>) {
             return anonobj.reduce((accum,curr)=>{
@@ -1485,7 +1508,8 @@ namespace ts {
             }
             if (!modTypesIn[modTypeIdx]) continue;
             if (floughTypeModule.isNeverType(modTypesIn[modTypeIdx]!)) continue;
-            const finalModTypeHasUndefined = floughTypeModule.hasUndefinedType(modTypesIn[modTypeIdx]!);
+            const finalModOrCallResultTypeHasUndefined = arrCallUndefinedAllowed ?
+                arrCallUndefinedAllowed[modTypeIdx] : floughTypeModule.hasUndefinedType(modTypesIn[modTypeIdx]!);
             //const finalModTypeHasUndefined = floughTypeModule.hasUndefinedType(modTypesIn[modTypeIdx]!);
             /**
              * Check that all paths to the root have a single key at each level.
@@ -1519,22 +1543,83 @@ namespace ts {
                     continue;
                 }
             }
+
             /**
              * Enforce a unique rootlet by creating a creating new pathlets from the final modified type back to the root.
              *
              */
-            {
 
+            const doOneLevel = (level: number, indicesIn: readonly number[], typesIn: Readonly<(FloughType | undefined)[]>): {
+                nextIndices: number[],
+                nextTypesIn: (FloughType | undefined)[],
+            } => {
+                const coll = state.collated[level];
+                const arrNewLogicalObjectBasic: (FloughLogicalObjectBasic | undefined)[] = Array(coll.logicalObjectsPlainOut.length);
+                const nextIndicesSet = new Set<number>();
+                for (const idx of indicesIn){
+                    const oldLogicalObjectBasic = coll.logicalObjectsPlainOut[idx];
+                    const key = state.aLiterals[level];
+                    // const key = coll.arrLiteralKeyIn?.[idx];
+                    Debug.assert(key);
+                    //let newLogicalObjectBasic: FloughLogicalObjectBasic | undefined;
+                    if (!typesIn[idx]){
+                        continue;
+                    }
+                    const variations = new Map<LiteralType,FloughType>(oldLogicalObjectBasic.variations);
+                    variations.set(key,typesIn[idx]!);
+                    //const key = childcoll.arrLiteralKeyIn![basicIdx]!;
+                    // const { logicalObject, nonObj } = typesIn[idx] ? floughTypeModule.splitLogicalObject(typesIn[idx]!) : { logicalObject: undefined, nonObj: undefined };
+                    arrNewLogicalObjectBasic[idx] = { ...oldLogicalObjectBasic, variations, id: nextLogicalObjectInnerId++ }; // TODO: createLogicalObjectBasic
+                    coll.mapTsTypeToLogicalObjectsInIdx.get(oldLogicalObjectBasic.tsType)!.forEach(x=>nextIndicesSet.add(x));
+                }
+                const nextIndices: number[] = [];
+                nextIndicesSet.forEach(x=>nextIndices.push(x));
+                //const arrNewLogicalObjectIn: (FloughLogicalObjectInner | undefined)[] = Array(coll.logicalObjectsIn.length);
+                const arrNextTypesIn: (FloughType | undefined)[] = Array(coll.logicalObjectsIn.length);
+                for (const idx of nextIndices){
+                    const inner = replaceOrFilterLogicalObjectsM(
+                        coll.logicalObjectsIn[idx]!,
+                        coll.mapTsTypeToLogicalObjectPlainOutIdx,
+                        arrNewLogicalObjectBasic
+                    );
+                    let nobjType: FloughType | undefined;
+                    if (coll.nobjTypesIn[idx] && finalModOrCallResultTypeHasUndefined && (state.aexpression[level] as AccessExpression)?.questionDotToken){
+                        // intermediate objects are cleared of all nobj types expect null or undefined
+                        nobjType=floughTypeModule.intersectionWithUndefinedNull(coll.nobjTypesIn[idx]!);
+                    }
+                    if (inner || nobjType){
+                        const outer = inner ? floughLogicalObjectModule.createFloughLogicalObjectFromInner(inner,/*edType*/ undefined) : undefined;
+                        arrNextTypesIn[idx] = floughTypeModule.createTypeFromLogicalObject(outer,nobjType);
+                    }
+                }
+                return { nextIndices, nextTypesIn: arrNextTypesIn };
+            };
+
+            let nextIndices: readonly number[] = [modTypeIdx];
+            let nextTypesIn: readonly (FloughType | undefined)[] = modTypesIn;
+            for (let lev = state.collated.length-1; lev>=0; lev--){
+                ({nextIndices,nextTypesIn} = doOneLevel(lev,nextIndices,nextTypesIn));
+            }
+            {
+                const ut = floughTypeModule.unionOfRefTypesType(nextTypesIn.filter(x=>!!x) as FloughType[]);
+                const { logicalObject: rootLogicalObjectOuter, remaining: rootNonObj } = floughTypeModule.splitLogicalObject(ut);
+                const rootLogicalObject = rootLogicalObjectOuter ? floughLogicalObjectModule.getInnerIF(rootLogicalObjectOuter) as FloughLogicalObjectInner: undefined;
+                results.push({ rootLogicalObject, rootNonObj, type: modTypesIn[modTypeIdx]??floughTypeModule.getNeverType() });
+            }
+
+
+            if (false){
                 let rootNonObj;
                 {
                     const x = unionOfNonObj(state.collated[0].nobjTypesIn);
-                    rootNonObj = calcNonObjWithQdot(x,0,finalModTypeHasUndefined);
+                    rootNonObj = calcNonObjWithQdot(x,0,!!finalModOrCallResultTypeHasUndefined);
                 }
 
 
                 let coll = state.collated[state.collated.length-1];
                 let arrChildLogicalObjectsInIndxs: number[];
                 let arrNewLogicalObjectIn: (FloughLogicalObjectInner | undefined)[]=[];
+                //let arrNewType: (FloughType | undefined)[]=[];
                 {
                     // First layer is irregular
                     const oldLogicObjectBasic = coll.logicalObjectsPlainOut[modTypeIdx];
@@ -1545,25 +1630,33 @@ namespace ts {
                     // if (!newLogicalObjectBasic) {
                     //     continue;
                     // }
-                    if (state.collated.length===1) {
-                        results.push({ rootLogicalObject: newLogicalObjectBasic, rootNonObj, type: modTypesIn[modTypeIdx]! });
-                        continue;
-                    }
+                    // if (state.collated.length===1) {
+                    //     results.push({ rootLogicalObject: newLogicalObjectBasic, rootNonObj, type: modTypesIn[modTypeIdx]! });
+                    //     continue;
+                    // }
                     //let arrNewLogicalObjectIn: FloughLogicalObjectInner[];
                     arrChildLogicalObjectsInIndxs = coll.mapTsTypeToLogicalObjectsInIdx.get(oldLogicObjectBasic.tsType)!;
                     if (extraAsserts){
                         Debug.assert(arrChildLogicalObjectsInIndxs.every(idx=>coll.logicalObjectsIn[idx]!==undefined));
                     }
                     arrChildLogicalObjectsInIndxs.forEach(inIndx=>{
-                        // if (coll.logicalObjectsIn[inIndx]) {
-                            const x = replaceOrFilterLogicalObjects1(
-                                coll.logicalObjectsIn[inIndx]!,
-                                oldLogicObjectBasic.tsType,
-                                newLogicalObjectBasic
-                            ) as FloughLogicalObjectInner;
-                            arrNewLogicalObjectIn[inIndx] = x;
-                        // }
-                        // else arrNewLogicalObjectIn[inIndx] = undefined;
+                        const x = replaceOrFilterLogicalObjects1(
+                            coll.logicalObjectsIn[inIndx]!,
+                            oldLogicObjectBasic.tsType,
+                            //finalModOrCallResultTypeHasUndefined && (state.aexpression[0] as PropertyAccessExpression)?.questionDotToken,
+                            newLogicalObjectBasic
+                        ) as FloughLogicalObjectInner;
+                        arrNewLogicalObjectIn[inIndx] = x;
+                        // @ts-ignore
+                        let nobjTypeToAdd: FloughType | undefined;
+                        if (coll.nobjTypesIn[inIndx] && finalModOrCallResultTypeHasUndefined && (state.aexpression[0] as PropertyAccessExpression)?.questionDotToken){
+                            // intermediate objects are cleared of all nobj types expect null or undefined
+                            nobjTypeToAdd=floughTypeModule.intersectionWithUndefinedNull(coll.nobjTypesIn[inIndx]!);
+                        }
+
+                        // const outer = newLogicalObjectAtKey ? floughLogicalObjectModule.createFloughLogicalObjectFromInner(newLogicalObjectAtKey,/*edType*/ undefined) : undefined;
+                        // arrNewType[inIndx] = floughTypeModule.createTypeFromLogicalObject(outer, nobjTypeToAdd);
+
                     });
                     if (state.collated.length===1) {
                         preResults.push({ modTypeIdx, collated0InIndices: arrChildLogicalObjectsInIndxs });
@@ -1598,8 +1691,10 @@ namespace ts {
                              *
                              *
                              */
-                            let nobjTypeToAdd: FloughType | undefined;
-                            if (childNobjType && finalModTypeHasUndefined && (state.aexpression[lev+1] as PropertyAccessExpression)?.questionDotToken){
+                            let nobjTypeToAdd: FloughType | undefined; // default is undefined
+                            // TODO: finalModTypeHasUndefined should be finalQdotUndefined, which is different from finalModTypeHasUndefined
+                            if (childNobjType && finalModOrCallResultTypeHasUndefined && (state.aexpression[lev+1] as PropertyAccessExpression)?.questionDotToken){
+                                // intermediate objects are cleared of all nobj types expect null or undefined
                                 nobjTypeToAdd=floughTypeModule.intersectionWithUndefinedNull(childNobjType);
                             }
                             const variations = logicalObjectBasic.variations ? new Map(logicalObjectBasic.variations) : new Map() as Variations;
@@ -1623,6 +1718,7 @@ namespace ts {
                         //         floughTypeModule.removeUndefinedNullMutate(rootNonObjTmp);
                         //     }
                         // }
+                        preResults.push({ modTypeIdx, collated0InIndices: arrChildLogicalObjectsInIndxs });
                         results.push({ rootLogicalObject: unionOfFloughLogicalObjects(arr), rootNonObj, type: modTypesIn[modTypeIdx]! });
                         break;
                     }
@@ -1645,9 +1741,9 @@ namespace ts {
                         }
                     });
                 }
-            }
-        }
-        // @ts-ignore
+            } // if false
+        }  //for (let modTypeIdx = 0; modTypeIdx<modTypesIn.length; modTypeIdx++)
+
         const ret: LogicalObjectModifyInnerReturnType = {
             type: floughTypeModule.unionOfRefTypesType(results.map(x=>x.type)),
             rootNonObj: floughTypeModule.unionOfRefTypesType(results.map(x=>x.rootNonObj).filter(x=>x) as FloughType[]),
@@ -1750,23 +1846,32 @@ namespace ts {
             c.mapTsTypeToLogicalObjectsInIdx.forEach((idx,type)=>{
                 astr.push(`collated[${idx0}].mapTsTypeToLogicalObjectsInIdx: ${type.id}->${idx}`);
             });
-            c.logicalObjectsIn.forEach((x,idx1)=>{
-                if (x) dbgLogicalObjectToStrings(x).forEach(s=>astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: ${s}`));
+            Debug.assert(c.nobjTypesIn.length===c.logicalObjectsIn.length);
+            for (let idx1=0; idx1<c.nobjTypesIn.length; idx1++){
+                if (!c.nobjTypesIn[idx1]) astr.push(`collated[${idx0}].nobjTypeIn[${idx1}]: <undef>`);
+                else floughTypeModule.dbgFloughTypeToStrings(c.nobjTypesIn[idx1]!).forEach(s=>astr.push(`collated[${idx0}].nobjTypeOut[${idx1}]: ${s}`));
+                if (c.logicalObjectsIn[idx1]) dbgLogicalObjectToStrings(c.logicalObjectsIn[idx1]!).forEach(s=>astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: ${s}`));
                 else astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: <undef>`);
-            });
+            }
+            // c.nobjTypesIn.forEach((x,idx1)=>{
+            //     if (!x) astr.push(`collated[${idx0}].nobjTypeIn[${idx1}]: <undef>`);
+            //     else floughTypeModule.dbgFloughTypeToStrings(x).forEach(s=>astr.push(`collated[${idx0}].nobjTypeOut[${idx1}]: ${s}`));
+            // });
+            // c.logicalObjectsIn.forEach((x,idx1)=>{
+            //     if (x) dbgLogicalObjectToStrings(x).forEach(s=>astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: ${s}`));
+            //     else astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: <undef>`);
+            // });
             c.logicalObjectsPlainOut.forEach((x,idx1)=>{
                 dbgLogicalObjectToStrings(x).forEach(s=>astr.push(`collated[${idx0}].logicalObjectsPlainOut[${idx1}]: ${s}`));
+                astr.push(`collated[${idx0}].carriedQdotUndefinedsOut[${idx1}]: ${c.carriedQdotUndefinedsOut[idx1]}`);
             });
-            c.nobjTypesIn.forEach((x,idx1)=>{
-                if (!x) astr.push(`collated[${idx0}].nobjTypeOut[${idx1}]: <undef>`);
-                else floughTypeModule.dbgFloughTypeToStrings(x).forEach(s=>astr.push(`collated[${idx0}].nobjTypeOut[${idx1}]: ${s}`));
-            });
+
             //floughTypeModule.dbgFloughTypeToStrings(c.remainingNonObjType).forEach(s=>astr.push(`collated[${idx0}].remainingNonObjType: ${s}`));
         });
         loar.aexpression.forEach((expr,idx)=>{
             astr.push(`aexpression[${idx}]: ${Debug.formatSyntaxKind(expr.kind)}, <hasqdot>:${!!(expr as PropertyAccessExpression).questionDotToken}`);
         });
-        astr.push(`hasFinalQdotUndefined: ${loar.hasFinalQdotUndefined??"<undef>"}`);
+        // astr.push(`hasFinalQdotUndefined: ${loar.hasFinalQdotUndefined??"<undef>"}`);
         return astr;
     }
 

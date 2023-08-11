@@ -2426,6 +2426,8 @@ namespace ts {
                 let callExpressionResult: Partial<CallExpressionResult> | undefined; //= { perFuncs:[] };
                 if (leftMntr.forCrit?.logicalObjectAccessReturn) {
                     //callExpressionResult = { perFuncs:[] };
+                    const collated = leftMntr.forCrit?.logicalObjectAccessReturn.collated;
+                    const carriedQdotUndefined = collated[collated.length-1].carriedQdotUndefinedsOut;
                     const perFuncs: CallExpressionResultPerFunc[] = leftMntr.forCrit.logicalObjectAccessReturn.finalTypes.map((x,logobjidx)=>{
                         const { logicalObject, remaining:_nobjType } = floughTypeModule.splitLogicalObject(x.type);
                         let functionTsObject: Type | undefined;
@@ -2433,9 +2435,8 @@ namespace ts {
                             const inner = floughLogicalObjectModule.getInnerIF(logicalObject);
                             functionTsObject = floughLogicalObjectInnerModule.getTsTypeOfBasicLogicalObject(inner);
                         }
-
                         objectTypeAndRttr.push([functionTsObject, undefined as any as RefTypesTableReturnNoSymbol,true,logobjidx]);
-                        return { functionTsObject, perSigs:[] };
+                        return { functionTsObject, perSigs:[], carriedQdotUndefined: carriedQdotUndefined[logobjidx] };
                     });
                     callExpressionResult = { perFuncs };
                 }
@@ -2637,7 +2638,9 @@ namespace ts {
                                 allMappings.push(oneMapping);
 
                                 const retType = floughTypeModule.createRefTypesType(arrsigrettype[sigidx]);
-                                if (islogobj && leftMntr.forCrit!.logicalObjectAccessReturn!.hasFinalQdotUndefined) {
+                                let tmp;
+                                if (islogobj &&
+                                    (tmp=leftMntr.forCrit!.logicalObjectAccessReturn!.collated)![tmp.length-1].carriedQdotUndefinedsOut[logobjidx!]) {
                                     floughTypeModule.addUndefinedTypeMutate(retType);
                                 }
                                 /////////////////////////////////////////////////
@@ -2729,10 +2732,25 @@ namespace ts {
                     consoleLog(`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${functionTypesUnmerged.length}`);
                 }
                 // In the case the expr.expression is access expression, leftMntr.logicalObjectAccessReturn is carried
+                //let hasFinalQdotUndefined = false;
                 const unmerged = aarrRefTypesTableReturn0.map((arrRttr)=>{
+                    let hasFinalQdotUndefined = false;
+                    //const logicalObjectIndexing = arrRttr[0].logicalObjectIdexing;
                     //if (arrRttr.length===1) return arrRttr[0];
-                    const type = floughTypeModule.unionOfRefTypesType(arrRttr.map(rttr=>rttr.type));
-                    if (leftMntr.forCrit?.logicalObjectAccessReturn?.hasFinalQdotUndefined){
+                    const type = floughTypeModule.unionOfRefTypesType(arrRttr.map(rttr=>{
+                        if (extraAsserts){
+                            if (arrRttr.length && arrRttr[0].logicalObjectIdexing) Debug.assert(rttr.logicalObjectIdexing);
+
+                        }
+                        if (rttr.logicalObjectIdexing) {
+                            const tmp = leftMntr.forCrit!.logicalObjectAccessReturn!.collated;
+                            if (tmp[tmp.length-1].carriedQdotUndefinedsOut[rttr.logicalObjectIdexing.logobjidx]) {
+                                hasFinalQdotUndefined = true;
+                            }
+                        }
+                        return rttr.type;
+                    }));
+                    if (hasFinalQdotUndefined){
                         floughTypeModule.addUndefinedTypeMutate(type);
                     }
                     const sci =  orSymtabConstraints(arrRttr.map(rttr=>rttr.sci));

@@ -192,7 +192,7 @@ namespace ts {
         functionTsObject: Type | undefined; // undefined in case of error
         functionReturnType?: Type | undefined; // undefined in case of error
         perSigs: CallExpressionResultPerSig[]; // empty in case of error
-        // qdotUndefined?: boolean; // redundant assuming it is in logicalObjectAccessReturn?
+        carriedQdotUndefined: boolean; // redundant assuming it is in logicalObjectAccessReturn?
     };
     export type CallExpressionResult = & {
         perFuncs: CallExpressionResultPerFunc[]; // includes error cases where functionTsObject is undefined or perSigs is empty
