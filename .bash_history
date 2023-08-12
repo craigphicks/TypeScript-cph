@@ -977,3 +977,29 @@ myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" -i
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" 
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-ez0004" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0004" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez000" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez000" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez001" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-ez0017" 
+gulp baseline accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez001" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-ez0017" 
+gulp baseline accept
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0017" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez001" 
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez" 
+. rt-testable.sh 
+. cleantmp.sh 
+. rt-testable.sh 

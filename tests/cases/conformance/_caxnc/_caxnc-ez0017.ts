@@ -6,7 +6,6 @@
 declare interface FooA {
     foo(b:string): "1",
     foo(b:number): undefined;
-    foo(b:any): void;
 };
 declare const obja: undefined | FooA;
 declare const arg: string | number;
@@ -22,7 +21,8 @@ if (isFoo){
 }
 else if (obja) {
     const y = obja.foo(arg); // resolveCall has it's own logic, separate from flow
-    y; // expect  "1" | undefined
-    arg; // expect string | number
-    argIsString; // expect boolean
+    y; // undefined
+    arg; // expect number
+    argIsString; // expect false
 }
+else obja; // expect undefined

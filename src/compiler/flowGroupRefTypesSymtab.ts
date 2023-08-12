@@ -242,6 +242,9 @@ namespace ts {
     export function createRefTypesSymtabConstraintItemNever(): RefTypesSymtabConstraintItemNever {
         return { constraintItem: createFlowConstraintNever() };
     }
+    export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstraintItemNotNever {
+        return { symtab: new RefTypesSymtabProxy(), constraintItem: createFlowConstraintAlways() };
+    }
 
     export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
         const dolog = true;

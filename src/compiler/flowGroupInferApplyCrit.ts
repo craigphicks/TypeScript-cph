@@ -199,7 +199,7 @@ namespace ts {
     function applyCritV2(x: Readonly<FloughReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
         passing: RefTypesTableReturnNoSymbol, failing?: RefTypesTableReturnNoSymbol | undefined
     } {
-        type ModifyArgForCall = & {funcType: FloughType | undefined, undefinedAllowed: boolean };
+        // type ModifyArgForCall = & {funcType: FloughType | undefined, undefinedAllowed: boolean };
         // @ts-expect-error
         const unmerged = x.unmerged.map(rttr=>{
             applyCritNoneToOne(rttr,x.nodeForMap,nodeToTypeMap);
@@ -219,11 +219,19 @@ namespace ts {
 
                 const passTypes0: FloughType[] = [];
                 const passScis0: RefTypesSymtabConstraintItem[] = [];
-                const passModifyArgs0: ModifyArgForCall[] = [];
+                const passFuncTypes0: (FloughType | undefined)[] = [];
+                const passUndfinedAllowed0: boolean[] = [];
+                // const passModifyArgs0: ModifyArgForCall[] = [];
                 const failTypes0: FloughType[] = [];
                 const failScis0: RefTypesSymtabConstraintItem[] = [];
-                const failModifyArgs0: ModifyArgForCall[] = [];
+                const failFuncTypes0: (FloughType | undefined)[] = [];
+                const failUndfinedAllowed0: boolean[] = [];
+                // const failModifyArgs0: ModifyArgForCall[] = [];
                 let indexFunc = -1;
+                /**
+                 * Note: even if the type evals to never under crit, a path may still exist because of "allowUndefined", i.e.,
+                 * the carried qdot undefined is in play.  If so, the symbol constraint should not be set to never.
+                 */
                 for (const perFunc of x.forCrit.callExpressionResult.perFuncs){
                     indexFunc++;
                     if (!perFunc.functionTsObject) continue;
@@ -246,55 +254,81 @@ namespace ts {
                             failScis.push(perSig.rttr.sci);
                         }
                     }
-                    const usigSigReturnTsType = checker.getUnionType(sigReturnTsTypes, UnionReduction.Literal);
-                    const usigReturnTypeHasUndefined = checker.getTypeFacts(usigSigReturnTsType) & TypeFacts.EQUndefined;
-                    const orsig = (types: FloughType[], scis: RefTypesSymtabConstraintItem[]): [
-                        type:FloughType,sci:RefTypesSymtabConstraintItem, functType: boolean, carriedQdotUndefined: boolean
-                    ] => {
-                        if (types.length===0) {
-                            return [floughTypeModule.getNeverType(), createRefTypesSymtabConstraintItemNever(), false, false];
-                        }
-                        else {
-                            const ut = floughTypeModule.unionOfRefTypesType(types);
-                            const modLogObj = floughTypeModule.getLogicalObject(loar.finalTypes[indexFunc].type);
-                            Debug.assert(modLogObj);
-                            //const utNonObj = floughTypeModule.hasUndefinedType(ut) ? floughTypeModule.createUndefinedType() : floughTypeModule.getNeverType();
-                            // If ut contains undefined, but the signature(s) (i.e. the sigs corresponding to modLogObj) return type(s) do not, then
-                            // modLogObj should be undefined
+                    // const usigSigReturnTsType = checker.getUnionType(sigReturnTsTypes, UnionReduction.Literal);
+                    // //const usigReturnTypeHasUndefined = checker.getTypeFacts(usigSigReturnTsType) & TypeFacts.EQUndefined;
+                    // const orsig = (types: FloughType[], scis: RefTypesSymtabConstraintItem[]): [
+                    //     type:FloughType,sci:RefTypesSymtabConstraintItem, functType: boolean, carriedQdotUndefined: boolean
+                    // ] => {
+                    //     if (types.length===0) {
+                    //         return [floughTypeModule.getNeverType(), createRefTypesSymtabConstraintItemNever(), false, false];
+                    //     }
+                    //     else {
+                    //         const ut = floughTypeModule.unionOfRefTypesType(types);
+                    //         // const modLogObj = floughTypeModule.getLogicalObject(loar.finalTypes[indexFunc].type);
+                    //         // Debug.assert(modLogObj);
+                    //         //const utNonObj = floughTypeModule.hasUndefinedType(ut) ? floughTypeModule.createUndefinedType() : floughTypeModule.getNeverType();
+                    //         // If ut contains undefined, but the signature(s) (i.e. the sigs corresponding to modLogObj) return type(s) do not, then
+                    //         // modLogObj should be undefined
 
-                            // if (usigReturnTypeHasUndefined===0 && floughTypeModule.hasUndefinedType(ut)){
-                            //     return [ut,orSymtabConstraints(scis),false,true];
-                            // }
-                            return [ut,orSymtabConstraints(scis), true, !!usigReturnTypeHasUndefined];
-                        }
-                    };
+                    //         // if (usigReturnTypeHasUndefined===0 && floughTypeModule.hasUndefinedType(ut)){
+                    //         //     return [ut,orSymtabConstraints(scis),false,true];
+                    //         // }
+                    //         return [ut,orSymtabConstraints(scis), true, !!usigReturnTypeHasUndefined];
+                    //     }
+                    // };
                     const funcType = floughTypeModule.createFromTsType(perFunc.functionTsObject);
                     {
-                        const x = orsig(passTypes,passScis);
-                        passTypes0.push(x[0]);
-                        passScis0.push(x[1]);
-                        const passFuncType = floughTypeModule.isNeverType(x[0]) ? undefined : funcType;
-                        passModifyArgs0.push({ funcType: passFuncType, undefinedAllowed: false });
+                        if (passTypes.length===0){
+                            passTypes0.push(floughTypeModule.getNeverType());
+                            passFuncTypes0.push(undefined);
+                        }
+                        else {
+                            passTypes0.push(floughTypeModule.unionOfRefTypesType(passTypes));
+                            passFuncTypes0.push(funcType);
+                        }
+                        passScis0.push(orSymtabConstraints(passScis));
+                        passUndfinedAllowed0.push(false);
                     }
                     if (crit.alsoFailing){
-                        const x = orsig(failTypes,failScis);
-                        failTypes0.push(x[0]);
-                        failScis0.push(x[1]);
-                        const failFuncType = floughTypeModule.isNeverType(x[0]) ? undefined : funcType;
-                        failModifyArgs0.push({ funcType:failFuncType, undefinedAllowed: true });
+                        if (failTypes.length===0){
+                            failTypes0.push(floughTypeModule.getNeverType());
+                            failFuncTypes0.push(undefined);
+                        }
+                        else {
+                            failTypes0.push(floughTypeModule.unionOfRefTypesType(failTypes));
+                            failFuncTypes0.push(funcType);
+                        }
+                        if (failScis.length===0) {
+                            failScis0.push(createRefTypesSymtabConstraintItemAlways());
+                        }
+                        else failScis0.push(orSymtabConstraints(failScis));
+                        failUndfinedAllowed0.push(true && x.forCrit.callExpressionResult.perFuncs[indexFunc].carriedQdotUndefined);
                     }
                 }
-                const makeRttr = (types: FloughType[], scis: RefTypesSymtabConstraintItem[], modifyArgs: Readonly<ModifyArgForCall[]>): RefTypesTableReturnNoSymbol => {
+                const makeRttr = (types: FloughType[], scis: RefTypesSymtabConstraintItem[], funcTypes: Readonly<(FloughType | undefined)[]>, undefinedAlloweds: boolean[]): RefTypesTableReturnNoSymbol => {
                     const { rootLogicalObject, rootNonObj } = floughLogicalObjectModule.logicalObjectModify(
-                        modifyArgs.map(x=>x.funcType), loar, modifyArgs.map(x=>!!x.undefinedAllowed));
-                    const sci = copyRefTypesSymtabConstraintItem(orSymtabConstraints(scis));
-                    sci.symtab!.set(
-                        loar.rootsWithSymbols[0].symbol!,
-                        floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj));
+                        funcTypes, loar, undefinedAlloweds);
                     const type = floughTypeModule.unionOfRefTypesType(types);
-                    return { type, sci };
+                    if (undefinedAlloweds.some(x=>x)) floughTypeModule.addUndefinedTypeMutate(type);
+                    if (floughTypeModule.isNeverType(type)){
+                        return { type, sci: createRefTypesSymtabConstraintItemNever() };
+                    }
+                    else {
+                        const sci = copyRefTypesSymtabConstraintItem(orSymtabConstraints(scis));
+                        if (extraAsserts) {
+                            Debug.assert(sci.symtab);
+                            Debug.assert(rootLogicalObject||rootNonObj);
+                        }
+                        sci.symtab!.set(
+                            loar.rootsWithSymbols[0].symbol!,
+                            floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj));
+                        return { type, sci };
+                    }
                 };
-                return { passing:makeRttr(passTypes0,passScis0,passModifyArgs0),failing:makeRttr(failTypes0,failScis0,failModifyArgs0) };
+                return {
+                    passing:makeRttr(passTypes0,passScis0,passFuncTypes0,passUndfinedAllowed0),
+                    failing:makeRttr(failTypes0,failScis0,failFuncTypes0,failUndfinedAllowed0)
+                };
             }
             else Debug.fail("not yet implemented");
         }

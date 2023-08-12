@@ -3,72 +3,71 @@ declare interface FooA {
 >FooA : Symbol(FooA, Decl(_caxnc-ez0017.ts, 0, 0))
 
     foo(b:string): "1",
->foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23))
 >b : Symbol(b, Decl(_caxnc-ez0017.ts, 1, 8))
 
     foo(b:number): undefined;
->foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23))
 >b : Symbol(b, Decl(_caxnc-ez0017.ts, 2, 8))
-
-    foo(b:any): void;
->foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
->b : Symbol(b, Decl(_caxnc-ez0017.ts, 3, 8))
 
 };
 declare const obja: undefined | FooA;
->obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 5, 13))
+>obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 4, 13))
 >FooA : Symbol(FooA, Decl(_caxnc-ez0017.ts, 0, 0))
 
 declare const arg: string | number;
->arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 5, 13))
 
 // checknig isFoo in combo with another condition argIsString
 const isFoo = obja?.foo(arg);
->isFoo : Symbol(isFoo, Decl(_caxnc-ez0017.ts, 9, 5))
->obja?.foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
->obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 5, 13))
->foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
->arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0017.ts, 8, 5))
+>obja?.foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23))
+>obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 4, 13))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23))
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 5, 13))
 
 const argIsString = typeof arg === "string";
->argIsString : Symbol(argIsString, Decl(_caxnc-ez0017.ts, 10, 5))
->arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+>argIsString : Symbol(argIsString, Decl(_caxnc-ez0017.ts, 9, 5))
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 5, 13))
 
 if (isFoo){
->isFoo : Symbol(isFoo, Decl(_caxnc-ez0017.ts, 9, 5))
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0017.ts, 8, 5))
 
     const x = obja.foo(arg);
->x : Symbol(x, Decl(_caxnc-ez0017.ts, 12, 9))
->obja.foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
->obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 5, 13))
->foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
->arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+>x : Symbol(x, Decl(_caxnc-ez0017.ts, 11, 9))
+>obja.foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23))
+>obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 4, 13))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23))
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 5, 13))
 
     x; // expect "1"
->x : Symbol(x, Decl(_caxnc-ez0017.ts, 12, 9))
+>x : Symbol(x, Decl(_caxnc-ez0017.ts, 11, 9))
 
     arg; // expect string
->arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 5, 13))
 
     argIsString; // expect true
->argIsString : Symbol(argIsString, Decl(_caxnc-ez0017.ts, 10, 5))
+>argIsString : Symbol(argIsString, Decl(_caxnc-ez0017.ts, 9, 5))
 }
 else if (obja) {
->obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 5, 13))
+>obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 4, 13))
 
     const y = obja.foo(arg); // resolveCall has it's own logic, separate from flow
->y : Symbol(y, Decl(_caxnc-ez0017.ts, 18, 9))
->obja.foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
->obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 5, 13))
->foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23), Decl(_caxnc-ez0017.ts, 2, 29))
->arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+>y : Symbol(y, Decl(_caxnc-ez0017.ts, 17, 9))
+>obja.foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23))
+>obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 4, 13))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0017.ts, 0, 24), Decl(_caxnc-ez0017.ts, 1, 23))
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 5, 13))
 
-    y; // expect  "1" | undefined
->y : Symbol(y, Decl(_caxnc-ez0017.ts, 18, 9))
+    y; // undefined
+>y : Symbol(y, Decl(_caxnc-ez0017.ts, 17, 9))
 
-    arg; // expect string | number
->arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 6, 13))
+    arg; // expect number
+>arg : Symbol(arg, Decl(_caxnc-ez0017.ts, 5, 13))
 
-    argIsString; // expect boolean
->argIsString : Symbol(argIsString, Decl(_caxnc-ez0017.ts, 10, 5))
+    argIsString; // expect false
+>argIsString : Symbol(argIsString, Decl(_caxnc-ez0017.ts, 9, 5))
 }
+else obja; // expect undefined
+>obja : Symbol(obja, Decl(_caxnc-ez0017.ts, 4, 13))
+

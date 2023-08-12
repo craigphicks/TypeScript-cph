@@ -41,11 +41,11 @@ else if (obja) {
 >obja : FooA | undefined
 
     const y = obja.foo(arg);
->y : never
->obja.foo(arg) : never
+>y : false
+>obja.foo(arg) : false
 >obja.foo : { (b: string): "1"; (b: number): false; }
 >obja : FooA
 >foo : { (b: string): "1"; (b: number): false; }
->arg : string | number
+>arg : number
 }
 

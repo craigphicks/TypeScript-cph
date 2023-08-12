@@ -33,11 +33,12 @@ const isFoo = obj?.foo();
 >obj : Symbol(obj, Decl(_caxnc-ez0004.ts, 7, 13))
 >foo : Symbol(foo, Decl(_caxnc-ez0004.ts, 0, 20), Decl(_caxnc-ez0004.ts, 1, 27), Decl(_caxnc-ez0004.ts, 4, 20))
 
+// @ts-dev-debugger
 if (isFoo) {
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0004.ts, 8, 5))
 
     let x = obj;
->x : Symbol(x, Decl(_caxnc-ez0004.ts, 10, 7))
+>x : Symbol(x, Decl(_caxnc-ez0004.ts, 11, 7))
 >obj : Symbol(obj, Decl(_caxnc-ez0004.ts, 7, 13))
 }
 else {

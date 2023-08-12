@@ -48,6 +48,6 @@ if (isFoo){
 >obja : FooA
 
     arg;
->arg : string | number
+>arg : number
 }
 

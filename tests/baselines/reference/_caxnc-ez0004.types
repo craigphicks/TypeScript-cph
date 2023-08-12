@@ -30,6 +30,7 @@ const isFoo = obj?.foo();
 >obj : Readonly<Foo> | Readonly<Boo> | undefined
 >foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[]) | undefined
 
+// @ts-dev-debugger
 if (isFoo) {
 >isFoo : number[] | bigint[] | undefined
 

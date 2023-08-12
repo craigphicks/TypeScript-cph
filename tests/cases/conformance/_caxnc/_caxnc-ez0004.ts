@@ -13,6 +13,7 @@ declare type Boo = {
 };
 declare const obj: Readonly<Foo> | Readonly<Boo> | undefined;
 const isFoo = obj?.foo();
+// @ts-dev-debugger
 if (isFoo) {
     let x = obj;
 }
