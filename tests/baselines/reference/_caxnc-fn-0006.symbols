@@ -46,11 +46,21 @@ if (obj===obja){
 >obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
 >obja : Symbol(obja, Decl(_caxnc-fn-0006.ts, 8, 13))
 
-    obj; // expect FooA
+    obj; // expect FooA | FooB
 >obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
+
+    obj.foo
+>obj.foo : Symbol(FooA.foo, Decl(_caxnc-fn-0006.ts, 0, 24), Decl(_caxnc-fn-0006.ts, 1, 23))
+>obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
+>foo : Symbol(FooA.foo, Decl(_caxnc-fn-0006.ts, 0, 24), Decl(_caxnc-fn-0006.ts, 1, 23))
 }
 else {
     obj; // expect FooA | FooB (even if left and right are FooA, the comparison result could still be false)
 >obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
+
+    obj.foo
+>obj.foo : Symbol(foo, Decl(_caxnc-fn-0006.ts, 0, 24), Decl(_caxnc-fn-0006.ts, 1, 23), Decl(_caxnc-fn-0006.ts, 4, 24), Decl(_caxnc-fn-0006.ts, 5, 23))
+>obj : Symbol(obj, Decl(_caxnc-fn-0006.ts, 12, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0006.ts, 0, 24), Decl(_caxnc-fn-0006.ts, 1, 23), Decl(_caxnc-fn-0006.ts, 4, 24), Decl(_caxnc-fn-0006.ts, 5, 23))
 }
 

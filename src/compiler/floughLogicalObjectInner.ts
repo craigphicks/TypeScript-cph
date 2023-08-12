@@ -1570,7 +1570,7 @@ namespace ts {
                     // const key = coll.arrLiteralKeyIn?.[idx];
                     Debug.assert(key);
                     //let newLogicalObjectBasic: FloughLogicalObjectBasic | undefined;
-                    if (!typesIn[idx]){
+                    if (!typesIn[idx] || floughTypeModule.isNeverType(typesIn[idx]!)){
                         continue;
                     }
                     const variations = new Map<LiteralType,FloughType>(oldLogicalObjectBasic.variations);
