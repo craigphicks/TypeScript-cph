@@ -3555,6 +3555,7 @@ namespace ts {
                     refAccessArgs[0].expressions.push(expr);
                 }
                 else {
+                    // TODO: this key could also be computed.
                     const keystr = expr.name.escapedText as string;
                     const keyType = floughTypeModule.createLiteralStringType(keystr);
                     sciFinal = leftSci;

@@ -29,10 +29,10 @@ function decl0014(){
 >"1" : "1"
 
         x;
->x : string
+>x : "1"
     }
     x; // flow not trigger without x here
->x : string | number[]
+>x : number[] | "1"
 
     x = 2;
 >x = 2 : 2
@@ -40,6 +40,6 @@ function decl0014(){
 >2 : 2
 
     x;    
->x : number
+>x : 2
 }
 

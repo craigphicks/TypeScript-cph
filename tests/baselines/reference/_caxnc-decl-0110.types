@@ -25,6 +25,6 @@ function decl0010(){
 >1 : 1
     }
     x; // flow not trigger without x here
->x : number
+>x : 0 | 1
 }
 

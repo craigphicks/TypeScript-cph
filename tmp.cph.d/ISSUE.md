@@ -6,61 +6,36 @@
 
 ### Priority: High
 
-0. `floughByCallExpression` - call arguments should be processed only once, and there should be a single SymtabConstraint resulting from that.
-Individual signatures may say something about constraints on inputs (postpone this feature.)
+0. `_caxnc-eqneqLRNindep-000(1|2)` - failing.  Likely a bad result incurred in quick type path of `floughByBinaryExpressionEqualsCompareV2`.  Now that `logicalObjectModify` can be deferred, the quick type paths are no longer required.
+
+0. `floughByBinaryExpressionEqualsCompareV2->V3`
+
+    0. Use deffered object crit application to obviate explicit quick type paths.
+
+0. `floughByCallExpression`
+
+    0. Unionize incoming paths or not?  For now,
+
+    0. Note: All objects paths in call instance do not necessarily have the same length. `(b ? f : obj.f)()`.  So process each path in seperately, for now.
+
+    0. Currently expecting end types to be a plain object which is incorrect.  Need to add a de/re/multiplexing layer and corresponding map to be used before calling `logicalObjectModify`.
+
+    0. Instead of having the optional loar/call reference once per return unmerged array, add it to each rttr of the unmerged array, along with the loar end type index.  Correspondingly, allow `logicalObjectModify` to be called with a single index, i.e., once per rttr.  That will allowed lazy unionization.
+
+        0. In this case should the other indices be forced to be never? Addd a switch to try forced nevering, on by default.
+
+    0. Note: Is the typeof field currently being used?
+
+0. `logicalObjectModify`
+
+    0. As discussed, allow a single `modTypeIdx` and type to be passed, force nevering the others.
+
+    0. key check needs to be corrected and tested.
 
 
 
 
-| stem contains `?.` | call return type contains null/undefined | crit accepts/rejects undefined | remove null/undefined before `?.` |
-| --- | ---- | --- | ---|
-| Y                  | N                                   | A                              | N |
-| Y                  | N                                   | R                              | Y |
-| Y                  | Y                                   | A                              | N |
-| Y                  | Y                                   | R                              | Y |
 
-
-```
-type A = { kind: 1, x?: A|B}
-type B = { kind: 2, x?: A|B}
-type U = A|B;
-const u:U;
-if (u.x.kind===2){
-   //
-}
-```
-
-```
-original:
-typesin   typeplain index:x              index:kind   final
-A|B       A                  A|B    A                 1
-          B                  A|B    B                 2
-
-modified:
-typesin   typeplain index:x              index:kind        final
-A|B       A                 (A->never)|B    A->never      never
-          B                 (A->never)|B    B              2
-```
-```
-type A = { kind: 1, x?: A}
-type B = { kind: 2, x?: B}
-type U = A|B;
-const u:U;
-if (u.x.kind===1){
-   //
-}
-```
-```
-original:
-typesin   typeplain index:x           index:kind   final
-A|B       A                  A    A                   1
-          B                  B    B                   2
-
-modified:
-typesin   typeplain index:x                        index:kind       final
-A->never|B A->never          A->never    A->never                    never
-           B                 B           B                           2
-```
 
 0. Implement never rules.
 
@@ -214,6 +189,8 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. Call expression `carriedQdotUndefined`.
 
 
 0. "readonly" attribute is lost in object types when the ro attribute is only the lhs side type declaration (as opposed to `as const` or `readonly` on the rhs.)
@@ -556,7 +533,6 @@ A consequence is that `case SyntaxKind.CallExpression` currently has a narrow co
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `numLoopCheckSourceFile=10 myDebug=0 myDebugLevel=0 myDisableInfer=0 node  --prof built/local/tsc.js tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0045.ts`
 - `node --prof-process isolate- > isolate.txt`
-
 
 
 
