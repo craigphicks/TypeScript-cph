@@ -615,11 +615,11 @@ namespace ts {
             if (lobj.kind===FloughLogicalObjectKind.plain){
                 f(lobj);
             }
-            else if (lobj.kind===FloughLogicalObjectKind.union){
+            else if (lobj.kind===FloughLogicalObjectKind.union || lobj.kind===FloughLogicalObjectKind.tsunion){
                 lobj.items.forEach(worker);
             }
             else {
-                Debug.fail("not yet implemented");
+                Debug.assert(false, "not yet implemented: ", ()=>lobj.kind);
             }
         }
         worker(topIn);

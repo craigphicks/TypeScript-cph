@@ -212,7 +212,8 @@ namespace ts {
             type.nobj = tmp.nobj;
         },
         partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
-            return partitionForEqualityCompareFloughType(a,b);
+            if (usePartitionForEqualityCompareFloughTypeV2) return partitionForEqualityCompareFloughTypeV2(a,b);
+            else return partitionForEqualityCompareFloughType(a,b);
         },
 
         // end of interface copied from RefTypesTypeModule
@@ -1282,8 +1283,6 @@ namespace ts {
         }
         return arr;
     }
-
-
     function partitionForEqualityCompareFloughType(ai: Readonly<FloughType>, bi: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
         castReadonlyFloughTypei(ai);
         castReadonlyFloughTypei(bi);
@@ -1332,6 +1331,85 @@ namespace ts {
         if (leftTsTypeSet && rightTsTypeSet) {
             leftTsTypeSet.forEach((leftTsType)=>{
                 rightTsTypeSet.forEach((rightTsType)=>{
+                    const subtLofR = checker.isTypeRelatedTo(leftTsType, rightTsType, checker.getRelations().subtypeRelation);
+                    partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtLofR, false:true });
+                    const subtRofL = checker.isTypeRelatedTo(rightTsType, leftTsType, checker.getRelations().subtypeRelation);
+                    partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtRofL, false:true });
+                });
+            });
+        }
+        return partarr;
+    }
+
+    // @ts-ignore
+    function partitionForEqualityCompareFloughTypeV2(ai: Readonly<FloughType>, bi: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
+        castReadonlyFloughTypei(ai);
+        castReadonlyFloughTypei(bi);
+        if (isNeverType(ai)||isNeverType(bi)) return [];
+        if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
+
+        // const leftTsType = ai.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
+        // const rightTsType = bi.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
+        // const leftTsType = ai.logicalObject ? createTypeFromLogicalObject(ai.logicalObject) : undefined;
+        // const rightTsType = bi.logicalObject ? createTypeFromLogicalObject(bi.logicalObject) : undefined;
+        const useNoMatchingOfObjects = true;
+
+        let leftTsType: Type | undefined;
+        let rightTsType: Type | undefined;
+        let leftTsTypeSet: Set<Type> | undefined;
+        let rightTsTypeSet: Set<Type> | undefined;
+        if (!useNoMatchingOfObjects) {
+            leftTsTypeSet = ai.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(ai.logicalObject)) : undefined;
+            if (!useNoMatchingOfObjects && leftTsTypeSet) {
+                const leftTsTypeArr: Type[] = [];
+                leftTsTypeSet.forEach((v)=>leftTsTypeArr.push(v));
+                leftTsType = checker.getUnionType(leftTsTypeArr);
+            }
+            rightTsTypeSet = bi.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(bi.logicalObject)) : undefined;
+            if (!useNoMatchingOfObjects && rightTsTypeSet) {
+                const rightTsTypeArr: Type[] = [];
+                rightTsTypeSet.forEach((v)=>rightTsTypeArr.push(v));
+                rightTsType = checker.getUnionType(rightTsTypeArr);
+            }
+        }
+
+        const symset = new Set<string | LiteralType>();
+        const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
+        const partnobj1 = partitionForEqualityCompareFloughTypeNobj(bi.nobj,ai.nobj,ai.logicalObject,1,symset);
+        const partnobj = partnobj0.concat(partnobj1);
+        const partarr: PartitionForEqualityCompareItemTpl<FloughType>[] = [];
+        for (const pn of partnobj){
+            const pi: PartitionForEqualityCompareItemTpl<FloughType> = { true:pn.true, false:pn.false };
+            if (pn.both) pi.both = { nobj:pn.both };
+            if (pn.left) pi.left = { nobj:pn.left };
+            if (pn.right) pi.right = { nobj:pn.right };
+
+            if (!useNoMatchingOfObjects) {
+                if (pn.bothts) pi.both = pn.bothts;
+                if (pn.leftts) pi.leftts = pn.leftts;
+                if (pn.rightts) pi.rightts = pn.rightts;
+                if (leftTsType) pi.leftts ? pi.leftts.push(leftTsType) : pi.leftts = [leftTsType];
+                if (rightTsType) pi.rightts ? pi.rightts.push(rightTsType) : pi.rightts = [rightTsType];
+            }
+            else {
+                if (pn.bothts) {
+                    pi.both = floughTypeModule.createFromTsType(pn.bothts);
+                    if (extraAsserts){
+                        Debug.assert(!pn.leftts && !pn.rightts && !pn.leftobj && !pn.rightobj);
+                    }
+                }
+                else {
+                    if (pn.leftts) pi.left = floughTypeModule.createFromTsTypes(pn.leftts);
+                    if (pn.rightts) pi.right = floughTypeModule.createFromTsTypes(pn.rightts);
+                    if (pn.leftobj) pi.left = floughTypeModule.createTypeFromLogicalObject(pn.leftobj,pi.left);
+                    if (pn.rightobj) pi.right = floughTypeModule.createTypeFromLogicalObject(pn.rightobj,pi.right);
+                }
+            }
+            partarr.push(pi);
+        }
+        if (leftTsTypeSet && rightTsTypeSet) {
+            leftTsTypeSet.forEach((leftTsType)=>{
+                rightTsTypeSet!.forEach((rightTsType)=>{
                     const subtLofR = checker.isTypeRelatedTo(leftTsType, rightTsType, checker.getRelations().subtypeRelation);
                     partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtLofR, false:true });
                     const subtRofL = checker.isTypeRelatedTo(rightTsType, leftTsType, checker.getRelations().subtypeRelation);

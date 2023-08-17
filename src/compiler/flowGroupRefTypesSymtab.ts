@@ -368,7 +368,8 @@ namespace ts {
         return target;
     } // unionArrRefTypesSymtabV2
     export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
-        return unionArrRefTypesSymtabV2(arr);
+        if (useUnionArrRefTypesSymtabV2) return unionArrRefTypesSymtabV2(arr);
+        else return unionArrRefTypesSymtabV1(arr);
     }
     // @ts-ignore
     function unionArrRefTypesSymtabV1(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
