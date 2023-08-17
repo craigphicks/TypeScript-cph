@@ -18,7 +18,7 @@ namespace ts {
      * but with useUnionArrRefTypesSymtabV2 it is required.
      */
     export const usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit = true;
-    export const useUnionArrRefTypesSymtabV2= false;
+    export const useUnionArrRefTypesSymtabV2= true;
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {

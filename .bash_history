@@ -1087,3 +1087,14 @@ cp tmp.de1.di0.dfc1.txt tmp.save.0.txt
 myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-fn-0007" 
 cp tmp.de1.di0.dfc1.txt tmp.save.1.txt
 myMaxLinesOut=300000 myDebug=0 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc" 
+myMaxLinesOut=300000 myDebug=01yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-and-011" 
+cp tmp.de1.di0.dfc1.txt tmp.save.1.txt
+myMaxLinesOut=300000 myDebug=01yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-and-011" 
+cp tmp.de1.di0.dfc1.txt tmp.save.0.txt
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-and-011" 
+cp tmp.de1.di0.dfc1.txt tmp.save.0.txt
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-and-011" 
+cp tmp.de1.di0.dfc1.txt tmp.save.1.txt
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-and-011" 
+cp tmp.de1.di0.dfc1.txt tmp.save.1.txt
+myMaxLinesOut=300000 myDebug=0 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc" 

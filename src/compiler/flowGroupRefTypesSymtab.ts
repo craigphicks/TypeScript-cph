@@ -294,7 +294,7 @@ namespace ts {
                         }
                         if (remaining) {
                             ptypeGot.typeMember!.nobj =
-                                ptypeGot.typeMember!.nobj ? floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.typeMember!.nobj) : remaining;
+                                ptypeGot.typeMember!.nobj ? floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.typeMember!.nobj) : floughTypeModule.cloneType(remaining);
                         }
                     }
                     if (pt.assignedType){
@@ -304,7 +304,7 @@ namespace ts {
                         }
                         if (remaining) {
                             ptypeGot.assignedTypeMember!.nobj =
-                                ptypeGot.assignedTypeMember!.nobj ? floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.assignedTypeMember!.nobj) : remaining;
+                                ptypeGot.assignedTypeMember!.nobj ? floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.assignedTypeMember!.nobj) : floughTypeModule.cloneType(remaining);
                         }
                     }
                 });
