@@ -2,7 +2,7 @@ namespace ts {
 
     export const extraAsserts = true; // not suitable for release or timing tests.
     const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
-    export const usePartitionForEqualityCompareFloughTypeV2 = false;
+    export const usePartitionForEqualityCompareFloughTypeV2 = true;
     export const useUnionArrRefTypesSymtabV2= false;
 
     let dbgs: Dbgs | undefined;
