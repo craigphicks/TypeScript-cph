@@ -1023,6 +1023,7 @@ namespace ts {
         const result = new Map<Type,FloughLogicalObjectBasic>();
         function worker(logicalObject: Readonly<FloughLogicalObjectInner>): void {
             if (logicalObject.kind === FloughLogicalObjectKind.plain) {
+                if (extraAsserts) Debug.assert(!result.has(logicalObject.tsType));
                 result.set(logicalObject.tsType,logicalObject);
             }
             else if (logicalObject.kind === FloughLogicalObjectKind.tsintersection) {
@@ -1061,21 +1062,50 @@ namespace ts {
         //const nobjType = floughTypeModule.unionOfRefTypesType(arr.map(x=>x.nobjType).filter(x=>x) as FloughType[]);
         // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let i=0; i<arr.length; i++){
+            // If there is any type without any variations, then that is the result.
             if (arr[i].variations===undefined) return arr[i];
         }
-        const isect: Variations = arr[0].variations!;
-        for (let i=1; isect.size!==0 && i<arr.length; i++){
-            const vari = arr[i].variations!;
-            for (let iter=isect.entries(), next=iter.next(); !next.done; next=iter.next()){
-                const got = vari.get(next.value[0]);
-                if (got===undefined) {
-                    isect.delete(next.value[0]);
+        const isect: Variations = new Map(); //arr[0].variations!;
+        const useUnionNotIsect = true; //(()=>{return true})();
+        if (useUnionNotIsect){
+            // For each variation key
+            // - if that key is not present in any variations, remove it from final variations.
+            // - else take the union of the variation types
+            arr[0].variations?.forEach((v,k)=>{
+                if (extraAsserts) Debug.assert(!floughTypeModule.isNeverType(v));
+                isect.set(k,floughTypeModule.cloneType(v));
+            });
+            isect.forEach((v,k)=>{
+                let deleteKey = false;
+                for (let i=1; i<arr.length; i++){
+                    const got = arr[i].variations!.get(k);
+                    if (got===undefined) {
+                        deleteKey  = true;
+                        break;
+                    }
+                    floughTypeModule.unionWithFloughTypeMutate(got, v);
                 }
+                if (deleteKey) isect.delete(k);
                 else {
-                    const type = floughTypeModule.cloneRefTypesType(next.value[1]);
-                    floughTypeModule.intersectionWithFloughTypeMutate(got, type);
-                    if (floughTypeModule.isNeverType(type)) isect.delete(next.value[0]);
-                    else isect.set(next.value[0], type);
+                    // TODO - could check if v is the same as tstype.k, and if so remove k from isect.
+                    isect.set(k, v);
+                }
+            });
+        }
+        else {
+            for (let i=1; isect.size!==0 && i<arr.length; i++){
+                const vari = arr[i].variations!;
+                for (let iter=isect.entries(), next=iter.next(); !next.done; next=iter.next()){
+                    const got = vari.get(next.value[0]);
+                    if (got===undefined) {
+                        isect.delete(next.value[0]);
+                    }
+                    else {
+                        const type = floughTypeModule.cloneRefTypesType(next.value[1]);
+                        floughTypeModule.intersectionWithFloughTypeMutate(got, type);
+                        if (floughTypeModule.isNeverType(type)) isect.delete(next.value[0]);
+                        else isect.set(next.value[0], type);
+                    }
                 }
             }
         }
@@ -1157,6 +1187,40 @@ namespace ts {
         //hasFinalQdotUndefined: boolean;
     };
 
+    function removeDupicateLogicalObjectBasicTypes(logicalObject: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner {
+        const map = new Map<Type,FloughLogicalObjectBasic[]>();
+        let hasDuplicates = false;
+        forEachLogicalObjectBasic(logicalObject, (logicalObjectBasic)=>{
+            const arr = map.get(logicalObjectBasic.tsType);
+            if (arr===undefined) map.set(logicalObjectBasic.tsType, [logicalObjectBasic]);
+            else {
+                hasDuplicates = true;
+                arr.push(logicalObjectBasic);
+            }
+        });
+        //const mapTypeToBasic = new Map<Type,FloughLogicalObjectBasic>();
+        if (!hasDuplicates){
+            return logicalObject;
+        }
+        const items: FloughLogicalObjectBasic[] = [];
+        map.forEach((arr, /*_tstype*/)=>{
+            if (arr.length===1){
+                items.push(arr[0]);
+            }
+            else {
+                const logicalObjectBasic = unionOfSameBaseTypesWithVariationsV2(arr);
+                items.push(logicalObjectBasic);
+            }
+        });
+        if (items.length===1) return items[0];
+        return {
+            kind: FloughLogicalObjectKind.union,
+            items,
+            id: nextLogicalObjectInnerId++,
+            [essymbolFloughLogicalObject]: true
+        };
+    }
+
     /***
      *
      */
@@ -1182,7 +1246,8 @@ namespace ts {
                 carryQdotUndefined = true;
             }
             if (logicalObjectOuterIF) {
-                const logicalObject = floughLogicalObjectModule.getInnerIF(logicalObjectOuterIF) as FloughLogicalObjectInner;
+                let logicalObject = floughLogicalObjectModule.getInnerIF(logicalObjectOuterIF) as FloughLogicalObjectInner;
+                logicalObject = removeDupicateLogicalObjectBasicTypes(logicalObject);
                 logicalObjectsIn.push(logicalObject);
                 if (_iroot===0) {
                     const map2 = getBaseLogicalObjects(logicalObject);

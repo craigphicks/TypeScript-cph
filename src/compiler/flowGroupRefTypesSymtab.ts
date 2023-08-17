@@ -245,8 +245,133 @@ namespace ts {
     export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstraintItemNotNever {
         return { symtab: new RefTypesSymtabProxy(), constraintItem: createFlowConstraintAlways() };
     }
+    /**
+     * unionArrRefTypesSymtabV2
+     * @param arr
+     * Similar to unionArrRefTypesSymtab, but logicalObjects are split and shallow or'd (delayed evaluation), while nobj types or'd immediately,
+     * but without going via Type.
+     */
+    // @ts-ignore
+    function unionArrRefTypesSymtabV2(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
+        const dolog = true;
+        if (dolog && getMyDebug()){
+            consoleGroup(`unionArrRefTypesSymtabV2[in]`);
+            arr.forEach((rts,i)=>{
+                dbgRefTypesSymtabToStrings(rts).forEach(str=>consoleLog(`unionArrRefTypesSymtabV2[in] symtab[${i}] ${str}`));
+            });
+        }
+        function unionArrRefTypesSymtab1(): RefTypesSymtab {
+            assertCastType<Readonly<RefTypesSymtabProxy>[]>(arr);
+            if (arr.length===0) Debug.fail("unexpected");
+            if (arr.length===1) return arr[0];
+            if (extraAsserts) {
+                for (let i=1; i<arr.length; i++){
+                    Debug.assert(arr[i-1].symtabOuter === arr[i].symtabOuter);
+                }
+            }
+            type SplitFTAcc = & {
+                logobj: Set<FloughLogicalObjectIF>, // typically not identical, but that is possible
+                nobj: FloughType,
+            };
+            const mapSymToPType = new Map<Symbol,{
+                typeMember?: SplitFTAcc,
+                assignedTypeMember?: SplitFTAcc,
+            }>();
+            arr.forEach(rts=>{
+                rts.symtabInner.forEach((pt,symbol)=>{
+                    let ptypeGot = mapSymToPType.get(symbol);
+                    if (!ptypeGot) {
+                        ptypeGot = {
+                            typeMember: { logobj: new Set(), nobj: floughTypeModule.createNeverType() },
+                            assignedTypeMember: { logobj: new Set(), nobj: floughTypeModule.createNeverType() },
+                        };
+                        mapSymToPType.set(symbol, ptypeGot);
+                    }
+                    if (pt.type){
+                        const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(pt.type);
+                        if (logicalObject) {
+                            ptypeGot.typeMember!.logobj.add(logicalObject);
+                        }
+                        if (remaining) {
+                            ptypeGot.typeMember!.nobj = floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.typeMember!.nobj);
+                        }
+                    }
+                    if (pt.assignedType){
+                        const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(pt.assignedType);
+                        if (logicalObject) {
+                            ptypeGot.assignedTypeMember!.logobj.add(logicalObject);
+                        }
+                        if (remaining) {
+                            ptypeGot.assignedTypeMember!.nobj = floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.typeMember!.nobj);
+                        }
+                    }
+                });
+            });
+            // Uses the existing outer symtab (common to all arr[*]), but creates a new inner symtab
+            const innerTarget = createRefTypesSymtabWithEmptyInnerSymtab(arr[0]) as RefTypesSymtabProxy;
+            assertCastType<Readonly<RefTypesSymtabProxy>>(innerTarget);
 
+            mapSymToPType.forEach(({ typeMember, assignedTypeMember },symbol)=>{
+                // c.f. _caxnc-whileLoop-0023 - for all i, s.t. arr[i].symbtabInner does not have symbol, must lookup in symtabOuter
+                for (const rts of arr){
+                    if (!rts.symtabInner.has(symbol)){
+                        let otype;
+                        if (!arr[0].isSubloop) {
+                            otype = mrNarrow.getEffectiveDeclaredType(symbolFlowInfoMap.get(symbol) ?? Debug.fail("unexpected"));
+                        }
+                        else {
+                            otype = rts.symtabOuter?.get(symbol);
+                        }
+                        if (otype){
+                            const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(otype);
+                            if (!typeMember) typeMember = { logobj: new Set(), nobj: floughTypeModule.createNeverType() };
+                            if (logicalObject) typeMember.logobj.add(logicalObject);
+                            if (remaining) typeMember.nobj = floughTypeModule.unionWithFloughTypeMutate(remaining, typeMember.nobj);
+                            break; // only need to do at most once per rts of arr
+                        }
+                    }
+                }
+                let type, assignedType;
+                {
+                    let logobj: FloughLogicalObjectIF | undefined;
+                    if (typeMember) {
+                        if (typeMember.logobj.size){
+                            const arrlogobj: FloughLogicalObjectIF[] = [];
+                            typeMember.logobj.forEach(logobj=>arrlogobj.push(logobj));
+                            logobj = floughLogicalObjectModule.unionOfFloughLogicalObjects(arrlogobj);
+                        }
+                    }
+                    type = floughTypeModule.createTypeFromLogicalObject(logobj, typeMember?.nobj);
+                }
+                {
+                    let logobj: FloughLogicalObjectIF | undefined;
+                    if (assignedTypeMember) {
+                        if (assignedTypeMember.logobj.size){
+                            const arrlogobj: FloughLogicalObjectIF[] = [];
+                            assignedTypeMember.logobj.forEach(logobj=>arrlogobj.push(logobj));
+                            logobj = floughLogicalObjectModule.unionOfFloughLogicalObjects(arrlogobj);
+                        }
+                        assignedType = floughTypeModule.createTypeFromLogicalObject(logobj, assignedTypeMember?.nobj);
+                    }
+                }
+                innerTarget.symtabInner.set(symbol,{ type, assignedType });
+            });
+            return innerTarget;
+        }
+        const target = unionArrRefTypesSymtab1();
+        {
+            if (dolog && getMyDebug()){
+                dbgRefTypesSymtabToStrings(target).forEach(str=>consoleLog(`unionArrRefTypesSymtab[out] return: ${str}`));
+                consoleGroupEnd();
+            }
+        }
+        return target;
+    } // unionArrRefTypesSymtabV2
     export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
+        return unionArrRefTypesSymtabV2(arr);
+    }
+    // @ts-ignore
+    function unionArrRefTypesSymtabV1(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
         const dolog = true;
         if (dolog && getMyDebug()){
             consoleGroup(`unionArrRefTypesSymtab[in]`);
@@ -274,6 +399,7 @@ namespace ts {
                 });
             });
 
+            // Uses the existing outer symtab (common to all arr[*]), but creates a new inner symtab
             const target = createRefTypesSymtabWithEmptyInnerSymtab(arr[0]) as RefTypesSymtabProxy;
             assertCastType<Readonly<RefTypesSymtabProxy>>(target);
 

@@ -1,0 +1,58 @@
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-110.ts ===
+declare const b: boolean;
+>b : boolean
+
+declare const c: 0|1;
+>c : 0 | 1
+
+let x = [c] as const;
+>x : readonly [0 | 1]
+>[c] as const : readonly [0 | 1]
+>[c] : readonly [0 | 1]
+>c : 0 | 1
+
+let y = [c] as const;
+>y : readonly [0 | 1]
+>[c] as const : readonly [0 | 1]
+>[c] : readonly [0 | 1]
+>c : 0 | 1
+
+if (x[0]===0) {
+>x[0]===0 : boolean
+>x[0] : 0 | 1
+>x : readonly [0 | 1]
+>0 : 0
+>0 : 0
+
+    x[0];
+>x[0] : 0
+>x : readonly [0 | 1]
+>0 : 0
+
+    if (y[0]===0) {
+>y[0]===0 : boolean
+>y[0] : 0 | 1
+>y : readonly [0 | 1]
+>0 : 0
+>0 : 0
+
+        y[0];
+>y[0] : 0
+>y : readonly [0 | 1]
+>0 : 0
+
+        // @ts-dev-debugger
+        let z = b ? x : y;
+>z : readonly [0 | 1]
+>b ? x : y : readonly [0 | 1]
+>b : boolean
+>x : readonly [0 | 1]
+>y : readonly [0 | 1]
+
+        z[0];
+>z[0] : 0
+>z : readonly [0 | 1]
+>0 : 0
+    }
+}
+
