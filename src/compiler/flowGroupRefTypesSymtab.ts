@@ -270,8 +270,8 @@ namespace ts {
                 }
             }
             type SplitFTAcc = & {
-                logobj: Set<FloughLogicalObjectIF>, // typically not identical, but that is possible
-                nobj: FloughType,
+                logobj: ESMap<FloughLogicalObjectInnerIF, FloughLogicalObjectIF>, // typically not identical, but that is possible
+                nobj?: FloughType,
             };
             const mapSymToPType = new Map<Symbol,{
                 typeMember?: SplitFTAcc,
@@ -282,27 +282,29 @@ namespace ts {
                     let ptypeGot = mapSymToPType.get(symbol);
                     if (!ptypeGot) {
                         ptypeGot = {
-                            typeMember: { logobj: new Set(), nobj: floughTypeModule.createNeverType() },
-                            assignedTypeMember: { logobj: new Set(), nobj: floughTypeModule.createNeverType() },
+                            typeMember: { logobj: new Map(), nobj: undefined },
+                            assignedTypeMember: { logobj: new Map(), nobj: undefined },
                         };
                         mapSymToPType.set(symbol, ptypeGot);
                     }
                     if (pt.type){
                         const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(pt.type);
                         if (logicalObject) {
-                            ptypeGot.typeMember!.logobj.add(logicalObject);
+                            ptypeGot.typeMember!.logobj.set(floughLogicalObjectModule.getInnerIF(logicalObject), logicalObject);
                         }
                         if (remaining) {
-                            ptypeGot.typeMember!.nobj = floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.typeMember!.nobj);
+                            ptypeGot.typeMember!.nobj =
+                                ptypeGot.typeMember!.nobj ? floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.typeMember!.nobj) : remaining;
                         }
                     }
                     if (pt.assignedType){
                         const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(pt.assignedType);
                         if (logicalObject) {
-                            ptypeGot.assignedTypeMember!.logobj.add(logicalObject);
+                            ptypeGot.assignedTypeMember!.logobj.set(floughLogicalObjectModule.getInnerIF(logicalObject), logicalObject);
                         }
                         if (remaining) {
-                            ptypeGot.assignedTypeMember!.nobj = floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.typeMember!.nobj);
+                            ptypeGot.assignedTypeMember!.nobj =
+                                ptypeGot.assignedTypeMember!.nobj ? floughTypeModule.unionWithFloughTypeMutate(remaining, ptypeGot.assignedTypeMember!.nobj) : remaining;
                         }
                     }
                 });
@@ -324,9 +326,9 @@ namespace ts {
                         }
                         if (otype){
                             const {logicalObject,remaining} = floughTypeModule.splitLogicalObject(otype);
-                            if (!typeMember) typeMember = { logobj: new Set(), nobj: floughTypeModule.createNeverType() };
-                            if (logicalObject) typeMember.logobj.add(logicalObject);
-                            if (remaining) typeMember.nobj = floughTypeModule.unionWithFloughTypeMutate(remaining, typeMember.nobj);
+                            if (!typeMember) typeMember = { logobj: new Map(), nobj: floughTypeModule.createNeverType() };
+                            if (logicalObject) typeMember.logobj.set(floughLogicalObjectModule.getInnerIF(logicalObject), logicalObject);
+                            if (remaining) typeMember.nobj = typeMember.nobj ? floughTypeModule.unionWithFloughTypeMutate(remaining, typeMember.nobj) : remaining;
                             break; // only need to do at most once per rts of arr
                         }
                     }
@@ -344,14 +346,14 @@ namespace ts {
                     type = floughTypeModule.createTypeFromLogicalObject(logobj, typeMember?.nobj);
                 }
                 {
-                    let logobj: FloughLogicalObjectIF | undefined;
                     if (assignedTypeMember) {
+                        let logobj: FloughLogicalObjectIF | undefined;
                         if (assignedTypeMember.logobj.size){
                             const arrlogobj: FloughLogicalObjectIF[] = [];
                             assignedTypeMember.logobj.forEach(logobj=>arrlogobj.push(logobj));
                             logobj = floughLogicalObjectModule.unionOfFloughLogicalObjects(arrlogobj);
                         }
-                        assignedType = floughTypeModule.createTypeFromLogicalObject(logobj, assignedTypeMember?.nobj);
+                        if (assignedTypeMember.nobj || logobj) assignedType = floughTypeModule.createTypeFromLogicalObject(logobj, assignedTypeMember.nobj);
                     }
                 }
                 innerTarget.symtabInner.set(symbol,{ type, assignedType });

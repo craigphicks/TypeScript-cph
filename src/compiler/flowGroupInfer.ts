@@ -12,7 +12,12 @@ namespace ts {
      * unionArrRefTypesSymtabV2 vs unionArrRefTypesSymtab
      * V2 perform shallow OR of logical objects postponing evaluation until logicalObjectAccess.
      * The nobjs are still immediately OR'd, but with translating to and from ts-types
+     *
+     * usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit fixes defective behavior of partitionForEqualityCompareFloughTypeNobj.
+     * When using ts-types for OR'ing in unionArrRefTypesSymtab, that defective behavior was masked,
+     * but with useUnionArrRefTypesSymtabV2 it is required.
      */
+    export const usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit = true;
     export const useUnionArrRefTypesSymtabV2= false;
 
     let dbgs: Dbgs | undefined;

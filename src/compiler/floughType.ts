@@ -1213,11 +1213,13 @@ namespace ts {
                             }
                         }
                         else { // ak is true, bk is a set
-                            arr.push({ left:{ [k]: true }, right:{ [k]:new Set<LiteralType>(bk) }, true:true, false:true });
-                            const bd = cloneTypeNobj(b) as Record<string,undefined | true | Set<LiteralType>>;
-                            delete bd[k];
-                            if (blogobj || itemCountFloughTypeNobj(bd)>0) {
-                                arr.push({ left:{ [k]: true }, right:bd, rightobj: blogobj, false:true });
+                            if (!usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit){
+                                arr.push({ left:{ [k]: true }, right:{ [k]:new Set<LiteralType>(bk) }, true:true, false:true });
+                                const bd = cloneTypeNobj(b) as Record<string,undefined | true | Set<LiteralType>>;
+                                delete bd[k];
+                                if (blogobj || itemCountFloughTypeNobj(bd)>0) {
+                                    arr.push({ left:{ [k]: true }, right:bd, rightobj: blogobj, false:true });
+                                }
                             }
                         }
                     }
