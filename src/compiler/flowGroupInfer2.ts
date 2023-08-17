@@ -2,7 +2,7 @@
 /* eslint-disable no-double-space */
 namespace ts {
 
-    export const enableMapReplayedObjectTypesToSymbolFlowInfoTypes = true;
+    //export const enableMapReplayedObjectTypesToSymbolFlowInfoTypes = true;
 
 
     export interface MrNarrow {

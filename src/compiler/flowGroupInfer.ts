@@ -2,7 +2,17 @@ namespace ts {
 
     export const extraAsserts = true; // not suitable for release or timing tests.
     const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
+    /**
+     * partitionForEqualityCompareFloughTypeV2 doesn't try to tell if objects are definitely different types
+     * so that object intersection is not used for equality compare.
+     * TODO: Still some duplication remainig to be fixed in partitionForEqualityCompareFloughTypeV2.
+     */
     export const usePartitionForEqualityCompareFloughTypeV2 = true;
+    /**
+     * unionArrRefTypesSymtabV2 vs unionArrRefTypesSymtab
+     * V2 perform shallow OR of logical objects postponing evaluation until logicalObjectAccess.
+     * The nobjs are still immediately OR'd, but with translating to and from ts-types
+     */
     export const useUnionArrRefTypesSymtabV2= false;
 
     let dbgs: Dbgs | undefined;

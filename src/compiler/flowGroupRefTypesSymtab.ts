@@ -248,8 +248,8 @@ namespace ts {
     /**
      * unionArrRefTypesSymtabV2
      * @param arr
-     * Similar to unionArrRefTypesSymtab, but logicalObjects are split and shallow or'd (delayed evaluation), while nobj types or'd immediately,
-     * but without going via Type.
+     * Similar to unionArrRefTypesSymtab, but logicalObjects are split and shallow or'd (delayed evaluation),
+     * while nobj types are still or'd immediately, but without computing via Type.
      */
     // @ts-ignore
     function unionArrRefTypesSymtabV2(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
