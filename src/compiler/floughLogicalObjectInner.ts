@@ -1186,6 +1186,43 @@ namespace ts {
         aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>;
         //hasFinalQdotUndefined: boolean;
     };
+    export const logicalObjectAccessModule = {
+        getFinalCarriedQdotUndefined(loar: Readonly<LogicalObjectAccessReturn>, finalIdx: number): boolean {
+            const lastColl = loar.collated[loar.collated.length-1];
+            return lastColl.carriedQdotUndefinedsOut[finalIdx];
+        },
+        getSymbol(loar: Readonly<LogicalObjectAccessReturn>): Symbol | undefined{
+            if (extraAsserts){
+                Debug.assert(loar.rootsWithSymbols.forEach(x=>x.symbol===loar.rootsWithSymbols[0].symbol), "unexpected");
+            }
+            return loar.rootsWithSymbols[0].symbol;
+        },
+        getFinalTypesLength(loar: Readonly<LogicalObjectAccessReturn>): number { return loar.finalTypes.length; },
+        getFinalType(loar: Readonly<LogicalObjectAccessReturn>, idx: number, includeCarriedQDotUndefined: boolean): FloughType {
+            if (includeCarriedQDotUndefined && !floughTypeModule.hasUndefinedType(loar.finalTypes[idx].type) && this.getFinalCarriedQdotUndefined(loar,idx)) {
+                const type = floughTypeModule.cloneType(loar.finalTypes[idx].type);
+                floughTypeModule.addUndefinedTypeMutate(type);
+                return type;
+            }
+            return loar.finalTypes[idx].type;
+        },
+        modifyOne(loar: Readonly<LogicalObjectAccessReturn>, idx: number, finalType: Readonly<FloughType>): FloughType {
+            if (extraAsserts){
+                Debug.assert(floughTypeModule.isNeverType(finalType), "unexpected, type never input to modifyOne");
+            }
+            const arr: (FloughType | undefined)[] = new Array(loar.finalTypes.length);
+            arr[idx] = finalType;
+            const {rootLogicalObject,rootNonObj} = floughLogicalObjectModule.logicalObjectModify(arr, loar);
+            const type = floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj);
+            return type;
+        }
+    };
+    //export type LogicalObjectAccessModule = typeof logicalObjectAccessModule;
+    // export function logicalObjectAccessReturnGetFinalCarriedQdotUndefined(loar: Readonly<LogicalObjectAccessReturn>, finalIdx: number): boolean {
+    //     const lastColl = loar.collated[loar.collated.length-1];
+    //     return lastColl.carriedQdotUndefinedsOut[finalIdx];
+    // }
+    // export function logicalObjectAccessReturnGetSymbol(loar: Readonly<LogicalObjectAccessReturn>, finalIdx: number): boolean {
 
     function removeDupicateLogicalObjectBasicTypes(logicalObject: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner {
         const map = new Map<Type,FloughLogicalObjectBasic[]>();

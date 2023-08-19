@@ -3237,7 +3237,7 @@ namespace ts {
                 return { unmerged: arrRefTypesTableReturn };
             } // floughByBinaryExpressionEqualCompare
 
-            // @ts-ignore
+            // @ ts-ignore
             function floughByBinaryExpressionEqualsCompareV2(
             ): FloughInnerReturn {
                 assertCastType<BinaryExpression>(expr);
@@ -3280,9 +3280,8 @@ namespace ts {
                     return quickType;
                 };
                 const isAccessExpression = (e: Expression) => (e.kind===SyntaxKind.ElementAccessExpression || e.kind===SyntaxKind.PropertyAccessExpression);
-                const leftQuickType = getQuick(leftExpr);
-                const rightQuickType = getQuick(rightExpr);
-
+                const leftQuickType = useLogcialObjectAccessDataInRttr ? undefined : getQuick(leftExpr);
+                const rightQuickType = useLogcialObjectAccessDataInRttr ? undefined : getQuick(rightExpr);
 
                 if (!leftQuickType && rightQuickType && isAccessExpression(leftExpr)){
                     const leftMntr = flough({
@@ -3500,6 +3499,77 @@ namespace ts {
                                     getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
                                     mrNarrow
                                 }));
+                            }
+                            if (useLogcialObjectAccessDataInRttr){
+                                if (leftRttr.logicalObjectAccessData || rightRttr.logicalObjectAccessData) {
+                                    Debug.assert(leftRttr.logicalObjectAccessData !== rightRttr.logicalObjectAccessData);
+                                    let leftLoar: LogicalObjectAccessReturn | undefined;
+                                    let leftFinalTypeIdx: number | undefined;
+                                    let leftSymbol: Symbol | undefined;
+                                    let rightLoar: LogicalObjectAccessReturn | undefined;
+                                    let rightFinalTypeIdx: number | undefined;
+                                    let rightSymbol: Symbol | undefined;
+                                    if (leftRttr.logicalObjectAccessData){
+                                        leftLoar = leftRttr.logicalObjectAccessData.logicalObjectAccessReturn;
+                                        leftFinalTypeIdx = leftRttr.logicalObjectAccessData.finalTypeIdx;
+                                        leftSymbol = logicalObjectAccessModule.getSymbol(leftLoar);
+                                    }
+                                    if (rightRttr.logicalObjectAccessData){
+                                        rightLoar = rightRttr.logicalObjectAccessData.logicalObjectAccessReturn;
+                                        rightFinalTypeIdx = rightRttr.logicalObjectAccessData.finalTypeIdx;
+                                        rightSymbol = logicalObjectAccessModule.getSymbol(rightLoar);
+                                    }
+                                    if (leftLoar === rightLoar) {
+                                        Debug.assert(false, "unexpected");
+                                    }
+                                    /**
+                                     * TODO: It is possible that left and right share the same symbol.
+                                     * Because that is special case we ought to write tests case before coding.
+                                     */
+                                    if (leftSymbol && leftSymbol === rightSymbol) {
+                                        Debug.assert(false, "not yet implemented: object on left and right sides of compare have same symbol");
+                                    }
+                                    else {
+                                        if (leftSymbol){
+                                            const leftFinalType = left ?? both;
+                                            if (extraAsserts){
+                                                Debug.assert(leftFinalType);
+                                                Debug.assert(!floughTypeModule.isNeverType(leftFinalType));
+                                                Debug.assert(!leftts && !rightts && !bothts); // should be true when usePartitionForEqualityCompareFloughTypeV2 is true
+                                            }
+                                            const leftModifiedObjectType = logicalObjectAccessModule.modifyOne(leftLoar!,leftFinalTypeIdx!,leftFinalType!);
+                                            if (!floughTypeModule.isNeverType(leftModifiedObjectType)){
+                                                sctmp = copyRefTypesSymtabConstraintItem(sctmp);
+                                                sctmp.symtab!.set(leftSymbol, leftModifiedObjectType);
+                                            }
+                                            else {
+                                                /**
+                                                 * If leftModifiedObjectType is never, then the whole flow branch becomes never.
+                                                 */
+                                                Debug.assert(false, "not yet implemented (unexpected?): leftModifiedObjectType is never");
+                                            }
+                                        }
+                                        if (rightSymbol){
+                                            const rightFinalType = right ?? both;
+                                            if (extraAsserts){
+                                                Debug.assert(rightFinalType);
+                                                Debug.assert(!floughTypeModule.isNeverType(rightFinalType));
+                                                Debug.assert(!leftts && !rightts && !bothts); // should be true when usePartitionForEqualityCompareFloughTypeV2 is true
+                                            }
+                                            const rightModifiedObjectType = logicalObjectAccessModule.modifyOne(rightLoar!,rightFinalTypeIdx!,rightFinalType!);
+                                            if (!floughTypeModule.isNeverType(rightModifiedObjectType)){
+                                                sctmp = copyRefTypesSymtabConstraintItem(sctmp);
+                                                sctmp.symtab!.set(rightSymbol, rightModifiedObjectType);
+                                            }
+                                            else {
+                                                /**
+                                                 * If rightModifiedObjectType is never, then the whole flow branch becomes never.
+                                                 */
+                                                Debug.assert(false, "not yet implemented (unexpected?): rightModifiedObjectType is never");
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             if (getMyDebug()) {
                                 const leftx = both ?? left ?? (bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts)));
@@ -3783,10 +3853,36 @@ namespace ts {
 
                     const includeQDotUndefined = expr.parent?.kind!==SyntaxKind.CallExpression;
                     const finalType: Readonly<FloughType> = floughLogicalObjectModule.getFinalTypeFromLogicalObjectAccessReturn(raccess, includeQDotUndefined);
-                    unmerged.push({
-                        sci: sciFinal,
-                        type: finalType
-                    });
+                    if (useLogcialObjectAccessDataInRttr){
+                        // TODO: in case inferStatus.inCondition is false, one of the following?
+                        // (1) leave as is
+                        // (2) don't add logicalObjectAccessData to unmerged
+                        // (3) logicalObjectModify here, per finalType, and (2)
+                        raccess.finalTypes.forEach((finalType,idx)=>{
+                            const logicalObjectAccessData: LogicalObjecAccessData = {
+                                logicalObjectAccessReturn : raccess!,
+                                finalTypeIdx: idx,
+                            };
+                            let type = finalType.type;
+                            if (includeQDotUndefined && !floughTypeModule.hasUndefinedType(type)){
+                                if (raccess!.collated[raccess!.collated.length-1].carriedQdotUndefinedsOut[idx]){
+                                    type = floughTypeModule.cloneType(type);
+                                    floughTypeModule.addUndefinedTypeMutate(type);
+                                }
+                            }
+                            unmerged.push({
+                                sci: sciFinal,
+                                type,
+                                logicalObjectAccessData,
+                            });
+                        });
+                    }
+                    else {
+                        unmerged.push({
+                            sci: sciFinal,
+                            type: finalType
+                        });
+                    }
                     for (let level=0, nlevel=raccess.collated.length; level!==nlevel; level++){
                         const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess,level);
                         orIntoNodeToTypeMap(newRootType,refAccessArgs[0].expressions[level].expression, inferStatus.groupNodeToTypeMap);
