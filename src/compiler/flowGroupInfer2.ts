@@ -1419,7 +1419,7 @@ namespace ts {
             assertCastType<PropertyAccessExpression>(expr);
             if (expr.expression.kind===SyntaxKind.Identifier && expr.name.kind===SyntaxKind.Identifier){
                 const sym0 = checker.getResolvedSymbol(expr.expression as Identifier);
-                if (sym0.flags & SymbolFlags.RegularEnum){
+                if (sym0.flags & (SymbolFlags.RegularEnum | SymbolFlags.ConstEnum)){
                     const type0 = checker.getTypeOfSymbol(sym0);
                     const sym1 = checker.getPropertyOfType(type0, expr.name.escapedText as string);
                     //const type1enum = checker.getTypeOfSymbol(sym1);

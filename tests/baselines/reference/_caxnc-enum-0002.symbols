@@ -1,0 +1,32 @@
+=== tests/cases/conformance/_caxnc/_caxnc-enum-0002.ts ===
+declare const enum E {
+>E : Symbol(E, Decl(_caxnc-enum-0002.ts, 0, 0))
+
+    n1 = 1,
+>n1 : Symbol(E.n1, Decl(_caxnc-enum-0002.ts, 0, 22))
+
+    n2 = 2,
+>n2 : Symbol(E.n2, Decl(_caxnc-enum-0002.ts, 1, 11))
+
+    sa = "a",
+>sa : Symbol(E.sa, Decl(_caxnc-enum-0002.ts, 2, 11))
+
+    sb = "b"
+>sb : Symbol(E.sb, Decl(_caxnc-enum-0002.ts, 3, 13))
+
+};
+declare const e: E;
+>e : Symbol(e, Decl(_caxnc-enum-0002.ts, 6, 13))
+>E : Symbol(E, Decl(_caxnc-enum-0002.ts, 0, 0))
+
+if (e===E.n1){
+>e : Symbol(e, Decl(_caxnc-enum-0002.ts, 6, 13))
+>E.n1 : Symbol(E.n1, Decl(_caxnc-enum-0002.ts, 0, 22))
+>E : Symbol(E, Decl(_caxnc-enum-0002.ts, 0, 0))
+>n1 : Symbol(E.n1, Decl(_caxnc-enum-0002.ts, 0, 22))
+
+    e; // E.n1
+>e : Symbol(e, Decl(_caxnc-enum-0002.ts, 6, 13))
+}
+
+

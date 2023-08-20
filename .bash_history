@@ -1098,3 +1098,31 @@ cp tmp.de1.di0.dfc1.txt tmp.save.1.txt
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-and-011" 
 cp tmp.de1.di0.dfc1.txt tmp.save.1.txt
 myMaxLinesOut=300000 myDebug=0 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc" 
+myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-101.ts" 
+myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-101.ts" -i
+myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-101.ts" 
+myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-101.ts" -i
+myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-arrayLiteralExpression-101.ts" 
+myMaxLinesOut=300000 myDebug=0 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-" 
+myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-enum-0002" 
+myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-enum-0002" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-enum-0002"
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"
+myMaxLinesOut=300000 myDebug=1 yDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-0000"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-rqneqLRindep-0000"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRindep-0000"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRNindep-0000"
+node baseline-accept
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRNindep-"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRNindep-0001"
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRNindep-0002"
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRNindep-0003"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-eqneqLRNindep-000"
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRNindep-000"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc"

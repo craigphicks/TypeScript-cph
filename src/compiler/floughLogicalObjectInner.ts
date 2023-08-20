@@ -1193,7 +1193,11 @@ namespace ts {
         },
         getSymbol(loar: Readonly<LogicalObjectAccessReturn>): Symbol | undefined{
             if (extraAsserts){
-                Debug.assert(loar.rootsWithSymbols.forEach(x=>x.symbol===loar.rootsWithSymbols[0].symbol), "unexpected");
+                // loar.rootsWithSymbols.forEach((x,i)=>{
+                //     if (x.symbol!==loar.rootsWithSymbols[0].symbol) Debug.fail("unexpected:",()=>i);
+
+                // });
+                Debug.assert(loar.rootsWithSymbols.every(x=>x.symbol===loar.rootsWithSymbols[0].symbol), "unexpected");
             }
             return loar.rootsWithSymbols[0].symbol;
         },
@@ -1208,7 +1212,7 @@ namespace ts {
         },
         modifyOne(loar: Readonly<LogicalObjectAccessReturn>, idx: number, finalType: Readonly<FloughType>): FloughType {
             if (extraAsserts){
-                Debug.assert(floughTypeModule.isNeverType(finalType), "unexpected, type never input to modifyOne");
+                Debug.assert(!floughTypeModule.isNeverType(finalType), "unexpected, type never input to modifyOne");
             }
             const arr: (FloughType | undefined)[] = new Array(loar.finalTypes.length);
             arr[idx] = finalType;
@@ -1618,7 +1622,7 @@ namespace ts {
             // if (!modTypesIn[modTypeIdx]) continue;
             // if (floughTypeModule.isNeverType(modTypesIn[modTypeIdx]!)) continue;
             const finalModOrCallResultTypeHasUndefined = arrCallUndefinedAllowed ?
-                arrCallUndefinedAllowed[modTypeIdx] : floughTypeModule.hasUndefinedType(modTypesIn[modTypeIdx]!);
+                arrCallUndefinedAllowed[modTypeIdx] : (modTypesIn[modTypeIdx] && floughTypeModule.hasUndefinedType(modTypesIn[modTypeIdx]!));
             //const finalModTypeHasUndefined = floughTypeModule.hasUndefinedType(modTypesIn[modTypeIdx]!);
             /**
              * Check that all paths to the root have a single key at each level.
@@ -1648,7 +1652,7 @@ namespace ts {
                 }
                 if (!ok) {
                     // TODO: output original root, and modified type
-                    results.push({ ...calcDefaultRoot(), type: modTypesIn[modTypeIdx]! });
+                    results.push({ ...calcDefaultRoot(), type: modTypesIn[modTypeIdx]??floughTypeModule.getNeverType() });
                     continue;
                 }
             }

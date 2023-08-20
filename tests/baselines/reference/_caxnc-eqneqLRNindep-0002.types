@@ -13,6 +13,7 @@ x;
 y;
 >y : number
 
+// Oddly, this is not an error.
 if (x===(y="one")){
 >x===(y="one") : boolean
 >x : number
@@ -28,5 +29,5 @@ if (x===(y="one")){
 else {
     x;y;
 >x : number
->y : string
+>y : "one"
 }

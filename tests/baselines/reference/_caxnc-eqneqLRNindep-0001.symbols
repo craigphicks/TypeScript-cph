@@ -11,7 +11,7 @@ x;
 y;
 >y : Symbol(y, Decl(_caxnc-eqneqLRNindep-0001.ts, 1, 3))
 
-// Expect: error TS2367: This condition will always return 'false' since the types 'number' and 'string' have no overlap.
+// error TS2367: This condition will always return 'false' since the types 'number' and 'string' have no overlap.
 if (x===(y="one")){
 >x : Symbol(x, Decl(_caxnc-eqneqLRNindep-0001.ts, 0, 3))
 >y : Symbol(y, Decl(_caxnc-eqneqLRNindep-0001.ts, 1, 3))
