@@ -19,8 +19,10 @@ namespace ts {
      */
     export const usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit = true;
     export const useUnionArrRefTypesSymtabV2= true;
-
     export const useLogcialObjectAccessDataInRttr = true;
+    //-------------------------------------------------------------------------------------
+    export const useAlwaysProperyAccessCritNone = true;
+    //-------------------------------------------------------------------------------------
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {

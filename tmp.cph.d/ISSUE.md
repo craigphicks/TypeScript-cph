@@ -6,15 +6,20 @@
 
 ### Priority: High
 
-0. `_caxnc-eqneqLRNindep-000(1|2)` - failing.  Likely a bad result incurred in quick type path of `floughByBinaryExpressionEqualsCompareV2`.  Now that `logicalObjectModify` can be deferred, the quick type paths are no longer required.
+0. Still seems to be some duplicates coming out of `partitionForEqualityCompareFloughTypeV2`.
 
-0. `floughByBinaryExpressionEqualsCompareV2->V3`
 
-    0. Use deffered object crit application to obviate explicit quick type paths.
+0. cleanup dead code
+
+0. adapt `floughByCallExpressionV2` to use rttr.logicalObjectAccessData
+
+0.  finish modulization of LogicalObjectAccessReturn
+
+
 
 0. `floughByCallExpression`
 
-    0. Unionize incoming paths or not?  For now,
+    0. Unionize incoming paths or not?
 
     0. Note: All objects paths in call instance do not necessarily have the same length. `(b ? f : obj.f)()`.  So process each path in seperately, for now.
 
@@ -26,114 +31,6 @@
 
     0. Note: Is the typeof field currently being used?
 
-0. `logicalObjectModify`
-
-    0. As discussed, allow a single `modTypeIdx` and type to be passed, force nevering the others.
-
-    0. key check needs to be corrected and tested.
-
-
-
-
-
-
-0. Implement never rules.
-
-
-0. Never Rules:
-
-    0. The type t in a "typesbasic"-column is "never"-ed when t[index] is "never".
-
-    0. The type in a "typesin"-column is "never"-ed when all of it's basic-types are "never".
-
-0. Because we are using types as a key in "typesplain", we dont want to erase that.  Instead add a "nevered" property.
-
-0. Can a type that was not seperable on input become seperable due to nevering???
-
-    0. If no, then separable may be computed during `floughLogiclaObjectAccess()`.
-
-    0. Else it may be recomputed after `floughLogiclaObjectModify()`
-
-    0. For now, assume no.
-
-0. Non separable can narrowed to fewer root types, which is different - e.g.
-
-```
-type A = { x?: A| B}
-type B = { x?: B}
-if (u.x.kind===1) //
-```
-
-
-0.  floughByCallExpression and logical objects
-
-    0. Any deferred `undefined` due to a `?.` on the left side of the `(...)` of the call expression should be added to the result type of the call.  Therefore it is necessary to distinguish between an undefered lhs final `undefined` and a deferred `?.` undefined, which is not currently being distinguished in `LogicalObjectAccessReturn`.  We can add a `hasFinalQdotUndefined` member to `loar` for that purpose.
-
-    0. Before any crit is applied to the return type of the call, it is not known whether the crit will accept `undefined` or not.
-
-    0. In addition, if the stem contains only one `?.` and the call return does not contain null/undefined, and the crit accepts only undefined, then the `?.` predicate should exclude any types except null or undefined.  However, this should be postponed as a task.
-
-    0. Add `hasFinalQdotUndefined` to `LogicalObjectAccessReturn`.
-
-    0. The call to `InferRefTypesPreAccess` is no longer needed, just as it is not used in the cases of `ProperyAccessExpression` and  `ArrayAccessExpression`.
-
-    0. `floughByCallExpression` will call `flough` on callExpression.expression, which may be an access expression, in which case -
-
-        0.  There may be muliple functions in the return. There are two prure scenarios (1) Seperable: Each function corresponds to an independent root object, (2) Mixed: All functions correspond to the same set of root objects, which must be greater of equal to the number of functions.  Besides the pure cases 1 and 2, a mix of both is possible.  Under case 1 (seperable), a seperate return table will returned for each (indep root, func, func return type) set.  Otherwise, a single return table is prepared.
-
-        0. crit - assuming crit is deferred, along with `rttr.logicalObjectAccessReturn`, info to distingish between plain access and call expression must be supplied.  In the case of call expression, the effect of the crit on the logical object is indirect and limited:
-
-            0. (1) `never` will exclude a result branch,
-
-            0. (2) if crit rejects `undefined` then any `?.` in the predecessor chains of that result should have their `undefined` removed.
-
-        0. In the case of separable, each should have it's own `hasFinalQdotUndefined` - each being in 1-1 corespondance with the seperable root.  The effect of any qdot flows up to the root.
-
-        0. Currently `logicalObjectModify` returns a single result - needs to be modified to return multiple for the completely seperable case, or one otherwise.
-
-        0. The rest of call expression doesn't have to change, although a faster version is probably advisable.
-
-    0. How to represent a narrowed type -
-
-
-
-0.  The `LogicalObjectAccessReturn` construction is expensive, and currently it constructed and abandoned immediately. This could be optimized by caching in the type, although it doesn't need to be completely cloned every time the type is cloned.
-
-
-0.  floughByBinaryExpressionEqualsCompareV2 / Either side as Identifier - Identifier is fast as long as it does not involve replay.  Even if does involve replay, it should not change the symbol table.  Therefore in the case where lhs is Identifier and also a replayable, and the rhs is identifier, but not a replayable, we can do the rhs first.
-
-0. Several of the tests _caxnc-arrayLiteralExpression- show overly complex types for objects such as `readonly [true, true] | readonly [boolean, boolean]`.  However the leaf access is working, so that over-complexity will be left for later to allow other progress. -- Fixed
-
-
-0. LogicalObject
-
-    0. effectiveDeclaredType to be kept on outside, not inside.  Then no need for tsType member on set-unions
-
-    0. LogicalObjectOuter to hold variations (narrowed key properties) - how will this work with union and intersection?
-
-        0. ~~Another way to use LogicalObjectOuter would be invalidate the handle contents (set inner to null) when a LogicalObject is mutated, to prevent accidental usage.  Work backwards from the error to figure out where clone is required. Then the object variations could kept in the plain objects (original plan).~~
-
-        0. However, a condition imposed on a key property, (which does not purely narrow types), can apply to multiple plain objects - so a key to flough type map on the outside seems like a clean representation (current plan).
-
-        0. Intersection: intersection of the insides, then union of the outside variation keys, intersection of their properties - any never intersection results in a total never result. Then evaluate each key - any never evalution results in a never result.
-
-        0. Union: Eval each variation key over the other union operand to get new value.  Then union of insides + union of outside variations.
-
-    0. Unclear on semantics of subsetRelation vs asignableRelation
-
-    0. Ordering of objects could be an optimization, probably.
-
-0. AndSymbolTypeIntoSymtabContraint, reduce number of calls.
-
-    0. Required for conditions
-
-    0. Required for the lhs of a constant replay when the lhs symbol has been narrowed by a condition.
-
-    0. not required for not-const non-conditions
-
-0. For a group which is non-replay and non-assign, the current branch input can be used as output.
-
-0. Property assignment
 
 
 0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break. -- Break targets not yet tested/
@@ -189,6 +86,13 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+0. In branch condalias-49075-work-2-eqneqLRNindep
+    export const usePartitionForEqualityCompareFloughTypeV2 = true;
+    export const usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit = true;
+    export const useUnionArrRefTypesSymtabV2 = true;
+    export useLogcialObjectAccessDataInRttr = true;
+
 
 0. Call expression `carriedQdotUndefined`.
 

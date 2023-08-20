@@ -1365,6 +1365,51 @@ namespace ts {
         const symset = new Set<string | LiteralType>();
         const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
         const partnobj1 = partitionForEqualityCompareFloughTypeNobj(bi.nobj,ai.nobj,ai.logicalObject,1,symset);
+        // if (extraAsserts){
+        //     //equalFloughTypesNobj();
+        //     const toNobjFTLeft = (p: PartitionNobj): FloughType => {
+        //         const x = p.left ?? p.both ?? (p.bothts ? createFromTsType(p.bothts).nobj : (p.leftts ? createFromTsTypes(p.leftts).nobj : undefined));
+        //         Debug.assert(x);
+        //         return x;
+        //     };
+        //     const toNobjFTRight = (p: PartitionNobj): FloughType => {
+        //         const x = p.right ?? p.both ?? (p.bothts ? createFromTsType(p.bothts).nobj : (p.rightts ? createFromTsTypes(p.rightts).nobj : undefined));
+        //         Debug.assert(x);
+        //         return x;
+        //     };
+        //     const atleft: FloughType[] = partnobj0.map((pn0,_i0)=>toNobjFTLeft(pn0));
+        //     const atright: FloughType[] = partnobj1.map((pn1,_i1)=>toNobjFTRight(pn1));
+        //     const print = (i0: number,i1: number) => {
+        //         const astr: string[] = [];
+        //         astr.push(`duplicate at: ${i0}, ${i1}`);
+        //         astr.push("left : ");
+        //         atleft.forEach((t,j0)=>{
+        //             astr.push(`${j0}:`+floughTypeModule.dbgFloughTypeToString(t));
+        //         });
+        //         astr.push("right: ");
+        //         atright.forEach((t,j1)=>{
+        //             astr.push(`${j1}:`+floughTypeModule.dbgFloughTypeToString(t));
+        //         });
+        //         astr.push("symset: ");
+        //         symset.forEach(s=>{
+        //             if (typeof s === "string") astr.push(s);
+        //             else astr.push(dbgsModule.dbgTypeToString(s));
+        //         });
+        //         return astr;//.join(sys.newLine);
+        //     };
+
+        //     partnobj0.forEach((_pn0,i0)=>{
+        //         partnobj1.forEach((_pn1,i1)=>{
+        //             const tleft = atleft[i0];
+        //             const tright = atright[i1];
+        //             if (equalFloughTypesNobj(tleft,tright)) {
+        //                 // consoleLog(`duplicate equalFloughTypesNobj ${i0}, ${i1}`);
+        //                 // print().forEach(s=>consoleLog(s));
+        //                 Debug.assert(false,"unexpected equalFloughTypesNobj",() => print(i0,i1).join(sys.newLine));
+        //             }
+        //         });
+        //     });
+        // }
         const partnobj = partnobj0.concat(partnobj1);
         if (ai.logicalObject || bi.logicalObject) {
             if (ai.logicalObject && bi.logicalObject){
