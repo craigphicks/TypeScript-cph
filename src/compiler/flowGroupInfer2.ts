@@ -329,6 +329,10 @@ namespace ts {
             if (rtt.logicalObjectIdexing){
                 as.push(`  logicalObjectIdexing: {logobjidx:${rtt.logicalObjectIdexing.logobjidx},sigidx:${rtt.logicalObjectIdexing.sigidx}}`);
             }
+            if (rtt.logicalObjectAccessData){
+                const load = rtt.logicalObjectAccessData;
+                as.push(`  logicalObjectAccessData: {logicalObjectAccessReturn:...,finalTypeIdx:${load.finalTypeIdx}}`);
+            }
             as.push("}");
             return as;
         }
@@ -2864,13 +2868,13 @@ namespace ts {
                             const leftRightIdependent = assignCountBeforeRhs===assignCountAfterRhs;
                             let sciFinal = leftRightIdependent ? rttrLeft0.sci : rttrRight0.sci;
                             const typeFinal = rightRttr.type;
-                            if (!floughTypeModule.isNeverType(typeFinal)) return;
+                            if (floughTypeModule.isNeverType(typeFinal)) return;
                             if (rttrLeft0.logicalObjectAccessData){
                                 const symbol = logicalObjectAccessModule.getSymbol(rttrLeft0.logicalObjectAccessData.logicalObjectAccessReturn);
                                 if (symbol){
                                     const { newRootType } = floughLogicalObjectModule.assignFinalTypeToLogicalObjectAccessReturn(
                                         rttrLeft0.logicalObjectAccessData.logicalObjectAccessReturn, rttrRight0.type);
-                                    if (!floughTypeModule.isNeverType(newRootType)) return;
+                                    if (floughTypeModule.isNeverType(newRootType)) return;
                                     sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
                                     sciFinal.symtab!.setAsAssigned(symbol,newRootType);
                                 }
