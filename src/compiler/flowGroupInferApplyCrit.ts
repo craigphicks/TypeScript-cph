@@ -377,14 +377,41 @@ namespace ts {
             if (!floughTypeModule.isNeverType(objType)) {
                 scOut = copyRefTypesSymtabConstraintItem(sc);
                 scOut.symtab!.set(symbol, objType);
-            };
+            }
+            else {
+                // URGENT TODO: this should be "never" not "do nothing"
+                typeOut = floughTypeModule.getNeverType();
+                scOut = createRefTypesSymtabConstraintItemNever();
+            }
+
         }
         else {
-            typeOut = floughTypeModule.getNeverType();
-            scOut = createRefTypesSymtabConstraintItemNever();
+            // URGENT TODO: this should be "do nothing" not "never"
+            // typeOut = floughTypeModule.getNeverType();
+            // scOut = createRefTypesSymtabConstraintItemNever();
         }
         return { type: typeOut, sc: scOut };
     };
+
+    export function resolveCallExpressionData(cad: CallExpressionData, sc: RefTypesSymtabConstraintItem, type: FloughType):
+    { type: FloughType, sc: RefTypesSymtabConstraintItem } {
+        if (!useFloughByCallExpressionV3) Debug.fail("unexpected");
+        const typeOut = type;
+        let scOut = sc;
+        const load = cad.logicalObjectAccessData;
+        const loar = load.logicalObjectAccessReturn;
+        const symbol = logicalObjectAccessModule.getSymbol(loar);
+        if (symbol){
+            const callUndefinedAllowed = floughTypeModule.hasUndefinedType(type) && logicalObjectAccessModule.getFinalCarriedQdotUndefined(loar,load.finalTypeIdx);
+            const objType = logicalObjectAccessModule.modifyOne(
+                loar, load.finalTypeIdx, cad.functionTsType, callUndefinedAllowed);
+            if (!floughTypeModule.isNeverType(objType)) {
+                scOut = copyRefTypesSymtabConstraintItem(sc);
+                scOut.symtab!.set(symbol, objType);
+            };
+        }
+        return { type: typeOut, sc: scOut };
+    }
 
 
 
@@ -483,6 +510,12 @@ namespace ts {
         if (floughTypeModule.isNeverType(passtype)) passing = createNever();
         else {
             if (useAlwaysProperyAccessCritNone){
+                if (useFloughByCallExpressionV3){
+                    if (rttr.callExpressionData){
+                        Debug.assert(!rttr.logicalObjectAccessData);
+                        ({type: passtype, sc: passsc} = resolveCallExpressionData(rttr.callExpressionData, passsc, passtype));
+                    }
+                }
                 if (rttr.logicalObjectAccessData){
                     ({type: passtype, sc: passsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, passsc, passtype));
                 }
@@ -495,6 +528,12 @@ namespace ts {
         if (crit.alsoFailing && floughTypeModule.isNeverType(failtype!)) failing = createNever();
         else if (crit.alsoFailing){
             if (useAlwaysProperyAccessCritNone){
+                if (useFloughByCallExpressionV3){
+                    if (rttr.callExpressionData){
+                        Debug.assert(!rttr.logicalObjectAccessData);
+                        ({type: failtype, sc: failsc} = resolveCallExpressionData(rttr.callExpressionData, failsc!, failtype!));
+                    }
+                }
                 if (rttr.logicalObjectAccessData){
                     ({type: failtype, sc: failsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, failsc!, failtype!));
                 }
@@ -557,6 +596,12 @@ namespace ts {
                     }));
                 }
                 if (useAlwaysProperyAccessCritNone){
+                    if (useFloughByCallExpressionV3){
+                        if (rttr.callExpressionData){
+                            Debug.assert(!rttr.logicalObjectAccessData);
+                            ({type: passtype, sc: passsc} = resolveCallExpressionData(rttr.callExpressionData, passsc, passtype));
+                        }
+                    }
                     if (rttr.logicalObjectAccessData){
                         ({type: passtype, sc: passsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, passsc, passtype));
                     }
@@ -581,7 +626,13 @@ namespace ts {
                         }));
                     }
                     if (useAlwaysProperyAccessCritNone){
-                        if (rttr.logicalObjectAccessData){
+                        if (useFloughByCallExpressionV3){
+                            if (rttr.callExpressionData){
+                                Debug.assert(!rttr.logicalObjectAccessData);
+                                ({type: failtype, sc: failsc} = resolveCallExpressionData(rttr.callExpressionData, failsc, failtype!));
+                            }
+                        }
+                             if (rttr.logicalObjectAccessData){
                             ({type: failtype, sc: failsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, failsc, failtype!));
                         }
                     }

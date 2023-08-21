@@ -17,6 +17,11 @@ namespace ts {
         logicalObjectAccessReturn: LogicalObjectAccessReturn;
         finalTypeIdx: number;
     };
+    export type CallExpressionData = & {
+        logicalObjectAccessData: LogicalObjecAccessData;
+        functionTsType: Type;
+        info?: {rttridx: number, tstypeidx: number, sigidx: number}
+    };
 
 
     export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
@@ -29,10 +34,7 @@ namespace ts {
         sci: RefTypesSymtabConstraintItem;
         logicalObjectIdexing?: { logobjidx: number, sigidx: number };
         logicalObjectAccessData?: LogicalObjecAccessData;
-        callExpressionData?: {
-            logicalObjectAccessData: LogicalObjecAccessData;
-            info?: {rttridx: number, tstypeidx: number, sigidx: number}
-        };
+        callExpressionData?: CallExpressionData;
     };
     export type RefTypesTableReturn = & {
         symbol?: Symbol | undefined;
@@ -43,10 +45,7 @@ namespace ts {
         sci: RefTypesSymtabConstraintItem;
         logicalObjectIdexing?: { logobjidx: number, sigidx: number };
         logicalObjectAccessData?: LogicalObjecAccessData;
-        callExpressionData?: {
-            logicalObjectAccessData: LogicalObjecAccessData;
-            info?: {rttridx: number, tstypeidx: number, sigidx: number}
-        };
+        callExpressionData?: CallExpressionData;
     };
     export enum InferCritKind {
         none= "none",

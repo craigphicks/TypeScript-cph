@@ -1216,13 +1216,19 @@ namespace ts {
             }
             return loar.finalTypes[idx].type;
         },
-        modifyOne(loar: Readonly<LogicalObjectAccessReturn>, idx: number, finalType: Readonly<FloughType>): FloughType {
-            if (extraAsserts){
-                Debug.assert(!floughTypeModule.isNeverType(finalType), "unexpected, type never input to modifyOne");
-            }
+        modifyOne(loar: Readonly<LogicalObjectAccessReturn>, idx: number, finalType: Readonly<FloughType>, callUndefinedAllowed?: boolean): FloughType {
+            // if (extraAsserts){
+            //     Debug.assert(!floughTypeModule.isNeverType(finalType), "unexpected, type never input to modifyOne");
+            // }
             const arr: (FloughType | undefined)[] = new Array(loar.finalTypes.length);
-            arr[idx] = finalType;
-            const {rootLogicalObject,rootNonObj} = floughLogicalObjectModule.logicalObjectModify(arr, loar);
+            if (!floughTypeModule.isNeverType(finalType)) arr[idx] = finalType;
+            let arrCallUndefinedAllowed: undefined | boolean[];
+            if (callUndefinedAllowed!==undefined) {
+                arrCallUndefinedAllowed = new Array(loar.finalTypes.length);
+                arrCallUndefinedAllowed.fill(/*value*/ false);
+                arrCallUndefinedAllowed[idx] = callUndefinedAllowed;
+            }
+            const {rootLogicalObject,rootNonObj} = floughLogicalObjectModule.logicalObjectModify(arr, loar, arrCallUndefinedAllowed);
             const type = floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj);
             return type;
         }

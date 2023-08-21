@@ -1512,6 +1512,7 @@ namespace ts {
                     return floughAccessExpression();
                     //return floughAccessExpression();
                 case SyntaxKind.CallExpression:{
+                    if (useFloughByCallExpressionV3) return floughByCallExpressionV3();
                     return floughByCallExpressionV2();
                 }
                 case SyntaxKind.PrefixUnaryExpression:
@@ -2959,6 +2960,7 @@ namespace ts {
                                     if (logicalObjectAccessData){
                                         rttr.callExpressionData = {
                                             logicalObjectAccessData,
+                                            functionTsType: tstype,
                                             info:{ rttridx, tstypeidx, sigidx }
                                         };
                                     }
