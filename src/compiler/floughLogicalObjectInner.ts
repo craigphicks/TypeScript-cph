@@ -1187,6 +1187,12 @@ namespace ts {
         //hasFinalQdotUndefined: boolean;
     };
     export const logicalObjectAccessModule = {
+        /**
+         *
+         * @param loar
+         * @param finalIdx
+         * @returns
+         */
         getFinalCarriedQdotUndefined(loar: Readonly<LogicalObjectAccessReturn>, finalIdx: number): boolean {
             const lastColl = loar.collated[loar.collated.length-1];
             return lastColl.carriedQdotUndefinedsOut[finalIdx];

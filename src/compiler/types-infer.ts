@@ -29,6 +29,10 @@ namespace ts {
         sci: RefTypesSymtabConstraintItem;
         logicalObjectIdexing?: { logobjidx: number, sigidx: number };
         logicalObjectAccessData?: LogicalObjecAccessData;
+        callExpressionData?: {
+            logicalObjectAccessData: LogicalObjecAccessData;
+            info?: {rttridx: number, tstypeidx: number, sigidx: number}
+        };
     };
     export type RefTypesTableReturn = & {
         symbol?: Symbol | undefined;
@@ -39,6 +43,10 @@ namespace ts {
         sci: RefTypesSymtabConstraintItem;
         logicalObjectIdexing?: { logobjidx: number, sigidx: number };
         logicalObjectAccessData?: LogicalObjecAccessData;
+        callExpressionData?: {
+            logicalObjectAccessData: LogicalObjecAccessData;
+            info?: {rttridx: number, tstypeidx: number, sigidx: number}
+        };
     };
     export enum InferCritKind {
         none= "none",

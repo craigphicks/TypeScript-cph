@@ -141,6 +141,13 @@ namespace ts {
         }
     }
 
+    /**
+     *
+     * @param rttr
+     * @param nodeForMap
+     * @param nodeToTypeMap
+     * @returns RefTypesTableReturnNoSymbol
+     */
     export function applyCritNoneToOne(rttr: Readonly<RefTypesTableReturn>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
         if (!rttr.symbol){
             if (nodeToTypeMap) orIntoNodeToTypeMap(rttr.type,nodeForMap,nodeToTypeMap);
