@@ -2820,21 +2820,22 @@ namespace ts {
                      * make a seprate entry in arrRefTypesTableReturn for that case.
                      * This removes the case of carriedQdotUndefined from further processing.
                      */
-                    // if (rttr.logicalObjectAccessData) {
-                    //     if (logicalObjectAccessModule.getFinalCarriedQdotUndefined(rttr.logicalObjectAccessData.logicalObjectAccessReturn, rttr.logicalObjectAccessData.finalTypeIdx)) {
-                    //         arrRefTypesTableReturn.push({
-                    //             type: floughTypeModule.createUndefinedType(),
-                    //             sci: rttr.sci,
-                    //             callExpressionData: {
-                    //                 logicalObjectAccessData: rttr.logicalObjectAccessData,
-                    //                 functionTsType: undefined,
-                    //                 functionSigType: undefined,
-                    //                 info: { rttridx, tstypeidx:-1, sigidx:-1 }
-                    //             }
-                    //         });
-                    //         // return; don't return here, must go on to to process the function call(s) assuming no carried undefined is involved.
-                    //     }
-                    // }
+                    if (rttr.logicalObjectAccessData) {
+                        if (logicalObjectAccessModule.getFinalCarriedQdotUndefined(rttr.logicalObjectAccessData.logicalObjectAccessReturn, rttr.logicalObjectAccessData.finalTypeIdx)) {
+                            arrRefTypesTableReturn.push({
+                                type: floughTypeModule.createUndefinedType(),
+                                sci: rttr.sci,
+                                callExpressionData: {
+                                    logicalObjectAccessData: rttr.logicalObjectAccessData,
+                                    functionTsType: undefined,
+                                    functionSigType: undefined,
+                                    carriedQdotUndefined: true,
+                                    info: { rttridx, tstypeidx:-1, sigidx:-1 }
+                                }
+                            });
+                            // return; don't return here, must go on to to process the function call(s) assuming no carried undefined is involved.
+                        }
+                    }
 
                     const { type, sci:scIsolated, logicalObjectAccessData } = rttr;
                     const { logicalObject:functionLogicalObjects, remaining: _remaining } = floughTypeModule.splitLogicalObject(type);
@@ -2847,10 +2848,6 @@ namespace ts {
                             tstypes.push(tstype);
                         });
 
-                    // TODO: this should be outside the tstypes loop
-                    const {sc: scResolvedArgs, resolvedCallArguments} = floughByCallExpressionProcessCallArguments({
-                        callExpr: expr as Readonly<CallExpression>, sc:{ symtab:scIsolated.symtab, constraintItem: scIsolated.constraintItem },inferStatus,
-                            setOfTransientCallArgumentSymbol });
 
                     if (getMyDebug()){
                         consoleLog(`floughByCallExpression rttridx:${rttridx}/${leftUnmerged.length}, tstypes.length:${tstypes.length}`);
@@ -2859,11 +2856,15 @@ namespace ts {
                         });
                     }
                     if (tstypes.length===0) return;
-                    if (tstypes.length>1) Debug.assert(false,"not yet implemented: case of types>1");
+                    //if (tstypes.length>1) Debug.assert(false,"not yet implemented: case of types>1");
                     tstypes.forEach((tstype,tstypeidx)=>{
                         const arrsig = checker.getSignaturesOfType(tstype, SignatureKind.Call);
                         if (arrsig.length===0) return;
 
+                        // TODO: this should be outside the tstypes loop once, and clone for inner use
+                        const {sc: scResolvedArgs, resolvedCallArguments} = floughByCallExpressionProcessCallArguments({
+                            callExpr: expr as Readonly<CallExpression>, sc:{ symtab:scIsolated.symtab, constraintItem: scIsolated.constraintItem },inferStatus,
+                                setOfTransientCallArgumentSymbol });
                         // if (getMyDebug()){
                         //     dbgRefTypesSymtabConstrinatItemToStrings(scIsolated).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx}, scIsolated: ${s}`));
                         // }
@@ -2871,12 +2872,6 @@ namespace ts {
 
                         //const tstype = floughTypeModule.getTypeFromRefTypesType(umrttr.type);
 
-                        if (arrsig.length===0) {
-                            // if (islogobj){
-                            //     (callExpressionResult!.perFuncs!)[logobjidx!] = { functionTsObject: undefined, perSigs:[] };
-                            // }
-                            return;
-                        }
                         //perFunc.perSigs = arrsig.map(signature=>({ signature, rttr: }));
                         const arrsigrettype = arrsig.map((sig)=>checker.getReturnTypeOfSignature(sig));
                         if (getMyDebug()){
@@ -2986,16 +2981,17 @@ namespace ts {
                                     allMappings.push(oneMapping);
 
                                     const functionSigType = floughTypeModule.createRefTypesType(arrsigrettype[sigidx]);
-                                    let functionSigTypeOrCarriedUndefined = functionSigType;
-                                    let cadCarriedQdotUndefined = false;
-                                    if (logicalObjectAccessData){
-                                        if (logicalObjectAccessModule.getFinalCarriedQdotUndefined(
-                                            logicalObjectAccessData.logicalObjectAccessReturn,logicalObjectAccessData.finalTypeIdx)){
-                                            functionSigTypeOrCarriedUndefined = floughTypeModule.cloneType(functionSigType);
-                                            cadCarriedQdotUndefined = true;
-                                            floughTypeModule.addUndefinedTypeMutate(functionSigTypeOrCarriedUndefined);
-                                        }
-                                    }
+                                    // TODO: cleanup
+                                    const functionSigTypeOrCarriedUndefined = functionSigType;
+                                    const cadCarriedQdotUndefined = false;
+                                    // if (logicalObjectAccessData){
+                                    //     if (logicalObjectAccessModule.getFinalCarriedQdotUndefined(
+                                    //         logicalObjectAccessData.logicalObjectAccessReturn,logicalObjectAccessData.finalTypeIdx)){
+                                    //         functionSigTypeOrCarriedUndefined = floughTypeModule.cloneType(functionSigType);
+                                    //         cadCarriedQdotUndefined = true;
+                                    //         floughTypeModule.addUndefinedTypeMutate(functionSigTypeOrCarriedUndefined);
+                                    //     }
+                                    // }
                                     /////////////////////////////////////////////////
                                     const rttr: RefTypesTableReturnNoSymbol = {
                                         type: functionSigTypeOrCarriedUndefined,

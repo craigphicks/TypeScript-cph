@@ -19,8 +19,8 @@ if (isFoo){
     isFoo; // expect "1"
 } else if (obja) {
     obja; // expect FooA
-    arg; // expect number (because of the correlation with the type of obja)
-    isFoo; // expect false;
+    arg; // expect string | number (correlation with obja not expected)
+    isFoo; // expect false (intersectiing with !=="1", not due to evaluation with arg)
 } else {
     obja; // expect undefined
     arg; // expect string | number
