@@ -65,6 +65,7 @@ namespace ts {
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
         hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
         hasUndefinedType(ft: Readonly<FloughType>): boolean;
+        isEqualToUndefinedType(ft: Readonly<FloughType>): boolean;
         hasUndefinedOrNullType(ft: Readonly<FloughType>): boolean;
         getAccessKeysMutable(ft: Readonly<FloughType>): {
             number?: undefined | true | Set<LiteralTypeNumber>;
@@ -271,6 +272,10 @@ namespace ts {
         },
         hasUndefinedType(ft: Readonly<FloughType>): boolean {
             return !!(ft as FloughTypei).nobj.undefined;
+        },
+        isEqualToUndefinedType(ft: Readonly<FloughType>): boolean {
+            castReadonlyFloughTypei(ft);
+            return this.hasUndefinedType(ft) && !this.hasLogicalObject(ft) && Object.keys(ft.nobj).length===1;
         },
         hasUndefinedOrNullType(ft: Readonly<FloughType>): boolean {
             castFloughTypei(ft);

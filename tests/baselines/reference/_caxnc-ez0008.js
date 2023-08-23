@@ -6,31 +6,31 @@ declare interface FooA {
 declare const obja: undefined | FooA;
 declare const arg: string | number;
 
-// checknig isFoo in combo with another condition argIsString
+// @ts-expect-error
 const isFoo = obja?.foo(arg);
-const argIsString = typeof arg === "string";
+//const argIsString = typeof arg === "string";
 if (isFoo){
-    obja;
-    arg;
+    obja; // expect FooA
+    arg; // expect string
 } else if (obja) {
-    obja;
-    arg;
+    //obja;
+    arg; // expect number (because of the correlation with the type of obja)
 }
 
 
 //// [_caxnc-ez0008.js]
 "use strict";
 ;
-// checknig isFoo in combo with another condition argIsString
+// @ts-expect-error
 var isFoo = obja === null || obja === void 0 ? void 0 : obja.foo(arg);
-var argIsString = typeof arg === "string";
+//const argIsString = typeof arg === "string";
 if (isFoo) {
-    obja;
-    arg;
+    obja; // expect FooA
+    arg; // expect string
 }
 else if (obja) {
-    obja;
-    arg;
+    //obja;
+    arg; // expect number (because of the correlation with the type of obja)
 }
 
 
@@ -42,4 +42,3 @@ declare interface FooA {
 declare const obja: undefined | FooA;
 declare const arg: string | number;
 declare const isFoo: undefined;
-declare const argIsString: boolean;

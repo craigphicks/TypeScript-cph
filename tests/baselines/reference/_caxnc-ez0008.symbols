@@ -18,7 +18,7 @@ declare const obja: undefined | FooA;
 declare const arg: string | number;
 >arg : Symbol(arg, Decl(_caxnc-ez0008.ts, 5, 13))
 
-// checknig isFoo in combo with another condition argIsString
+// @ts-expect-error
 const isFoo = obja?.foo(arg);
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0008.ts, 8, 5))
 >obja?.foo : Symbol(FooA.foo, Decl(_caxnc-ez0008.ts, 0, 24), Decl(_caxnc-ez0008.ts, 1, 23))
@@ -26,26 +26,21 @@ const isFoo = obja?.foo(arg);
 >foo : Symbol(FooA.foo, Decl(_caxnc-ez0008.ts, 0, 24), Decl(_caxnc-ez0008.ts, 1, 23))
 >arg : Symbol(arg, Decl(_caxnc-ez0008.ts, 5, 13))
 
-const argIsString = typeof arg === "string";
->argIsString : Symbol(argIsString, Decl(_caxnc-ez0008.ts, 9, 5))
->arg : Symbol(arg, Decl(_caxnc-ez0008.ts, 5, 13))
-
+//const argIsString = typeof arg === "string";
 if (isFoo){
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0008.ts, 8, 5))
 
-    obja;
+    obja; // expect FooA
 >obja : Symbol(obja, Decl(_caxnc-ez0008.ts, 4, 13))
 
-    arg;
+    arg; // expect string
 >arg : Symbol(arg, Decl(_caxnc-ez0008.ts, 5, 13))
 
 } else if (obja) {
 >obja : Symbol(obja, Decl(_caxnc-ez0008.ts, 4, 13))
 
-    obja;
->obja : Symbol(obja, Decl(_caxnc-ez0008.ts, 4, 13))
-
-    arg;
+    //obja;
+    arg; // expect number (because of the correlation with the type of obja)
 >arg : Symbol(arg, Decl(_caxnc-ez0008.ts, 5, 13))
 }
 

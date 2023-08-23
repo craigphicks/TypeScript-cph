@@ -16,7 +16,7 @@ declare const obja: undefined | FooA;
 declare const arg: string | number;
 >arg : string | number
 
-// checknig isFoo in combo with another condition argIsString
+// @ts-expect-error
 const isFoo = obja?.foo(arg);
 >isFoo : undefined
 >obja?.foo(arg) : undefined
@@ -25,29 +25,21 @@ const isFoo = obja?.foo(arg);
 >foo : { (b: string): "1"; (b: number): false; } | undefined
 >arg : string | number
 
-const argIsString = typeof arg === "string";
->argIsString : boolean
->typeof arg === "string" : boolean
->typeof arg : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
->arg : string | number
->"string" : "string"
-
+//const argIsString = typeof arg === "string";
 if (isFoo){
 >isFoo : false | "1" | undefined
 
-    obja;
+    obja; // expect FooA
 >obja : FooA
 
-    arg;
+    arg; // expect string
 >arg : string
 
 } else if (obja) {
 >obja : FooA | undefined
 
-    obja;
->obja : FooA
-
-    arg;
+    //obja;
+    arg; // expect number (because of the correlation with the type of obja)
 >arg : number
 }
 

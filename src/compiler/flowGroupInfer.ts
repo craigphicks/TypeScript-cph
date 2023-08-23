@@ -22,7 +22,7 @@ namespace ts {
     export const useLogcialObjectAccessDataInRttr = true;
     //-------------------------------------------------------------------------------------
     export const useAlwaysProperyAccessCritNone = true;
-    export const useFloughByCallExpressionV3 = false;
+    export const useFloughByCallExpressionV3 = true;
     //-------------------------------------------------------------------------------------
 
     let dbgs: Dbgs | undefined;

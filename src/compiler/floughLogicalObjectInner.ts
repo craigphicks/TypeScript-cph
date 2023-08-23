@@ -1040,10 +1040,23 @@ namespace ts {
         return result;
     }
     function getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInner>): Set<Type> {
-        const x = getBaseLogicalObjects(logicalObjectTop);
-        const r = new Set<Type>();
-        x.forEach((_,k)=>r.add(k));
-        return r;
+        const result = new Set<Type>();
+        function worker(logicalObject: Readonly<FloughLogicalObjectInner>): void {
+            if (logicalObject.kind === FloughLogicalObjectKind.plain) {
+                result.add(logicalObject.tsType);
+            }
+            else if (logicalObject.kind === FloughLogicalObjectKind.tsintersection) {
+                Debug.fail("not yet implemented");
+            }
+            else if (logicalObject.kind === FloughLogicalObjectKind.tsunion || logicalObject.kind === FloughLogicalObjectKind.union) {
+                logicalObject.items.forEach(worker);
+            }
+            else {
+                Debug.fail("unexpected");
+            }
+        }
+        worker(logicalObjectTop);
+        return result;
     }
 
     function unionOfSameBaseTypesWithVariationsV2(arr: Readonly<FloughLogicalObjectBasic[]>): FloughLogicalObjectBasic {
@@ -1221,6 +1234,7 @@ namespace ts {
             //     Debug.assert(!floughTypeModule.isNeverType(finalType), "unexpected, type never input to modifyOne");
             // }
             const arr: (FloughType | undefined)[] = new Array(loar.finalTypes.length);
+            arr.fill(/*value*/ undefined);
             if (!floughTypeModule.isNeverType(finalType)) arr[idx] = finalType;
             let arrCallUndefinedAllowed: undefined | boolean[];
             if (callUndefinedAllowed!==undefined) {

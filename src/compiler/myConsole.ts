@@ -93,7 +93,7 @@ namespace ts {
         dbgGetNodeText: (node: Node) => any;
         dbgFlowToString: (flow: FlowNode | undefined, withAntecedants?: boolean) => string;
         dbgFloughTypeToString: (flowType: FloughType) => string;
-        dbgTypeToString: (type: Type) => string;
+        dbgTypeToString: (type: Type | undefined) => string;
         dbgTypeToStringDetail: (type: Type) => string[];
         dbgNodeToString: (node: Node | undefined) => string;
         dbgSignatureToString: (c: Signature) => string;
@@ -140,7 +140,8 @@ namespace ts {
             }
             return str;
         };
-        const dbgTypeToString = (type: Type): string => {
+        const dbgTypeToString = (type: Type | undefined): string => {
+            if (!type) return "<undef>";
             const alwaysDetail = false;
             if (alwaysDetail) return "(type detail)" + dbgTypeToStringDetail(type).join(", ");
             return `${checker.typeToString(type)}:[${type.id}]`;

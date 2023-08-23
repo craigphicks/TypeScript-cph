@@ -20,6 +20,8 @@ namespace ts {
     export type CallExpressionData = & {
         logicalObjectAccessData: LogicalObjecAccessData;
         functionTsType: Type;
+        functionSigType: FloughType;
+        carriedQdotUndefined: boolean;
         info?: {rttridx: number, tstypeidx: number, sigidx: number}
     };
 

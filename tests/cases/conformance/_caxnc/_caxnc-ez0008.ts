@@ -10,13 +10,19 @@ declare interface FooA {
 declare const obja: undefined | FooA;
 declare const arg: string | number;
 
-// checknig isFoo in combo with another condition argIsString
+// @ts-expect-error
 const isFoo = obja?.foo(arg);
-const argIsString = typeof arg === "string";
+//const argIsString = typeof arg === "string";
 if (isFoo){
-    obja;
-    arg;
+    obja; // expect FooA
+    arg; // expect string
+    isFoo; // expect "1"
 } else if (obja) {
-    obja;
-    arg;
+    obja; // expect FooA
+    arg; // expect number (because of the correlation with the type of obja)
+    isFoo; // expect false;
+} else {
+    obja; // expect undefined
+    arg; // expect string | number
+    isFoo; // expect undefined
 }
