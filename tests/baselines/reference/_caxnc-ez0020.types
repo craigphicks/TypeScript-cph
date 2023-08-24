@@ -1,4 +1,4 @@
-=== tests/cases/conformance/_caxnc/_caxnc-ez0007.ts ===
+=== tests/cases/conformance/_caxnc/_caxnc-ez0020.ts ===
 declare interface FooA {
     foo(b:string): "1",
 >foo : { (b: string): "1"; (b: number): 0; }
@@ -15,7 +15,6 @@ declare const obja: undefined | FooA;
 declare const arg: string | number;
 >arg : string | number
 
-// checknig isFoo in combo with another condition argIsString
 // @ts-expect-error
 const isFoo = obja?.foo(arg);
 >isFoo : undefined
@@ -28,44 +27,28 @@ const isFoo = obja?.foo(arg);
 if (isFoo){
 >isFoo : 0 | "1" | undefined
 
-    obja;
->obja : FooA
-
-    arg;
->arg : string
-
-    isFoo;
->isFoo : "1"
+    // obja;
+    // arg;
+    // isFoo;
 }
 else if (isFoo === 0) {
 >isFoo === 0 : boolean
 >isFoo : 0 | undefined
 >0 : 0
 
+    // @ts-dev-debugger
     obja;
 >obja : FooA
 
-    arg;
->arg : number
-
-    isFoo;
->isFoo : 0
+    // arg;
+    // isFoo;
 }
-else {
-    obja;
->obja : undefined
-
-    arg;
->arg : string | number
-
-    //isFoo; currently causing an exception because the case of no logical object is not handled
-}
-obja;
->obja : FooA | undefined
-
-arg;
->arg : string | number
-
-isFoo;
->isFoo : 0 | "1" | undefined
+// else {
+//     obja;
+//     arg;
+//     isFoo;
+// }
+// obja;
+// arg;
+// isFoo;
 

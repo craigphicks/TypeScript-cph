@@ -1,0 +1,54 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0020.ts ===
+declare interface FooA {
+>FooA : Symbol(FooA, Decl(_caxnc-ez0020.ts, 0, 0))
+
+    foo(b:string): "1",
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0020.ts, 0, 24), Decl(_caxnc-ez0020.ts, 1, 23))
+>b : Symbol(b, Decl(_caxnc-ez0020.ts, 1, 8))
+
+    foo(b:number): 0;
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0020.ts, 0, 24), Decl(_caxnc-ez0020.ts, 1, 23))
+>b : Symbol(b, Decl(_caxnc-ez0020.ts, 2, 8))
+
+};
+declare const obja: undefined | FooA;
+>obja : Symbol(obja, Decl(_caxnc-ez0020.ts, 4, 13))
+>FooA : Symbol(FooA, Decl(_caxnc-ez0020.ts, 0, 0))
+
+declare const arg: string | number;
+>arg : Symbol(arg, Decl(_caxnc-ez0020.ts, 5, 13))
+
+// @ts-expect-error
+const isFoo = obja?.foo(arg);
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
+>obja?.foo : Symbol(FooA.foo, Decl(_caxnc-ez0020.ts, 0, 24), Decl(_caxnc-ez0020.ts, 1, 23))
+>obja : Symbol(obja, Decl(_caxnc-ez0020.ts, 4, 13))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0020.ts, 0, 24), Decl(_caxnc-ez0020.ts, 1, 23))
+>arg : Symbol(arg, Decl(_caxnc-ez0020.ts, 5, 13))
+
+if (isFoo){
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
+
+    // obja;
+    // arg;
+    // isFoo;
+}
+else if (isFoo === 0) {
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
+
+    // @ts-dev-debugger
+    obja;
+>obja : Symbol(obja, Decl(_caxnc-ez0020.ts, 4, 13))
+
+    // arg;
+    // isFoo;
+}
+// else {
+//     obja;
+//     arg;
+//     isFoo;
+// }
+// obja;
+// arg;
+// isFoo;
+

@@ -26,3 +26,6 @@ if (isFoo){
     arg; // expect string | number
     isFoo; // expect undefined
 }
+obja; // expect undefined | FooA
+arg; // expect string | number
+isFoo; // expect "1" | false | undefined

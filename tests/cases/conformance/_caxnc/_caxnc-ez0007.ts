@@ -5,19 +5,29 @@
 
 declare interface FooA {
     foo(b:string): "1",
-    foo(b:number): undefined;
+    foo(b:number): 0;
 };
 declare const obja: undefined | FooA;
 declare const arg: string | number;
 
 // checknig isFoo in combo with another condition argIsString
+// @ts-expect-error
 const isFoo = obja?.foo(arg);
-const argIsString = typeof arg === "string";
 if (isFoo){
-    const x = obja.foo(arg);
-    argIsString;
+    obja;
+    arg;
+    isFoo;
 }
-else if (obja) {
-    const y = obja.foo(arg);
-    argIsString;
+else if (isFoo === 0) {
+    obja;
+    arg;
+    isFoo;
 }
+else {
+    obja;
+    arg;
+    //isFoo; currently causing an exception because the case of no logical object is not handled
+}
+obja;
+arg;
+isFoo;

@@ -3871,6 +3871,20 @@ namespace ts {
                                 }));
                             }
                             if (useLogcialObjectAccessDataInRttr){
+                                if (useFloughByCallExpressionV3){
+                                    if (leftRttr0.callExpressionData){
+                                        Debug.assert(!leftRttr.logicalObjectAccessData);
+                                        const leftFinalType = left ?? both;
+                                        Debug.assert(leftFinalType);
+                                        const leftCad = leftRttr0.callExpressionData;
+                                        if (!rightRttr.callExpressionData && !rightRttr.logicalObjectAccessData){
+                                            ({ /*type,*/ sc:sctmp} = resolveCallExpressionData(leftCad, sctmp, leftFinalType));
+                                        }
+                                        else {
+                                            Debug.assert(false, "not yet implemented");
+                                        }
+                                    }
+                                }
                                 if (leftRttr.logicalObjectAccessData || rightRttr.logicalObjectAccessData) {
                                     Debug.assert(leftRttr.logicalObjectAccessData !== rightRttr.logicalObjectAccessData);
                                     let leftLoar: LogicalObjectAccessReturn | undefined;
