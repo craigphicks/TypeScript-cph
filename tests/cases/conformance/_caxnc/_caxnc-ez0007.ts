@@ -14,20 +14,20 @@ declare const arg: string | number;
 // @ts-expect-error
 const isFoo = obja?.foo(arg);
 if (isFoo){
-    obja;
-    arg;
-    isFoo;
+    obja; // expect FooA
+    arg; // expect string
+    isFoo; // expect "1"
 }
 else if (isFoo === 0) {
-    obja;
-    arg;
-    isFoo;
+    obja; // expect FooA
+    arg; // expect number
+    isFoo; // expect 0
 }
 else {
-    obja;
-    arg;
-    //isFoo; currently causing an exception because the case of no logical object is not handled
+    obja; // expect undefined
+    arg; // expect string | number
+    isFoo; // expect undefined
 }
-obja;
-arg;
-isFoo;
+obja; // expect undefined | FooA
+arg; // expect string | number
+isFoo; // expect undefined | "1" | 0

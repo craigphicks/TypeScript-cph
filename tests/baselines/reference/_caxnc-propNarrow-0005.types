@@ -1,4 +1,4 @@
-=== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0002.ts ===
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0005.ts ===
 declare const x: boolean;
 >x : boolean
 
@@ -18,36 +18,8 @@ let r = x ? { a: 1 } as const : { a: 2, b:2 } as const ;
 >b : 2
 >2 : 2
 
-if (r.b){
+r.b; // expect undefined | 2
 >r.b : 2 | undefined
 >r : { readonly a: 1; } | { readonly a: 2; readonly b: 2; }
 >b : 2 | undefined
-
-    r; // expect { readonly a: 2; readonly b: 2; }
->r : { readonly a: 2; readonly b: 2; }
-
-    r.a; // expect 2
->r.a : 2
->r : { readonly a: 2; readonly b: 2; }
->a : 2
-
-    r.b; // expect 2
->r.b : 2
->r : { readonly a: 2; readonly b: 2; }
->b : 2
-}
-else {
-    r; // expect { readonly a: 1; }
->r : { readonly a: 1; }
-
-    r.a; // expect 1
->r.a : 1
->r : { readonly a: 1; }
->a : 1
-
-    r.b; // expect any (error)
->r.b : any
->r : { readonly a: 1; }
->b : any
-}
 

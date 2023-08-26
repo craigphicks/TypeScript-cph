@@ -1,0 +1,107 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0006.ts ===
+declare const x: boolean;
+>x : boolean
+
+function testWithConst() {
+>testWithConst : () => void
+
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { readonly a: 1; } | { readonly a: 2; readonly b: 2; }"
+    let r = x ? { a: 1 } as const : { a: 2, b:2 } as const ;
+>r : { readonly a: 1; readonly b?: undefined; } | { readonly a: 2; readonly b: 2; }
+>x ? { a: 1 } as const : { a: 2, b:2 } as const : { readonly a: 1; } | { readonly a: 2; readonly b: 2; }
+>x : boolean
+>{ a: 1 } as const : { readonly a: 1; }
+>{ a: 1 } : { readonly a: 1; }
+>a : 1
+>1 : 1
+>{ a: 2, b:2 } as const : { readonly a: 2; readonly b: 2; }
+>{ a: 2, b:2 } : { readonly a: 2; readonly b: 2; }
+>a : 2
+>2 : 2
+>b : 2
+>2 : 2
+
+    if (r.b!==2) {
+>r.b!==2 : boolean
+>r.b : 2 | undefined
+>r : { readonly a: 1; } | { readonly a: 2; readonly b: 2; }
+>b : 2 | undefined
+>2 : 2
+
+        r; // expect { readonly a: 1; }
+>r : { readonly a: 1; }
+
+        r.b; // r is sealed so access not allowed by checkerExpression, gives error,  expect any
+>r.b : any
+>r : { readonly a: 1; }
+>b : any
+    }
+}
+function testWithoutConst() {
+>testWithoutConst : () => void
+
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { readonly a: 2; readonly b: 2; }"
+    let r = x ? { a: 1 } : { a: 2, b:2 } as const ;
+>r : { a: number; readonly b?: undefined; } | { readonly a: 2; readonly b: 2; }
+>x ? { a: 1 } : { a: 2, b:2 } as const : { a: number; } | { readonly a: 2; readonly b: 2; }
+>x : boolean
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ a: 2, b:2 } as const : { readonly a: 2; readonly b: 2; }
+>{ a: 2, b:2 } : { readonly a: 2; readonly b: 2; }
+>a : 2
+>2 : 2
+>b : 2
+>2 : 2
+
+    if (r.b!==2) {
+>r.b!==2 : boolean
+>r.b : 2 | undefined
+>r : { a: number; } | { readonly a: 2; readonly b: 2; }
+>b : 2 | undefined
+>2 : 2
+
+        r; // expect { a: number; }
+>r : { a: number; }
+
+        r.b; // even though r is not sealed access still not allowed by checkerExpression, expect any
+>r.b : any
+>r : { a: number; }
+>b : any
+    }
+}
+function testNarrowing() {
+>testNarrowing : () => void
+
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { readonly a: 2; readonly b: 2; }"
+    let r = x ? { a: 1 } : { a: 2, b:2 } as const ;
+>r : { a: number; readonly b?: undefined; } | { readonly a: 2; readonly b: 2; }
+>x ? { a: 1 } : { a: 2, b:2 } as const : { a: number; } | { readonly a: 2; readonly b: 2; }
+>x : boolean
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ a: 2, b:2 } as const : { readonly a: 2; readonly b: 2; }
+>{ a: 2, b:2 } : { readonly a: 2; readonly b: 2; }
+>a : 2
+>2 : 2
+>b : 2
+>2 : 2
+
+    if (r.b===undefined) { // not an error
+>r.b===undefined : boolean
+>r.b : 2 | undefined
+>r : { a: number; } | { readonly a: 2; readonly b: 2; }
+>b : 2 | undefined
+>undefined : undefined
+
+        r; // expect { a: number; }
+>r : { a: number; }
+
+        r.b; // even though r is not sealed access still not allowed by checkerExpression, expect any
+>r.b : any
+>r : { a: number; }
+>b : any
+    }
+}

@@ -6,15 +6,14 @@ let z = { a: "one", b: "two"};
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: string; b: string; }"
 let r = x ? y : z;
 if (r.b===undefined){
-    r;
-    r.a;
-    // @ts-expect-error
-    r.b;
+    r; // expect { a: number; }
+    r.a; // expect number
+    r.b; // expect any (error)
 }
 else {
-    r;
-    r.a;
-    r.b;
+    r; // expect { a: string; b: string; }
+    r.a; // expect string
+    r.b; // expect string
 }
 
 
@@ -25,15 +24,14 @@ var z = { a: "one", b: "two" };
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: string; b: string; }"
 var r = x ? y : z;
 if (r.b === undefined) {
-    r;
-    r.a;
-    // @ts-expect-error
-    r.b;
+    r; // expect { a: number; }
+    r.a; // expect number
+    r.b; // expect any (error)
 }
 else {
-    r;
-    r.a;
-    r.b;
+    r; // expect { a: string; b: string; }
+    r.a; // expect string
+    r.b; // expect string
 }
 
 

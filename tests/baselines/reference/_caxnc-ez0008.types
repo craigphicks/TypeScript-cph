@@ -35,11 +35,37 @@ if (isFoo){
     arg; // expect string
 >arg : string
 
+    isFoo; // expect "1"
+>isFoo : "1"
+
 } else if (obja) {
 >obja : FooA | undefined
 
-    //obja;
-    arg; // expect number (because of the correlation with the type of obja)
->arg : number
+    obja; // expect FooA
+>obja : FooA
+
+    arg; // expect string | number (correlation with obja not expected)
+>arg : string | number
+
+    isFoo; // expect false (intersectiing with !=="1", not due to evaluation with arg)
+>isFoo : false
+
+} else {
+    obja; // expect undefined
+>obja : undefined
+
+    arg; // expect string | number
+>arg : string | number
+
+    isFoo; // expect undefined
+>isFoo : undefined
 }
+obja; // expect undefined | FooA
+>obja : FooA | undefined
+
+arg; // expect string | number
+>arg : string | number
+
+isFoo; // expect "1" | false | undefined
+>isFoo : false | "1" | undefined
 

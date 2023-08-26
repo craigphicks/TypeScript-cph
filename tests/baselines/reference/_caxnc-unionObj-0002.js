@@ -8,6 +8,7 @@ declare const x: boolean;
 const result = x ? { a: 1 } as const : { a: 1, b: 2 } as const;
 result.b; // expect 2 | undefined
 
+
 //// [_caxnc-unionObj-0002.js]
 "use strict";
 // C.f. _caxnc-union-0003.ts, and see notes there.

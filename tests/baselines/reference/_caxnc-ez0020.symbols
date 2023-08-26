@@ -26,29 +26,31 @@ const isFoo = obja?.foo(arg);
 >foo : Symbol(FooA.foo, Decl(_caxnc-ez0020.ts, 0, 24), Decl(_caxnc-ez0020.ts, 1, 23))
 >arg : Symbol(arg, Decl(_caxnc-ez0020.ts, 5, 13))
 
-if (isFoo){
+function f1() {
+>f1 : Symbol(f1, Decl(_caxnc-ez0020.ts, 8, 29))
+
+    if (isFoo){
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
+    }
+    else if (isFoo === 0) {
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
 
-    // obja;
-    // arg;
-    // isFoo;
-}
-else if (isFoo === 0) {
->isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
-
-    // @ts-dev-debugger
-    obja;
+        obja; // expect FooA
 >obja : Symbol(obja, Decl(_caxnc-ez0020.ts, 4, 13))
-
-    // arg;
-    // isFoo;
+    }
 }
-// else {
-//     obja;
-//     arg;
-//     isFoo;
-// }
-// obja;
-// arg;
-// isFoo;
+function f2() {
+>f2 : Symbol(f2, Decl(_caxnc-ez0020.ts, 16, 1))
+
+    if (isFoo){
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
+    }
+    else if (isFoo === 0) {
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
+    }
+    else {
+        isFoo; // expect undefined
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0020.ts, 8, 5))
+    }
+}
 

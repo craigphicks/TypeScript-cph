@@ -6,15 +6,14 @@ let z = { a: 2 as const, b: 2 as const };
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: 1; } | { a: 2; b: 2; }"
 let r = x ?  y : z;
 if (r.b){
-    r;
-    r.a;
-    r.b;
+    r; // expect { a: 2; b: 2; }
+    r.a; // expect 2
+    r.b; // expect 2
 }
 else {
-    r;
-    r.a;
-    // @ts-expect-error
-    r.b;
+    r; // expect { a: 1; }
+    r.a; // expect 1
+    r.b; // expect any (error)
 }
 
 
@@ -25,15 +24,14 @@ var z = { a: 2, b: 2 };
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: 1; } | { a: 2; b: 2; }"
 var r = x ? y : z;
 if (r.b) {
-    r;
-    r.a;
-    r.b;
+    r; // expect { a: 2; b: 2; }
+    r.a; // expect 2
+    r.b; // expect 2
 }
 else {
-    r;
-    r.a;
-    // @ts-expect-error
-    r.b;
+    r; // expect { a: 1; }
+    r.a; // expect 1
+    r.b; // expect any (error)
 }
 
 

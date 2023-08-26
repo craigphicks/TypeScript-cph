@@ -30,42 +30,43 @@ const isFoo = obja?.foo(arg);
 if (isFoo){
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 
-    obja;
+    obja; // expect FooA
 >obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
 
-    arg;
+    arg; // expect string
 >arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
 
-    isFoo;
+    isFoo; // expect "1"
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 }
 else if (isFoo === 0) {
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 
-    obja;
+    obja; // expect FooA
 >obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
 
-    arg;
+    arg; // expect number
 >arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
 
-    isFoo;
+    isFoo; // expect 0
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 }
 else {
-    obja;
+    obja; // expect undefined
 >obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
 
-    arg;
+    arg; // expect string | number
 >arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
 
-    //isFoo; currently causing an exception because the case of no logical object is not handled
+    isFoo; // expect undefined
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 }
-obja;
+obja; // expect undefined | FooA
 >obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
 
-arg;
+arg; // expect string | number
 >arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
 
-isFoo;
+isFoo; // expect undefined | "1" | 0
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 

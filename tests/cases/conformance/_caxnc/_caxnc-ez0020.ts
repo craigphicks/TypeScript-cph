@@ -13,13 +13,13 @@ declare const arg: string | number;
 // @ts-expect-error
 const isFoo = obja?.foo(arg);
 
-// function f1() {
-//     if (isFoo){
-//     }
-//     else if (isFoo === 0) {
-//         obja; // expect FooA
-//     }
-// }
+function f1() {
+    if (isFoo){
+    }
+    else if (isFoo === 0) {
+        obja; // expect FooA
+    }
+}
 function f2() {
     if (isFoo){
     }

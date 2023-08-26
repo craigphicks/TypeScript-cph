@@ -23,29 +23,30 @@ if (r.b){
 >r : { a: 1; } | { a: 2; b: number; }
 >b : number | undefined
 
-    r;
+    r; // expect { a: 2; b: number; }
 >r : { a: 2; b: number; }
 
-    r.a
+    r.a // expect 2
 >r.a : 2
 >r : { a: 2; b: number; }
 >a : 2
 
-    r.b
+    r.b // expect number
 >r.b : number
 >r : { a: 2; b: number; }
 >b : number
 }
 else {
-    r;
+    // Note: r.b could be 0
+    r; // expect { a: 1 } | { a: 2; b: number; }
 >r : { a: 1; } | { a: 2; b: number; }
 
-    r.a // 1 | 2
+    r.a // expect 1 | 2
 >r.a : 1 | 2
 >r : { a: 1; } | { a: 2; b: number; }
 >a : 1 | 2
 
-    r.b // undefined | number
+    r.b // expect undefined | number
 >r.b : number | undefined
 >r : { a: 1; } | { a: 2; b: number; }
 >b : number | undefined

@@ -1201,3 +1201,53 @@ myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-" 
 myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0007" 
 gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0020" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0020" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0020" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0020" -i-i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0020" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0020" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0020" -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0020" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0007" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0009" 
+find tests -name "*_caxnc=ez0009*"
+find tests -name "*_caxnc-ez0009*"
+find tests -name "*_caxnc-ez0009*" -exec rm {} \;
+find tests -name "*_caxnc-ez0009*"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-ez0008" 
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc" 
+find tests -name "*_caxnc-ez0009*"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc" 
+myMaxLinesOut=300000 myDebug=01myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc"-propNarrow-0001"
+myMaxLinesOut=300000 myDebug=01myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow-0001"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow-0001"
+find tests -name "*_caxnc-propNarrow-0001*"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow-0001"
+gulp baseline-accept
+find tests/baselines/ -name "_caxnc-propNarrow*"
+find tests/baselines/ -name "_caxnc-propNarrow*" -exec rm{} \;
+find tests/baselines/ -name "_caxnc-propNarrow*"
+find tests/baselines/ -name "_caxnc-propNarrow*" -exec rm {} \;
+find tests/baselines/ -name "_caxnc-propNarrow*"
+find tests/baselines/ -name "_caxnc-unionObj*"
+find tests/baselines/ -name "_caxnc-unionObj*" -exec rm {} \;
+find tests/baselines/ -name "_caxnc-unionObj*"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc"
+find tests/baselines/ -name "_caxnc-propNarrow*.types"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow-0002"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow-0005"
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow-0006"
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow-0006"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-unionObj-0003"
+gulp baseline-accept
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow-0006"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-propNarrow"
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"

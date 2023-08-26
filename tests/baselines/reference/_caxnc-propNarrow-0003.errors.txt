@@ -1,0 +1,21 @@
+tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0003.ts(8,7): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+
+
+==== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0003.ts (1 errors) ====
+    declare const x: boolean;
+    
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: string; b: string; }"
+    let r = x ? { a: 1} : { a: "one", b: "two"};
+    if (r.b===undefined){
+        r; // expect { a: number; }
+        r.a; // expect number
+        r.b; // expect any (error)
+          ~
+!!! error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+    }
+    else {
+        r; // expect { a: string; b: string; }
+        r.a; // expect string
+        r.b; // expect string
+    }
+    

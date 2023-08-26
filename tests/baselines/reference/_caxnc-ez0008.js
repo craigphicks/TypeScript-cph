@@ -12,10 +12,19 @@ const isFoo = obja?.foo(arg);
 if (isFoo){
     obja; // expect FooA
     arg; // expect string
+    isFoo; // expect "1"
 } else if (obja) {
-    //obja;
-    arg; // expect number (because of the correlation with the type of obja)
+    obja; // expect FooA
+    arg; // expect string | number (correlation with obja not expected)
+    isFoo; // expect false (intersectiing with !=="1", not due to evaluation with arg)
+} else {
+    obja; // expect undefined
+    arg; // expect string | number
+    isFoo; // expect undefined
 }
+obja; // expect undefined | FooA
+arg; // expect string | number
+isFoo; // expect "1" | false | undefined
 
 
 //// [_caxnc-ez0008.js]
@@ -27,11 +36,21 @@ var isFoo = obja === null || obja === void 0 ? void 0 : obja.foo(arg);
 if (isFoo) {
     obja; // expect FooA
     arg; // expect string
+    isFoo; // expect "1"
 }
 else if (obja) {
-    //obja;
-    arg; // expect number (because of the correlation with the type of obja)
+    obja; // expect FooA
+    arg; // expect string | number (correlation with obja not expected)
+    isFoo; // expect false (intersectiing with !=="1", not due to evaluation with arg)
 }
+else {
+    obja; // expect undefined
+    arg; // expect string | number
+    isFoo; // expect undefined
+}
+obja; // expect undefined | FooA
+arg; // expect string | number
+isFoo; // expect "1" | false | undefined
 
 
 //// [_caxnc-ez0008.d.ts]

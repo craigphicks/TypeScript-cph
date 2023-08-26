@@ -27,7 +27,7 @@ const result = x ? foo : bar;
 >foo : Symbol(foo, Decl(_caxnc-unionObj-0003.ts, 8, 5))
 >bar : Symbol(bar, Decl(_caxnc-unionObj-0003.ts, 9, 5))
 
-result.b; // expect 2 | undefined, checkExpression level does not emit error because probably because it adds the optional 'b' to the type.
+result.b; // expect 2 | undefined (with flough) [NOTE: original-flow => any (error)]
 >result.b : Symbol(b, Decl(_caxnc-unionObj-0003.ts, 9, 19))
 >result : Symbol(result, Decl(_caxnc-unionObj-0003.ts, 13, 5))
 >b : Symbol(b, Decl(_caxnc-unionObj-0003.ts, 9, 19))

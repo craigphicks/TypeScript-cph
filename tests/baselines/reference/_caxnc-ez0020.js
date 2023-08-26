@@ -8,25 +8,23 @@ declare const arg: string | number;
 
 // @ts-expect-error
 const isFoo = obja?.foo(arg);
-if (isFoo){
-    // obja;
-    // arg;
-    // isFoo;
+
+function f1() {
+    if (isFoo){
+    }
+    else if (isFoo === 0) {
+        obja; // expect FooA
+    }
 }
-else if (isFoo === 0) {
-    // @ts-dev-debugger
-    obja;
-    // arg;
-    // isFoo;
+function f2() {
+    if (isFoo){
+    }
+    else if (isFoo === 0) {
+    }
+    else {
+        isFoo; // expect undefined
+    }
 }
-// else {
-//     obja;
-//     arg;
-//     isFoo;
-// }
-// obja;
-// arg;
-// isFoo;
 
 
 //// [_caxnc-ez0020.js]
@@ -34,25 +32,22 @@ else if (isFoo === 0) {
 ;
 // @ts-expect-error
 var isFoo = obja === null || obja === void 0 ? void 0 : obja.foo(arg);
-if (isFoo) {
-    // obja;
-    // arg;
-    // isFoo;
+function f1() {
+    if (isFoo) {
+    }
+    else if (isFoo === 0) {
+        obja; // expect FooA
+    }
 }
-else if (isFoo === 0) {
-    // @ts-dev-debugger
-    obja;
-    // arg;
-    // isFoo;
+function f2() {
+    if (isFoo) {
+    }
+    else if (isFoo === 0) {
+    }
+    else {
+        isFoo; // expect undefined
+    }
 }
-// else {
-//     obja;
-//     arg;
-//     isFoo;
-// }
-// obja;
-// arg;
-// isFoo;
 
 
 //// [_caxnc-ez0020.d.ts]
@@ -63,3 +58,5 @@ declare interface FooA {
 declare const obja: undefined | FooA;
 declare const arg: string | number;
 declare const isFoo: undefined;
+declare function f1(): void;
+declare function f2(): void;

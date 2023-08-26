@@ -24,8 +24,7 @@ if (r.b===undefined){
 >r : Symbol(r, Decl(_caxnc-propNarrow-0003.ts, 3, 3))
 >a : Symbol(a, Decl(_caxnc-propNarrow-0003.ts, 3, 13))
 
-    // @ts-expect-error
-    r.b; // expect error
+    r.b; // expect any (error)
 >r : Symbol(r, Decl(_caxnc-propNarrow-0003.ts, 3, 3))
 }
 else {
