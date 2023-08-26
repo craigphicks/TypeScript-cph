@@ -391,7 +391,6 @@ namespace ts {
 
     export function resolveCallExpressionData(cad: CallExpressionData, sc: RefTypesSymtabConstraintItem, type: FloughType):
     { type: FloughType, sc: RefTypesSymtabConstraintItem } {
-        if (!useFloughByCallExpressionV3) Debug.fail("unexpected");
         let typeOut = type;
         let scOut = sc;
         const load = cad.logicalObjectAccessData;
@@ -441,7 +440,7 @@ namespace ts {
             // Do nothing
         }
         return { type: typeOut, sc: scOut };
-    }
+    } // resolveCallExpressionData
 
 
 
@@ -484,22 +483,7 @@ namespace ts {
         }
         let passtype = floughTypeModule.createRefTypesType();
         let failtype = crit.alsoFailing ? floughTypeModule.createRefTypesType() : undefined;
-        // let passTypeCarriedUndefined: FloughType | undefined;
-        // let failTypeCarriedUndefined: FloughType | undefined;
-        // if (useFloughByCallExpressionV3){
-        //     if (rttr.callExpressionData){
-        //         Debug.assert(!rttr.symbol);
-        //         applyCritToTypeMutate(rttr.callExpressionData.functionSigType,crit,passtype,failtype);
-        //         if (rttr.callExpressionData.carriedQdotUndefined){
-        //             passTypeCarriedUndefined = floughTypeModule.createNeverType();
-        //             failTypeCarriedUndefined = floughTypeModule.createNeverType();
-        //             applyCritToTypeMutate(floughTypeModule.createUndefinedType(),crit,passTypeCarriedUndefined,failTypeCarriedUndefined);
-        //         }
-        //     }
-        // }
-        // else {
-            applyCritToTypeMutate(rttr.type,crit,passtype,failtype);
-        // }
+        applyCritToTypeMutate(rttr.type,crit,passtype,failtype);
         let passsc = rttr.sci;
         let failsc = crit.alsoFailing ? rttr.sci : undefined;
         if (rttr.symbol){
@@ -555,11 +539,9 @@ namespace ts {
         if (floughTypeModule.isNeverType(passtype)) passing = createNever();
         else {
             if (useAlwaysProperyAccessCritNone){
-                if (useFloughByCallExpressionV3){
-                    if (rttr.callExpressionData){
-                        Debug.assert(!rttr.logicalObjectAccessData);
-                        ({type: passtype, sc: passsc} = resolveCallExpressionData(rttr.callExpressionData, passsc, passtype));
-                    }
+                if (rttr.callExpressionData){
+                    Debug.assert(!rttr.logicalObjectAccessData);
+                    ({type: passtype, sc: passsc} = resolveCallExpressionData(rttr.callExpressionData, passsc, passtype));
                 }
                 if (rttr.logicalObjectAccessData){
                     ({type: passtype, sc: passsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, passsc, passtype));
@@ -573,11 +555,9 @@ namespace ts {
         if (crit.alsoFailing && floughTypeModule.isNeverType(failtype!)) failing = createNever();
         else if (crit.alsoFailing){
             if (useAlwaysProperyAccessCritNone){
-                if (useFloughByCallExpressionV3){
-                    if (rttr.callExpressionData){
-                        Debug.assert(!rttr.logicalObjectAccessData);
-                        ({type: failtype, sc: failsc} = resolveCallExpressionData(rttr.callExpressionData, failsc!, failtype!));
-                    }
+                if (rttr.callExpressionData){
+                    Debug.assert(!rttr.logicalObjectAccessData);
+                    ({type: failtype, sc: failsc} = resolveCallExpressionData(rttr.callExpressionData, failsc!, failtype!));
                 }
                 if (rttr.logicalObjectAccessData){
                     ({type: failtype, sc: failsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, failsc!, failtype!));
@@ -602,13 +582,10 @@ namespace ts {
         }
         const ret = (()=>{
             if (arrRttr.length===0) return { passing: createNever(), failing: crit.alsoFailing? createNever() : undefined };
-            //if (!useFloughByCallExpressionV3){
-                // TODO: have to refactor applyCrit1ToOne
-                if (arrRttr.length===1) {
-                    Debug.assert(!arrRttr[0].critsense);
-                    return applyCrit1ToOne(arrRttr[0],crit,nodeForMap,nodeToTypeMap);
-                }
-            //}
+            if (arrRttr.length===1) {
+                Debug.assert(!arrRttr[0].critsense);
+                return applyCrit1ToOne(arrRttr[0],crit,nodeForMap,nodeToTypeMap);
+            }
             if (arrRttr.length===2 && (arrRttr[0].critsense || arrRttr[1].critsense)){
                 if (extraAsserts){
                     Debug.assert(arrRttr[0].critsense==="passing" && arrRttr[1].critsense==="failing");
@@ -621,10 +598,6 @@ namespace ts {
             const arrFailType: RefTypesType[]=[];
             const arrPassSC: RefTypesSymtabConstraintItemNotNever[]=[];
             const arrFailSC: RefTypesSymtabConstraintItemNotNever[]=[];
-
-            // let passTypeCarriedUndefinedOnce: FloughType | undefined;
-            // let failTypeCarriedUndefinedOnce: FloughType | undefined;
-
             arrRttr.forEach((rttr,_rttridx)=>{
                 if (getMyDebug()){
                     consoleLog(`applyCrit1[dbg,rttridx:${_rttridx}]`);
@@ -643,32 +616,7 @@ namespace ts {
                 }
                 let passtype = floughTypeModule.createRefTypesType();
                 let failtype = crit.alsoFailing ? floughTypeModule.createRefTypesType() : undefined;
-                // let passTypeCarriedUndefined: FloughType | undefined;
-                // let failTypeCarriedUndefined: FloughType | undefined;
-                // if (useFloughByCallExpressionV3){
-                //     if (rttr.callExpressionData){
-                //         //Debug.assert(!rttr.symbol);
-                //         applyCritToTypeMutate(rttr.callExpressionData.functionSigType,crit,passtype,failtype);
-                //         if (rttr.callExpressionData.carriedQdotUndefined){
-                //             if (!passTypeCarriedUndefinedOnce || !failTypeCarriedUndefinedOnce){
-                //                 Debug.assert(!passTypeCarriedUndefinedOnce && !failTypeCarriedUndefinedOnce);
-                //                 if (rttr.callExpressionData.carriedQdotUndefined){
-                //                     passTypeCarriedUndefinedOnce = floughTypeModule.createNeverType();
-                //                     failTypeCarriedUndefinedOnce = floughTypeModule.createNeverType();
-                //                     applyCritToTypeMutate(floughTypeModule.createUndefinedType(),crit,passTypeCarriedUndefinedOnce,failTypeCarriedUndefinedOnce);
-                //                 }
-                //             }
-                //         }
-                //         passTypeCarriedUndefined = passTypeCarriedUndefinedOnce;
-                //         failTypeCarriedUndefined = failTypeCarriedUndefinedOnce;
-                //     }
-                //     else {
-                        applyCritToTypeMutate(rttr.type,crit,passtype,failtype);
-                    // }
-                // }
-                // else {
-                    applyCritToTypeMutate(rttr.type,crit,passtype,failtype);
-                // }
+                applyCritToTypeMutate(rttr.type,crit,passtype,failtype);
                 if (getMyDebug()){
                     floughTypeModule.dbgFloughTypeToStrings(passtype).forEach(s=>{
                         consoleLog(`applyCrit1[dbg,rttridx:${_rttridx}] passtype@0: ${s}`);
@@ -677,25 +625,21 @@ namespace ts {
 
                 if (!floughTypeModule.isNeverType(passtype)){
                     let passsc = rttr.sci;
-                    //if (!useFloughByCallExpressionV3){
-                        if (rttr.symbol){
-                            ({type:passtype,sc:passsc} = andSymbolTypeIntoSymtabConstraint({
-                                symbol: rttr.symbol,
-                                type: passtype,
-                                isconst: rttr.isconst,
-                                isAssign: rttr.isAssign,
-                                sc: passsc,
-                                getDeclaredType,
-                                mrNarrow,
-                            }));
-                        }
-                    //}
+                    if (rttr.symbol){
+                        ({type:passtype,sc:passsc} = andSymbolTypeIntoSymtabConstraint({
+                            symbol: rttr.symbol,
+                            type: passtype,
+                            isconst: rttr.isconst,
+                            isAssign: rttr.isAssign,
+                            sc: passsc,
+                            getDeclaredType,
+                            mrNarrow,
+                        }));
+                    }
                     if (useAlwaysProperyAccessCritNone){
-                        if (useFloughByCallExpressionV3){
-                            if (rttr.callExpressionData){
-                                Debug.assert(!rttr.logicalObjectAccessData);
-                                ({type: passtype, sc: passsc} = resolveCallExpressionData(rttr.callExpressionData, passsc, passtype));
-                            }
+                        if (rttr.callExpressionData){
+                            Debug.assert(!rttr.logicalObjectAccessData);
+                            ({type: passtype, sc: passsc} = resolveCallExpressionData(rttr.callExpressionData, passsc, passtype));
                         }
                         if (rttr.logicalObjectAccessData){
                             ({type: passtype, sc: passsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, passsc, passtype));
@@ -706,19 +650,6 @@ namespace ts {
                             consoleLog(`applyCrit1[dbg,rttridx:${_rttridx}] passtype@1: ${s}`);
                         });
                     }
-                    // if (useFloughByCallExpressionV3){
-                    //     if (rttr.symbol){
-                    //         ({type:passtype,sc:passsc} = andSymbolTypeIntoSymtabConstraint({
-                    //             symbol: rttr.symbol,
-                    //             type: passtype,
-                    //             isconst: rttr.isconst,
-                    //             isAssign: rttr.isAssign,
-                    //             sc: passsc,
-                    //             getDeclaredType,
-                    //             mrNarrow,
-                    //         }));
-                    //     }
-                    // }
                     if (getMyDebug()){
                         floughTypeModule.dbgFloughTypeToStrings(passtype).forEach(s=>{
                             consoleLog(`applyCrit1[dbg,rttridx:${_rttridx}] passtype@2: ${s}`);
@@ -738,25 +669,21 @@ namespace ts {
                     }
                     if (!floughTypeModule.isNeverType(failtype)){
                         let failsc = rttr.sci;
-                        //if (!useFloughByCallExpressionV3){
-                            if (rttr.symbol){
-                                ({type:failtype,sc:failsc} = andSymbolTypeIntoSymtabConstraint({
-                                    symbol: rttr.symbol,
-                                    type: failtype,
-                                    isconst: rttr.isconst,
-                                    isAssign: rttr.isAssign,
-                                    sc: failsc,
-                                    getDeclaredType,
-                                    mrNarrow,
-                                }));
-                            }
-                        //}
+                        if (rttr.symbol){
+                            ({type:failtype,sc:failsc} = andSymbolTypeIntoSymtabConstraint({
+                                symbol: rttr.symbol,
+                                type: failtype,
+                                isconst: rttr.isconst,
+                                isAssign: rttr.isAssign,
+                                sc: failsc,
+                                getDeclaredType,
+                                mrNarrow,
+                            }));
+                        }
                         if (useAlwaysProperyAccessCritNone){
-                            if (useFloughByCallExpressionV3){
-                                if (rttr.callExpressionData){
-                                    Debug.assert(!rttr.logicalObjectAccessData);
-                                    ({type: failtype, sc: failsc} = resolveCallExpressionData(rttr.callExpressionData, failsc, failtype));
-                                }
+                            if (rttr.callExpressionData){
+                                Debug.assert(!rttr.logicalObjectAccessData);
+                                ({type: failtype, sc: failsc} = resolveCallExpressionData(rttr.callExpressionData, failsc, failtype));
                             }
                             if (rttr.logicalObjectAccessData){
                                 ({type: failtype, sc: failsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, failsc, failtype));
@@ -767,19 +694,6 @@ namespace ts {
                                 consoleLog(`applyCrit1[dbg,rttridx:${_rttridx}] failtype@1: ${s}`);
                             });
                         }
-                        // if (useFloughByCallExpressionV3){
-                        //     if (rttr.symbol){
-                        //         ({type:failtype,sc:failsc} = andSymbolTypeIntoSymtabConstraint({
-                        //             symbol: rttr.symbol,
-                        //             type: failtype,
-                        //             isconst: rttr.isconst,
-                        //             isAssign: rttr.isAssign,
-                        //             sc: failsc,
-                        //             getDeclaredType,
-                        //             mrNarrow,
-                        //         }));
-                        //     }
-                        // }
                         if (getMyDebug()){
                             floughTypeModule.dbgFloughTypeToStrings(failtype).forEach(s=>{
                                 consoleLog(`applyCrit1[dbg,rttridx:${_rttridx}] failtype@2: ${s}`);

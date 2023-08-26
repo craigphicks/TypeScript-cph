@@ -6,34 +6,34 @@
 
 ### Priority: High
 
-0. Still seems to be some duplicates coming out of `partitionForEqualityCompareFloughTypeV2`.
-
-
+0. Clean up development variables
+```
+    export const usePartitionForEqualityCompareFloughTypeV2 = true;
+    export const usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit = true;
+    export const useUnionArrRefTypesSymtabV2= true;
+    export const useLogcialObjectAccessDataInRttr = true;
+    export const useAlwaysProperyAccessCritNone = true;
+    export const useFloughByCallExpressionV3 = true;
+```
+0. Check for duplicates coming out of `partitionForEqualityCompareFloughTypeV2`.
 0. cleanup dead code
-
-0. adapt `floughByCallExpressionV2` to use rttr.logicalObjectAccessData
-
-0.  finish modulization of LogicalObjectAccessReturn
+0. finish modulization of LogicalObjectAccessModule
 
 
-
-0. `floughByCallExpression`
-
-    0. Unionize incoming paths or not?
-
-    0. Note: All objects paths in call instance do not necessarily have the same length. `(b ? f : obj.f)()`.  So process each path in seperately, for now.
-
-    0. Currently expecting end types to be a plain object which is incorrect.  Need to add a de/re/multiplexing layer and corresponding map to be used before calling `logicalObjectModify`.
-
-    0. Instead of having the optional loar/call reference once per return unmerged array, add it to each rttr of the unmerged array, along with the loar end type index.  Correspondingly, allow `logicalObjectModify` to be called with a single index, i.e., once per rttr.  That will allowed lazy unionization.
-
-        0. In this case should the other indices be forced to be never? Addd a switch to try forced nevering, on by default.
-
-    0. Note: Is the typeof field currently being used?
+0. How do functions which affect outer variabes work with flow
+```
+let x = 0;
+function f(){
+  x = 1;
+}
+x = 2;
+f();
+x;
+```
 
 
 
-0. `SyntaxKind.ContinueStatement`,`BreakStatement`: test cases with label targets, block break. -- Break targets not yet tested/
+
 0.  `Do` loop
 0.  `For`,`ForOf`,`ForIn` loops
 0.  `Switch`
