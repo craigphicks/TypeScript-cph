@@ -1,0 +1,36 @@
+=== tests/cases/conformance/_caxnc/_caxnc-enum-0002.ts ===
+declare const enum E {
+>E : E
+
+    n1 = 1,
+>n1 : E.n1
+>1 : 1
+
+    n2 = 2,
+>n2 : E.n2
+>2 : 2
+
+    sa = "a",
+>sa : E.sa
+>"a" : "a"
+
+    sb = "b"
+>sb : E.sb
+>"b" : "b"
+
+};
+declare const e: E;
+>e : E
+
+if (e===E.n1){
+>e===E.n1 : boolean
+>e : 1 | 2 | "a" | "b"
+>E.n1 : E.n1
+>E : typeof E
+>n1 : E.n1
+
+    e; // E.n1
+>e : 1
+}
+
+

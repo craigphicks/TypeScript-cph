@@ -6,7 +6,7 @@ tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0001.ts(6,5): error TS
     let y: string | number = 1;
     x;
     y;
-    // Expect: error TS2367: This condition will always return 'false' since the types 'number' and 'string' have no overlap.
+    // error TS2367: This condition will always return 'false' since the types 'number' and 'string' have no overlap.
     if (x===(y="one")){
         ~~~~~~~~~~~~~
 !!! error TS2367: This condition will always return 'false' since the types 'number' and 'string' have no overlap.

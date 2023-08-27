@@ -13,7 +13,20 @@ namespace ts {
         false?: boolean;
     };
 
-    export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
+    export type LogicalObjecAccessData = & {
+        logicalObjectAccessReturn: LogicalObjectAccessReturn;
+        finalTypeIdx: number;
+    };
+    export type CallExpressionData = & {
+        logicalObjectAccessData: LogicalObjecAccessData;
+        functionTsType: Type | undefined;
+        functionSigType: FloughType | undefined;
+        carriedQdotUndefined: boolean;
+        info?: {rttridx: number, tstypeidx: number, sigidx: number}
+    };
+
+
+    //export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
 
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
@@ -22,6 +35,8 @@ namespace ts {
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem;
         logicalObjectIdexing?: { logobjidx: number, sigidx: number };
+        logicalObjectAccessData?: LogicalObjecAccessData;
+        callExpressionData?: CallExpressionData;
     };
     export type RefTypesTableReturn = & {
         symbol?: Symbol | undefined;
@@ -31,6 +46,8 @@ namespace ts {
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem;
         logicalObjectIdexing?: { logobjidx: number, sigidx: number };
+        logicalObjectAccessData?: LogicalObjecAccessData;
+        callExpressionData?: CallExpressionData;
     };
     export enum InferCritKind {
         none= "none",

@@ -17,30 +17,29 @@ if (r.b){
 >r : Symbol(r, Decl(_caxnc-propNarrow-0002.ts, 3, 3))
 >b : Symbol(b, Decl(_caxnc-propNarrow-0002.ts, 3, 39))
 
-    r;
+    r; // expect { readonly a: 2; readonly b: 2; }
 >r : Symbol(r, Decl(_caxnc-propNarrow-0002.ts, 3, 3))
 
-    r.a;
+    r.a; // expect 2
 >r.a : Symbol(a, Decl(_caxnc-propNarrow-0002.ts, 3, 33))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0002.ts, 3, 3))
 >a : Symbol(a, Decl(_caxnc-propNarrow-0002.ts, 3, 33))
 
-    r.b;
+    r.b; // expect 2
 >r.b : Symbol(b, Decl(_caxnc-propNarrow-0002.ts, 3, 39))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0002.ts, 3, 3))
 >b : Symbol(b, Decl(_caxnc-propNarrow-0002.ts, 3, 39))
 }
 else {
-    r;
+    r; // expect { readonly a: 1; }
 >r : Symbol(r, Decl(_caxnc-propNarrow-0002.ts, 3, 3))
 
-    r.a;
+    r.a; // expect 1
 >r.a : Symbol(a, Decl(_caxnc-propNarrow-0002.ts, 3, 13))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0002.ts, 3, 3))
 >a : Symbol(a, Decl(_caxnc-propNarrow-0002.ts, 3, 13))
 
-    // @ts-expect-error
-    r.b;
+    r.b; // expect any (error)
 >r : Symbol(r, Decl(_caxnc-propNarrow-0002.ts, 3, 3))
 }
 

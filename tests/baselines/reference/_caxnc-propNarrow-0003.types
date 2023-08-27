@@ -31,9 +31,8 @@ if (r.b===undefined){
 >r : { a: number; }
 >a : number
 
-    // @ts-expect-error
-    r.b; // expect error
->r.b : error
+    r.b; // expect any (error)
+>r.b : any
 >r : { a: number; }
 >b : any
 }

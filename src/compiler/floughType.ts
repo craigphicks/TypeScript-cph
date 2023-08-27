@@ -65,6 +65,7 @@ namespace ts {
         hasNumberType(ft: Readonly<FloughType>, intrinsicNumberTypeOnly?: true): boolean;
         hasStringType(ft: Readonly<FloughType>, intrinsicStringTypeOnly?: true): boolean;
         hasUndefinedType(ft: Readonly<FloughType>): boolean;
+        isEqualToUndefinedType(ft: Readonly<FloughType>): boolean;
         hasUndefinedOrNullType(ft: Readonly<FloughType>): boolean;
         getAccessKeysMutable(ft: Readonly<FloughType>): {
             number?: undefined | true | Set<LiteralTypeNumber>;
@@ -80,7 +81,7 @@ namespace ts {
 
     }
 
-
+    export type PartitionForEqualityCompareItem = & { both?: FloughType, left?: FloughType, right?: FloughType, true?: boolean, false?: boolean };
     export const floughTypeModule: FloughTypeModule = {
         /**
          * Interface copied from RefTypesTypeModule
@@ -211,8 +212,10 @@ namespace ts {
             if (!(type.logicalObject = tmp.logicalObject)) delete type.logicalObject;
             type.nobj = tmp.nobj;
         },
-        partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
-            return partitionForEqualityCompareFloughType(a,b);
+        partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[] {
+            castFloughTypei(a);
+            castFloughTypei(b);
+            return partitionForEqualityCompareFloughTypeV2(a,b);
         },
 
         // end of interface copied from RefTypesTypeModule
@@ -268,6 +271,10 @@ namespace ts {
         },
         hasUndefinedType(ft: Readonly<FloughType>): boolean {
             return !!(ft as FloughTypei).nobj.undefined;
+        },
+        isEqualToUndefinedType(ft: Readonly<FloughType>): boolean {
+            castReadonlyFloughTypei(ft);
+            return this.hasUndefinedType(ft) && !this.hasLogicalObject(ft) && Object.keys(ft.nobj).length===1;
         },
         hasUndefinedOrNullType(ft: Readonly<FloughType>): boolean {
             castFloughTypei(ft);
@@ -355,8 +362,7 @@ namespace ts {
         logicalObject?: FloughLogicalObjectIF;
     };
 
-    // @ts-expect-error
-    function castFloughType(ft: FloughType): asserts ft is FloughTypei {}
+    //function castFloughType(ft: FloughType): asserts ft is FloughTypei {}
 
     function createNeverType(): FloughTypei {
         return { nobj:{} };
@@ -1029,50 +1035,50 @@ namespace ts {
         return minuend;
     }
 
-    // @ts-expect-error
-    function isSubsetOfFloughTypeNobj(subset: Readonly<FloughTypeNobj>, superset: Readonly<FloughTypeNobj>): boolean {
-        if (subset.boolFalse && !superset.boolFalse) return false;
-        if (subset.boolTrue && !superset.boolTrue) return false;
-        if (subset.symbol && !superset.symbol) return false;
-        if (subset.uniqueSymbol && !superset.uniqueSymbol) return false;
-        if (subset.null && !superset.null) return false;
-        if (subset.undefined && !superset.undefined) return false;
-        if (subset.void && !superset.void) return false;
-        if (subset.string) {
-            if (!superset.string) return false;
-            if (subset.string===true){
-                if (superset.string!==true) return false;
-            }
-            else if (superset.string!==true){
-                for (let iter = subset.string.values(), it=iter.next(); !it.done; it=iter.next()){
-                    if (!superset.string.has(it.value)) return false;
-                }
-            }
-        }
-        if (subset.number) {
-            if (!superset.number) return false;
-            if (subset.number===true){
-                if (superset.number!==true) return false;
-            }
-            else if (superset.number!==true){
-                for (let iter = subset.number.values(), it=iter.next(); !it.done; it=iter.next()){
-                    if (!superset.number.has(it.value)) return false;
-                }
-            }
-        }
-        if (subset.bigint) {
-            if (!superset.bigint) return false;
-            if (subset.bigint===true){
-                if (superset.bigint!==true) return false;
-            }
-            else if (superset.bigint!==true){
-                for (let iter = subset.bigint.values(), it=iter.next(); !it.done; it=iter.next()){
-                    if (!superset.bigint.has(it.value)) return false;
-                }
-            }
-        }
-        return true;
-    }
+    // @ ts-expect-error
+    // function isSubsetOfFloughTypeNobj(subset: Readonly<FloughTypeNobj>, superset: Readonly<FloughTypeNobj>): boolean {
+    //     if (subset.boolFalse && !superset.boolFalse) return false;
+    //     if (subset.boolTrue && !superset.boolTrue) return false;
+    //     if (subset.symbol && !superset.symbol) return false;
+    //     if (subset.uniqueSymbol && !superset.uniqueSymbol) return false;
+    //     if (subset.null && !superset.null) return false;
+    //     if (subset.undefined && !superset.undefined) return false;
+    //     if (subset.void && !superset.void) return false;
+    //     if (subset.string) {
+    //         if (!superset.string) return false;
+    //         if (subset.string===true){
+    //             if (superset.string!==true) return false;
+    //         }
+    //         else if (superset.string!==true){
+    //             for (let iter = subset.string.values(), it=iter.next(); !it.done; it=iter.next()){
+    //                 if (!superset.string.has(it.value)) return false;
+    //             }
+    //         }
+    //     }
+    //     if (subset.number) {
+    //         if (!superset.number) return false;
+    //         if (subset.number===true){
+    //             if (superset.number!==true) return false;
+    //         }
+    //         else if (superset.number!==true){
+    //             for (let iter = subset.number.values(), it=iter.next(); !it.done; it=iter.next()){
+    //                 if (!superset.number.has(it.value)) return false;
+    //             }
+    //         }
+    //     }
+    //     if (subset.bigint) {
+    //         if (!superset.bigint) return false;
+    //         if (subset.bigint===true){
+    //             if (superset.bigint!==true) return false;
+    //         }
+    //         else if (superset.bigint!==true){
+    //             for (let iter = subset.bigint.values(), it=iter.next(); !it.done; it=iter.next()){
+    //                 if (!superset.bigint.has(it.value)) return false;
+    //             }
+    //         }
+    //     }
+    //     return true;
+    // }
 
     function equalFloughTypesNobj(a: Readonly<FloughTypeNobj>, b: Readonly<FloughTypeNobj>): boolean {
         if (a.boolFalse!==b.boolFalse) return false;
@@ -1209,13 +1215,18 @@ namespace ts {
                                 arr.push({ left: { [k]:true }, right:bd, rightobj: blogobj, false:true });
                             }
                         }
-                        else { // ak is true, bk is a set
-                            arr.push({ left:{ [k]: true }, right:{ [k]:new Set<LiteralType>(bk) }, true:true, false:true });
-                            const bd = cloneTypeNobj(b) as Record<string,undefined | true | Set<LiteralType>>;
-                            delete bd[k];
-                            if (blogobj || itemCountFloughTypeNobj(bd)>0) {
-                                arr.push({ left:{ [k]: true }, right:bd, rightobj: blogobj, false:true });
-                            }
+                        else {
+                            /**
+                             * The other side (generic to specific) is unwanted!
+                             */
+                            // if (!usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit){
+                            //     arr.push({ left:{ [k]: true }, right:{ [k]:new Set<LiteralType>(bk) }, true:true, false:true });
+                            //     const bd = cloneTypeNobj(b) as Record<string,undefined | true | Set<LiteralType>>;
+                            //     delete bd[k];
+                            //     if (blogobj || itemCountFloughTypeNobj(bd)>0) {
+                            //         arr.push({ left:{ [k]: true }, right:bd, rightobj: blogobj, false:true });
+                            //     }
+                            // }
                         }
                     }
                     else {
@@ -1282,11 +1293,72 @@ namespace ts {
         }
         return arr;
     }
+    // function partitionForEqualityCompareFloughType(ai: Readonly<FloughType>, bi: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
+    //     castReadonlyFloughTypei(ai);
+    //     castReadonlyFloughTypei(bi);
+    //     if (isNeverType(ai)||isNeverType(bi)) return [];
+    //     if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
 
+    //     // const leftTsType = ai.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
+    //     // const rightTsType = bi.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
+    //     // const leftTsType = ai.logicalObject ? createTypeFromLogicalObject(ai.logicalObject) : undefined;
+    //     // const rightTsType = bi.logicalObject ? createTypeFromLogicalObject(bi.logicalObject) : undefined;
+    //     const leftTsTypeSet = ai.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(ai.logicalObject)) : undefined;
+    //     let leftTsType: Type | undefined;
+    //     if (leftTsTypeSet) {
+    //         const leftTsTypeArr: Type[] = [];
+    //         leftTsTypeSet.forEach((v)=>leftTsTypeArr.push(v));
+    //         leftTsType = checker.getUnionType(leftTsTypeArr);
+    //     }
 
-    function partitionForEqualityCompareFloughType(ai: Readonly<FloughType>, bi: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
-        castReadonlyFloughTypei(ai);
-        castReadonlyFloughTypei(bi);
+    //     const rightTsTypeSet = bi.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(bi.logicalObject)) : undefined;
+    //     let rightTsType: Type | undefined;
+    //     if (rightTsTypeSet) {
+    //         const rightTsTypeArr: Type[] = [];
+    //         rightTsTypeSet.forEach((v)=>rightTsTypeArr.push(v));
+    //         rightTsType = checker.getUnionType(rightTsTypeArr);
+    //     }
+
+    //     const symset = new Set<string | LiteralType>();
+    //     const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
+    //     const partnobj1 = partitionForEqualityCompareFloughTypeNobj(bi.nobj,ai.nobj,ai.logicalObject,1,symset);
+    //     const partnobj = partnobj0.concat(partnobj1);
+    //     const partarr: PartitionForEqualityCompareItemTpl<FloughType>[] = [];
+    //     for (const pn of partnobj){
+    //         const pi: PartitionForEqualityCompareItemTpl<FloughType> = { true:pn.true, false:pn.false };
+    //         if (pn.both) pi.both = { nobj:pn.both };
+    //         if (pn.left) pi.left = { nobj:pn.left };
+    //         if (pn.right) pi.right = { nobj:pn.right };
+
+    //         if (pn.bothts) pi.bothts = pn.bothts;
+    //         if (pn.leftts) pi.leftts = pn.leftts;
+    //         if (pn.rightts) pi.rightts = pn.rightts;
+
+    //         if (leftTsType) pi.leftts ? pi.leftts.push(leftTsType) : pi.leftts = [leftTsType];
+    //         if (rightTsType) pi.rightts ? pi.rightts.push(rightTsType) : pi.rightts = [rightTsType];
+    //         partarr.push(pi);
+    //     }
+    //     if (leftTsTypeSet && rightTsTypeSet) {
+    //         leftTsTypeSet.forEach((leftTsType)=>{
+    //             rightTsTypeSet.forEach((rightTsType)=>{
+    //                 const subtLofR = checker.isTypeRelatedTo(leftTsType, rightTsType, checker.getRelations().subtypeRelation);
+    //                 partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtLofR, false:true });
+    //                 const subtRofL = checker.isTypeRelatedTo(rightTsType, leftTsType, checker.getRelations().subtypeRelation);
+    //                 partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtRofL, false:true });
+    //             });
+    //         });
+    //     }
+    //     return partarr;
+    // }
+
+    function partitionForEqualityCompareFloughTypeV2(ai: Readonly<FloughTypei>, bi: Readonly<FloughTypei>): PartitionForEqualityCompareItem[] {
+        if (getMyDebug()) {
+            consoleGroup("partitionForEqualityCompareFloughTypeV2[in]");
+            consoleLog(`partitionForEqualityCompareFloughTypeV2[in:ai] ${dbgFloughTypeToString(ai)}`);
+            consoleLog(`partitionForEqualityCompareFloughTypeV2[in:bi] ${dbgFloughTypeToString(bi)}`);
+        }
+        // castReadonlyFloughTypei(ai);
+        // castReadonlyFloughTypei(bi);
         if (isNeverType(ai)||isNeverType(bi)) return [];
         if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
 
@@ -1294,50 +1366,95 @@ namespace ts {
         // const rightTsType = bi.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
         // const leftTsType = ai.logicalObject ? createTypeFromLogicalObject(ai.logicalObject) : undefined;
         // const rightTsType = bi.logicalObject ? createTypeFromLogicalObject(bi.logicalObject) : undefined;
-        const leftTsTypeSet = ai.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(ai.logicalObject)) : undefined;
-        let leftTsType: Type | undefined;
-        if (leftTsTypeSet) {
-            const leftTsTypeArr: Type[] = [];
-            leftTsTypeSet.forEach((v)=>leftTsTypeArr.push(v));
-            leftTsType = checker.getUnionType(leftTsTypeArr);
-        }
-
-        const rightTsTypeSet = bi.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(bi.logicalObject)) : undefined;
-        let rightTsType: Type | undefined;
-        if (rightTsTypeSet) {
-            const rightTsTypeArr: Type[] = [];
-            rightTsTypeSet.forEach((v)=>rightTsTypeArr.push(v));
-            rightTsType = checker.getUnionType(rightTsTypeArr);
-        }
 
         const symset = new Set<string | LiteralType>();
         const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
         const partnobj1 = partitionForEqualityCompareFloughTypeNobj(bi.nobj,ai.nobj,ai.logicalObject,1,symset);
+        // if (extraAsserts){
+        //     //equalFloughTypesNobj();
+        //     const toNobjFTLeft = (p: PartitionNobj): FloughType => {
+        //         const x = p.left ?? p.both ?? (p.bothts ? createFromTsType(p.bothts).nobj : (p.leftts ? createFromTsTypes(p.leftts).nobj : undefined));
+        //         Debug.assert(x);
+        //         return x;
+        //     };
+        //     const toNobjFTRight = (p: PartitionNobj): FloughType => {
+        //         const x = p.right ?? p.both ?? (p.bothts ? createFromTsType(p.bothts).nobj : (p.rightts ? createFromTsTypes(p.rightts).nobj : undefined));
+        //         Debug.assert(x);
+        //         return x;
+        //     };
+        //     const atleft: FloughType[] = partnobj0.map((pn0,_i0)=>toNobjFTLeft(pn0));
+        //     const atright: FloughType[] = partnobj1.map((pn1,_i1)=>toNobjFTRight(pn1));
+        //     const print = (i0: number,i1: number) => {
+        //         const astr: string[] = [];
+        //         astr.push(`duplicate at: ${i0}, ${i1}`);
+        //         astr.push("left : ");
+        //         atleft.forEach((t,j0)=>{
+        //             astr.push(`${j0}:`+floughTypeModule.dbgFloughTypeToString(t));
+        //         });
+        //         astr.push("right: ");
+        //         atright.forEach((t,j1)=>{
+        //             astr.push(`${j1}:`+floughTypeModule.dbgFloughTypeToString(t));
+        //         });
+        //         astr.push("symset: ");
+        //         symset.forEach(s=>{
+        //             if (typeof s === "string") astr.push(s);
+        //             else astr.push(dbgsModule.dbgTypeToString(s));
+        //         });
+        //         return astr;//.join(sys.newLine);
+        //     };
+
+        //     partnobj0.forEach((_pn0,i0)=>{
+        //         partnobj1.forEach((_pn1,i1)=>{
+        //             const tleft = atleft[i0];
+        //             const tright = atright[i1];
+        //             if (equalFloughTypesNobj(tleft,tright)) {
+        //                 // consoleLog(`duplicate equalFloughTypesNobj ${i0}, ${i1}`);
+        //                 // print().forEach(s=>consoleLog(s));
+        //                 Debug.assert(false,"unexpected equalFloughTypesNobj",() => print(i0,i1).join(sys.newLine));
+        //             }
+        //         });
+        //     });
+        // }
         const partnobj = partnobj0.concat(partnobj1);
+        if (ai.logicalObject || bi.logicalObject) {
+            if (ai.logicalObject && bi.logicalObject){
+                const pn: PartitionNobj = { leftobj:ai.logicalObject,rightobj:bi.logicalObject, true:true, false:true };
+                partnobj.push(pn);
+            }
+        }
         const partarr: PartitionForEqualityCompareItemTpl<FloughType>[] = [];
+        let idx = -1;
         for (const pn of partnobj){
+            idx++;
             const pi: PartitionForEqualityCompareItemTpl<FloughType> = { true:pn.true, false:pn.false };
             if (pn.both) pi.both = { nobj:pn.both };
             if (pn.left) pi.left = { nobj:pn.left };
             if (pn.right) pi.right = { nobj:pn.right };
 
-            if (pn.bothts) pi.bothts = pn.bothts;
-            if (pn.leftts) pi.leftts = pn.leftts;
-            if (pn.rightts) pi.rightts = pn.rightts;
-
-            if (leftTsType) pi.leftts ? pi.leftts.push(leftTsType) : pi.leftts = [leftTsType];
-            if (rightTsType) pi.rightts ? pi.rightts.push(rightTsType) : pi.rightts = [rightTsType];
+            if (pn.bothts) {
+                pi.both = floughTypeModule.createFromTsType(pn.bothts);
+                if (extraAsserts){
+                    Debug.assert(!pn.leftts && !pn.rightts && !pn.leftobj && !pn.rightobj);
+                }
+            }
+            else {
+                if (pn.leftts) pi.left = floughTypeModule.createFromTsTypes(pn.leftts);
+                if (pn.rightts) pi.right = floughTypeModule.createFromTsTypes(pn.rightts);
+                if (pn.leftobj) pi.left = floughTypeModule.createTypeFromLogicalObject(pn.leftobj,pi.left);
+                if (pn.rightobj) pi.right = floughTypeModule.createTypeFromLogicalObject(pn.rightobj,pi.right);
+            }
+            if (getMyDebug()) {
+                consoleLog(`partitionForEqualityCompareFloughTypeV2[out:${idx}:both] ${pi.both?dbgFloughTypeToString(pi.both):"<undef>"}`);
+                consoleLog(`partitionForEqualityCompareFloughTypeV2[out:${idx}:left] ${pi.left?dbgFloughTypeToString(pi.left):"<undef>"}`);
+                consoleLog(`partitionForEqualityCompareFloughTypeV2[out::${idx}:right] ${pi.right?dbgFloughTypeToString(pi.right):"<undef>"}`);
+                consoleLog(`partitionForEqualityCompareFloughTypeV2[out::${idx}] true:${pi.true}, false:${pi.false}`);
+                Debug.assert(!pi.bothts && !pi.leftts && !pi.rightts);
+            }
             partarr.push(pi);
         }
-        if (leftTsTypeSet && rightTsTypeSet) {
-            leftTsTypeSet.forEach((leftTsType)=>{
-                rightTsTypeSet.forEach((rightTsType)=>{
-                    const subtLofR = checker.isTypeRelatedTo(leftTsType, rightTsType, checker.getRelations().subtypeRelation);
-                    partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtLofR, false:true });
-                    const subtRofL = checker.isTypeRelatedTo(rightTsType, leftTsType, checker.getRelations().subtypeRelation);
-                    partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtRofL, false:true });
-                });
-            });
+        if (getMyDebug()) {
+            consoleGroup("partitionForEqualityCompareFloughTypeV2[out]");
+            consoleGroupEnd();
         }
         return partarr;
     }

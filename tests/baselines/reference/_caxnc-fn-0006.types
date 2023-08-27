@@ -43,12 +43,12 @@ if (obj===obja){
 >obja : FooA
 
     obj; // expect FooA | FooB
->obj : FooA
+>obj : FooA | FooB
 
     obj.foo
->obj.foo : { (b: string): "A"; (...args: any[]): unknown; }
->obj : FooA
->foo : { (b: string): "A"; (...args: any[]): unknown; }
+>obj.foo : { (b: number): "B"; (...args: any[]): unknown; } | { (b: string): "A"; (...args: any[]): unknown; }
+>obj : FooA | FooB
+>foo : { (b: number): "B"; (...args: any[]): unknown; } | { (b: string): "A"; (...args: any[]): unknown; }
 }
 else {
     obj; // expect FooA | FooB (even if left and right are FooA, the comparison result could still be false)

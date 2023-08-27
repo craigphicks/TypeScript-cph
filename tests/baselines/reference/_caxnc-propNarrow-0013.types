@@ -31,30 +31,29 @@ if (r.b===undefined){
 >b : string | undefined
 >undefined : undefined
 
-    r;
+    r; // expect { a: number; }
 >r : { a: number; }
 
-    r.a;
+    r.a; // expect number
 >r.a : number
 >r : { a: number; }
 >a : number
 
-    // @ts-expect-error
-    r.b;
->r.b : error
+    r.b; // expect any (error)
+>r.b : any
 >r : { a: number; }
 >b : any
 }
 else {
-    r;
+    r; // expect { a: string; b: string; }
 >r : { a: string; b: string; }
 
-    r.a;
+    r.a; // expect string
 >r.a : string
 >r : { a: string; b: string; }
 >a : string
 
-    r.b;
+    r.b; // expect string
 >r.b : string
 >r : { a: string; b: string; }
 >b : string

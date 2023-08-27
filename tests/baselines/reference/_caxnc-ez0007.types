@@ -1,11 +1,11 @@
 === tests/cases/conformance/_caxnc/_caxnc-ez0007.ts ===
 declare interface FooA {
     foo(b:string): "1",
->foo : { (b: string): "1"; (b: number): undefined; }
+>foo : { (b: string): "1"; (b: number): 0; }
 >b : string
 
-    foo(b:number): undefined;
->foo : { (b: string): "1"; (b: number): undefined; }
+    foo(b:number): 0;
+>foo : { (b: string): "1"; (b: number): 0; }
 >b : number
 
 };
@@ -16,46 +16,57 @@ declare const arg: string | number;
 >arg : string | number
 
 // checknig isFoo in combo with another condition argIsString
+// @ts-expect-error
 const isFoo = obja?.foo(arg);
 >isFoo : undefined
 >obja?.foo(arg) : undefined
->obja?.foo : { (b: string): "1"; (b: number): undefined; } | undefined
+>obja?.foo : { (b: string): "1"; (b: number): 0; } | undefined
 >obja : FooA | undefined
->foo : { (b: string): "1"; (b: number): undefined; } | undefined
+>foo : { (b: string): "1"; (b: number): 0; } | undefined
 >arg : string | number
-
-const argIsString = typeof arg === "string";
->argIsString : boolean
->typeof arg === "string" : boolean
->typeof arg : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
->arg : string | number
->"string" : "string"
 
 if (isFoo){
->isFoo : "1" | undefined
+>isFoo : 0 | "1" | undefined
 
-    const x = obja.foo(arg);
->x : "1"
->obja.foo(arg) : "1"
->obja.foo : { (b: string): "1"; (b: number): undefined; }
+    obja; // expect FooA
 >obja : FooA
->foo : { (b: string): "1"; (b: number): undefined; }
+
+    arg; // expect string
 >arg : string
 
-    argIsString;
->argIsString : true
+    isFoo; // expect "1"
+>isFoo : "1"
 }
-else if (obja) {
->obja : FooA | undefined
+else if (isFoo === 0) {
+>isFoo === 0 : boolean
+>isFoo : 0 | undefined
+>0 : 0
 
-    const y = obja.foo(arg);
->y : undefined
->obja.foo(arg) : undefined
->obja.foo : { (b: string): "1"; (b: number): undefined; }
+    obja; // expect FooA
 >obja : FooA
->foo : { (b: string): "1"; (b: number): undefined; }
+
+    arg; // expect number
 >arg : number
 
-    argIsString;
->argIsString : false
+    isFoo; // expect 0
+>isFoo : 0
 }
+else {
+    obja; // expect undefined
+>obja : undefined
+
+    arg; // expect string | number
+>arg : string | number
+
+    isFoo; // expect undefined
+>isFoo : undefined
+}
+obja; // expect undefined | FooA
+>obja : FooA | undefined
+
+arg; // expect string | number
+>arg : string | number
+
+isFoo; // expect undefined | "1" | 0
+>isFoo : 0 | "1" | undefined
+

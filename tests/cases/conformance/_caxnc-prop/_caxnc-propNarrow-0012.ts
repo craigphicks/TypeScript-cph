@@ -11,12 +11,13 @@ let z = { a: 2 as const, b: 2 }
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: 1; } | { a: 2; b: number; }"
 let r = x ? y : z;
 if (r.b){
-    r;
-    r.a;
-    r.b;
+    r; // expect { a: 2; b: number; }
+    r.a; // expect 2
+    r.b; // expect number
 }
 else {
-    r;
+    // Note: r.b could be 0
+    r; // expect { a: 1 } | { a: 2; b: number; }
     r.a; // expect 1|2
-    r.b; // expect undefined|number
+    r.b; // expect any (error)
 }

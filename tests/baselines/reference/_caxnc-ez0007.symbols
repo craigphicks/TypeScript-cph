@@ -6,7 +6,7 @@ declare interface FooA {
 >foo : Symbol(FooA.foo, Decl(_caxnc-ez0007.ts, 0, 24), Decl(_caxnc-ez0007.ts, 1, 23))
 >b : Symbol(b, Decl(_caxnc-ez0007.ts, 1, 8))
 
-    foo(b:number): undefined;
+    foo(b:number): 0;
 >foo : Symbol(FooA.foo, Decl(_caxnc-ez0007.ts, 0, 24), Decl(_caxnc-ez0007.ts, 1, 23))
 >b : Symbol(b, Decl(_caxnc-ez0007.ts, 2, 8))
 
@@ -19,40 +19,54 @@ declare const arg: string | number;
 >arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
 
 // checknig isFoo in combo with another condition argIsString
+// @ts-expect-error
 const isFoo = obja?.foo(arg);
->isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 8, 5))
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 >obja?.foo : Symbol(FooA.foo, Decl(_caxnc-ez0007.ts, 0, 24), Decl(_caxnc-ez0007.ts, 1, 23))
 >obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
 >foo : Symbol(FooA.foo, Decl(_caxnc-ez0007.ts, 0, 24), Decl(_caxnc-ez0007.ts, 1, 23))
 >arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
 
-const argIsString = typeof arg === "string";
->argIsString : Symbol(argIsString, Decl(_caxnc-ez0007.ts, 9, 5))
->arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
-
 if (isFoo){
->isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 8, 5))
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 
-    const x = obja.foo(arg);
->x : Symbol(x, Decl(_caxnc-ez0007.ts, 11, 9))
->obja.foo : Symbol(FooA.foo, Decl(_caxnc-ez0007.ts, 0, 24), Decl(_caxnc-ez0007.ts, 1, 23))
+    obja; // expect FooA
 >obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
->foo : Symbol(FooA.foo, Decl(_caxnc-ez0007.ts, 0, 24), Decl(_caxnc-ez0007.ts, 1, 23))
+
+    arg; // expect string
 >arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
 
-    argIsString;
->argIsString : Symbol(argIsString, Decl(_caxnc-ez0007.ts, 9, 5))
+    isFoo; // expect "1"
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 }
-else if (obja) {
+else if (isFoo === 0) {
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
+
+    obja; // expect FooA
 >obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
 
-    const y = obja.foo(arg);
->y : Symbol(y, Decl(_caxnc-ez0007.ts, 15, 9))
->obja.foo : Symbol(FooA.foo, Decl(_caxnc-ez0007.ts, 0, 24), Decl(_caxnc-ez0007.ts, 1, 23))
->obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
->foo : Symbol(FooA.foo, Decl(_caxnc-ez0007.ts, 0, 24), Decl(_caxnc-ez0007.ts, 1, 23))
+    arg; // expect number
 >arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
 
-    argIsString;
->argIsString : Symbol(argIsString, Decl(_caxnc-ez0007.ts, 9, 5))
+    isFoo; // expect 0
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
 }
+else {
+    obja; // expect undefined
+>obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
+
+    arg; // expect string | number
+>arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
+
+    isFoo; // expect undefined
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
+}
+obja; // expect undefined | FooA
+>obja : Symbol(obja, Decl(_caxnc-ez0007.ts, 4, 13))
+
+arg; // expect string | number
+>arg : Symbol(arg, Decl(_caxnc-ez0007.ts, 5, 13))
+
+isFoo; // expect undefined | "1" | 0
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0007.ts, 9, 5))
+

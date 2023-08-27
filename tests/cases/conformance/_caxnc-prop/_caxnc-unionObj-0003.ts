@@ -18,4 +18,4 @@ const bar = { a: 1, b: 2 } as const;
 // Note: result is displayed in '.types' file as a union of two types: { a: 1, b?: 2} | { a: 1, b: 2 }, but flough-level code does not add the optional 'b'.
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { readonly a: 1; } | { readonly a: 1; readonly b: 2; }"
 const result = x ? foo : bar;
-result.b; // expect 2 | undefined, checkExpression level does not emit error because probably because it adds the optional 'b' to the type.
+result.b; // expect 2 | undefined (with flough) [NOTE: original-flow => any (error)]

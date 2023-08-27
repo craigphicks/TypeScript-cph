@@ -17,29 +17,30 @@ if (r.b){
 >r : Symbol(r, Decl(_caxnc-propNarrow-0001.ts, 3, 3))
 >b : Symbol(b, Decl(_caxnc-propNarrow-0001.ts, 3, 48))
 
-    r;
+    r; // expect { a: 2; b: number; }
 >r : Symbol(r, Decl(_caxnc-propNarrow-0001.ts, 3, 3))
 
-    r.a
+    r.a // expect 2
 >r.a : Symbol(a, Decl(_caxnc-propNarrow-0001.ts, 3, 33))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0001.ts, 3, 3))
 >a : Symbol(a, Decl(_caxnc-propNarrow-0001.ts, 3, 33))
 
-    r.b
+    r.b // expect number
 >r.b : Symbol(b, Decl(_caxnc-propNarrow-0001.ts, 3, 48))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0001.ts, 3, 3))
 >b : Symbol(b, Decl(_caxnc-propNarrow-0001.ts, 3, 48))
 }
 else {
-    r;
+    // Note: r.b could be 0
+    r; // expect { a: 1 } | { a: 2; b: number; }
 >r : Symbol(r, Decl(_caxnc-propNarrow-0001.ts, 3, 3))
 
-    r.a // 1 | 2
+    r.a // expect 1 | 2
 >r.a : Symbol(a, Decl(_caxnc-propNarrow-0001.ts, 3, 13), Decl(_caxnc-propNarrow-0001.ts, 3, 33))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0001.ts, 3, 3))
 >a : Symbol(a, Decl(_caxnc-propNarrow-0001.ts, 3, 13), Decl(_caxnc-propNarrow-0001.ts, 3, 33))
 
-    r.b // undefined | number
+    r.b // expect undefined | number
 >r.b : Symbol(b, Decl(_caxnc-propNarrow-0001.ts, 3, 48))
 >r : Symbol(r, Decl(_caxnc-propNarrow-0001.ts, 3, 3))
 >b : Symbol(b, Decl(_caxnc-propNarrow-0001.ts, 3, 48))

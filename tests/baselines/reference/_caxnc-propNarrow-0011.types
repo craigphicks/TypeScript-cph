@@ -32,31 +32,30 @@ if (r.b){
 >r : { a: 1; } | { a: 2; b: 2; }
 >b : 2 | undefined
 
-    r;
+    r; // expect { a: 2; b: 2; }
 >r : { a: 2; b: 2; }
 
-    r.a;
+    r.a; // expect 2
 >r.a : 2
 >r : { a: 2; b: 2; }
 >a : 2
 
-    r.b;
+    r.b; // expect 2
 >r.b : 2
 >r : { a: 2; b: 2; }
 >b : 2
 }
 else {
-    r;
+    r; // expect { a: 1; }
 >r : { a: 1; }
 
-    r.a;
+    r.a; // expect 1
 >r.a : 1
 >r : { a: 1; }
 >a : 1
 
-    // @ts-expect-error
-    r.b;
->r.b : error
+    r.b; // expect any (error)
+>r.b : any
 >r : { a: 1; }
 >b : any
 }

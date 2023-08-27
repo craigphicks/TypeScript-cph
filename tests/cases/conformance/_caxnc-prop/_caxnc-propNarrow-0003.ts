@@ -11,8 +11,7 @@ let r = x ? { a: 1} : { a: "one", b: "two"};
 if (r.b===undefined){
     r; // expect { a: number; }
     r.a; // expect number
-    // @ts-expect-error
-    r.b; // expect error
+    r.b; // expect any (error)
 }
 else {
     r; // expect { a: string; b: string; }

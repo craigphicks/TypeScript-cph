@@ -1,0 +1,78 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0006.ts ===
+declare const x: boolean;
+>x : Symbol(x, Decl(_caxnc-propNarrow-0006.ts, 0, 13))
+
+function testWithConst() {
+>testWithConst : Symbol(testWithConst, Decl(_caxnc-propNarrow-0006.ts, 0, 25))
+
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { readonly a: 1; } | { readonly a: 2; readonly b: 2; }"
+    let r = x ? { a: 1 } as const : { a: 2, b:2 } as const ;
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 4, 7))
+>x : Symbol(x, Decl(_caxnc-propNarrow-0006.ts, 0, 13))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0006.ts, 4, 17))
+>const : Symbol(const)
+>a : Symbol(a, Decl(_caxnc-propNarrow-0006.ts, 4, 37))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 4, 43))
+>const : Symbol(const)
+
+    if (r.b!==2) {
+>r.b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 4, 43))
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 4, 7))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 4, 43))
+
+        r; // expect { readonly a: 1; }
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 4, 7))
+
+        r.b; // r is sealed so access not allowed by checkerExpression, gives error,  expect any
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 4, 7))
+    }
+}
+function testWithoutConst() {
+>testWithoutConst : Symbol(testWithoutConst, Decl(_caxnc-propNarrow-0006.ts, 9, 1))
+
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { readonly a: 2; readonly b: 2; }"
+    let r = x ? { a: 1 } : { a: 2, b:2 } as const ;
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 12, 7))
+>x : Symbol(x, Decl(_caxnc-propNarrow-0006.ts, 0, 13))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0006.ts, 12, 17))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0006.ts, 12, 28))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 12, 34))
+>const : Symbol(const)
+
+    if (r.b!==2) {
+>r.b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 12, 34))
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 12, 7))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 12, 34))
+
+        r; // expect { a: number; }
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 12, 7))
+
+        r.b; // even though r is not sealed access still not allowed by checkerExpression, expect any
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 12, 7))
+    }
+}
+function testNarrowing() {
+>testNarrowing : Symbol(testNarrowing, Decl(_caxnc-propNarrow-0006.ts, 17, 1))
+
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { readonly a: 2; readonly b: 2; }"
+    let r = x ? { a: 1 } : { a: 2, b:2 } as const ;
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 20, 7))
+>x : Symbol(x, Decl(_caxnc-propNarrow-0006.ts, 0, 13))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0006.ts, 20, 17))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0006.ts, 20, 28))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 20, 34))
+>const : Symbol(const)
+
+    if (r.b===undefined) { // not an error
+>r.b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 20, 34))
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 20, 7))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0006.ts, 20, 34))
+>undefined : Symbol(undefined)
+
+        r; // expect { a: number; }
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 20, 7))
+
+        r.b; // even though r is not sealed access still not allowed by checkerExpression, expect any
+>r : Symbol(r, Decl(_caxnc-propNarrow-0006.ts, 20, 7))
+    }
+}
