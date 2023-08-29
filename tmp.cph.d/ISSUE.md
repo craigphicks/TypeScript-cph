@@ -6,16 +6,7 @@
 
 ### Priority: High
 
-0. Clean up development variables
-```
-    export const usePartitionForEqualityCompareFloughTypeV2 = true;
-    export const usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit = true;
-    export const useUnionArrRefTypesSymtabV2= true;
-    export const useLogcialObjectAccessDataInRttr = true;
-    export const useAlwaysProperyAccessCritNone = true;
-    export const useFloughByCallExpressionV3 = true;
-```
-0. Check for duplicates coming out of `partitionForEqualityCompareFloughTypeV2`.
+0. Finish cases for rttr.callExpressionData in floughByEqualityCompareV3
 0. cleanup dead code
 0. finish modulization of LogicalObjectAccessModule
 
