@@ -1,4 +1,4 @@
-=== tests/cases/conformance/_caxnc/_caxnc-eqneq-0013.ts ===
+=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneq-0013.ts ===
 declare const a: 1|2|3;
 >a : Symbol(a, Decl(_caxnc-eqneq-0013.ts, 0, 13))
 

@@ -6,10 +6,18 @@
 
 ### Priority: High
 
-0. Finish cases for rttr.callExpressionData in floughByEqualityCompareV3
+0. Fix argument matching in `floughByCallExpressionV3`.
+
+    0. Non-obj type matching: Match non-obj types strictly, subtract once matched.
+
+        0. Recfactor floughTypeModule.intersectionsAndDifferences to expose a non-obj only version
+
+    0. Obj type matching (step 0): Match only (object) present or not present, no subtraction.
+
+    0. Obj type matching (step 1): Add stricter matching of some kind (e.g. duck typing), but without subtraction.
+
 0. cleanup dead code
 0. finish modulization of LogicalObjectAccessModule
-
 
 0. How do functions which affect outer variabes work with flow
 ```
@@ -22,15 +30,14 @@ f();
 x;
 ```
 
-
-
-
 0.  `Do` loop
 0.  `For`,`ForOf`,`ForIn` loops
 0.  `Switch`
 
 
 0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFLow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least. (This was at least improved for  _caxnc-prop-0003 by commit ff478282a2).
+
+    0.  Possible Strategy - instead of only following flow records only upwards, follow them downwards first.
 
 
 0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
@@ -39,10 +46,10 @@ x;
 
 0. `const widenedType = createRefTypesType(checker.getWidenedType(unwidenedTsType));` When `unwidenedTsType` is type true, `checker.getWidenedType(unwidenedTsType)` is still true.
 
-0. Test case and code: When comparing ===, left and/or right are also mutating expressions. E.g., `((a=b)===(c=d))`
-
 
 0. Deconstructed lhs.
+
+0. Add state in logical objects to narrow the choice of overload function?
 
 ### Priority: Postponed
 

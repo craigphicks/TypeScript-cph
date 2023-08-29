@@ -1354,7 +1354,7 @@ namespace ts {
         if (getMyDebug()){
             const f = (k: keyof typeof ret)=>{
                 if (ret[k]) {
-                    dbgFloughTypeNobjToStrings((ret.bothUnique as FloughTypei).nobj).forEach(s=>consoleLog(`intersectionsAndDifferences[out] ${k}.nobj:${s}`));
+                    dbgFloughTypeNobjToStrings((ret[k] as FloughTypei).nobj).forEach(s=>consoleLog(`intersectionsAndDifferences[out] ${k}.nobj:${s}`));
                     consoleLog(`intersectionsAndDifferences[in] ${k}.obj:${aobj?"<...>":"<undef>"}`);
                 }
             };

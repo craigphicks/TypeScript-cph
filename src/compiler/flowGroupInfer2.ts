@@ -3332,291 +3332,228 @@ namespace ts {
             // @ ts-expect-error
             function floughByBinaryExpressionEqualsCompareV3(
                 ): FloughInnerReturn {
-                    assertCastType<BinaryExpression>(expr);
-                    const {left:leftExpr,operatorToken,right:rightExpr} = expr;
-                    if (getMyDebug()) {
-                        consoleGroup(`floughByBinaryExpressionEqualCompare[in] expr:${dbgNodeToString(expr)}`);
-                    }
-                    if (![
-                        SyntaxKind.EqualsEqualsEqualsToken,
-                        SyntaxKind.EqualsEqualsToken,
-                        SyntaxKind.ExclamationEqualsEqualsToken,
-                        SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind)){
-                        Debug.fail("unexpected");
-                    }
-                    const negateEq = [
-                        SyntaxKind.ExclamationEqualsEqualsToken,
-                        SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind);
-                    const nomativeTrueType = floughTypeModule.createRefTypesType(negateEq ? falseType : trueType);
-                    const nomativeFalseType = floughTypeModule.createRefTypesType(negateEq ? trueType : falseType);
-                    const trueAndFalseType = floughTypeModule.createRefTypesType([trueType,falseType]);
+                assertCastType<BinaryExpression>(expr);
+                const {left:leftExpr,operatorToken,right:rightExpr} = expr;
+                if (getMyDebug()) {
+                    consoleGroup(`floughByBinaryExpressionEqualCompare[in] expr:${dbgNodeToString(expr)}`);
+                }
+                if (![
+                    SyntaxKind.EqualsEqualsEqualsToken,
+                    SyntaxKind.EqualsEqualsToken,
+                    SyntaxKind.ExclamationEqualsEqualsToken,
+                    SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind)){
+                    Debug.fail("unexpected");
+                }
+                const negateEq = [
+                    SyntaxKind.ExclamationEqualsEqualsToken,
+                    SyntaxKind.ExclamationEqualsToken].includes(operatorToken.kind);
+                const nomativeTrueType = floughTypeModule.createRefTypesType(negateEq ? falseType : trueType);
+                const nomativeFalseType = floughTypeModule.createRefTypesType(negateEq ? trueType : falseType);
+                const trueAndFalseType = floughTypeModule.createRefTypesType([trueType,falseType]);
 
-                    const leftMntr = flough({
-                        expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                        sci
-                    });
+                const leftMntr = flough({
+                    expr:leftExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                    sci
+                });
 
-                    Debug.assert(leftMntr!==undefined);
-                    const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
+                Debug.assert(leftMntr!==undefined);
+                const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
 
-                    /**
-                     * It's too expensive to compute flough seperately for every indepent leftMntr.unmerged, so it is done on leftRttrUnion instead.
-                     * However, if the rhs is a readonly operation, then the lhs and rhs can be treated as independently calculated, post fact.
-                     */
+                /**
+                 * It's too expensive to compute flough seperately for every indepent leftMntr.unmerged, so it is done on leftRttrUnion instead.
+                 * However, if the rhs is a readonly operation, then the lhs and rhs can be treated as independently calculated, post fact.
+                 */
 
-                    const assignCountBeforeRhs = leftRttrUnion.sci.symtab?.getAssignCount() ?? -1;
+                const assignCountBeforeRhs = leftRttrUnion.sci.symtab?.getAssignCount() ?? -1;
+                if (getMyDebug()){
+                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: ${assignCountBeforeRhs}`);
+                }
+                const rightMntr = flough({
+                        expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                        sci: leftRttrUnion.sci
+                });
+
+                if (getMyDebug()){
+                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] rightMntr done`);
+                }
+
+                const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
+                leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
+                    const leftRttr = applyCritNoneToOne(leftRttr0,leftExpr,inferStatus.groupNodeToTypeMap);
                     if (getMyDebug()){
-                        consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: ${assignCountBeforeRhs}`);
+                        floughTypeModule.dbgRefTypesTypeToStrings(leftRttr.type).forEach(str=>{
+                            consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
+                        });
                     }
-                    const rightMntr = flough({
-                            expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                            sci: leftRttrUnion.sci
-                    });
-
-                    if (getMyDebug()){
-                        consoleLog(`floughByBinaryExpressionEqualCompare[dbg] rightMntr done`);
-                    }
-
-                    const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
-                    leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
-                        const leftRttr = applyCritNoneToOne(leftRttr0,leftExpr,inferStatus.groupNodeToTypeMap);
+                    Debug.assert(rightMntr);
+                    rightMntr.unmerged.forEach((rightRttr0, _rightidx)=>{
+                        const rightRttr = applyCritNoneToOne(rightRttr0,rightExpr,inferStatus.groupNodeToTypeMap);
+                        const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
+                        const leftRightIdependent = assignCountBeforeRhs===assignCountAfterRhs;
                         if (getMyDebug()){
-                            floughTypeModule.dbgRefTypesTypeToStrings(leftRttr.type).forEach(str=>{
-                                consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
+                            floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str=>{
+                                consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
                             });
                         }
-                        Debug.assert(rightMntr);
-                        rightMntr.unmerged.forEach((rightRttr0, _rightidx)=>{
-                            const rightRttr = applyCritNoneToOne(rightRttr0,rightExpr,inferStatus.groupNodeToTypeMap);
-                            const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
-                            const leftRightIdependent = assignCountBeforeRhs===assignCountAfterRhs;
-                            if (getMyDebug()){
-                                floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str=>{
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
-                                });
+
+                        if (getMyDebug()){
+                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: ${assignCountBeforeRhs}, leftRightIndependent: ${leftRightIdependent}`);
+                        }
+                        if (getMyDebug()){
+                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
+                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
+                        }
+                        const iad = floughTypeModule.intersectionsAndDifferences(leftRttr.type,rightRttr.type);
+                        // const aeqcmp = floughTypeModule.partitionForEqualityCompare(leftRttr.type,rightRttr.type);
+                        // if (getMyDebug()){
+                        //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] aeqcmp.length:${aeqcmp.length}`);
+                        // }
+                        type Item = & {left?: FloughType, right?: FloughType, both?: FloughType, pass?: boolean, fail?: boolean};
+                        const items: Item[] = [];
+                        if (iad.bothUnique) items.push({ both:iad.bothUnique, pass:true, fail:false });
+                        if (iad.bothNotUniqueA || iad.bothNotUniqueB) {
+                            Debug.assert(iad.bothNotUniqueA && iad.bothNotUniqueB);
+                            items.push({ left:iad.bothNotUniqueA, right:iad.bothNotUniqueB, pass:true, fail:true });
+                        }
+                        if (iad.aonly){
+                            items.push({ left:iad.aonly, right:rightRttr.type, pass:false, fail:true });
+                        }
+                        if (iad.bonly){
+                            items.push({ left:leftRttr.type, right:iad.bonly, pass:false, fail:true });
+                        }
+
+                        items.forEach((item,_i)=>{
+                            const {left,right,both,pass,fail} = item;
+                            let leftFt: RefTypesType | undefined;
+                            let rightFt: RefTypesType | undefined;
+                            function f2at(x: FloughType | undefined): Type[] | undefined {
+                                if (!x) return undefined;
+                                return floughTypeModule.getTsTypesFromFloughType(x);
+                            }
+                            if (getMyDebug()) {
+                                const leftFt1 = both ?? left;
+                                //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
+                                const rightFt1 = both ?? right;
+                                //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                                Debug.assert(leftFt1 && rightFt1);
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] -- before`
+                                +`[${_i}][0] left:${dbgRefTypesTypeToString(leftFt1)}, right:${dbgRefTypesTypeToString(rightFt1)}, pass:${pass},fail:${fail}`);
                             }
 
-                            if (getMyDebug()){
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: ${assignCountBeforeRhs}, leftRightIndependent: ${leftRightIdependent}`);
+                            let sctmp = leftRightIdependent ? leftRttr.sci : rightRttr.sci;
+                            const tftype = pass ? (fail ? trueAndFalseType : nomativeTrueType) : nomativeFalseType;
+                            if (leftRttr0.symbol){
+                                leftFt = both ?? left;
+                                //leftFt = both ?? left ?? (bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts)));
+                                ({type:leftFt, sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:leftRttr0.symbol,
+                                    isconst:leftRttr0.isconst,
+                                    // isAssign: leftRttr0.isAssign, // pure narrowing here so do not set isAssign
+                                    type: leftFt!,
+                                    sc:sctmp,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+                                    mrNarrow
+                                }));
                             }
-                            if (getMyDebug()){
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
-                            }
-                            const iad = floughTypeModule.intersectionsAndDifferences(leftRttr.type,rightRttr.type);
-                            // const aeqcmp = floughTypeModule.partitionForEqualityCompare(leftRttr.type,rightRttr.type);
-                            // if (getMyDebug()){
-                            //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] aeqcmp.length:${aeqcmp.length}`);
-                            // }
-                            type Item = & {left?: FloughType, right?: FloughType, both?: FloughType, pass?: boolean, fail?: boolean};
-                            const items: Item[] = [];
-                            if (iad.bothUnique) items.push({ both:iad.bothUnique, pass:true, fail:false });
-                            if (iad.bothNotUniqueA || iad.bothNotUniqueB) {
-                                Debug.assert(iad.bothNotUniqueA && iad.bothNotUniqueB);
-                                items.push({ left:iad.bothNotUniqueA, right:iad.bothNotUniqueB, pass:true, fail:true });
-                            }
-                            if (iad.aonly){
-                                items.push({ left:iad.aonly, right:rightRttr.type, pass:false, fail:true });
-                            }
-                            if (iad.bonly){
-                                items.push({ left:leftRttr.type, right:iad.bonly, pass:false, fail:true });
+                            Debug.assert(leftMntr);
+                            if (leftMntr.typeof){
+                                const leftTypeOfArgSymbol = leftMntr.typeof.argSymbol;
+                                const tsTypes = f2at(both) ?? f2at(left);
+                                Debug.assert(tsTypes);
+                                let typeofArgSubType: FloughType | undefined;
+                                if (!isArray(tsTypes)) typeofArgSubType = leftMntr.typeof.map.get(tsTypes);
+                                else if (tsTypes.length) {
+                                    if (tsTypes.length===1) typeofArgSubType = leftMntr.typeof.map.get(tsTypes[0]);
+                                    else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>leftMntr.typeof!.map.get(tstype)!));
+                                }
+                                Debug.assert(typeofArgSubType);
+                                // const typeofArgSubType = (bothts ? leftMntr.typeof.map.get(bothts)! : floughTypeModule.unionOfRefTypesType(leftts!.map(tstype=>leftMntr.typeof!.map.get(tstype)!)));
+                                ({sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:leftTypeOfArgSymbol,
+                                    isconst:_mrState.symbolFlowInfoMap.get(leftTypeOfArgSymbol)!.isconst,
+                                    // isAssign: leftRttr0.isAssign,
+                                    type: typeofArgSubType,// ?? floughTypeModule.getNeverType(),
+                                    sc:sctmp,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+                                    mrNarrow
+                                }));
                             }
 
-                            items.forEach((item,_i)=>{
-                                const {left,right,both,pass,fail} = item;
-                                let leftFt: RefTypesType | undefined;
-                                let rightFt: RefTypesType | undefined;
-                                function f2at(x: FloughType | undefined): Type[] | undefined {
-                                    if (!x) return undefined;
-                                    return floughTypeModule.getTsTypesFromFloughType(x);
-                                }
-                                if (getMyDebug()) {
-                                    const leftFt1 = both ?? left;
-                                    //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
-                                    const rightFt1 = both ?? right;
-                                    //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                    Debug.assert(leftFt1 && rightFt1);
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] -- before`
-                                    +`[${_i}][0] left:${dbgRefTypesTypeToString(leftFt1)}, right:${dbgRefTypesTypeToString(rightFt1)}, pass:${pass},fail:${fail}`);
-                                }
+                            if (rightRttr0.symbol){
+                                rightFt = both ?? right;
+                                //rightFt = both ?? right ?? floughTypeModule.createRefTypesType(f2at(bothts) ?? f2at(rightts) ?? (Debug.assert(rightts),undefined));
+                                //rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                                ({type:rightFt, sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:rightRttr0.symbol,
+                                    isconst:rightRttr0.isconst,
+                                    // isAssign: rightRttr0.isAssign,
+                                    type: rightFt ?? floughTypeModule.getNeverType(),
+                                    sc:sctmp,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+                                    mrNarrow
+                                }));
+                            }
+                            Debug.assert(rightMntr);
+                            if (rightMntr.typeof){
+                                const rightTypeOfArgSymbol = rightMntr.typeof.argSymbol;
 
-                                let sctmp = leftRightIdependent ? leftRttr.sci : rightRttr.sci;
-                                const tftype = pass ? (fail ? trueAndFalseType : nomativeTrueType) : nomativeFalseType;
-                                if (leftRttr0.symbol){
-                                    leftFt = both ?? left;
-                                    //leftFt = both ?? left ?? (bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts)));
-                                    ({type:leftFt, sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
-                                        symbol:leftRttr0.symbol,
-                                        isconst:leftRttr0.isconst,
-                                        // isAssign: leftRttr0.isAssign, // pure narrowing here so do not set isAssign
-                                        type: leftFt!,
-                                        sc:sctmp,
-                                        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
-                                        mrNarrow
-                                    }));
+                                const tsTypes = f2at(both) ?? f2at(right);
+                                Debug.assert(tsTypes);
+                                let typeofArgSubType: FloughType | undefined;
+                                if (!isArray(tsTypes)) typeofArgSubType = rightMntr.typeof.map.get(tsTypes);
+                                else if (tsTypes.length) {
+                                    if (tsTypes.length=1) typeofArgSubType = rightMntr.typeof.map.get(tsTypes[0]);
+                                    else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>rightMntr.typeof!.map.get(tstype)!));
                                 }
-                                Debug.assert(leftMntr);
-                                if (leftMntr.typeof){
-                                    const leftTypeOfArgSymbol = leftMntr.typeof.argSymbol;
-                                    const tsTypes = f2at(both) ?? f2at(left);
-                                    Debug.assert(tsTypes);
-                                    let typeofArgSubType: FloughType | undefined;
-                                    if (!isArray(tsTypes)) typeofArgSubType = leftMntr.typeof.map.get(tsTypes);
-                                    else if (tsTypes.length) {
-                                        if (tsTypes.length===1) typeofArgSubType = leftMntr.typeof.map.get(tsTypes[0]);
-                                        else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>leftMntr.typeof!.map.get(tstype)!));
-                                    }
-                                    Debug.assert(typeofArgSubType);
-                                    // const typeofArgSubType = (bothts ? leftMntr.typeof.map.get(bothts)! : floughTypeModule.unionOfRefTypesType(leftts!.map(tstype=>leftMntr.typeof!.map.get(tstype)!)));
-                                    ({sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
-                                        symbol:leftTypeOfArgSymbol,
-                                        isconst:_mrState.symbolFlowInfoMap.get(leftTypeOfArgSymbol)!.isconst,
-                                        // isAssign: leftRttr0.isAssign,
-                                        type: typeofArgSubType,// ?? floughTypeModule.getNeverType(),
-                                        sc:sctmp,
-                                        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
-                                        mrNarrow
-                                    }));
+                                Debug.assert(typeofArgSubType);
+                                ({sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
+                                    symbol:rightTypeOfArgSymbol,
+                                    isconst:_mrState.symbolFlowInfoMap.get(rightTypeOfArgSymbol)!.isconst,
+                                    // isAssign: rightRttr0.isAssign,
+                                    type: typeofArgSubType ?? floughTypeModule.getNeverType(),
+                                    sc:sctmp,
+                                    getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+                                    mrNarrow
+                                }));
+                            }
+                            {
+                                const leftTypeTmp = left ?? both;
+                                Debug.assert(leftTypeTmp);
+                                if (leftRttr0.callExpressionData){
+                                    Debug.assert(!leftRttr.logicalObjectAccessData);
+                                    ({ /*type,*/ sc:sctmp} = resolveCallExpressionData(leftRttr0.callExpressionData, sctmp, leftTypeTmp));
                                 }
-
-                                if (rightRttr0.symbol){
-                                    rightFt = both ?? right;
-                                    //rightFt = both ?? right ?? floughTypeModule.createRefTypesType(f2at(bothts) ?? f2at(rightts) ?? (Debug.assert(rightts),undefined));
-                                    //rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                    ({type:rightFt, sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
-                                        symbol:rightRttr0.symbol,
-                                        isconst:rightRttr0.isconst,
-                                        // isAssign: rightRttr0.isAssign,
-                                        type: rightFt ?? floughTypeModule.getNeverType(),
-                                        sc:sctmp,
-                                        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
-                                        mrNarrow
-                                    }));
+                                if (leftRttr.logicalObjectAccessData){
+                                    ({ /*type,*/ sc:sctmp} = resolveLogicalObjectAccessData(leftRttr0.logicalObjectAccessData!, sctmp, leftTypeTmp));
                                 }
-                                Debug.assert(rightMntr);
-                                if (rightMntr.typeof){
-                                    const rightTypeOfArgSymbol = rightMntr.typeof.argSymbol;
-
-                                    const tsTypes = f2at(both) ?? f2at(right);
-                                    Debug.assert(tsTypes);
-                                    let typeofArgSubType: FloughType | undefined;
-                                    if (!isArray(tsTypes)) typeofArgSubType = rightMntr.typeof.map.get(tsTypes);
-                                    else if (tsTypes.length) {
-                                        if (tsTypes.length=1) typeofArgSubType = rightMntr.typeof.map.get(tsTypes[0]);
-                                        else typeofArgSubType = floughTypeModule.unionOfRefTypesType(tsTypes.map(tstype=>rightMntr.typeof!.map.get(tstype)!));
-                                    }
-                                    Debug.assert(typeofArgSubType);
-                                    ({sc:sctmp } = andSymbolTypeIntoSymtabConstraint({
-                                        symbol:rightTypeOfArgSymbol,
-                                        isconst:_mrState.symbolFlowInfoMap.get(rightTypeOfArgSymbol)!.isconst,
-                                        // isAssign: rightRttr0.isAssign,
-                                        type: typeofArgSubType ?? floughTypeModule.getNeverType(),
-                                        sc:sctmp,
-                                        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
-                                        mrNarrow
-                                    }));
+                                const rightTypeTmp = right ?? both;
+                                Debug.assert(rightTypeTmp);
+                                if (rightRttr0.callExpressionData){
+                                    Debug.assert(!rightRttr.logicalObjectAccessData);
+                                    ({ /*type,*/ sc:sctmp} = resolveCallExpressionData(rightRttr0.callExpressionData, sctmp, rightTypeTmp));
                                 }
-                                {
-                                    if (leftRttr0.callExpressionData){
-                                        Debug.assert(!leftRttr.logicalObjectAccessData);
-                                        const leftFinalType = left ?? both;
-                                        Debug.assert(leftFinalType);
-                                        const leftCad = leftRttr0.callExpressionData;
-                                        if (!rightRttr.callExpressionData && !rightRttr.logicalObjectAccessData){
-                                            ({ /*type,*/ sc:sctmp} = resolveCallExpressionData(leftCad, sctmp, leftFinalType));
-                                        }
-                                        else {
-                                            Debug.assert(false, "not yet implemented");
-                                        }
-                                    }
-                                    if (leftRttr.logicalObjectAccessData || rightRttr.logicalObjectAccessData) {
-                                        Debug.assert(leftRttr.logicalObjectAccessData !== rightRttr.logicalObjectAccessData);
-                                        let leftLoar: LogicalObjectAccessReturn | undefined;
-                                        let leftFinalTypeIdx: number | undefined;
-                                        let leftSymbol: Symbol | undefined;
-                                        let rightLoar: LogicalObjectAccessReturn | undefined;
-                                        let rightFinalTypeIdx: number | undefined;
-                                        let rightSymbol: Symbol | undefined;
-                                        if (leftRttr.logicalObjectAccessData){
-                                            leftLoar = leftRttr.logicalObjectAccessData.logicalObjectAccessReturn;
-                                            leftFinalTypeIdx = leftRttr.logicalObjectAccessData.finalTypeIdx;
-                                            leftSymbol = logicalObjectAccessModule.getSymbol(leftLoar);
-                                        }
-                                        if (rightRttr.logicalObjectAccessData){
-                                            rightLoar = rightRttr.logicalObjectAccessData.logicalObjectAccessReturn;
-                                            rightFinalTypeIdx = rightRttr.logicalObjectAccessData.finalTypeIdx;
-                                            rightSymbol = logicalObjectAccessModule.getSymbol(rightLoar);
-                                        }
-                                        if (leftLoar === rightLoar) {
-                                            Debug.assert(false, "unexpected");
-                                        }
-                                        /**
-                                         * TODO: It is possible that left and right share the same symbol.
-                                         * Because that is special case we ought to write tests case before coding.
-                                         */
-                                        if (leftSymbol && leftSymbol === rightSymbol) {
-                                            Debug.assert(false, "not yet implemented: object on left and right sides of compare have same symbol");
-                                        }
-                                        else {
-                                            if (leftSymbol){
-                                                const leftFinalType = left ?? both;
-                                                if (extraAsserts){
-                                                    Debug.assert(leftFinalType);
-                                                    Debug.assert(!floughTypeModule.isNeverType(leftFinalType));
-                                                    //Debug.assert(!leftts && !rightts && !bothts); // should be true when usePartitionForEqualityCompareFloughTypeV2 is true
-                                                }
-                                                const leftModifiedObjectType = logicalObjectAccessModule.modifyOne(leftLoar!,leftFinalTypeIdx!,leftFinalType!);
-                                                if (!floughTypeModule.isNeverType(leftModifiedObjectType)){
-                                                    sctmp = copyRefTypesSymtabConstraintItem(sctmp);
-                                                    sctmp.symtab!.set(leftSymbol, leftModifiedObjectType);
-                                                }
-                                                else {
-                                                    /**
-                                                     * If leftModifiedObjectType is never, then the whole flow branch becomes never.
-                                                     */
-                                                    Debug.assert(false, "not yet implemented (unexpected?): leftModifiedObjectType is never");
-                                                }
-                                            }
-                                            if (rightSymbol){
-                                                const rightFinalType = right ?? both;
-                                                if (extraAsserts){
-                                                    Debug.assert(rightFinalType);
-                                                    Debug.assert(!floughTypeModule.isNeverType(rightFinalType));
-                                                    //Debug.assert(!leftts && !rightts && !bothts); // should be true when usePartitionForEqualityCompareFloughTypeV2 is true
-                                                }
-                                                const rightModifiedObjectType = logicalObjectAccessModule.modifyOne(rightLoar!,rightFinalTypeIdx!,rightFinalType!);
-                                                if (!floughTypeModule.isNeverType(rightModifiedObjectType)){
-                                                    sctmp = copyRefTypesSymtabConstraintItem(sctmp);
-                                                    sctmp.symtab!.set(rightSymbol, rightModifiedObjectType);
-                                                }
-                                                else {
-                                                    /**
-                                                     * If rightModifiedObjectType is never, then the whole flow branch becomes never.
-                                                     */
-                                                    Debug.assert(false, "not yet implemented (unexpected?): rightModifiedObjectType is never");
-                                                }
-                                            }
-                                        }
-                                    }
+                                if (rightRttr.logicalObjectAccessData){
+                                    ({ /*type,*/ sc:sctmp} = resolveLogicalObjectAccessData(rightRttr0.logicalObjectAccessData!, sctmp, rightTypeTmp));
                                 }
-                                if (getMyDebug()) {
-                                    const leftx = both ?? left;
-                                    //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
-                                    const rightx = both ?? right;
-                                    //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
-                                    Debug.assert(leftx && rightx);
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] `
-                                    +`[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`);
-                                }
-                                arrRefTypesTableReturn.push({
-                                    type: tftype,
-                                    sci:sctmp
-                                });
+                            }
+                            if (getMyDebug()) {
+                                const leftx = both ?? left;
+                                //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
+                                const rightx = both ?? right;
+                                //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
+                                Debug.assert(leftx && rightx);
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] `
+                                +`[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`);
+                            }
+                            arrRefTypesTableReturn.push({
+                                type: tftype,
+                                sci:sctmp
                             });
                         });
                     });
-                    return { unmerged: arrRefTypesTableReturn };
-                } // floughByBinaryExpressionEqualCompareV3
+                });
+                return { unmerged: arrRefTypesTableReturn };
+            } // floughByBinaryExpressionEqualCompareV3
 
 
             // @ ts-ignore
