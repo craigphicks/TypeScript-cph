@@ -1,0 +1,15 @@
+=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0001.ts ===
+declare const a: 1|"2";
+>a : Symbol(a, Decl(_caxnc-eqneqMultiUnique-0001.ts, 0, 13))
+
+declare const b: number|string;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0001.ts, 1, 13))
+
+if (b===a)
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0001.ts, 1, 13))
+>a : Symbol(a, Decl(_caxnc-eqneqMultiUnique-0001.ts, 0, 13))
+{
+    b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0001.ts, 1, 13))
+}
+

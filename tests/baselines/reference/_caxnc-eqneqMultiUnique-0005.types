@@ -1,0 +1,95 @@
+=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0005.ts ===
+declare const a1: true|1;
+>a1 : true | 1
+>true : true
+
+declare const a2: true|1|"2"|"3";
+>a2 : true | 1 | "2" | "3"
+>true : true
+
+declare const a3: true|1|"2"|"3"|4n|5n;
+>a3 : true | 1 | "2" | "3" | 4n | 5n
+>true : true
+
+declare const a4: true|1|"2"|"3"|4n|5n|null|undefined;
+>a4 : true | 1 | "2" | "3" | 4n | 5n | null | undefined
+>true : true
+>null : null
+
+declare const b: boolean|number|string|bigint|null|undefined;
+>b : string | number | bigint | boolean | null | undefined
+>null : null
+
+if (b===a1)
+>b===a1 : boolean
+>b : string | number | bigint | boolean | null | undefined
+>a1 : true | 1
+
+    b;
+>b : true | 1
+
+else if (b===a2)
+>b===a2 : boolean
+>b : string | number | bigint | boolean | null | undefined
+>a2 : true | 1 | "2" | "3"
+
+    b;
+>b : true | 1 | "2" | "3"
+
+else if (b===a3)
+>b===a3 : boolean
+>b : string | number | bigint | boolean | null | undefined
+>a3 : true | 1 | "2" | "3" | 4n | 5n
+
+    b;
+>b : true | 1 | "2" | "3" | 4n | 5n
+
+else if (b===a4)
+>b===a4 : boolean
+>b : string | number | bigint | boolean | null | undefined
+>a4 : true | 1 | "2" | "3" | 4n | 5n | null | undefined
+
+    b;
+>b : true | 1 | "2" | "3" | 4n | 5n | null | undefined
+
+else b;
+>b : string | number | bigint | boolean | null | undefined
+
+b;
+>b : string | number | bigint | boolean | null | undefined
+
+if (b===a1){
+>b===a1 : boolean
+>b : string | number | bigint | boolean | null | undefined
+>a1 : true | 1
+
+    b;
+>b : true | 1
+
+    if (b===a2) {
+>b===a2 : boolean
+>b : true | 1
+>a2 : true | 1 | "2" | "3"
+
+        b;
+>b : true | 1
+
+        if (b===a3) {
+>b===a3 : boolean
+>b : true | 1
+>a3 : true | 1 | "2" | "3" | 4n | 5n
+
+            b;
+>b : true | 1
+
+            if (b===a4) {
+>b===a4 : boolean
+>b : true | 1
+>a4 : true | 1 | "2" | "3" | 4n | 5n | null | undefined
+
+                b;
+>b : true | 1
+            }
+        }
+    }
+}

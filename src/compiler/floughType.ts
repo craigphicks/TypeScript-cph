@@ -1179,6 +1179,7 @@ namespace ts {
         let bothUnique: FloughTypeNobj | undefined;
         let bypassBothUnique = false;
         const bothNotUnique: FloughTypeNobj = {};
+        const bothNotUniqueSpec: FloughTypeNobj = {};
         const aonly: FloughTypeNobj = {};
         const bonly: FloughTypeNobj = {};
 
@@ -1186,8 +1187,30 @@ namespace ts {
             if (extraAsserts) {
                 Debug.assert(itemCountFloughTypeNobj(x)===1);
             }
+            const k = Object.keys(x)[0] as keyof FloughTypeNobj;
+            if (extraAsserts) Debug.assert(k);
+            switch (k) {
+                case "boolFalse":
+                case "boolTrue":
+                case "null":
+                case "undefined":{
+                    bothNotUnique[k] = true;
+                    break;
+                }
+                case "string":
+                case "number":
+                case "bigint":{
+                    if (extraAsserts){
+                        Debug.assert(x[k]!==true && (x[k] as Set<LiteralType>).size===1);
+                        Debug.assert(!bothNotUnique[k]);
+                    }
+                    bothNotUnique[k] = x[k];
+                    break;
+                }
+                default: Debug.fail("unexpected");
+            }
             bothUnique = undefined;
-            Debug.fail("TODO: not yet implemented");
+            //Debug.fail("TODO: not yet implemented");
         }
 
         function f1Unique(k: keyof FloughTypeNobj){
@@ -1199,6 +1222,7 @@ namespace ts {
                     else if (!bothUnique) {
                         bothUnique = {};
                         bothUnique[k] = true;
+                        bothNotUniqueSpec[k] = true;
                     }
                     else {
                         bypassBothUnique = true;
@@ -1226,6 +1250,8 @@ namespace ts {
             if (a[k]) {
                 if (b[k]) {
                     bothNotUnique[k] = true;
+                    bothNotUniqueSpec[k] = true;
+
                 }
                 else {
                     aonly[k] = true;
@@ -1422,226 +1448,6 @@ namespace ts {
         }
         return ret;
     }
-
-    // function intersectionsAndDifferencesOld(aIn: Readonly<FloughTypei>, bIn: Readonly<FloughTypei>):
-    // IntersectionsAndDifferencesReturnType {
-    //     const a = aIn.nobj;
-    //     const b = bIn.nobj;
-    //     const aobj = aIn.logicalObject;
-    //     const bobj = bIn.logicalObject;
-    //     if (getMyDebug()){
-    //         consoleGroup("intersectionsAndDifferences[in]");
-    //         consoleLog(`intersectionsAndDifferences[in] a.nobj:${dbgFloughTypeNobjToStrings(a)}`);
-    //         consoleLog(`intersectionsAndDifferences[in] a.obj:${aobj?"<...>":"<undef>"}`);
-    //         consoleLog(`intersectionsAndDifferences[in] b.nobj:${dbgFloughTypeNobjToStrings(b)}`);
-    //         consoleLog(`intersectionsAndDifferences[in] b.obj:${bobj?"<...>":"<undef>"}`);
-    //     }
-    //     let bothUnique: FloughTypeNobj | undefined;
-    //     let bypassBothUnique = false;
-    //     const bothNotUnique: FloughTypeNobj = {};
-    //     const aonly: FloughTypeNobj = {};
-    //     const bonly: FloughTypeNobj = {};
-    //     // let hadBothUnique = false;
-    //     // let hadBothNotUnique = false;
-    //     // let hadAonly = false;
-    //     // let hadBonly = false;
-    //     function sendBothUniqueToBothNotUnique(x: Readonly<FloughTypeNobj>){
-    //         if (extraAsserts) {
-    //             Debug.assert(itemCountFloughTypeNobj(x)===1);
-    //         }
-    //         Debug.fail("not yet implemented");
-    //     }
-
-    //     function f1Unique(k: keyof FloughTypeNobj){
-    //         assertCastType<Record<string,boolean>>(a);
-    //         assertCastType<Record<string,boolean>>(b);
-    //         if (a[k]) {
-    //             if (b[k]) {
-    //                 if (bypassBothUnique) bothNotUnique[k] = true;
-    //                 else if (!bothUnique) {
-    //                     bothUnique = {};
-    //                     bothUnique[k] = true;
-    //                 }
-    //                 else {
-    //                     bypassBothUnique = true;
-    //                     sendBothUniqueToBothNotUnique(bothUnique);
-    //                     bothNotUnique[k] = true;
-    //                 }
-    //             }
-    //             else {
-    //                 aonly[k] = true;
-    //             }
-    //         }
-    //         else if (b[k]) {
-    //             bonly[k] = true;
-    //         }
-    //     }
-    //     f1Unique("boolFalse");
-    //     f1Unique("boolTrue");
-    //     f1Unique("null");
-    //     f1Unique("undefined");
-
-
-    //     function f1(k: keyof FloughTypeNobj){
-    //         assertCastType<Record<string,boolean>>(a);
-    //         assertCastType<Record<string,boolean>>(b);
-    //         if (a[k]) {
-    //             if (b[k]) {
-    //                 bothNotUnique[k] = true;
-    //             }
-    //             else {
-    //                 aonly[k] = true;
-    //             }
-    //         }
-    //         else if (b[k]) {
-    //             bonly[k] = true;
-    //         }
-    //     }
-    //     f1("symbol");
-    //     f1("uniqueSymbol");
-
-    //     function f2(k: "string" | "number" | "bigint"){
-    //         const ak = a[k];
-    //         const bk = b[k];
-    //         if (ak) {
-    //             if (ak===true) {
-    //                 if (bk) {
-    //                     if (bk===true){
-    //                         bothNotUnique[k] = true;
-    //                     }
-    //                     else {
-    //                         /**
-    //                          * The literals of b[k] go to both; a[k] goes to aonly.
-    //                          * Could be unique!
-    //                          */
-    //                         if (!bypassBothUnique && bk.size===1) {
-    //                             if (!bothUnique){
-    //                                 bothUnique = {};
-    //                                 bothUnique[k] = new Set<LiteralType>(bk);
-    //                             }
-    //                             else {
-    //                                 bypassBothUnique = true;
-    //                                 sendBothUniqueToBothNotUnique(bothUnique);
-    //                                 bothNotUnique[k] = new Set<LiteralType>(bk);
-    //                             }
-    //                         }
-    //                         else {
-    //                             bothNotUnique[k] = new Set<LiteralType>(bk);
-    //                         }
-    //                         aonly[k] = true;
-    //                     }
-    //                 }
-    //                 else {
-    //                     aonly[k] = true;
-    //                 }
-    //             }
-    //             else {
-    //                 if (bk) {
-    //                     if (bk===true){
-    //                         /**
-    //                          * The literal of a[k] go to both; b[k] goes to bonly.
-    //                          * Could be unique!
-    //                          */
-    //                         if (!bypassBothUnique && ak.size===1) {
-    //                             if (!bothUnique){
-    //                                 bothUnique = {};
-    //                                 bothUnique[k] = new Set<LiteralType>(ak);
-    //                             }
-    //                             else {
-    //                                 bypassBothUnique = true;
-    //                                 sendBothUniqueToBothNotUnique(bothUnique);
-    //                                 bothNotUnique[k] = new Set<LiteralType>(ak);
-    //                             }
-    //                         }
-    //                         else {
-    //                             bothNotUnique[k] = new Set<LiteralType>(ak);
-    //                         }
-    //                         bonly[k] = true;
-    //                     }
-    //                     else {
-    //                         /** both ak and bk are sets of literals */
-    //                         const sboth = new Set<LiteralType>();
-    //                         const saonly = new Set<LiteralType>();
-    //                         const sbonly = new Set<LiteralType>();
-    //                         ak.forEach((v)=>{
-    //                             if (bk.has(v)) sboth.add(v);
-    //                             else saonly.add(v);
-    //                         });
-    //                         bk.forEach((v)=>{
-    //                             if (!ak.has(v)) sbonly.add(v);
-    //                         });
-    //                         if (sboth.size!==0) {
-    //                             /**
-    //                              * Could be unique!
-    //                              */
-    //                             if (!bypassBothUnique && sboth.size===1) {
-    //                                 if (!bothUnique){
-    //                                     bothUnique = {};
-    //                                     bothUnique[k] = sboth;
-    //                                 }
-    //                                 else {
-    //                                     bypassBothUnique = true;
-    //                                     sendBothUniqueToBothNotUnique(bothUnique);
-    //                                     bothNotUnique[k] = sboth;
-    //                                 }
-    //                             }
-    //                             else {
-    //                                 bothNotUnique[k] = sboth;
-    //                             }
-    //                         }
-    //                         if (saonly.size!==0) aonly[k] = saonly;
-    //                         if (sbonly.size!==0) bonly[k] = sbonly;
-    //                     }
-    //                 }
-    //                 else {
-    //                     aonly[k] = new Set(ak);
-    //                 }
-    //             }
-    //         }
-    //         else {
-    //             if (bk) {
-    //                 if (bk===true){
-    //                     bonly[k] = true;
-    //                 }
-    //                 else {
-    //                     bonly[k] = new Set(bk);
-    //                 }
-    //             }
-    //         }
-    //     } // end of f2
-    //     f2("string");
-    //     f2("number");
-    //     f2("bigint");
-
-    //     const ret: IntersectionsAndDifferencesReturnType = {};
-    //     if (bothUnique) ret.bothUnique = { nobj: bothUnique };
-    //     if (Object.keys(bothNotUnique).length!==0 || (aobj && bobj)) {
-    //         ret.bothNotUniqueA = { nobj: cloneTypeNobj(bothNotUnique), logicalObject: aobj };
-    //         ret.bothNotUniqueB = { nobj: cloneTypeNobj(bothNotUnique), logicalObject: bobj };
-    //     }
-    //     if (Object.keys(aonly).length!==0 || (aobj && !bobj)) {
-    //         ret.aonly = { nobj: { ...aonly }, logicalObject: aobj };
-    //     }
-    //     if (Object.keys(bonly).length!==0 || (!aobj && bobj)) {
-    //         ret.bonly = { nobj: { ...bonly }, logicalObject: bobj };
-    //     }
-    //     if (getMyDebug()){
-    //         const f = (k: keyof typeof ret)=>{
-    //             if (ret[k]) {
-    //                 dbgFloughTypeNobjToStrings((ret[k] as FloughTypei).nobj).forEach(s=>consoleLog(`intersectionsAndDifferences[out] ${k}.nobj:${s}`));
-    //                 consoleLog(`intersectionsAndDifferences[in] ${k}.obj:${aobj?"<...>":"<undef>"}`);
-    //             }
-    //         };
-    //         f("bothUnique");
-    //         f("bothNotUniqueA");
-    //         f("bothNotUniqueB");
-    //         f("aonly");
-    //         f("bonly");
-    //         consoleGroupEnd();
-    //     }
-    //     return ret;
-    // }
-
 
     function hasLogicalObject(ft: Readonly<FloughType>): boolean {
         castReadonlyFloughTypei(ft);

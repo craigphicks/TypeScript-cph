@@ -6,6 +6,8 @@
 
 ### Priority: High
 
+0. Need to test `bypassBothUnique` code branch in intersectionsAndDifferencesNobjInteral - currently will fail with "not yet implemented"
+
 0. Fix argument matching in `floughByCallExpressionV3`.
 
     0. Non-obj type matching: Match non-obj types strictly, subtract once matched.
