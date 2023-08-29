@@ -3403,7 +3403,7 @@ namespace ts {
                             consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
                             consoleLog(`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
                         }
-                        const iad = floughTypeModule.intersectionsAndDifferences(leftRttr.type,rightRttr.type);
+                        const iad = floughTypeModule.intersectionsAndDifferencesForEqualityCompare(leftRttr.type,rightRttr.type);
                         // const aeqcmp = floughTypeModule.partitionForEqualityCompare(leftRttr.type,rightRttr.type);
                         // if (getMyDebug()){
                         //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] aeqcmp.length:${aeqcmp.length}`);

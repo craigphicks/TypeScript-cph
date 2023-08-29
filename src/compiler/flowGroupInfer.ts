@@ -3,6 +3,13 @@ namespace ts {
     export const extraAsserts = true; // not suitable for release or timing tests.
     const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
 
+    /**
+     * refactor floughTypeModule.intersectionsAndDifferences
+     */
+    export const refactorFloughTypeModuleIntersectionsAndDifferences = true;
+
+
+
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
         none="none",
