@@ -27,7 +27,8 @@ namespace ts {
         forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void ;
         equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): void;
-        partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[];
+        intersectionsAndDifferences(a: Readonly<FloughType>, b: Readonly<FloughType>): IntersectionsAndDifferencesReturnType;
+        //partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[];
         dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[];
         // end of interface copied from RefTypesTypeModule
 
@@ -212,11 +213,12 @@ namespace ts {
             if (!(type.logicalObject = tmp.logicalObject)) delete type.logicalObject;
             type.nobj = tmp.nobj;
         },
-        partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[] {
-            castFloughTypei(a);
-            castFloughTypei(b);
-            return partitionForEqualityCompareFloughTypeV2(a,b);
-        },
+        intersectionsAndDifferences,
+        // partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[] {
+        //     castFloughTypei(a);
+        //     castFloughTypei(b);
+        //     return partitionForEqualityCompareFloughTypeV2(a,b);
+        // },
 
         // end of interface copied from RefTypesTypeModule
 
@@ -1116,19 +1118,6 @@ namespace ts {
         return true;
     }
 
-    type PartitionNobj = & {
-        both?: FloughTypeNobj;
-        left?: FloughTypeNobj;
-        right?: FloughTypeNobj;
-        bothts?: Type;
-        leftts?: Type[];
-        rightts?: Type[];
-        leftobj?: undefined | FloughLogicalObjectIF;
-        rightobj?: undefined | FloughLogicalObjectIF;
-        true?: boolean;
-        false?: boolean;
-    };
-
     function itemCountFloughTypeNobj(a: Readonly<FloughTypeNobj>): number {
         let count = 0;
         if (a.boolFalse) count++;
@@ -1153,47 +1142,89 @@ namespace ts {
         return count;
     }
 
-    function partitionForEqualityCompareFloughTypeNobj(
-        a: Readonly<FloughTypeNobj>, b: Readonly<FloughTypeNobj>,
-        blogobj: FloughLogicalObjectIF | undefined,
-        pass: 0 | 1, symset: Set<string | LiteralType>):
-    PartitionNobj[] {
-        const arr: PartitionNobj[] = [];
-        //const both = intersectionWithFloughTypeNobjMutate(a,cloneTypeNobj(b));
-        //const neither = differenceWithFloughTypeNobjMutate(both,cloneTypeNobj(a));
-        const bcount = itemCountFloughTypeNobj(b) + (blogobj ? 1 : 0);
-        // TODO: f1 is simpler to write, but expanding out each case would probably be faster
-        function f1(k: string, notUniqueType=true){
+    export type IntersectionsAndDifferencesReturnType = & {
+        bothUnique?: FloughType,
+        bothNotUniqueA?: FloughType,
+        bothNotUniqueB?: FloughType,
+        aonly?: FloughType,
+        bonly?: FloughType
+    };
+    function intersectionsAndDifferences(aIn: Readonly<FloughTypei>, bIn: Readonly<FloughTypei>):
+    IntersectionsAndDifferencesReturnType {
+        const a = aIn.nobj;
+        const b = bIn.nobj;
+        const aobj = aIn.logicalObject;
+        const bobj = bIn.logicalObject;
+        if (getMyDebug()){
+            consoleGroup("intersectionsAndDifferences[in]");
+            consoleLog(`intersectionsAndDifferences[in] a.nobj:${dbgFloughTypeNobjToStrings(a)}`);
+            consoleLog(`intersectionsAndDifferences[in] a.obj:${aobj?"<...>":"<undef>"}`);
+            consoleLog(`intersectionsAndDifferences[in] b.nobj:${dbgFloughTypeNobjToStrings(b)}`);
+            consoleLog(`intersectionsAndDifferences[in] b.obj:${bobj?"<...>":"<undef>"}`);
+        }
+        let bothUnique: FloughTypeNobj | undefined;
+        let bypassBothUnique = false;
+        const bothNotUnique: FloughTypeNobj = {};
+        const aonly: FloughTypeNobj = {};
+        const bonly: FloughTypeNobj = {};
+        // let hadBothUnique = false;
+        // let hadBothNotUnique = false;
+        // let hadAonly = false;
+        // let hadBonly = false;
+        function sendBothUniqueToBothNotUnique(x: Readonly<FloughTypeNobj>){
+            if (extraAsserts) {
+                Debug.assert(itemCountFloughTypeNobj(x)===1);
+            }
+            Debug.fail("not yet implemented");
+        }
+
+        function f1Unique(k: keyof FloughTypeNobj){
             assertCastType<Record<string,boolean>>(a);
             assertCastType<Record<string,boolean>>(b);
             if (a[k]) {
                 if (b[k]) {
-                    if (pass===0) {
-                        arr.push({ both:{ [k]:true }, true:true, false:notUniqueType });
-                        symset.add(k);
+                    if (bypassBothUnique) bothNotUnique[k] = true;
+                    else if (!bothUnique) {
+                        bothUnique = {};
+                        bothUnique[k] = true;
                     }
-                    else if (!symset.has(k)) {
-                        arr.push({ both:{ [k]:true }, true:true, false:notUniqueType });
-                    }
-                    if (bcount>1){
-                        const bd = cloneTypeNobj(b) as Record<string,boolean>;
-                        delete bd[k];
-                        arr.push({ left: { [k]:true }, right:bd, rightobj: blogobj, false:true });
+                    else {
+                        bypassBothUnique = true;
+                        sendBothUniqueToBothNotUnique(bothUnique);
+                        bothNotUnique[k] = true;
                     }
                 }
                 else {
-                    arr.push({ left: { [k]:true }, right:b, rightobj: blogobj, false:true });
+                    aonly[k] = true;
                 }
             }
+            else if (b[k]) {
+                bonly[k] = true;
+            }
         }
-        f1("boolFalse",/*notUniqueType*/ false);
-        f1("boolTrue",/*notUniqueType*/ false);
+        f1Unique("boolFalse");
+        f1Unique("boolTrue");
+        f1Unique("null");
+        f1Unique("undefined");
+
+
+        function f1(k: keyof FloughTypeNobj){
+            assertCastType<Record<string,boolean>>(a);
+            assertCastType<Record<string,boolean>>(b);
+            if (a[k]) {
+                if (b[k]) {
+                    bothNotUnique[k] = true;
+                }
+                else {
+                    aonly[k] = true;
+                }
+            }
+            else if (b[k]) {
+                bonly[k] = true;
+            }
+        }
         f1("symbol");
         f1("uniqueSymbol");
-        f1("null",/*notUniqueType*/ false);
-        f1("undefined",/*notUniqueType*/ false);
-        Debug.assert(!a.void && !b.void);
-        //f1("void");
 
         function f2(k: "string" | "number" | "bigint"){
             const ak = a[k];
@@ -1202,262 +1233,141 @@ namespace ts {
                 if (ak===true) {
                     if (bk) {
                         if (bk===true){
-                            if (pass===0) {
-                                arr.push({ both:{ [k]:true }, true:true, false:true });
-                                symset.add(k);
-                            }
-                            else if (!symset.has(k)) {
-                                arr.push({ both:{ [k]:true }, true:true, false:true });
-                            }
-                            if (bcount>1){
-                                const bd = cloneTypeNobj(b) as Record<string,undefined | true | Set<LiteralType>>;
-                                delete bd[k];
-                                arr.push({ left: { [k]:true }, right:bd, rightobj: blogobj, false:true });
-                            }
+                            bothNotUnique[k] = true;
                         }
                         else {
                             /**
-                             * The other side (generic to specific) is unwanted!
+                             * The literals of b[k] go to both; a[k] goes to aonly.
+                             * Could be unique!
                              */
-                            // if (!usePartitionForEqualityCompareFloughTypeNobjGenericSpecificOmit){
-                            //     arr.push({ left:{ [k]: true }, right:{ [k]:new Set<LiteralType>(bk) }, true:true, false:true });
-                            //     const bd = cloneTypeNobj(b) as Record<string,undefined | true | Set<LiteralType>>;
-                            //     delete bd[k];
-                            //     if (blogobj || itemCountFloughTypeNobj(bd)>0) {
-                            //         arr.push({ left:{ [k]: true }, right:bd, rightobj: blogobj, false:true });
-                            //     }
-                            // }
+                            if (!bypassBothUnique && bk.size===1) {
+                                if (!bothUnique){
+                                    bothUnique = {};
+                                    bothUnique[k] = new Set<LiteralType>(bk);
+                                }
+                                else {
+                                    bypassBothUnique = true;
+                                    sendBothUniqueToBothNotUnique(bothUnique);
+                                    bothNotUnique[k] = new Set<LiteralType>(bk);
+                                }
+                            }
+                            else {
+                                bothNotUnique[k] = new Set<LiteralType>(bk);
+                            }
+                            aonly[k] = true;
                         }
                     }
                     else {
-                        arr.push({ left:{ [k]:true }, right:b, rightobj: blogobj, false:true });
+                        aonly[k] = true;
                     }
                 }
                 else {
-                    ak.forEach((v)=>{
-                        if (bk) {
-                            if (bk===true){
-                                if (pass===0) {
-                                    arr.push({ bothts:v, true:true });
-                                    symset.add(v);
+                    if (bk) {
+                        if (bk===true){
+                            /**
+                             * The literal of a[k] go to both; b[k] goes to bonly.
+                             * Could be unique!
+                             */
+                            if (!bypassBothUnique && ak.size===1) {
+                                if (!bothUnique){
+                                    bothUnique = {};
+                                    bothUnique[k] = new Set<LiteralType>(ak);
                                 }
-                                else if (!symset.has(v)) {
-                                    arr.push({ bothts:v, true:true });
+                                else {
+                                    bypassBothUnique = true;
+                                    sendBothUniqueToBothNotUnique(bothUnique);
+                                    bothNotUnique[k] = new Set<LiteralType>(ak);
                                 }
-                                // cannot subtract v from b
-                                arr.push({ leftts:[v], right:b, rightobj: blogobj, false:true });
                             }
                             else {
-                                if (bk.has(v)){
-                                    arr.push({ bothts:v, true:true });
-                                    if (bcount>1){
-                                        const bd = cloneTypeNobj(b);
-                                        (bd[k]! as Set<LiteralType>).delete(v);
-                                        arr.push({ leftts:[v], right:bd, rightobj: blogobj, false:true });
+                                bothNotUnique[k] = new Set<LiteralType>(ak);
+                            }
+                            bonly[k] = true;
+                        }
+                        else {
+                            /** both ak and bk are sets of literals */
+                            const sboth = new Set<LiteralType>();
+                            const saonly = new Set<LiteralType>();
+                            const sbonly = new Set<LiteralType>();
+                            ak.forEach((v)=>{
+                                if (bk.has(v)) sboth.add(v);
+                                else saonly.add(v);
+                            });
+                            bk.forEach((v)=>{
+                                if (!ak.has(v)) sbonly.add(v);
+                            });
+                            if (sboth.size!==0) {
+                                /**
+                                 * Could be unique!
+                                 */
+                                if (!bypassBothUnique && sboth.size===1) {
+                                    if (!bothUnique){
+                                        bothUnique = {};
+                                        bothUnique[k] = sboth;
+                                    }
+                                    else {
+                                        bypassBothUnique = true;
+                                        sendBothUniqueToBothNotUnique(bothUnique);
+                                        bothNotUnique[k] = sboth;
                                     }
                                 }
                                 else {
-                                    arr.push({ leftts:[v], right:b, rightobj: blogobj, false:true });
+                                    bothNotUnique[k] = sboth;
                                 }
                             }
+                            if (saonly.size!==0) aonly[k] = saonly;
+                            if (sbonly.size!==0) bonly[k] = sbonly;
                         }
-                        else {
-                            arr.push({ leftts:[v], right:b, rightobj: blogobj, false:true });
-                        }
-                    });
+                    }
+                    else {
+                        aonly[k] = new Set(ak);
+                    }
+                }
+            }
+            else {
+                if (bk) {
+                    if (bk===true){
+                        bonly[k] = true;
+                    }
+                    else {
+                        bonly[k] = new Set(bk);
+                    }
                 }
             }
         } // end of f2
         f2("string");
         f2("number");
         f2("bigint");
-        if (pass===1){
-            // swap left* and right*
-            for (const p of arr){
-                if (p.left||p.right) {
-                    const t = p.left;
-                    p.left = p.right;
-                    p.right = t;
-                }
-                if (p.leftts||p.rightts) {
-                    const t = p.leftts;
-                    p.leftts = p.rightts;
-                    p.rightts = t;
-                }
-                if (p.leftobj||p.rightobj) {
-                    const t = p.leftobj;
-                    p.leftobj = p.rightobj;
-                    p.rightobj = t;
-                }
-            }
+
+        const ret: IntersectionsAndDifferencesReturnType = {};
+        if (bothUnique) ret.bothUnique = { nobj: bothUnique };
+        if (Object.keys(bothNotUnique).length!==0 || (aobj && bobj)) {
+            ret.bothNotUniqueA = { nobj: cloneTypeNobj(bothNotUnique), logicalObject: aobj };
+            ret.bothNotUniqueB = { nobj: cloneTypeNobj(bothNotUnique), logicalObject: bobj };
         }
-        return arr;
-    }
-    // function partitionForEqualityCompareFloughType(ai: Readonly<FloughType>, bi: Readonly<FloughType>): PartitionForEqualityCompareItemTpl<FloughType>[] {
-    //     castReadonlyFloughTypei(ai);
-    //     castReadonlyFloughTypei(bi);
-    //     if (isNeverType(ai)||isNeverType(bi)) return [];
-    //     if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
-
-    //     // const leftTsType = ai.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
-    //     // const rightTsType = bi.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
-    //     // const leftTsType = ai.logicalObject ? createTypeFromLogicalObject(ai.logicalObject) : undefined;
-    //     // const rightTsType = bi.logicalObject ? createTypeFromLogicalObject(bi.logicalObject) : undefined;
-    //     const leftTsTypeSet = ai.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(ai.logicalObject)) : undefined;
-    //     let leftTsType: Type | undefined;
-    //     if (leftTsTypeSet) {
-    //         const leftTsTypeArr: Type[] = [];
-    //         leftTsTypeSet.forEach((v)=>leftTsTypeArr.push(v));
-    //         leftTsType = checker.getUnionType(leftTsTypeArr);
-    //     }
-
-    //     const rightTsTypeSet = bi.logicalObject ? floughLogicalObjectInnerModule.getTsTypesOfBaseLogicalObjects(floughLogicalObjectModule.getInnerIF(bi.logicalObject)) : undefined;
-    //     let rightTsType: Type | undefined;
-    //     if (rightTsTypeSet) {
-    //         const rightTsTypeArr: Type[] = [];
-    //         rightTsTypeSet.forEach((v)=>rightTsTypeArr.push(v));
-    //         rightTsType = checker.getUnionType(rightTsTypeArr);
-    //     }
-
-    //     const symset = new Set<string | LiteralType>();
-    //     const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
-    //     const partnobj1 = partitionForEqualityCompareFloughTypeNobj(bi.nobj,ai.nobj,ai.logicalObject,1,symset);
-    //     const partnobj = partnobj0.concat(partnobj1);
-    //     const partarr: PartitionForEqualityCompareItemTpl<FloughType>[] = [];
-    //     for (const pn of partnobj){
-    //         const pi: PartitionForEqualityCompareItemTpl<FloughType> = { true:pn.true, false:pn.false };
-    //         if (pn.both) pi.both = { nobj:pn.both };
-    //         if (pn.left) pi.left = { nobj:pn.left };
-    //         if (pn.right) pi.right = { nobj:pn.right };
-
-    //         if (pn.bothts) pi.bothts = pn.bothts;
-    //         if (pn.leftts) pi.leftts = pn.leftts;
-    //         if (pn.rightts) pi.rightts = pn.rightts;
-
-    //         if (leftTsType) pi.leftts ? pi.leftts.push(leftTsType) : pi.leftts = [leftTsType];
-    //         if (rightTsType) pi.rightts ? pi.rightts.push(rightTsType) : pi.rightts = [rightTsType];
-    //         partarr.push(pi);
-    //     }
-    //     if (leftTsTypeSet && rightTsTypeSet) {
-    //         leftTsTypeSet.forEach((leftTsType)=>{
-    //             rightTsTypeSet.forEach((rightTsType)=>{
-    //                 const subtLofR = checker.isTypeRelatedTo(leftTsType, rightTsType, checker.getRelations().subtypeRelation);
-    //                 partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtLofR, false:true });
-    //                 const subtRofL = checker.isTypeRelatedTo(rightTsType, leftTsType, checker.getRelations().subtypeRelation);
-    //                 partarr.push({ leftts:[leftTsType], rightts:[rightTsType], true:subtRofL, false:true });
-    //             });
-    //         });
-    //     }
-    //     return partarr;
-    // }
-
-    function partitionForEqualityCompareFloughTypeV2(ai: Readonly<FloughTypei>, bi: Readonly<FloughTypei>): PartitionForEqualityCompareItem[] {
-        if (getMyDebug()) {
-            consoleGroup("partitionForEqualityCompareFloughTypeV2[in]");
-            consoleLog(`partitionForEqualityCompareFloughTypeV2[in:ai] ${dbgFloughTypeToString(ai)}`);
-            consoleLog(`partitionForEqualityCompareFloughTypeV2[in:bi] ${dbgFloughTypeToString(bi)}`);
+        if (Object.keys(aonly).length!==0 || (aobj && !bobj)) {
+            ret.aonly = { nobj: { ...aonly }, logicalObject: aobj };
         }
-        // castReadonlyFloughTypei(ai);
-        // castReadonlyFloughTypei(bi);
-        if (isNeverType(ai)||isNeverType(bi)) return [];
-        if (isAnyType(ai) || isUnknownType(ai) || isAnyType(bi) || isUnknownType(bi)) return [{ left:ai,right:bi, true:true,false:true }];
-
-        // const leftTsType = ai.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ai.logicalObject) : undefined;
-        // const rightTsType = bi.logicalObject ? floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(bi.logicalObject) : undefined;
-        // const leftTsType = ai.logicalObject ? createTypeFromLogicalObject(ai.logicalObject) : undefined;
-        // const rightTsType = bi.logicalObject ? createTypeFromLogicalObject(bi.logicalObject) : undefined;
-
-        const symset = new Set<string | LiteralType>();
-        const partnobj0 = partitionForEqualityCompareFloughTypeNobj(ai.nobj,bi.nobj,bi.logicalObject,0,symset);
-        const partnobj1 = partitionForEqualityCompareFloughTypeNobj(bi.nobj,ai.nobj,ai.logicalObject,1,symset);
-        // if (extraAsserts){
-        //     //equalFloughTypesNobj();
-        //     const toNobjFTLeft = (p: PartitionNobj): FloughType => {
-        //         const x = p.left ?? p.both ?? (p.bothts ? createFromTsType(p.bothts).nobj : (p.leftts ? createFromTsTypes(p.leftts).nobj : undefined));
-        //         Debug.assert(x);
-        //         return x;
-        //     };
-        //     const toNobjFTRight = (p: PartitionNobj): FloughType => {
-        //         const x = p.right ?? p.both ?? (p.bothts ? createFromTsType(p.bothts).nobj : (p.rightts ? createFromTsTypes(p.rightts).nobj : undefined));
-        //         Debug.assert(x);
-        //         return x;
-        //     };
-        //     const atleft: FloughType[] = partnobj0.map((pn0,_i0)=>toNobjFTLeft(pn0));
-        //     const atright: FloughType[] = partnobj1.map((pn1,_i1)=>toNobjFTRight(pn1));
-        //     const print = (i0: number,i1: number) => {
-        //         const astr: string[] = [];
-        //         astr.push(`duplicate at: ${i0}, ${i1}`);
-        //         astr.push("left : ");
-        //         atleft.forEach((t,j0)=>{
-        //             astr.push(`${j0}:`+floughTypeModule.dbgFloughTypeToString(t));
-        //         });
-        //         astr.push("right: ");
-        //         atright.forEach((t,j1)=>{
-        //             astr.push(`${j1}:`+floughTypeModule.dbgFloughTypeToString(t));
-        //         });
-        //         astr.push("symset: ");
-        //         symset.forEach(s=>{
-        //             if (typeof s === "string") astr.push(s);
-        //             else astr.push(dbgsModule.dbgTypeToString(s));
-        //         });
-        //         return astr;//.join(sys.newLine);
-        //     };
-
-        //     partnobj0.forEach((_pn0,i0)=>{
-        //         partnobj1.forEach((_pn1,i1)=>{
-        //             const tleft = atleft[i0];
-        //             const tright = atright[i1];
-        //             if (equalFloughTypesNobj(tleft,tright)) {
-        //                 // consoleLog(`duplicate equalFloughTypesNobj ${i0}, ${i1}`);
-        //                 // print().forEach(s=>consoleLog(s));
-        //                 Debug.assert(false,"unexpected equalFloughTypesNobj",() => print(i0,i1).join(sys.newLine));
-        //             }
-        //         });
-        //     });
-        // }
-        const partnobj = partnobj0.concat(partnobj1);
-        if (ai.logicalObject || bi.logicalObject) {
-            if (ai.logicalObject && bi.logicalObject){
-                const pn: PartitionNobj = { leftobj:ai.logicalObject,rightobj:bi.logicalObject, true:true, false:true };
-                partnobj.push(pn);
-            }
+        if (Object.keys(bonly).length!==0 || (!aobj && bobj)) {
+            ret.bonly = { nobj: { ...bonly }, logicalObject: bobj };
         }
-        const partarr: PartitionForEqualityCompareItemTpl<FloughType>[] = [];
-        let idx = -1;
-        for (const pn of partnobj){
-            idx++;
-            const pi: PartitionForEqualityCompareItemTpl<FloughType> = { true:pn.true, false:pn.false };
-            if (pn.both) pi.both = { nobj:pn.both };
-            if (pn.left) pi.left = { nobj:pn.left };
-            if (pn.right) pi.right = { nobj:pn.right };
-
-            if (pn.bothts) {
-                pi.both = floughTypeModule.createFromTsType(pn.bothts);
-                if (extraAsserts){
-                    Debug.assert(!pn.leftts && !pn.rightts && !pn.leftobj && !pn.rightobj);
+        if (getMyDebug()){
+            const f = (k: keyof typeof ret)=>{
+                if (ret[k]) {
+                    dbgFloughTypeNobjToStrings((ret.bothUnique as FloughTypei).nobj).forEach(s=>consoleLog(`intersectionsAndDifferences[out] ${k}.nobj:${s}`));
+                    consoleLog(`intersectionsAndDifferences[in] ${k}.obj:${aobj?"<...>":"<undef>"}`);
                 }
-            }
-            else {
-                if (pn.leftts) pi.left = floughTypeModule.createFromTsTypes(pn.leftts);
-                if (pn.rightts) pi.right = floughTypeModule.createFromTsTypes(pn.rightts);
-                if (pn.leftobj) pi.left = floughTypeModule.createTypeFromLogicalObject(pn.leftobj,pi.left);
-                if (pn.rightobj) pi.right = floughTypeModule.createTypeFromLogicalObject(pn.rightobj,pi.right);
-            }
-            if (getMyDebug()) {
-                consoleLog(`partitionForEqualityCompareFloughTypeV2[out:${idx}:both] ${pi.both?dbgFloughTypeToString(pi.both):"<undef>"}`);
-                consoleLog(`partitionForEqualityCompareFloughTypeV2[out:${idx}:left] ${pi.left?dbgFloughTypeToString(pi.left):"<undef>"}`);
-                consoleLog(`partitionForEqualityCompareFloughTypeV2[out::${idx}:right] ${pi.right?dbgFloughTypeToString(pi.right):"<undef>"}`);
-                consoleLog(`partitionForEqualityCompareFloughTypeV2[out::${idx}] true:${pi.true}, false:${pi.false}`);
-                Debug.assert(!pi.bothts && !pi.leftts && !pi.rightts);
-            }
-            partarr.push(pi);
-        }
-        if (getMyDebug()) {
-            consoleGroup("partitionForEqualityCompareFloughTypeV2[out]");
+            };
+            f("bothUnique");
+            f("bothNotUniqueA");
+            f("bothNotUniqueB");
+            f("aonly");
+            f("bonly");
             consoleGroupEnd();
         }
-        return partarr;
+        return ret;
     }
+
 
     function hasLogicalObject(ft: Readonly<FloughType>): boolean {
         castReadonlyFloughTypei(ft);
@@ -1475,13 +1385,6 @@ namespace ts {
         };
     }
 
-    // deprecated
-    // function modifyFloughTypeObjectEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredType: Type): FloughTypei {
-    //     castReadonlyFloughTypei(ft);
-    //     if (ft.logicalObject===undefined) return ft;
-    //     const logicalObject = modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject, effectiveDeclaredType, { doNotWidenPropertyTypes:true });
-    //     return { nobj: ft.nobj, logicalObject };
-    // }
     function widenNobjTypeByEffectiveDeclaredNobjType(ftin: Readonly<FloughTypei>, effectiveDeclaredType: Readonly<FloughTypei>): FloughTypei {
         let ftout: FloughTypei | undefined;
         const getFtOut = () => ftout ?? (ftout=cloneType(ftin));
@@ -1497,33 +1400,6 @@ namespace ts {
         return ftout ?? ftin;
     }
 
-
-    // function widenTypeByEffectiveDeclaredType(ftin: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType {
-    //     castReadonlyFloughTypei(ftin);
-    //     if (isAnyType(ftin) || isUnknownType(ftin)) return ftin;
-
-    //     // if (!compilerOptions.floughDoNotWidenNonObject){
-    //     const ft = createFromTsType(effectiveDeclaredTsType);
-    //     if (floughTypeModule.hasLogicalObject(ftin)) {
-    //         const edObjTypes: ObjectType[] = [];
-    //         checker.forEachType(effectiveDeclaredTsType, (t)=>{
-    //             if (t.flags & TypeFlags.Object) edObjTypes.push(t as ObjectType);
-    //         });
-    //         Debug.assert(edObjTypes.length>0);
-    //         const edType = checker.getUnionType(edObjTypes);
-    //         floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(ft.logicalObject!, edType);
-    //     }
-    //     return ft;
-    //     // }
-    //     // else {
-    //     //     const logicalObject = ftin.logicalObject;
-    //     //     if (!logicalObject) return ftin;
-    //     //     return {
-    //     //         ...ftin,
-    //     //         logicalObject: floughLogicalObjectModule.modifyFloughLogicalObjectEffectiveDeclaredType(logicalObject, effectiveDeclaredTsType)
-    //     //     };
-    //     // }
-    // }
 
     function getAccessKeysMutable(ft: Readonly<FloughTypei>): {
         number?: undefined | true | Set<LiteralTypeNumber>;
@@ -1552,14 +1428,8 @@ namespace ts {
         };
     }
 
-
-    function dbgFloughTypeToStrings(ft: Readonly<FloughType>): string[] {
-        castReadonlyFloughTypei(ft);
-        if (isNeverType(ft)) return ["never"];
-        if (isAnyType(ft)) return ["any"];
-        if (isUnknownType(ft)) return ["unknown"];
+    function dbgFloughTypeNobjToStrings(nobj: Readonly<FloughTypeNobj>): string[] {
         const arr: string[] = [];
-        const nobj = ft.nobj;
         for (const k in nobj){
             if (k==="string" || k==="number" || k==="bigint") {
                 let str = "nobj."+k;
@@ -1581,6 +1451,36 @@ namespace ts {
                 if ((nobj as Record<string,boolean>)[k]) arr.push("nobj."+k+":true");
             }
         }
+        return arr;
+    }
+
+    function dbgFloughTypeToStrings(ft: Readonly<FloughType>): string[] {
+        castReadonlyFloughTypei(ft);
+        if (isNeverType(ft)) return ["never"];
+        if (isAnyType(ft)) return ["any"];
+        if (isUnknownType(ft)) return ["unknown"];
+        const arr: string[] = dbgFloughTypeNobjToStrings(ft.nobj);
+        // for (const k in nobj){
+        //     if (k==="string" || k==="number" || k==="bigint") {
+        //         let str = "nobj."+k;
+        //         if (nobj[k]===true) str+=":true";
+        //         else {
+        //             str+=":{";
+        //             const set = nobj[k] as Set<LiteralType>;
+        //             let first = true;
+        //             set.forEach((v)=>{
+        //                 if (first) first = false;
+        //                 else str+=",";
+        //                 str+=dbgsModule.dbgTypeToString(v);
+        //             });
+        //             str+="}";
+        //         }
+        //         arr.push(str);
+        //     }
+        //     else {
+        //         if ((nobj as Record<string,boolean>)[k]) arr.push("nobj."+k+":true");
+        //     }
+        // }
         if (ft.logicalObject) {
             floughLogicalObjectModule.dbgLogicalObjectToStrings(ft.logicalObject).forEach((s)=>arr.push("logicalObject:"+s));
         }

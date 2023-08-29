@@ -2,12 +2,6 @@ namespace ts {
 
     export const extraAsserts = true; // not suitable for release or timing tests.
     const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
-    /**
-     * partitionForEqualityCompareFloughTypeV2 doesn't try to tell if objects are definitely different types
-     * so that object intersection is not used for equality compare.
-     * TODO: Still some duplication remainig to be fixed in partitionForEqualityCompareFloughTypeV2.
-     */
-    //export const usePartitionForEqualityCompareFloughTypeV2 = true;
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
