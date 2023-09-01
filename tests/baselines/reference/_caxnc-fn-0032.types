@@ -1,0 +1,103 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0032.ts ===
+declare function foo(x:string): number[];
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>x : string
+
+declare function foo(x?:string,y?:string,...z:string[]): string[];
+>foo : { (x: string): number[]; (x?: string, y?: string, ...z: string[]): string[]; }
+>x : string | undefined
+>y : string | undefined
+>z : string[]
+
+const a0 = foo();
+>a0 : string[]
+>foo() : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+
+a0; // expect string[]
+>a0 : string[]
+
+const a1 = foo("");
+>a1 : number[]
+>foo("") : number[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>"" : ""
+
+a1; // expect  number[] | string[]
+>a1 : number[] | string[]
+
+const a2 = foo("","");
+>a2 : string[]
+>foo("","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>"" : ""
+>"" : ""
+
+a2; // expect string[]
+>a2 : string[]
+
+const a3 = foo("","","");
+>a3 : string[]
+>foo("","","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>"" : ""
+>"" : ""
+>"" : ""
+
+a3; // expect string[]
+>a3 : string[]
+
+const a4 = foo("","","","");
+>a4 : string[]
+>foo("","","","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>"" : ""
+>"" : ""
+>"" : ""
+>"" : ""
+
+a4; // expect string[]
+>a4 : string[]
+
+const b1 = foo(undefined);
+>b1 : string[]
+>foo(undefined) : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>undefined : undefined
+
+b1; // expect string[]
+>b1 : string[]
+
+const b2 = foo(undefined,undefined);
+>b2 : string[]
+>foo(undefined,undefined) : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>undefined : undefined
+>undefined : undefined
+
+b2; // expect string[]
+>b2 : string[]
+
+const b3 = foo(undefined,undefined,undefined);
+>b3 : number[] & string[]
+>foo(undefined,undefined,undefined) : number[] & string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>undefined : undefined
+>undefined : undefined
+>undefined : undefined
+
+b3; // expect never
+>b3 : never
+
+[a0,a1,a2,a3,a4,b1,b2,b3]; // expect never[] and expect each element to be never
+>[a0,a1,a2,a3,a4,b1,b2,b3] : never[]
+>a0 : never
+>a1 : never
+>a2 : never
+>a3 : never
+>a4 : never
+>b1 : never
+>b2 : never
+>b3 : never
+
+

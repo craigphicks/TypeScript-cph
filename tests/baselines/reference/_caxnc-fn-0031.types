@@ -18,6 +18,6 @@ const b3 = foo(undefined,undefined,undefined);
 >undefined : undefined
 
 b3; // expect unknown
->b3 : unknown
+>b3 : never
 
 

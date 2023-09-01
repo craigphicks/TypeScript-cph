@@ -16,5 +16,5 @@ const a2 = foo(1);
 >1 : 1
 
 a2; // expect number[]
->a2 : number[]
+>a2 : number[] | string[]
 

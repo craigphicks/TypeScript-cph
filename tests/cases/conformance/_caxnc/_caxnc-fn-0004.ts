@@ -18,24 +18,8 @@ declare const b: boolean;
 const obj = b? obja : objb
 
 if (obj.foo(arg)){
-    // if (obj===obja){
-    //     arg; // should be string
-    //     const xa = obj.foo(arg);
-    //     xa; // should be "A"
-    // }
-    // if (obj===objb){
-    //     arg; // should be number
-    //     const xb = obj.foo(arg);
-    //     xb; // should be "B"
-    // }
     const x = obj.foo(arg); // x should be "A" | "B"
     obj;
     obj.foo;
-    x; // should be "A" | "B"
+    x; // expect "A" | "B" | undefined  (because `if (obj.foo(arg)){...}` doesn't currently narrow signatures)
 }
-
-
-// if ((obj===obja && arg==="one") || (obj===objb && arg===1)){
-//     arg; // should be "one" | 1
-//     const x = obja.foo(arg); // x should be "1"
-// }

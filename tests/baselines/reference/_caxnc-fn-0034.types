@@ -1,0 +1,156 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0034.ts ===
+declare function foo(x:string): number[];
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>x : string
+
+declare function foo(x?:string,y?:string,...z:string[]): string[];
+>foo : { (x: string): number[]; (x?: string, y?: string, ...z: string[]): string[]; (...args: any[]): never; }
+>x : string | undefined
+>y : string | undefined
+>z : string[]
+
+// By adding the following overload, the error goes away.
+// Although the last overload is always matched,
+// when either/both of the first two overloads match, the correct floughType is returned
+// because never | <not never> = <not never>. When the last overload match
+declare function foo(...args:any[]): never;
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>args : any[]
+
+const a0 = foo();
+>a0 : string[]
+>foo() : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+
+a0; // expect string[]
+>a0 : string[]
+
+const a1 = foo("");
+>a1 : number[]
+>foo("") : number[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>"" : ""
+
+a1; // expect  number[] | string[]
+>a1 : number[] | string[]
+
+const a2 = foo("","");
+>a2 : string[]
+>foo("","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>"" : ""
+>"" : ""
+
+a2; // expect string[]
+>a2 : string[]
+
+const a3 = foo("","","");
+>a3 : string[]
+>foo("","","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>"" : ""
+>"" : ""
+>"" : ""
+
+a3; // expect string[]
+>a3 : string[]
+
+const a4 = foo("","","","");
+>a4 : string[]
+>foo("","","","") : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>"" : ""
+>"" : ""
+>"" : ""
+>"" : ""
+
+a4; // expect string[]
+>a4 : string[]
+
+const b1 = foo(undefined);
+>b1 : string[]
+>foo(undefined) : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>undefined : undefined
+
+b1; // expect string[]
+>b1 : string[]
+
+const b2 = foo(undefined,undefined);
+>b2 : string[]
+>foo(undefined,undefined) : string[]
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>undefined : undefined
+>undefined : undefined
+
+b2; // expect string[]
+>b2 : string[]
+
+const b3 = foo(undefined,undefined,undefined);
+>b3 : never
+>foo(undefined,undefined,undefined) : never
+>foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>undefined : undefined
+>undefined : undefined
+>undefined : undefined
+
+b3; // expect never
+>b3 : never
+
+const c0 = a0||a1||a2||a3||a4||b1||b2||b3; // never
+>c0 : never
+>a0||a1||a2||a3||a4||b1||b2||b3 : never
+>a0||a1||a2||a3||a4||b1||b2 : never
+>a0||a1||a2||a3||a4||b1 : never
+>a0||a1||a2||a3||a4 : never
+>a0||a1||a2||a3 : never
+>a0||a1||a2 : never
+>a0||a1 : never
+>a0 : never
+>a1 : never
+>a2 : never
+>a3 : never
+>a4 : never
+>b1 : never
+>b2 : never
+>b3 : never
+
+c0; // expected string[]
+>c0 : never
+
+const c1 = [a0,a1,a2,a3,a4,b1,b2,b3]; // never
+>c1 : never[]
+>[a0,a1,a2,a3,a4,b1,b2,b3] : never[]
+>a0 : never
+>a1 : never
+>a2 : never
+>a3 : never
+>a4 : never
+>b1 : never
+>b2 : never
+>b3 : never
+
+c1; // expected never;
+>c1 : never
+
+const c2 = a0||a1||a2||a3||a4||b1||b2||b3; // never
+>c2 : never
+>a0||a1||a2||a3||a4||b1||b2||b3 : never
+>a0||a1||a2||a3||a4||b1||b2 : never
+>a0||a1||a2||a3||a4||b1 : never
+>a0||a1||a2||a3||a4 : never
+>a0||a1||a2||a3 : never
+>a0||a1||a2 : never
+>a0||a1 : never
+>a0 : never
+>a1 : never
+>a2 : never
+>a3 : never
+>a4 : never
+>b1 : never
+>b2 : never
+>b3 : never
+
+c2; // expected never
+>c2 : never
+

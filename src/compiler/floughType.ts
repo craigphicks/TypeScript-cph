@@ -24,11 +24,12 @@ namespace ts {
         isNeverType(type: Readonly<FloughType>): boolean ;
         isAnyType(type: Readonly<FloughType>): boolean ;
         isUnknownType(type: Readonly<FloughType>): boolean ;
+        isAnyOrUnknownType(type: Readonly<FloughType>): boolean ;
         forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void ;
         equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): void;
-        intersectionsAndDifferencesForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): IntersectionsAndDifferencesReturnType;
-        intersectionsAndDifferencesNobj(a: Readonly<FloughTypei>, b: Readonly<FloughTypei>): IntersectionsAndDifferencesNobjReturnType
+        intersectionsAndDifferencesForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): IntersectionsAndDifferencesForEqualityCompareReturnType;
+        //intersectionsAndDifferencesNobj(a: Readonly<FloughType>, b: Readonly<FloughType>): IntersectionsAndDifferencesNobjReturnType
         //partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[];
         dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[];
         // end of interface copied from RefTypesTypeModule
@@ -186,6 +187,10 @@ namespace ts {
             castReadonlyFloughTypei(type);
             return isAnyOrUnknownType(type);
         },
+        isAnyOrUnknownType(type: Readonly<FloughType>): boolean {
+            castReadonlyFloughTypei(type);
+            return isAnyOrUnknownType(type);
+        },
         forEachRefTypesTypeType<F extends (t: Type) => any>(type: Readonly<FloughType>, f: F): void {
             castReadonlyFloughTypei(type);
             const tsType = getTsTypeFromFloughType(type);
@@ -215,7 +220,7 @@ namespace ts {
             type.nobj = tmp.nobj;
         },
         intersectionsAndDifferencesForEqualityCompare,
-        intersectionsAndDifferencesNobj,
+        //intersectionsAndDifferencesNobj,
         // partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[] {
         //     castFloughTypei(a);
         //     castFloughTypei(b);
@@ -811,7 +816,12 @@ namespace ts {
      */
     function unionWithFloughTypeMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei): FloughTypei {
         if (ft0.any||ft1.any) return createAnyType();
-        if (ft0.unknown||ft1.unknown) return createUnknownType();
+        if (ft0.unknown||ft1.unknown) {
+            if (ft0.unknown && ft1.unknown) {
+                return createUnknownType(); // for debug
+            }
+            return createUnknownType();
+        }
         ft1.nobj = unionWithFloughTypeNobjMutate(ft0.nobj, ft1.nobj);
         if (ft0.logicalObject){
             if (ft1.logicalObject) {
@@ -1144,24 +1154,29 @@ namespace ts {
         return count;
     }
 
-    export type IntersectionsAndDifferencesNobjReturnType = & {
-        bothUnique?: FloughType,
-        bothNotUnique?: FloughType,
-        aonly?: FloughType,
-        bonly?: FloughType
-    };
-    function intersectionsAndDifferencesNobj(a: Readonly<FloughTypei>, b: Readonly<FloughTypei>):
-    IntersectionsAndDifferencesNobjReturnType {
-        Debug.assert(!hasLogicalObject(a));
-        Debug.assert(!hasLogicalObject(b));
-        const r = intersectionsAndDifferencesNobjInternal(a.nobj, b.nobj);
-        const ret: IntersectionsAndDifferencesNobjReturnType = {};
-        if (r.bothUnique) ret.bothUnique = composeFromLogicalObjectAndNobj(/*logicalObject*/ undefined, r.bothUnique);
-        if (r.bothNotUnique) ret.bothNotUnique = composeFromLogicalObjectAndNobj(/*logicalObject*/ undefined, r.bothNotUnique);
-        if (r.aonly) ret.aonly = composeFromLogicalObjectAndNobj(/*logicalObject*/ undefined, r.aonly);
-        if (r.bonly) ret.bonly = composeFromLogicalObjectAndNobj(/*logicalObject*/ undefined, r.bonly);
-        return ret;
-    }
+    // export type IntersectionsAndDifferencesNobjReturnType = & {
+    //     bothUnique?: FloughType,
+    //     bothNotUnique?: FloughType,
+    //     aonly?: FloughType,
+    //     bonly?: FloughType
+    // };
+    // function intersectionsAndDifferencesNobj(a: Readonly<FloughTypei>, b: Readonly<FloughTypei>):
+    // IntersectionsAndDifferencesNobjReturnType {
+    //     Debug.assert(!hasLogicalObject(a));
+    //     Debug.assert(!hasLogicalObject(b));
+    //     if (isAnyOrUnknownType(a)) a = b;
+    //     if (isAnyOrUnknownType(b)) {
+    //         if (a===b) return { bothNotUnique: a };
+    //         b = a;
+    //     }
+    //     const r = intersectionsAndDifferencesNobjInternal(a.nobj, b.nobj);
+    //     const ret: IntersectionsAndDifferencesNobjReturnType = {};
+    //     if (r.bothUnique) ret.bothUnique = composeFromLogicalObjectAndNobj(/*logicalObject*/ undefined, r.bothUnique);
+    //     if (r.bothNotUnique) ret.bothNotUnique = composeFromLogicalObjectAndNobj(/*logicalObject*/ undefined, r.bothNotUnique);
+    //     if (r.aonly) ret.aonly = composeFromLogicalObjectAndNobj(/*logicalObject*/ undefined, r.aonly);
+    //     if (r.bonly) ret.bonly = composeFromLogicalObjectAndNobj(/*logicalObject*/ undefined, r.bonly);
+    //     return ret;
+    // }
 
     export type IntersectionsAndDifferencesNobjInteralReturnType = & {
         bothUnique?: FloughTypeNobj,
@@ -1399,7 +1414,7 @@ namespace ts {
     }
 
 
-    export type IntersectionsAndDifferencesReturnType = & {
+    export type IntersectionsAndDifferencesForEqualityCompareReturnType = & {
         bothUnique?: FloughType,
         bothNotUniqueA?: FloughType,
         bothNotUniqueB?: FloughType,
@@ -1407,7 +1422,17 @@ namespace ts {
         bonly?: FloughType
     };
     function intersectionsAndDifferencesForEqualityCompare(aIn: Readonly<FloughTypei>, bIn: Readonly<FloughTypei>):
-    IntersectionsAndDifferencesReturnType {
+    IntersectionsAndDifferencesForEqualityCompareReturnType {
+        if (aIn.any || aIn.unknown) {
+            if (bIn.any || bIn.unknown) {
+                if (aIn.any && bIn.any) return { bothNotUniqueA: aIn, bothNotUniqueB: bIn };
+                else return { bothNotUniqueA: createUnknownType(), bothNotUniqueB: createUnknownType() };
+            }
+            aIn = bIn;
+        }
+        if (bIn.any || bIn.unknown) {
+            bIn = aIn;
+        }
         const a = aIn.nobj;
         const b = bIn.nobj;
         const aobj = aIn.logicalObject;
@@ -1420,7 +1445,7 @@ namespace ts {
             consoleLog(`intersectionsAndDifferences[in] b.obj:${bobj?"<...>":"<undef>"}`);
         }
         const {bothUnique,bothNotUnique,aonly,bonly} = intersectionsAndDifferencesNobjInternal(a, b);
-        const ret: IntersectionsAndDifferencesReturnType = {};
+        const ret: IntersectionsAndDifferencesForEqualityCompareReturnType = {};
         if (bothUnique) ret.bothUnique = { nobj: bothUnique };
         if (bothNotUnique && Object.keys(bothNotUnique).length!==0 || (aobj && bobj)) {
             ret.bothNotUniqueA = { nobj: cloneTypeNobj(bothNotUnique!), logicalObject: aobj };
@@ -1463,6 +1488,7 @@ namespace ts {
         return ret;
     }
     function createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined, nonObj?: Readonly<FloughTypei> | undefined): FloughTypei {
+        if (nonObj?.any || nonObj?.unknown) return nonObj;
         const nobj = nonObj ? cloneTypeNobj(nonObj.nobj) : undefined;
         return composeFromLogicalObjectAndNobj(logicalObject, nobj);
     }

@@ -1,0 +1,123 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0034.ts ===
+declare function foo(x:string): number[];
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+>x : Symbol(x, Decl(_caxnc-fn-0034.ts, 0, 21))
+
+declare function foo(x?:string,y?:string,...z:string[]): string[];
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+>x : Symbol(x, Decl(_caxnc-fn-0034.ts, 1, 21))
+>y : Symbol(y, Decl(_caxnc-fn-0034.ts, 1, 31))
+>z : Symbol(z, Decl(_caxnc-fn-0034.ts, 1, 41))
+
+// By adding the following overload, the error goes away.
+// Although the last overload is always matched,
+// when either/both of the first two overloads match, the correct floughType is returned
+// because never | <not never> = <not never>. When the last overload match
+declare function foo(...args:any[]): never;
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+>args : Symbol(args, Decl(_caxnc-fn-0034.ts, 6, 21))
+
+const a0 = foo();
+>a0 : Symbol(a0, Decl(_caxnc-fn-0034.ts, 8, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+
+a0; // expect string[]
+>a0 : Symbol(a0, Decl(_caxnc-fn-0034.ts, 8, 5))
+
+const a1 = foo("");
+>a1 : Symbol(a1, Decl(_caxnc-fn-0034.ts, 10, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+
+a1; // expect  number[] | string[]
+>a1 : Symbol(a1, Decl(_caxnc-fn-0034.ts, 10, 5))
+
+const a2 = foo("","");
+>a2 : Symbol(a2, Decl(_caxnc-fn-0034.ts, 12, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+
+a2; // expect string[]
+>a2 : Symbol(a2, Decl(_caxnc-fn-0034.ts, 12, 5))
+
+const a3 = foo("","","");
+>a3 : Symbol(a3, Decl(_caxnc-fn-0034.ts, 14, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+
+a3; // expect string[]
+>a3 : Symbol(a3, Decl(_caxnc-fn-0034.ts, 14, 5))
+
+const a4 = foo("","","","");
+>a4 : Symbol(a4, Decl(_caxnc-fn-0034.ts, 16, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+
+a4; // expect string[]
+>a4 : Symbol(a4, Decl(_caxnc-fn-0034.ts, 16, 5))
+
+const b1 = foo(undefined);
+>b1 : Symbol(b1, Decl(_caxnc-fn-0034.ts, 18, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+>undefined : Symbol(undefined)
+
+b1; // expect string[]
+>b1 : Symbol(b1, Decl(_caxnc-fn-0034.ts, 18, 5))
+
+const b2 = foo(undefined,undefined);
+>b2 : Symbol(b2, Decl(_caxnc-fn-0034.ts, 20, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+>undefined : Symbol(undefined)
+>undefined : Symbol(undefined)
+
+b2; // expect string[]
+>b2 : Symbol(b2, Decl(_caxnc-fn-0034.ts, 20, 5))
+
+const b3 = foo(undefined,undefined,undefined);
+>b3 : Symbol(b3, Decl(_caxnc-fn-0034.ts, 22, 5))
+>foo : Symbol(foo, Decl(_caxnc-fn-0034.ts, 0, 0), Decl(_caxnc-fn-0034.ts, 0, 41), Decl(_caxnc-fn-0034.ts, 1, 66))
+>undefined : Symbol(undefined)
+>undefined : Symbol(undefined)
+>undefined : Symbol(undefined)
+
+b3; // expect never
+>b3 : Symbol(b3, Decl(_caxnc-fn-0034.ts, 22, 5))
+
+const c0 = a0||a1||a2||a3||a4||b1||b2||b3; // never
+>c0 : Symbol(c0, Decl(_caxnc-fn-0034.ts, 24, 5))
+>a0 : Symbol(a0, Decl(_caxnc-fn-0034.ts, 8, 5))
+>a1 : Symbol(a1, Decl(_caxnc-fn-0034.ts, 10, 5))
+>a2 : Symbol(a2, Decl(_caxnc-fn-0034.ts, 12, 5))
+>a3 : Symbol(a3, Decl(_caxnc-fn-0034.ts, 14, 5))
+>a4 : Symbol(a4, Decl(_caxnc-fn-0034.ts, 16, 5))
+>b1 : Symbol(b1, Decl(_caxnc-fn-0034.ts, 18, 5))
+>b2 : Symbol(b2, Decl(_caxnc-fn-0034.ts, 20, 5))
+>b3 : Symbol(b3, Decl(_caxnc-fn-0034.ts, 22, 5))
+
+c0; // expected string[]
+>c0 : Symbol(c0, Decl(_caxnc-fn-0034.ts, 24, 5))
+
+const c1 = [a0,a1,a2,a3,a4,b1,b2,b3]; // never
+>c1 : Symbol(c1, Decl(_caxnc-fn-0034.ts, 26, 5))
+>a0 : Symbol(a0, Decl(_caxnc-fn-0034.ts, 8, 5))
+>a1 : Symbol(a1, Decl(_caxnc-fn-0034.ts, 10, 5))
+>a2 : Symbol(a2, Decl(_caxnc-fn-0034.ts, 12, 5))
+>a3 : Symbol(a3, Decl(_caxnc-fn-0034.ts, 14, 5))
+>a4 : Symbol(a4, Decl(_caxnc-fn-0034.ts, 16, 5))
+>b1 : Symbol(b1, Decl(_caxnc-fn-0034.ts, 18, 5))
+>b2 : Symbol(b2, Decl(_caxnc-fn-0034.ts, 20, 5))
+>b3 : Symbol(b3, Decl(_caxnc-fn-0034.ts, 22, 5))
+
+c1; // expected never;
+>c1 : Symbol(c1, Decl(_caxnc-fn-0034.ts, 26, 5))
+
+const c2 = a0||a1||a2||a3||a4||b1||b2||b3; // never
+>c2 : Symbol(c2, Decl(_caxnc-fn-0034.ts, 28, 5))
+>a0 : Symbol(a0, Decl(_caxnc-fn-0034.ts, 8, 5))
+>a1 : Symbol(a1, Decl(_caxnc-fn-0034.ts, 10, 5))
+>a2 : Symbol(a2, Decl(_caxnc-fn-0034.ts, 12, 5))
+>a3 : Symbol(a3, Decl(_caxnc-fn-0034.ts, 14, 5))
+>a4 : Symbol(a4, Decl(_caxnc-fn-0034.ts, 16, 5))
+>b1 : Symbol(b1, Decl(_caxnc-fn-0034.ts, 18, 5))
+>b2 : Symbol(b2, Decl(_caxnc-fn-0034.ts, 20, 5))
+>b3 : Symbol(b3, Decl(_caxnc-fn-0034.ts, 22, 5))
+
+c2; // expected never
+>c2 : Symbol(c2, Decl(_caxnc-fn-0034.ts, 28, 5))
+

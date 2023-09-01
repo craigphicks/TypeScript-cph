@@ -8,11 +8,6 @@ a;
 b;
 
 
-
-
-
-
-
 //// [_caxnc-typeUnknown-0001.js]
 "use strict";
 var a = 1;

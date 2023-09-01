@@ -17,35 +17,35 @@ const a0 = foo();
 >a0 : Symbol(a0, Decl(_caxnc-fn-0030.ts, 4, 5))
 >foo : Symbol(foo, Decl(_caxnc-fn-0030.ts, 0, 0), Decl(_caxnc-fn-0030.ts, 0, 41), Decl(_caxnc-fn-0030.ts, 1, 66))
 
-a0; // expect string
+a0; // expect unknown
 >a0 : Symbol(a0, Decl(_caxnc-fn-0030.ts, 4, 5))
 
 const a1 = foo("");
 >a1 : Symbol(a1, Decl(_caxnc-fn-0030.ts, 6, 5))
 >foo : Symbol(foo, Decl(_caxnc-fn-0030.ts, 0, 0), Decl(_caxnc-fn-0030.ts, 0, 41), Decl(_caxnc-fn-0030.ts, 1, 66))
 
-a1; // expect  number
+a1; // expect  unknown
 >a1 : Symbol(a1, Decl(_caxnc-fn-0030.ts, 6, 5))
 
 const a2 = foo("","");
 >a2 : Symbol(a2, Decl(_caxnc-fn-0030.ts, 8, 5))
 >foo : Symbol(foo, Decl(_caxnc-fn-0030.ts, 0, 0), Decl(_caxnc-fn-0030.ts, 0, 41), Decl(_caxnc-fn-0030.ts, 1, 66))
 
-a2; // expect string
+a2; // expect unknown
 >a2 : Symbol(a2, Decl(_caxnc-fn-0030.ts, 8, 5))
 
 const a3 = foo("","","");
 >a3 : Symbol(a3, Decl(_caxnc-fn-0030.ts, 10, 5))
 >foo : Symbol(foo, Decl(_caxnc-fn-0030.ts, 0, 0), Decl(_caxnc-fn-0030.ts, 0, 41), Decl(_caxnc-fn-0030.ts, 1, 66))
 
-a3; // expect string
+a3; // expect unknown
 >a3 : Symbol(a3, Decl(_caxnc-fn-0030.ts, 10, 5))
 
 const a4 = foo("","","","");
 >a4 : Symbol(a4, Decl(_caxnc-fn-0030.ts, 12, 5))
 >foo : Symbol(foo, Decl(_caxnc-fn-0030.ts, 0, 0), Decl(_caxnc-fn-0030.ts, 0, 41), Decl(_caxnc-fn-0030.ts, 1, 66))
 
-a4; // expect string
+a4; // expect unknown
 >a4 : Symbol(a4, Decl(_caxnc-fn-0030.ts, 12, 5))
 
 const b1 = foo(undefined);
@@ -53,7 +53,7 @@ const b1 = foo(undefined);
 >foo : Symbol(foo, Decl(_caxnc-fn-0030.ts, 0, 0), Decl(_caxnc-fn-0030.ts, 0, 41), Decl(_caxnc-fn-0030.ts, 1, 66))
 >undefined : Symbol(undefined)
 
-b1; // expect string
+b1; // expect unknown
 >b1 : Symbol(b1, Decl(_caxnc-fn-0030.ts, 14, 5))
 
 const b2 = foo(undefined,undefined);
@@ -62,7 +62,7 @@ const b2 = foo(undefined,undefined);
 >undefined : Symbol(undefined)
 >undefined : Symbol(undefined)
 
-b2; // expect string
+b2; // expect unknown
 >b2 : Symbol(b2, Decl(_caxnc-fn-0030.ts, 16, 5))
 
 const b3 = foo(undefined,undefined,undefined);

@@ -15,7 +15,7 @@ const a1 = foo();
 >foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
 
 a1; // expect number[]
->a1 : number[]
+>a1 : number[] | string[]
 
 const a2 = foo(1);
 >a2 : number[]
@@ -24,7 +24,7 @@ const a2 = foo(1);
 >1 : 1
 
 a2; // expect number[]
->a2 : number[]
+>a2 : number[] | string[]
 
 const a3 = foo(1,"2");
 >a3 : string[]
@@ -89,8 +89,8 @@ a6; // expect string[]
 
 [a1,a2,a3,a4,a5,a6];
 >[a1,a2,a3,a4,a5,a6] : (number[] | string[])[]
->a1 : number[]
->a2 : number[]
+>a1 : number[] | string[]
+>a2 : number[] | string[]
 >a3 : string[]
 >a4 : string[]
 >a5 : string[]

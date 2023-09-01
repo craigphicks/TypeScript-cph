@@ -251,8 +251,7 @@ namespace ts {
      * Similar to unionArrRefTypesSymtab, but logicalObjects are split and shallow or'd (delayed evaluation),
      * while nobj types are still or'd immediately, but without computing via Type.
      */
-    // @ts-ignore
-    function unionArrRefTypesSymtabV2(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
+    export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
         const dolog = true;
         if (dolog && getMyDebug()){
             consoleGroup(`unionArrRefTypesSymtabV2[in]`);
@@ -369,85 +368,7 @@ namespace ts {
         }
         return target;
     } // unionArrRefTypesSymtabV2
-    export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
-        return unionArrRefTypesSymtabV2(arr);
-    }
-    // @ts-ignore
-    function unionArrRefTypesSymtabV1(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
-        const dolog = true;
-        if (dolog && getMyDebug()){
-            consoleGroup(`unionArrRefTypesSymtab[in]`);
-            arr.forEach((rts,i)=>{
-                dbgRefTypesSymtabToStrings(rts).forEach(str=>consoleLog(`unionArrRefTypesSymtab[in] symtab[${i}] ${str}`));
-            });
-        }
-        function unionArrRefTypesSymtab1(): RefTypesSymtab {
-            assertCastType<Readonly<RefTypesSymtabProxy>[]>(arr);
-            if (arr.length===0) Debug.fail("unexpected");
-            if (arr.length===1) return arr[0];
-            for (let i=1; i<arr.length; i++){
-                Debug.assert(arr[i-1].symtabOuter === arr[i].symtabOuter);
-            }
-            const mapSymToPType = new Map<Symbol,{set: Set<Type>, setAssigned: Set<Type>}>();
-            arr.forEach(rts=>{
-                rts.symtabInner.forEach((pt,symbol)=>{
-                    let ptypeGot = mapSymToPType.get(symbol);
-                    if (!ptypeGot) {
-                        ptypeGot = { set:new Set<Type>(), setAssigned:new Set<Type>() };
-                        mapSymToPType.set(symbol, ptypeGot);
-                    }
-                    floughTypeModule.forEachRefTypesTypeType(pt.type, tstype=>ptypeGot!.set.add(tstype));
-                    if (pt.assignedType) floughTypeModule.forEachRefTypesTypeType(pt.assignedType, tstype=>ptypeGot!.setAssigned.add(tstype));
-                });
-            });
 
-            // Uses the existing outer symtab (common to all arr[*]), but creates a new inner symtab
-            const target = createRefTypesSymtabWithEmptyInnerSymtab(arr[0]) as RefTypesSymtabProxy;
-            assertCastType<Readonly<RefTypesSymtabProxy>>(target);
-
-            //const target = new RefTypesSymtabProxy(arr[0].symtabOuter,undefined,arr[0].);
-            mapSymToPType.forEach(({set, setAssigned},symbol)=>{
-                // c.f. _caxnc-whileLoop-0023 - for all i, s.t. arr[i].symbtabInner does not have symbol, must lookup in symtabOuter
-                if (!arr[0].isSubloop){
-                    for (const rts of arr){
-                        if (!rts.symtabInner.has(symbol)){
-                            const otype = mrNarrow.getEffectiveDeclaredType(symbolFlowInfoMap.get(symbol) ?? Debug.fail("unexpected"));
-                            floughTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
-                            break;
-                        }
-                    }
-                }
-                else {
-                    for (const rts of arr){
-                        if (!rts.symtabInner.has(symbol)){
-                            const otype = rts.symtabOuter?.get(symbol);
-                            if (otype){
-                                floughTypeModule.forEachRefTypesTypeType(otype, tstype=>set.add(tstype));
-                                break;
-                            }
-                        }
-                    }
-                }
-                const atype: Type[]=[];
-                set.forEach(t=>atype.push(t));
-                const type = floughTypeModule.createRefTypesType(atype);
-                const aAssignedType: Type[] = [];
-                setAssigned.forEach(t=>aAssignedType.push(t));
-                let assignedType: RefTypesType | undefined;
-                if (setAssigned.size) assignedType = floughTypeModule.createRefTypesType(aAssignedType);
-                target.symtabInner.set(symbol,{ type, assignedType });
-            });
-            return target;
-        }
-        const target = unionArrRefTypesSymtab1();
-        {
-            if (dolog && getMyDebug()){
-                dbgRefTypesSymtabToStrings(target).forEach(str=>consoleLog(`unionArrRefTypesSymtab[out] return: ${str}`));
-                consoleGroupEnd();
-            }
-        }
-        return target;
-    }
     export function modifiedInnerSymtabUsingOuterForFinalCondition(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
         const dolog = true;
         if (dolog && getMyDebug()){

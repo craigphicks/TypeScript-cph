@@ -44,16 +44,6 @@ if (obj.foo(arg)){
 >foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
 >arg : string | number
 
-    // if (obj===obja){
-    //     arg; // should be string
-    //     const xa = obj.foo(arg);
-    //     xa; // should be "A"
-    // }
-    // if (obj===objb){
-    //     arg; // should be number
-    //     const xb = obj.foo(arg);
-    //     xb; // should be "B"
-    // }
     const x = obj.foo(arg); // x should be "A" | "B"
 >x : undefined
 >obj.foo(arg) : undefined
@@ -70,13 +60,7 @@ if (obj.foo(arg)){
 >obj : FooA | FooB
 >foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
 
-    x; // should be "A" | "B"
+    x; // expect "A" | "B" | undefined  (because `if (obj.foo(arg)){...}` doesn't currently narrow signatures)
 >x : "A" | "B" | undefined
 }
-
-
-// if ((obj===obja && arg==="one") || (obj===objb && arg===1)){
-//     arg; // should be "one" | 1
-//     const x = obja.foo(arg); // x should be "1"
-// }
 

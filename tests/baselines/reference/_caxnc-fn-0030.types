@@ -18,8 +18,8 @@ const a0 = foo();
 >foo() : string[]
 >foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
 
-a0; // expect string
->a0 : string[]
+a0; // expect unknown
+>a0 : unknown
 
 const a1 = foo("");
 >a1 : number[]
@@ -27,8 +27,8 @@ const a1 = foo("");
 >foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
 >"" : ""
 
-a1; // expect  number
->a1 : number[]
+a1; // expect  unknown
+>a1 : unknown
 
 const a2 = foo("","");
 >a2 : string[]
@@ -37,8 +37,8 @@ const a2 = foo("","");
 >"" : ""
 >"" : ""
 
-a2; // expect string
->a2 : string[]
+a2; // expect unknown
+>a2 : unknown
 
 const a3 = foo("","","");
 >a3 : string[]
@@ -48,8 +48,8 @@ const a3 = foo("","","");
 >"" : ""
 >"" : ""
 
-a3; // expect string
->a3 : string[]
+a3; // expect unknown
+>a3 : unknown
 
 const a4 = foo("","","","");
 >a4 : string[]
@@ -60,8 +60,8 @@ const a4 = foo("","","","");
 >"" : ""
 >"" : ""
 
-a4; // expect string
->a4 : string[]
+a4; // expect unknown
+>a4 : unknown
 
 const b1 = foo(undefined);
 >b1 : string[]
@@ -69,8 +69,8 @@ const b1 = foo(undefined);
 >foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
 >undefined : undefined
 
-b1; // expect string
->b1 : string[]
+b1; // expect unknown
+>b1 : unknown
 
 const b2 = foo(undefined,undefined);
 >b2 : string[]
@@ -79,8 +79,8 @@ const b2 = foo(undefined,undefined);
 >undefined : undefined
 >undefined : undefined
 
-b2; // expect string
->b2 : string[]
+b2; // expect unknown
+>b2 : unknown
 
 const b3 = foo(undefined,undefined,undefined);
 >b3 : unknown
@@ -95,13 +95,13 @@ b3; // expect unknown
 
 [a0,a1,a2,a3,a4,b1,b2,b3];
 >[a0,a1,a2,a3,a4,b1,b2,b3] : unknown[]
->a0 : string[]
->a1 : number[]
->a2 : string[]
->a3 : string[]
->a4 : string[]
->b1 : string[]
->b2 : string[]
+>a0 : unknown
+>a1 : unknown
+>a2 : unknown
+>a3 : unknown
+>a4 : unknown
+>b1 : unknown
+>b2 : unknown
 >b3 : unknown
 
 

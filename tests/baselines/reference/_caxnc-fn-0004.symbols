@@ -48,18 +48,8 @@ if (obj.foo(arg)){
 >foo : Symbol(foo, Decl(_caxnc-fn-0004.ts, 0, 24), Decl(_caxnc-fn-0004.ts, 1, 23), Decl(_caxnc-fn-0004.ts, 4, 24), Decl(_caxnc-fn-0004.ts, 5, 23))
 >arg : Symbol(arg, Decl(_caxnc-fn-0004.ts, 10, 13))
 
-    // if (obj===obja){
-    //     arg; // should be string
-    //     const xa = obj.foo(arg);
-    //     xa; // should be "A"
-    // }
-    // if (obj===objb){
-    //     arg; // should be number
-    //     const xb = obj.foo(arg);
-    //     xb; // should be "B"
-    // }
     const x = obj.foo(arg); // x should be "A" | "B"
->x : Symbol(x, Decl(_caxnc-fn-0004.ts, 25, 9))
+>x : Symbol(x, Decl(_caxnc-fn-0004.ts, 15, 9))
 >obj.foo : Symbol(foo, Decl(_caxnc-fn-0004.ts, 0, 24), Decl(_caxnc-fn-0004.ts, 1, 23), Decl(_caxnc-fn-0004.ts, 4, 24), Decl(_caxnc-fn-0004.ts, 5, 23))
 >obj : Symbol(obj, Decl(_caxnc-fn-0004.ts, 12, 5))
 >foo : Symbol(foo, Decl(_caxnc-fn-0004.ts, 0, 24), Decl(_caxnc-fn-0004.ts, 1, 23), Decl(_caxnc-fn-0004.ts, 4, 24), Decl(_caxnc-fn-0004.ts, 5, 23))
@@ -73,13 +63,7 @@ if (obj.foo(arg)){
 >obj : Symbol(obj, Decl(_caxnc-fn-0004.ts, 12, 5))
 >foo : Symbol(foo, Decl(_caxnc-fn-0004.ts, 0, 24), Decl(_caxnc-fn-0004.ts, 1, 23), Decl(_caxnc-fn-0004.ts, 4, 24), Decl(_caxnc-fn-0004.ts, 5, 23))
 
-    x; // should be "A" | "B"
->x : Symbol(x, Decl(_caxnc-fn-0004.ts, 25, 9))
+    x; // expect "A" | "B" | undefined  (because `if (obj.foo(arg)){...}` doesn't currently narrow signatures)
+>x : Symbol(x, Decl(_caxnc-fn-0004.ts, 15, 9))
 }
-
-
-// if ((obj===obja && arg==="one") || (obj===objb && arg===1)){
-//     arg; // should be "one" | 1
-//     const x = obja.foo(arg); // x should be "1"
-// }
 

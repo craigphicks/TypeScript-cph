@@ -30,14 +30,14 @@ const isFoo = obj?.foo(); // isFoo should be number[] | bigint[] | undefined, be
 >obj : Readonly<Foo> | Readonly<Boo> | undefined
 >foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[]) | undefined
 
-isFoo; // isFoo should be number[] | bigint[] | undefined
->isFoo : number[] | bigint[] | undefined
+isFoo; // isFoo should be number[] | string[] | bigint[] | undefined
+>isFoo : number[] | string[] | bigint[] | undefined
 
 if (isFoo) {
->isFoo : number[] | bigint[] | undefined
+>isFoo : number[] | string[] | bigint[] | undefined
 
-    isFoo; // isFoo should be number[] | bigint[]
->isFoo : number[] | bigint[]
+    isFoo; // isFoo should be number[] | string[] | bigint[]
+>isFoo : number[] | string[] | bigint[]
 
     let x = obj; // x should be Readonly<Foo> | Readonly<Boo>
 >x : Readonly<Foo> | Readonly<Boo>
@@ -49,18 +49,18 @@ if (isFoo) {
 >x : Readonly<Foo> | Readonly<Boo>
 >foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[])
 
-    let z = y(); // z should be number[] | bigint[]
+    let z = y(); // z should be number[] | string[] | bigint[]
 >z : number[] | bigint[]
 >y() : number[] | bigint[]
 >y : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[])
 
-    console.log(z); // again z should be number[] | bigint[]
+    console.log(z); // again z should be number[] | string[] | bigint[]
 >console.log(z) : void
 >console.log : (...data: any[]) => void
 >console : Console
 >log : (...data: any[]) => void
->z : number[] | bigint[]
+>z : number[] | string[] | bigint[]
 }
-isFoo; // isFoo should be number[] | bigint[] | undefined
->isFoo : number[] | bigint[] | undefined
+isFoo; // isFoo should be number[] | string[] | bigint[] | undefined
+>isFoo : number[] | string[] | bigint[] | undefined
 

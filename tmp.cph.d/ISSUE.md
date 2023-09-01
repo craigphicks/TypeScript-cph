@@ -10,13 +10,18 @@
 
 0. Fix argument matching in `floughByCallExpressionV3`.
 
-    0. Non-obj type matching: Match non-obj types strictly, subtract once matched.
+    0. `calculateNextLeftovers` is calculated using a cross product.  That's too expensive so kill it.
 
-        0. Recfactor floughTypeModule.intersectionsAndDifferences to expose a non-obj only version
+    0. Recfactor floughTypeModule.intersectionsAndDifferences to expose a non-obj only version (Done)
 
-    0. Obj type matching (step 0): Match only (object) present or not present, no subtraction.
+    0. Non-obj type matching: Match non-obj arg-param types if at least some arg-param overlap in every parameter, ~~subtract once matched~~.
 
-    0. Obj type matching (step 1): Add stricter matching of some kind (e.g. duck typing), but without subtraction.
+    0. (Postpone) Check every arg is a subset of union of corr param types.
+
+    0. Obj type matching (step 0): Match only (object) present or not present.
+
+    0. Obj type matching (step 1): Add stricter matching of some kind (e.g. duck typing).
+
 
 0. cleanup dead code
 0. finish modulization of LogicalObjectAccessModule

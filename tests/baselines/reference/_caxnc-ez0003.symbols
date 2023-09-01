@@ -33,13 +33,13 @@ const isFoo = obj?.foo(); // isFoo should be number[] | bigint[] | undefined, be
 >obj : Symbol(obj, Decl(_caxnc-ez0003.ts, 7, 13))
 >foo : Symbol(foo, Decl(_caxnc-ez0003.ts, 0, 20), Decl(_caxnc-ez0003.ts, 1, 27), Decl(_caxnc-ez0003.ts, 4, 20))
 
-isFoo; // isFoo should be number[] | bigint[] | undefined
+isFoo; // isFoo should be number[] | string[] | bigint[] | undefined
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0003.ts, 8, 5))
 
 if (isFoo) {
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0003.ts, 8, 5))
 
-    isFoo; // isFoo should be number[] | bigint[]
+    isFoo; // isFoo should be number[] | string[] | bigint[]
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0003.ts, 8, 5))
 
     let x = obj; // x should be Readonly<Foo> | Readonly<Boo>
@@ -52,16 +52,16 @@ if (isFoo) {
 >x : Symbol(x, Decl(_caxnc-ez0003.ts, 13, 7))
 >foo : Symbol(foo, Decl(_caxnc-ez0003.ts, 0, 20), Decl(_caxnc-ez0003.ts, 1, 27), Decl(_caxnc-ez0003.ts, 4, 20))
 
-    let z = y(); // z should be number[] | bigint[]
+    let z = y(); // z should be number[] | string[] | bigint[]
 >z : Symbol(z, Decl(_caxnc-ez0003.ts, 15, 7))
 >y : Symbol(y, Decl(_caxnc-ez0003.ts, 14, 7))
 
-    console.log(z); // again z should be number[] | bigint[]
+    console.log(z); // again z should be number[] | string[] | bigint[]
 >console.log : Symbol(Console.log, Decl(lib.dom.d.ts, --, --))
 >console : Symbol(console, Decl(lib.dom.d.ts, --, --))
 >log : Symbol(Console.log, Decl(lib.dom.d.ts, --, --))
 >z : Symbol(z, Decl(_caxnc-ez0003.ts, 15, 7))
 }
-isFoo; // isFoo should be number[] | bigint[] | undefined
+isFoo; // isFoo should be number[] | string[] | bigint[] | undefined
 >isFoo : Symbol(isFoo, Decl(_caxnc-ez0003.ts, 8, 5))
 
