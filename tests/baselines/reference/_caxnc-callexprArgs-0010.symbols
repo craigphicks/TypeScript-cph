@@ -1,0 +1,50 @@
+=== tests/cases/conformance/_caxnc-callexprArgs/_caxnc-callexprArgs-0010.ts ===
+declare function f(p:1): 1;
+>f : Symbol(f, Decl(_caxnc-callexprArgs-0010.ts, 0, 0), Decl(_caxnc-callexprArgs-0010.ts, 0, 27), Decl(_caxnc-callexprArgs-0010.ts, 1, 27), Decl(_caxnc-callexprArgs-0010.ts, 2, 27))
+>p : Symbol(p, Decl(_caxnc-callexprArgs-0010.ts, 0, 19))
+
+declare function f(p:2): 2;
+>f : Symbol(f, Decl(_caxnc-callexprArgs-0010.ts, 0, 0), Decl(_caxnc-callexprArgs-0010.ts, 0, 27), Decl(_caxnc-callexprArgs-0010.ts, 1, 27), Decl(_caxnc-callexprArgs-0010.ts, 2, 27))
+>p : Symbol(p, Decl(_caxnc-callexprArgs-0010.ts, 1, 19))
+
+declare function f(p:3): 3;
+>f : Symbol(f, Decl(_caxnc-callexprArgs-0010.ts, 0, 0), Decl(_caxnc-callexprArgs-0010.ts, 0, 27), Decl(_caxnc-callexprArgs-0010.ts, 1, 27), Decl(_caxnc-callexprArgs-0010.ts, 2, 27))
+>p : Symbol(p, Decl(_caxnc-callexprArgs-0010.ts, 2, 19))
+
+declare function f(p: any): never;
+>f : Symbol(f, Decl(_caxnc-callexprArgs-0010.ts, 0, 0), Decl(_caxnc-callexprArgs-0010.ts, 0, 27), Decl(_caxnc-callexprArgs-0010.ts, 1, 27), Decl(_caxnc-callexprArgs-0010.ts, 2, 27))
+>p : Symbol(p, Decl(_caxnc-callexprArgs-0010.ts, 3, 19))
+
+declare const a: 1|2|3;
+>a : Symbol(a, Decl(_caxnc-callexprArgs-0010.ts, 4, 13))
+
+const rt = f(a);
+>rt : Symbol(rt, Decl(_caxnc-callexprArgs-0010.ts, 6, 5))
+>f : Symbol(f, Decl(_caxnc-callexprArgs-0010.ts, 0, 0), Decl(_caxnc-callexprArgs-0010.ts, 0, 27), Decl(_caxnc-callexprArgs-0010.ts, 1, 27), Decl(_caxnc-callexprArgs-0010.ts, 2, 27))
+>a : Symbol(a, Decl(_caxnc-callexprArgs-0010.ts, 4, 13))
+
+if (rt === 1) {
+>rt : Symbol(rt, Decl(_caxnc-callexprArgs-0010.ts, 6, 5))
+
+    a;
+>a : Symbol(a, Decl(_caxnc-callexprArgs-0010.ts, 4, 13))
+}
+else if (rt === 2) {
+>rt : Symbol(rt, Decl(_caxnc-callexprArgs-0010.ts, 6, 5))
+
+    a;
+>a : Symbol(a, Decl(_caxnc-callexprArgs-0010.ts, 4, 13))
+}
+else if (rt === 3) {
+>rt : Symbol(rt, Decl(_caxnc-callexprArgs-0010.ts, 6, 5))
+
+    a;
+>a : Symbol(a, Decl(_caxnc-callexprArgs-0010.ts, 4, 13))
+}
+else {
+    a;
+>a : Symbol(a, Decl(_caxnc-callexprArgs-0010.ts, 4, 13))
+}
+a;
+>a : Symbol(a, Decl(_caxnc-callexprArgs-0010.ts, 4, 13))
+
