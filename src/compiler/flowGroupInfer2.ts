@@ -2967,25 +2967,26 @@ namespace ts {
                 });
 
                 Debug.assert(leftMntr!==undefined);
-                const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
+                //const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
 
                 /**
-                 * It's too expensive to compute flough seperately for every indepent leftMntr.unmerged, so it is done on leftRttrUnion instead.
-                 * However, if the rhs is a readonly operation, then the lhs and rhs can be treated as independently calculated, post fact.
+                 * NO LONGER VALID: until left/right seperablity is showable.
+                 * ~~It's too expensive to compute flough seperately for every indepent leftMntr.unmerged, so it is done on leftRttrUnion instead.~~
+                 * ~~However, if the rhs is a readonly operation, then the lhs and rhs can be treated as independently calculated, post fact.~~
                  */
 
-                const assignCountBeforeRhs = leftRttrUnion.sci.symtab?.getAssignCount() ?? -1;
-                if (getMyDebug()){
-                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: ${assignCountBeforeRhs}`);
-                }
-                const rightMntr = flough({
-                        expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                        sci: leftRttrUnion.sci
-                });
+                // const assignCountBeforeRhs = leftRttrUnion.sci.symtab?.getAssignCount() ?? -1;
+                // if (getMyDebug()){
+                //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: ${assignCountBeforeRhs}`);
+                // }
+                // const rightMntr = flough({
+                //         expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                //         sci: leftRttrUnion.sci
+                // });
 
-                if (getMyDebug()){
-                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] rightMntr done`);
-                }
+                // if (getMyDebug()){
+                //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] rightMntr done`);
+                // }
 
                 const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
                 leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
@@ -2995,20 +2996,25 @@ namespace ts {
                             consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
                         });
                     }
+                    const rightMntr = flough({
+                        expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                        sci: leftRttr.sci
+                    });
+
                     Debug.assert(rightMntr);
                     rightMntr.unmerged.forEach((rightRttr0, _rightidx)=>{
                         const rightRttr = applyCritNoneToOne(rightRttr0,rightExpr,inferStatus.groupNodeToTypeMap);
-                        const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
-                        const leftRightIdependent = assignCountBeforeRhs===assignCountAfterRhs;
+                        // const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
+                        // const leftRightIdependent = assignCountBeforeRhs===assignCountAfterRhs;
                         if (getMyDebug()){
                             floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str=>{
                                 consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
                             });
                         }
 
-                        if (getMyDebug()){
-                            consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: ${assignCountBeforeRhs}, leftRightIndependent: ${leftRightIdependent}`);
-                        }
+                        // if (getMyDebug()){
+                        //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: ${assignCountBeforeRhs}, leftRightIndependent: ${leftRightIdependent}`);
+                        // }
                         if (getMyDebug()){
                             consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
                             consoleLog(`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
@@ -3040,6 +3046,7 @@ namespace ts {
                                 if (!x) return undefined;
                                 return floughTypeModule.getTsTypesFromFloughType(x);
                             }
+                            let sctmp: RefTypesSymtabConstraintItem = rightRttr.sci;
                             if (getMyDebug()) {
                                 const leftFt1 = both ?? left;
                                 //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
@@ -3048,9 +3055,13 @@ namespace ts {
                                 Debug.assert(leftFt1 && rightFt1);
                                 consoleLog(`floughByBinaryExpressionEqualCompare[dbg] -- before`
                                 +`[${_i}][0] left:${dbgRefTypesTypeToString(leftFt1)}, right:${dbgRefTypesTypeToString(rightFt1)}, pass:${pass},fail:${fail}`);
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr0.symbol:${dbgSymbolToStringSimple(leftRttr0.symbol)}, rightRttr0.symbol:${dbgSymbolToStringSimple(rightRttr0.symbol)}`);
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] !!leftMntr.typeof:${!!leftMntr.typeof}, !!rightMntr.typeof:${!!rightMntr.typeof}`);
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] !!leftRttr0.callExpressionData:${!!leftRttr0.callExpressionData}, !!rightRttr0.callExpressionData:${!!rightRttr0.callExpressionData}`);
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] !!leftRttr.logicalObjectAccessData:${!!leftRttr.logicalObjectAccessData}, !!rightRttr.logicalObjectAccessData:${!!rightRttr.logicalObjectAccessData}`);
+                                dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s=>consoleLog(`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`));
                             }
 
-                            let sctmp = leftRightIdependent ? leftRttr.sci : rightRttr.sci;
                             const tftype = pass ? (fail ? trueAndFalseType : nomativeTrueType) : nomativeFalseType;
                             if (leftRttr0.symbol){
                                 leftFt = both ?? left;
@@ -3152,8 +3163,9 @@ namespace ts {
                                 const rightx = both ?? right;
                                 //const rightFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(rightts), floughTypeModule.createRefTypesType(rightts));
                                 Debug.assert(leftx && rightx);
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] `
+                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] -- after`
                                 +`[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`);
+                                dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s=>consoleLog(`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`));
                             }
                             arrRefTypesTableReturn.push({
                                 type: tftype,

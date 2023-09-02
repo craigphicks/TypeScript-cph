@@ -1,0 +1,28 @@
+=== tests/cases/conformance/_caxnc-callexprArgs/_caxnc-callexprEqNeq-0001.ts ===
+declare function f(x:1): 1;
+>f : Symbol(f, Decl(_caxnc-callexprEqNeq-0001.ts, 0, 0), Decl(_caxnc-callexprEqNeq-0001.ts, 0, 27))
+>x : Symbol(x, Decl(_caxnc-callexprEqNeq-0001.ts, 0, 19))
+
+declare function f(x:2): 2;
+>f : Symbol(f, Decl(_caxnc-callexprEqNeq-0001.ts, 0, 0), Decl(_caxnc-callexprEqNeq-0001.ts, 0, 27))
+>x : Symbol(x, Decl(_caxnc-callexprEqNeq-0001.ts, 1, 19))
+
+
+declare const x: 1|2;
+>x : Symbol(x, Decl(_caxnc-callexprEqNeq-0001.ts, 4, 13))
+
+// @ts-ignore-error 2769
+if (f(x)===1)
+>f : Symbol(f, Decl(_caxnc-callexprEqNeq-0001.ts, 0, 0), Decl(_caxnc-callexprEqNeq-0001.ts, 0, 27))
+>x : Symbol(x, Decl(_caxnc-callexprEqNeq-0001.ts, 4, 13))
+{
+    x;
+>x : Symbol(x, Decl(_caxnc-callexprEqNeq-0001.ts, 4, 13))
+}
+else {
+    x;
+>x : Symbol(x, Decl(_caxnc-callexprEqNeq-0001.ts, 4, 13))
+}
+x;
+>x : Symbol(x, Decl(_caxnc-callexprEqNeq-0001.ts, 4, 13))
+
