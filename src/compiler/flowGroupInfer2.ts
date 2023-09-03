@@ -2997,25 +2997,6 @@ namespace ts {
                     }
                 }
 
-                /**
-                 * NO LONGER VALID: until left/right seperablity is showable.
-                 * ~~It's too expensive to compute flough seperately for every indepent leftMntr.unmerged, so it is done on leftRttrUnion instead.~~
-                 * ~~However, if the rhs is a readonly operation, then the lhs and rhs can be treated as independently calculated, post fact.~~
-                 */
-
-                // const assignCountBeforeRhs = leftRttrUnion.sci.symtab?.getAssignCount() ?? -1;
-                // if (getMyDebug()){
-                //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountBeforeRhs: ${assignCountBeforeRhs}`);
-                // }
-                // const rightMntr = flough({
-                //         expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                //         sci: leftRttrUnion.sci
-                // });
-
-                // if (getMyDebug()){
-                //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] rightMntr done`);
-                // }
-
                 const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
                 leftMntr.unmerged.forEach((leftRttr0,_leftidx)=>{
                     const leftRttr = applyCritNoneToOne(leftRttr0,leftExpr,inferStatus.groupNodeToTypeMap);
@@ -3040,8 +3021,6 @@ namespace ts {
                     Debug.assert(rightMntr);
                     rightMntr.unmerged.forEach((rightRttr0, _rightidx)=>{
                         const rightRttr = applyCritNoneToOne(rightRttr0,rightExpr,inferStatus.groupNodeToTypeMap);
-                        // const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
-                        // const leftRightIdependent = assignCountBeforeRhs===assignCountAfterRhs;
                         if (getMyDebug()){
                             floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str=>{
                                 consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
@@ -3062,18 +3041,13 @@ namespace ts {
                             }
                         }
 
-                        // if (getMyDebug()){
-                        //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] assignCountAfterRhs: ${assignCountBeforeRhs}, leftRightIndependent: ${leftRightIdependent}`);
-                        // }
                         if (getMyDebug()){
                             consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
                             consoleLog(`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
                         }
+
                         const iad = floughTypeModule.intersectionsAndDifferencesForEqualityCompare(leftRttr.type,rightRttr.type);
-                        // const aeqcmp = floughTypeModule.partitionForEqualityCompare(leftRttr.type,rightRttr.type);
-                        // if (getMyDebug()){
-                        //     consoleLog(`floughByBinaryExpressionEqualCompare[dbg] aeqcmp.length:${aeqcmp.length}`);
-                        // }
+
                         type Item = & {left?: FloughType, right?: FloughType, both?: FloughType, pass?: boolean, fail?: boolean};
                         const items: Item[] = [];
                         if (iad.bothUnique) items.push({ both:iad.bothUnique, pass:true, fail:false });

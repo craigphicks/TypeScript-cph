@@ -6,21 +6,24 @@
 
 ### Priority: High
 
-0. Need to test `bypassBothUnique` code branch in intersectionsAndDifferencesNobjInteral - currently will fail with "not yet implemented"
+0. Grouping and Heap
+
+    0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFlow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least. (This was at least improved for  _caxnc-prop-0003 by commit ff478282a2).
+
+    0.  Add postGroups member to Group and find graphs of connected groups.  Do one graph of connected groups instead of just ante Groups.
+
+
+
 
 0. Fix argument matching in `floughByCallExpressionV3`.
-
-    0. `calculateNextLeftovers` is calculated using a cross product.  That's too expensive so kill it.
-
-    0. Recfactor floughTypeModule.intersectionsAndDifferences to expose a non-obj only version (Done)
-
-    0. Non-obj type matching: Match non-obj arg-param types if at least some arg-param overlap in every parameter, ~~subtract once matched~~.
 
     0. (Postpone) Check every arg is a subset of union of corr param types.
 
     0. Obj type matching (step 0): Match only (object) present or not present.
 
     0. Obj type matching (step 1): Add stricter matching of some kind (e.g. duck typing).
+
+0. `floughByCallExpressionV3` Add state in logical objects to narrow the choice of overload function?
 
 
 0. cleanup dead code
@@ -42,9 +45,6 @@ x;
 0.  `Switch`
 
 
-0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFLow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least. (This was at least improved for  _caxnc-prop-0003 by commit ff478282a2).
-
-    0.  Possible Strategy - instead of only following flow records only upwards, follow them downwards first.
 
 
 0. A new function in checker: `isConstantSymbolOfIdentifier(symbol)` based on `isConstantReference(expr)`.  That way `expr` is not required.
@@ -56,7 +56,6 @@ x;
 
 0. Deconstructed lhs.
 
-0. Add state in logical objects to narrow the choice of overload function?
 
 ### Priority: Postponed
 

@@ -1395,3 +1395,7 @@ myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRNindep-0000" -i 
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-eqneqLRNindep-0000" 
 myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0003" 
+. cleantmp.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-prop-0003" 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-flowgraph-0001" 
