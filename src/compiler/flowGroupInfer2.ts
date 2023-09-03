@@ -2967,7 +2967,35 @@ namespace ts {
                 });
 
                 Debug.assert(leftMntr!==undefined);
-                //const leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
+
+                /**
+                 * TODO: Current criterion for seperability could be widened.
+                 * If we the changes to left and right sci only affect different symbols, then they are seperable.
+                 * But there currently isn't a low cost way to check that, because the symbol table might be huge
+                 */
+                let assumeSeparable = true;
+                let leftRttrUnion: RefTypesTableReturn | undefined;
+                let rightMntrSeparable: FloughReturn | undefined;
+                let useLeftSci = false;
+                if (assumeSeparable){
+                    leftRttrUnion = applyCritNoneUnion(leftMntr,inferStatus.groupNodeToTypeMap);
+                    rightMntrSeparable = flough({
+                            expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                            sci: leftRttrUnion.sci
+                    });
+                    if (leftRttrUnion.sci!==sci){
+                        const rightMntrSeparableUnion = applyCritNoneUnion(rightMntrSeparable,inferStatus.groupNodeToTypeMap);
+                        if (rightMntrSeparableUnion.sci === leftRttrUnion.sci){
+                            useLeftSci = true;
+                        }
+                        else {
+                            assumeSeparable = false;
+                            leftRttrUnion = undefined;
+                            rightMntrSeparable = undefined;
+                            //Debug.fail("checking how many and which tests take this branch");
+                        }
+                    }
+                }
 
                 /**
                  * NO LONGER VALID: until left/right seperablity is showable.
@@ -2996,10 +3024,18 @@ namespace ts {
                             consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
                         });
                     }
-                    const rightMntr = flough({
-                        expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
-                        sci: leftRttr.sci
-                    });
+                    let rightMntr: FloughReturn;
+                    let rightMntrNotSeparable: FloughReturn | undefined;
+                    if (!assumeSeparable){
+                        rightMntrNotSeparable = flough({
+                            expr:rightExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus/*:{ ...inferStatus, inCondition:false }*/,
+                            sci: leftRttr.sci
+                        });
+                        rightMntr = rightMntrNotSeparable;
+                    }
+                    else {
+                        rightMntr = rightMntrSeparable!;
+                    }
 
                     Debug.assert(rightMntr);
                     rightMntr.unmerged.forEach((rightRttr0, _rightidx)=>{
@@ -3010,6 +3046,20 @@ namespace ts {
                             floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str=>{
                                 consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
                             });
+                        }
+                        let sciLeftRight0: RefTypesSymtabConstraintItem;
+                        if (!assumeSeparable){
+                            sciLeftRight0 = rightRttr.sci;
+                        }
+                        else {
+                            // "andSymtabConstraintItemIntoSymtabConstraintItem" doesn't exist - but it's what we might like to do.
+                            // andSymtabConstraintItemIntoSymtabConstraintItem(leftRttr.sci, rightRttr.sci);
+                            if (useLeftSci){
+                                sciLeftRight0 = leftRttr.sci;
+                            }
+                            else {
+                                sciLeftRight0 = rightRttr.sci;
+                            }
                         }
 
                         // if (getMyDebug()){
@@ -3046,7 +3096,8 @@ namespace ts {
                                 if (!x) return undefined;
                                 return floughTypeModule.getTsTypesFromFloughType(x);
                             }
-                            let sctmp: RefTypesSymtabConstraintItem = rightRttr.sci;
+                            // let sctmp: RefTypesSymtabConstraintItem = rightRttr.sci;
+                            let sctmp: RefTypesSymtabConstraintItem = sciLeftRight0;
                             if (getMyDebug()) {
                                 const leftFt1 = both ?? left;
                                 //const leftFt = bothts ? floughTypeModule.createRefTypesType(bothts) : (Debug.assert(leftts), floughTypeModule.createRefTypesType(leftts));
