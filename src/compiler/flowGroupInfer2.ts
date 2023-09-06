@@ -1732,16 +1732,52 @@ namespace ts {
                 assertCastType<Readonly<ArrayLiteralExpression>>(expr);
                 //let sci: RefTypesSymtabConstraintItem = { symtab:refTypesSymtabIn,constraintItem:constraintItemIn };
                 let sci1: RefTypesSymtabConstraintItem = sci;
-                for (const e of expr.elements){
-                    ({sci:sci1}=applyCritNoneUnion(flough({
+                const elemTsTypes: Type[] = [];
+                const elemFlags: ElementFlags[] = [];
+                for (let i=0; i<expr.elements.length; i++){
+                    const e = expr.elements[i];
+                    let type;
+                    ({type, sci:sci1}=applyCritNoneUnion(flough({
                         sci:sci1,
                         expr:(e.kind===SyntaxKind.SpreadElement) ? (e as SpreadElement).expression : e,
                         crit:{ kind: InferCritKind.none },
                         qdotfallout: undefined, inferStatus,
                     }),inferStatus.groupNodeToTypeMap));
+                    if (refactorConnectedGroupsGraphsNoShallowRecursion){
+                        const tstype = checker.getUnionType(floughTypeModule.getTsTypesFromFloughType(type));
+                        if (e.kind===SyntaxKind.SpreadElement){
+                            if (checker.isArrayOrTupleType(tstype)) {
+                                if (checker.isTupleType(tstype)){
+                                    //Debug.assert(tstype.objectFlags & ObjectFlags.Reference);
+                                    Debug.assert(tstype.resolvedTypeArguments);
+                                    tstype.resolvedTypeArguments?.forEach((tstype,_indexInTuple)=>{
+                                        elemTsTypes.push(tstype);
+                                        elemFlags.push(ElementFlags.Required);
+                                    });
+                                }
+                                else {
+                                    elemTsTypes.push(tstype);
+                                    elemFlags.push(ElementFlags.Rest);
+                                }
+                            }
+                            else {
+                                // This should not happen, unless maybe it is a syntax error.
+                                Debug.assert(false, "unexpected / not yet implemented");
+                            }
+                        }
+                        else {
+                            elemTsTypes.push(tstype);
+                            elemFlags.push(ElementFlags.Required);
+                        }
+                    }
                 }
-
-                const arrayType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
+                let arrayType: Type;
+                if (refactorConnectedGroupsGraphsNoShallowRecursion){
+                    arrayType = checker.createTupleType(elemTsTypes,elemFlags);
+                }
+                else {
+                    arrayType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
+                }
                 if (getMyDebug()) consoleLog(`floughInner[dbg]: case SyntaxKind.ArrayLiteralExpression: arrayType: ${dbgTypeToString(arrayType)}`);
                 return {
                     unmerged: [{
@@ -1849,7 +1885,24 @@ namespace ts {
                 if (typeNode.kind===SyntaxKind.TypeReference &&
                     (typeNode as TypeReferenceNode).typeName.kind===SyntaxKind.Identifier &&
                     ((typeNode as TypeReferenceNode).typeName as Identifier).escapedText === "const"){
-                    tstype = inferStatus.getTypeOfExpressionShallowRecursion({ symtab, constraintItem }, expr);
+                    if (refactorConnectedGroupsGraphsNoShallowRecursion){
+                        const tsType0 = floughTypeModule.getTypeFromRefTypesType(rhs.type);
+                        if (checker.isTupleType(tsType0)){
+                            tstype = checker.createReaonlyTupleTypeFromTupleType(tsType0 as TupleTypeReference);
+                        }
+                        else if (checker.isArrayType(tsType0)){
+                            Debug.assert(false,"not yet implemented [isArrayType]: ", ()=>dbgNodeToString(expr));
+                        }
+                        else if (tsType0.flags & TypeFlags.Object){
+                            Debug.assert(false,"not yet implemented [ObjectType]: ", ()=>dbgNodeToString(expr));
+                            //checker.createObjectLiteralTypeFromShape();
+                            //tstype = checker.createReadonlyObjectType(tsType0 as ObjectType);
+                        }
+                        else {
+                            Debug.assert(false,"not yet implemented: ", ()=>dbgNodeToString(expr));
+                        }
+                    }
+                    else tstype = inferStatus.getTypeOfExpressionShallowRecursion({ symtab, constraintItem }, expr);
                 }
                 else {
                     tstype = checker.getTypeFromTypeNode(typeNode);

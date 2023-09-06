@@ -4328,6 +4328,8 @@ namespace ts {
         narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     }
     export interface TypeChecker {
+        ///* @internal */ cloneNonTupleNonArrayObjectType(type: Type): Type;
+        /* @internal */ createTupleType(elementTypes: readonly Type[], elementFlags: readonly ElementFlags[], readonly?: boolean): Type;
         /* @internal */ createReaonlyTupleTypeFromTupleType(type: Readonly<TupleTypeReference>): TupleTypeReference;
         /* @internal */ isReadonlyArrayType(type: Type): boolean;
         ///* @internal */ getTypeFromTypeNode(node: TypeNode): Type;

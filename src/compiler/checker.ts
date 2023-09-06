@@ -965,6 +965,7 @@ namespace ts {
             getErrorType: () => errorType,
             createPromiseType,
             createArrayType,
+            createTupleType,
             getElementTypeOfArrayType,
             getBooleanType: () => booleanType,
             getFalseType: (fresh?) => fresh ? falseType : regularFalseType,
@@ -17678,6 +17679,30 @@ namespace ts {
             }
             return type;
         }
+        /**
+         *
+         */
+        // function cloneNonTupleNonArrayObjectType(type: Type): Type {
+        //     if (type.flags & TypeFlags.Object) {
+        //         const newobj = createObjectType(type.flags, type.symbol);
+        //         const resolved = resolveStructuredTypeMembers(type as ObjectType);
+        //         const ret = { ...newobj, ...resolved };
+        //         return ret;
+        //         // if (resolved.constructSignatures.length || resolved.callSignatures.length) {
+        //         //     const result = createObjectType(ObjectFlags.Anonymous, type.symbol);
+        //         //     result.members = resolved.members;
+        //         //     result.properties = resolved.properties;
+        //         //     result.callSignatures = emptyArray;
+        //         //     result.constructSignatures = emptyArray;
+        //         //     result.indexInfos = emptyArray;
+        //         //     return result;
+        //         // }
+        //     }
+        //     else if (type.flags & TypeFlags.Intersection) {
+        //         Debug.assert(false,"intersection not yet implemented");
+        //     }
+        //     Debug.assert(false,"unexpected");
+        // }
 
         // TYPE CHECKING
 

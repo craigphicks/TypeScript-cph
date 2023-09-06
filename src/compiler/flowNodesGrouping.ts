@@ -53,6 +53,46 @@ namespace ts {
         }
     }
 
+    function makeConnectedGroupsGraphs(orderedGroups: Readonly<GroupForFlow[]>, groupToAnteGroupMap: Readonly<ESMap< GroupForFlow, Set<GroupForFlow>>>):
+    ConnectedGroupsGraphs {
+        const arrGroupIndexToConnectGraph: number[] = new Array(orderedGroups.length).fill(-1);
+        const arrGroupIndexToDependantCount: number[] = new Array(orderedGroups.length).fill(0);
+        const arrConnectedGraphs: GroupForFlow[][] = [];
+        for (const groupIdx in orderedGroups){
+            const group = orderedGroups[groupIdx];
+            const anteGroups = groupToAnteGroupMap.get(group);
+            anteGroups?.forEach(anteGroup=>{
+                arrGroupIndexToDependantCount[anteGroup.groupIdx]++;
+            });
+            if (!anteGroups || anteGroups.size===0) {
+                const graphIndex = arrConnectedGraphs.length;
+                arrConnectedGraphs.push([group]);
+                arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
+                if (getMyDebug()) group.dbgGraphIdx = graphIndex;
+            }
+            else {
+                const anteGroup = anteGroups.values().next().value as GroupForFlow;
+                const graphIndex = arrGroupIndexToConnectGraph[anteGroup.groupIdx];
+                arrConnectedGraphs[graphIndex].push(group);
+                arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
+                if (getMyDebug()) group.dbgGraphIdx = graphIndex;
+            }
+        }
+        if (extraAsserts){
+            arrConnectedGraphs.forEach((graph,graphIndex)=>{
+                graph.forEach(group=>{
+                    Debug.assert(arrGroupIndexToConnectGraph[group.groupIdx] === graphIndex);
+                    const anteGroups = groupToAnteGroupMap.get(group);
+                    if (!anteGroups) return;
+                    anteGroups?.forEach(anteGroup=>{
+                        Debug.assert(arrGroupIndexToConnectGraph[anteGroup.groupIdx] === graphIndex);
+                    });
+                });
+            });
+        }
+        return { arrConnectedGraphs, arrGroupIndexToDependantCount, arrGroupIndexToConnectGraph };
+    }
+
     export function makeGroupsForFlow(sourceFile: SourceFile, checker: TypeChecker): GroupsForFlow {
 
         const flowNodes: FlowNode[] = sourceFile.allFlowNodes ?? [];
@@ -520,6 +560,7 @@ namespace ts {
             //groupToSetOfFlowMap,
             groupToAnteGroupMap,
             nodeToGroupMap,
+            connectedGroupsGraphs: makeConnectedGroupsGraphs(orderedGroups, groupToAnteGroupMap),
             //dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx,
         };
         if (getMyDebug()) {
@@ -717,6 +758,9 @@ namespace ts {
                 g.dbgSetOfUnhandledFlow.forEach((fnlab,fnlabidx)=>{
                     astr.push(`groups[${i}]:    dbgSetOfUnhandledFlow[${fnlabidx}]: ${dbgFlowToString(fnlab,/*withAntecedents*/ true)}`);
                 });
+            }
+            if (g.dbgGraphIdx!==undefined){
+                astr.push(`groups[${i}]:    dbgGraphIdx:${g.dbgGraphIdx}`);
             }
         });
 
