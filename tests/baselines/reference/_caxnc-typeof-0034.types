@@ -3,12 +3,12 @@ declare const a: number|string;
 >a : string | number
 
 const xa = typeof a;
->xa : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
->typeof a : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>xa : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>typeof a : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
 >a : string | number
 
 xa;
->xa : "string" | "number"
+>xa : "number" | "string"
 
 if (a===0){
 >a===0 : boolean

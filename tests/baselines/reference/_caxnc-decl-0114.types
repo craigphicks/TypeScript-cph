@@ -32,7 +32,7 @@ function decl0014(){
 >x : "1"
     }
     x; // flow not trigger without x here
->x : number[] | "1"
+>x : "1" | number[]
 
     x = 2;
 >x = 2 : 2

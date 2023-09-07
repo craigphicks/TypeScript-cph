@@ -2,7 +2,7 @@
 const x = typeof 1 === "number";
 >x : boolean
 >typeof 1 === "number" : boolean
->typeof 1 : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>typeof 1 : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
 >1 : 1
 >"number" : "number"
 

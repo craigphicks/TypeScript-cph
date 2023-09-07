@@ -1,18 +1,18 @@
 === tests/cases/conformance/_caxnc/_caxnc-fn-0023.ts ===
 declare function foo(x?:number):number[];
->foo : { (x?: number): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
->x : number | undefined
+>foo : { (x?: number): number[]; (x?: undefined | number, y?: undefined | string, z?: undefined | string): string[]; }
+>x : undefined | number
 
 declare function foo(x?:number,y?:string,z?:string):string[];
->foo : { (x?: number | undefined): number[]; (x?: number, y?: string, z?: string): string[]; }
->x : number | undefined
->y : string | undefined
->z : string | undefined
+>foo : { (x?: undefined | number): number[]; (x?: number, y?: string, z?: string): string[]; }
+>x : undefined | number
+>y : undefined | string
+>z : undefined | string
 
 const a2 = foo(1);
 >a2 : number[]
 >foo(1) : number[]
->foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined, z?: string | undefined): string[]; }
+>foo : { (x?: undefined | number): number[]; (x?: undefined | number, y?: undefined | string, z?: undefined | string): string[]; }
 >1 : 1
 
 a2; // expect number[]

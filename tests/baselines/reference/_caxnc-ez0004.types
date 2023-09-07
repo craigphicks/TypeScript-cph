@@ -3,13 +3,13 @@ declare type Foo = {
 >Foo : { foo(x?: number): number[]; foo(x?: string, y?: string): string[]; }
 
     foo(x?:number):number[]
->foo : { (x?: number): number[]; (x?: string | undefined, y?: string | undefined): string[]; }
->x : number | undefined
+>foo : { (x?: number): number[]; (x?: undefined | string, y?: undefined | string): string[]; }
+>x : undefined | number
 
     foo(x?:string,y?:string):string[]
->foo : { (x?: number | undefined): number[]; (x?: string, y?: string): string[]; }
->x : string | undefined
->y : string | undefined
+>foo : { (x?: undefined | number): number[]; (x?: string, y?: string): string[]; }
+>x : undefined | string
+>y : undefined | string
 
 };
 declare type Boo = {
@@ -21,22 +21,22 @@ declare type Boo = {
 
 };
 declare const obj: Readonly<Foo> | Readonly<Boo> | undefined;
->obj : Readonly<Foo> | Readonly<Boo> | undefined
+>obj : Readonly<Boo> | Readonly<Foo> | undefined
 
 const isFoo = obj?.foo();
->isFoo : number[] | bigint[] | undefined
->obj?.foo() : number[] | bigint[] | undefined
->obj?.foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[]) | undefined
->obj : Readonly<Foo> | Readonly<Boo> | undefined
->foo : { (x?: number | undefined): number[]; (x?: string | undefined, y?: string | undefined): string[]; } | ((x?: bigint | undefined) => bigint[]) | undefined
+>isFoo : bigint[] | number[] | undefined
+>obj?.foo() : bigint[] | number[] | undefined
+>obj?.foo : ((x?: bigint | undefined) => bigint[]) | { (x?: undefined | number): number[]; (x?: undefined | string, y?: undefined | string): string[]; } | undefined
+>obj : Readonly<Boo> | Readonly<Foo> | undefined
+>foo : ((x?: bigint | undefined) => bigint[]) | { (x?: undefined | number): number[]; (x?: undefined | string, y?: undefined | string): string[]; } | undefined
 
 // @ts-dev-debugger
 if (isFoo) {
->isFoo : number[] | string[] | bigint[] | undefined
+>isFoo : bigint[] | number[] | string[] | undefined
 
     let x = obj;
->x : Readonly<Foo> | Readonly<Boo>
->obj : Readonly<Foo> | Readonly<Boo>
+>x : Readonly<Boo> | Readonly<Foo>
+>obj : Readonly<Boo> | Readonly<Foo>
 }
 else {
     obj;

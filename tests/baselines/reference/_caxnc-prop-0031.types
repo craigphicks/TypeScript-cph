@@ -9,7 +9,7 @@ declare type X = {
 
 };
 declare const x:X|null;
->x : X | null
+>x : null | X
 >null : null
 
 function prop0021(){
@@ -19,7 +19,7 @@ function prop0021(){
 >x?.a1?.a2?.a3 : 1 | 2 | undefined
 >x?.a1?.a2 : { a3?: 1 | 2 | undefined; } | undefined
 >x?.a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; } | undefined
->x : X | null
+>x : null | X
 >a1 : { a2?: { a3?: 1 | 2 | undefined; } | undefined; } | undefined
 >a2 : { a3?: 1 | 2 | undefined; } | undefined
 >a3 : 1 | 2 | undefined

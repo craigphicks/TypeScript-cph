@@ -10,7 +10,7 @@ declare type U = { u?: U, t: T };
 >t : T
 
 declare const tu1:T | U | undefined;
->tu1 : U | T | undefined
+>tu1 : T | U | undefined
 
 //declare const tu2:T | U;
 function propAssign0001_2(): any {
@@ -21,7 +21,7 @@ function propAssign0001_2(): any {
 >tu1?.u?.t.u : U | undefined
 >tu1?.u?.t : T | undefined
 >tu1?.u : U | undefined
->tu1 : U | T | undefined
+>tu1 : T | U | undefined
 >u : U | undefined
 >t : T | undefined
 >u : U | undefined
@@ -38,7 +38,7 @@ function propAssign0001_2(): any {
 >tu1.u.t.u : U
 >tu1.u.t : T
 >tu1.u : U
->tu1 : U | T
+>tu1 : T | U
 >u : U
 >t : T
 >u : U
@@ -51,7 +51,7 @@ function propAssign0001_2(): any {
 >tu1.u.t.u : U
 >tu1.u.t : T
 >tu1.u : U
->tu1 : U | T
+>tu1 : T | U
 >u : U
 >t : T
 >u : U

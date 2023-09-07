@@ -6,15 +6,15 @@ declare const b: number|boolean;
 >b : number | boolean
 
 const xa = (typeof a);
->xa : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
->(typeof a) : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
->typeof a : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>xa : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>(typeof a) : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>typeof a : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
 >a : string | number
 
 const xb = (typeof b);
->xb : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
->(typeof b) : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
->typeof b : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>xb : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>(typeof b) : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>typeof b : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
 >b : number | boolean
 
 if (a===b){
@@ -39,12 +39,12 @@ else {
 >a : string | number
 
     xa;
->xa : "string" | "number"
+>xa : "number" | "string"
 
     b;
 >b : number | boolean
 
     xb;
->xb : "number" | "boolean"
+>xb : "boolean" | "number"
 }
 

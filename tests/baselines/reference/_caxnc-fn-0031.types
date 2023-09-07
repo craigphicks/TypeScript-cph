@@ -1,18 +1,18 @@
 === tests/cases/conformance/_caxnc/_caxnc-fn-0031.ts ===
 declare function foo(x:string): number[];
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >x : string
 
 declare function foo(x?:string,y?:string,...z:string[]): string[];
 >foo : { (x: string): number[]; (x?: string, y?: string, ...z: string[]): string[]; }
->x : string | undefined
->y : string | undefined
+>x : undefined | string
+>y : undefined | string
 >z : string[]
 
 const b3 = foo(undefined,undefined,undefined);
 >b3 : number[] & string[]
 >foo(undefined,undefined,undefined) : number[] & string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >undefined : undefined
 >undefined : undefined
 >undefined : undefined

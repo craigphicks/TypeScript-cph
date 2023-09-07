@@ -26,9 +26,9 @@ let r = x ? y : z;
 
 if (r.b===undefined){
 >r.b===undefined : boolean
->r.b : string | undefined
+>r.b : undefined | string
 >r : { a: number; } | { a: string; b: string; }
->b : string | undefined
+>b : undefined | string
 >undefined : undefined
 
     r; // expect { a: number; }

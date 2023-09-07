@@ -49,7 +49,7 @@ declare const e: E|F;
 
 if (e===E.n1){
 >e===E.n1 : boolean
->e : 1 | 2 | "a" | "b"
+>e : "a" | "b" | 1 | 2
 >E.n1 : E.n1
 >E : typeof E
 >n1 : E.n1
@@ -60,7 +60,7 @@ if (e===E.n1){
 // @ts-ignore to suppress TS2367
 else if (e===1){
 >e===1 : boolean
->e : 2 | "a" | "b"
+>e : "a" | "b" | 2
 >1 : 1
 
     // Compile error TS2367 doesn't show up in the GUI, only compile time

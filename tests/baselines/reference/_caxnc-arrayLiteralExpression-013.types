@@ -4,7 +4,7 @@ declare const c: boolean;
 
 const x: readonly[boolean,boolean] = c ? [c,c] as const : [c,c] as const;
 >x : readonly [boolean, boolean]
->c ? [c,c] as const : [c,c] as const : readonly [true, true] | readonly [false, false]
+>c ? [c,c] as const : [c,c] as const : readonly [false, false] | readonly [true, true]
 >c : boolean
 >[c,c] as const : readonly [true, true]
 >[c,c] : readonly [true, true]

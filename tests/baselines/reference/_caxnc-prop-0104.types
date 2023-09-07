@@ -15,11 +15,11 @@ function prop0104(){
 
     if (!x?.foo?.bar){
 >!x?.foo?.bar : boolean
->x?.foo?.bar : boolean | undefined
+>x?.foo?.bar : undefined | boolean
 >x?.foo : { bar: boolean; } | undefined
 >x : X | undefined
 >foo : { bar: boolean; } | undefined
->bar : boolean | undefined
+>bar : undefined | boolean
 
         x?.foo?.bar;
 >x?.foo?.bar : false | undefined

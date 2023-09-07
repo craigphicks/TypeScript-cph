@@ -20,14 +20,14 @@ let bar = { a: 1, b: 2 };
 
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: number; b: number; }"
 let result = x ? foo : bar;
->result : { a: number; b?: undefined; } | { a: number; b: number; }
->x ? foo : bar : { a: number; } | { a: number; b: number; }
+>result : { a: number; b: number; } | { a: number; b?: undefined; }
+>x ? foo : bar : { a: number; b: number; } | { a: number; }
 >x : boolean
 >foo : { a: number; }
 >bar : { a: number; b: number; }
 
 result.b; // expect number | undefined
->result.b : number | undefined
->result : { a: number; } | { a: number; b: number; }
->b : number | undefined
+>result.b : undefined | number
+>result : { a: number; b: number; } | { a: number; }
+>b : undefined | number
 

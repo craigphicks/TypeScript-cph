@@ -29,6 +29,6 @@ let v = b ? (undefined as any as Foo) : (undefined as any as ObjFoo).foo;
 >foo : () => string[]
 
 v();
->v() : string[] | number[]
+>v() : number[] | string[]
 >v : (() => string[]) | Foo
 

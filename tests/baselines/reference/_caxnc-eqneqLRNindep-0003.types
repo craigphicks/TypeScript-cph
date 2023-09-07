@@ -1,10 +1,10 @@
 === tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0003.ts ===
 let x: string | number | bigint = 1;
->x : string | number | bigint
+>x : bigint | string | number
 >1 : 1
 
 let y: string | number | bigint = 1;
->y : string | number | bigint
+>y : bigint | string | number
 >1 : 1
 
 x;
@@ -18,7 +18,7 @@ if (x===(y=x)){
 >x : number
 >(y=x) : number
 >y=x : number
->y : string | number | bigint
+>y : bigint | string | number
 >x : number
 
     x;y;
