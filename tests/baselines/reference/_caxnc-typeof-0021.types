@@ -4,7 +4,7 @@ declare const a: number|string;
 
 if (typeof a==="number"){
 >typeof a==="number" : boolean
->typeof a : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>typeof a : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
 >a : string | number
 >"number" : "number"
 

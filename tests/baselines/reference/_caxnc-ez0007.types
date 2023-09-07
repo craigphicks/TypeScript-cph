@@ -26,7 +26,7 @@ const isFoo = obja?.foo(arg);
 >arg : string | number
 
 if (isFoo){
->isFoo : 0 | "1" | undefined
+>isFoo : "1" | 0 | undefined
 
     obja; // expect FooA
 >obja : FooA
@@ -68,5 +68,5 @@ arg; // expect string | number
 >arg : string | number
 
 isFoo; // expect undefined | "1" | 0
->isFoo : 0 | "1" | undefined
+>isFoo : "1" | 0 | undefined
 

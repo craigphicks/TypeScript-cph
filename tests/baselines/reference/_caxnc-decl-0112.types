@@ -26,6 +26,6 @@ function decl0012(){
 >"1" : "1"
     }
     x; // flow not trigger without x here
->x : number[] | "1"
+>x : "1" | number[]
 }
 

@@ -24,7 +24,7 @@ declare const e: E;
 
 if (e===E.n1){
 >e===E.n1 : boolean
->e : 1 | 2 | "a" | "b"
+>e : "a" | "b" | 1 | 2
 >E.n1 : E.n1
 >E : typeof E
 >n1 : E.n1

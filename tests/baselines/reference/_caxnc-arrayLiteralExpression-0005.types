@@ -8,8 +8,8 @@ const x = [1,"2"] as const;
 
 // This calls ArrayLiteralExpression with a spread element.
 let y = [...x];
->y : (1 | "2")[]
->[...x] : (1 | "2")[]
->...x : 1 | "2"
+>y : ("2" | 1)[]
+>[...x] : ("2" | 1)[]
+>...x : "2" | 1
 >x : readonly [1, "2"]
 

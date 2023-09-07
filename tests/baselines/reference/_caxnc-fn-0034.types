@@ -1,12 +1,12 @@
 === tests/cases/conformance/_caxnc/_caxnc-fn-0034.ts ===
 declare function foo(x:string): number[];
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >x : string
 
 declare function foo(x?:string,y?:string,...z:string[]): string[];
 >foo : { (x: string): number[]; (x?: string, y?: string, ...z: string[]): string[]; (...args: any[]): never; }
->x : string | undefined
->y : string | undefined
+>x : undefined | string
+>y : undefined | string
 >z : string[]
 
 // By adding the following overload, the error goes away.
@@ -14,13 +14,13 @@ declare function foo(x?:string,y?:string,...z:string[]): string[];
 // when either/both of the first two overloads match, the correct floughType is returned
 // because never | <not never> = <not never>. When the last overload match
 declare function foo(...args:any[]): never;
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >args : any[]
 
 const a0 = foo();
 >a0 : string[]
 >foo() : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 
 a0; // expect string[]
 >a0 : string[]
@@ -28,7 +28,7 @@ a0; // expect string[]
 const a1 = foo("");
 >a1 : number[]
 >foo("") : number[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >"" : ""
 
 a1; // expect  number[] | string[]
@@ -37,7 +37,7 @@ a1; // expect  number[] | string[]
 const a2 = foo("","");
 >a2 : string[]
 >foo("","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >"" : ""
 >"" : ""
 
@@ -47,7 +47,7 @@ a2; // expect string[]
 const a3 = foo("","","");
 >a3 : string[]
 >foo("","","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >"" : ""
 >"" : ""
 >"" : ""
@@ -58,7 +58,7 @@ a3; // expect string[]
 const a4 = foo("","","","");
 >a4 : string[]
 >foo("","","","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >"" : ""
 >"" : ""
 >"" : ""
@@ -70,7 +70,7 @@ a4; // expect string[]
 const b1 = foo(undefined);
 >b1 : string[]
 >foo(undefined) : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >undefined : undefined
 
 b1; // expect string[]
@@ -79,7 +79,7 @@ b1; // expect string[]
 const b2 = foo(undefined,undefined);
 >b2 : string[]
 >foo(undefined,undefined) : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >undefined : undefined
 >undefined : undefined
 
@@ -89,7 +89,7 @@ b2; // expect string[]
 const b3 = foo(undefined,undefined,undefined);
 >b3 : never
 >foo(undefined,undefined,undefined) : never
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): never; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): never; }
 >undefined : undefined
 >undefined : undefined
 >undefined : undefined

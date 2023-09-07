@@ -3,8 +3,8 @@ declare const c: boolean;
 >c : boolean
 
 const x = c ? [c,c] : [c,c];
->x : true[] | false[]
->c ? [c,c] : [c,c] : true[] | false[]
+>x : false[] | true[]
+>c ? [c,c] : [c,c] : false[] | true[]
 >c : boolean
 >[c,c] : true[]
 >c : true

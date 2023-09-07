@@ -2,7 +2,7 @@
 declare type Foo = { readonly foo: (x?:number)=>number[] };
 >Foo : { readonly foo: (x?: number) => number[]; }
 >foo : (x?: number) => number[]
->x : number | undefined
+>x : undefined | number
 
 declare const obj: Foo | undefined;
 >obj : Foo | undefined
@@ -10,7 +10,7 @@ declare const obj: Foo | undefined;
 const isFoo = obj?.foo();
 >isFoo : number[] | undefined
 >obj?.foo() : number[] | undefined
->obj?.foo : ((x?: number | undefined) => number[]) | undefined
+>obj?.foo : ((x?: undefined | number) => number[]) | undefined
 >obj : Foo | undefined
->foo : ((x?: number | undefined) => number[]) | undefined
+>foo : ((x?: undefined | number) => number[]) | undefined
 

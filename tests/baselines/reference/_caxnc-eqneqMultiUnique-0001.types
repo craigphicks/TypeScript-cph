@@ -1,6 +1,6 @@
 === tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0001.ts ===
 declare const a: 1|"2";
->a : 1 | "2"
+>a : "2" | 1
 
 declare const b: number|string;
 >b : string | number
@@ -8,9 +8,9 @@ declare const b: number|string;
 if (b===a)
 >b===a : boolean
 >b : string | number
->a : 1 | "2"
+>a : "2" | 1
 {
     b;
->b : 1 | "2"
+>b : "2" | 1
 }
 

@@ -1,7 +1,7 @@
 === tests/cases/conformance/_caxnc/_caxnc-typeof-0001.ts ===
 const x = typeof 1;
->x : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
->typeof 1 : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>typeof 1 : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
 >1 : 1
 
 x;
@@ -12,8 +12,8 @@ x;
 // !!! error TS2322: Type '"string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"' is not assignable to type '"string" | "number"'.
 // !!! error TS2322:   Type '"bigint"' is not assignable to type '"string" | "number"'.
 const y: "number" | "string" = typeof 1;
->y : "string" | "number"
->typeof 1 : "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
+>y : "number" | "string"
+>typeof 1 : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
 >1 : 1
 
 // However in the mrNarrow flow processing, the narrowed type is used.

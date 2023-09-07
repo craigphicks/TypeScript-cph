@@ -33,7 +33,7 @@ if (v) {
 >v : (() => string[]) | Foo | undefined
 
     v();
->v() : string[] | number[]
+>v() : number[] | string[]
 >v : (() => string[]) | Foo
 }
 v;

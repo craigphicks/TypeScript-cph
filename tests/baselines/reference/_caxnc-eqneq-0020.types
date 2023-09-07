@@ -1,10 +1,10 @@
 === tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneq-0020.ts ===
 declare const a: string | undefined;
->a : string | undefined
+>a : undefined | string
 
 if (a===undefined)
 >a===undefined : boolean
->a : string | undefined
+>a : undefined | string
 >undefined : undefined
 {
     a;

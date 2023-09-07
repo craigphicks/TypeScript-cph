@@ -39,26 +39,26 @@ const obj = b? obja : objb
 
 if (obj.foo(arg)){
 >obj.foo(arg) : undefined
->obj.foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>obj.foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
 >obj : FooA | FooB
->foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
 >arg : string | number
 
     const x = obj.foo(arg); // x should be "A" | "B"
 >x : undefined
 >obj.foo(arg) : undefined
->obj.foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>obj.foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
 >obj : FooA | FooB
->foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
 >arg : string | number
 
     obj;
 >obj : FooA | FooB
 
     obj.foo;
->obj.foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>obj.foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
 >obj : FooA | FooB
->foo : { (b: number): "B"; (...args: any[]): undefined; } | { (a: string): "A"; (...args: any[]): undefined; }
+>foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
 
     x; // expect "A" | "B" | undefined  (because `if (obj.foo(arg)){...}` doesn't currently narrow signatures)
 >x : "A" | "B" | undefined

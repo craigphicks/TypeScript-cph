@@ -28,7 +28,7 @@ function f1() {
 >f1 : () => void
 
     if (isFoo){
->isFoo : 0 | "1" | undefined
+>isFoo : "1" | 0 | undefined
     }
     else if (isFoo === 0) {
 >isFoo === 0 : boolean
@@ -43,7 +43,7 @@ function f2() {
 >f2 : () => void
 
     if (isFoo){
->isFoo : 0 | "1" | undefined
+>isFoo : "1" | 0 | undefined
     }
     else if (isFoo === 0) {
 >isFoo === 0 : boolean

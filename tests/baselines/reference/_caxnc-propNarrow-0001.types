@@ -19,9 +19,9 @@ let r = x ? { a: 1 as const } : { a: 2 as const, b: 2 };
 >2 : 2
 
 if (r.b){
->r.b : number | undefined
+>r.b : undefined | number
 >r : { a: 1; } | { a: 2; b: number; }
->b : number | undefined
+>b : undefined | number
 
     r; // expect { a: 2; b: number; }
 >r : { a: 2; b: number; }
@@ -47,8 +47,8 @@ else {
 >a : 1 | 2
 
     r.b // expect undefined | number
->r.b : number | undefined
+>r.b : undefined | number
 >r : { a: 1; } | { a: 2; b: number; }
->b : number | undefined
+>b : undefined | number
 }
 

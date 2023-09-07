@@ -3,13 +3,13 @@ declare type Foo = {
 >Foo : { foo(x?: number): number[]; foo(x?: number, y?: string): string[]; }
 
     foo(x?:number):number[]
->foo : { (x?: number): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
->x : number | undefined
+>foo : { (x?: number): number[]; (x?: undefined | number, y?: undefined | string): string[]; }
+>x : undefined | number
 
     foo(x?:number,y?:string):string[]
->foo : { (x?: number | undefined): number[]; (x?: number, y?: string): string[]; }
->x : number | undefined
->y : string | undefined
+>foo : { (x?: undefined | number): number[]; (x?: number, y?: string): string[]; }
+>x : undefined | number
+>y : undefined | string
 
 };
 // declare type Boo = {
@@ -31,9 +31,9 @@ const z: [number,string] = [1,"2"];
 const a5 = obj.foo(...z);
 >a5 : string[]
 >obj.foo(...z) : string[]
->obj.foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
+>obj.foo : { (x?: undefined | number): number[]; (x?: undefined | number, y?: undefined | string): string[]; }
 >obj : Readonly<Foo>
->foo : { (x?: number | undefined): number[]; (x?: number | undefined, y?: string | undefined): string[]; }
+>foo : { (x?: undefined | number): number[]; (x?: undefined | number, y?: undefined | string): string[]; }
 >...z : string | number
 >z : [number, string]
 

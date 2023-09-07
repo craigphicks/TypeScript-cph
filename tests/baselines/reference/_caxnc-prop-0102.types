@@ -14,11 +14,11 @@ function prop0002(){
 >prop0002 : () => void
 
     if (x?.foo?.bar){
->x?.foo?.bar : boolean | undefined
+>x?.foo?.bar : undefined | boolean
 >x?.foo : { bar: boolean; } | undefined
 >x : X | undefined
 >foo : { bar: boolean; } | undefined
->bar : boolean | undefined
+>bar : undefined | boolean
 
         let y = x.foo.bar;
 >y : true

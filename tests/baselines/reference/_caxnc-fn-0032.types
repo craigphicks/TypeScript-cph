@@ -1,18 +1,18 @@
 === tests/cases/conformance/_caxnc/_caxnc-fn-0032.ts ===
 declare function foo(x:string): number[];
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >x : string
 
 declare function foo(x?:string,y?:string,...z:string[]): string[];
 >foo : { (x: string): number[]; (x?: string, y?: string, ...z: string[]): string[]; }
->x : string | undefined
->y : string | undefined
+>x : undefined | string
+>y : undefined | string
 >z : string[]
 
 const a0 = foo();
 >a0 : string[]
 >foo() : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 
 a0; // expect string[]
 >a0 : string[]
@@ -20,7 +20,7 @@ a0; // expect string[]
 const a1 = foo("");
 >a1 : number[]
 >foo("") : number[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >"" : ""
 
 a1; // expect  number[] | string[]
@@ -29,7 +29,7 @@ a1; // expect  number[] | string[]
 const a2 = foo("","");
 >a2 : string[]
 >foo("","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >"" : ""
 >"" : ""
 
@@ -39,7 +39,7 @@ a2; // expect string[]
 const a3 = foo("","","");
 >a3 : string[]
 >foo("","","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >"" : ""
 >"" : ""
 >"" : ""
@@ -50,7 +50,7 @@ a3; // expect string[]
 const a4 = foo("","","","");
 >a4 : string[]
 >foo("","","","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >"" : ""
 >"" : ""
 >"" : ""
@@ -62,7 +62,7 @@ a4; // expect string[]
 const b1 = foo(undefined);
 >b1 : string[]
 >foo(undefined) : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >undefined : undefined
 
 b1; // expect string[]
@@ -71,7 +71,7 @@ b1; // expect string[]
 const b2 = foo(undefined,undefined);
 >b2 : string[]
 >foo(undefined,undefined) : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >undefined : undefined
 >undefined : undefined
 
@@ -81,7 +81,7 @@ b2; // expect string[]
 const b3 = foo(undefined,undefined,undefined);
 >b3 : number[] & string[]
 >foo(undefined,undefined,undefined) : number[] & string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; }
 >undefined : undefined
 >undefined : undefined
 >undefined : undefined

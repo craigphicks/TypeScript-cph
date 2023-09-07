@@ -26,13 +26,13 @@ function decl0013(){
 >"1" : "1"
     }
     x; // flow not trigger without x here
->x : number[] | "1"
+>x : "1" | number[]
 
     let y = x;
->y : number[] | "1"
->x : number[] | "1"
+>y : "1" | number[]
+>x : "1" | number[]
 
     y;
->y : number[] | "1"
+>y : "1" | number[]
 }
 

@@ -6,8 +6,8 @@ declare const x: boolean;
 
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: number; b: number; }"
 let result = x ? { a: 1 } : { a: 1, b: 2 };
->result : { a: number; b?: undefined; } | { a: number; b: number; }
->x ? { a: 1 } : { a: 1, b: 2 } : { a: number; } | { a: number; b: number; }
+>result : { a: number; b: number; } | { a: number; b?: undefined; }
+>x ? { a: 1 } : { a: 1, b: 2 } : { a: number; b: number; } | { a: number; }
 >x : boolean
 >{ a: 1 } : { a: number; }
 >a : number
@@ -19,7 +19,7 @@ let result = x ? { a: 1 } : { a: 1, b: 2 };
 >2 : 2
 
 result.b; // expect number | undefined
->result.b : number | undefined
->result : { a: number; } | { a: number; b: number; }
->b : number | undefined
+>result.b : undefined | number
+>result : { a: number; b: number; } | { a: number; }
+>b : undefined | number
 

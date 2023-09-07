@@ -4,7 +4,7 @@ declare const c: boolean;
 
 const x:[boolean,boolean] = c ? [c,c] : [c,c];
 >x : [boolean, boolean]
->c ? [c,c] : [c,c] : [true, true] | [false, false]
+>c ? [c,c] : [c,c] : [false, false] | [true, true]
 >c : boolean
 >[c,c] : [true, true]
 >c : true

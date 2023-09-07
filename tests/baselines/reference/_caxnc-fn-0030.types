@@ -1,22 +1,22 @@
 === tests/cases/conformance/_caxnc/_caxnc-fn-0030.ts ===
 declare function foo(x:string): number[];
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >x : string
 
 declare function foo(x?:string,y?:string,...z:string[]): string[];
 >foo : { (x: string): number[]; (x?: string, y?: string, ...z: string[]): string[]; (...args: any[]): unknown; }
->x : string | undefined
->y : string | undefined
+>x : undefined | string
+>y : undefined | string
 >z : string[]
 
 declare function foo(...args:any[]): unknown;
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >args : any[]
 
 const a0 = foo();
 >a0 : string[]
 >foo() : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 
 a0; // expect unknown
 >a0 : unknown
@@ -24,7 +24,7 @@ a0; // expect unknown
 const a1 = foo("");
 >a1 : number[]
 >foo("") : number[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >"" : ""
 
 a1; // expect  unknown
@@ -33,7 +33,7 @@ a1; // expect  unknown
 const a2 = foo("","");
 >a2 : string[]
 >foo("","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >"" : ""
 >"" : ""
 
@@ -43,7 +43,7 @@ a2; // expect unknown
 const a3 = foo("","","");
 >a3 : string[]
 >foo("","","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >"" : ""
 >"" : ""
 >"" : ""
@@ -54,7 +54,7 @@ a3; // expect unknown
 const a4 = foo("","","","");
 >a4 : string[]
 >foo("","","","") : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >"" : ""
 >"" : ""
 >"" : ""
@@ -66,7 +66,7 @@ a4; // expect unknown
 const b1 = foo(undefined);
 >b1 : string[]
 >foo(undefined) : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >undefined : undefined
 
 b1; // expect unknown
@@ -75,7 +75,7 @@ b1; // expect unknown
 const b2 = foo(undefined,undefined);
 >b2 : string[]
 >foo(undefined,undefined) : string[]
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >undefined : undefined
 >undefined : undefined
 
@@ -85,7 +85,7 @@ b2; // expect unknown
 const b3 = foo(undefined,undefined,undefined);
 >b3 : unknown
 >foo(undefined,undefined,undefined) : unknown
->foo : { (x: string): number[]; (x?: string | undefined, y?: string | undefined, ...z: string[]): string[]; (...args: any[]): unknown; }
+>foo : { (x: string): number[]; (x?: undefined | string, y?: undefined | string, ...z: string[]): string[]; (...args: any[]): unknown; }
 >undefined : undefined
 >undefined : undefined
 >undefined : undefined
