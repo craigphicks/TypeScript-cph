@@ -3,8 +3,11 @@ namespace ts {
     export const extraAsserts = true; // not suitable for release or timing tests.
     const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
 
-    export const refactorConnectedGroupsGraphs = true;
-    export const refactorConnectedGroupsGraphsNoShallowRecursion = false;
+    export const refactorConnectedGroupsGraphs = false;
+    export const refactorConnectedGroupsGraphsUpdateHeapWithConnectedGroupsGraph = refactorConnectedGroupsGraphs && true;
+    export const refactorConnectedGroupsGraphsGroupDependancyCountRemaining = refactorConnectedGroupsGraphs && true;
+    export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnectedGroupsGraphs && false;
+
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {
@@ -456,17 +459,17 @@ namespace ts {
      * @param returnSortedGroupIdxs
      * @returns
      */
-    function updateHeapWithGroupForFlowV2(groups: Readonly<Set<GroupForFlow>>, heap: Heap, sourceFileMrState: SourceFileMrState, returnSortedGroupIdxs?: boolean): number[] | undefined {
+    function updateHeapWithGroupForFlowLoop(groups: Readonly<Set<GroupForFlow>>, heap: Heap, sourceFileMrState: SourceFileMrState, returnSortedGroupIdxs?: boolean): number[] | undefined {
         if (getMyDebug()) {
             const gidx: number[]=[];
             groups.forEach(g=>gidx.push(g.groupIdx));
-            consoleGroup(`updateHeapWithGroupForFlow[in]: group idxs:[`+gidx.map(idx=>`${idx}`).join(",")+"]");
+            consoleGroup(`updateHeapWithGroupForFlowLoop[in]: group idxs:[`+gidx.map(idx=>`${idx}`).join(",")+"]");
         }
         const arrGroupIndexToDependantCount = sourceFileMrState.groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount;
         const groupDependancyCountRemaining = sourceFileMrState.mrState.groupDependancyCountRemaining;
         const forFlow = sourceFileMrState.mrState.forFlowTop;
         groups.forEach(g=>{
-            if (refactorConnectedGroupsGraphs){
+            if (refactorConnectedGroupsGraphsGroupDependancyCountRemaining){
                 if (forFlow.currentBranchesMap.has(g)) forFlow.currentBranchesMap.delete(g);
                 if (forFlow.groupToNodeToType!.has(g)) forFlow.groupToNodeToType!.delete(g);
                 groupDependancyCountRemaining[g.groupIdx] = arrGroupIndexToDependantCount[g.groupIdx];
@@ -475,7 +478,7 @@ namespace ts {
         });
         if (getMyDebug()) {
             const sortedHeap1Idx = heap.createSortedCopy();
-            let str = `updateHeapWithGroupForFlow[in]: heap group idxs:[`;
+            let str = `updateHeapWithGroupForFlowLoop[in]: heap group idxs:[`;
             for (let idx = sortedHeap1Idx.length-1; idx!==0; idx--) {
                 str += `${sortedHeap1Idx[idx]},`;
             }
@@ -731,7 +734,7 @@ namespace ts {
 
             // before calling the loop the second time, we must know the "symbolsReadNotAssigned".
 
-            updateHeapWithGroupForFlowV2(setOfLoopDeps,forFlowParent.heap, sourceFileMrState);
+            updateHeapWithGroupForFlowLoop(setOfLoopDeps,forFlowParent.heap, sourceFileMrState);
             Debug.assert(forFlowParent.heap.peek()===loopGroup.groupIdx);
             forFlowParent.heap.remove();
             processLoop(loopGroup, sourceFileMrState, forFlowParent, setOfLoopDeps, maxGroupIdxProcessed);
@@ -787,7 +790,7 @@ namespace ts {
         let loopCount = 0;
         let forFlowFinal: ForFlow;
 
-        if (!refactorConnectedGroupsGraphs){
+        if (!refactorConnectedGroupsGraphsGroupDependancyCountRemaining){
             if (loopState.invocations>=1){
                 setOfLoopDeps.forEach(gff=>{
                     if (forFlowParent.currentBranchesMap.has(gff)) deleteCurrentBranchesMap(gff);
@@ -1169,7 +1172,7 @@ namespace ts {
                 Debug.assert(!sc);  // when previousAnteGroupIdx is present, anteGroupLabels.length must have been zero
                 const prevAnteGroup = groupsForFlow.orderedGroups[groupForFlow.previousAnteGroupIdx];
 
-                if (refactorConnectedGroupsGraphs){
+                if (refactorConnectedGroupsGraphsGroupDependancyCountRemaining){
                     const rem = --sourceFileMrState.mrState.groupDependancyCountRemaining[groupForFlow.previousAnteGroupIdx];
                     Debug.assert(rem>=0);
                     if (rem===0){
@@ -1288,6 +1291,7 @@ namespace ts {
 
         const { mrState, /* refTypesTypeModule */ } = sourceFileMrState;
 
+        // TODO: should be if (mrState.dataForGetTypeOfExpressionShallowRecursive?.expr === expr) {}
         if (mrState.dataForGetTypeOfExpressionShallowRecursive){
             /**
              * It turns out that the upper "checkeExpression" software will try to do minor flow analsis outside of the scope
@@ -1350,7 +1354,7 @@ namespace ts {
          * But connectGroupsGraphs, we know from sourceFileMrState.mrState.XXX when the graph was completed or not, and if it was completed,
          * then !cachedType implies that the node is in a never branch.
          */
-        if (refactorConnectedGroupsGraphs){
+        if (refactorConnectedGroupsGraphsUpdateHeapWithConnectedGroupsGraph){
             if (!cachedType){
                 const graphIndex = groupsForFlow.connectedGroupsGraphs.arrGroupIndexToConnectGraph[groupForFlow.groupIdx];
                 if (mrState.connectGroupsGraphsCompleted[graphIndex]){
@@ -1374,7 +1378,7 @@ namespace ts {
 
         Debug.assert(sourceFileMrState.mrState.recursionLevel===0,"expected sourceFileMrState.mrState.recursionLevel===0");
         sourceFileMrState.mrState.recursionLevel++;
-        if (refactorConnectedGroupsGraphs){
+        if (refactorConnectedGroupsGraphsUpdateHeapWithConnectedGroupsGraph){
             updateHeapWithConnectedGroupsGraph(groupForFlow,sourceFileMrState, sourceFileMrState.mrState.forFlowTop);
         }
         else {
