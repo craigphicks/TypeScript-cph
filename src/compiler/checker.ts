@@ -1,5 +1,7 @@
 /* @internal */
 namespace ts {
+    const enableTypeWriterSortUnionTypes = true;
+
     let dbgFlowFileCnt = 0;
     let myDebug = false;
     const myDebugLevel = (process.env.myDebugLevel===undefined) ? 0 : Number(process.env.myDebugLevel);
@@ -361,10 +363,6 @@ namespace ts {
     }
 
     export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
-        /**
-         * required by infer
-         */
-
         let sourceFileMrState: SourceFileMrState | undefined;
         // const mapSourceFileToGroupedFlowNodes = new Map<SourceFile, GroupedFlowNodes>();
         // let currentSourceFile: undefined | SourceFile;
@@ -676,6 +674,9 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
+            isTypeWriterSortUnionTypesEnabled(){
+                return enableTypeWriterSortUnionTypes;
+            },
             createReaonlyTupleTypeFromTupleType,
             isReadonlyArrayType,
             getFreshTypeOfLiteralType,
@@ -840,8 +841,8 @@ namespace ts {
             signatureToString: (signature, enclosingDeclaration, flags, kind) => {
                 return signatureToString(signature, getParseTreeNode(enclosingDeclaration), flags, kind);
             },
-            typeToString: (type, enclosingDeclaration, flags) => {
-                return typeToString(type, getParseTreeNode(enclosingDeclaration), flags);
+            typeToString: (type, enclosingDeclaration, flags, sortUnionTypes) => {
+                return typeToString(type, getParseTreeNode(enclosingDeclaration), flags, /*writer*/ undefined, sortUnionTypes);
             },
             symbolToString: (symbol, enclosingDeclaration, meaning, flags) => {
                 return symbolToString(symbol, getParseTreeNode(enclosingDeclaration), meaning, flags);
@@ -5046,7 +5047,8 @@ namespace ts {
             }
         }
 
-        function typeToString(type: Type, enclosingDeclaration?: Node, flags: TypeFormatFlags = TypeFormatFlags.AllowUniqueESSymbolType | TypeFormatFlags.UseAliasDefinedOutsideCurrentScope, writer: EmitTextWriter = createTextWriter("")): string {
+        function typeToString(type: Type, enclosingDeclaration?: Node, flags: TypeFormatFlags = TypeFormatFlags.AllowUniqueESSymbolType | TypeFormatFlags.UseAliasDefinedOutsideCurrentScope, writer?: EmitTextWriter | undefined, sortUnionTypes?: boolean): string {
+            if (!writer) writer = createTextWriter("");
             const noTruncation = compilerOptions.noErrorTruncation || flags & TypeFormatFlags.NoTruncation;
             const typeNode = nodeBuilder.typeToTypeNode(type, enclosingDeclaration, toNodeBuilderFlags(flags) | NodeBuilderFlags.IgnoreErrors | (noTruncation ? NodeBuilderFlags.NoTruncation : 0), writer);
             if (typeNode === undefined) return Debug.fail("should always get typenode");
@@ -5055,7 +5057,7 @@ namespace ts {
             const options = { removeComments: type !== unresolvedType };
             const printer = createPrinter(options);
             const sourceFile = enclosingDeclaration && getSourceFileOfNode(enclosingDeclaration);
-            printer.writeNode(EmitHint.Unspecified, typeNode, /*sourceFile*/ sourceFile, writer);
+            printer.writeNode(EmitHint.Unspecified, typeNode, /*sourceFile*/ sourceFile, writer, sortUnionTypes);
             const result = writer.getText();
 
             const maxLength = noTruncation ? noTruncationMaximumTruncationLength * 2 : defaultMaximumTruncationLength * 2;

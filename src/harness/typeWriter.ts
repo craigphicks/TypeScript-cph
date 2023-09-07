@@ -147,7 +147,8 @@ namespace Harness {
                     typeString = (type as ts.IntrinsicType).intrinsicName;
                 }
                 else {
-                    typeString = this.checker.typeToString(type, node.parent, ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.AllowUniqueESSymbolType);
+                    typeString = this.checker.typeToString(type, node.parent, ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.AllowUniqueESSymbolType,
+                        /*sortUnionTypes*/ this.checker.isTypeWriterSortUnionTypesEnabled());
                     if (ts.isIdentifier(node) && ts.isTypeAliasDeclaration(node.parent) && node.parent.name === node && typeString === ts.idText(node)) {
                         // for a complex type alias `type T = ...`, showing "T : T" isn't very helpful for type tests. When the type produced is the same as
                         // the name of the type alias, recreate the type string without reusing the alias name
