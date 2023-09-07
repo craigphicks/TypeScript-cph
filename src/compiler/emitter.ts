@@ -909,6 +909,8 @@ namespace ts {
         let commentsDisabled = !!printerOptions.removeComments;
         let lastSubstitution: Node | undefined;
         let currentParenthesizerRule: ((node: Node) => Node) | undefined;
+        let doEmitSortedUnionTypes: boolean | undefined;
+        //let createTempWriterForSortUnionTypes: (() => EmitTextWriter) | undefined;
         const { enter: enterComment, exit: exitComment } = performance.createTimerIf(extendedDiagnostics, "commentTime", "beforeComment", "afterComment");
         const parenthesizer = factory.parenthesizer;
         const typeArgumentParenthesizerRuleSelector: OrdinalParentheizerRuleSelector<Node> = {
@@ -976,14 +978,17 @@ namespace ts {
         /**
          * If `sourceFile` is `undefined`, `node` must be a synthesized `TypeNode`.
          */
-        function writeNode(hint: EmitHint, node: TypeNode, sourceFile: undefined, output: EmitTextWriter): void;
+        function writeNode(hint: EmitHint, node: TypeNode, sourceFile: undefined, output: EmitTextWriter, sortUnionTypes?: boolean | undefined): void;
         function writeNode(hint: EmitHint, node: Node, sourceFile: SourceFile, output: EmitTextWriter): void;
-        function writeNode(hint: EmitHint, node: Node, sourceFile: SourceFile | undefined, output: EmitTextWriter) {
+        function writeNode(hint: EmitHint, node: Node, sourceFile: SourceFile | undefined, output: EmitTextWriter, sortUnionTypes?: boolean | undefined) {
+            const previousDoEmitSortedUnionTypes = doEmitSortedUnionTypes;
+            doEmitSortedUnionTypes = previousDoEmitSortedUnionTypes || sortUnionTypes;
             const previousWriter = writer;
             setWriter(output, /*_sourceMapGenerator*/ undefined);
             print(hint, node, sourceFile);
             reset();
             writer = previousWriter;
+            doEmitSortedUnionTypes = previousDoEmitSortedUnionTypes;
         }
 
         function writeList<T extends Node>(format: ListFormat, nodes: NodeArray<T>, sourceFile: SourceFile | undefined, output: EmitTextWriter) {
@@ -2278,7 +2283,32 @@ namespace ts {
         }
 
         function emitUnionType(node: UnionTypeNode) {
-            emitList(node, node.types, ListFormat.UnionTypeConstituents, parenthesizer.parenthesizeConstituentTypeOfUnionType);
+            if (doEmitSortedUnionTypes){
+                const tmpWriter = createTextWriter("");
+                const mapped = node.types.map((type, i) => {
+                    writeNode(EmitHint.Unspecified, node.types[i], /*sourceFile*/ undefined, tmpWriter, /*sortUnionTypes*/ true);
+                    const text = tmpWriter.getText();
+                    tmpWriter.clear();
+                    return { index:i, type, text };
+                });
+                mapped.sort((a, b) => {
+                    if (a.type.kind > b.type.kind) return -1;
+                    if (a.type.kind < b.type.kind) return 1;
+                    if (a.text < b.text) return -1;
+                    if (a.text > b.text) return 1;
+                    return a.index - b.index;
+                });
+                const sortedTypes: NodeArray<TypeNode> = {
+                    ... mapped.map((v) => v.type),
+                    length: node.types.length,
+                    hasTrailingComma: node.types.hasTrailingComma,
+                    pos: node.types.pos,
+                    end: node.types.end,
+                    transformFlags: node.types.transformFlags
+                };
+                emitList(node, sortedTypes, ListFormat.UnionTypeConstituents, parenthesizer.parenthesizeConstituentTypeOfUnionType);
+            }
+            else emitList(node, node.types, ListFormat.UnionTypeConstituents, parenthesizer.parenthesizeConstituentTypeOfUnionType);
         }
 
         function emitIntersectionType(node: IntersectionTypeNode) {

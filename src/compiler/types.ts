@@ -4329,6 +4329,7 @@ namespace ts {
     }
     export interface TypeChecker {
         ///* @internal */ cloneNonTupleNonArrayObjectType(type: Type): Type;
+        isTypeWriterSortUnionTypesEnabled(): boolean;
         /* @internal */ createTupleType(elementTypes: readonly Type[], elementFlags: readonly ElementFlags[], readonly?: boolean): Type;
         /* @internal */ createReaonlyTupleTypeFromTupleType(type: Readonly<TupleTypeReference>): TupleTypeReference;
         /* @internal */ isReadonlyArrayType(type: Type): boolean;
@@ -4452,7 +4453,7 @@ namespace ts {
         getTypeFromTypeNode(node: TypeNode): Type;
 
         signatureToString(signature: Signature, enclosingDeclaration?: Node, flags?: TypeFormatFlags, kind?: SignatureKind): string;
-        typeToString(type: Type, enclosingDeclaration?: Node, flags?: TypeFormatFlags): string;
+        typeToString(type: Type, enclosingDeclaration?: Node, flags?: TypeFormatFlags, sortUnionTypes?: boolean): string;
         symbolToString(symbol: Symbol, enclosingDeclaration?: Node, meaning?: SymbolFlags, flags?: SymbolFormatFlags): string;
         typePredicateToString(predicate: TypePredicate, enclosingDeclaration?: Node, flags?: TypeFormatFlags): string;
 
@@ -8336,7 +8337,7 @@ namespace ts {
          * Prints a bundle of source files as-is, without any emit transformations.
          */
         printBundle(bundle: Bundle): string;
-        /*@internal*/ writeNode(hint: EmitHint, node: Node, sourceFile: SourceFile | undefined, writer: EmitTextWriter): void;
+        /*@internal*/ writeNode(hint: EmitHint, node: Node, sourceFile: SourceFile | undefined, writer: EmitTextWriter, sortUnionTypes?: boolean | undefined): void;
         /*@internal*/ writeList<T extends Node>(format: ListFormat, list: NodeArray<T> | undefined, sourceFile: SourceFile | undefined, writer: EmitTextWriter): void;
         /*@internal*/ writeFile(sourceFile: SourceFile, writer: EmitTextWriter, sourceMapGenerator: SourceMapGenerator | undefined): void;
         /*@internal*/ writeBundle(bundle: Bundle, writer: EmitTextWriter, sourceMapGenerator: SourceMapGenerator | undefined): void;
