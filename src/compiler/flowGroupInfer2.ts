@@ -908,7 +908,10 @@ namespace ts {
             if (expr.kind!==SyntaxKind.Identifier) Debug.fail("unexpected");
             Debug.assert(isIdentifier(expr));
 
-            const symbol = getResolvedSymbol(expr); // getSymbolOfNode()?
+            const symbol = getResolvedSymbol(expr, /*noDiagnostics*/ true); // getSymbolOfNode()?
+            if (checker.isUnknownSymbol(symbol)) {
+                return { symbol };
+            }
             let type: FloughType | undefined;
             let isReplayable: boolean | undefined;
             if (symbol.flags & SymbolFlags.RegularEnum){

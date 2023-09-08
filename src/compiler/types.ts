@@ -4364,7 +4364,7 @@ namespace ts {
         /* @internal */  isConstantReference(node: Node): boolean;
         /* @internal */  getNodeLinks(node: Node): NodeLinks;
         ///* @internal */  getUnionType(types: readonly Type[], unionReduction?: UnionReduction /* = UnionReduction.Literal*/ , aliasSymbol?: Symbol, aliasTypeArguments?: readonly Type[], origin?: Type): Type;
-        /* @internal */ getResolvedSymbol(node: Identifier): Symbol;
+        /* @internal */ getResolvedSymbol(node: Identifier, noDiagnotics?: boolean): Symbol;
         /* @internal */ getSymbolOfNode(node: Declaration): Symbol;
         /* @internal */ getUnknownType(): Type;
         /* @internal */ getTypeOfExpression(node: Expression): Type;
