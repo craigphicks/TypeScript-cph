@@ -1291,8 +1291,8 @@ namespace ts {
 
         const { mrState, /* refTypesTypeModule */ } = sourceFileMrState;
 
-        // TODO: should be if (mrState.dataForGetTypeOfExpressionShallowRecursive?.expr === expr) {}
-        if (mrState.dataForGetTypeOfExpressionShallowRecursive){
+        // upto commit 4690571dd432 was (mrState.dataForGetTypeOfExpressionShallowRecursive?.expr) {}
+        if (mrState.dataForGetTypeOfExpressionShallowRecursive?.expr === expr){
             /**
              * It turns out that the upper "checkeExpression" software will try to do minor flow analsis outside of the scope
              * of mrState.dataForGetTypeOfExpressionShallowRecursive.expr, so the original design doesn't work.
