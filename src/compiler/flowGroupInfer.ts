@@ -3,7 +3,7 @@ namespace ts {
     export const extraAsserts = true; // not suitable for release or timing tests.
     const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
 
-    export const refactorConnectedGroupsGraphs = false;
+    export const refactorConnectedGroupsGraphs = true;
     export const refactorConnectedGroupsGraphsUpdateHeapWithConnectedGroupsGraph = refactorConnectedGroupsGraphs && true;
     export const refactorConnectedGroupsGraphsGroupDependancyCountRemaining = refactorConnectedGroupsGraphs && true;
     export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnectedGroupsGraphs && false;

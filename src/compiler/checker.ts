@@ -8916,6 +8916,7 @@ namespace ts {
         }
 
         function findResolutionCycleStartIndex(target: TypeSystemEntity, propertyName: TypeSystemPropertyName): number {
+            if (!myDisableInfer) return -1; // To stop circularity checking when using flough.
             for (let i = resolutionTargets.length - 1; i >= 0; i--) {
                 if (hasType(resolutionTargets[i], resolutionPropertyNames[i])) {
                     return -1;
@@ -26754,7 +26755,11 @@ namespace ts {
             }
         }
 
-        function getNarrowedTypeOfSymbol(symbol: Symbol, location: Identifier) {
+        function getNarrowedTypeOfSymbol(symbol: Symbol, location: Identifier): Type {
+        if (getMyDebug()) {
+            consoleGroup(`getNarrowedTypeOfSymbol[in]: symbol: ${symbolToString(symbol)}, location: ${dbgNodeToString(location)}`);
+        }
+        const retType = (()=>{
             const declaration = symbol.valueDeclaration;
             if (declaration) {
                 // If we have a non-rest binding element with no initializer declared as a const variable or a const-like
@@ -26835,9 +26840,18 @@ namespace ts {
                 }
             }
             return getTypeOfSymbol(symbol);
+        })();
+        if (getMyDebug()) {
+            consoleGroup(`getNarrowedTypeOfSymbol[out]: symbol: ${symbolToString(symbol)}, location: ${dbgNodeToString(location)}->type: ${typeToString(retType)}`);
+        }
+        return retType;
         }
 
         function checkIdentifier(node: Identifier, checkMode: CheckMode | undefined): Type {
+        if (getMyDebug()){
+            consoleGroup(`checkIdentifier[in]: ${dbgNodeToString(node)}, checkMode: ${checkMode}`);
+        }
+        const ret = ((): Type=>{
             if (isThisInTypeQuery(node)) {
                 return checkThisExpression(node);
             }
@@ -27003,7 +27017,6 @@ namespace ts {
                 type === autoType || type === autoArrayType ? undefinedType :
                 getOptionalType(type);
             const flowType = getFlowTypeOfReference(node, type, initialType, flowContainer);
-            if (myDebug) consoleLog(`In getIdentifier(), getFlowTypeOfReference returned ${typeToString(flowType)}`);
             // A variable is considered uninitialized when it is possible to analyze the entire control flow graph
             // from declaration to use, and when the variable's declared type doesn't include undefined but the
             // control flow based type does include undefined.
@@ -27022,6 +27035,12 @@ namespace ts {
                 return type;
             }
             return assignmentKind ? getBaseTypeOfLiteralType(flowType) : flowType;
+        })();
+        if (getMyDebug()) {
+            consoleLog(`checkIdentifier[out] ${dbgNodeToString(node)} -> ${typeToString(ret)}`);
+            consoleGroupEnd();
+        }
+        return ret;
         }
 
         function isInsideFunctionOrInstancePropertyInitializer(node: Node, threshold: Node): boolean {
@@ -36060,40 +36079,17 @@ namespace ts {
         }
 
         function checkExpression(node: Expression | QualifiedName, checkMode?: CheckMode, forceTuple?: boolean): Type {
+        if (getMyDebug()) {
+            const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
+            let str = `checkExpression[in] node: ${dbgNodeToString(node)}`;
+            if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+            consoleGroup(str);
+        }
+        const retType = (()=>{
             tracing?.push(tracing.Phase.Check, "checkExpression", { kind: node.kind, pos: node.pos, end: node.end, path: (node as TracingNode).tracingPath });
             const saveCurrentNode = currentNode;
             currentNode = node;
             instantiationCount = 0;
-            const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
-
-            // let inFlowGroup = false;
-            // if (!myDisableInfer){
-            //     if (!insideGetFlowTypeOfReference){
-            //         if (!currentFlowNodeGroup) {
-            //             if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
-            //         }
-            //         else {
-            //             if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
-            //                 inFlowGroup = true;
-            //             }
-            //             else currentFlowNodeGroup = undefined;
-            //         }
-            //     }
-            //     if (myDebug) {
-            //         let str = `checkExpression[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
-            //         if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-            //         consoleGroup(str);
-            //     }
-            // }
-            // else
-            {
-                if (myDebug) {
-                    let str = `checkExpression[in] node: ${dbgNodeToString(node)}`;
-                    if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-                    consoleGroup(str);
-                }
-            }
-
             const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
             const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
             if (isConstEnumObjectType(type)) {
@@ -36101,41 +36097,16 @@ namespace ts {
             }
             currentNode = saveCurrentNode;
             tracing?.pop();
-
-            // if (!myDisableInfer && flowTypeOfReferenceDepth===0 && temporaryPerSourceElementCheckExpressionCache){
-            //     const symbol = getNodeLinks(node).resolvedSymbol;
-            //     Debug.assert(symbol);
-            //     const constantReference = isConstantReference(node);
-            //     if (symbol) {
-            //         const constantReference = isConstantReference(node);
-            //         const constVariable = isConstVariable(symbol);
-            //         if (myDebug) consoleLog(`checkExpression[dbg]: ${dbgNodeToString(node)}, isConstVariable(symbol)=${constVariable}, isConstantReference(node)=${constantReference}`);
-            //         addToTempCheckExprCache(temporaryPerSourceElementCheckExpressionCache, symbol, {
-            //             isConst:isConstVariable(symbol)||isConstantReference(node),
-            //             node,type,symbol
-            //         });
-            //     }
-            //     else {
-            //         if (myDebug) consoleLog(`checkExpression[dbg]: found no symbol - ${dbgNodeToString(node)}, isConstantReference(node)=${constantReference}`);
-            //     }
-            // }
-
             if (flowTypeOfReferenceDepth===0) checkExpressionCache.set(node,type);
-            // if (currentFlowNodeGroup?.maxNode===node) {
-            //     /**
-            //      * At this point checkExpression will have been called to do what can be done without flow work (i.e., not calling getFlowTypeOfReference
-            //      * or narrow), so the flow work can be done here.
-            //      */
-            //     //currentFlowNodeGroup.group;
-
-            //     currentFlowNodeGroup = undefined;
-            // }
-            if (myDebug) {
-                consoleLog(`checkExpression[out]: ${dbgNodeToString(node)} -> ${typeToString(type)}`);
-                consoleGroupEnd();
-                //consoleLog(`node: ${(node as any).getText()}, [${node.pos},${node.end}]`);
-            }
             return type;
+        })();
+        if (getMyDebug()) {
+            const str = `checkExpression[out] node: ${dbgNodeToString(node)} -> ${typeToString(retType)}`;
+            consoleLog(str);
+            consoleGroupEnd();
+        }
+
+        return retType;
         }
 
         function checkConstEnumAccess(node: Expression | QualifiedName, type: Type) {
@@ -42760,66 +42731,22 @@ namespace ts {
 
 
         function checkSourceElement(node: Node | undefined): void {
+            if (getMyDebug()) {
+                const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
+                let str = `checkSourceElement[in] node: ${dbgNodeToString(node)}`;
+                if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
+                consoleGroup(str);
+            }
             if (node) {
                 const saveCurrentNode = currentNode;
                 currentNode = node;
                 instantiationCount = 0;
-
-                /**
-                 * Not expecting checkSourceElement to be called recursively inside a selected source element.
-                 */
-                // if (!myDisableInfer){
-                //     Debug.assert(!sourceElementSelectedForInfer);
-                //     //Debug.assert(isExpression(node), "isExpression(node)");
-                //     sourceElementSelectedForInfer = myIsSpecialSourceElement(node)?node:undefined;
-                //     if (sourceElementSelectedForInfer) {
-                //         Debug.assert(isExpressionStatement(node), "isExpression(node)");
-                //         //temporaryPerSourceElementCheckExpressionCache = new Map<Symbol,CheckExprData>();
-                //     }
-                // }
-                const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
-                // let inFlowGroup = false;
-                // if (!myDisableInfer){
-                //     if (!insideGetFlowTypeOfReference){
-                //         if (!currentFlowNodeGroup) {
-                //             if (testSetCurrentFlowGroupNode(node)) inFlowGroup = true;
-                //         }
-                //         else {
-                //             if (node.pos>= currentFlowNodeGroup.pos && node.end <= currentFlowNodeGroup.end) {
-                //                 inFlowGroup = true;
-                //             }
-                //             else currentFlowNodeGroup = undefined;
-                //         }
-                //     }
-                //     if (myDebug) {
-                //         let str = `checkSourceElement[in]${inFlowGroup?`group:<${currentFlowNodeGroup!.pos},${currentFlowNodeGroup!.end}>`:""}: ${dbgNodeToString(node)}`;
-                //         if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-                //         consoleGroup(str);
-                //     }
-                // }
-                // else
-                {
-                    if (myDebug) {
-                        let str = `checkSourceElement[in] node: ${dbgNodeToString(node)}`;
-                        if (insideGetFlowTypeOfReference) str += `, insideGetFlowTypeOfReference`;
-                        consoleGroup(str);
-                    }
-                }
                 checkSourceElementWorker(node);
-                if (myDebug) {
-                    consoleLog(`checkSourceElement[out]: nodeid: ${node.id}`);
-                    consoleGroupEnd();
-                }
-                //if (currentFlowNodeGroup?.maxNode===node) currentFlowNodeGroup = undefined;
-
-                // if (sourceElementSelectedForInfer){
-                //     Debug.assert(isExpressionStatement(node), "isExpression(node)");
-                //     //Debug.assert(temporaryPerSourceElementCheckExpressionCache);
-                //     inferExprOverCurrentConditionStack(node /*, temporaryPerSourceElementCheckExpressionCache */);
-                //     //temporaryPerSourceElementCheckExpressionCache = undefined;
-                //     sourceElementSelectedForInfer = undefined;
-                // }
                 currentNode = saveCurrentNode;
+            }
+            if (getMyDebug()) {
+                consoleLog(`checkSourceElement[out]: node: ${dbgNodeToString(node)}`);
+                consoleGroupEnd();
             }
         }
 
