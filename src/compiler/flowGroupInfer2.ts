@@ -1420,7 +1420,8 @@ namespace ts {
                         Debug.fail("not yet implemented");
                         break;
                     case SyntaxKind.InKeyword:
-                        Debug.fail("not yet implemented");
+                        return floughByBinaryExpressionInKeyword();
+                        //Debug.fail("not yet implemented");
                         break;
                     case SyntaxKind.CommaToken:
                         Debug.fail("not yet implemented");
@@ -3386,6 +3387,65 @@ namespace ts {
                 const ret: FloughInnerReturn = { unmerged };
                 return ret;
             } // endof floughAccessExpressionCritNone
+
+            function floughByBinaryExpressionInKeyword(): FloughInnerReturn {
+                const {left: keyExpr, right: objExpr} = expr as BinaryExpression;
+                const keyMntr = flough({
+                    expr:keyExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
+                    sci
+                });
+                const keyRttrUnion = applyCritNoneUnion(keyMntr,inferStatus.groupNodeToTypeMap);
+                const { remaining: keyNobjType } = floughTypeModule.splitLogicalObject(keyRttrUnion.type);
+                const objMntr = flough({
+                    expr:objExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
+                    sci: keyRttrUnion.sci
+                });
+                if (!keyNobjType) return { unmerged: [] };
+                const ambiguousKey =
+                    !floughTypeModule.isAnyType(keyNobjType)
+                    && !floughTypeModule.hasNumberType(keyNobjType)
+                    && !floughTypeModule.hasStringType(keyNobjType);
+                // TODO: essymbols
+                const literalKeyTypes = [
+                    ...floughTypeModule.getLiteralNumberTypes(keyNobjType)??[],
+                    ...floughTypeModule.getLiteralStringTypes(keyNobjType)??[],
+                ];
+
+                const unmergedOut: RefTypesTableReturn[] = [];
+                objMntr.unmerged.forEach((rttr0,_rttridx)=>{
+                    const rttr = applyCritNoneToOne(rttr0,objExpr,inferStatus.groupNodeToTypeMap);
+                    const { logicalObject, remaining: _remaining } = floughTypeModule.splitLogicalObject(rttr.type);
+                    if (!logicalObject) return;
+                    if (!rttr0.symbol || ambiguousKey) {
+                        unmergedOut.push({
+                            ...rttr,
+                            type: floughTypeModule.createBooleanType()
+                        });
+                        return;
+                    }
+                    literalKeyTypes.forEach(litkey=>{
+                        const { passingLogicalObject, failingLogicalObject } = floughLogicalObjectModule.resolveInKeyword(logicalObject, litkey) as {
+                            passingLogicalObject: FloughLogicalObjectIF | undefined,
+                            failingLogicalObject: FloughLogicalObjectIF | undefined
+                        };
+                        const pushOne = (logicalObject: FloughLogicalObjectIF, tf: FloughType) => {
+                            const {sc} = andSymbolTypeIntoSymtabConstraint({
+                                symbol: rttr0.symbol!, isconst: rttr0.isconst,
+                                type: floughTypeModule.createTypeFromLogicalObject(logicalObject),
+                                sc: rttr.sci, getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow
+                            });
+                            unmergedOut.push({
+                                ...rttr,
+                                sci: sc,
+                                type: tf
+                            });
+                        };
+                        if (passingLogicalObject) pushOne(passingLogicalObject, floughTypeModule.createTrueType());
+                        if (failingLogicalObject) pushOne(failingLogicalObject, floughTypeModule.createFalseType());
+                    });
+                });
+                return { unmerged: unmergedOut };
+            } // endof floughByBinaryExpressionInKeyword
 
         } // endof floughInnerAux()
     } // endof floughInner()

@@ -6,14 +6,49 @@
 
 ### Priority: High
 
+
+0. InKeyword
+
+    0. prerequisite Changes before implementing inKeyword.
+
+        0. Object literal keys (numbers) should be mapped to strings, because 0 and "0" are the same key. (Does not include essymbols).
+
+        0. For optional props with a type-value including "undefined", need to distinguins between "haskey:false" and "key present but has type-value undefined".
+
+            0. Using Type "never" will not work because "never" cannot be unioned with other types.
+
+            0. use a haskey tristate: `{yes:boolean,no:boolean}`, in parallel with `variations`
+
+            0. There is some redundancy
+
+                0. not optional -> haskey: `{yes:true,no:false}`; no need to be explicit.
+
+                0. read when `{yes:X,no:true}` -> union with type `undefined`.
+
+                0. narrow type-value to undefined (for optional types only)
+
+                    0. case (T includes undefined): haskey: `{yes:X,no:Y}` -> `{yes:X,no:true}`,
+
+                    0. case (T not includes undefined): haskey: `{yes:X,no:Y}` -> `{yes:false,no:true}`
+
+                0. set, delete
+
+    0. implement inKeyword
+
+0. ESSymbols
+
+    0. Likely to be used with InKeyword
+
+
 0. Grouping and Heap
 
-    0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFlow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least. (This was at least improved for  _caxnc-prop-0003 by commit ff478282a2).
+    0.  so far retaining the ability to switch between graph based and the old way: refactorConnectedGroupsGraphs = true/false both work.
 
-    0.  Add postGroups member to Group and find graphs of connected groups.  Do one graph of connected groups instead of just ante Groups.
+        0. The problem of "left out" statement doesn't seem to exist anymore even in the old way, and/so the _caxnc test results are identical.
 
+        0. Seems that log file length is reduced by using "true" setting.  This could be made into a formal test.
 
-
+        0. `refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnectedGroupsGraphs && false;` is always false, so should elide that never-to-be-used code.
 
 0. Fix argument matching in `floughByCallExpressionV3`.
 
@@ -90,6 +125,19 @@ That could be "fixed" by implementing "not" of literal types, and modifying seve
 
 
 ### Done (reverse order)
+
+
+0. Grouping and Heap
+
+    0. It seems that sometimes the same statements are getting computed more than once via heap, e.g.,  [a], [b], [a,b,c].  E.g. _caxnc-prop-0003, `grep updateHeapWithGroupForFlow tmp.de1.di0.dfc1.txt` to see it.  Need to check if this is happing elsewhere.  Need a strategy to keep some cbes in memory when they are know dependencies of groups not yet called.  Checked, not a problem in whileLoop-0046, at least. (This was at least improved for  _caxnc-prop-0003 by commit ff478282a2).
+
+    0.  Add postGroups member to Group and find graphs of connected groups.  Do one graph of connected groups instead of just ante Groups.
+
+    0.  so far retaining the ability to switch between graph based and the old way.
+
+        0. refactorConnectedGroupsGraphs = true/false both work.
+
+        0. Seems that log file length is reduced by using "true" setting.  This could be made into a formal test.
 
 0. In branch condalias-49075-work-2-eqneqLRNindep
     export const usePartitionForEqualityCompareFloughTypeV2 = true;

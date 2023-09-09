@@ -30,18 +30,14 @@ namespace ts {
 
     // export type FloughLogicalObjectVariations = ESMap<LiteralType,FloughType>;
     // type Variations = FloughLogicalObjectVariations;
-    type Variations = ESMap<LiteralType,FloughType>;
+    /**
+     * TODO: LiteralType should be projected to plain string or symbol, but not a number,
+     * to prevent duplicate keys.
+     */
 
-    type LiteralTypeNumber = LiteralType & {value: number};
-    type LiteralTypeString = LiteralType & {value: string};
-    function isLiteralTypeNumber(x: LiteralType): x is LiteralTypeNumber {
-        return x.value !== undefined && typeof x.value === "number";
-    }
-    // @ ts-expect-error
-    function isLiteralTypeString(x: LiteralType): x is LiteralTypeString {
-        return x.value !== undefined && typeof x.value === "string";
-    }
-
+    const checker = undefined as any as TypeChecker; // TODO: intialize;
+    const dbgs = undefined as any as Dbgs;
+    const mrNarrow = undefined as any as MrNarrow;
 
     export type OldToNewLogicalObjectMap = ESMap<FloughLogicalObjectInnerIF,FloughLogicalObjectInnerIF>;
 
@@ -86,7 +82,9 @@ namespace ts {
         getTsTypeOfBasicLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
         inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop: FloughLogicalObjectInnerIF, edType: Readonly<Type>): FloughLogicalObjectInnerIF;
-
+        resolveInKeyword(logicalObject: FloughLogicalObjectInnerIF, litkey: LiteralType): {
+            passingLogicalObject: FloughLogicalObjectInnerIF | undefined, failingLogicalObject: FloughLogicalObjectInnerIF | undefined
+        };
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
         dbgLogicalObjectAccessResult(loar: Readonly<LogicalObjectAccessReturn>): string[];
     }
@@ -114,14 +112,47 @@ namespace ts {
             return logicalObjectTop.tsType;
         },
         inheritReadonlyFromEffectiveDeclaredTsTypeModify,
+        resolveInKeyword,
         dbgLogicalObjectToStrings,
         dbgLogicalObjectAccessResult
     };
 
+    // TODO: undefined means key is known to be not present, different from key having undefined type value.
+    //type Variations = ESMap<LiteralType,FloughType /*| undefined */>;
+    type Variations = ESMap<string,FloughType /*| undefined */>;
 
-    const checker = undefined as any as TypeChecker; // TODO: intialize;
-    const dbgs = undefined as any as Dbgs;
-    const mrNarrow = undefined as any as MrNarrow;
+    //type LiteralTypeNumber = LiteralType & {value: number};
+    //type LiteralTypeString = LiteralType & {value: string};
+
+    // function isLiteralTypeNumber(x: LiteralType): x is LiteralTypeNumber {
+    //     return x.value !== undefined && typeof x.value === "number";
+    // }
+    // // @ ts-expect-error
+    // function isLiteralTypeString(x: LiteralType): x is LiteralTypeString {
+    //     return x.value !== undefined && typeof x.value === "string";
+    // }
+
+    // function literalTypeToStringKey(x: LiteralType): string {
+    //     //Debug.assert(x.value !== undefined);
+    //     if (typeof x.value === "string") return x.value;
+    //     else if (typeof x.value === "number") return x.value.toString();
+    //     else Debug.fail("unexpected");
+    // }
+
+    /**
+     *
+     * @param x
+     * @returns number | typeof NaN
+     * Note: Nan is a number, added to union as a comment
+     */
+    // function literalTypeToNumberKey(x: LiteralType): number | typeof NaN {
+    //     //Debug.assert(x.value !== undefined);
+    //     if (typeof x.value === "string") return Number(x.value);
+    //     else if (typeof x.value === "number") return x.value;
+    //     else Debug.fail("unexpected");
+    // }
+
+
     export function initFloughLogicalObjectInner(checkerIn: TypeChecker, dbgsIn: Dbgs, mrNarrowIn: MrNarrow) {
         (checker as any) = checkerIn;
         //(refTypesTypeModule as any) = refTypesTypeModuleIn;
@@ -196,6 +227,16 @@ namespace ts {
     type FloughLogicalTsObject = FloughLogicalObjectTsintersection | FloughLogicalObjectTsunion | FloughLogicalObjectPlain ;
 
     type FloughLogicalObjectInner = FloughLogicalObjectUnion | FloughLogicalObjectIntersection | FloughLogicalObjectDifference | FloughLogicalTsObject;
+
+    // function isKeyPresent(logobj: Readonly<FloughLogicalObjectPlain>, key: string){
+    //     if (checker.isArrayOrTupleType(logobj.tsType)){
+    //         Debug.assert(false, "not yet implemented");
+    //     }
+    //     else {
+    //         if (logobj.variations) return logobj.variations.has(key as LiteralType);
+    //         else return false;
+    //     }
+    // }
 
     /**
      * The FloughLogicalObjectIF is the handle for arguments and return values used in exported functions of this module.
@@ -791,6 +832,27 @@ namespace ts {
     //     return <FloughLogicalObjectPlain>{ ...logicalObjectBasic, variations, id: nextLogicalObjectInnerId++ };
     // }
 
+    // type AccessKeys = ReturnType<typeof floughTypeModule["getAccessKeysMutable"]>;
+    // type ObjectUsableKeys = & {
+    //     genericNumber: boolean;
+    //     genericString: boolean;
+    //     stringSet: Set<string>;
+    // };
+    // function convertAccessKeysToUsableKeys(accessKeys: AccessKeys): ObjectUsableKeys {
+    //     const genericNumber = accessKeys.number===true;
+    //     const genericString = accessKeys.string===true;
+    //     const stringSet = new Set<string>();
+    //     if (accessKeys.number && accessKeys.number!==true) {
+    //         accessKeys.number.forEach(k=>stringSet.add(k.value.toString()));
+    //     }
+    //     if (accessKeys.string && accessKeys.string!==true) {
+    //         accessKeys.string.forEach(k=>stringSet.add(k.value));
+    //     }
+    //     // const strings: string[]=[];
+    //     // stringSet.forEach(s=>strings.push(s));
+    //     return { genericNumber, genericString, stringSet };
+    // }
+
     function getTypeOverIndicesFromBase(logicalObjectBaseIn: Readonly<FloughLogicalObjectInner>, keysType: FloughType): { type: FloughType } {
         if (logicalObjectBaseIn.kind!=="plain"){
             Debug.fail("unexpected logicalObject.kind!=='plain'");
@@ -798,8 +860,8 @@ namespace ts {
         if (isFakeTsObjectType(((logicalObjectBaseIn as FloughLogicalObjectBasic).tsType))){
             return { type: floughTypeModule.createNeverType() };
         }
-
-        const accessKeys = floughTypeModule.getAccessKeysMutable(keysType);
+        // get a copy of the string and number keys
+        const keys = floughTypeModule.getObjectUsableAccessKeys(keysType);
 
         // const alitnum = floughTypeModule.getLiteralNumberTypes(keysType);
         // const alitnumset =
@@ -807,40 +869,33 @@ namespace ts {
         // const hasnum = floughTypeModule.hasNumberType(keysType);
         // const hasstr = floughTypeModule.hasStringType(keysType);
         const aft: FloughType[]=[];
-        let variations: Variations | undefined;
-        if (variations=logicalObjectBaseIn.variations){
-            variations.forEach((v,k)=>{
-                if (k.flags & TypeFlags.Number){
-                    if (accessKeys.number) {
-                        if (accessKeys.number===true) aft.push(floughTypeModule.cloneType(v));
-                        else {
-                            assertCastType<LiteralTypeNumber>(k);
-                            if (accessKeys.number.has(k)){
-                                aft.push(v);
-                                accessKeys.number.delete(k);
-                            }
+        {
+            let variations: Variations | undefined;
+            if (variations=logicalObjectBaseIn.variations){
+                variations.forEach((v,k)=>{
+                    {
+                        //assertCastType<LiteralTypeNumber>(k);
+                        if (keys.stringSet.has(k)){
+                            aft.push(v);
+                            keys.stringSet.delete(k);
                         }
                     }
-                }
-                else if (k.flags & TypeFlags.String){
-                    if (accessKeys.string) {
-                        if (accessKeys.string===true) aft.push(floughTypeModule.cloneType(v));
-                        else {
-                            assertCastType<LiteralTypeString>(k);
-                            if (accessKeys.string.has(k)){
-                                aft.push(v);
-                                accessKeys.string.delete(k);
-                            }
-                        }
+                    if (keys.genericString) {
+                        aft.push(floughTypeModule.cloneType(v));
+                        return;
                     }
-                }
-            });
+                    if (keys.genericNumber) {
+                        if (Number.isSafeInteger(Number.parseInt(k))) aft.push(floughTypeModule.cloneType(v));
+                        return;
+                    }
+                });
+            }
         }
         const atstypes: Type[]=[];
         let undef = false;
         const baseType = logicalObjectBaseIn.tsType as ObjectType;
         if (checker.isArrayOrTupleType(baseType)){
-            if (accessKeys.number) {
+            //if (accessKeys.number) {
                 if (checker.isTupleType(baseType)){
                     //const index = key.value as number;
                     assertCastType<TupleTypeReference>(baseType);
@@ -849,13 +904,15 @@ namespace ts {
                     const hasRest = !!(elementFlags[elementFlags.length-1] & ElementFlags.Rest);
                     //let undef = false;
                     //let atstype: Type[]=[];
-                    if (accessKeys.number===true){
+                    if (keys.genericNumber===true){
                         atstypes.push(...tupleElements);
                         // under what circumstances, if ever, should undefined be added here?
                     }
                     else {
-                        accessKeys.number.forEach(klitnum=>{
-                            const index = klitnum.value as number;
+                        keys.stringSet.forEach(numstr=>{
+                            const index = Number.parseInt(numstr);
+                            if (!Number.isSafeInteger(index)) return; // just ignored
+                            // const index = klitnum.value as number;
 
                             if (index<tupleElements.length) {
                                 atstypes.push(tupleElements[index]);
@@ -874,12 +931,10 @@ namespace ts {
                     Debug.assert(elementType);
                     atstypes.push(elementType);
                 }
-            } // accessKeys.number
+            //} // accessKeys.number
         }
         else { // ought to be object
-            if (accessKeys.string){
-                Debug.fail("not yet implemented; object type");
-            }
+            Debug.fail("unexpected; should not be trying to get union of types over all indices of an object type");
         }
 
         if (atstypes || undef){
@@ -894,7 +949,7 @@ namespace ts {
         Debug.fail("");
     }
 
-    function getTypeAtIndexFromBase(logicalObjectBaseIn: Readonly<FloughLogicalObjectInner>, key: LiteralType): { literalKey?: LiteralType | undefined, type: Readonly<FloughType> | undefined } {
+    function getTypeAtIndexFromBase(logicalObjectBaseIn: Readonly<FloughLogicalObjectInner>, key: string): { literalKey?: string | undefined, type: Readonly<FloughType> | undefined } {
         if (isFakeTsObjectType(((logicalObjectBaseIn as FloughLogicalObjectBasic).tsType))){
             return { literalKey:key, type: floughTypeModule.createNeverType() };
         }
@@ -915,17 +970,22 @@ namespace ts {
         const baseType = logicalObjectBaseIn.tsType;
         if (checker.isArrayOrTupleType(baseType)){
             if (checker.isTupleType(baseType)){
-                if (!isLiteralTypeNumber(key)) {
-                    return { type: floughTypeModule.createUndefinedType() };
-                }
-                const index = key.value as number;
+                // if (!isLiteralTypeNumber(key)) {
+                //     return { type: floughTypeModule.createUndefinedType() };
+                // }
+                // const index = key.value as number;
+                let index = Number.parseInt(key);
+                index = Number.isSafeInteger(index) ? index : NaN;
                 assertCastType<TupleTypeReference>(baseType);
                 const tupleElements = checker.getTypeArguments(baseType);
                 const elementFlags = baseType.target.elementFlags;
                 const hasRest = !!(elementFlags[elementFlags.length-1] & ElementFlags.Rest);
                 let undef = false;
                 let tstype: Type;
-                if (index<tupleElements.length) {
+                if (isNaN(index)) {
+                    tstype = checker.getUnknownType();
+                }
+                else if (index<tupleElements.length) {
                     tstype = tupleElements[index];
                     undef = !!(elementFlags[index] & (ElementFlags.Optional | ElementFlags.Rest));
                     if (extraAsserts) {
@@ -958,17 +1018,18 @@ namespace ts {
             }
         }
         else {
-            if (!isLiteralTypeString(key)) {
-                return { type: floughTypeModule.createUndefinedType() };
-            }
-            assertCastType<ObjectType>(baseType);
-            const keystr = key.value as string;
+            // if (!isLiteralTypeString(key)) {
+            //     return { type: floughTypeModule.createUndefinedType() };
+            // }
+            // assertCastType<ObjectType>(baseType);
+            // const keystr = key.value as string;
+            const keystr = key;
             const propSymbol = checker.getPropertyOfType(/*logicalObjectBaseIn.tsType*/ baseType, keystr);
             if (!propSymbol){
                 return { type: undefined, literalKey: key };
             }
             Debug.assert(propSymbol);
-            // TODO: case enum type
+            // TODO: ? case enum type
             const tstype = checker.getTypeOfSymbol(propSymbol);
             if (extraAsserts) Debug.assert(tstype!==checker.getErrorType());
             return { type: floughTypeModule.createFromTsType(tstype), literalKey: key };
@@ -1186,7 +1247,7 @@ namespace ts {
     // }
 
     type Collated = & {
-        arrLiteralKeyIn?: (LiteralType | undefined)[]; // TODO: kill??
+        arrLiteralKeyIn?: (string | undefined)[]; // TODO: kill??
         logicalObjectsIn: Readonly<(FloughLogicalObjectInner | undefined)[]>; // each may be union of obj, but no nobj types
         nobjTypesIn: Readonly<(FloughType | undefined)[]>; // nobj, same length as logicalObjectsIn
         logicalObjectsPlainOut: Readonly<FloughLogicalObjectPlain>[]; // each of the unique plain obj over union of logicalObjectsIn
@@ -1197,12 +1258,12 @@ namespace ts {
         //remainingNonObjType: FloughType;
         //reverseMap: { inIdx: number, idxInIn: number }[][]; //
     };
-    export type LiteralKeyAndType = & { literalKey?: LiteralType | undefined, type: FloughType };
+    export type LiteralKeyAndType = & { literalKey?: string | undefined, type: FloughType };
     export type LogicalObjectAccessReturn = & {
         rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>;
         roots: Readonly<FloughType[]>;
         collated: Readonly<Collated[]>;
-        aLiterals: (LiteralType | undefined)[];
+        aLiterals: (string | undefined)[];
         finalTypes: Readonly<LiteralKeyAndType[]>;
         //finalQdotUndefineds: (boolean | undefined)[]; // use collated[last].carriedQdotUndefinedsOut instead <------ !!!!
         aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>;
@@ -1400,33 +1461,35 @@ namespace ts {
     function logicalObjectAccess(
         rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>,
         roots: Readonly<FloughType[]>,
-        akey: Readonly<FloughType[]>,
+        akeyType: Readonly<FloughType[]>,
         aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>,
         // groupNodeToTypeMap: ESMap<Node,Type>,
     ): LogicalObjectAccessReturn {
-        function getLiteralKey(kt: Readonly<FloughType>): LiteralType | undefined {
-            let aklits = floughTypeModule.getLiteralNumberTypes(kt);
-            if (!aklits) aklits = floughTypeModule.getLiteralStringTypes(kt);
-            if (aklits?.length===1) return aklits[0];
+        function getLiteralKey(kt: Readonly<FloughType>): string | undefined {
+            //const accessKeys = floughTypeModule.getAccessKeysMutable(kt);
+            const keys = floughTypeModule.getObjectUsableAccessKeys(kt);
+            if (keys.stringSet.size===1) {
+                return keys.stringSet.values().next().value as string;
+            }
             return undefined;
         }
 
         let collated0 = collateByBaseType(roots, aexpression[0]);
         const acollated: Collated[] = [collated0];
-        const aLiterals: (LiteralType | undefined)[] = [];
-        let finalLiteralKeyAndType: { literalKey?: LiteralType | undefined, type: FloughType }[];
+        const astringkeys: (string | undefined)[] = [];
+        let finalLiteralKeyAndType: { literalKey?: string | undefined, type: FloughType }[];
         //const aqdot: boolean[] = aexpression.map(e=>!!(e as PropertyAccessExpression).questionDotToken);
         // Temporary test - does not examine each type for null/undefined
         // @ ts-expect-error
         //let hasFinalQdotUndefined = false; //aqdot.some(b=>b);
         //const finalCarriedQdotUndefineds: (boolean | undefined)[] = [];
 
-        for (let i=0, ie=akey.length; i!==ie; i++){
-            const nextKey = getLiteralKey(akey[i]);
-            aLiterals.push(nextKey);
+        for (let i=0, ie=akeyType.length; i!==ie; i++){
+            const nextKey = getLiteralKey(akeyType[i]);
+            astringkeys.push(nextKey);
             //const nextTypes: FloughType[] = [];
             // TODO: or note: literalKey value is identical for all members of nextKeyAndType array. That is redundant.
-            const nextKeyAndType: { literalKey?: LiteralType | undefined, type: FloughType | undefined }[] = [];
+            const nextKeyAndType: { literalKey?: string | undefined, type: FloughType | undefined }[] = [];
             // for (let j=0, je=collated0.nobjTypesIn.length; j!==je; j++){
             //     let type;
             //     if ((type=collated0.nobjTypesIn[j]) && floughTypeModule.hasUndefinedOrNullType(type)){
@@ -1446,14 +1509,14 @@ namespace ts {
             }
             else {
                 for (let j=0, je=collated0.logicalObjectsPlainOut.length; j!==je; j++){
-                    const type = getTypeOverIndicesFromBase(collated0.logicalObjectsPlainOut[j], akey[i]);
+                    const type = getTypeOverIndicesFromBase(collated0.logicalObjectsPlainOut[j], akeyType[i]);
                     // if (aexpression[i].questionDotToken && floughTypeModule.hasUndefinedOrNullType(type)){
                     //     addUndefinedToFinal = true;
                     // }
                     nextKeyAndType.push({ type });
                 }
             }
-            if (i<akey.length-1){
+            if (i<akeyType.length-1){
                 collated0 = collateByBaseType(nextKeyAndType.map(x=>x.type??floughTypeModule.createUndefinedType()) as FloughLogicalObjectInner[], aexpression[i+1]);
                 collated0.arrLiteralKeyIn = nextKeyAndType.map(x=>x.literalKey);
                 acollated.push(collated0);
@@ -1476,7 +1539,7 @@ namespace ts {
                 //finalCarriedQdotUndefineds = acollated[akey.length-1].carriedQdotUndefinedOut;
             }
         }
-        return { rootsWithSymbols, roots, collated: acollated, aLiterals, finalTypes: finalLiteralKeyAndType!, aexpression };
+        return { rootsWithSymbols, roots, collated: acollated, aLiterals: astringkeys, finalTypes: finalLiteralKeyAndType!, aexpression };
     }
     function getFinalTypesFromLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>, includeQDotUndefined: boolean): Readonly<FloughType[]> {
         if (includeQDotUndefined){
@@ -1749,7 +1812,7 @@ namespace ts {
                     if (isFakeTsObjectType(oldLogicalObjectBasic.tsType)) {
                         continue;
                     }
-                    const variations = new Map<LiteralType,FloughType>(oldLogicalObjectBasic.variations);
+                    const variations = new Map<string,FloughType>(oldLogicalObjectBasic.variations);
                     variations.set(key,typesIn[idx]!);
                     //const key = childcoll.arrLiteralKeyIn![basicIdx]!;
                     // const { logicalObject, nonObj } = typesIn[idx] ? floughTypeModule.splitLogicalObject(typesIn[idx]!) : { logicalObject: undefined, nonObj: undefined };
@@ -1832,6 +1895,45 @@ namespace ts {
         //return results;
     } // logicalObjectModify
 
+    function resolveInKeyword(_logicalObjectIn: Readonly<FloughLogicalObjectInner>, _litkey: Readonly<LiteralType>): {
+        passingLogicalObject: FloughLogicalObjectInner | undefined, failingLogicalObject: FloughLogicalObjectInner | undefined
+    }{
+        Debug.fail("not yet implemented");
+        // // TODO: project numbers to string space
+        // let keystring = String(litkey.value);
+        // // if (typeof keystring==="number") keystring = String(keystring);
+
+        // const passing = new Set<FloughLogicalObjectBasic>();
+        // const failing = new Set<FloughLogicalObjectBasic>();
+        // const both = new Set<FloughLogicalObjectBasic>();
+        // function doOne(logobj: Readonly<FloughLogicalObjectInner>){
+        //     if (logobj.kind===FloughLogicalObjectKind.plain){
+        //         if (checker.isArrayType(logobj.tsType)){
+        //             both.add(logobj);
+        //         }
+        //         else if (checker.isTupleType(logobj.tsType)){
+        //             Debug.assert(false, "'key in tuple' not yet implemented");
+        //         }
+        //         else if (logobj.variations?.has(litkey)){
+        //             const value = logobj.variations.get(litkey)!;
+        //             if (value===undefined || floughTypeModule.isNeverType(value)) fail=true;
+        //             else pass=true;
+        //         }
+        //         else {
+        //             // check the original ts type
+        //             // TODO: would this work with tuple also? I think not.
+        //             const propSymbol = checker.getPropertyOfType(logobj.tsType,keystring);
+        //             if (propSymbol===undefined) failing.add(logobj);
+        //             else {
+        //                 const tstype = checker.getTypeOfSymbol(propSymbol);
+
+        //             }
+        //         }
+        //     }
+        // }
+    }
+
+
 
     function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[] {
         const as: string[] = [];
@@ -1856,7 +1958,7 @@ namespace ts {
                 if (logicalObject.variations) {
                     logicalObject.variations.forEach((value,key)=>{
                         floughTypeModule.dbgFloughTypeToStrings(value).forEach(s=>{
-                            as.push(`  variation:  key:${dbgsModule.dbgTypeToString(key)}], value:${s}`);
+                            as.push(`  variation:  key:${key}], value:${s}`);
                         });
                     });
                 }
@@ -1877,11 +1979,11 @@ namespace ts {
         const astr: string[] = [];
         let str = "aLiterals:";
         loar.aLiterals.forEach(x=>{
-            str += x ? x.value : "<undef>";
+            str += x ? x : "<undef>";
         });
         astr.push(str);
         loar.finalTypes.forEach((x,idx)=>{
-            astr.push(`finalTypes[${idx}] literalKey: ${x.literalKey? x.literalKey.value : "<undef>"}`);
+            astr.push(`finalTypes[${idx}] literalKey: ${x.literalKey? x.literalKey : "<undef>"}`);
             floughTypeModule.dbgFloughTypeToStrings(x.type).forEach(s=>astr.push(`finalTypes[${idx}] type:${s}`));
         });
         loar.roots.forEach((x,idx)=>{

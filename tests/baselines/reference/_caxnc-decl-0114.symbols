@@ -5,13 +5,13 @@ declare const b: boolean;
 function decl0014(){
 >decl0014 : Symbol(decl0014, Decl(_caxnc-decl-0114.ts, 0, 25))
 
-    let x;
+    let x: string | any[];
 >x : Symbol(x, Decl(_caxnc-decl-0114.ts, 2, 7))
 
     if (b) {
 >b : Symbol(b, Decl(_caxnc-decl-0114.ts, 0, 13))
 
-        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | any[]"
         x = [0];
 >x : Symbol(x, Decl(_caxnc-decl-0114.ts, 2, 7))
 
@@ -19,20 +19,20 @@ function decl0014(){
 >x : Symbol(x, Decl(_caxnc-decl-0114.ts, 2, 7))
     }
     else {
-        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | any[]"
         x = "1";
 >x : Symbol(x, Decl(_caxnc-decl-0114.ts, 2, 7))
 
         x;
 >x : Symbol(x, Decl(_caxnc-decl-0114.ts, 2, 7))
     }
-    x; // flow not trigger without x here
+    x;
 >x : Symbol(x, Decl(_caxnc-decl-0114.ts, 2, 7))
 
     x = 2;
 >x : Symbol(x, Decl(_caxnc-decl-0114.ts, 2, 7))
 
-    x;    
+    x;
 >x : Symbol(x, Decl(_caxnc-decl-0114.ts, 2, 7))
 }
 

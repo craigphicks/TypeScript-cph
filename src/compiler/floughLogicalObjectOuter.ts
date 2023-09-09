@@ -65,8 +65,9 @@ namespace ts {
             state: LogicalObjectAccessReturn,
             arrCallUndefinedAllowed?: Readonly<boolean[]>
         ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined };
-        // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
-        //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectIF | undefined>[]): FloughLogicalObjectIF;
+        resolveInKeyword(logcialObject: FloughLogicalObjectIF, litkey: LiteralType): {
+            passingLogicalObject: FloughLogicalObjectIF | undefined, failingLogicalObject: FloughLogicalObjectIF | undefined
+        };
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
 
@@ -156,10 +157,7 @@ namespace ts {
             //         type
             // }));
         },
-        // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][] {
-        //     return floughLogicalObjectInnerModule.getTsTypesInChainOfLogicalObjectAccessReturn(loar);
-        // },
-        //unionOfFloughLogicalObjectWithTypeMerging,
+        resolveInKeyword,
         dbgLogicalObjectToStrings,
     };
 
@@ -330,15 +328,20 @@ namespace ts {
     //     return { logicalObject: newLogicalObject, type: newType };
     // }
 
-    function createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType: Type | undefined): FloughLogicalObjectOuter {
+    function createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType?: Type | undefined): FloughLogicalObjectOuter {
         return { inner, id: nextLogicalObjectOuterId++, effectiveDeclaredTsType: edType,
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
+    function resolveInKeyword(logicalObject: FloughLogicalObjectOuter, litkey: LiteralType): {
+        passingLogicalObject: FloughLogicalObjectOuter | undefined, failingLogicalObject: FloughLogicalObjectOuter | undefined
+    }{
+        const { passingLogicalObject:innerPassing, failingLogicalObject:innerFailing } = floughLogicalObjectInnerModule.resolveInKeyword(logicalObject.inner, litkey);
+        const passingLogicalObject = innerPassing ? createFloughLogicalObjectFromInner(innerPassing, /*logicalObject.effectiveDeclaredTsType*/) : undefined;
+        const failingLogicalObject = innerFailing ? createFloughLogicalObjectFromInner(innerFailing, /*logicalObject.effectiveDeclaredTsType*/) : undefined;
+        return { passingLogicalObject, failingLogicalObject };
+    }
 
-    // function getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectOuter>): Type {
-    //     return floughLogicalObjectInnerModule.getTypeFromAssumedBaseLogicalObject(logicalObject.inner);
-    // }
 
     function dbgLogicalObjectToStrings(logicalObjectTop: Readonly<FloughLogicalObjectOuter>): string[] {
         const as: string[] = [];

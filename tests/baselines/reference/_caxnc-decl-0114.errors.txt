@@ -1,0 +1,24 @@
+tests/cases/conformance/_caxnc-decl/_caxnc-decl-0114.ts(15,5): error TS2322: Type 'number' is not assignable to type 'string | any[]'.
+
+
+==== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0114.ts (1 errors) ====
+    declare const b: boolean;
+    function decl0014(){
+        let x: string | any[];
+        if (b) {
+            // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | any[]"
+            x = [0];
+            x;
+        }
+        else {
+            // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | any[]"
+            x = "1";
+            x;
+        }
+        x;
+        x = 2;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type 'string | any[]'.
+        x;
+    }
+    

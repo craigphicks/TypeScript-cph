@@ -29,8 +29,6 @@ namespace ts {
         equalRefTypesTypes(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
         addTsTypeNonUnionToRefTypesTypeMutate(tstype: Type, type: FloughType): void;
         intersectionsAndDifferencesForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): IntersectionsAndDifferencesForEqualityCompareReturnType;
-        //intersectionsAndDifferencesNobj(a: Readonly<FloughType>, b: Readonly<FloughType>): IntersectionsAndDifferencesNobjReturnType
-        //partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[];
         dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[];
         // end of interface copied from RefTypesTypeModule
 
@@ -38,18 +36,17 @@ namespace ts {
          * Prefered interface for FloughType
          * @param ft
          */
-        //createFromTsTypeAndLogicalObject(tstype: Readonly<Type>, logicalObject: FloughLogicalObjectIF): FloughType;
         createFromTsType(tstype: Readonly<Type>, logicalObject?: Readonly<FloughLogicalObjectIF> | undefined): FloughType;
         createFromTsTypes(tstypes: Readonly<Type[]>, logicalObject?: Readonly<FloughLogicalObjectIF> | undefined): FloughType;
         unionWithTsTypeMutate(tstype: Readonly<Type>, ft: FloughType): FloughType;
         cloneType(ft: Readonly<FloughType>): FloughType;
         createNeverType(): FloughType;
-        //isNeverType(ft: Readonly<FloughType>): boolean; // already defined above
         getNeverType(): Readonly<FloughType>;
         createNumberType(): Readonly<FloughType>;
         createUndefinedType(): Readonly<FloughType>;
         createTrueType(): Readonly<FloughType>;
         createFalseType(): Readonly<FloughType>;
+        createBooleanType(): Readonly<FloughType>;
         createLiteralStringType(s: string): Readonly<FloughType>;
         intersectionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
@@ -61,7 +58,6 @@ namespace ts {
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
         createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined, nonObj?: Readonly<FloughType> | undefined): FloughType;
         setLogicalObjectMutate(logicalObject: Readonly<FloughLogicalObjectIF>, ft: FloughType): void;
-        // widenTypeByEffectiveDeclaredType(ft: Readonly<FloughType>, effectiveDeclaredTsType: Readonly<Type>): FloughType;
         widenNobjTypeByEffectiveDeclaredNobjType(ftNobj: Readonly<FloughType>, effectiveDeclaredNobjType: Readonly<FloughType>): FloughType;
         getLiteralNumberTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
         getLiteralStringTypes(ft: Readonly<FloughType>): LiteralType[] | undefined;
@@ -70,10 +66,7 @@ namespace ts {
         hasUndefinedType(ft: Readonly<FloughType>): boolean;
         isEqualToUndefinedType(ft: Readonly<FloughType>): boolean;
         hasUndefinedOrNullType(ft: Readonly<FloughType>): boolean;
-        getAccessKeysMutable(ft: Readonly<FloughType>): {
-            number?: undefined | true | Set<LiteralTypeNumber>;
-            string?: undefined | true | Set<LiteralTypeString>;
-        };
+        getObjectUsableAccessKeys(type: Readonly<FloughType>): ObjectUsableAccessKeys;
         splitLogicalObject(ft: Readonly<FloughType>): { logicalObject?: FloughLogicalObjectIF | undefined, remaining: FloughType };
         removeUndefinedNullMutate(ft: FloughType): void;
         addUndefinedTypeMutate(ft: FloughType): void;
@@ -108,6 +101,9 @@ namespace ts {
         },
         createFalseType(): Readonly<FloughType> {
             return { nobj: { boolFalse: true } };
+        },
+        createBooleanType(): Readonly<FloughType> {
+            return { nobj: { boolTrue: true, boolFalse: true } };
         },
         createLiteralStringType(s: string): Readonly<FloughType> {
             return { nobj: { string: new Set<LiteralType>([checker.getStringLiteralType(s)]) } } as FloughType;
@@ -144,21 +140,6 @@ namespace ts {
             });
             return ft;
         },
-        // isASubsetOfB(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean {
-        //     castReadonlyFloughTypei(a);
-        //     castReadonlyFloughTypei(b);
-        //     if (isNeverType(a)) return true;
-        //     if (isNeverType(b)) return false;
-        //     if (isAnyType(a)) return isAnyType(b) ? true : false;
-        //     if (isUnknownType(a) || isAnyOrUnknownType(b)) return false; // too pessimistic?
-        //     if (!isSubsetOfFloughTypeNobj(a.nobj,b.nobj)) return false;
-        //     if (a.logicalObject) {
-        //         if (!b.logicalObject) return false; // TODO: alothough a.logicalObject might be a deep postponed never type in which case true would be correct.
-        //         // this gets complicated. Is it valid to postpone, and what is the correct result to return here when postponing?
-        //         return true;
-        //     }
-        //     return true;
-        // },
         isASubsetOfB(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean {
             // The above commented out code should give the same answer but maybe be faster.  But this is more simple. TODO: compare performance.
             castReadonlyFloughTypei(a);
@@ -220,16 +201,6 @@ namespace ts {
             type.nobj = tmp.nobj;
         },
         intersectionsAndDifferencesForEqualityCompare,
-        //intersectionsAndDifferencesNobj,
-        // partitionForEqualityCompare(a: Readonly<FloughType>, b: Readonly<FloughType>): PartitionForEqualityCompareItem[] {
-        //     castFloughTypei(a);
-        //     castFloughTypei(b);
-        //     return partitionForEqualityCompareFloughTypeV2(a,b);
-        // },
-
-        // end of interface copied from RefTypesTypeModule
-
-
         dbgRefTypesTypeToStrings(type: Readonly<FloughType>): string[] {
             castReadonlyFloughTypei(type);
             return dbgFloughTypeToStrings(type);
@@ -289,7 +260,7 @@ namespace ts {
             castFloughTypei(ft);
             return !!(ft.nobj.undefined || ft.nobj.null);
         },
-        getAccessKeysMutable,
+        getObjectUsableAccessKeys,
         splitLogicalObject,
         removeUndefinedNullMutate(ft: FloughType): void {
             castFloughTypei(ft);
@@ -337,11 +308,6 @@ namespace ts {
 
     function castFloughTypei(_ft: FloughType): asserts _ft is FloughTypei {}
     function castReadonlyFloughTypei(_ft: FloughType): asserts _ft is Readonly<FloughTypei> {}
-
-
-
-    //export const floughTypeModule = floughTypeModuleTmp;
-
     const checker = 0 as any as TypeChecker;
     const compilerOptions = 0 as any as CompilerOptions;
 
@@ -370,8 +336,6 @@ namespace ts {
         nobj: FloughTypeNobj;
         logicalObject?: FloughLogicalObjectIF;
     };
-
-    //function castFloughType(ft: FloughType): asserts ft is FloughTypei {}
 
     function createNeverType(): FloughTypei {
         return { nobj:{} };
@@ -1508,20 +1472,24 @@ namespace ts {
         return ftout ?? ftin;
     }
 
-
-    function getAccessKeysMutable(ft: Readonly<FloughTypei>): {
-        number?: undefined | true | Set<LiteralTypeNumber>;
-        string?: undefined | true | Set<LiteralTypeString>;
-    } {
-        // TODO: ??? (ft.any||ft.unknown) => {number:true,string:true} ???
-        if (ft.any||ft.unknown) return {};
-        const res: ReturnType<typeof getAccessKeysMutable> = {};
-        if (ft.nobj.number) res.number = (ft.nobj.number===true) ? true : new Set<LiteralTypeNumber>(ft.nobj.number as Set<LiteralTypeNumber>);
-        if (ft.nobj.string) res.string = (ft.nobj.string===true) ? true : new Set<LiteralTypeString>(ft.nobj.number as Set<LiteralTypeString>);
-        return res;
+    // TODO: ESSymbols
+    export type ObjectUsableAccessKeys = & {
+        genericNumber: boolean;
+        genericString: boolean;
+        stringSet: Set<string>;
+    };
+    function getObjectUsableAccessKeys(type: Readonly<FloughTypei>): ObjectUsableAccessKeys {
+        const genericNumber = type.nobj.number===true;
+        const genericString = type.nobj.string===true;
+        const stringSet = new Set<string>();
+        if (type.nobj.number && type.nobj.number!==true) {
+            type.nobj.number.forEach(k=>stringSet.add(k.value.toString()));
+        }
+        if (type.nobj.string && type.nobj.string!==true) {
+            type.nobj.string.forEach(k=>stringSet.add(k.value as string));
+        }
+        return { genericNumber, genericString, stringSet };
     }
-
-
 
     function splitLogicalObject(ft: Readonly<FloughTypei>): { logicalObject?: FloughLogicalObjectIF | undefined, remaining: FloughTypei } {
         castReadonlyFloughTypei(ft);
