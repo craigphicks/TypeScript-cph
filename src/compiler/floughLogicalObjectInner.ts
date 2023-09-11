@@ -82,9 +82,7 @@ namespace ts {
         getTsTypeOfBasicLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
         inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop: FloughLogicalObjectInnerIF, edType: Readonly<Type>): FloughLogicalObjectInnerIF;
-        resolveInKeyword(logicalObject: FloughLogicalObjectInnerIF, litkey: LiteralType): {
-            passingLogicalObject: FloughLogicalObjectInnerIF | undefined, failingLogicalObject: FloughLogicalObjectInnerIF | undefined
-        };
+        resolveInKeyword(logicalObject: FloughLogicalObjectInnerIF, litkey: LiteralType): ResolveInKeywordReturnType;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
         dbgLogicalObjectAccessResult(loar: Readonly<LogicalObjectAccessReturn>): string[];
     }
@@ -117,9 +115,9 @@ namespace ts {
         dbgLogicalObjectAccessResult
     };
 
-    // TODO: undefined means key is known to be not present, different from key having undefined type value.
-    //type Variations = ESMap<LiteralType,FloughType /*| undefined */>;
-    type Variations = ESMap<string,FloughType /*| undefined */>;
+    type Variations = ESMap<string,FloughType>;
+    type HasKeyItem = & {yes: true, no: false};
+    type HasKeys = ESMap<string,HasKeyItem>;
 
     //type LiteralTypeNumber = LiteralType & {value: number};
     //type LiteralTypeString = LiteralType & {value: string};
@@ -203,6 +201,7 @@ namespace ts {
         kind: FloughLogicalObjectKind.plain;
         //item: FloughObjectTypeInstance;
         variations?: Variations;
+        haskeys?: HasKeys;
     };
     /**
      * TODO: FloughLogicalObjectBasic will include FloughLogicalObjectTsintersection
@@ -1895,42 +1894,87 @@ namespace ts {
         //return results;
     } // logicalObjectModify
 
-    function resolveInKeyword(_logicalObjectIn: Readonly<FloughLogicalObjectInner>, _litkey: Readonly<LiteralType>): {
-        passingLogicalObject: FloughLogicalObjectInner | undefined, failingLogicalObject: FloughLogicalObjectInner | undefined
-    }{
-        Debug.fail("not yet implemented");
+    export type ResolveInKeywordReturnType = & {
+        pass: FloughLogicalObjectInner | undefined,
+        fail: FloughLogicalObjectInner | undefined,
+        both: FloughLogicalObjectInner | undefined
+    }
+    function resolveInKeyword(_logicalObjectIn: Readonly<FloughLogicalObjectInner>, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType {
+        //Debug.fail("not yet implemented");
+        Debug.assert(!accessKeys.genericString, "accessKeys.genericString unexpected, should have been handled upstairs");
         // // TODO: project numbers to string space
         // let keystring = String(litkey.value);
         // // if (typeof keystring==="number") keystring = String(keystring);
+        const passing = new Map<string,FloughLogicalObjectBasic>();
+        const failing = new Map<string,FloughLogicalObjectBasic>();
+        const bothing = new Set<FloughLogicalObjectPlain>();
+        //const arrArrayTypes: Type[]=[];
 
-        // const passing = new Set<FloughLogicalObjectBasic>();
-        // const failing = new Set<FloughLogicalObjectBasic>();
-        // const both = new Set<FloughLogicalObjectBasic>();
-        // function doOne(logobj: Readonly<FloughLogicalObjectInner>){
-        //     if (logobj.kind===FloughLogicalObjectKind.plain){
-        //         if (checker.isArrayType(logobj.tsType)){
-        //             both.add(logobj);
-        //         }
-        //         else if (checker.isTupleType(logobj.tsType)){
-        //             Debug.assert(false, "'key in tuple' not yet implemented");
-        //         }
-        //         else if (logobj.variations?.has(litkey)){
-        //             const value = logobj.variations.get(litkey)!;
-        //             if (value===undefined || floughTypeModule.isNeverType(value)) fail=true;
-        //             else pass=true;
-        //         }
-        //         else {
-        //             // check the original ts type
-        //             // TODO: would this work with tuple also? I think not.
-        //             const propSymbol = checker.getPropertyOfType(logobj.tsType,keystring);
-        //             if (propSymbol===undefined) failing.add(logobj);
-        //             else {
-        //                 const tstype = checker.getTypeOfSymbol(propSymbol);
+        // function doOneKey(logobj: Readonly<FloughLogicalObjectPlain>, accessKeys: ObjectUsableAccessKeys): void {
+        //     if (logobj.variations?.has(key)){
+        //         const value = logobj.variations.get(key)!;
+        //         // TODO: is "never" ever fond here?
+        //         if (floughTypeModule.isNeverType(value)) Debug.assert(false, "never should not be found here or not yet implemented");
+        //         passing.set(key,logobj);
+        //     }
+        //     else if (checker.isArrayType(logobj.tsType)){
+        //         bothing.add(logobj);
+        //     }
 
-        //             }
-        //         }
         //     }
         // }
+
+        function doTupleWithKey(logobj: Readonly<FloughLogicalObjectPlain>, key: string): void {
+            if (extraAsserts) Debug.assert(checker.isTupleType(logobj.tsType));
+            Debug.fail("not yet implemented");
+        }
+        function doObjectWithKey(logobj: Readonly<FloughLogicalObjectPlain>, key: string): void {
+            if (extraAsserts) Debug.assert(!checker.isArrayOrTupleType(logobj.tsType));
+                const propSymbol = checker.getPropertyOfType(logobj.tsType,key);
+                if (!propSymbol) {
+                    failing.set(key,logobj);
+                    return;
+                }
+                let optional = !!(propSymbol.flags & SymbolFlags.Optional);
+                if (optional  && logobj.haskeys) optional = false;
+                //checker.isOptionalP
+                if (logobj.variations?.has(key)){
+                const value = logobj.variations.get(key)!;
+                if (floughTypeModule.isNeverType(value)) Debug.fail("not expected or not yet implemented");
+
+            }
+        }
+
+        function doOne(logobj: Readonly<FloughLogicalObjectInner>){
+            if (logobj.kind===FloughLogicalObjectKind.plain){
+                if (checker.isArrayType(logobj.tsType)){
+                    if (accessKeys.genericNumber || accessKeys.numberSubset){
+                        bothing.add(logobj);
+                    }
+                }
+                else if (checker.isTupleType(logobj.tsType)){
+                    if (accessKeys.genericNumber){
+                        bothing.add(logobj);
+                    }
+                    else {
+                        accessKeys.numberSubset?.forEach(key=>{
+                            doTupleWithKey(logobj,key);
+                        });
+                    }
+                }
+                else {
+                    accessKeys.stringSet?.forEach(key=>{
+                        doObjectWithKey(logobj,key);
+                    });
+                }
+            }
+            else if (logobj.kind===FloughLogicalObjectKind.union){
+                logobj.items.forEach(item=>doOne(item));
+            }
+            else {
+                Debug.fail("not yet implemented: ", () => logobj.kind);
+            }
+        }
     }
 
 

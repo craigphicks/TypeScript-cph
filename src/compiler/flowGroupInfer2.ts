@@ -3400,49 +3400,58 @@ namespace ts {
                     expr:objExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
                     sci: keyRttrUnion.sci
                 });
-                if (!keyNobjType) return { unmerged: [] };
-                const ambiguousKey =
-                    !floughTypeModule.isAnyType(keyNobjType)
-                    && !floughTypeModule.hasNumberType(keyNobjType)
-                    && !floughTypeModule.hasStringType(keyNobjType);
-                // TODO: essymbols
-                const literalKeyTypes = [
-                    ...floughTypeModule.getLiteralNumberTypes(keyNobjType)??[],
-                    ...floughTypeModule.getLiteralStringTypes(keyNobjType)??[],
-                ];
+                // If there is no key, or the key is unknown, terminate this branch; it is an error anyway.
+                if (!keyNobjType || floughTypeModule.isUnknownType(keyNobjType)) return { unmerged: [] };
+                const isAnyKeyType = floughTypeModule.isAnyType(keyNobjType);
+                const usableKeys = floughTypeModule.getObjectUsableAccessKeys(keyNobjType);
+
+                // If the key is any, the return the original object type for both true and false.
+                //floughTypeModule.isAnyType(keyNobjType)
+
+                // const ambiguousKey =
+                //     !floughTypeModule.isAnyType(keyNobjType)
+                //     && !floughTypeModule.hasNumberType(keyNobjType)
+                //     && !floughTypeModule.hasStringType(keyNobjType);
+                // // TODO: essymbols
+                // const literalKeyTypes = [
+                //     ...floughTypeModule.getLiteralNumberTypes(keyNobjType)??[],
+                //     ...floughTypeModule.getLiteralStringTypes(keyNobjType)??[],
+                // ];
 
                 const unmergedOut: RefTypesTableReturn[] = [];
                 objMntr.unmerged.forEach((rttr0,_rttridx)=>{
                     const rttr = applyCritNoneToOne(rttr0,objExpr,inferStatus.groupNodeToTypeMap);
                     const { logicalObject, remaining: _remaining } = floughTypeModule.splitLogicalObject(rttr.type);
                     if (!logicalObject) return;
-                    if (!rttr0.symbol || ambiguousKey) {
+                    if (isAnyKeyType || usableKeys.genericString) {
                         unmergedOut.push({
                             ...rttr,
                             type: floughTypeModule.createBooleanType()
                         });
                         return;
                     }
-                    literalKeyTypes.forEach(litkey=>{
-                        const { passingLogicalObject, failingLogicalObject } = floughLogicalObjectModule.resolveInKeyword(logicalObject, litkey) as {
-                            passingLogicalObject: FloughLogicalObjectIF | undefined,
-                            failingLogicalObject: FloughLogicalObjectIF | undefined
-                        };
-                        const pushOne = (logicalObject: FloughLogicalObjectIF, tf: FloughType) => {
-                            const {sc} = andSymbolTypeIntoSymtabConstraint({
-                                symbol: rttr0.symbol!, isconst: rttr0.isconst,
-                                type: floughTypeModule.createTypeFromLogicalObject(logicalObject),
-                                sc: rttr.sci, getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow
-                            });
-                            unmergedOut.push({
-                                ...rttr,
-                                sci: sc,
-                                type: tf
-                            });
-                        };
-                        if (passingLogicalObject) pushOne(passingLogicalObject, floughTypeModule.createTrueType());
-                        if (failingLogicalObject) pushOne(failingLogicalObject, floughTypeModule.createFalseType());
-                    });
+                    
+
+                    // literalKeyTypes.forEach(litkey=>{
+                    //     const { passingLogicalObject, failingLogicalObject } = floughLogicalObjectModule.resolveInKeyword(logicalObject, litkey) as {
+                    //         passingLogicalObject: FloughLogicalObjectIF | undefined,
+                    //         failingLogicalObject: FloughLogicalObjectIF | undefined
+                    //     };
+                    //     const pushOne = (logicalObject: FloughLogicalObjectIF, tf: FloughType) => {
+                    //         const {sc} = andSymbolTypeIntoSymtabConstraint({
+                    //             symbol: rttr0.symbol!, isconst: rttr0.isconst,
+                    //             type: floughTypeModule.createTypeFromLogicalObject(logicalObject),
+                    //             sc: rttr.sci, getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow
+                    //         });
+                    //         unmergedOut.push({
+                    //             ...rttr,
+                    //             sci: sc,
+                    //             type: tf
+                    //         });
+                    //     };
+                    //     if (passingLogicalObject) pushOne(passingLogicalObject, floughTypeModule.createTrueType());
+                    //     if (failingLogicalObject) pushOne(failingLogicalObject, floughTypeModule.createFalseType());
+                    // });
                 });
                 return { unmerged: unmergedOut };
             } // endof floughByBinaryExpressionInKeyword

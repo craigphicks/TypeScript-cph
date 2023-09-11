@@ -1476,17 +1476,24 @@ namespace ts {
     export type ObjectUsableAccessKeys = & {
         genericNumber: boolean;
         genericString: boolean;
-        stringSet: Set<string>;
+        stringSet: Set<string>; // includes numbers
+        numberSubset?: Set<string>; // only numbers, subset of stringSet
     };
     function getObjectUsableAccessKeys(type: Readonly<FloughTypei>): ObjectUsableAccessKeys {
         const genericNumber = type.nobj.number===true;
         const genericString = type.nobj.string===true;
         const stringSet = new Set<string>();
+        const numberSubset = new Set<string>(); // only numbers, subset of stringSet
         if (type.nobj.number && type.nobj.number!==true) {
-            type.nobj.number.forEach(k=>stringSet.add(k.value.toString()));
+            type.nobj.number.forEach(k=>{
+                stringSet.add(k.value.toString());
+            });
         }
         if (type.nobj.string && type.nobj.string!==true) {
-            type.nobj.string.forEach(k=>stringSet.add(k.value as string));
+            type.nobj.string.forEach(k=>{
+                stringSet.add(k.value as string);
+                if (Number.isSafeInteger(Number(k.value))) numberSubset.add(k.value as string);
+            });
         }
         return { genericNumber, genericString, stringSet };
     }
