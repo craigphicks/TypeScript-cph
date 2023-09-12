@@ -54,9 +54,9 @@ namespace ts {
         createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectInnerIF[]>): FloughLogicalObjectTsintersection;
         createFloughLogicalObject(tsType: Type): FloughLogicalObjectInnerIF;
         unionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
-        intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
-        intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner;
-        differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
+        // intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
+        // intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner;
+        //differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
         intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInnerIF | undefined;
         getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         logicalObjectAccess(
@@ -92,9 +92,9 @@ namespace ts {
         createFloughLogicalObjectTsintersection,
         createFloughLogicalObject,
         unionOfFloughLogicalObject,
-        intersectionOfFloughLogicalObject,
-        intersectionOfFloughLogicalObjects,
-        differenceOfFloughLogicalObject,
+        // intersectionOfFloughLogicalObject,
+        // intersectionOfFloughLogicalObjects,
+        //differenceOfFloughLogicalObject,
         intersectionWithLogicalObjectConstraint,
         getTsTypeFromLogicalObject,
         logicalObjectAccess,
@@ -403,52 +403,54 @@ namespace ts {
     }
 
 
-    function intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
-        assertCastType<FloughLogicalObjectInner>(a);
-        assertCastType<FloughLogicalObjectInner>(b);
-        const items: FloughLogicalObjectInner[] = [];
-        if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
-        else items.push(a);
-        if (b.kind===FloughLogicalObjectKind.intersection) items.push(...b.items);
-        else items.push(b);
-        return {
-            kind: FloughLogicalObjectKind.intersection,
-            items,
-            id: nextLogicalObjectInnerId++,
-            [essymbolFloughLogicalObject]: true
-        };
-    }
-    function intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner {
-        assertCastType<FloughLogicalObjectInner[]>(arrobj);
-        const items: FloughLogicalObjectInner[] = [];
-        for (const a of arrobj) {
-            if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
-            else items.push(a);
-        }
-        return {
-            kind: FloughLogicalObjectKind.intersection,
-            items,
-            id: nextLogicalObjectInnerId++,
-            [essymbolFloughLogicalObject]: true
-        };
-    }
+    // function intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
+    //     assertCastType<FloughLogicalObjectInner>(a);
+    //     assertCastType<FloughLogicalObjectInner>(b);
+    //     const items: FloughLogicalObjectInner[] = [];
+    //     if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
+    //     else items.push(a);
+    //     if (b.kind===FloughLogicalObjectKind.intersection) items.push(...b.items);
+    //     else items.push(b);
+    //     return {
+    //         kind: FloughLogicalObjectKind.intersection,
+    //         items,
+    //         id: nextLogicalObjectInnerId++,
+    //         [essymbolFloughLogicalObject]: true
+    //     };
+    // }
+    // function intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner {
+    //     assertCastType<FloughLogicalObjectInner[]>(arrobj);
+    //     const items: FloughLogicalObjectInner[] = [];
+    //     for (const a of arrobj) {
+    //         if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
+    //         else items.push(a);
+    //     }
+    //     return {
+    //         kind: FloughLogicalObjectKind.intersection,
+    //         items,
+    //         id: nextLogicalObjectInnerId++,
+    //         [essymbolFloughLogicalObject]: true
+    //     };
+    // }
 
-    function differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
-        assertCastType<FloughLogicalObjectInner>(minuend);
-        assertCastType<FloughLogicalObjectInner>(subtrahend);
-        return {
-            kind: FloughLogicalObjectKind.difference,
-            items: [minuend,subtrahend],
-            id: nextLogicalObjectInnerId++,
-            [essymbolFloughLogicalObject]: true
-        };
-    }
+    // function differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
+    //     assertCastType<FloughLogicalObjectInner>(minuend);
+    //     assertCastType<FloughLogicalObjectInner>(subtrahend);
+    //     return {
+    //         kind: FloughLogicalObjectKind.difference,
+    //         items: [minuend,subtrahend],
+    //         id: nextLogicalObjectInnerId++,
+    //         [essymbolFloughLogicalObject]: true
+    //     };
+    // }
 
     function intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInner>, logicalObjectConstraint: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined {
 
         function intersectionWithTsTypeOrTsType(logicalObject: Readonly<FloughLogicalObjectInner>, tsTypeConstraint: Type): FloughLogicalObjectInner | undefined {
             //assertCastType<FloughLogicalObjectInner>(logicalObject);
             if (logicalObject.kind===FloughLogicalObjectKind.plain) {
+                // const test = true;
+                // if (test) Debug.fail("test");
                 // TODO: This might recurse into property types, or maybe subtypesRelation will not do that, whereas assignableRelation would.  Not clear.
                 if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
                     // if the logicalObject is a plain object, and it is a subtype of the tsType, then we can just return the logicalObject

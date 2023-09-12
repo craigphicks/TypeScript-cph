@@ -857,7 +857,8 @@ namespace ts {
             delete ft1.logicalObject; // no error if not present
         }
         else if (ft1.logicalObject) {
-            ft1.logicalObject = floughLogicalObjectModule.intersectionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
+            // Doing nothing because intersection of logical objects is hard to compute.
+            // ft1.logicalObject = floughLogicalObjectModule.intersectionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
         }
         return ft1;
     }
@@ -939,7 +940,8 @@ namespace ts {
         if (minuend.unknown) return minuend; // no way to represent not-subtrahend
         minuend.nobj = differenceWithFloughTypeNobjMutate(subtrahend.nobj, minuend.nobj);
         if (subtrahend.logicalObject && minuend.logicalObject) {
-            minuend.logicalObject = floughLogicalObjectModule.differenceOfFloughLogicalObject(subtrahend.logicalObject, minuend.logicalObject);
+            // Do nothing
+            //minuend.logicalObject = floughLogicalObjectModule.differenceOfFloughLogicalObject(subtrahend.logicalObject, minuend.logicalObject);
         }
         return minuend;
     }
@@ -964,31 +966,6 @@ namespace ts {
         fndiff("number");
         fndiff("bigint");
 
-        // if (subtrahend.string && minuend.string) {
-        //     if (subtrahend.string===true) delete minuend.string;
-        //     else if (minuend.string!==true){
-        //         subtrahend.string.forEach((v)=>{
-        //             (minuend.string as Set<LiteralType>).delete(v);
-        //         });
-        //     }
-        // }
-        // if (subtrahend.number && minuend.number) {
-        //     if (subtrahend.number===true) delete minuend.number;
-        //     else if (minuend.number!==true){
-        //         subtrahend.number.forEach((v)=>{
-        //             (minuend.number as Set<LiteralType>).delete(v);
-        //         });
-        //         if (minuend.number.size===0) delete minuend.number;
-        //     }
-        // }
-        // if (subtrahend.bigint && minuend.bigint) {
-        //     if (subtrahend.bigint===true) delete minuend.bigint;
-        //     else if (minuend.bigint!==true){
-        //         subtrahend.bigint.forEach((v)=>{
-        //             (minuend.bigint as Set<LiteralType>).delete(v);
-        //         });
-        //     }
-        // }
         if (subtrahend.boolFalse && minuend.boolFalse) {
             delete minuend.boolFalse;
         }
