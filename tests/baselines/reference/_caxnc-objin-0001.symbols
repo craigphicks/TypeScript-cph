@@ -1,0 +1,20 @@
+=== tests/cases/conformance/_caxnc--objin/_caxnc-objin-0001.ts ===
+function fin1(x: { a: string } | { b: number }){
+>fin1 : Symbol(fin1, Decl(_caxnc-objin-0001.ts, 0, 0))
+>x : Symbol(x, Decl(_caxnc-objin-0001.ts, 0, 14))
+>a : Symbol(a, Decl(_caxnc-objin-0001.ts, 0, 18))
+>b : Symbol(b, Decl(_caxnc-objin-0001.ts, 0, 34))
+
+    if ("a" in x) {
+>x : Symbol(x, Decl(_caxnc-objin-0001.ts, 0, 14))
+
+        x;
+>x : Symbol(x, Decl(_caxnc-objin-0001.ts, 0, 14))
+    }
+    else {
+        x;
+>x : Symbol(x, Decl(_caxnc-objin-0001.ts, 0, 14))
+    }
+    x;
+>x : Symbol(x, Decl(_caxnc-objin-0001.ts, 0, 14))
+}

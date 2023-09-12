@@ -1996,7 +1996,7 @@ namespace ts {
                     });
                 }
             }
-            else if (logobj.kind===FloughLogicalObjectKind.union){
+            else if (logobj.kind===FloughLogicalObjectKind.union || logobj.kind===FloughLogicalObjectKind.tsunion){
                 logobj.items.forEach(item=>helper(item));
             }
             else {
