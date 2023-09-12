@@ -3389,6 +3389,7 @@ namespace ts {
             } // endof floughAccessExpressionCritNone
 
             function floughByBinaryExpressionInKeyword(): FloughInnerReturn {
+                // TODO: left and right are reversed, fix
                 const {left: keyExpr, right: objExpr} = expr as BinaryExpression;
                 const keyMntr = flough({
                     expr:keyExpr, crit:{ kind:InferCritKind.none }, qdotfallout: undefined, inferStatus,
@@ -3430,7 +3431,8 @@ namespace ts {
                         });
                         return;
                     }
-                    
+                    const keysGenericStringRemoved: ObjectUsableAccessKeys = { ...usableKeys, genericString: false };
+                    const rt = floughLogicalObjectModule.resolveInKeyword(logicalObject, keysGenericStringRemoved);
 
                     // literalKeyTypes.forEach(litkey=>{
                     //     const { passingLogicalObject, failingLogicalObject } = floughLogicalObjectModule.resolveInKeyword(logicalObject, litkey) as {

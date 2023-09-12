@@ -65,9 +65,7 @@ namespace ts {
             state: LogicalObjectAccessReturn,
             arrCallUndefinedAllowed?: Readonly<boolean[]>
         ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined };
-        resolveInKeyword(logcialObject: FloughLogicalObjectIF, litkey: LiteralType): {
-            passingLogicalObject: FloughLogicalObjectIF | undefined, failingLogicalObject: FloughLogicalObjectIF | undefined
-        };
+        resolveInKeyword(logicalObject: FloughLogicalObjectIF, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
 
@@ -333,13 +331,8 @@ namespace ts {
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
-    function resolveInKeyword(logicalObject: FloughLogicalObjectOuter, litkey: LiteralType): {
-        passingLogicalObject: FloughLogicalObjectOuter | undefined, failingLogicalObject: FloughLogicalObjectOuter | undefined
-    }{
-        const { passingLogicalObject:innerPassing, failingLogicalObject:innerFailing } = floughLogicalObjectInnerModule.resolveInKeyword(logicalObject.inner, litkey);
-        const passingLogicalObject = innerPassing ? createFloughLogicalObjectFromInner(innerPassing, /*logicalObject.effectiveDeclaredTsType*/) : undefined;
-        const failingLogicalObject = innerFailing ? createFloughLogicalObjectFromInner(innerFailing, /*logicalObject.effectiveDeclaredTsType*/) : undefined;
-        return { passingLogicalObject, failingLogicalObject };
+    function resolveInKeyword(logicalObject: FloughLogicalObjectOuter, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType {
+        return floughLogicalObjectInnerModule.resolveInKeyword(logicalObject.inner, accessKeys);
     }
 
 

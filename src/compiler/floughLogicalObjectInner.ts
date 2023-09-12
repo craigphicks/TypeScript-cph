@@ -82,7 +82,7 @@ namespace ts {
         getTsTypeOfBasicLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
         inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop: FloughLogicalObjectInnerIF, edType: Readonly<Type>): FloughLogicalObjectInnerIF;
-        resolveInKeyword(logicalObject: FloughLogicalObjectInnerIF, litkey: LiteralType): ResolveInKeywordReturnType;
+        resolveInKeyword(logicalObject: FloughLogicalObjectInnerIF, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
         dbgLogicalObjectAccessResult(loar: Readonly<LogicalObjectAccessReturn>): string[];
     }
@@ -116,7 +116,7 @@ namespace ts {
     };
 
     type Variations = ESMap<string,FloughType>;
-    type HasKeyItem = & {yes: true, no: false};
+    type HasKeyItem = & {yes: boolean, no: boolean};
     type HasKeys = ESMap<string,HasKeyItem>;
 
     //type LiteralTypeNumber = LiteralType & {value: number};
@@ -256,6 +256,12 @@ namespace ts {
             // item: createFloughObjectTypeInstance(tstype),
             [essymbolFloughLogicalObject]: true
         };
+    }
+    function cloneFloughLogicalObjectPlain(logobj: Readonly<FloughLogicalObjectPlain>): FloughLogicalObjectPlain{
+        const x = createFloughLogicalObjectPlain(logobj.tsType);
+        if (logobj.haskeys) x.haskeys = new Map(logobj.haskeys);
+        x.variations = new Map(logobj.variations);
+        return x;
     }
     function createFloughLogicalObjectUnion(items: FloughLogicalObjectInner[]): FloughLogicalObjectUnion {
         return {
@@ -1895,66 +1901,88 @@ namespace ts {
     } // logicalObjectModify
 
     export type ResolveInKeywordReturnType = & {
-        pass: FloughLogicalObjectInner | undefined,
-        fail: FloughLogicalObjectInner | undefined,
-        both: FloughLogicalObjectInner | undefined
-    }
+        passing?: [string,FloughLogicalObjectIF][];
+        failing?: [string,FloughLogicalObjectIF][];
+        bothing?: FloughLogicalObjectIF;
+    };
     function resolveInKeyword(_logicalObjectIn: Readonly<FloughLogicalObjectInner>, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType {
-        //Debug.fail("not yet implemented");
         Debug.assert(!accessKeys.genericString, "accessKeys.genericString unexpected, should have been handled upstairs");
-        // // TODO: project numbers to string space
-        // let keystring = String(litkey.value);
-        // // if (typeof keystring==="number") keystring = String(keystring);
-        const passing = new Map<string,FloughLogicalObjectBasic>();
-        const failing = new Map<string,FloughLogicalObjectBasic>();
-        const bothing = new Set<FloughLogicalObjectPlain>();
-        //const arrArrayTypes: Type[]=[];
-
-        // function doOneKey(logobj: Readonly<FloughLogicalObjectPlain>, accessKeys: ObjectUsableAccessKeys): void {
-        //     if (logobj.variations?.has(key)){
-        //         const value = logobj.variations.get(key)!;
-        //         // TODO: is "never" ever fond here?
-        //         if (floughTypeModule.isNeverType(value)) Debug.assert(false, "never should not be found here or not yet implemented");
-        //         passing.set(key,logobj);
-        //     }
-        //     else if (checker.isArrayType(logobj.tsType)){
-        //         bothing.add(logobj);
-        //     }
-
-        //     }
-        // }
-
-        function doTupleWithKey(logobj: Readonly<FloughLogicalObjectPlain>, key: string): void {
+        const passing = new Map<string,FloughLogicalObjectBasic[]>();
+        const failing = new Map<string,FloughLogicalObjectBasic[]>();
+        const bothing: FloughLogicalObjectPlain[]=[];
+        function put(map: ESMap<string,FloughLogicalObjectBasic[]>, key: string, logobj: Readonly<FloughLogicalObjectPlain>): void {
+            const arr = map.get(key);
+            if (arr) {
+                Debug.fail("unexpected");
+                //arr.push(logobj);
+            }
+            else map.set(key,[logobj]);
+        }
+        function doTupleWithKey(logobj: Readonly<FloughLogicalObjectPlain>, _key: string): void {
             if (extraAsserts) Debug.assert(checker.isTupleType(logobj.tsType));
             Debug.fail("not yet implemented");
         }
         function doObjectWithKey(logobj: Readonly<FloughLogicalObjectPlain>, key: string): void {
             if (extraAsserts) Debug.assert(!checker.isArrayOrTupleType(logobj.tsType));
-                const propSymbol = checker.getPropertyOfType(logobj.tsType,key);
-                if (!propSymbol) {
-                    failing.set(key,logobj);
-                    return;
-                }
-                let optional = !!(propSymbol.flags & SymbolFlags.Optional);
-                if (optional  && logobj.haskeys) optional = false;
-                //checker.isOptionalP
-                if (logobj.variations?.has(key)){
-                const value = logobj.variations.get(key)!;
-                if (floughTypeModule.isNeverType(value)) Debug.fail("not expected or not yet implemented");
+            const propSymbol = checker.getPropertyOfType(logobj.tsType,key);
+            if (!propSymbol) {
+                put(failing,key,logobj);
+                return;
+            }
+            if (!(propSymbol.flags & SymbolFlags.Optional)){
+                put(passing,key,logobj);
+                return;
+            }
+            // @ts-ignore-error
+            let hasKeys: HasKeys | undefined;
+            let hasKeyItem: HasKeyItem | undefined;
+            if (hasKeyItem = (hasKeys=logobj.haskeys)?.get(key)){
+                const {yes,no} = hasKeyItem;
+                if (extraAsserts) Debug.assert(yes||no, "unexpected");
+                if (yes && no){
+                    // one case split into two
+                    const y = cloneFloughLogicalObjectPlain(logobj);
+                    y.haskeys!.set(key, { yes:true,no:false });
+                    put(passing,key,y);
 
+                    const n = cloneFloughLogicalObjectPlain(logobj);
+                    n.haskeys!.set(key, { yes:false,no:true });
+                    if (true){
+                        n.variations?.delete(key);
+                    }
+                    put(failing,key,y);
+                }
+                if (hasKeyItem.no) {
+                    put(failing,key,logobj);
+                }
+                if (hasKeyItem.yes) {
+                    put(passing,key,logobj);
+                }
+                return;
+            }
+            else {
+                const y = cloneFloughLogicalObjectPlain(logobj);
+                (y.haskeys = new Map<string,HasKeyItem>()).set(key, { yes:true,no:false });
+                put(passing,key,y);
+
+                const n = cloneFloughLogicalObjectPlain(logobj);
+                (n.haskeys = new Map<string,HasKeyItem>()).set(key, { yes:false,no:true });
+                if (true){
+                    n.variations?.delete(key);
+                }
             }
         }
 
-        function doOne(logobj: Readonly<FloughLogicalObjectInner>){
+        function helper(logobj: Readonly<FloughLogicalObjectInner>){
             if (logobj.kind===FloughLogicalObjectKind.plain){
                 if (checker.isArrayType(logobj.tsType)){
                     if (accessKeys.genericNumber || accessKeys.numberSubset){
-                        bothing.add(logobj);
+                        bothing.push(logobj);
                     }
                 }
                 else if (checker.isTupleType(logobj.tsType)){
                     if (accessKeys.genericNumber){
-                        bothing.add(logobj);
+                        bothing.push(logobj);
                     }
                     else {
                         accessKeys.numberSubset?.forEach(key=>{
@@ -1969,12 +1997,44 @@ namespace ts {
                 }
             }
             else if (logobj.kind===FloughLogicalObjectKind.union){
-                logobj.items.forEach(item=>doOne(item));
+                logobj.items.forEach(item=>helper(item));
             }
             else {
                 Debug.fail("not yet implemented: ", () => logobj.kind);
             }
         }
+        helper(_logicalObjectIn);
+        if (extraAsserts) {
+            passing.forEach((value,_key)=>{
+                const s = new Set<FloughLogicalObjectPlain>(value);
+                Debug.assert(s.size===value.length, "unexpected duplicates");
+            });
+            failing.forEach((value,_key)=>{
+                const s = new Set<FloughLogicalObjectPlain>(value);
+                Debug.assert(s.size===value.length, "unexpected duplicates");
+            });
+            const sb = new Set<FloughLogicalObjectPlain>(bothing);
+            Debug.assert(sb.size===bothing.length, "unexpected duplicates");
+        }
+        const ret: ResolveInKeywordReturnType = { };
+        function convert(x: Readonly<ESMap<string,FloughLogicalObjectBasic[]>>) {
+            const r: [string,FloughLogicalObjectIF][] = [];
+            x.forEach((value,key)=>{
+                r.push([
+                    key,
+                    floughLogicalObjectModule.createFloughLogicalObjectFromInner(
+                        createFloughLogicalObjectUnion(value) as FloughLogicalObjectInnerIF, /*edType*/ undefined)
+                ]);
+            });
+            return r;
+        }
+        if (passing.size) ret.passing = convert(passing);
+        if (failing.size) ret.failing = convert(failing);
+        if (bothing.length) {
+            ret.bothing = floughLogicalObjectModule.createFloughLogicalObjectFromInner(
+                createFloughLogicalObjectUnion(bothing), /*edType*/ undefined);
+        }
+        return ret;
     }
 
 
