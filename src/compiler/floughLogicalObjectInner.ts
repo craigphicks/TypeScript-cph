@@ -1929,7 +1929,8 @@ namespace ts {
                 put(failing,key,logobj);
                 return;
             }
-            if (!(propSymbol.flags & SymbolFlags.Optional)){
+            const isOptional = propSymbol.flags & SymbolFlags.Optional;
+            if (!isOptional){
                 put(passing,key,logobj);
                 return;
             }
@@ -1970,6 +1971,7 @@ namespace ts {
                 if (true){
                     n.variations?.delete(key);
                 }
+                put(failing,key,n);
             }
         }
 

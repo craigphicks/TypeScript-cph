@@ -12,3 +12,4 @@ function fin1(x: { a: string } | { b: number }){
     }
     x;
 }
+

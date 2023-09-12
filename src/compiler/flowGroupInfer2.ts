@@ -1280,6 +1280,19 @@ namespace ts {
         function floughInnerAttemptPropertyAccessExpressionEnum(expr: Readonly<PropertyAccessExpression>):
         undefined | FloughType {
             assertCastType<PropertyAccessExpression>(expr);
+
+            function orTsTypesIntoNodeToTypeMap(tstypes: Readonly<Type[]>, node: Node, nodeToTypeMap: NodeToTypeMap){
+                const got = nodeToTypeMap.get(node);
+                if (!got) nodeToTypeMap.set(node,checker.getUnionType(tstypes as Type[], UnionReduction.Literal));
+                else nodeToTypeMap.set(node,checker.getUnionType([got,...tstypes as Type[]],UnionReduction.Literal));
+                if (getMyDebug()){
+                    const dbgTstype = checker.getUnionType(tstypes as Type[], UnionReduction.Literal);
+                    consoleLog(`orTsTypesIntoNodeToTypeMap(types:${dbgsModule.dbgTypeToString(dbgTstype)},node:${dbgsModule.dbgNodeToString(node)})::`
+                        +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node))}`);
+                }
+            }
+
+
             if (expr.expression.kind===SyntaxKind.Identifier && expr.name.kind===SyntaxKind.Identifier){
                 const sym0 = checker.getResolvedSymbol(expr.expression as Identifier);
                 if (sym0.flags & (SymbolFlags.RegularEnum | SymbolFlags.ConstEnum)){

@@ -9,6 +9,8 @@ function fin1(x: { a: string } | { b: number }){
     x;
 }
 
+
+
 //// [_caxnc-objin-0001.js]
 "use strict";
 function fin1(x) {

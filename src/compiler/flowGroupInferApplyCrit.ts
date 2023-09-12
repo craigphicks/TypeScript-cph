@@ -130,16 +130,16 @@ namespace ts {
                 +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node))}`);
         }
     }
-    export function orTsTypesIntoNodeToTypeMap(tstypes: Readonly<Type[]>, node: Node, nodeToTypeMap: NodeToTypeMap){
-        const got = nodeToTypeMap.get(node);
-        if (!got) nodeToTypeMap.set(node,checker.getUnionType(tstypes as Type[], UnionReduction.Literal));
-        else nodeToTypeMap.set(node,checker.getUnionType([got,...tstypes as Type[]],UnionReduction.Literal));
-        if (getMyDebug()){
-            const dbgTstype = checker.getUnionType(tstypes as Type[], UnionReduction.Literal);
-            consoleLog(`orTsTypesIntoNodeToTypeMap(types:${dbgsModule.dbgTypeToString(dbgTstype)},node:${dbgsModule.dbgNodeToString(node)})::`
-                +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node))}`);
-        }
-    }
+    // export function orTsTypesIntoNodeToTypeMap(tstypes: Readonly<Type[]>, node: Node, nodeToTypeMap: NodeToTypeMap){
+    //     const got = nodeToTypeMap.get(node);
+    //     if (!got) nodeToTypeMap.set(node,checker.getUnionType(tstypes as Type[], UnionReduction.Literal));
+    //     else nodeToTypeMap.set(node,checker.getUnionType([got,...tstypes as Type[]],UnionReduction.Literal));
+    //     if (getMyDebug()){
+    //         const dbgTstype = checker.getUnionType(tstypes as Type[], UnionReduction.Literal);
+    //         consoleLog(`orTsTypesIntoNodeToTypeMap(types:${dbgsModule.dbgTypeToString(dbgTstype)},node:${dbgsModule.dbgNodeToString(node)})::`
+    //             +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node))}`);
+    //     }
+    // }
 
     /**
      *
