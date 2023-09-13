@@ -24,7 +24,6 @@ namespace ts {
         NOTINSERVICE_intersectionOfRefTypesType(...args: Readonly<FloughType>[]): FloughType ;
         isASubsetOfB(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
         NOTINSERVICE_subtractFromType(subtrahend: Readonly<FloughType>, minuend: Readonly<FloughType>, /* errorOnMissing = false */): FloughType ;
-        getTypeFromRefTypesType(type: Readonly<FloughType>): Type ;
         isNeverType(type: Readonly<FloughType>): boolean ;
         isAnyType(type: Readonly<FloughType>): boolean ;
         isUnknownType(type: Readonly<FloughType>): boolean ;
@@ -57,6 +56,7 @@ namespace ts {
         //differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
 
         getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
+        getTsTypeFromFloughType(type: Readonly<FloughType>): Type ;
         /**
          * The intersection of the nobj parts is exact.
          * The value of the logicalObject part is unassigned if either ft1.logicalObject or ft2.logicalObject is unassigned,
@@ -164,10 +164,7 @@ namespace ts {
             castReadonlyFloughTypei(minuend);
             return differenceWithFloughTypeMutate(subtrahend,cloneType(minuend));
         },
-        getTypeFromRefTypesType(type: Readonly<FloughType>): Type {
-            castReadonlyFloughTypei(type);
-            return getTsTypeFromFloughType(type);
-        },
+        getTsTypeFromFloughType,
         isNeverType(type: Readonly<FloughType>): boolean {
             castReadonlyFloughTypei(type);
             return isNeverType(type);
@@ -400,21 +397,13 @@ namespace ts {
     }
 
     function getTsTypeFromFloughType(ft: Readonly<FloughTypei>): Type {
-        if (!ft) Debug.fail("getTsTypeFromFloughType: ft is undefined");
-        if (!ft.nobj) Debug.fail("getTsTypeFromFloughType: ft.nobj is undefined");
-        if (ft.any) return checker.getAnyType();
-        if (ft.unknown) return checker.getUnknownType();
-        const at = getTsTypesFromFloughTypeNobj(ft.nobj);
-        // Now for the objects.
-        if (ft.logicalObject) {
-            // TODO: return the narrowed types.
-            at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
-        }
-        if (at.length === 0) return checker.getNeverType();
+        const at = getTsTypesFromFloughType(ft);
         if (at.length === 1) return at[0];
         return checker.getUnionType(at);
     }
     function getTsTypesFromFloughType(ft: Readonly<FloughTypei>): Type[] {
+        if (!ft) Debug.fail("getTsTypeFromFloughType: ft is undefined");
+        if (!ft.nobj) Debug.fail("getTsTypeFromFloughType: ft.nobj is undefined");
         if (ft.any) return [checker.getAnyType()];
         if (ft.unknown) return [checker.getUnknownType()];
         const at = getTsTypesFromFloughTypeNobj(ft.nobj);

@@ -790,7 +790,7 @@ namespace ts {
                     const rttr: RefTypesTableReturn = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
 
                     sctmp = rttr.sci; //{ symtab: rttr.symtab, constraintItem: rttr.constraintItem };
-                    const tstype1 = floughTypeModule.getTypeFromRefTypesType(rttr.type);
+                    const tstype1 = floughTypeModule.getTsTypeFromFloughType(rttr.type);
                     if (checker.isArrayOrTupleType(tstype1)){
                         if (checker.isTupleType(tstype1)){
                             /**
@@ -822,7 +822,7 @@ namespace ts {
                         else {
                             // should be array type, although that fact isn't used here
                             const type = rttr.type;
-                            const tstype = floughTypeModule.getTypeFromRefTypesType(type);
+                            const tstype = floughTypeModule.getTsTypeFromFloughType(type);
                             const symbol = symbolOuter;
                             const isconst = isconstOuter;
                             // if (!symbol) {
@@ -857,7 +857,7 @@ namespace ts {
                     const rttr: RefTypesTableReturn = applyCritNoneUnion(mntr,inferStatus.groupNodeToTypeMap);
                     sctmp = rttr.sci;
                     const type = rttr.type;
-                    const tstype = floughTypeModule.getTypeFromRefTypesType(type);
+                    const tstype = floughTypeModule.getTsTypeFromFloughType(type);
                     if (!symbol) {
                         isconst = true;
                         symbol = undefined; //createTransientCallArgumentSymbol(cargidx,resolvedCallArguments.length,/**/ undefined, type);
@@ -1622,7 +1622,7 @@ namespace ts {
                                 }
                             }
                             else {
-                                const tsType = floughTypeModule.getTypeFromRefTypesType(rhs.type);
+                                const tsType = floughTypeModule.getTsTypeFromFloughType(rhs.type);
                                 effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr,checker.getFreshTypeOfLiteralType(tsType));
                                 //widenedTsTypeInferredFromInitializer = effectiveDeclaredTsType;
                                 if (getMyDebug()){
@@ -1655,7 +1655,7 @@ namespace ts {
                             Debug.assert(checker.isTypeRelatedTo(typeNodeTsType,symbolFlowInfo.typeNodeTsType, checker.getRelations().identityRelation));
                         }
                         if (!expr.type){
-                            const tsType = floughTypeModule.getTypeFromRefTypesType(symbolFlowInfo.initializerType);
+                            const tsType = floughTypeModule.getTsTypeFromFloughType(symbolFlowInfo.initializerType);
                             // TODO: checker.getFreshTypeOfLiteralType will/might fail when tsType is not a literal type.
                             symbolFlowInfo.effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr,checker.getFreshTypeOfLiteralType(tsType));
                             //widenedTsTypeInferredFromInitializer = symbolFlowInfo.effectiveDeclaredTsType;
@@ -1906,7 +1906,7 @@ namespace ts {
                     (typeNode as TypeReferenceNode).typeName.kind===SyntaxKind.Identifier &&
                     ((typeNode as TypeReferenceNode).typeName as Identifier).escapedText === "const"){
                     if (refactorConnectedGroupsGraphsNoShallowRecursion){
-                        const tsType0 = floughTypeModule.getTypeFromRefTypesType(rhs.type);
+                        const tsType0 = floughTypeModule.getTsTypeFromFloughType(rhs.type);
                         if (checker.isTupleType(tsType0)){
                             tstype = checker.createReaonlyTupleTypeFromTupleType(tsType0 as TupleTypeReference);
                         }

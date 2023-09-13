@@ -121,7 +121,7 @@ namespace ts {
     }
 
     export function orIntoNodeToTypeMap(type: Readonly<RefTypesType>, node: Node, nodeToTypeMap: NodeToTypeMap){
-        const tstype = floughTypeModule.getTypeFromRefTypesType(type);
+        const tstype = floughTypeModule.getTsTypeFromFloughType(type);
         const got = nodeToTypeMap.get(node);
         if (!got) nodeToTypeMap.set(node,tstype);
         else nodeToTypeMap.set(node,checker.getUnionType([got,tstype],UnionReduction.Literal));
