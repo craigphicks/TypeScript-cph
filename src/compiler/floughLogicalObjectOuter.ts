@@ -42,6 +42,7 @@ namespace ts {
         //     lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
         // ): void;
         getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>, forNodeToTypeMap?: boolean): Type;
+        getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>, forNodeToTypeMap?: boolean): Type;
         //setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void;
         createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF;
         identicalLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): boolean;
@@ -88,6 +89,7 @@ namespace ts {
         //differenceOfFloughLogicalObject,
         // intersectionAndSimplifyLogicalObjects,
         getEffectiveDeclaredTsTypeFromLogicalObject,
+        getTsTypeFromLogicalObject,
         createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF {
             assertCastType<FloughLogicalObjectOuter>(logicalObjectTop);
             // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -173,6 +175,9 @@ namespace ts {
 
     function getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectOuter>, forNodeToTypeMap?: boolean): Type {
         return logicalObjectTop.effectiveDeclaredTsType || floughLogicalObjectInnerModule.getTsTypeFromLogicalObject(logicalObjectTop.inner, forNodeToTypeMap);
+    }
+    function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectOuter>, forNodeToTypeMap?: boolean): Type {
+        return floughLogicalObjectInnerModule.getTsTypeFromLogicalObject(logicalObjectTop.inner, forNodeToTypeMap);
     }
 
 

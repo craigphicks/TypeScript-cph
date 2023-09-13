@@ -410,7 +410,8 @@ namespace ts {
         // Now for the objects.
         if (ft.logicalObject) {
             // TODO: return the narrowed types.
-            at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject, forNodeToTypeMap));
+            if (enableBypassEffectiveDeclaredType) at.push(floughLogicalObjectModule.getTsTypeFromLogicalObject(ft.logicalObject, forNodeToTypeMap));
+            else at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject, forNodeToTypeMap));
         }
         if (at.length === 0) return [checker.getNeverType()];
         return at;

@@ -4,7 +4,6 @@ namespace ts {
 
     //export const enableMapReplayedObjectTypesToSymbolFlowInfoTypes = true;
 
-
     export interface MrNarrow {
         flough({ sci, expr, crit, qdotfallout, inferStatus }: FloughArgs): FloughReturn;
         createRefTypesSymtab(): RefTypesSymtab;
@@ -376,11 +375,13 @@ namespace ts {
         function setEffectiveDeclaredTsTypeOfLogicalObjectOfType(rhsType: FloughType, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): {logicalObjectRhsType: FloughType, nobjRhsType: FloughType, nobjEdtType: FloughType} {
             const splitRhs = floughTypeModule.splitLogicalObject(rhsType);
             let { logicalObject:logicalObjectRhs } = splitRhs;
+            //if (extraAsserts) Debug.assert(logicalObjectRhs);
             const { logicalObject:logicalObjectEdt , remaining: remainingEdt } = floughTypeModule.splitLogicalObject(getEffectiveDeclaredType(lhsSymbolFlowInfo));
             if (logicalObjectRhs && logicalObjectEdt){
                 logicalObjectRhs = floughLogicalObjectModule.createCloneWithEffectiveDeclaredTsType(logicalObjectRhs,floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectEdt));
             }
-            return { logicalObjectRhsType:floughTypeModule.createTypeFromLogicalObject(logicalObjectRhs), nobjRhsType: splitRhs.remaining, nobjEdtType: remainingEdt };
+            const logicalObjectRhsType = floughTypeModule.createTypeFromLogicalObject(logicalObjectRhs);
+            return { logicalObjectRhsType, nobjRhsType: splitRhs.remaining, nobjEdtType: remainingEdt };
         }
 
         function widenDeclarationOrAssignmentRhs(rhsType: Readonly<RefTypesType>, lhsSymbolFlowInfo: Readonly<SymbolFlowInfo>): RefTypesType {
