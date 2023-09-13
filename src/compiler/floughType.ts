@@ -21,9 +21,9 @@ namespace ts {
          * This is a dummy function
          * @param args
          */
-        DEADintersectionOfRefTypesTypeDEAD(...args: Readonly<FloughType>[]): FloughType ;
+        NOTINSERVICE_intersectionOfRefTypesType(...args: Readonly<FloughType>[]): FloughType ;
         isASubsetOfB(a: Readonly<FloughType>, b: Readonly<FloughType>): boolean;
-        subtractFromType(subtrahend: Readonly<FloughType>, minuend: Readonly<FloughType>, /* errorOnMissing = false */): FloughType ;
+        NOTINSERVICE_subtractFromType(subtrahend: Readonly<FloughType>, minuend: Readonly<FloughType>, /* errorOnMissing = false */): FloughType ;
         getTypeFromRefTypesType(type: Readonly<FloughType>): Type ;
         isNeverType(type: Readonly<FloughType>): boolean ;
         isAnyType(type: Readonly<FloughType>): boolean ;
@@ -54,7 +54,7 @@ namespace ts {
         createLiteralStringType(s: string): Readonly<FloughType>;
         //intersectionWithFloughTypeSpecialMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
-        differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
+        //differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
 
         getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
         /**
@@ -141,7 +141,7 @@ namespace ts {
             });
             return ft;
         },
-        DEADintersectionOfRefTypesTypeDEAD(..._args: Readonly<FloughType>[]): FloughType {
+        NOTINSERVICE_intersectionOfRefTypesType(..._args: Readonly<FloughType>[]): FloughType {
             Debug.fail("DEADintersectionOfRefTypesTypeDEAD");
             // if (args.length === 0) return createNeverType();
             // castReadonlyFloughTypei(args[0]);
@@ -159,7 +159,7 @@ namespace ts {
             const diff = differenceWithFloughTypeMutate(b,cloneType(a));
             return isNeverType(diff);
         },
-        subtractFromType(subtrahend: Readonly<FloughType>, minuend: Readonly<FloughType>, /* errorOnMissing = false */): FloughType {
+        NOTINSERVICE_subtractFromType(subtrahend: Readonly<FloughType>, minuend: Readonly<FloughType>, /* errorOnMissing = false */): FloughType {
             castReadonlyFloughTypei(subtrahend);
             castReadonlyFloughTypei(minuend);
             return differenceWithFloughTypeMutate(subtrahend,cloneType(minuend));
@@ -228,7 +228,7 @@ namespace ts {
         createFromTsTypes,
         unionWithTsTypeMutate,
         cloneType,
-        differenceWithFloughTypeMutate,
+        //differenceWithFloughTypeMutate,
         //intersectionWithFloughTypeSpecialMutate,
         unionWithFloughTypeMutate,
         createNumberType(): FloughType {
@@ -973,6 +973,7 @@ namespace ts {
         if (minuend.unknown) return minuend; // no way to represent not-subtrahend
         minuend.nobj = differenceWithFloughTypeNobjMutate(subtrahend.nobj, minuend.nobj);
         if (subtrahend.logicalObject && minuend.logicalObject) {
+            Debug.fail("differenceWithFloughTypeMutate: not yet implemented");
             // Do nothing
             //minuend.logicalObject = floughLogicalObjectModule.differenceOfFloughLogicalObject(subtrahend.logicalObject, minuend.logicalObject);
         }
