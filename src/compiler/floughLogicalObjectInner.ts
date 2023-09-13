@@ -57,7 +57,7 @@ namespace ts {
         // intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
         // intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner;
         //differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
-        intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInnerIF | undefined;
+        // intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInnerIF | undefined;
         getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         logicalObjectAccess(
             rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>,
@@ -95,7 +95,7 @@ namespace ts {
         // intersectionOfFloughLogicalObject,
         // intersectionOfFloughLogicalObjects,
         //differenceOfFloughLogicalObject,
-        intersectionWithLogicalObjectConstraint,
+        // intersectionWithLogicalObjectConstraint,
         getTsTypeFromLogicalObject,
         logicalObjectAccess,
         getRootAtLevelFromLogicalObjectAccessReturn,
@@ -444,54 +444,53 @@ namespace ts {
     //     };
     // }
 
-    function intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInner>, logicalObjectConstraint: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined {
+    // function intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInner>, logicalObjectConstraint: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined {
 
-        function intersectionWithTsTypeOrTsType(logicalObject: Readonly<FloughLogicalObjectInner>, tsTypeConstraint: Type): FloughLogicalObjectInner | undefined {
-            //assertCastType<FloughLogicalObjectInner>(logicalObject);
-            if (logicalObject.kind===FloughLogicalObjectKind.plain) {
-                const test = true;
-                if (test) Debug.fail("test");
-                // TODO: This might recurse into property types, or maybe subtypesRelation will not do that, whereas assignableRelation would.  Not clear.
-                if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
-                    // if the logicalObject is a plain object, and it is a subtype of the tsType, then we can just return the logicalObject
-                    return logicalObject;
-                }
-                else return undefined;
-            }
-            else if (logicalObject.kind===FloughLogicalObjectKind.tsunion || logicalObject.kind===FloughLogicalObjectKind.union) {
+    //     function intersectionWithTsTypeOrTsType(logicalObject: Readonly<FloughLogicalObjectInner>, tsTypeConstraint: Type): FloughLogicalObjectInner | undefined {
+    //         //assertCastType<FloughLogicalObjectInner>(logicalObject);
+    //         if (logicalObject.kind===FloughLogicalObjectKind.plain) {
+    //             const test = true;
+    //             if (test) Debug.fail("test");
+    //             // TODO: This might recurse into property types, or maybe subtypesRelation will not do that, whereas assignableRelation would.  Not clear.
+    //             if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
+    //                 // if the logicalObject is a plain object, and it is a subtype of the tsType, then we can just return the logicalObject
+    //                 return logicalObject;
+    //             }
+    //             else return undefined;
+    //         }
+    //         else if (logicalObject.kind===FloughLogicalObjectKind.tsunion || logicalObject.kind===FloughLogicalObjectKind.union) {
 
-                const items = logicalObject.items.map(x=>intersectionWithTsTypeOrTsType(x, tsTypeConstraint)).filter(x=>!!x) as FloughLogicalObjectInner[];
-                if (items.length===0) return undefined;
-                else if (items.length===1) return items[0];
-                else {
-                    if (items.length===logicalObject.items.length && items.every((x,i)=>x===logicalObject.items[i])) return logicalObject;
-                    else {
-                        // if some types are filtered out, new logicalObject is created
-                        return createFloughLogicalObjectUnion(items);
-                    }
-                }
-            }
-            else if (logicalObject.kind===FloughLogicalObjectKind.tsintersection) {
-                // ts-intersection type is an integral type than cannot be simplified.  Like a plain object.
-                if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
-                    return logicalObject;
-                }
-                else return undefined;
-            }
-            else if (logicalObject.kind===FloughLogicalObjectKind.intersection) {
-                Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.intersection, should be resolving immediately");
-            }
-            else if (logicalObject.kind===FloughLogicalObjectKind.difference) {
-                Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.difference, should be resolving immediately");
-            }
-            //return createFloughLogicalObject(getEffectiveDeclaredTsTypeFromLogicalObject(logobj));
-        }
-        const logicalObj1 = intersectionWithTsTypeOrTsType(logicalObjectTop,getTsTypeFromLogicalObject(logicalObjectConstraint));
-        if (!logicalObj1) return undefined;
-        const logicalObj2 = intersectionWithTsTypeOrTsType(logicalObjectConstraint,getTsTypeFromLogicalObject(logicalObj1));
-        return logicalObj2;
-    }
-
+    //             const items = logicalObject.items.map(x=>intersectionWithTsTypeOrTsType(x, tsTypeConstraint)).filter(x=>!!x) as FloughLogicalObjectInner[];
+    //             if (items.length===0) return undefined;
+    //             else if (items.length===1) return items[0];
+    //             else {
+    //                 if (items.length===logicalObject.items.length && items.every((x,i)=>x===logicalObject.items[i])) return logicalObject;
+    //                 else {
+    //                     // if some types are filtered out, new logicalObject is created
+    //                     return createFloughLogicalObjectUnion(items);
+    //                 }
+    //             }
+    //         }
+    //         else if (logicalObject.kind===FloughLogicalObjectKind.tsintersection) {
+    //             // ts-intersection type is an integral type than cannot be simplified.  Like a plain object.
+    //             if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
+    //                 return logicalObject;
+    //             }
+    //             else return undefined;
+    //         }
+    //         else if (logicalObject.kind===FloughLogicalObjectKind.intersection) {
+    //             Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.intersection, should be resolving immediately");
+    //         }
+    //         else if (logicalObject.kind===FloughLogicalObjectKind.difference) {
+    //             Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.difference, should be resolving immediately");
+    //         }
+    //         //return createFloughLogicalObject(getEffectiveDeclaredTsTypeFromLogicalObject(logobj));
+    //     }
+    //     const logicalObj1 = intersectionWithTsTypeOrTsType(logicalObjectTop,getTsTypeFromLogicalObject(logicalObjectConstraint));
+    //     if (!logicalObj1) return undefined;
+    //     const logicalObj2 = intersectionWithTsTypeOrTsType(logicalObjectConstraint,getTsTypeFromLogicalObject(logicalObj1));
+    //     return logicalObj2;
+    // }
 
     type LogicalObjectVisitor<ResultType,StateType, VTorRtnType = [StateType | undefined,ResultType | undefined, FloughLogicalObjectInner | undefined]> = & {
         onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => ResultType;

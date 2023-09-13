@@ -35,7 +35,7 @@ namespace ts {
         // intersectionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
 
         //differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectIF>, subtrahend: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
-        intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
+        // intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
         // logicalObjectForEachTypeOfPropertyLookup(
         //     logicalObject: Readonly<FloughLogicalObjectIF>,
         //     lookupkey: Readonly<FloughType>,
@@ -86,7 +86,7 @@ namespace ts {
         unionOfFloughLogicalObjects,
         // intersectionOfFloughLogicalObject,
         //differenceOfFloughLogicalObject,
-        intersectionAndSimplifyLogicalObjects,
+        // intersectionAndSimplifyLogicalObjects,
         getEffectiveDeclaredTsTypeFromLogicalObject,
         createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF {
             assertCastType<FloughLogicalObjectOuter>(logicalObjectTop);
@@ -204,16 +204,16 @@ namespace ts {
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
-    function intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter | undefined {
-        const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
-        if (inner === undefined) return undefined;
-        // TODO: do the keys
-        /***
-         * Intersection: intersection of the insides, then union of the outside variation keys, intersection of their properties - any never intersection results in a total never result. Then evaluate each key - any never evalution results in a never result.
-         * Union: Eval each variation key over the other union operand to get new value.  Then union of insides + union of outside variations.
-         */
-        return { ...logicalObject, inner, id: nextLogicalObjectOuterId++ };
-    }
+    // function intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter | undefined {
+    //     const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
+    //     if (inner === undefined) return undefined;
+    //     // TODO: do the keys
+    //     /***
+    //      * Intersection: intersection of the insides, then union of the outside variation keys, intersection of their properties - any never intersection results in a total never result. Then evaluate each key - any never evalution results in a never result.
+    //      * Union: Eval each variation key over the other union operand to get new value.  Then union of insides + union of outside variations.
+    //      */
+    //     return { ...logicalObject, inner, id: nextLogicalObjectOuterId++ };
+    // }
     function unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectOuter>, b: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter{
         const ret: FloughLogicalObjectOuter = {
             inner: floughLogicalObjectInnerModule.unionOfFloughLogicalObject(a.inner, b.inner),
