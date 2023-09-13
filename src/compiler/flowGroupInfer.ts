@@ -12,7 +12,7 @@ namespace ts {
      * enableBypassEffectiveDeclaredType allows more detailed description of the state at each node.
      * However, it also causes named types might to not use the name even if the type is the full named type.
      */
-    export const enableBypassEffectiveDeclaredType = false;
+    export const enableBypassEffectiveDeclaredType = true;
 
     //export const disableLogicalObjectIntersections = true;
 

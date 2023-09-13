@@ -24,7 +24,7 @@ if (x[0]) {
 >c : boolean
 
     x;
->x : readonly [boolean, boolean]
+>x : readonly [false, false] | readonly [true, true]
 
     x[0];
 >x[0] : boolean
@@ -42,7 +42,7 @@ else
 >c : boolean
 
     x;
->x : readonly [boolean, boolean]
+>x : readonly [false, false] | readonly [true, true]
 
     x[0];
 >x[0] : boolean

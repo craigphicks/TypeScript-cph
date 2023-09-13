@@ -71,7 +71,7 @@ if (w[0]) {
 >0 : 0
 
     w;
->w : readonly [boolean, boolean]
+>w : readonly [true, true]
 
     w[0];
 >w[0] : true
@@ -89,7 +89,7 @@ if (x[0]) {
 >0 : 0
 
     x;
->x : readonly [boolean, boolean]
+>x : readonly [true, true]
 
     x[0];
 >x[0] : true

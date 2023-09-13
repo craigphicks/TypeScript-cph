@@ -22,7 +22,7 @@ if (c) {
 >c : true
 
     x;
->x : readonly [boolean, boolean]
+>x : readonly [true, true]
 
     x[0];
 >x[0] : true
@@ -39,7 +39,7 @@ else {
 >c : false
 
     x;
->x : readonly [boolean, boolean]
+>x : readonly [false, false]
 
     x[0];
 >x[0] : false

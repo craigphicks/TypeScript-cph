@@ -10,9 +10,9 @@ function propAssign0002_1(): any {
 >{ } : {}
 
     t;
->t : T2
+>t : {}
 
     t;
->t : T2
+>t : {}
 }
 
