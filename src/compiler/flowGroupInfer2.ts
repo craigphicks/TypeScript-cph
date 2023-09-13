@@ -1103,7 +1103,10 @@ namespace ts {
                                 // }
                                 let narrowerTypeOut: FloughType | undefined;
                                 if (replayableInType){
-                                    narrowerTypeOut = floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType);
+                                    // if (disableLogicalObjectIntersections){
+                                    narrowerTypeOut = floughTypeModule.intersectionWithFloughTypeSpecial(replayableInType,rttr.type);
+                                    // }
+                                    // else narrowerTypeOut = floughTypeModule.intersectionOfRefTypesType(rttr.type, replayableInType);
                                 }
                                 if (narrowerTypeOut &&floughTypeModule.isNeverType(narrowerTypeOut)) return;
                                 rttr = applyCritNoneToOne({ ...rttr,type:narrowerTypeOut??rttr.type },expr,/**/ undefined); // don't write here because the original symbol is from replay.
