@@ -56,7 +56,7 @@ namespace ts {
         //differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
 
         getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
-        getTsTypeFromFloughType(type: Readonly<FloughType>): Type ;
+        getTsTypeFromFloughType(type: Readonly<FloughType>, forNodeToTypeMap?: boolean): Type ;
         /**
          * The intersection of the nobj parts is exact.
          * The value of the logicalObject part is unassigned if either ft1.logicalObject or ft2.logicalObject is unassigned,
@@ -396,12 +396,12 @@ namespace ts {
         return  !!ft.any || !!ft.unknown;
     }
 
-    function getTsTypeFromFloughType(ft: Readonly<FloughTypei>): Type {
-        const at = getTsTypesFromFloughType(ft);
+    function getTsTypeFromFloughType(ft: Readonly<FloughTypei>, forNodeToTypeMap?: boolean): Type {
+        const at = getTsTypesFromFloughType(ft, forNodeToTypeMap);
         if (at.length === 1) return at[0];
         return checker.getUnionType(at);
     }
-    function getTsTypesFromFloughType(ft: Readonly<FloughTypei>): Type[] {
+    function getTsTypesFromFloughType(ft: Readonly<FloughTypei>, forNodeToTypeMap?: boolean): Type[] {
         if (!ft) Debug.fail("getTsTypeFromFloughType: ft is undefined");
         if (!ft.nobj) Debug.fail("getTsTypeFromFloughType: ft.nobj is undefined");
         if (ft.any) return [checker.getAnyType()];
@@ -410,7 +410,7 @@ namespace ts {
         // Now for the objects.
         if (ft.logicalObject) {
             // TODO: return the narrowed types.
-            at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject));
+            at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject, forNodeToTypeMap));
         }
         if (at.length === 0) return [checker.getNeverType()];
         return at;

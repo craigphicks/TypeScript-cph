@@ -120,8 +120,14 @@ namespace ts {
         return { symbol, isconst, isAssign };
     }
 
+    /**
+     * Note: search for orTsTypesIntoNodeToTypeMap for another path to setting nodeToTypeMap
+     * @param type
+     * @param node
+     * @param nodeToTypeMap
+     */
     export function orIntoNodeToTypeMap(type: Readonly<RefTypesType>, node: Node, nodeToTypeMap: NodeToTypeMap){
-        const tstype = floughTypeModule.getTsTypeFromFloughType(type);
+        const tstype = floughTypeModule.getTsTypeFromFloughType(type, /*forNodeToTypeMap*/ true);
         const got = nodeToTypeMap.get(node);
         if (!got) nodeToTypeMap.set(node,tstype);
         else nodeToTypeMap.set(node,checker.getUnionType([got,tstype],UnionReduction.Literal));
