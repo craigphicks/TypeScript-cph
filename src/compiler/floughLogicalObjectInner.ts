@@ -1153,6 +1153,7 @@ namespace ts {
         // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let i=0; i<arr.length; i++){
             // If there is any type without any variations, then that is the result.
+            // TODO: consider arr[i].haskey
             if (arr[i].variations===undefined) return arr[i];
         }
         const isect: Variations = new Map(); //arr[0].variations!;
@@ -1191,8 +1192,8 @@ namespace ts {
                         isect.delete(next.value[0]);
                     }
                     else {
-                        const type = floughTypeModule.cloneRefTypesType(next.value[1]);
-                        floughTypeModule.intersectionWithFloughTypeMutate(got, type);
+                        let type = floughTypeModule.cloneRefTypesType(next.value[1]);
+                        type = floughTypeModule.intersectionWithFloughTypeSpecial(got, type);
                         if (floughTypeModule.isNeverType(type)) isect.delete(next.value[0]);
                         else isect.set(next.value[0], type);
                     }

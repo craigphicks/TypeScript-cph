@@ -48,12 +48,19 @@ namespace ts {
         createFalseType(): Readonly<FloughType>;
         createBooleanType(): Readonly<FloughType>;
         createLiteralStringType(s: string): Readonly<FloughType>;
-        intersectionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
+        /**
+         * The intersection of the nobj parts is exact.
+         * The value of the logicalObject part is unassigned if either ft1.logicalObject or ft2.logicalObject is unassigned,
+         * otherwise is the value of ft2.logicalObject.
+         * @param ft1
+         * @param ft2
+         */
+        intersectionWithFloughTypeSpecialMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         unionWithFloughTypeMutate(ft1: Readonly<FloughType>, ft2: FloughType): FloughType;
         differenceWithFloughTypeMutate(subtrahend: Readonly<FloughType>, minuend: FloughType): FloughType;
 
         getTsTypesFromFloughType(ft: Readonly<FloughType>): Type[];
-        intersectionWithObjectSimplification(a: Readonly<FloughType>,b: Readonly<FloughType>): FloughType;
+        intersectionWithFloughTypeSpecial(a: Readonly<FloughType>,b: Readonly<FloughType>): FloughType;
         hasLogicalObject(ft: Readonly<FloughType>): boolean;
         getLogicalObject(ft: Readonly<FloughType>): FloughLogicalObjectIF | undefined;
         createTypeFromLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF> | undefined, nonObj?: Readonly<FloughType> | undefined): FloughType;
@@ -136,7 +143,7 @@ namespace ts {
             let ft = cloneType(args[0]);
             args.slice(1).forEach((t,_i)=>{
                 castReadonlyFloughTypei(t);
-                ft = intersectionWithFloughTypeMutate(t,ft);
+                ft = intersectionWithFloughTypeSpecial(t,ft);
             });
             return ft;
         },
@@ -206,7 +213,7 @@ namespace ts {
             return dbgFloughTypeToStrings(type);
         },
         getTsTypesFromFloughType,
-        intersectionWithObjectSimplification,
+        intersectionWithFloughTypeSpecial,
         hasLogicalObject,
         getLogicalObject,
         createTypeFromLogicalObject,
@@ -217,7 +224,7 @@ namespace ts {
         unionWithTsTypeMutate,
         cloneType,
         differenceWithFloughTypeMutate,
-        intersectionWithFloughTypeMutate,
+        intersectionWithFloughTypeSpecialMutate,
         unionWithFloughTypeMutate,
         createNumberType(): FloughType {
             return { nobj: { number: true } };
@@ -414,50 +421,54 @@ namespace ts {
         if (at.length === 0) return [checker.getNeverType()];
         return at;
     }
-    function intersectionWithObjectSimplificationV2(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
-        const {logicalObject: alogobj, remaining: anobjt} = splitLogicalObject(a);
-        const {logicalObject: blogobj, remaining: bnobjt} = splitLogicalObject(b);
-        const nobjt = intersectionWithFloughTypeMutate(anobjt,bnobjt);
-        if (!alogobj || !blogobj) return nobjt;
-        return createTypeFromLogicalObject(blogobj,nobjt);
-    }
-    function intersectionWithObjectSimplification(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
-        if (disableLogicalObjectIntersections) return intersectionWithObjectSimplificationV2(a,b);
-        else return intersectionWithObjectSimplificationV1(a,b);
+    // @ ts-expect-error
+    // function intersectionWithObjectSimplificationV2(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
+    //     const {logicalObject: alogobj, remaining: anobjt} = splitLogicalObject(a);
+    //     const {logicalObject: blogobj, remaining: bnobjt} = splitLogicalObject(b);
+    //     const nobjt = intersectionWithFloughTypeSpecialMutate(anobjt,bnobjt);
+    //     if (!alogobj || !blogobj) return nobjt;
+    //     return createTypeFromLogicalObject(blogobj,nobjt);
+    // }
+    function intersectionWithFloughTypeSpecial(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
+        const t = cloneType(b);
+        return intersectionWithFloughTypeSpecialMutate(a,t);
+        // if (disableLogicalObjectIntersections) return intersectionWithObjectSimplificationV2(a,b);
+        // else return intersectionWithObjectSimplificationV1(a,b);
     }
 
-    function intersectionWithObjectSimplificationV1(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
-        const types = [a,b];
-        Debug.assert(types.length === 2);
-        castReadonlyFloughTypei(types[0]);
-        const arrlogobj: FloughLogicalObjectIF[] = [];
-        let blogobj = false;
-        let ft = cloneType(types[0]);
-        if (ft.logicalObject) {
-            blogobj = true;
-            arrlogobj.push(ft.logicalObject);
-            delete ft.logicalObject;
-        }
-        {
-            if (isNeverType(ft) && !blogobj) return ft;
-            const t = types[1];
-            castReadonlyFloughTypei(t);
-            if (t.logicalObject) {
-                if (blogobj) arrlogobj.push(t.logicalObject);
-            }
-            else if (blogobj) blogobj = false;
-            // t.logicalObject will be elided in intersectionWithFloughTypeMutate because ft has no logical object.
-            ft = intersectionWithFloughTypeMutate(t,ft);
-        };
-        if (!blogobj) return ft;
-        const test = true;
-        if (test){
-            ft.logicalObject = arrlogobj[1];
-        }
-        else ft.logicalObject = floughLogicalObjectModule.intersectionAndSimplifyLogicalObjects(arrlogobj[0],arrlogobj[1]); // note that this may return undefined.
-        if (!ft.logicalObject) delete ft.logicalObject; // delete the undefined member.
-        return ft;
-    }
+    // @ ts-expect-error
+    // function intersectionWithObjectSimplificationV1(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
+    //     const types = [a,b];
+    //     Debug.assert(types.length === 2);
+    //     castReadonlyFloughTypei(types[0]);
+    //     const arrlogobj: FloughLogicalObjectIF[] = [];
+    //     let blogobj = false;
+    //     let ft = cloneType(types[0]);
+    //     if (ft.logicalObject) {
+    //         blogobj = true;
+    //         arrlogobj.push(ft.logicalObject);
+    //         delete ft.logicalObject;
+    //     }
+    //     {
+    //         if (isNeverType(ft) && !blogobj) return ft;
+    //         const t = types[1];
+    //         castReadonlyFloughTypei(t);
+    //         if (t.logicalObject) {
+    //             if (blogobj) arrlogobj.push(t.logicalObject);
+    //         }
+    //         else if (blogobj) blogobj = false;
+    //         // t.logicalObject will be elided in intersectionWithFloughTypeMutate because ft has no logical object.
+    //         ft = intersectionWithFloughTypeSpecialMutate(t,ft);
+    //     };
+    //     if (!blogobj) return ft;
+    //     const test = true;
+    //     if (test){
+    //         ft.logicalObject = arrlogobj[1];
+    //     }
+    //     else ft.logicalObject = floughLogicalObjectModule.intersectionAndSimplifyLogicalObjects(arrlogobj[0],arrlogobj[1]); // note that this may return undefined.
+    //     if (!ft.logicalObject) delete ft.logicalObject; // delete the undefined member.
+    //     return ft;
+    // }
 
     function getTsTypesFromFloughTypeNobj(ft: Readonly<FloughTypeNobj>): Type[] {
         const at: Type[] = [];
@@ -860,7 +871,7 @@ namespace ts {
         return ft1;
     }
 
-    function intersectionWithFloughTypeMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei): FloughTypei {
+    function intersectionWithFloughTypeSpecialMutate(ft0: Readonly<FloughTypei>, ft1: FloughTypei): FloughTypei {
         if (ft0.any && ft1.any) return ft0;
         if (ft0.unknown && ft1.unknown) return ft0;
         if (ft0.any) return ft1;
@@ -869,9 +880,11 @@ namespace ts {
         if (ft1.unknown) return ft0;
         ft1.nobj = intersectionWithFloughTypeNobjMutate(ft0.nobj, ft1.nobj);
         if (!ft0.logicalObject){
-            delete ft1.logicalObject; // no error if not present
+            return { nobj: ft1.nobj };
+            //delete ft1.logicalObject; // no error if not present
         }
         else if (ft1.logicalObject) {
+
             // Doing nothing because intersection of logical objects is hard to compute.
             // ft1.logicalObject = floughLogicalObjectModule.intersectionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
         }
