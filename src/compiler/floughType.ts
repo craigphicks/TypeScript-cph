@@ -414,10 +414,21 @@ namespace ts {
         if (at.length === 0) return [checker.getNeverType()];
         return at;
     }
+    function intersectionWithObjectSimplificationV2(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
+        const {logicalObject: alogobj, remaining: anobjt} = splitLogicalObject(a);
+        const {logicalObject: blogobj, remaining: bnobjt} = splitLogicalObject(b);
+        const nobjt = intersectionWithFloughTypeMutate(anobjt,bnobjt);
+        if (!alogobj || !blogobj) return nobjt;
+        return createTypeFromLogicalObject(blogobj,nobjt);
+    }
+    function intersectionWithObjectSimplification(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
+        if (disableLogicalObjectIntersections) return intersectionWithObjectSimplificationV2(a,b);
+        else return intersectionWithObjectSimplificationV1(a,b);
+    }
 
-    function intersectionWithObjectSimplification(...types: Readonly<FloughType>[]): FloughType {
+    function intersectionWithObjectSimplificationV1(a: Readonly<FloughTypei>,b: Readonly<FloughTypei>): FloughTypei {
+        const types = [a,b];
         Debug.assert(types.length === 2);
-        //if (types.length === 0) return createNeverType();
         castReadonlyFloughTypei(types[0]);
         const arrlogobj: FloughLogicalObjectIF[] = [];
         let blogobj = false;
@@ -427,9 +438,9 @@ namespace ts {
             arrlogobj.push(ft.logicalObject);
             delete ft.logicalObject;
         }
-        for (let i=1; i<types.length; i++) {
+        {
             if (isNeverType(ft) && !blogobj) return ft;
-            const t = types[i];
+            const t = types[1];
             castReadonlyFloughTypei(t);
             if (t.logicalObject) {
                 if (blogobj) arrlogobj.push(t.logicalObject);
@@ -439,7 +450,11 @@ namespace ts {
             ft = intersectionWithFloughTypeMutate(t,ft);
         };
         if (!blogobj) return ft;
-        ft.logicalObject = floughLogicalObjectModule.intersectionAndSimplifyLogicalObjects(arrlogobj[0],arrlogobj[1]); // note that this may return undefined.
+        const test = true;
+        if (test){
+            ft.logicalObject = arrlogobj[1];
+        }
+        else ft.logicalObject = floughLogicalObjectModule.intersectionAndSimplifyLogicalObjects(arrlogobj[0],arrlogobj[1]); // note that this may return undefined.
         if (!ft.logicalObject) delete ft.logicalObject; // delete the undefined member.
         return ft;
     }

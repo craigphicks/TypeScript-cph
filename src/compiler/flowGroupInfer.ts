@@ -8,6 +8,8 @@ namespace ts {
     export const refactorConnectedGroupsGraphsGroupDependancyCountRemaining = refactorConnectedGroupsGraphs && true;
     export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnectedGroupsGraphs && false;
 
+    export const disableLogicalObjectIntersections = true;
+
 
     let dbgs: Dbgs | undefined;
     export enum GroupForFlowKind {

@@ -449,8 +449,8 @@ namespace ts {
         function intersectionWithTsTypeOrTsType(logicalObject: Readonly<FloughLogicalObjectInner>, tsTypeConstraint: Type): FloughLogicalObjectInner | undefined {
             //assertCastType<FloughLogicalObjectInner>(logicalObject);
             if (logicalObject.kind===FloughLogicalObjectKind.plain) {
-                // const test = true;
-                // if (test) Debug.fail("test");
+                const test = true;
+                if (test) Debug.fail("test");
                 // TODO: This might recurse into property types, or maybe subtypesRelation will not do that, whereas assignableRelation would.  Not clear.
                 if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
                     // if the logicalObject is a plain object, and it is a subtype of the tsType, then we can just return the logicalObject
