@@ -32,7 +32,8 @@ namespace ts {
         createFloughLogicalObject(tsType: Readonly<Type>): FloughLogicalObjectIF | undefined;
         unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
         unionOfFloughLogicalObjects(arr: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
-        // intersectionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
+        intersectionOfRelatedFloughLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
+            // intersectionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
 
         //differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectIF>, subtrahend: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
         // intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
@@ -85,7 +86,8 @@ namespace ts {
         createFloughLogicalObject,
         unionOfFloughLogicalObject,
         unionOfFloughLogicalObjects,
-        // intersectionOfFloughLogicalObject,
+        intersectionOfRelatedFloughLogicalObjects,
+            // intersectionOfFloughLogicalObject,
         //differenceOfFloughLogicalObject,
         // intersectionAndSimplifyLogicalObjects,
         getEffectiveDeclaredTsTypeFromLogicalObject,
@@ -234,18 +236,15 @@ namespace ts {
         const ret: FloughLogicalObjectOuter = arr.reduce((accumulator,currentValue)=>unionOfFloughLogicalObject(accumulator,currentValue));
         return ret;
     }
-    // function intersectionOfFloughLogicalObject(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectIF | undefined {
-    //     const maybe = true;
-    //     if (maybe) Debug.fail("intersectionOfFloughLogicalObject not expect");
-    //     const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
-    //     if (inner === undefined) return undefined;
-    //     const ret: FloughLogicalObjectOuter = {
-    //         inner, id: nextLogicalObjectOuterId++, [essymbolfloughLogicalObjectOuter]: true,
-    //     };
-    //     if (logicalObject.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = logicalObject.effectiveDeclaredTsType;
-    //     // TODO: The variations, and possibly the effective declared type.
-    //     return ret;
-    // }
+    function intersectionOfRelatedFloughLogicalObjects(a: Readonly<FloughLogicalObjectOuter>, b: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectIF | undefined {
+        const inner = floughLogicalObjectInnerModule.intersectionOfRelatedFloughLogicalObjects(a.inner, b.inner);
+        if (inner === undefined) return undefined;
+        const ret: FloughLogicalObjectOuter = {
+            inner, id: nextLogicalObjectOuterId++, [essymbolfloughLogicalObjectOuter]: true,
+        };
+        if (a.effectiveDeclaredTsType || b.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = (a.effectiveDeclaredTsType || b.effectiveDeclaredTsType);
+        return ret;
+    }
 
     // function differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectOuter>, subtrahend: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter {
     //     const inner = floughLogicalObjectInnerModule.differenceOfFloughLogicalObject(minuend.inner, subtrahend.inner);

@@ -874,16 +874,17 @@ namespace ts {
         if (ft0.unknown) return ft1;
         if (ft1.unknown) return ft0;
         const nobj = intersectionWithFloughTypeNobjMutate(ft0.nobj, { ...ft1.nobj });
-        if (!ft0.logicalObject){
+        if (!ft0.logicalObject || !ft1.logicalObject) {
             return { nobj };
             //delete ft1.logicalObject; // no error if not present
         }
+        const isectLogicalObject = floughLogicalObjectModule.intersectionOfRelatedFloughLogicalObjects(ft0.logicalObject, ft1.logicalObject);
         // else if (ft1.logicalObject) {
 
         //     // Doing nothing because intersection of logical objects is hard to compute.
         //     // ft1.logicalObject = floughLogicalObjectModule.intersectionOfFloughLogicalObject(ft0.logicalObject, ft1.logicalObject);
         // }
-        return { nobj, logicalObject: ft1.logicalObject };
+        return { nobj, logicalObject: isectLogicalObject };
     }
     function intersectionWithFloughTypeNobjMutate(ft0: Readonly<FloughTypeNobj>, ft1: FloughTypeNobj): FloughTypeNobj {
         if (isNeverTypeNobj(ft0) || isNeverTypeNobj(ft1)) return {};

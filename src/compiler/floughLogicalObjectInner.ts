@@ -77,7 +77,7 @@ namespace ts {
             state: LogicalObjectAccessReturn,
             arrCallUndefinedAllowed?: Readonly<boolean[]>,
         ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> };
-        // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
+        intersectionOfRelatedFloughLogicalObjects(a: Readonly<FloughLogicalObjectInnerIF>, b: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInner | undefined;
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
         getTsTypeOfBasicLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
@@ -102,6 +102,7 @@ namespace ts {
         getFinalTypesFromLogicalObjectAccessReturn,
         assignFinalTypeToLogicalObjectAccessReturn,
         logicalObjectModify,
+        intersectionOfRelatedFloughLogicalObjects,
         // getTsTypesInChainOfLogicalObjectAccessReturn,
         getTsTypesOfBaseLogicalObjects,
         getTsTypeOfBasicLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type {
@@ -561,6 +562,48 @@ namespace ts {
         return result;
     }
 
+    function intersectionOfRelatedFloughLogicalObjects(a: Readonly<FloughLogicalObjectInner>, b: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined {
+        const dolog = true;
+        if (dolog && getMyDebug()){
+            consoleGroup("intersectionOfRelatedFloughLogicalObjects[in]");
+            dbgLogicalObjectToStrings(a).forEach(s=>consoleLog(`intersectionOfRelatedFloughLogicalObjects[in] a: `+s));
+            dbgLogicalObjectToStrings(b).forEach(s=>consoleLog(`intersectionOfRelatedFloughLogicalObjects[in] b: `+s));
+        }
+        const ret = (()=>{
+            const amap = getTsTypeMapFromLogicalObjectV2(a);
+            const bmap = getTsTypeMapFromLogicalObjectV2(b);
+            const iset= new Set<Type>();
+            amap.forEach((_,t)=>{
+                if (bmap.has(t)) iset.add(t);
+            });
+            if (iset.size===0) return undefined;
+            const items: FloughLogicalObjectPlain[] = [];
+            iset.forEach((k)=>{
+                // Consider using unionOfSameBaseTypesWithVariationsV2 if length is > 1
+                let ap: FloughLogicalObjectPlain | FloughLogicalObjectPlain[] = amap.get(k)!;
+                if (ap.length===1) ap = ap[0];
+                else Debug.fail("unexpected");
+                let bp: FloughLogicalObjectPlain | FloughLogicalObjectPlain[] = amap.get(k)!;
+                if (bp.length===1) bp = bp[0];
+                else Debug.fail("unexpected");
+                if (getMyDebug()){
+                    consoleLog("WARNING: intersectionOfRelatedFloughLogicalObjects: using union instead of intersection of variations (temporary)");
+                }
+                const item = unionOfSameBaseTypesWithVariationsV2([ap,bp]);
+                items.push(item);
+            });
+            const ret = createFloughLogicalObjectUnion(items);
+            return ret;
+        })();
+        if (dolog && getMyDebug()){
+            if (!ret) consoleLog("intersectionOfRelatedFloughLogicalObjects[out] return: <undef>");
+            else dbgLogicalObjectToStrings(ret).forEach(s=>consoleLog(`intersectionOfRelatedFloughLogicalObjects[ret] return: `+s));
+            consoleLog("intersectionOfRelatedFloughLogicalObjects[out]");
+            consoleGroupEnd();
+        }
+        return ret;
+    }
+
     function getTsTypeSetFromLogicalObjectForNodeMap(logicalObjectTop: Readonly<FloughLogicalObjectInner>): Set<Type> {
         /**
          *
@@ -601,7 +644,28 @@ namespace ts {
         return setOfTsTypes;
     } // getTsTypeSetFromLogicalObjectForNodeMap
 
-    // @ts-ignore
+    function getTsTypeMapFromLogicalObjectV2(logicalObjectTop: Readonly<FloughLogicalObjectInner>): ESMap<Type, FloughLogicalObjectBasic[]> {
+        const setOfTsTypes = new Map<Type, FloughLogicalObjectBasic[]>();
+        function put(type: Type, logobj: FloughLogicalObjectBasic): void {
+            const got = setOfTsTypes.get(type);
+            if (!got) setOfTsTypes.set(type,[logobj]);
+            else got.push(logobj);
+        }
+        function helper(logobj: Readonly<FloughLogicalObjectInner>): void {
+            if (logobj.kind===FloughLogicalObjectKind.plain) {
+                // TODO: somehow work in haskey and variations
+                put(logobj.tsType, logobj);
+            }
+            else if (logobj.kind===FloughLogicalObjectKind.union || logobj.kind===FloughLogicalObjectKind.tsunion){
+                logobj.items.forEach(helper);
+            }
+        }
+        helper(logicalObjectTop);
+        return setOfTsTypes;
+    }
+
+
+    // @ ts-ignore
     function getTsTypeSetFromLogicalObjectV2(logicalObjectTop: Readonly<FloughLogicalObjectInner>): Set<Type> {
         const setOfTsTypes = new Set<Type>();
         function helper(logobj: Readonly<FloughLogicalObjectInner>): void {
