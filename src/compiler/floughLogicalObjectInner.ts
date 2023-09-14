@@ -53,6 +53,8 @@ namespace ts {
         createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectInnerIF[]>): FloughLogicalObjectTsunion;
         createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectInnerIF[]>): FloughLogicalObjectTsintersection;
         createFloughLogicalObject(tsType: Type): FloughLogicalObjectInnerIF;
+        createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectInnerIF | undefined;
+
         unionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
         // intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
         // intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner;
@@ -91,6 +93,7 @@ namespace ts {
         createFloughLogicalObjectTsunion,
         createFloughLogicalObjectTsintersection,
         createFloughLogicalObject,
+        createFloughLogicalObjectWithVariations,
         unionOfFloughLogicalObject,
         // intersectionOfFloughLogicalObject,
         // intersectionOfFloughLogicalObjects,
@@ -602,6 +605,16 @@ namespace ts {
             consoleGroupEnd();
         }
         return ret;
+    }
+    function createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectInner {
+        const logobj = createFloughLogicalObjectPlain(origTsType);
+        const variations: Variations = new Map<string,FloughType>();
+        checker.getPropertiesOfType(newTsType).forEach(symbol=>{
+            const ptstype = checker.getTypeOfSymbol(symbol);
+            variations.set(symbol.escapedName.toString(),floughTypeModule.createFromTsType(ptstype));
+        });
+        logobj.variations = variations;
+        return logobj;
     }
 
     function getTsTypeSetFromLogicalObjectForNodeMap(logicalObjectTop: Readonly<FloughLogicalObjectInner>): Set<Type> {

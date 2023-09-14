@@ -139,6 +139,7 @@ namespace ts {
         //accumNodeTypes: boolean,
         accumBranches: boolean,
         isInLoop?: boolean;
+        isAsConstObject?: boolean | undefined; // Passed from AsExpression to floughObjectLiteralExprssion
         involved?: {
             initializing: boolean;
             inEncountered: WeakSet<Symbol>;

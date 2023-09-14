@@ -1817,19 +1817,44 @@ namespace ts {
                         sci:sci1,
                         expr:e,
                         crit:{ kind: InferCritKind.none },
-                        qdotfallout: undefined, inferStatus,
+                        qdotfallout: undefined, inferStatus:{ ... inferStatus, isAsConstObject: undefined },
                     }),inferStatus.groupNodeToTypeMap));
                 }
-                const objectType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
+                let newObjectTsType: Type;
+                if (inferStatus.isAsConstObject){
+                    if (extraAsserts){
+                        const typeNode = (expr.parent as AsExpression).type;
+                        Debug.assert((typeNode.kind===SyntaxKind.TypeReference &&
+                            (typeNode as TypeReferenceNode).typeName.kind===SyntaxKind.Identifier &&
+                            ((typeNode as TypeReferenceNode).typeName as Identifier).escapedText === "const"));
+                    }
+                    newObjectTsType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr.parent as Expression);
+                }
+                else {
+                    newObjectTsType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
+                }
+                let type: FloughType;
+                if (inferStatus.currentReplayableItem){
+                    const originalObjectTsType = inferStatus.currentReplayableItem.nodeToTypeMap.get(expr);
+                    Debug.assert(originalObjectTsType);
+                    assertCastType<ObjectType>(originalObjectTsType);
+                    assertCastType<ObjectType>(newObjectTsType);
+                    const logobj = floughLogicalObjectModule.createFloughLogicalObjectWithVariations(originalObjectTsType,newObjectTsType);
+                    type = floughTypeModule.createTypeFromLogicalObject(logobj);
+                }
+                else {
+                    const logobj = floughLogicalObjectModule.createFloughLogicalObject(newObjectTsType);
+                    type = floughTypeModule.createTypeFromLogicalObject(logobj);
+                }
                 // const objectType1 = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
                 // // 1 and 2 have different id's but are "identical"
                 // const identityRelation = checker.getRelations().identityRelation;
                 // checker.isTypeRelatedTo(objectType0, objectType1, identityRelation);
                 // const objectType = (objectType0 as FreshableType).regularType;
-                if (getMyDebug()) consoleLog(`floughObjectLiteralExpression[dbg]: objectType: ${dbgTypeToString(objectType)}`);
+                if (getMyDebug()) consoleLog(`floughObjectLiteralExpression[dbg]: objectType: ${dbgTypeToString(newObjectTsType)}`);
                 return {
                     unmerged: [{
-                        type: floughTypeModule.createRefTypesType(objectType),
+                        type,
                         sci:sci1
                     }]
                 };
@@ -1889,49 +1914,30 @@ namespace ts {
 
             function floughInnerAsExpression(): FloughInnerReturn {
                 assertCastType<Readonly<AsExpression>>(expr);
-                const {expression:lhs,type:typeNode} = expr;
-                const rhs = applyCritNoneUnion(flough({
+                const {expression:lhsExpression,type:typeNode} = expr;
+                // @ ts-expect-error
+                const isAsConstObject = lhsExpression.kind===SyntaxKind.ObjectLiteralExpression
+                    && typeNode.kind===SyntaxKind.TypeReference
+                    && (typeNode as TypeReferenceNode).typeName.kind===SyntaxKind.Identifier
+                    && ((typeNode as TypeReferenceNode).typeName as Identifier).escapedText === "const";
+
+                const rhsRttr = applyCritNoneUnion(flough({
                     sci,
-                    expr:lhs,
+                    expr:lhsExpression,
                     crit:{ kind: InferCritKind.none },
-                    qdotfallout: undefined, inferStatus,
+                    qdotfallout: undefined, inferStatus: { ...inferStatus, isAsConstObject },
                 }),inferStatus.groupNodeToTypeMap);
-                // When the typeNode is "const" checker.getTypeFromTypeNode will reparse the whole parent of typeNode expression,
-                // triggering an unwanted recursion in mrNarrowType.  A solution to this problem is to call inferStatus.getTypeOfExpression(expr) instead.
-                // Because that might extra work when typeNode is NOT const, we check first.
 
-                const {symtab,constraintItem} = rhs.sci;
-
-                let tstype: Type;
-                if (typeNode.kind===SyntaxKind.TypeReference &&
-                    (typeNode as TypeReferenceNode).typeName.kind===SyntaxKind.Identifier &&
-                    ((typeNode as TypeReferenceNode).typeName as Identifier).escapedText === "const"){
-                    if (refactorConnectedGroupsGraphsNoShallowRecursion){
-                        const tsType0 = floughTypeModule.getTsTypeFromFloughType(rhs.type);
-                        if (checker.isTupleType(tsType0)){
-                            tstype = checker.createReaonlyTupleTypeFromTupleType(tsType0 as TupleTypeReference);
-                        }
-                        else if (checker.isArrayType(tsType0)){
-                            Debug.assert(false,"not yet implemented [isArrayType]: ", ()=>dbgNodeToString(expr));
-                        }
-                        else if (tsType0.flags & TypeFlags.Object){
-                            Debug.assert(false,"not yet implemented [ObjectType]: ", ()=>dbgNodeToString(expr));
-                            //checker.createObjectLiteralTypeFromShape();
-                            //tstype = checker.createReadonlyObjectType(tsType0 as ObjectType);
-                        }
-                        else {
-                            Debug.assert(false,"not yet implemented: ", ()=>dbgNodeToString(expr));
-                        }
-                    }
-                    else tstype = inferStatus.getTypeOfExpressionShallowRecursion({ symtab, constraintItem }, expr);
+                if (isAsConstObject){
+                    return {
+                        unmerged:[rhsRttr]
+                    };
                 }
-                else {
-                    tstype = checker.getTypeFromTypeNode(typeNode);
-                }
+                const tstype = checker.getTypeFromTypeNode(typeNode);
                 return {
                     unmerged: [{
                         type: floughTypeModule.createRefTypesType(tstype),
-                        sci:{ symtab,constraintItem }
+                        sci:rhsRttr.sci
                     }]
                 };
             } // floughInnerAsExpression
@@ -3330,6 +3336,10 @@ namespace ts {
                     });
                     if (!allSymbolsSame){
                         Debug.fail("not yet implemented, multiple disparate symbols (or lack of) for access roots");
+                    }
+                    if (extraAsserts){
+                        Debug.assert(refAccessArgs[0].roots);
+                        Debug.assert(refAccessArgs[0].roots[0]);
                     }
                     const symbol = refAccessArgs[0].roots[0].symbol;
 

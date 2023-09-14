@@ -30,6 +30,7 @@ namespace ts {
         createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         createFloughLogicalObject(tsType: Readonly<Type>): FloughLogicalObjectIF | undefined;
+        createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectIF | undefined;
         unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
         unionOfFloughLogicalObjects(arr: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         intersectionOfRelatedFloughLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
@@ -84,6 +85,11 @@ namespace ts {
         createFloughLogicalObjectTsunion,
         createFloughLogicalObjectTsintersection,
         createFloughLogicalObject,
+        createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectIF | undefined {
+            const inner = floughLogicalObjectInnerModule.createFloughLogicalObjectWithVariations(origTsType,newTsType);
+            if (!inner) return undefined;
+            return createFloughLogicalObjectFromInner(inner);
+        },
         unionOfFloughLogicalObject,
         unionOfFloughLogicalObjects,
         intersectionOfRelatedFloughLogicalObjects,
@@ -211,6 +217,7 @@ namespace ts {
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
+
     // function intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter | undefined {
     //     const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
     //     if (inner === undefined) return undefined;
@@ -338,6 +345,8 @@ namespace ts {
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
+
+
     function resolveInKeyword(logicalObject: FloughLogicalObjectOuter, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType {
         return floughLogicalObjectInnerModule.resolveInKeyword(logicalObject.inner, accessKeys);
     }
