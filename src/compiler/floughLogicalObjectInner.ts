@@ -582,10 +582,10 @@ namespace ts {
                 // Consider using unionOfSameBaseTypesWithVariationsV2 if length is > 1
                 let ap: FloughLogicalObjectPlain | FloughLogicalObjectPlain[] = amap.get(k)!;
                 if (ap.length===1) ap = ap[0];
-                else Debug.fail("unexpected");
+                else ap = unionOfSameBaseTypesWithVariationsV2(ap);
                 let bp: FloughLogicalObjectPlain | FloughLogicalObjectPlain[] = amap.get(k)!;
                 if (bp.length===1) bp = bp[0];
-                else Debug.fail("unexpected");
+                else bp = unionOfSameBaseTypesWithVariationsV2(bp);
                 if (getMyDebug()){
                     consoleLog("WARNING: intersectionOfRelatedFloughLogicalObjects: using union instead of intersection of variations (temporary)");
                 }
