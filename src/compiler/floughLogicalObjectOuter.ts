@@ -30,6 +30,7 @@ namespace ts {
         createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         createFloughLogicalObject(tsType: Readonly<Type>): FloughLogicalObjectIF | undefined;
+        createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectIF | undefined;
         unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
         unionOfFloughLogicalObjects(arr: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         // intersectionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
@@ -52,7 +53,7 @@ namespace ts {
         createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType: Type | undefined): FloughLogicalObjectIF;
         //getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF>): Type;
         logicalObjectAccess(
-            rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined}[]>,
+            rootsWithSymbols: Readonly<RefTypesTableReturn[]>,
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>
@@ -65,7 +66,7 @@ namespace ts {
             types: Readonly<(FloughType | undefined)[]> | undefined,
             state: LogicalObjectAccessReturn,
             arrCallUndefinedAllowed?: Readonly<boolean[]>
-        ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined };
+        ): LogicalObjectModifyReturnType;
         resolveInKeyword(logicalObject: FloughLogicalObjectIF, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
@@ -73,6 +74,7 @@ namespace ts {
     export type LogicalObjectModifyReturnType = & {
         rootLogicalObject: FloughLogicalObjectIF | undefined,
         rootNonObj: FloughType | undefined;
+        sci: RefTypesSymtabConstraintItem
         //type: Readonly<FloughType>
     };
 
@@ -83,6 +85,11 @@ namespace ts {
         createFloughLogicalObjectTsunion,
         createFloughLogicalObjectTsintersection,
         createFloughLogicalObject,
+        createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectIF | undefined {
+            const inner = floughLogicalObjectInnerModule.createFloughLogicalObjectWithVariations(origTsType,newTsType);
+            if (!inner) return undefined;
+            return createFloughLogicalObjectFromInner(inner);
+        },
         unionOfFloughLogicalObject,
         unionOfFloughLogicalObjects,
         // intersectionOfFloughLogicalObject,
@@ -107,7 +114,7 @@ namespace ts {
         },
         createFloughLogicalObjectFromInner,
         logicalObjectAccess(
-            rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol}[]>,
+            rootsWithSymbols: Readonly<RefTypesTableReturn[]>,
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>
@@ -150,7 +157,7 @@ namespace ts {
         ): LogicalObjectModifyReturnType {
             const x = floughLogicalObjectInnerModule.logicalObjectModify(types, state, arrCallUndefinedAllowed);
             const outer = x.rootLogicalObject ? createFloughLogicalObjectFromInner(x.rootLogicalObject, /* edType */ undefined) : undefined;
-            return { rootLogicalObject:outer, rootNonObj: x.rootNonObj };
+            return { rootLogicalObject:outer, rootNonObj: x.rootNonObj, sci: x.sci };
             // return x.map(({ rootLogicalObject, rootNonObj, type })=>({
             //     rootLogicalObject: rootLogicalObject ? createFloughLogicalObjectFromInner(rootLogicalObject, /* edType */ undefined) : undefined,
             //         rootNonObj,
@@ -209,6 +216,7 @@ namespace ts {
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
+
     // function intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter | undefined {
     //     const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
     //     if (inner === undefined) return undefined;
@@ -339,6 +347,8 @@ namespace ts {
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
+
+
     function resolveInKeyword(logicalObject: FloughLogicalObjectOuter, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType {
         return floughLogicalObjectInnerModule.resolveInKeyword(logicalObject.inner, accessKeys);
     }

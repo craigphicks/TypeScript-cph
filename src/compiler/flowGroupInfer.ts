@@ -300,6 +300,14 @@ namespace ts {
         symbolFlowInfoMap: SymbolFlowInfoMap;
         connectGroupsGraphsCompleted: boolean[];
         groupDependancyCountRemaining: number[];
+        /**
+         * The same node may be evaluated multiple times (*) to produce literal objects of different values, but they should all share a common type.
+         * (e.g., in a loop, a replayable expression).
+         * Because they share a common type, they should also share a common type id.
+         * Therefore, later evaluations of the same node should be able to find the type id in this map and construct a type with the same id,
+         * but with variations.
+         */
+        nodeToOriginalObjectLiteralTypeMap: ESMap<Node,Type>;
     };
 
 
@@ -391,6 +399,7 @@ namespace ts {
             symbolFlowInfoMap: new WeakMap<Symbol,SymbolFlowInfo | undefined>(),
             connectGroupsGraphsCompleted: new Array(groupsForFlow.connectedGroupsGraphs.arrConnectedGraphs.length).fill(/*value*/ false),
             groupDependancyCountRemaining: groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount.slice(),
+            nodeToOriginalObjectLiteralTypeMap: new Map<Node,Type>(),
         };
         //const refTypesTypeModule = floughTypeModule.createRefTypesTypeModule(checker);
         const mrNarrow = createMrNarrow(checker, sourceFile, mrState, /*refTypesTypeModule, */ compilerOptions);

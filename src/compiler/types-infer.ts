@@ -7,8 +7,6 @@ namespace ts {
         leftts?: Type[];
         rightts?: Type[];
         bothts?: Type;
-        // leftobj?: FloughLogicalObjectIF;
-        // rightobj?: FloughLogicalObjectIF;
         true?: boolean;
         false?: boolean;
     };
@@ -17,26 +15,13 @@ namespace ts {
         logicalObjectAccessReturn: LogicalObjectAccessReturn;
         finalTypeIdx: number;
     };
-    export type CallExpressionData = & {
-        logicalObjectAccessData: LogicalObjecAccessData;
-        functionTsType: Type | undefined;
-        functionSigRtnType: FloughType | undefined;
-        carriedQdotUndefined: boolean;
-        info?: {rttridx: number, tstypeidx: number, sigidx: number}
-    };
-
-
-    //export type PartitionForEqualityCompareItem = PartitionForEqualityCompareItemTpl<RefTypesType>;
 
     export type RefTypesTable = RefTypesTableReturn | RefTypesTableReturnNoSymbol;
 
     export type RefTypesTableReturnNoSymbol = & {
-        critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem;
-        logicalObjectIdexing?: { logobjidx: number, sigidx: number };
         logicalObjectAccessData?: LogicalObjecAccessData;
-        callExpressionData?: CallExpressionData;
     };
     export type RefTypesTableReturn = & {
         symbol?: Symbol | undefined;
@@ -45,9 +30,7 @@ namespace ts {
         critsense?: "passing" | "failing"; // TODO: remove this
         type: RefTypesType;
         sci: RefTypesSymtabConstraintItem;
-        logicalObjectIdexing?: { logobjidx: number, sigidx: number };
         logicalObjectAccessData?: LogicalObjecAccessData;
-        callExpressionData?: CallExpressionData;
     };
     export enum InferCritKind {
         none= "none",
@@ -116,15 +99,6 @@ namespace ts {
         inferStatus: InferStatus;
     };
 
-    /**
-     * InferStatus
-     * X The "inCondition" member is true when the current node is within a discriminating expression (e.g. "if (node){...}else{...}", or "(node)? x : y").
-     * X When "inCondition" is true, then the full complexity of expression branching should be preserved to allow for inference, otherwise the complexity should be squashed.
-     * Note: Use of "ConstraintItem" obviates the need for "inCondition". (?)
-     *
-     * X The "currentReplayableItem" member is non-false when a variables rhs assigned value is being "replayed" as an alias for the variable, and the sub-member
-     * X"byNode" is the Node->Type map which will be used for that purpose.
-     */
     export type ReplayData = & {
         byNode: NodeToTypeMap;
     };
@@ -136,15 +110,9 @@ namespace ts {
         currentReplayableItem?: undefined | ReplayableItem;
         replayables: WeakMap< Symbol, ReplayableItem >;
         groupNodeToTypeMap: ESMap<Node,Type>;
-        //accumNodeTypes: boolean,
         accumBranches: boolean,
         isInLoop?: boolean;
-        involved?: {
-            initializing: boolean;
-            inEncountered: WeakSet<Symbol>;
-            outEncountered?: Set<Symbol>;
-            involvedSymbolTypeCache: InvolvedSymbolTypeCache;
-        };
+        isAsConstObject?: boolean | undefined; // Passed from AsExpression to floughObjectLiteralExprssion
         /**
          * This allows checker.getTypeOfExpression(expr) to be called on any node in groupNodeToTypeMap, which may be conputed deep within a speculative branch,
          * e.g., floughByCallExpression.  (In test _cax-fn-0020.ts it is called in SpreadElement deep under floughByCallExpression)
@@ -155,17 +123,6 @@ namespace ts {
         callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, returnErrorTypeOnFail: boolean, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
     };
 
-    // export type floughArgsX = & {
-    //     sci: RefTypesSymtabConstraintItem,
-    //     expr: Readonly<Node>,
-    //     qdotfallout?: RefTypesTableReturn[],
-    //     inferStatus: InferStatus,
-    //     crit: InferCrit,
-    // };
-    // export type AccessItem = & {
-    //     logicalObject?: FloughLogicalObjectIF; // not present for last access item
-    //     keyType: FloughType;
-    // };
     /**
      * 'roots' is an array of entries to the access chain, not intermediate nodes.
      * However, 'keyTypes' is an array of FloughTypes, each entry corresponding to one level of the access chain.
@@ -173,14 +130,6 @@ namespace ts {
      * 'expressions' are the nodes corresponding to the access chain objects, and are the same length as 'keyTypes'.
      */
     export type AccessArgsRoot = RefTypesTableReturn;
-    //     export type AccessArgsRoot = & {
-    //     type: FloughType,
-    //     symbolData?: {
-    //         symbol: Symbol,
-    //         isconst?: boolean | undefined,
-    //         isAssign?: boolean | undefined,
-    //     };
-    // };
     export type AccessArgs = & {
         roots: AccessArgsRoot[] | undefined;
         keyTypes: FloughType[];
@@ -194,37 +143,16 @@ namespace ts {
         crit: InferCrit,
         accessDepth?: number,
         refAccessArgs?: [{
-            roots: AccessArgsRoot[] | undefined, keyTypes: FloughType[],
-            expressions: (ElementAccessExpression | PropertyAccessExpression)[]
+            roots: AccessArgsRoot[] | undefined; // the length of this array is the number of branches in the root
+            keyTypes: FloughType[]; // the length of this array is the depth of the access chain
+            expressions: (ElementAccessExpression | PropertyAccessExpression)[] // the length of this array is the depth of the access chain
         }], // a tuple of an array, only set by callees which are accessor expressions
     };
-
-    export type CallExpressionResultPerSig = & {
-        signature: Signature; //
-        signatureReturnType: Type;
-        type?: FloughType;
-        rttr: RefTypesTableReturn,
-    };
-    export type CallExpressionResultPerFunc = & {
-        functionTsObject: Type | undefined; // undefined in case of error
-        functionReturnType?: Type | undefined; // undefined in case of error
-        perSigs: CallExpressionResultPerSig[]; // empty in case of error
-        carriedQdotUndefined: boolean; // redundant assuming it is in logicalObjectAccessReturn?
-    };
-    export type CallExpressionResult = & {
-        perFuncs: CallExpressionResultPerFunc[]; // includes error cases where functionTsObject is undefined or perSigs is empty
-    };
-
 
     export type NodeToTypeMap = ESMap<Node, Type>;
     export type FloughReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
         nodeForMap: Readonly<Node>;
-        forCrit?: {
-            logicalObjectAccessReturn?: LogicalObjectAccessReturn;
-            //isCallExpression?: boolean;
-            callExpressionResult?: CallExpressionResult;
-        },
         typeof?: {
             map: ESMap<Type,RefTypesType>;
             argSymbol: Symbol;
@@ -240,11 +168,6 @@ namespace ts {
 
     export type FloughInnerReturn = & {
         unmerged: Readonly<RefTypesTableReturn[]>;
-        forCrit?: {
-            logicalObjectAccessReturn?: LogicalObjectAccessReturn;
-            //isCallExpression?: boolean; // replaced by callExpressionResult TODO kill
-            callExpressionResult?: CallExpressionResult;
-        },
         typeof?: {
             map: ESMap<Type,RefTypesType>;
             argSymbol: Symbol;

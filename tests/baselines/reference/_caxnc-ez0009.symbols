@@ -1,0 +1,52 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0009.ts ===
+declare interface FooA {
+>FooA : Symbol(FooA, Decl(_caxnc-ez0009.ts, 0, 0))
+
+    foo(b:string): "1",
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+>b : Symbol(b, Decl(_caxnc-ez0009.ts, 1, 8))
+
+    foo(b:number): undefined;
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+>b : Symbol(b, Decl(_caxnc-ez0009.ts, 2, 8))
+
+    foo(...args: any[]): never;
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+>args : Symbol(args, Decl(_caxnc-ez0009.ts, 3, 8))
+
+};
+declare const obja: undefined | FooA;
+>obja : Symbol(obja, Decl(_caxnc-ez0009.ts, 5, 13))
+>FooA : Symbol(FooA, Decl(_caxnc-ez0009.ts, 0, 0))
+
+declare const arg: string | number;
+>arg : Symbol(arg, Decl(_caxnc-ez0009.ts, 6, 13))
+
+const isFoo = obja?.foo(arg);
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0009.ts, 8, 5))
+>obja?.foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+>obja : Symbol(obja, Decl(_caxnc-ez0009.ts, 5, 13))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+>arg : Symbol(arg, Decl(_caxnc-ez0009.ts, 6, 13))
+
+let x = isFoo;
+>x : Symbol(x, Decl(_caxnc-ez0009.ts, 9, 3))
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0009.ts, 8, 5))
+
+obja;
+>obja : Symbol(obja, Decl(_caxnc-ez0009.ts, 5, 13))
+
+obja?.foo;
+>obja?.foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+>obja : Symbol(obja, Decl(_caxnc-ez0009.ts, 5, 13))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+
+obja?.foo(arg);
+>obja?.foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+>obja : Symbol(obja, Decl(_caxnc-ez0009.ts, 5, 13))
+>foo : Symbol(FooA.foo, Decl(_caxnc-ez0009.ts, 0, 24), Decl(_caxnc-ez0009.ts, 1, 23), Decl(_caxnc-ez0009.ts, 2, 29))
+>arg : Symbol(arg, Decl(_caxnc-ez0009.ts, 6, 13))
+
+isFoo;
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0009.ts, 8, 5))
+
