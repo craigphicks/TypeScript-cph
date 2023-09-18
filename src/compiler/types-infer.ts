@@ -36,8 +36,6 @@ namespace ts {
         none= "none",
         truthy= "truthy",
         notnullundef= "notnullundef",
-        assignable= "assignable",
-        subtype= "subtype",
         equalLiteral= "equalLiteral",
     };
     export type InferCrit =
@@ -53,16 +51,6 @@ namespace ts {
         | {
             kind: typeof InferCritKind.notnullundef;
             negate?: boolean;
-        }
-        | {
-            kind: typeof InferCritKind.assignable;
-            negate?: boolean;
-            target: Type;
-        }
-        | {
-            kind: typeof InferCritKind.subtype;
-            negate?: boolean;
-            target: Type;
         }
         | {
             kind: typeof InferCritKind.equalLiteral;

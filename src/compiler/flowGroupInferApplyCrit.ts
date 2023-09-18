@@ -76,24 +76,6 @@ namespace ts {
                 if (failtype && tf&ffacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t,failtype);
             });
         }
-        else if (crit.kind===InferCritKind.assignable) {
-            const assignableRelation = checker.getRelations().assignableRelation;
-            floughTypeModule.forEachRefTypesTypeType(rt, source => {
-                let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
-                if (crit.negate) rel = !rel;
-                if (rel) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(source, passtype);
-                else if (failtype) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(source, failtype);
-            });
-        }
-        else if (crit.kind===InferCritKind.subtype) {
-            const subtypeRelation = checker.getRelations().subtypeRelation;
-            floughTypeModule.forEachRefTypesTypeType(rt, source => {
-                let rel = checker.isTypeRelatedTo(source, crit.target, subtypeRelation);
-                if (crit.negate) rel = !rel;
-                if (rel) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(source, passtype);
-                else if (failtype) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(source, failtype);
-            });
-        }
         else {
             // @ts-ignore
             Debug.fail("unexpected ", ()=>crit.kind);

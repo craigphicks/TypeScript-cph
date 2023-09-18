@@ -405,96 +405,6 @@ namespace ts {
         return arr.reduce((accum,curr)=>unionOfFloughLogicalObject(accum,curr)/*,arr[0]*/);
     }
 
-
-    // function intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
-    //     assertCastType<FloughLogicalObjectInner>(a);
-    //     assertCastType<FloughLogicalObjectInner>(b);
-    //     const items: FloughLogicalObjectInner[] = [];
-    //     if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
-    //     else items.push(a);
-    //     if (b.kind===FloughLogicalObjectKind.intersection) items.push(...b.items);
-    //     else items.push(b);
-    //     return {
-    //         kind: FloughLogicalObjectKind.intersection,
-    //         items,
-    //         id: nextLogicalObjectInnerId++,
-    //         [essymbolFloughLogicalObject]: true
-    //     };
-    // }
-    // function intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner {
-    //     assertCastType<FloughLogicalObjectInner[]>(arrobj);
-    //     const items: FloughLogicalObjectInner[] = [];
-    //     for (const a of arrobj) {
-    //         if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
-    //         else items.push(a);
-    //     }
-    //     return {
-    //         kind: FloughLogicalObjectKind.intersection,
-    //         items,
-    //         id: nextLogicalObjectInnerId++,
-    //         [essymbolFloughLogicalObject]: true
-    //     };
-    // }
-
-    // function differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
-    //     assertCastType<FloughLogicalObjectInner>(minuend);
-    //     assertCastType<FloughLogicalObjectInner>(subtrahend);
-    //     return {
-    //         kind: FloughLogicalObjectKind.difference,
-    //         items: [minuend,subtrahend],
-    //         id: nextLogicalObjectInnerId++,
-    //         [essymbolFloughLogicalObject]: true
-    //     };
-    // }
-
-    // function intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInner>, logicalObjectConstraint: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined {
-
-    //     function intersectionWithTsTypeOrTsType(logicalObject: Readonly<FloughLogicalObjectInner>, tsTypeConstraint: Type): FloughLogicalObjectInner | undefined {
-    //         //assertCastType<FloughLogicalObjectInner>(logicalObject);
-    //         if (logicalObject.kind===FloughLogicalObjectKind.plain) {
-    //             const test = true;
-    //             if (test) Debug.fail("test");
-    //             // TODO: This might recurse into property types, or maybe subtypesRelation will not do that, whereas assignableRelation would.  Not clear.
-    //             if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
-    //                 // if the logicalObject is a plain object, and it is a subtype of the tsType, then we can just return the logicalObject
-    //                 return logicalObject;
-    //             }
-    //             else return undefined;
-    //         }
-    //         else if (logicalObject.kind===FloughLogicalObjectKind.tsunion || logicalObject.kind===FloughLogicalObjectKind.union) {
-
-    //             const items = logicalObject.items.map(x=>intersectionWithTsTypeOrTsType(x, tsTypeConstraint)).filter(x=>!!x) as FloughLogicalObjectInner[];
-    //             if (items.length===0) return undefined;
-    //             else if (items.length===1) return items[0];
-    //             else {
-    //                 if (items.length===logicalObject.items.length && items.every((x,i)=>x===logicalObject.items[i])) return logicalObject;
-    //                 else {
-    //                     // if some types are filtered out, new logicalObject is created
-    //                     return createFloughLogicalObjectUnion(items);
-    //                 }
-    //             }
-    //         }
-    //         else if (logicalObject.kind===FloughLogicalObjectKind.tsintersection) {
-    //             // ts-intersection type is an integral type than cannot be simplified.  Like a plain object.
-    //             if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
-    //                 return logicalObject;
-    //             }
-    //             else return undefined;
-    //         }
-    //         else if (logicalObject.kind===FloughLogicalObjectKind.intersection) {
-    //             Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.intersection, should be resolving immediately");
-    //         }
-    //         else if (logicalObject.kind===FloughLogicalObjectKind.difference) {
-    //             Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.difference, should be resolving immediately");
-    //         }
-    //         //return createFloughLogicalObject(getEffectiveDeclaredTsTypeFromLogicalObject(logobj));
-    //     }
-    //     const logicalObj1 = intersectionWithTsTypeOrTsType(logicalObjectTop,getTsTypeFromLogicalObject(logicalObjectConstraint));
-    //     if (!logicalObj1) return undefined;
-    //     const logicalObj2 = intersectionWithTsTypeOrTsType(logicalObjectConstraint,getTsTypeFromLogicalObject(logicalObj1));
-    //     return logicalObj2;
-    // }
-
     type LogicalObjectVisitor<ResultType,StateType, VTorRtnType = [StateType | undefined,ResultType | undefined, FloughLogicalObjectInner | undefined]> = & {
         onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => ResultType;
         onUnion: (logicalObject: Readonly<FloughLogicalObjectUnion>, result: ResultType | undefined, state: StateType | undefined, itemsIndex: number) => VTorRtnType;
@@ -503,8 +413,6 @@ namespace ts {
         onTsunion?: (logicalObject: Readonly<FloughLogicalObjectTsunion>, result: ResultType | undefined, state: StateType | undefined, itemsIndex: number) => VTorRtnType;
         onTsintersection?: (logicalObject: Readonly<FloughLogicalObjectTsintersection>, result: ResultType | undefined, state: StateType | undefined, itemsIndex: number) => VTorRtnType;
 
-        // onItemsInitializeState: () => StateType;
-        // onItemsFinished: (state: StateType | undefined) => ResultType;
     };
     function logicalObjecVisit<ArgType, ResultType,StateType>(
         logicalObjectTop: Readonly<FloughLogicalObjectInner>,

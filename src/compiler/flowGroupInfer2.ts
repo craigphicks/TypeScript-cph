@@ -23,19 +23,20 @@ namespace ts {
     };
 
     export function createMrNarrow(checker: TypeChecker, sourceFile: Readonly<SourceFile>, _mrState: MrState, /*refTypesTypeModule: RefTypesTypeModule, */ compilerOptions: CompilerOptions): MrNarrow {
-        const {
-            // @ts-ignore-error
-            subtypeRelation,
-            // @ts-ignore-error
-            strictSubtypeRelation,
-            assignableRelation,
-            // @ts-ignore-error
-            comparableRelation,
-            // @ts-ignore-error
-            identityRelation,
-            // @ts-ignore-error
-            enumRelation,
-        } = checker.getRelations();
+        // const {
+        //     // // @ts-ignore-error
+        //     // subtypeRelation,
+        //     // // @ts-ignore-error
+        //     // strictSubtypeRelation,
+        //     // // @ts-ignore-error
+        //     // assignableRelation,
+        //     // // @ts-ignore-error
+        //     // comparableRelation,
+        //     // // @ts-ignore-error
+        //     // identityRelation,
+        //     // // @ts-ignore-error
+        //     // enumRelation,
+        // } = checker.getRelations();
         const undefinedType = checker.getUndefinedType();
         const nullType = checker.getNullType();
         const anyType = checker.getAnyType();
@@ -385,13 +386,13 @@ namespace ts {
                     func(t, !!(tf&pfacts), !!(tf & ffacts));
                 });
             }
-            else if (crit.kind===InferCritKind.assignable) {
-               floughTypeModule.forEachRefTypesTypeType(rt, source => {
-                    let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
-                    if (crit.negate) rel = !rel;
-                    func(source, rel, !rel);
-                });
-            }
+            // else if (crit.kind===InferCritKind.assignable) {
+            //    floughTypeModule.forEachRefTypesTypeType(rt, source => {
+            //         let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
+            //         if (crit.negate) rel = !rel;
+            //         func(source, rel, !rel);
+            //     });
+            // }
             // else if (crit.kind===InferCritKind.typeof) {
             //     Debug.fail("unexpected");
             // }
@@ -1681,11 +1682,6 @@ namespace ts {
                     const logobj = floughLogicalObjectModule.createFloughLogicalObject(newObjectTsType);
                     type = floughTypeModule.createTypeFromLogicalObject(logobj);
                 }
-                // const objectType1 = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
-                // // 1 and 2 have different id's but are "identical"
-                // const identityRelation = checker.getRelations().identityRelation;
-                // checker.isTypeRelatedTo(objectType0, objectType1, identityRelation);
-                // const objectType = (objectType0 as FreshableType).regularType;
                 if (getMyDebug()) consoleLog(`floughObjectLiteralExpression[dbg]: objectType: ${dbgTypeToString(newObjectTsType)}`);
                 return {
                     unmerged: [{
