@@ -1,0 +1,51 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0009.ts ===
+declare interface FooA {
+    foo(b:string): "1",
+>foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; }
+>b : string
+
+    foo(b:number): undefined;
+>foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; }
+>b : number
+
+    foo(...args: any[]): never;
+>foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; }
+>args : any[]
+
+};
+declare const obja: undefined | FooA;
+>obja : FooA | undefined
+
+declare const arg: string | number;
+>arg : string | number
+
+const isFoo = obja?.foo(arg);
+>isFoo : undefined
+>obja?.foo(arg) : undefined
+>obja?.foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; } | undefined
+>obja : FooA | undefined
+>foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; } | undefined
+>arg : string | number
+
+let x = isFoo;
+>x : "1" | undefined
+>isFoo : "1" | undefined
+
+obja;
+>obja : FooA | undefined
+
+obja?.foo;
+>obja?.foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; } | undefined
+>obja : FooA | undefined
+>foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; } | undefined
+
+obja?.foo(arg);
+>obja?.foo(arg) : undefined
+>obja?.foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; } | undefined
+>obja : FooA | undefined
+>foo : { (b: string): "1"; (b: number): undefined; (...args: any[]): never; } | undefined
+>arg : string | number
+
+isFoo;
+>isFoo : "1" | undefined
+

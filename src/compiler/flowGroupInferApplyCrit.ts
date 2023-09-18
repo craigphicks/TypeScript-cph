@@ -18,7 +18,6 @@ namespace ts {
 
     export type CritToTypeV2Result = FloughType | undefined;
     export function applyCritToTypeV2(rt: Readonly<FloughType>,crit: Readonly<InferCrit>): {pass: CritToTypeV2Result, fail?: CritToTypeV2Result } {
-        //const crit = critIn;
         const {logicalObject, remaining} = floughTypeModule.splitLogicalObject(rt);
         const arrtstype = floughTypeModule.getTsTypesFromFloughType(remaining);
 
@@ -27,11 +26,6 @@ namespace ts {
                 const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
                 const arrpass: Type[] = arrtstype.filter(t=>(checker.getTypeFacts(t)&pfacts));
                 const logobjpass = crit.negate ? undefined : logicalObject;
-                // if (arrpass.length===arrtstype.length) {
-                //     return rt; // no change,
-                //     //return true; // not using the "true" optimization, because it is not clear if it is worth it
-                // }
-                // else
                 if (logobjpass){
                     if (arrpass.length===arrtstype.length) return rt;
                     if (arrpass.length===0) return floughTypeModule.createTypeFromLogicalObject(logobjpass);
@@ -120,24 +114,20 @@ namespace ts {
         return { symbol, isconst, isAssign };
     }
 
+    /**
+     * Note: search for orTsTypesIntoNodeToTypeMap for another path to setting nodeToTypeMap
+     * @param type
+     * @param node
+     * @param nodeToTypeMap
+     */
     export function orIntoNodeToTypeMap(type: Readonly<RefTypesType>, node: Node, nodeToTypeMap: NodeToTypeMap){
-        const tstype = floughTypeModule.getTypeFromRefTypesType(type);
+        const tstype = floughTypeModule.getTsTypeFromFloughType(type, /*forNodeToTypeMap*/ true);
         const got = nodeToTypeMap.get(node);
         if (!got) nodeToTypeMap.set(node,tstype);
         else nodeToTypeMap.set(node,checker.getUnionType([got,tstype],UnionReduction.Literal));
         if (getMyDebug()){
-            consoleLog(`orIntoNodeToTypeMap(type:${floughTypeModule.dbgFloughTypeToString(type)},node:${dbgsModule.dbgNodeToString(node)})::`
-                +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node))}`);
-        }
-    }
-    export function orTsTypesIntoNodeToTypeMap(tstypes: Readonly<Type[]>, node: Node, nodeToTypeMap: NodeToTypeMap){
-        const got = nodeToTypeMap.get(node);
-        if (!got) nodeToTypeMap.set(node,checker.getUnionType(tstypes as Type[], UnionReduction.Literal));
-        else nodeToTypeMap.set(node,checker.getUnionType([got,...tstypes as Type[]],UnionReduction.Literal));
-        if (getMyDebug()){
-            const dbgTstype = checker.getUnionType(tstypes as Type[], UnionReduction.Literal);
-            consoleLog(`orTsTypesIntoNodeToTypeMap(types:${dbgsModule.dbgTypeToString(dbgTstype)},node:${dbgsModule.dbgNodeToString(node)})::`
-                +`${got?dbgsModule.dbgTypeToString(got):"*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node))}`);
+            consoleLog(`orIntoNodeToTypeMap(node:${dbgsModule.dbgNodeToString(node)}, type:${floughTypeModule.dbgFloughTypeToString(type)}) :: `
+                +`${got?dbgsModule.dbgTypeToString(got):"*"} -> ${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node))}`);
         }
     }
 
@@ -151,7 +141,6 @@ namespace ts {
     export function applyCritNoneToOne(rttr: Readonly<RefTypesTableReturn>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
         if (!rttr.symbol){
             if (nodeToTypeMap) orIntoNodeToTypeMap(rttr.type,nodeForMap,nodeToTypeMap);
-            //nodeToTypeMap?.set(nodeForMap,floughTypeModule.getTypeFromRefTypesType(rttr.type));
             return rttr;
         }
         const {type,sc} = andSymbolTypeIntoSymtabConstraint({ symbol:rttr.symbol,isconst:rttr.isconst,isAssign:rttr.isAssign,type:rttr.type, sc:rttr.sci,
@@ -211,10 +200,10 @@ namespace ts {
         const loar = load.logicalObjectAccessReturn;
         const symbol = logicalObjectAccessModule.getSymbol(loar);
         if (symbol){
-            const objType = logicalObjectAccessModule.modifyOne(
+            const { type: objType, sci } = logicalObjectAccessModule.modifyOne(
                 loar, load.finalTypeIdx, type);
             if (!floughTypeModule.isNeverType(objType)) {
-                scOut = copyRefTypesSymtabConstraintItem(sc);
+                scOut = copyRefTypesSymtabConstraintItem(sci); //copyRefTypesSymtabConstraintItem(sc);
                 scOut.symtab!.set(symbol, objType);
             }
             else {
@@ -227,60 +216,6 @@ namespace ts {
         }
         return { type: typeOut, sc: scOut };
     };
-
-    export function resolveCallExpressionData(cad: CallExpressionData, sc: RefTypesSymtabConstraintItem, type: FloughType):
-    { type: FloughType, sc: RefTypesSymtabConstraintItem } {
-        let typeOut = type;
-        let scOut = sc;
-        const load = cad.logicalObjectAccessData;
-        const loar = load.logicalObjectAccessReturn;
-        const symbol = logicalObjectAccessModule.getSymbol(loar);
-        if (symbol){
-            // if (!cad.functionSigType || !cad.functionTsType){
-            //     Debug.assert(!cad.functionSigType && !cad.functionTsType);
-            //     const objType = logicalObjectAccessModule.modifyOne(
-            //         loar, load.finalTypeIdx, floughTypeModule.getNeverType(), /*callUndefinedAllowed*/ true);
-            //     if (floughTypeModule.isNeverType(objType)) Debug.fail("unexpected");
-            //     scOut = copyRefTypesSymtabConstraintItem(sc);
-            //     scOut.symtab!.set(symbol, objType);
-            // }
-            // else
-            {
-                if (floughTypeModule.isNeverType(type)){
-                    typeOut = floughTypeModule.getNeverType();
-                    scOut = createRefTypesSymtabConstraintItemNever();
-                }
-                else {
-                    if (extraAsserts){
-                        Debug.assert(!!cad.functionTsType !== !!cad.carriedQdotUndefined); // exactly one of the two should be defined
-                        if (cad.carriedQdotUndefined){
-                            Debug.assert(floughTypeModule.isEqualToUndefinedType(type) || floughTypeModule.isNeverType(type));
-                        }
-                    }
-                    const functionType = cad.functionTsType ? floughTypeModule.createFromTsType(cad.functionTsType) : floughTypeModule.getNeverType();
-                    const objType = logicalObjectAccessModule.modifyOne(
-                        loar, load.finalTypeIdx, functionType, cad.carriedQdotUndefined);
-                    if (!floughTypeModule.isNeverType(objType)) {
-                        scOut = copyRefTypesSymtabConstraintItem(sc);
-                        scOut.symtab!.set(symbol, objType);
-                        // if (cad.carriedQdotUndefined){
-                        //     typeOut = floughTypeModule.cloneType(typeOut);
-                        //     floughTypeModule.addUndefinedTypeMutate(typeOut);
-                        // }
-                    }
-                    else {
-                        typeOut = floughTypeModule.getNeverType();
-                        scOut = createRefTypesSymtabConstraintItemNever();
-                    }
-                }
-            }
-        }
-        else {
-            // Do nothing
-        }
-        return { type: typeOut, sc: scOut };
-    } // resolveCallExpressionData
-
 
 
     export function applyCrit(x: Readonly<FloughReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
@@ -340,10 +275,6 @@ namespace ts {
 
         if (floughTypeModule.isNeverType(passtype)) passing = createNever();
         else {
-            if (rttr.callExpressionData){
-                Debug.assert(!rttr.logicalObjectAccessData);
-                ({type: passtype, sc: passsc} = resolveCallExpressionData(rttr.callExpressionData, passsc, passtype));
-            }
             if (rttr.logicalObjectAccessData){
                 ({type: passtype, sc: passsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, passsc, passtype));
             }
@@ -354,10 +285,6 @@ namespace ts {
         }
         if (crit.alsoFailing && floughTypeModule.isNeverType(failtype!)) failing = createNever();
         else if (crit.alsoFailing){
-            if (rttr.callExpressionData){
-                Debug.assert(!rttr.logicalObjectAccessData);
-                ({type: failtype, sc: failsc} = resolveCallExpressionData(rttr.callExpressionData, failsc!, failtype!));
-            }
             if (rttr.logicalObjectAccessData){
                 ({type: failtype, sc: failsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, failsc!, failtype!));
             }
@@ -366,7 +293,6 @@ namespace ts {
                 sci: failsc!
             };
         }
-        // if (nodeToTypeMap) orIntoNodeToTypeMap(floughTypeModule.unionOfRefTypesType([passing.type,failing.type]),nodeForMap,nodeToTypeMap);
         (crit as InferCrit).done = true; // note: overriding readonly
         return { passing,failing };
     }
@@ -434,10 +360,6 @@ namespace ts {
                             mrNarrow,
                         }));
                     }
-                    if (rttr.callExpressionData){
-                        Debug.assert(!rttr.logicalObjectAccessData);
-                        ({type: passtype, sc: passsc} = resolveCallExpressionData(rttr.callExpressionData, passsc, passtype));
-                    }
                     if (rttr.logicalObjectAccessData){
                         ({type: passtype, sc: passsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, passsc, passtype));
                     }
@@ -475,10 +397,6 @@ namespace ts {
                                 getDeclaredType,
                                 mrNarrow,
                             }));
-                        }
-                        if (rttr.callExpressionData){
-                            Debug.assert(!rttr.logicalObjectAccessData);
-                            ({type: failtype, sc: failsc} = resolveCallExpressionData(rttr.callExpressionData, failsc, failtype));
                         }
                         if (rttr.logicalObjectAccessData){
                             ({type: failtype, sc: failsc} = resolveLogicalObjectAccessData(rttr.logicalObjectAccessData, failsc, failtype));

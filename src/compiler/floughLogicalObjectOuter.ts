@@ -30,18 +30,20 @@ namespace ts {
         createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
         createFloughLogicalObject(tsType: Readonly<Type>): FloughLogicalObjectIF | undefined;
+        createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectIF | undefined;
         unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
         unionOfFloughLogicalObjects(arr: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
-        intersectionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
+        // intersectionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
 
-        differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectIF>, subtrahend: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
-        intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
+        //differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectIF>, subtrahend: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
+        // intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
         // logicalObjectForEachTypeOfPropertyLookup(
         //     logicalObject: Readonly<FloughLogicalObjectIF>,
         //     lookupkey: Readonly<FloughType>,
         //     lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
         // ): void;
-        getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>): Type;
+        getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>, forNodeToTypeMap?: boolean): Type;
+        getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>, forNodeToTypeMap?: boolean): Type;
         //setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void;
         createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF;
         identicalLogicalObjects(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): boolean;
@@ -51,7 +53,7 @@ namespace ts {
         createFloughLogicalObjectFromInner(inner: Readonly<FloughLogicalObjectInnerIF>, edType: Type | undefined): FloughLogicalObjectIF;
         //getTypeFromAssumedBaseLogicalObject(logicalObject: Readonly<FloughLogicalObjectIF>): Type;
         logicalObjectAccess(
-            rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined}[]>,
+            rootsWithSymbols: Readonly<RefTypesTableReturn[]>,
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>
@@ -64,16 +66,15 @@ namespace ts {
             types: Readonly<(FloughType | undefined)[]> | undefined,
             state: LogicalObjectAccessReturn,
             arrCallUndefinedAllowed?: Readonly<boolean[]>
-        ): { rootLogicalObject: FloughLogicalObjectIF | undefined, rootNonObj: FloughType | undefined };
-        resolveInKeyword(logcialObject: FloughLogicalObjectIF, litkey: LiteralType): {
-            passingLogicalObject: FloughLogicalObjectIF | undefined, failingLogicalObject: FloughLogicalObjectIF | undefined
-        };
+        ): LogicalObjectModifyReturnType;
+        resolveInKeyword(logicalObject: FloughLogicalObjectIF, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectIF): string[];
     };
 
     export type LogicalObjectModifyReturnType = & {
         rootLogicalObject: FloughLogicalObjectIF | undefined,
         rootNonObj: FloughType | undefined;
+        sci: RefTypesSymtabConstraintItem
         //type: Readonly<FloughType>
     };
 
@@ -84,12 +85,18 @@ namespace ts {
         createFloughLogicalObjectTsunion,
         createFloughLogicalObjectTsintersection,
         createFloughLogicalObject,
+        createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectIF | undefined {
+            const inner = floughLogicalObjectInnerModule.createFloughLogicalObjectWithVariations(origTsType,newTsType);
+            if (!inner) return undefined;
+            return createFloughLogicalObjectFromInner(inner);
+        },
         unionOfFloughLogicalObject,
         unionOfFloughLogicalObjects,
-        intersectionOfFloughLogicalObject,
-        differenceOfFloughLogicalObject,
-        intersectionAndSimplifyLogicalObjects,
+        // intersectionOfFloughLogicalObject,
+        //differenceOfFloughLogicalObject,
+        // intersectionAndSimplifyLogicalObjects,
         getEffectiveDeclaredTsTypeFromLogicalObject,
+        getTsTypeFromLogicalObject,
         createCloneWithEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): FloughLogicalObjectIF {
             assertCastType<FloughLogicalObjectOuter>(logicalObjectTop);
             // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -107,7 +114,7 @@ namespace ts {
         },
         createFloughLogicalObjectFromInner,
         logicalObjectAccess(
-            rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol}[]>,
+            rootsWithSymbols: Readonly<RefTypesTableReturn[]>,
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>
@@ -150,7 +157,7 @@ namespace ts {
         ): LogicalObjectModifyReturnType {
             const x = floughLogicalObjectInnerModule.logicalObjectModify(types, state, arrCallUndefinedAllowed);
             const outer = x.rootLogicalObject ? createFloughLogicalObjectFromInner(x.rootLogicalObject, /* edType */ undefined) : undefined;
-            return { rootLogicalObject:outer, rootNonObj: x.rootNonObj };
+            return { rootLogicalObject:outer, rootNonObj: x.rootNonObj, sci: x.sci };
             // return x.map(({ rootLogicalObject, rootNonObj, type })=>({
             //     rootLogicalObject: rootLogicalObject ? createFloughLogicalObjectFromInner(rootLogicalObject, /* edType */ undefined) : undefined,
             //         rootNonObj,
@@ -173,8 +180,11 @@ namespace ts {
     //     };
     // }
 
-    function getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectOuter>): Type {
-        return logicalObjectTop.effectiveDeclaredTsType || floughLogicalObjectInnerModule.getTsTypeFromLogicalObject(logicalObjectTop.inner);
+    function getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectOuter>, forNodeToTypeMap?: boolean): Type {
+        return logicalObjectTop.effectiveDeclaredTsType || floughLogicalObjectInnerModule.getTsTypeFromLogicalObject(logicalObjectTop.inner, forNodeToTypeMap);
+    }
+    function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectOuter>, forNodeToTypeMap?: boolean): Type {
+        return floughLogicalObjectInnerModule.getTsTypeFromLogicalObject(logicalObjectTop.inner, forNodeToTypeMap);
     }
 
 
@@ -206,16 +216,17 @@ namespace ts {
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
-    function intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter | undefined {
-        const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
-        if (inner === undefined) return undefined;
-        // TODO: do the keys
-        /***
-         * Intersection: intersection of the insides, then union of the outside variation keys, intersection of their properties - any never intersection results in a total never result. Then evaluate each key - any never evalution results in a never result.
-         * Union: Eval each variation key over the other union operand to get new value.  Then union of insides + union of outside variations.
-         */
-        return { ...logicalObject, inner, id: nextLogicalObjectOuterId++ };
-    }
+
+    // function intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter | undefined {
+    //     const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
+    //     if (inner === undefined) return undefined;
+    //     // TODO: do the keys
+    //     /***
+    //      * Intersection: intersection of the insides, then union of the outside variation keys, intersection of their properties - any never intersection results in a total never result. Then evaluate each key - any never evalution results in a never result.
+    //      * Union: Eval each variation key over the other union operand to get new value.  Then union of insides + union of outside variations.
+    //      */
+    //     return { ...logicalObject, inner, id: nextLogicalObjectOuterId++ };
+    // }
     function unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectOuter>, b: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter{
         const ret: FloughLogicalObjectOuter = {
             inner: floughLogicalObjectInnerModule.unionOfFloughLogicalObject(a.inner, b.inner),
@@ -231,32 +242,35 @@ namespace ts {
         const ret: FloughLogicalObjectOuter = arr.reduce((accumulator,currentValue)=>unionOfFloughLogicalObject(accumulator,currentValue));
         return ret;
     }
-    function intersectionOfFloughLogicalObject(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectIF | undefined {
-        const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
-        if (inner === undefined) return undefined;
-        const ret: FloughLogicalObjectOuter = {
-            inner, id: nextLogicalObjectOuterId++, [essymbolfloughLogicalObjectOuter]: true,
-        };
-        if (logicalObject.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = logicalObject.effectiveDeclaredTsType;
-        // TODO: The variations, and possibly the effective declared type.
-        return ret;
-    }
-    function differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectOuter>, subtrahend: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter {
-        const inner = floughLogicalObjectInnerModule.differenceOfFloughLogicalObject(minuend.inner, subtrahend.inner);
-        const ret: FloughLogicalObjectOuter = {
-            inner, id: nextLogicalObjectOuterId++,
-            [essymbolfloughLogicalObjectOuter]: true,
-        };
-        if (minuend.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = minuend.effectiveDeclaredTsType;
-        // TODO: The variations, and possibly the effective declared type.
-        return ret;
-    }
-    export type LogicalObjectForEachTypeOfPropertyLookupItem = & {
-        logicalObject: FloughLogicalObjectIF, // undefined if not input logicalObject was trimmed to nothing
-        key?: LiteralType | undefined, // undefined if not input logicalObject was trimmed to nothing or if no literal keys were found
-        type: FloughType // will be never if logicalItem is undefined, and visa versa.
-        arrLogicalObjectBaseOfType: Readonly<FloughLogicalObjectInnerIF>[], // the base logicalObject that was used to create the logicalObject
-    };
+    // function intersectionOfFloughLogicalObject(logicalObject: Readonly<FloughLogicalObjectOuter>, logicalObjectConstraint: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectIF | undefined {
+    //     const maybe = true;
+    //     if (maybe) Debug.fail("intersectionOfFloughLogicalObject not expect");
+    //     const inner = floughLogicalObjectInnerModule.intersectionWithLogicalObjectConstraint(logicalObject.inner, logicalObjectConstraint.inner);
+    //     if (inner === undefined) return undefined;
+    //     const ret: FloughLogicalObjectOuter = {
+    //         inner, id: nextLogicalObjectOuterId++, [essymbolfloughLogicalObjectOuter]: true,
+    //     };
+    //     if (logicalObject.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = logicalObject.effectiveDeclaredTsType;
+    //     // TODO: The variations, and possibly the effective declared type.
+    //     return ret;
+    // }
+
+    // function differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectOuter>, subtrahend: Readonly<FloughLogicalObjectOuter>): FloughLogicalObjectOuter {
+    //     const inner = floughLogicalObjectInnerModule.differenceOfFloughLogicalObject(minuend.inner, subtrahend.inner);
+    //     const ret: FloughLogicalObjectOuter = {
+    //         inner, id: nextLogicalObjectOuterId++,
+    //         [essymbolfloughLogicalObjectOuter]: true,
+    //     };
+    //     if (minuend.effectiveDeclaredTsType) ret.effectiveDeclaredTsType = minuend.effectiveDeclaredTsType;
+    //     // TODO: The variations, and possibly the effective declared type.
+    //     return ret;
+    // }
+    // export type LogicalObjectForEachTypeOfPropertyLookupItem = & {
+    //     logicalObject: FloughLogicalObjectIF, // undefined if not input logicalObject was trimmed to nothing
+    //     key?: LiteralType | undefined, // undefined if not input logicalObject was trimmed to nothing or if no literal keys were found
+    //     type: FloughType // will be never if logicalItem is undefined, and visa versa.
+    //     arrLogicalObjectBaseOfType: Readonly<FloughLogicalObjectInnerIF>[], // the base logicalObject that was used to create the logicalObject
+    // };
 
     // function logicalObjectDuplicateBaseAndJoinType(base: Readonly<FloughLogicalObjectOuter>, key: LiteralType, type: Readonly<FloughType>): FloughLogicalObjectOuter {
     //     const inner = floughLogicalObjectInnerModule.logicalObjectDuplicateBaseAndJoinTypeInner(base.inner, key, type);
@@ -333,13 +347,10 @@ namespace ts {
             [essymbolfloughLogicalObjectOuter]: true,
         };
     }
-    function resolveInKeyword(logicalObject: FloughLogicalObjectOuter, litkey: LiteralType): {
-        passingLogicalObject: FloughLogicalObjectOuter | undefined, failingLogicalObject: FloughLogicalObjectOuter | undefined
-    }{
-        const { passingLogicalObject:innerPassing, failingLogicalObject:innerFailing } = floughLogicalObjectInnerModule.resolveInKeyword(logicalObject.inner, litkey);
-        const passingLogicalObject = innerPassing ? createFloughLogicalObjectFromInner(innerPassing, /*logicalObject.effectiveDeclaredTsType*/) : undefined;
-        const failingLogicalObject = innerFailing ? createFloughLogicalObjectFromInner(innerFailing, /*logicalObject.effectiveDeclaredTsType*/) : undefined;
-        return { passingLogicalObject, failingLogicalObject };
+
+
+    function resolveInKeyword(logicalObject: FloughLogicalObjectOuter, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType {
+        return floughLogicalObjectInnerModule.resolveInKeyword(logicalObject.inner, accessKeys);
     }
 
 

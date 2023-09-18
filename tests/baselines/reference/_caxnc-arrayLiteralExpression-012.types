@@ -12,7 +12,7 @@ if (c) {
 >c : true
 
     w;
->w : readonly [boolean]
+>w : readonly [true]
 
     // @ts-dev-debugger
     w[0];

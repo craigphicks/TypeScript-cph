@@ -26,7 +26,7 @@ namespace ts {
      * writing - assignment, property assignment, (can this modify inplace, or does it always need to create a new FloughLogicalObjectIF?)
      */
 
-    const enableReSectionSubsetOfTsUnionAndIntersection = true;
+    //const enableReSectionSubsetOfTsUnionAndIntersection = true;
 
     // export type FloughLogicalObjectVariations = ESMap<LiteralType,FloughType>;
     // type Variations = FloughLogicalObjectVariations;
@@ -53,14 +53,16 @@ namespace ts {
         createFloughLogicalObjectTsunion(unionType: Readonly<UnionType>, items: Readonly<FloughLogicalObjectInnerIF[]>): FloughLogicalObjectTsunion;
         createFloughLogicalObjectTsintersection(intersectionType: Readonly<IntersectionType>, items: Readonly<FloughLogicalObjectInnerIF[]>): FloughLogicalObjectTsintersection;
         createFloughLogicalObject(tsType: Type): FloughLogicalObjectInnerIF;
+        createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectInnerIF | undefined;
+
         unionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
-        intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
-        intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner;
-        differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
-        intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInnerIF | undefined;
-        getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
+        // intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
+        // intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner;
+        //differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner;
+        // intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectInnerIF>): FloughLogicalObjectInnerIF | undefined;
+        getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, forNodeToTypeMap?: boolean): Type;
         logicalObjectAccess(
-            rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>,
+            rootsWithSymbols: Readonly<RefTypesTableReturn[]>,
             roots: Readonly<FloughType[]>,
             akey: Readonly<FloughType[]>,
             aexpression: Readonly<Expression[]>,
@@ -76,15 +78,13 @@ namespace ts {
             types: Readonly<(FloughType | undefined)[]> | undefined,
             state: LogicalObjectAccessReturn,
             arrCallUndefinedAllowed?: Readonly<boolean[]>,
-        ): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined, type: Readonly<FloughType> };
+        ): LogicalObjectModifyInnerReturnType;
         // getTsTypesInChainOfLogicalObjectAccessReturn(loar: Readonly<LogicalObjectAccessReturn>): Type[][];
         getTsTypesOfBaseLogicalObjects(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type>;
         getTsTypeOfBasicLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type;
         //unionOfFloughLogicalObjectWithTypeMerging(arr: Readonly<FloughLogicalObjectInnerIF>[]): FloughLogicalObjectInnerIF;
         inheritReadonlyFromEffectiveDeclaredTsTypeModify(logicalObjectTop: FloughLogicalObjectInnerIF, edType: Readonly<Type>): FloughLogicalObjectInnerIF;
-        resolveInKeyword(logicalObject: FloughLogicalObjectInnerIF, litkey: LiteralType): {
-            passingLogicalObject: FloughLogicalObjectInnerIF | undefined, failingLogicalObject: FloughLogicalObjectInnerIF | undefined
-        };
+        resolveInKeyword(logicalObject: FloughLogicalObjectInnerIF, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType;
         dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF): string[];
         dbgLogicalObjectAccessResult(loar: Readonly<LogicalObjectAccessReturn>): string[];
     }
@@ -93,11 +93,12 @@ namespace ts {
         createFloughLogicalObjectTsunion,
         createFloughLogicalObjectTsintersection,
         createFloughLogicalObject,
+        createFloughLogicalObjectWithVariations,
         unionOfFloughLogicalObject,
-        intersectionOfFloughLogicalObject,
-        intersectionOfFloughLogicalObjects,
-        differenceOfFloughLogicalObject,
-        intersectionWithLogicalObjectConstraint,
+        // intersectionOfFloughLogicalObject,
+        // intersectionOfFloughLogicalObjects,
+        //differenceOfFloughLogicalObject,
+        // intersectionWithLogicalObjectConstraint,
         getTsTypeFromLogicalObject,
         logicalObjectAccess,
         getRootAtLevelFromLogicalObjectAccessReturn,
@@ -117,9 +118,9 @@ namespace ts {
         dbgLogicalObjectAccessResult
     };
 
-    // TODO: undefined means key is known to be not present, different from key having undefined type value.
-    //type Variations = ESMap<LiteralType,FloughType /*| undefined */>;
-    type Variations = ESMap<string,FloughType /*| undefined */>;
+    type Variations = ESMap<string,FloughType>;
+    type HasKeyItem = & {yes: boolean, no: boolean};
+    type HasKeys = ESMap<string,HasKeyItem>;
 
     //type LiteralTypeNumber = LiteralType & {value: number};
     //type LiteralTypeString = LiteralType & {value: string};
@@ -203,6 +204,7 @@ namespace ts {
         kind: FloughLogicalObjectKind.plain;
         //item: FloughObjectTypeInstance;
         variations?: Variations;
+        haskeys?: HasKeys;
     };
     /**
      * TODO: FloughLogicalObjectBasic will include FloughLogicalObjectTsintersection
@@ -258,6 +260,12 @@ namespace ts {
             [essymbolFloughLogicalObject]: true
         };
     }
+    function cloneFloughLogicalObjectPlain(logobj: Readonly<FloughLogicalObjectPlain>): FloughLogicalObjectPlain{
+        const x = createFloughLogicalObjectPlain(logobj.tsType);
+        if (logobj.haskeys) x.haskeys = new Map(logobj.haskeys);
+        x.variations = new Map(logobj.variations);
+        return x;
+    }
     function createFloughLogicalObjectUnion(items: FloughLogicalObjectInner[]): FloughLogicalObjectUnion {
         return {
             kind: FloughLogicalObjectKind.union,
@@ -309,7 +317,7 @@ namespace ts {
             const items = filterAndMapItems((tsType as UnionType).types);
             if (items.length===0) Debug.fail("unepxected");
             else if (items.length===1) return items[0];
-            else if (enableReSectionSubsetOfTsUnionAndIntersection && items.length !== (tsType as UnionType).types.length) {
+            else if (/*enableReSectionSubsetOfTsUnionAndIntersection && */items.length !== (tsType as UnionType).types.length) {
                 // if some types are filtered out, then we need to resection the types
                 const aType = items.map(x=>x.tsType);
                 tsType = checker.getUnionType(aType);
@@ -320,7 +328,7 @@ namespace ts {
             const items = filterAndMapItems((tsType as UnionType).types);
             if (items.length===0) Debug.fail("unepxected");
             else if (items.length===1) return items[0];
-            else if (enableReSectionSubsetOfTsUnionAndIntersection && items.length !== (tsType as UnionType).types.length) {
+            else if (/*enableReSectionSubsetOfTsUnionAndIntersection &&*/ items.length !== (tsType as UnionType).types.length) {
                 // if some types are filtered out, then we need to resection the types
                 const aType = items.map(x=>x.tsType);
                 tsType = checker.getIntersectionType(aType);
@@ -398,93 +406,94 @@ namespace ts {
     }
 
 
-    function intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
-        assertCastType<FloughLogicalObjectInner>(a);
-        assertCastType<FloughLogicalObjectInner>(b);
-        const items: FloughLogicalObjectInner[] = [];
-        if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
-        else items.push(a);
-        if (b.kind===FloughLogicalObjectKind.intersection) items.push(...b.items);
-        else items.push(b);
-        return {
-            kind: FloughLogicalObjectKind.intersection,
-            items,
-            id: nextLogicalObjectInnerId++,
-            [essymbolFloughLogicalObject]: true
-        };
-    }
-    function intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner {
-        assertCastType<FloughLogicalObjectInner[]>(arrobj);
-        const items: FloughLogicalObjectInner[] = [];
-        for (const a of arrobj) {
-            if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
-            else items.push(a);
-        }
-        return {
-            kind: FloughLogicalObjectKind.intersection,
-            items,
-            id: nextLogicalObjectInnerId++,
-            [essymbolFloughLogicalObject]: true
-        };
-    }
+    // function intersectionOfFloughLogicalObject(a: FloughLogicalObjectInnerIF, b: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
+    //     assertCastType<FloughLogicalObjectInner>(a);
+    //     assertCastType<FloughLogicalObjectInner>(b);
+    //     const items: FloughLogicalObjectInner[] = [];
+    //     if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
+    //     else items.push(a);
+    //     if (b.kind===FloughLogicalObjectKind.intersection) items.push(...b.items);
+    //     else items.push(b);
+    //     return {
+    //         kind: FloughLogicalObjectKind.intersection,
+    //         items,
+    //         id: nextLogicalObjectInnerId++,
+    //         [essymbolFloughLogicalObject]: true
+    //     };
+    // }
+    // function intersectionOfFloughLogicalObjects(...arrobj: FloughLogicalObjectInnerIF[]): FloughLogicalObjectInner {
+    //     assertCastType<FloughLogicalObjectInner[]>(arrobj);
+    //     const items: FloughLogicalObjectInner[] = [];
+    //     for (const a of arrobj) {
+    //         if (a.kind===FloughLogicalObjectKind.intersection) items.push(...a.items);
+    //         else items.push(a);
+    //     }
+    //     return {
+    //         kind: FloughLogicalObjectKind.intersection,
+    //         items,
+    //         id: nextLogicalObjectInnerId++,
+    //         [essymbolFloughLogicalObject]: true
+    //     };
+    // }
 
-    function differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
-        assertCastType<FloughLogicalObjectInner>(minuend);
-        assertCastType<FloughLogicalObjectInner>(subtrahend);
-        return {
-            kind: FloughLogicalObjectKind.difference,
-            items: [minuend,subtrahend],
-            id: nextLogicalObjectInnerId++,
-            [essymbolFloughLogicalObject]: true
-        };
-    }
+    // function differenceOfFloughLogicalObject(minuend: FloughLogicalObjectInnerIF, subtrahend: FloughLogicalObjectInnerIF): FloughLogicalObjectInner {
+    //     assertCastType<FloughLogicalObjectInner>(minuend);
+    //     assertCastType<FloughLogicalObjectInner>(subtrahend);
+    //     return {
+    //         kind: FloughLogicalObjectKind.difference,
+    //         items: [minuend,subtrahend],
+    //         id: nextLogicalObjectInnerId++,
+    //         [essymbolFloughLogicalObject]: true
+    //     };
+    // }
 
-    function intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInner>, logicalObjectConstraint: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined {
+    // function intersectionWithLogicalObjectConstraint(logicalObjectTop: Readonly<FloughLogicalObjectInner>, logicalObjectConstraint: Readonly<FloughLogicalObjectInner>): FloughLogicalObjectInner | undefined {
 
-        function intersectionWithTsTypeOrTsType(logicalObject: Readonly<FloughLogicalObjectInner>, tsTypeConstraint: Type): FloughLogicalObjectInner | undefined {
-            //assertCastType<FloughLogicalObjectInner>(logicalObject);
-            if (logicalObject.kind===FloughLogicalObjectKind.plain) {
-                // TODO: This might recurse into property types, or maybe subtypesRelation will not do that, whereas assignableRelation would.  Not clear.
-                if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
-                    // if the logicalObject is a plain object, and it is a subtype of the tsType, then we can just return the logicalObject
-                    return logicalObject;
-                }
-                else return undefined;
-            }
-            else if (logicalObject.kind===FloughLogicalObjectKind.tsunion || logicalObject.kind===FloughLogicalObjectKind.union) {
+    //     function intersectionWithTsTypeOrTsType(logicalObject: Readonly<FloughLogicalObjectInner>, tsTypeConstraint: Type): FloughLogicalObjectInner | undefined {
+    //         //assertCastType<FloughLogicalObjectInner>(logicalObject);
+    //         if (logicalObject.kind===FloughLogicalObjectKind.plain) {
+    //             const test = true;
+    //             if (test) Debug.fail("test");
+    //             // TODO: This might recurse into property types, or maybe subtypesRelation will not do that, whereas assignableRelation would.  Not clear.
+    //             if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
+    //                 // if the logicalObject is a plain object, and it is a subtype of the tsType, then we can just return the logicalObject
+    //                 return logicalObject;
+    //             }
+    //             else return undefined;
+    //         }
+    //         else if (logicalObject.kind===FloughLogicalObjectKind.tsunion || logicalObject.kind===FloughLogicalObjectKind.union) {
 
-                const items = logicalObject.items.map(x=>intersectionWithTsTypeOrTsType(x, tsTypeConstraint)).filter(x=>!!x) as FloughLogicalObjectInner[];
-                if (items.length===0) return undefined;
-                else if (items.length===1) return items[0];
-                else {
-                    if (items.length===logicalObject.items.length && items.every((x,i)=>x===logicalObject.items[i])) return logicalObject;
-                    else {
-                        // if some types are filtered out, new logicalObject is created
-                        return createFloughLogicalObjectUnion(items);
-                    }
-                }
-            }
-            else if (logicalObject.kind===FloughLogicalObjectKind.tsintersection) {
-                // ts-intersection type is an integral type than cannot be simplified.  Like a plain object.
-                if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
-                    return logicalObject;
-                }
-                else return undefined;
-            }
-            else if (logicalObject.kind===FloughLogicalObjectKind.intersection) {
-                Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.intersection, should be resolving immediately");
-            }
-            else if (logicalObject.kind===FloughLogicalObjectKind.difference) {
-                Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.difference, should be resolving immediately");
-            }
-            //return createFloughLogicalObject(getEffectiveDeclaredTsTypeFromLogicalObject(logobj));
-        }
-        const logicalObj1 = intersectionWithTsTypeOrTsType(logicalObjectTop,getTsTypeFromLogicalObject(logicalObjectConstraint));
-        if (!logicalObj1) return undefined;
-        const logicalObj2 = intersectionWithTsTypeOrTsType(logicalObjectConstraint,getTsTypeFromLogicalObject(logicalObj1));
-        return logicalObj2;
-    }
-
+    //             const items = logicalObject.items.map(x=>intersectionWithTsTypeOrTsType(x, tsTypeConstraint)).filter(x=>!!x) as FloughLogicalObjectInner[];
+    //             if (items.length===0) return undefined;
+    //             else if (items.length===1) return items[0];
+    //             else {
+    //                 if (items.length===logicalObject.items.length && items.every((x,i)=>x===logicalObject.items[i])) return logicalObject;
+    //                 else {
+    //                     // if some types are filtered out, new logicalObject is created
+    //                     return createFloughLogicalObjectUnion(items);
+    //                 }
+    //             }
+    //         }
+    //         else if (logicalObject.kind===FloughLogicalObjectKind.tsintersection) {
+    //             // ts-intersection type is an integral type than cannot be simplified.  Like a plain object.
+    //             if (checker.isTypeRelatedTo(logicalObject.tsType, tsTypeConstraint, checker.getRelations().subtypeRelation)) {
+    //                 return logicalObject;
+    //             }
+    //             else return undefined;
+    //         }
+    //         else if (logicalObject.kind===FloughLogicalObjectKind.intersection) {
+    //             Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.intersection, should be resolving immediately");
+    //         }
+    //         else if (logicalObject.kind===FloughLogicalObjectKind.difference) {
+    //             Debug.fail("unexpected logicalObject.kind===FloughLogicalObjectKind.difference, should be resolving immediately");
+    //         }
+    //         //return createFloughLogicalObject(getEffectiveDeclaredTsTypeFromLogicalObject(logobj));
+    //     }
+    //     const logicalObj1 = intersectionWithTsTypeOrTsType(logicalObjectTop,getTsTypeFromLogicalObject(logicalObjectConstraint));
+    //     if (!logicalObj1) return undefined;
+    //     const logicalObj2 = intersectionWithTsTypeOrTsType(logicalObjectConstraint,getTsTypeFromLogicalObject(logicalObj1));
+    //     return logicalObj2;
+    // }
 
     type LogicalObjectVisitor<ResultType,StateType, VTorRtnType = [StateType | undefined,ResultType | undefined, FloughLogicalObjectInner | undefined]> = & {
         onPlain: (logicalObject: Readonly<FloughLogicalObjectPlain>) => ResultType;
@@ -555,10 +564,82 @@ namespace ts {
         return result;
     }
 
+    function createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>,newTsType: Readonly<ObjectType>): FloughLogicalObjectInner {
+        const logobj = createFloughLogicalObjectPlain(origTsType);
+        const variations: Variations = new Map<string,FloughType>();
+        checker.getPropertiesOfType(newTsType).forEach(symbol=>{
+            const ptstype = checker.getTypeOfSymbol(symbol);
+            variations.set(symbol.escapedName.toString(),floughTypeModule.createFromTsType(ptstype));
+        });
+        logobj.variations = variations;
+        return logobj;
+    }
 
+    function getTsTypeSetFromLogicalObjectForNodeMap(logicalObjectTop: Readonly<FloughLogicalObjectInner>): Set<Type> {
+        /**
+         *
+         * @param logobj
+         * @returns
+         * if logobj.kind===plain then return true if logobj.tsType is itself returned, otherwise false
+         * else return true if helper returned true for every item in logobj.items, otherwise false
+         */
+        function helper(logobj: Readonly<FloughLogicalObjectInner>, settstype: Set<Type>): boolean {
+            if (logobj.kind===FloughLogicalObjectKind.plain) {
+                // TODO: somehow work in haskey and variations
+                settstype.add(logobj.tsType);
+                return true;
+            }
+            else if (logobj.kind===FloughLogicalObjectKind.union){
+                //const subset = new Set<Type>();
+                logobj.items.forEach(item=>helper(item, settstype));
+                return true;
+            }
+            else if (logobj.kind===FloughLogicalObjectKind.tsunion){
+                const subset = new Set<Type>();
+                const noChangeFromTsType = logobj.items.every(item=>helper(item, subset));
+                if (noChangeFromTsType) {
+                    settstype.add(logobj.tsType);
+                    return true;
+                }
+                else {
+                    subset.forEach(t=>settstype.add(t));
+                    return false;
+                }
+            }
+            else {
+                Debug.assert(false, "unexpected: ", ()=>logobj.kind);
+            }
+        }
+        const setOfTsTypes = new Set<Type>();
+        helper(logicalObjectTop, setOfTsTypes);
+        return setOfTsTypes;
+    } // getTsTypeSetFromLogicalObjectForNodeMap
 
+    // @ts-ignore
+    function getTsTypeSetFromLogicalObjectV2(logicalObjectTop: Readonly<FloughLogicalObjectInner>): Set<Type> {
+        const setOfTsTypes = new Set<Type>();
+        function helper(logobj: Readonly<FloughLogicalObjectInner>): void {
+            if (logobj.kind===FloughLogicalObjectKind.plain) {
+                // TODO: somehow work in haskey and variations
+                setOfTsTypes.add(logobj.tsType);
+            }
+            else if (logobj.kind===FloughLogicalObjectKind.union || logobj.kind===FloughLogicalObjectKind.tsunion){
+                logobj.items.forEach(helper);
+            }
+        }
+        helper(logicalObjectTop);
+        return setOfTsTypes;
+    }
+    function getTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInner>, forNodeMap?: boolean): Set<Type> {
+        const useV2 = true;
+        if (!useV2) return getTsTypeSetFromLogicalObjectV1(logicalObjectTop);
+        else {
+            if (forNodeMap) return getTsTypeSetFromLogicalObjectForNodeMap(logicalObjectTop);
+            else return getTsTypeSetFromLogicalObjectV2(logicalObjectTop);
+        }
+    }
 
-    function getTsTypeSetFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type> {
+    function getTsTypeSetFromLogicalObjectV1(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Set<Type> {
         assertCastType<Readonly<FloughLogicalObjectInner>>(logicalObjectTop);
         type Result = Set<Type>;
         type State = Set<Type>;
@@ -577,53 +658,59 @@ namespace ts {
                     return new Set<Type>([logicalObject.tsType]);
                 },
                 onUnion,
-                onIntersection(logicalObject: Readonly<FloughLogicalObjectIntersection>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
+                onIntersection(_logicalObject: Readonly<FloughLogicalObjectIntersection>, _result: Result | undefined, _state: State | undefined, _itemsIndex: number): OnReturnType {
                     //if (logicalObject.tsType) return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
-                    if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
-                    Debug.assert(state && result);
-                    if (itemsIndex===0) {
-                        Debug.assert(state.size===0);
-                        state = result;
-                    }
-                    else {
-                        const [smaller,larger] = state.size<result.size ? [state,result] : [result,state];
-                        smaller.forEach(t =>{
-                            if (!larger.has(t)) smaller.delete(t);
-                        });
-                        state = smaller;
-                    }
-                    /**
-                     * If state.size===0, then the intersection is empty, so we can stop.
-                     */
-                    if (itemsIndex === logicalObject.items.length-1 || state.size===0) return [undefined,state,undefined];
-                    return [state,undefined, logicalObject.items[itemsIndex+1]];
+                    //const test = true;
+                    //if (test)
+                    Debug.fail("test");
+                    // if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
+                    // Debug.assert(state && result);
+                    // if (itemsIndex===0) {
+                    //     Debug.assert(state.size===0);
+                    //     state = result;
+                    // }
+                    // else {
+                    //     const [smaller,larger] = state.size<result.size ? [state,result] : [result,state];
+                    //     smaller.forEach(t =>{
+                    //         if (!larger.has(t)) smaller.delete(t);
+                    //     });
+                    //     state = smaller;
+                    // }
+                    // /**
+                    //  * If state.size===0, then the intersection is empty, so we can stop.
+                    //  */
+                    // if (itemsIndex === logicalObject.items.length-1 || state.size===0) return [undefined,state,undefined];
+                    // return [state,undefined, logicalObject.items[itemsIndex+1]];
                 },
+                // @ts-expect-error
                 onDifference(logicalObject: Readonly<FloughLogicalObjectDifference>, result: Result | undefined, state: State | undefined, itemsIndex: number): OnReturnType {
-                    //if (logicalObject.tsType) return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
-                    Debug.assert(logicalObject.items.length === 2);
-                    if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
-                    Debug.assert(state && result);
-                    if (itemsIndex===0) {
-                        Debug.assert(state.size===0);
-                        state = result;
-                        return [state,undefined, logicalObject.items[itemsIndex+1]];
-                    }
-                    else {
-                        // TODO: compute the difference; subtract the types of the subtrahend (result )from types of the the minuend (state[0])
-                        result.forEach(t => state!.delete(t));
-                        return [undefined,state, undefined];
-                    }
+                    //const test = true;
+                    Debug.fail("test");
+                    // Debug.assert(logicalObject.items.length === 2);
+                    // if (itemsIndex===-1) return [new Set<Type>(), undefined, logicalObject.items[0]];
+                    // Debug.assert(state && result);
+                    // if (itemsIndex===0) {
+                    //     Debug.assert(state.size===0);
+                    //     state = result;
+                    //     return [state,undefined, logicalObject.items[itemsIndex+1]];
+                    // }
+                    // else {
+                    //     // TODO: compute the difference; subtract the types of the subtrahend (result )from types of the the minuend (state[0])
+                    //     result.forEach(t => state!.delete(t));
+                    //     return [undefined,state, undefined];
+                    // }
                 },
                 onTsunion(logicalObject: Readonly<FloughLogicalObjectTsunion>, _result: Result | undefined, _state: State | undefined, _itemsIndex: number) {
+                    //Debug.fail("test"); in use
                     return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
-                    //return onUnion(logicalObject, result,state,itemsIndex);
 
                 },
-                onTsintersection(logicalObject: Readonly<FloughLogicalObjectTsintersection>, _result: Result | undefined, _state: State | undefined, _itemsIndex: number) {
+                onTsintersection(_logicalObject: Readonly<FloughLogicalObjectTsintersection>, _result: Result | undefined, _state: State | undefined, _itemsIndex: number) {
+                    Debug.fail("test");
                     /**
                      * ts intersection is a single type, not a union of types, and it should contain any unions beneath it.
                      */
-                    return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
+                    //return [undefined, new Set<Type>([logicalObject.tsType]), undefined];
                 },
             };
         }
@@ -633,19 +720,19 @@ namespace ts {
     }
 
 
-    function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>): Type {
+    function getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectInnerIF>, forNodeToTypeMap?: boolean): Type {
         assertCastType<FloughLogicalObjectInner>(logicalObjectTop);
         const at: Type[] = [];
-        const typeSet = getTsTypeSetFromLogicalObject(logicalObjectTop);
+        const typeSet = getTsTypeSetFromLogicalObject(logicalObjectTop, forNodeToTypeMap);
         typeSet.forEach(t => at.push(t));
-        if (!enableReSectionSubsetOfTsUnionAndIntersection){
-            if (logicalObjectTop.kind === "tsunion"){
-                if (logicalObjectTop.items.length===at.length){
-                    // the types in the original tsType map 1-1 to those in the type set, so return the input.
-                    if ((logicalObjectTop.tsType as UnionType).types.every(t => typeSet.has(t))) return logicalObjectTop.tsType;
-                }
-            }
-        }
+        // if (!enableReSectionSubsetOfTsUnionAndIntersection){
+        //     if (logicalObjectTop.kind === "tsunion"){
+        //         if (logicalObjectTop.items.length===at.length){
+        //             // the types in the original tsType map 1-1 to those in the type set, so return the input.
+        //             if ((logicalObjectTop.tsType as UnionType).types.every(t => typeSet.has(t))) return logicalObjectTop.tsType;
+        //         }
+        //     }
+        // }
         if (at.length===0) return checker.getNeverType();
         if (at.length===1) return at[0];
         const ut = checker.getUnionType(at);
@@ -1146,6 +1233,7 @@ namespace ts {
         // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let i=0; i<arr.length; i++){
             // If there is any type without any variations, then that is the result.
+            // TODO: consider arr[i].haskey
             if (arr[i].variations===undefined) return arr[i];
         }
         const isect: Variations = new Map(); //arr[0].variations!;
@@ -1184,8 +1272,8 @@ namespace ts {
                         isect.delete(next.value[0]);
                     }
                     else {
-                        const type = floughTypeModule.cloneRefTypesType(next.value[1]);
-                        floughTypeModule.intersectionWithFloughTypeMutate(got, type);
+                        let type = floughTypeModule.cloneRefTypesType(next.value[1]);
+                        type = floughTypeModule.intersectionWithFloughTypeSpecial(got, type);
                         if (floughTypeModule.isNeverType(type)) isect.delete(next.value[0]);
                         else isect.set(next.value[0], type);
                     }
@@ -1260,7 +1348,7 @@ namespace ts {
     };
     export type LiteralKeyAndType = & { literalKey?: string | undefined, type: FloughType };
     export type LogicalObjectAccessReturn = & {
-        rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>;
+        rootsWithSymbols: Readonly<RefTypesTableReturn[]>;
         roots: Readonly<FloughType[]>;
         collated: Readonly<Collated[]>;
         aLiterals: (string | undefined)[];
@@ -1290,6 +1378,13 @@ namespace ts {
             }
             return loar.rootsWithSymbols[0].symbol;
         },
+        getSymbolData(loar: Readonly<LogicalObjectAccessReturn>): { symbol: Symbol | undefined, isconst: boolean | undefined }{
+            if (extraAsserts){
+                Debug.assert(loar.rootsWithSymbols.every(x=>x.symbol===loar.rootsWithSymbols[0].symbol), "unexpected");
+            }
+            const { symbol, isconst } = loar.rootsWithSymbols[0];
+            return { symbol, isconst };
+        },
         getFinalTypesLength(loar: Readonly<LogicalObjectAccessReturn>): number { return loar.finalTypes.length; },
         getFinalType(loar: Readonly<LogicalObjectAccessReturn>, idx: number, includeCarriedQDotUndefined: boolean): FloughType {
             if (includeCarriedQDotUndefined && !floughTypeModule.hasUndefinedType(loar.finalTypes[idx].type) && this.getFinalCarriedQdotUndefined(loar,idx)) {
@@ -1299,7 +1394,7 @@ namespace ts {
             }
             return loar.finalTypes[idx].type;
         },
-        modifyOne(loar: Readonly<LogicalObjectAccessReturn>, idx: number, finalType: Readonly<FloughType>, callUndefinedAllowed?: boolean): FloughType {
+        modifyOne(loar: Readonly<LogicalObjectAccessReturn>, idx: number, finalType: Readonly<FloughType>, callUndefinedAllowed?: boolean): RefTypesTableReturn {
             // if (extraAsserts){
             //     Debug.assert(!floughTypeModule.isNeverType(finalType), "unexpected, type never input to modifyOne");
             // }
@@ -1312,9 +1407,9 @@ namespace ts {
                 arrCallUndefinedAllowed.fill(/*value*/ false);
                 arrCallUndefinedAllowed[idx] = callUndefinedAllowed;
             }
-            const {rootLogicalObject,rootNonObj} = floughLogicalObjectModule.logicalObjectModify(arr, loar, arrCallUndefinedAllowed);
+            const {rootLogicalObject,rootNonObj, sci} = floughLogicalObjectModule.logicalObjectModify(arr, loar, arrCallUndefinedAllowed);
             const type = floughTypeModule.createTypeFromLogicalObject(rootLogicalObject, rootNonObj);
-            return type;
+            return { ...this.getSymbolData(loar), type, sci };
         }
     };
     //export type LogicalObjectAccessModule = typeof logicalObjectAccessModule;
@@ -1459,7 +1554,7 @@ namespace ts {
 
 
     function logicalObjectAccess(
-        rootsWithSymbols: Readonly<{ type: FloughType, symbol: Symbol | undefined }[]>,
+        rootsWithSymbols: Readonly<RefTypesTableReturn[]>,
         roots: Readonly<FloughType[]>,
         akeyType: Readonly<FloughType[]>,
         aexpression: Readonly<(PropertyAccessExpression | ElementAccessExpression)[]>,
@@ -1523,12 +1618,6 @@ namespace ts {
             }
             else {
                 // Note: hasFinalQdotUndefined is now included within getFinalTypesFromLogicalObjectAccessReturn()
-                // TODO: undefined is added to all final types, perhaps adding should be restricted through accurate propogation.
-                // if (hasFinalQdotUndefined){
-                //     nextKeyAndType.forEach(x=>{
-                //         if (x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
-                //     });
-                // }
                 finalLiteralKeyAndType = nextKeyAndType.map(x=>{
                     //if (hasFinalQdotUndefined && x.type) floughTypeModule.addUndefinedTypeMutate(x.type);
                     //Debug.assert(x.type!==undefined); // TODO: why would it be undefined?
@@ -1664,21 +1753,31 @@ namespace ts {
     export type LogicalObjectModifyInnerReturnType = & {
         rootLogicalObject: FloughLogicalObjectInner | undefined,
         rootNonObj: FloughType | undefined;
-        type: Readonly<FloughType>
+        //type: Readonly<FloughType>;
+        sci: Readonly<RefTypesSymtabConstraintItem>
     };
     /**
      * function logicalObjectModify
      * @param modTypesIn
      * @param state
      * @param arrCallUndefinedAllowed
+     * @param arrQdotUndefined - same length as modTypesIn
+     *  - if true, then return the branches that procuded a final qdot undefined for the corresponding index
      * @returns
      */
     function logicalObjectModify(
         modTypesIn: Readonly<(FloughType | undefined)[]>,
         state: LogicalObjectAccessReturn, // same length as modTypesIn
-        arrCallUndefinedAllowed?: Readonly<boolean[]>, // same length as modTypesIn
+        arrCallUndefinedAllowed?: Readonly<boolean[]> | undefined, // same length as modTypesIn
+        //arrQdotUndefined?: Readonly<(boolean | undefined)[]> | undefined
     ): LogicalObjectModifyInnerReturnType {
         if (extraAsserts) Debug.assert(state.finalTypes.length===modTypesIn.length);
+        /**
+         * TODO: Optimize this function expecting only one of modTypesIn to be non-undefined.
+         * Originally this function was intended to allow modTypesIn to have multiple non-undefined values,
+         * but now it is only called via logicalObjectAccessModule.modifyOne() which calls this function with only has a single non-undefined value.
+         */
+
         const doLog = true;
         if (getMyDebug()){
             if (doLog){
@@ -1717,17 +1816,19 @@ namespace ts {
         //     return nonObj;
         // }
 
-        let defaultRoot: { rootLogicalObject: FloughLogicalObjectInner, rootNonObj: FloughType | undefined } | undefined;
-        function calcDefaultRoot(): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined } {
+        let defaultRoot: { rootLogicalObject: FloughLogicalObjectInner, rootNonObj: FloughType | undefined, sci: RefTypesSymtabConstraintItem } | undefined;
+        function calcDefaultRoot(): { rootLogicalObject: FloughLogicalObjectInner | undefined, rootNonObj: FloughType | undefined, sci: RefTypesSymtabConstraintItem } {
             if (defaultRoot) return defaultRoot;
             Debug.assert(state.collated[0].logicalObjectsPlainOut.length!==0);
             // if (state.collated[0].logicalObjectsPlainOut.length===1){
             //     return (defaultRoot = state.collated[0].logicalObjectsPlainOut[0]);
             // }
             const rootLogicalObject = unionOfFloughLogicalObjects(state.collated[0].logicalObjectsPlainOut.filter(x=>!isFakeTsObjectType(x.tsType)) as FloughLogicalObjectInner[]);
+            const sci = orSymtabConstraints(state.rootsWithSymbols.map(x=>x.sci));
             return defaultRoot = {
                 rootLogicalObject,
-                rootNonObj: unionOfNonObj(state.collated[0].nobjTypesIn)
+                rootNonObj: unionOfNonObj(state.collated[0].nobjTypesIn),
+                sci
             };
         }
         const results: ReturnType<typeof logicalObjectModify>[] = [];
@@ -1739,7 +1840,7 @@ namespace ts {
         for (let modTypeIdx = 0; modTypeIdx<modTypesIn.length; modTypeIdx++){
             // check presence of keys all the way down
             if (state.finalTypes[modTypeIdx].literalKey===undefined) {
-                results.push({ ...calcDefaultRoot(), type: state.finalTypes[modTypeIdx].type });
+                results.push({ ...calcDefaultRoot()/*, type: state.finalTypes[modTypeIdx].type*/ });
                 continue;
             }
             // if (!modTypesIn[modTypeIdx]) continue;
@@ -1775,7 +1876,7 @@ namespace ts {
                 }
                 if (!ok) {
                     // TODO: output original root, and modified type
-                    results.push({ ...calcDefaultRoot(), type: modTypesIn[modTypeIdx]??floughTypeModule.getNeverType() });
+                    results.push({ ...calcDefaultRoot(), /*type: modTypesIn[modTypeIdx]??floughTypeModule.getNeverType()*/ });
                     continue;
                 }
             }
@@ -1854,39 +1955,48 @@ namespace ts {
                 const ut = floughTypeModule.unionOfRefTypesType(nextTypesIn.filter(x=>!!x) as FloughType[]);
                 const { logicalObject: rootLogicalObjectOuter, remaining: rootNonObj } = floughTypeModule.splitLogicalObject(ut);
                 const rootLogicalObject = rootLogicalObjectOuter ? floughLogicalObjectModule.getInnerIF(rootLogicalObjectOuter) as FloughLogicalObjectInner: undefined;
-                results.push({ rootLogicalObject, rootNonObj, type: modTypesIn[modTypeIdx]??floughTypeModule.getNeverType() });
+                const arrsci = nextIndices.filter(idx=>{
+                    if (extraAsserts) Debug.assert(!nextTypesIn[idx] || !floughTypeModule.isNeverType(nextTypesIn[idx]!));
+                    return nextTypesIn[idx];
+                }).map(idx=>state.rootsWithSymbols[idx].sci);
+                const sci = arrsci.length ? orSymtabConstraints(arrsci) : createRefTypesSymtabConstraintItemNever();
+                results.push({ rootLogicalObject, rootNonObj, /*type: modTypesIn[modTypeIdx]??floughTypeModule.getNeverType(),*/ sci });
             }
 
 
         }  //for (let modTypeIdx = 0; modTypeIdx<modTypesIn.length; modTypeIdx++)
 
         const ret: LogicalObjectModifyInnerReturnType = {
-            type: floughTypeModule.unionOfRefTypesType(results.map(x=>x.type)),
+            // Note: type is actually the final type, not the type of the root.
+            //type: floughTypeModule.unionOfRefTypesType(results.map(x=>x.type)),
             rootNonObj: floughTypeModule.unionOfRefTypesType(results.map(x=>x.rootNonObj).filter(x=>x) as FloughType[]),
-            rootLogicalObject: unionOfFloughLogicalObjectWithTypeMerging(results.map(x=>x.rootLogicalObject))
+            rootLogicalObject: unionOfFloughLogicalObjectWithTypeMerging(results.map(x=>x.rootLogicalObject)),
+            sci: orSymtabConstraints(results.map(x=>x.sci)),
         };
 
         if (getMyDebug()){
             if (doLog){
                 results.forEach((r,ridx)=>{
                     const hstr = `logicalObjectModify[out] [${ridx}] `;
-                    if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>consoleLog(`${hstr} type: ${s}`));
-                    else consoleLog(`${hstr} type: <undef>`);
+                    // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>consoleLog(`${hstr} type: ${s}`));
+                    // else consoleLog(`${hstr} type: <undef>`);
                     if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s=>consoleLog(`${hstr} rootNonObj: ${s}`));
                     else consoleLog(`${hstr} rootNonObj: <undef>`);
                     if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s=>consoleLog(`${hstr} rootLogicalObject: ${s}`));
                     else consoleLog(`${hstr} rootLogicalObject: <undef>`);
+                    dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s=>consoleLog(`${hstr} sci: ${s}`));
                 });
                 {
                     consoleLog("logicalObjectModify[out] --- unionized");
                     const hstr = `logicalObjectModify[out] [union]`;
                     const r = ret;
-                    if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>consoleLog(`${hstr} type: ${s}`));
-                    else consoleLog(`${hstr} type: <undef>`);
+                    // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>consoleLog(`${hstr} type: ${s}`));
+                    // else consoleLog(`${hstr} type: <undef>`);
                     if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s=>consoleLog(`${hstr} rootNonObj: ${s}`));
                     else consoleLog(`${hstr} rootNonObj: <undef>`);
                     if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s=>consoleLog(`${hstr} rootLogicalObject: ${s}`));
                     else consoleLog(`${hstr} rootLogicalObject: <undef>`);
+                    dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s=>consoleLog(`${hstr} sci: ${s}`));
                 }
                 consoleGroupEnd();
             }
@@ -1895,42 +2005,143 @@ namespace ts {
         //return results;
     } // logicalObjectModify
 
-    function resolveInKeyword(_logicalObjectIn: Readonly<FloughLogicalObjectInner>, _litkey: Readonly<LiteralType>): {
-        passingLogicalObject: FloughLogicalObjectInner | undefined, failingLogicalObject: FloughLogicalObjectInner | undefined
-    }{
-        Debug.fail("not yet implemented");
-        // // TODO: project numbers to string space
-        // let keystring = String(litkey.value);
-        // // if (typeof keystring==="number") keystring = String(keystring);
+    export type ResolveInKeywordReturnType = & {
+        passing?: [string,FloughLogicalObjectIF][];
+        failing?: [string,FloughLogicalObjectIF][];
+        bothing?: FloughLogicalObjectIF;
+    };
+    function resolveInKeyword(_logicalObjectIn: Readonly<FloughLogicalObjectInner>, accessKeys: ObjectUsableAccessKeys): ResolveInKeywordReturnType {
+        Debug.assert(!accessKeys.genericString, "accessKeys.genericString unexpected, should have been handled upstairs");
+        const passing = new Map<string,FloughLogicalObjectBasic[]>();
+        const failing = new Map<string,FloughLogicalObjectBasic[]>();
+        const bothing: FloughLogicalObjectPlain[]=[];
+        function put(map: ESMap<string,FloughLogicalObjectBasic[]>, key: string, logobj: Readonly<FloughLogicalObjectPlain>): void {
+            const arr = map.get(key);
+            if (arr) {
+                Debug.fail("unexpected");
+                //arr.push(logobj);
+            }
+            else map.set(key,[logobj]);
+        }
+        function doTupleWithKey(logobj: Readonly<FloughLogicalObjectPlain>, _key: string): void {
+            if (extraAsserts) Debug.assert(checker.isTupleType(logobj.tsType));
+            Debug.fail("not yet implemented");
+        }
+        function doObjectWithKey(logobj: Readonly<FloughLogicalObjectPlain>, key: string): void {
+            if (extraAsserts) Debug.assert(!checker.isArrayOrTupleType(logobj.tsType));
+            const propSymbol = checker.getPropertyOfType(logobj.tsType,key);
+            if (!propSymbol) {
+                put(failing,key,logobj);
+                return;
+            }
+            const isOptional = propSymbol.flags & SymbolFlags.Optional;
+            if (!isOptional){
+                put(passing,key,logobj);
+                return;
+            }
+            // @ts-ignore-error
+            let hasKeys: HasKeys | undefined;
+            let hasKeyItem: HasKeyItem | undefined;
+            if (hasKeyItem = (hasKeys=logobj.haskeys)?.get(key)){
+                const {yes,no} = hasKeyItem;
+                if (extraAsserts) Debug.assert(yes||no, "unexpected");
+                if (yes && no){
+                    // one case split into two
+                    const y = cloneFloughLogicalObjectPlain(logobj);
+                    y.haskeys!.set(key, { yes:true,no:false });
+                    put(passing,key,y);
 
-        // const passing = new Set<FloughLogicalObjectBasic>();
-        // const failing = new Set<FloughLogicalObjectBasic>();
-        // const both = new Set<FloughLogicalObjectBasic>();
-        // function doOne(logobj: Readonly<FloughLogicalObjectInner>){
-        //     if (logobj.kind===FloughLogicalObjectKind.plain){
-        //         if (checker.isArrayType(logobj.tsType)){
-        //             both.add(logobj);
-        //         }
-        //         else if (checker.isTupleType(logobj.tsType)){
-        //             Debug.assert(false, "'key in tuple' not yet implemented");
-        //         }
-        //         else if (logobj.variations?.has(litkey)){
-        //             const value = logobj.variations.get(litkey)!;
-        //             if (value===undefined || floughTypeModule.isNeverType(value)) fail=true;
-        //             else pass=true;
-        //         }
-        //         else {
-        //             // check the original ts type
-        //             // TODO: would this work with tuple also? I think not.
-        //             const propSymbol = checker.getPropertyOfType(logobj.tsType,keystring);
-        //             if (propSymbol===undefined) failing.add(logobj);
-        //             else {
-        //                 const tstype = checker.getTypeOfSymbol(propSymbol);
+                    const n = cloneFloughLogicalObjectPlain(logobj);
+                    n.haskeys!.set(key, { yes:false,no:true });
+                    if (true){
+                        n.variations?.delete(key);
+                    }
+                    put(failing,key,y);
+                }
+                if (hasKeyItem.no) {
+                    put(failing,key,logobj);
+                }
+                if (hasKeyItem.yes) {
+                    put(passing,key,logobj);
+                }
+                return;
+            }
+            else {
+                const y = cloneFloughLogicalObjectPlain(logobj);
+                (y.haskeys = new Map<string,HasKeyItem>()).set(key, { yes:true,no:false });
+                put(passing,key,y);
 
-        //             }
-        //         }
-        //     }
-        // }
+                const n = cloneFloughLogicalObjectPlain(logobj);
+                (n.haskeys = new Map<string,HasKeyItem>()).set(key, { yes:false,no:true });
+                if (true){
+                    n.variations?.delete(key);
+                }
+                put(failing,key,n);
+            }
+        }
+
+        function helper(logobj: Readonly<FloughLogicalObjectInner>){
+            if (logobj.kind===FloughLogicalObjectKind.plain){
+                if (checker.isArrayType(logobj.tsType)){
+                    if (accessKeys.genericNumber || accessKeys.numberSubset){
+                        bothing.push(logobj);
+                    }
+                }
+                else if (checker.isTupleType(logobj.tsType)){
+                    if (accessKeys.genericNumber){
+                        bothing.push(logobj);
+                    }
+                    else {
+                        accessKeys.numberSubset?.forEach(key=>{
+                            doTupleWithKey(logobj,key);
+                        });
+                    }
+                }
+                else {
+                    accessKeys.stringSet?.forEach(key=>{
+                        doObjectWithKey(logobj,key);
+                    });
+                }
+            }
+            else if (logobj.kind===FloughLogicalObjectKind.union || logobj.kind===FloughLogicalObjectKind.tsunion){
+                logobj.items.forEach(item=>helper(item));
+            }
+            else {
+                Debug.fail("not yet implemented: ", () => logobj.kind);
+            }
+        }
+        helper(_logicalObjectIn);
+        if (extraAsserts) {
+            passing.forEach((value,_key)=>{
+                const s = new Set<FloughLogicalObjectPlain>(value);
+                Debug.assert(s.size===value.length, "unexpected duplicates");
+            });
+            failing.forEach((value,_key)=>{
+                const s = new Set<FloughLogicalObjectPlain>(value);
+                Debug.assert(s.size===value.length, "unexpected duplicates");
+            });
+            const sb = new Set<FloughLogicalObjectPlain>(bothing);
+            Debug.assert(sb.size===bothing.length, "unexpected duplicates");
+        }
+        const ret: ResolveInKeywordReturnType = { };
+        function convert(x: Readonly<ESMap<string,FloughLogicalObjectBasic[]>>) {
+            const r: [string,FloughLogicalObjectIF][] = [];
+            x.forEach((value,key)=>{
+                r.push([
+                    key,
+                    floughLogicalObjectModule.createFloughLogicalObjectFromInner(
+                        createFloughLogicalObjectUnion(value) as FloughLogicalObjectInnerIF, /*edType*/ undefined)
+                ]);
+            });
+            return r;
+        }
+        if (passing.size) ret.passing = convert(passing);
+        if (failing.size) ret.failing = convert(failing);
+        if (bothing.length) {
+            ret.bothing = floughLogicalObjectModule.createFloughLogicalObjectFromInner(
+                createFloughLogicalObjectUnion(bothing), /*edType*/ undefined);
+        }
+        return ret;
     }
 
 
@@ -1990,9 +2201,10 @@ namespace ts {
             floughTypeModule.dbgFloughTypeToStrings(x).forEach(s=>astr.push(`roots[${idx}] type:${s}`));
         });
         loar.rootsWithSymbols.forEach((x,idx)=>{
-            floughTypeModule.dbgFloughTypeToStrings(x.type).forEach(s=>astr.push(`rootsWithSymbols[${idx}] type:${s} `));
-            const s = dbgs.dbgSymbolToStringSimple(x.symbol);
-            astr.push(`rootsWithSymbols[${idx}] symbol:${s} `);
+            mrNarrow.dbgRefTypesTableToStrings(x).forEach(s=>astr.push(`rootsWithSymbols[${idx}] sci:${s}`));
+            // floughTypeModule.dbgFloughTypeToStrings(x.type).forEach(s=>astr.push(`rootsWithSymbols[${idx}] type:${s} `));
+            // const s = dbgs.dbgSymbolToStringSimple(x.symbol);
+            // astr.push(`rootsWithSymbols[${idx}] symbol:${s} `);
         });
         loar.collated.forEach((c,idx0)=>{
             c.mapTsTypeToLogicalObjectPlainOutIdx.forEach((idx,type)=>{
@@ -2011,14 +2223,6 @@ namespace ts {
                 if (c.logicalObjectsIn[idx1]) dbgLogicalObjectToStrings(c.logicalObjectsIn[idx1]!).forEach(s=>astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: ${s}`));
                 else astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: <undef>`);
             }
-            // c.nobjTypesIn.forEach((x,idx1)=>{
-            //     if (!x) astr.push(`collated[${idx0}].nobjTypeIn[${idx1}]: <undef>`);
-            //     else floughTypeModule.dbgFloughTypeToStrings(x).forEach(s=>astr.push(`collated[${idx0}].nobjTypeOut[${idx1}]: ${s}`));
-            // });
-            // c.logicalObjectsIn.forEach((x,idx1)=>{
-            //     if (x) dbgLogicalObjectToStrings(x).forEach(s=>astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: ${s}`));
-            //     else astr.push(`collated[${idx0}].logicalObjectsIn[${idx1}]: <undef>`);
-            // });
             c.logicalObjectsPlainOut.forEach((x,idx1)=>{
                 if (isFakeTsObjectType(x.tsType)) {
                     astr.push(`collated[${idx0}].logicalObjectsPlainOut[${idx1}]: <fake>`);
@@ -2026,13 +2230,10 @@ namespace ts {
                 else dbgLogicalObjectToStrings(x).forEach(s=>astr.push(`collated[${idx0}].logicalObjectsPlainOut[${idx1}]: ${s}`));
                 astr.push(`collated[${idx0}].carriedQdotUndefinedsOut[${idx1}]: ${c.carriedQdotUndefinedsOut[idx1]}`);
             });
-
-            //floughTypeModule.dbgFloughTypeToStrings(c.remainingNonObjType).forEach(s=>astr.push(`collated[${idx0}].remainingNonObjType: ${s}`));
         });
         loar.aexpression.forEach((expr,idx)=>{
             astr.push(`aexpression[${idx}]: ${Debug.formatSyntaxKind(expr.kind)}, <hasqdot>:${!!(expr as PropertyAccessExpression).questionDotToken}`);
         });
-        // astr.push(`hasFinalQdotUndefined: ${loar.hasFinalQdotUndefined??"<undef>"}`);
         return astr;
     }
 

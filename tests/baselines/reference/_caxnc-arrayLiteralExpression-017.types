@@ -13,7 +13,7 @@ if (c) {
 >c : true
 
     w;
->w : readonly [boolean, boolean]
+>w : readonly [true, true]
 
     w[0];
 >w[0] : true

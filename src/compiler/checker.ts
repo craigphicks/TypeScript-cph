@@ -26842,7 +26842,8 @@ namespace ts {
             return getTypeOfSymbol(symbol);
         })();
         if (getMyDebug()) {
-            consoleGroup(`getNarrowedTypeOfSymbol[out]: symbol: ${symbolToString(symbol)}, location: ${dbgNodeToString(location)}->type: ${typeToString(retType)}`);
+            consoleLog(`getNarrowedTypeOfSymbol[out]: symbol: ${symbolToString(symbol)}, location: ${dbgNodeToString(location)}->type: ${typeToString(retType)}`);
+            consoleGroupEnd();
         }
         return retType;
         }

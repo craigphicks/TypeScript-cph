@@ -7,18 +7,18 @@ const t: T2 = { };
 >{ } : {}
 
 t;
->t : T2
+>t : {}
 
 t;
->t : T2
+>t : {}
 
 let tl: T2 = { };
 >tl : T2
 >{ } : {}
 
 tl;
->tl : T2
+>tl : {}
 
 tl;
->tl : T2
+>tl : {}
 

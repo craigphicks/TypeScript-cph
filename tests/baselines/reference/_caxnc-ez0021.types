@@ -1,0 +1,30 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0021.ts ===
+declare interface FooA {
+    foo(b:string): "1",
+>foo : { (b: string): "1"; (b: number): 0; }
+>b : string
+
+    foo(b:number): 0;
+>foo : { (b: string): "1"; (b: number): 0; }
+>b : number
+
+};
+declare const obja: undefined | FooA;
+>obja : FooA | undefined
+
+declare const arg: string | number;
+>arg : string | number
+
+// @ts-expect-error
+const isFoo = obja?.foo(arg);
+>isFoo : undefined
+>obja?.foo(arg) : undefined
+>obja?.foo : { (b: string): "1"; (b: number): 0; } | undefined
+>obja : FooA | undefined
+>foo : { (b: string): "1"; (b: number): 0; } | undefined
+>arg : string | number
+
+isFoo; // expect "1" | 0 | undefined
+>isFoo : "1" | 0 | undefined
+
+

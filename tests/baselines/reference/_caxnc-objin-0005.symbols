@@ -1,0 +1,23 @@
+=== tests/cases/conformance/_caxnc-objin/_caxnc-objin-0005.ts ===
+declare function maybe(): boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-objin-0005.ts, 0, 0))
+
+type T = { a: string } | { b: number };
+>T : Symbol(T, Decl(_caxnc-objin-0005.ts, 0, 34))
+>a : Symbol(a, Decl(_caxnc-objin-0005.ts, 1, 10))
+>b : Symbol(b, Decl(_caxnc-objin-0005.ts, 1, 26))
+
+declare const x: T;
+>x : Symbol(x, Decl(_caxnc-objin-0005.ts, 2, 13))
+>T : Symbol(T, Decl(_caxnc-objin-0005.ts, 0, 34))
+
+if ("a" in x) {
+>x : Symbol(x, Decl(_caxnc-objin-0005.ts, 2, 13))
+
+    x;
+>x : Symbol(x, Decl(_caxnc-objin-0005.ts, 2, 13))
+
+    "b" in x; // checker resolves this as "boolean", although flough resolves it as "false"
+>x : Symbol(x, Decl(_caxnc-objin-0005.ts, 2, 13))
+}
+

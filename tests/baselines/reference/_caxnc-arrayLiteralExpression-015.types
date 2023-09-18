@@ -35,8 +35,8 @@ if (c) {
     u;v;w;x;
 >u : true[]
 >v : readonly [true, true]
->w : readonly [boolean, boolean]
->x : readonly [boolean, boolean]
+>w : readonly [true, true]
+>x : readonly [true, true]
 
     u[0];
 >u[0] : true

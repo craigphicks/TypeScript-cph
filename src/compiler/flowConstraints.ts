@@ -136,11 +136,11 @@ namespace ts {
         if (cin.kind===ConstraintItemKind.leaf){
             if (!negate){
                 if (cin.symbol!==symbol) return typeRange;
-                return floughTypeModule.intersectionOfRefTypesType(cin.type,typeRange);
+                return floughTypeModule.NOTINSERVICE_intersectionOfRefTypesType(cin.type,typeRange);
             }
             else {
                 if (cin.symbol!==symbol) return floughTypeModule.createRefTypesType(); // never
-                return floughTypeModule.subtractFromType(cin.type,typeRange);
+                return floughTypeModule.NOTINSERVICE_subtractFromType(cin.type,typeRange);
             }
         }
         else if (cin.kind===ConstraintItemKind.node){
@@ -246,7 +246,7 @@ namespace ts {
                 }
                 else {
                     // @ ts-expect-error
-                    const isectType = floughTypeModule.intersectionOfRefTypesType(cin.type, type);
+                    const isectType = floughTypeModule.NOTINSERVICE_intersectionOfRefTypesType(cin.type, type);
                     if (floughTypeModule.isNeverType(isectType)) return createFlowConstraintNever();
                     if (!floughTypeModule.isASubsetOfB(type,isectType)) return createFlowConstraintLeaf(symbol,isectType);
                     return createFlowConstraintAlways();
@@ -258,7 +258,7 @@ namespace ts {
                     return createFlowConstraintNodeNot(cin);
                 }
                 else {
-                    const isectInvType = floughTypeModule.intersectionOfRefTypesType(floughTypeModule.subtractFromType(cin.type, declaredType), type);
+                    const isectInvType = floughTypeModule.NOTINSERVICE_intersectionOfRefTypesType(floughTypeModule.NOTINSERVICE_subtractFromType(cin.type, declaredType), type);
                     if (floughTypeModule.isNeverType(isectInvType)) return createFlowConstraintNever();
                     if (!floughTypeModule.isASubsetOfB(type,isectInvType)) return createFlowConstraintLeaf(symbol,isectInvType);
                     return createFlowConstraintAlways();
@@ -297,7 +297,7 @@ namespace ts {
                     else {
                         const atype: RefTypesType[] = [];
                         setc.forEach(cleaf=>atype.push(cleaf.type));
-                        const ctype = floughTypeModule.intersectionOfRefTypesType(...atype);
+                        const ctype = floughTypeModule.NOTINSERVICE_intersectionOfRefTypesType(...atype);
                         if (floughTypeModule.isNeverType(ctype)) hasNeverLeaf = true;
                         constraints.push({ kind:ConstraintItemKind.leaf,symbol:csymbol,type:ctype });
                     }
@@ -357,7 +357,7 @@ namespace ts {
         if (constraintItem.kind===ConstraintItemKind.never) return constraintItem;
         if (constraintItem.kind===ConstraintItemKind.leaf){
             if (constraintItem.symbol===symbol){
-                const isecttype = floughTypeModule.intersectionOfRefTypesType(type, constraintItem.type);
+                const isecttype = floughTypeModule.NOTINSERVICE_intersectionOfRefTypesType(type, constraintItem.type);
                 if (floughTypeModule.isNeverType(isecttype)) return createFlowConstraintNever();
                 return createFlowConstraintLeaf(symbol, isecttype);
             }
@@ -482,7 +482,7 @@ namespace ts {
             else {
                 const type = symtab.get(symbol);
                 if (type) {
-                    typeOut = floughTypeModule.intersectionWithObjectSimplification(type, typeIn);
+                    typeOut = floughTypeModule.intersectionWithFloughTypeSpecial(type, typeIn);
                     //typeOut = floughTypeModule.intersectionOfRefTypesType(type, typeIn);
                     if (!floughTypeModule.equalRefTypesTypes(typeOut,type)){
                         symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol,typeOut);
@@ -628,10 +628,10 @@ namespace ts {
             // }
             if (ciLeft.kind===ConstraintItemKind.leaf || ciLeft.kind===ConstraintItemKind.always || ciLeft.kind===ConstraintItemKind.never){
                 if (ciLeft.kind===ConstraintItemKind.leaf){
-                    let type = negate ? floughTypeModule.subtractFromType(ciLeft.type, getDeclaredType(ciLeft.symbol)) : ciLeft.type;
+                    let type = negate ? floughTypeModule.NOTINSERVICE_subtractFromType(ciLeft.type, getDeclaredType(ciLeft.symbol)) : ciLeft.type;
                     const prevType = mapref[0].get(ciLeft.symbol);
                     if (prevType){
-                        type = floughTypeModule.intersectionOfRefTypesType(prevType,type);
+                        type = floughTypeModule.NOTINSERVICE_intersectionOfRefTypesType(prevType,type);
                         // if type is never, then this product-term will always be never, so there is no need to compute the rest,
                         // therefore simply return.
                         if (floughTypeModule.isNeverType(type)) return;
