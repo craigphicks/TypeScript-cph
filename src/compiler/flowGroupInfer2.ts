@@ -141,6 +141,7 @@ namespace ts {
             Debug.fail("unexpected");
         }
 
+        // TODO: ensure that checker.getTypeOfSymbol is being called nowhere where floughGetTsTypeOfSymbol should be called instead
         function floughGetTsTypeOfSymbol(symbol: Symbol): Type {
             Debug.assert(!(symbol.flags & SymbolFlags.RegularEnum));
             const type = checker.getTypeOfSymbol(symbol);
@@ -829,6 +830,79 @@ namespace ts {
                 return floughAux();
             })();
 
+            if (expr.parent.kind === SyntaxKind.ReturnStatement){
+                if (getMyDebug()){
+                    consoleGroup(`flough[check return type][in] ${dbgNodeToString(expr.parent)}]`);
+                }
+                // check the return type of the function against the type of the return statement at its location
+                const caller = ((): FunctionLikeDeclaration | undefined =>{
+                    let tmp: Node | undefined = expr.parent;
+                    while (tmp && !(tmp.kind & SyntaxKind.FunctionDeclaration)){
+                        tmp = tmp.parent;
+                    }
+                    return tmp as FunctionLikeDeclaration | undefined;
+                })();
+                assertCastType<FunctionLikeDeclaration>(caller);
+                if (getMyDebug()){
+                    consoleGroup(`flough[check return type][] caller.type is defined: ${!!caller.type},  callerNode: ${dbgNodeToString(caller)}`);
+                }
+                /**
+                 * call.type is undefined for function expressions, but defined for function declarations. (says copilot)
+                 * It shows the return type.  If there is no return type, it will be inferred by checker.
+                 * (using checker.getReturnTypesOfSignature says copilot).
+                 */
+                if (caller.type){
+                    const funcType = checker.getTypeAtLocation(caller);
+                    const sigs = checker.getSignaturesOfType(funcType, SignatureKind.Call);
+                    if (getMyDebug()){
+                        consoleLog(`flough[check return type][] funcType: ${dbgTypeToString(funcType)}`);
+                        consoleLog(`flough[check return type][] sigs.length: ${sigs.length}`);
+                        sigs.forEach((sig,idx) => {
+                            const s= dbgsModule.dbgSignatureToString(sig);
+                            consoleLog(`flough[check return type][] sig[${idx}]: ${s}`);
+                        });
+                        consoleGroupEnd();
+                    }
+                    /**
+                     * for each idx of implementation sig params
+                     * - let implTypes[idx] = the narrowed type coresponding to that index at the return statement.
+                     * set (node, {sigs, implTypes, flowReturnedType}) to a map that will be used by checker to check the return type of the function.
+                     * Actually checking that return type in the checker module must compare implTypes[] to the signature parameter types.
+                     * The checker should be using this algorithm:
+                     * allowedReturnTypes = never;
+                     * For each sig of sigs
+                     *   if weakMatches^(implTypes, sig.parameters)
+                     *     allowedReturnTypes ||= subset(flowReturnedType, sig.returnType)
+                     * if (subset(flowReturnType, allowedReturnTypes)===false) error
+                     * ^Definition of weakMatches:
+                     *   sig.parameters.every((sigparam,idx) => intersection(sigparam.type, implTypes[idx])!==never)
+                     *
+                     * weakMatches implies a certain meaning on the contract for overloads implementation:
+                     *
+                     * - The order of the overloads is not important.  It can be canonically described as union (set) of functions.
+                     *   That means the implementation does not **have to** execute in a given order (although it can).
+                     *   Why use weakMatches then?  Because it simplifies the TypeScript algorithm for matching.
+                     *   If order were important, then the algorithm would have to be hugely more complicated:
+                     *   Accurate matching would have to include subtracting cross set of parameters of earlier failed matches from
+                     *   the cross set of parameters of each later attemped match.  Since that cannot be done in reasonable time,
+                     *   the actual algorithm used is weakMatching, and the contract for that the implementation is de facto order independent.
+                     * 
+                     * - weakMatches^(implTypes, sig.parameters)===true does not imply that intersection(flowReturnedType,sig.returnType) is not empty.
+                     *   This is kind of obvious, because the implementation can return only once.
+                     *   However, it still requires that the intersection(flowReturnType, sig.returnType) is not empty for at least one weakMatching sig.
+                     *
+                     * Another benefit describing weakMatching is that unions of functions already occur in the type system, e.g.,
+                     * - user definitions: `type F = ((a: number)=>number) | ((a: string)=>string);`
+                     * - template functions: `function f<T>(a: T): T;` which correlate the parameter and return types (this is a secret undocumented feature of TypeScript)
+                     * - distributed template functions: <example goes here>
+                     */
+                }
+                if (getMyDebug()){
+                    consoleLog(`flough[check return type][out] ${dbgNodeToString(expr.parent)}]`);
+                    consoleGroupEnd();
+                }
+            }
+
             if (getMyDebug()) {
                 floughReturn.unmerged.forEach((rttr,i)=>{
                         dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`  flough[dbg]: unmerged[${i}]: ${s}`));
@@ -1424,6 +1498,26 @@ namespace ts {
                 Debug.assert(expr.initializer);
                 const initializer = expr.initializer;
 
+                // TODO: move this out so other functions can use it before calling checker.getTypeFromTypeNode
+                function scanTypeNodeForTypeQueryFloughResolveArgs(typeNode: TypeNode, sci: RefTypesSymtabConstraintItem): RefTypesSymtabConstraintItem {
+                    const visitor: Visitor = (node: Node): undefined => {
+                        if (isRefTypesSymtabConstraintItemNever(sci)) return undefined;
+                        if (node.kind===SyntaxKind.TypeQuery){
+                            assertCastType<TypeQueryNode>(node);
+                            const qmntr = flough({ sci, expr: node.exprName, crit: { kind: InferCritKind.none }, qdotfallout: undefined, inferStatus });
+                            const rttr = applyCritNoneUnion(qmntr,inferStatus.groupNodeToTypeMap);
+                            if (extraAsserts) Debug.assert(!rttr.logicalObjectAccessData);
+                            sci = rttr.sci;
+                        }
+                        else {
+                            forEachChild(node, visitor);
+                        }
+                        return undefined;
+                    };
+                    forEachChild(typeNode, visitor);
+                    return sci;
+                }
+
                 const rhs = applyCritNoneUnion(flough({
                     sci,
                     expr:initializer, crit:{ kind: InferCritKind.none }, qdotfallout:undefined,
@@ -1444,14 +1538,15 @@ namespace ts {
                         if (symbol.valueDeclaration===expr) {
                             // primary
                             if (expr.type) {
+                                sci = scanTypeNodeForTypeQueryFloughResolveArgs(expr.type,sci);
                                 typeNodeTsType = checker.getTypeFromTypeNode(expr.type);
-                                if (extraAsserts){ // testing
-                                    // This assertion shows that calling checker.getTypeFromTypeNode is equivalent to calling the higher level function checker.getTypeOfSymbol.
-                                    const tstypeTest = checker.getTypeOfSymbol(symbol);
-                                    if (!checker.isTypeRelatedTo(tstypeTest,typeNodeTsType, checker.getRelations().identityRelation)) {
-                                        Debug.fail(`floughInnerVariableDeclaration[dbg] tstypeTest=${checker.typeToString(tstypeTest)} typeNodeTsType=${checker.typeToString(typeNodeTsType)}`);
-                                    }
-                                }
+                                // if (extraAsserts){ // testing
+                                //     // This assertion shows that calling checker.getTypeFromTypeNode is equivalent to calling the higher level function checker.getTypeOfSymbol.
+                                //     const tstypeTest = checker.getTypeOfSymbol(symbol);
+                                //     if (!checker.isTypeRelatedTo(tstypeTest,typeNodeTsType, checker.getRelations().identityRelation)) {
+                                //         Debug.fail(`floughInnerVariableDeclaration[dbg] tstypeTest=${checker.typeToString(tstypeTest)} typeNodeTsType=${checker.typeToString(typeNodeTsType)}`);
+                                //     }
+                                // }
                                 effectiveDeclaredTsType = typeNodeTsType;
                                 effectiveDeclaredType = undefined;
                                 if (getMyDebug()){
@@ -1486,11 +1581,11 @@ namespace ts {
                         // if called more than once, must be in a loop, or the same group is being pushed on the heap more than once (another TODO issue)
                         symbolFlowInfo.passCount++;
                         symbolFlowInfo.initializerType = floughTypeModule.unionOfRefTypesType([symbolFlowInfo.initializerType!,rhs.type]);
-                        if (extraAsserts && expr.type){
-                            Debug.assert(symbolFlowInfo.typeNodeTsType);
-                            const typeNodeTsType = checker.getTypeFromTypeNode(expr.type);
-                            Debug.assert(checker.isTypeRelatedTo(typeNodeTsType,symbolFlowInfo.typeNodeTsType, checker.getRelations().identityRelation));
-                        }
+                        // if (extraAsserts && expr.type){
+                        //     Debug.assert(symbolFlowInfo.typeNodeTsType);
+                        //     const typeNodeTsType = checker.getTypeFromTypeNode(expr.type);
+                        //     Debug.assert(checker.isTypeRelatedTo(typeNodeTsType,symbolFlowInfo.typeNodeTsType, checker.getRelations().identityRelation));
+                        // }
                         if (!expr.type){
                             const tsType = floughTypeModule.getTsTypeFromFloughType(symbolFlowInfo.initializerType);
                             // TODO: checker.getFreshTypeOfLiteralType will/might fail when tsType is not a literal type.
@@ -1505,7 +1600,7 @@ namespace ts {
                         debugDevExpectEffectiveDeclaredType(expr.parent,symbolFlowInfo);
                     }
                     const isconstVar = symbolFlowInfo.isconst; // isConstVariable(symbol);
-                    if (sci.symtab.has(symbol)){
+                    if (sci.symtab?.has(symbol)){
                         Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
                     }
                     const rhsWidenedType = widenDeclarationOrAssignmentRhs(rhs.type, symbolFlowInfo);
@@ -1764,6 +1859,7 @@ namespace ts {
                         unmerged:[rhsRttr]
                     };
                 }
+                // TODO: process typeNode for type queries who args need to be resolved by flough.
                 const tstype = checker.getTypeFromTypeNode(typeNode);
                 return {
                     unmerged: [{
@@ -1772,234 +1868,6 @@ namespace ts {
                     }]
                 };
             } // floughInnerAsExpression
-
-
-        // @ ts-expect-error
-        // function floughByCallExpression(): FloughInnerReturn {
-        //         assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-        //         if (getMyDebug()){
-        //             consoleGroup(`floughByCallExpression[in]`);
-        //         }
-        //         Debug.assert(qdotfalloutInner);
-        //         // First duty is to call the pre-chain, if any.
-        //         const pre = InferRefTypesPreAccess({ sci, expr: expr as CallExpression, /*crit,*/ qdotfallout: qdotfalloutInner, inferStatus });
-        //         if (pre.kind==="immediateReturn") return pre.retval;
-        //         assertCastType<CallExpression>(expr);
-        //         const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[]=[];
-        //         let sigGroupFailedCount = 0;
-        //         const setOfTransientCallArgumentSymbol = new Set<TransientCallArgumentSymbol>();
-        //         pre.unmergedPassing.forEach((umrttr,rttridx)=>{
-        //             /**
-        //              * In the case where multiple functions with the same name but different symbols are coincide on this CallExpression
-        //              * We have to disambiguate the constraints by and-not'ing with all other instances than the one of interest.
-        //              * Actually that was nevessary when we logical contraints were implemented and enabled - might not be necessary now.
-        //              */
-        //             const scIsolated: RefTypesSymtabConstraintItem = umrttr.sci; //{ symtab: umrttr.symtab, constraintItem: umrttr.constraintItem };
-        //             pre.unmergedPassing.forEach((umrttr1,_rttridx1)=>{
-        //                 if (!umrttr1.symbol || umrttr1.symbol===umrttr.symbol) return;
-        //                 if (scIsolated.symtab) (scIsolated.symtab =  copyRefTypesSymtab(scIsolated.symtab)).delete(umrttr1.symbol);
-        //             });
-        //             if (getMyDebug()){
-        //                 dbgRefTypesSymtabConstrinatItemToStrings(scIsolated).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx}, scIsolated: ${s}`));
-        //             }
-
-        //             const {sc: scResolvedArgs, resolvedCallArguments} = floughByCallExpressionProcessCallArguments({
-        //                 callExpr: expr as Readonly<CallExpression>, sc:{ symtab:scIsolated.symtab, constraintItem: scIsolated.constraintItem },inferStatus, setOfTransientCallArgumentSymbol });
-
-        //             const tstype = floughTypeModule.getTypeFromRefTypesType(umrttr.type);
-        //             const arrsig = checker.getSignaturesOfType(tstype, SignatureKind.Call);
-        //             const arrsigrettype = arrsig.map((sig)=>checker.getReturnTypeOfSignature(sig));
-        //             if (getMyDebug()){
-        //                 arrsig.forEach((sig,sigidx)=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx} ${checker.signatureToString(sig)}`));
-        //             }
-
-        //             const allMappings: RefTypesType[][]=[];
-        //             const allLeftoverMappings: RefTypesType[][]=[];
-        //             const arrCargSymbols: CallArgumentSymbol[] = resolvedCallArguments.map(x=>x.symbol);
-        //             let finished = false;
-        //             {
-        //                 let cumLeftoverConstraintItem = createFlowConstraintAlways();
-        //                 //let nextConstraint = scResolvedArgs.constraintItem;
-        //                 let nextSC = scResolvedArgs;
-        //                 finished = arrsig.some((sig,sigidx)=>{
-        //                     const oneMapping: RefTypesType[]=[];
-        //                     const oneLeftoverMapping: (RefTypesType)[]=[];
-        //                     //let tmpArgsConstr = nextConstraint;
-        //                     let tmpSC = nextSC;
-        //                     if (getMyDebug()){
-        //                         dbgRefTypesSymtabConstrinatItemToStrings(tmpSC).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx},tmpSC: ${s}`));
-        //                         dbgConstraintItem(cumLeftoverConstraintItem).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx},cumLeftoverConstraintItem: ${s}`));
-        //                     }
-        //                     let pass1 = resolvedCallArguments.every((carg,cargidx)=>{
-        //                         if (!isValidSigParamIndex(sig,cargidx)){
-        //                             return false;
-        //                         }
-        //                         const sparam = getSigParamType(sig,cargidx);
-        //                         if (carg.hasSpread /*final spread only*/ && !sparam.isRest) {
-        //                             return false;
-        //                         }
-        //                         let assignableType = floughTypeModule.intersectionOfRefTypesType(carg.type, floughTypeModule.createRefTypesType(sparam.type));
-        //                         if (getMyDebug()){
-        //                             consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (1) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
-        //                         }
-
-        //                         if (floughTypeModule.isNeverType(assignableType)){
-        //                             return false;
-        //                         }
-        //                         ({type: assignableType, sc:tmpSC}=andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol as Symbol,isconst:carg.isconst,type:assignableType,sc: tmpSC,getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow }));
-        //                         // if (compilerOptions.mrNarrowConstraintsEnable){
-        //                         //     tmpArgsConstr = andSymbolTypeIntoConstraint({ symbol:carg.symbol as Symbol,type:assignableType, constraintItem:tmpArgsConstr,getDeclaredType,mrNarrow });
-        //                         //     if (isNeverConstraint(tmpArgsConstr)) {
-        //                         //         return false;
-        //                         //     }
-        //                         // }
-        //                         //const evaledAssignableType = evalSymbol(carg.symbol,tmpSC, getDeclaredType, mrNarrow);
-        //                         if (getMyDebug()){
-        //                             consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (2) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
-        //                         }
-        //                         // is this necessary? evalCover is expensive
-        //                         //const evaledAssignableType = evalCoverForOneSymbol(carg.symbol,tmpArgsConstr, getDeclaredType, mrNarrow);
-        //                         if (floughTypeModule.isNeverType(assignableType)){
-        //                             return false;
-        //                         }
-        //                         // if (!floughTypeModule.isASubsetOfB(assignableType,evaledAssignableType)){
-        //                         //     assignableType = evaledAssignableType;
-        //                         //     if (getMyDebug()){
-        //                         //         consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
-        //                         //     }
-        //                         // }
-        //                         oneMapping.push(assignableType);
-
-        //                         const notAssignableType =floughTypeModule.subtractFromType(assignableType, carg.type);
-        //                         if (getMyDebug()){
-        //                             consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, notAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(notAssignableType)}`);
-        //                         }
-        //                         // check if the non assignable type is allowed.
-        //                         {
-        //                             const {sc:checkSC} = andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol, isconst:carg.isconst, type:notAssignableType, sc: nextSC, getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow });
-        //                             const evaledNotAssignableType = evalSymbol(carg.symbol,checkSC,getEffectiveDeclaredTypeFromSymbol,mrNarrow);
-        //                             if (getMyDebug()){
-        //                                 consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) evaledNotAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(evaledNotAssignableType)}`);
-        //                             }
-        //                             oneLeftoverMapping.push(evaledNotAssignableType);
-        //                         }
-        //                         return true;
-        //                     });
-        //                     if (getMyDebug()){
-        //                         let str = "";
-        //                         oneMapping.forEach((t,_i)=>str+=`${dbgRefTypesTypeToString(t)}, `);
-        //                         consoleLog(`floughByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneMapping:[${str}]`);
-        //                         str = "";
-        //                         oneLeftoverMapping.forEach((t,_i)=>str+=`${dbgRefTypesTypeToString(t)}, `);
-        //                         consoleLog(`floughByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneLeftoverMapping:[${str}]`);
-        //                     }
-        //                     if (pass1 && isValidSigParamIndex(sig, resolvedCallArguments.length)){
-        //                         // if there are leftover sig params the first one must be optional or final spread
-        //                         const sparam = getSigParamType(sig, resolvedCallArguments.length);
-        //                         if (!sparam.optional && !sparam.isRest){
-        //                             pass1 = false;
-        //                         }
-        //                     }
-        //                     if (pass1){
-        //                         // check if mapping lies within the shadow of any previous mapping, in which case pass1->false
-        //                         const shadowsPrev = allMappings.some((prevMapping,_prevMappingIdx)=>{
-        //                             if (prevMapping.length<oneMapping.length) return false;
-        //                             const oneshadow = oneMapping.every((onetype,idx)=>{
-        //                                 return floughTypeModule.isASubsetOfB(onetype,prevMapping[idx]);
-        //                             });
-        //                             return oneshadow;
-        //                         });
-        //                         if (shadowsPrev){
-        //                             pass1 = false;
-        //                         }
-        //                     }
-        //                     let finished1 = false;
-        //                     if (pass1){
-        //                         allMappings.push(oneMapping);
-
-        //                         arrRefTypesTableReturn.push({
-        //                             type: floughTypeModule.createRefTypesType(arrsigrettype[sigidx]),
-        //                             sci: tmpSC,
-        //                         });
-
-        //                         finished1 = oneLeftoverMapping.every(oneNotType=>floughTypeModule.isNeverType(oneNotType));
-        //                         if (!finished1){
-        //                             Debug.assert(tmpSC.symtab);
-        //                             const nextSymtab = copyRefTypesSymtab(tmpSC.symtab);
-        //                             let hadNonNeverInSymtab = false;
-        //                             resolvedCallArguments.forEach((carg,cargidx)=>{
-        //                                 //const symbol=carg.symbol;
-        //                                 const leftoverType = oneLeftoverMapping[cargidx];
-        //                                 const got = nextSymtab.get(carg.symbol);
-        //                                 if (got) {
-        //                                     nextSymtab.set(carg.symbol, leftoverType);
-        //                                     //got.type = leftoverType; // might be never.
-        //                                     if (!floughTypeModule.isNeverType(leftoverType)) hadNonNeverInSymtab = true;
-        //                                 }
-        //                                 else {
-        //                                     Debug.fail("unexpected"); // ???
-        //                                 }
-        //                             });
-        //                             //nextSymtab;
-        //                             let nextConstraintItem = nextSC.constraintItem;
-        //                             if (compilerOptions.floughConstraintsEnable) {
-        //                                 allLeftoverMappings.push(oneLeftoverMapping);
-        //                                 // the combination (logical and / intersection) of allLeftoverMappings might evaluate to never, if so then finished->true
-        //                                 // We might wonder if the simple per-position intersection of of allLeftoverMappings would be enough to imply finished ...
-        //                                 // but it is not so because it is the cross product of all inputs combinations that must be accounted for.
-        //                                 // Each leftoverMapping is treated as a cross product, and the intesection of those cross products is what is calculated here.
-        //                                 // If that is never, then all input cross products have been accounted for.
-        //                                 cumLeftoverConstraintItem = calculateNextLeftovers(oneLeftoverMapping,cumLeftoverConstraintItem,arrCargSymbols,getEffectiveDeclaredTypeFromSymbol);
-        //                                 if (isNeverConstraint(cumLeftoverConstraintItem)) finished1 = true;
-        //                                 if (!finished1){
-        //                                     nextConstraintItem = calculateNextLeftovers(oneLeftoverMapping,nextSC.constraintItem,arrCargSymbols,getEffectiveDeclaredTypeFromSymbol);
-        //                                 }
-        //                             }
-        //                             nextSC = { symtab:nextSymtab, constraintItem:nextConstraintItem };
-        //                             if (!hadNonNeverInSymtab && isNeverConstraint(nextSC.constraintItem)) finished1 = true;
-        //                         }
-
-        //                     }
-        //                     // eslint-disable-next-line prefer-const
-        //                     //if (pass1) arrAssigned.push(tmpAssigned);
-        //                     if (getMyDebug()){
-        //                         if (!finished1) {
-        //                             dbgRefTypesSymtabConstrinatItemToStrings(nextSC).forEach(s=>{
-        //                                 consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, nextSC: ${s}`);
-        //                             });
-        //                         }
-        //                         consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, pass1:${pass1}, finshed1:${finished1}`);
-        //                     }
-        //                     return finished1;
-        //                 });
-        //                 // if not all possible assignment combinations have been covered then ...
-        //             }
-
-        //             if (!finished) {
-        //                 sigGroupFailedCount++;
-        //                 // "not finished" means there could be uncovered/unexpected arguments passed to the function and therefore the result is unknown.
-        //                 // This situation can always be prevented if the user declares a final overload - `function [functionName](...args: any[]): never;`
-        //                 // which could be backed up by terminating in case of unexpected inputs.
-        //                 // This next added return is the same as the user declaring a final overload - `function [functionName](...args: any[]): unknown;`
-        //                 // If the user declares `function [functionName](...args: any[]): unknown;` and the processing "finishes" before reaching it, then the
-        //                 // function return effectively becomes never.
-        //                 arrRefTypesTableReturn.push({
-        //                     type: floughTypeModule.createRefTypesType(checker.getUnknownType()),
-        //                     sci:scResolvedArgs
-        //                 });
-        //             }
-        //             if (getMyDebug()){
-        //                 consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, finished:${finished}`);
-        //             }
-        //         });
-        //         setOfTransientCallArgumentSymbol.forEach(symbol=>_mrState.symbolFlowInfoMap.delete(symbol));
-        //         if (getMyDebug()){
-        //             consoleLog(`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${pre.unmergedPassing.length}`);
-        //             consoleGroupEnd();
-        //         }
-        //         return { unmerged: arrRefTypesTableReturn };
-        //     } // floughByCallExpression
-
 
             //-----------------------------------------------------------------------------------------------------------
             /**
@@ -2273,6 +2141,8 @@ namespace ts {
                         // this must correspond to a declaration without an initializer, or a variable with no type spec at all (default: any).
                         let typeNodeTsType: Type;
                         if ((symbol.valueDeclaration as VariableDeclaration).type){
+                            // TODO: flough shouldn't need to worry about typeNodeTsType, that's for type checking.
+                            // However, process typeNode for type queries who args need to be resolved by flough
                             typeNodeTsType = checker.getTypeFromTypeNode((symbol.valueDeclaration as VariableDeclaration).type!);
                         }
                         else {
