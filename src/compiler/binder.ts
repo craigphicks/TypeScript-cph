@@ -227,7 +227,7 @@ namespace ts {
         const alwaysAddFlowToConditionNode = !myDisableInfer;
         const recordBreakAndReturnOnControlLoop = !myDisableInfer;
         const doArrayOrObjectLiteralExpression = !myDisableInfer;
-        //const doPropertyAssignment = !myDisableInfer; not yet
+        const connectReturnsInFunction = !myDisableInfer;
 
         let file: SourceFile;
         let options: CompilerOptions;
@@ -304,7 +304,7 @@ namespace ts {
                 file.classifiableNames = classifiableNames;
                 delayedBindJSDocTypedefTag();
             }
-
+            if (file.originalFileName.includes("_caxnc")) debugger;
             file = undefined!;
             options = undefined!;
             languageVersion = undefined!;
@@ -2616,6 +2616,9 @@ namespace ts {
         }
 
         function bindWorker(node: Node) {
+            if (connectReturnsInFunction && node.parent?.kind === SyntaxKind.ReturnStatement) {
+                setNodeFlow(node, currentFlow); // setNodeFlow may be called again with same args but that is ok.
+            }
             switch (node.kind) {
                 /* Strict mode checks */
                 case SyntaxKind.Identifier:
