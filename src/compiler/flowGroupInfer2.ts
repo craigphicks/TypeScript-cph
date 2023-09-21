@@ -886,7 +886,7 @@ namespace ts {
                      *   Accurate matching would have to include subtracting cross set of parameters of earlier failed matches from
                      *   the cross set of parameters of each later attemped match.  Since that cannot be done in reasonable time,
                      *   the actual algorithm used is weakMatching, and the contract for that the implementation is de facto order independent.
-                     * 
+                     *
                      * - weakMatches^(implTypes, sig.parameters)===true does not imply that intersection(flowReturnedType,sig.returnType) is not empty.
                      *   This is kind of obvious, because the implementation can return only once.
                      *   However, it still requires that the intersection(flowReturnType, sig.returnType) is not empty for at least one weakMatching sig.
