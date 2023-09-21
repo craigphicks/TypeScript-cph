@@ -1,0 +1,47 @@
+=== tests/cases/conformance/_caxnc-deplikefn/_caxnc-deplikefn-0003.ts ===
+interface F {
+>F : Symbol(F, Decl(_caxnc-deplikefn-0003.ts, 0, 0))
+
+    "t": number,
+>"t" : Symbol(F["t"], Decl(_caxnc-deplikefn-0003.ts, 0, 13))
+
+    "f": boolean,
+>"f" : Symbol(F["f"], Decl(_caxnc-deplikefn-0003.ts, 1, 16))
+  }
+
+// Using overloads the external contract is sound
+function dlf(k:"t"): void;
+>dlf : Symbol(dlf, Decl(_caxnc-deplikefn-0003.ts, 3, 3), Decl(_caxnc-deplikefn-0003.ts, 6, 26), Decl(_caxnc-deplikefn-0003.ts, 7, 26))
+>k : Symbol(k, Decl(_caxnc-deplikefn-0003.ts, 6, 13))
+
+function dlf(k:"f"): void;
+>dlf : Symbol(dlf, Decl(_caxnc-deplikefn-0003.ts, 3, 3), Decl(_caxnc-deplikefn-0003.ts, 6, 26), Decl(_caxnc-deplikefn-0003.ts, 7, 26))
+>k : Symbol(k, Decl(_caxnc-deplikefn-0003.ts, 7, 13))
+
+// implementation
+function dlf(k:keyof F): void {
+>dlf : Symbol(dlf, Decl(_caxnc-deplikefn-0003.ts, 3, 3), Decl(_caxnc-deplikefn-0003.ts, 6, 26), Decl(_caxnc-deplikefn-0003.ts, 7, 26))
+>k : Symbol(k, Decl(_caxnc-deplikefn-0003.ts, 9, 13))
+>F : Symbol(F, Decl(_caxnc-deplikefn-0003.ts, 0, 0))
+
+    if (k!=="t"){
+>k : Symbol(k, Decl(_caxnc-deplikefn-0003.ts, 9, 13))
+
+        const r1: F[typeof k] = 1; // expect TS2322: Type 'number' is not assignable to type 'boolean'.
+>r1 : Symbol(r1, Decl(_caxnc-deplikefn-0003.ts, 11, 13))
+>F : Symbol(F, Decl(_caxnc-deplikefn-0003.ts, 0, 0))
+>k : Symbol(k, Decl(_caxnc-deplikefn-0003.ts, 9, 13))
+
+        r1; // expect 1
+>r1 : Symbol(r1, Decl(_caxnc-deplikefn-0003.ts, 11, 13))
+
+        const r2: F[typeof k] = true;
+>r2 : Symbol(r2, Decl(_caxnc-deplikefn-0003.ts, 13, 13))
+>F : Symbol(F, Decl(_caxnc-deplikefn-0003.ts, 0, 0))
+>k : Symbol(k, Decl(_caxnc-deplikefn-0003.ts, 9, 13))
+
+        r2; // expect true
+>r2 : Symbol(r2, Decl(_caxnc-deplikefn-0003.ts, 13, 13))
+    }
+}
+

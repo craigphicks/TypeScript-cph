@@ -1,0 +1,46 @@
+=== tests/cases/conformance/_caxnc-deplikefn/_caxnc-deplikefn-0003.ts ===
+interface F {
+    "t": number,
+>"t" : number
+
+    "f": boolean,
+>"f" : boolean
+  }
+
+// Using overloads the external contract is sound
+function dlf(k:"t"): void;
+>dlf : { (k: "t"): void; (k: "f"): void; }
+>k : "t"
+
+function dlf(k:"f"): void;
+>dlf : { (k: "t"): void; (k: "f"): void; }
+>k : "f"
+
+// implementation
+function dlf(k:keyof F): void {
+>dlf : { (k: "t"): void; (k: "f"): void; }
+>k : keyof F
+
+    if (k!=="t"){
+>k!=="t" : boolean
+>k : "f" | "t"
+>"t" : "t"
+
+        const r1: F[typeof k] = 1; // expect TS2322: Type 'number' is not assignable to type 'boolean'.
+>r1 : boolean
+>k : "f"
+>1 : 1
+
+        r1; // expect 1
+>r1 : 1
+
+        const r2: F[typeof k] = true;
+>r2 : boolean
+>k : "f"
+>true : true
+
+        r2; // expect true
+>r2 : true
+    }
+}
+
