@@ -44,17 +44,19 @@ In each case the following will be detail in detail:
 
 ## 1. Case of a single non-template function declaration.
 
-E.g., `declare function f(a: 1|2, b:  1|2): 1|2`.
-
 Section 1.1 discusses type checking a function call.  Section 1.2 discusses type checking the return values in the function.
 
 ### 1.1 Type checking a call (in case of single non-template function declaration)
 
 Function calls will be type checked based on the inferred type range of each parameter passed.
 ```
+declare function f(a: 1|2, b:  1|2): 1|2
 declare const a: 1|2;
 declare const b: 1|2|3;
 let r = f(a,b);
+//          ~
+// Argument of type '1 | 2 | 3' is not assignable to parameter of type '1 | 2'.
+//  Type '3' is not assignable to type '1 | 2'. (2345)
 ```
 
 The result of type checking is aiming test the legality what would happen executing the function over the full range calling inputs, e.g.,
@@ -73,8 +75,11 @@ what would happen over each of the possible inputs in the range formed by the cr
 
 The worst case complexity of iterating over each element of the cross product range is product of range sizes
 - *O(#R(x) \* #R(y) \* ...)*
+
 which may be prohibitively expensive.  However, the type checking can actually be implemented in complexity
+
 - *O(#R(x) + #R(y) + ...)*
+
 which is acceptable, using the below algorithm for `stronglyMatches`.
 
 Lets define the relation `x stronglyMatches y` where `x` and `y` are tuples of types, `x` has fixed length, and the result is a boolean.
@@ -83,11 +88,15 @@ Lets define the relation `x stronglyMatches y` where `x` and `y` are tuples of t
 - `x.length` fits within the range of lengths allowed by `y`
 - for each parameter index `idx` in 0...y.length, `x[idx] isAssignableTo y[idx]`.
 
-*(Note: `isAssignableTo` is a deep and complex topic on its own, so it gets a seperate section of its own.  It can be skipped for now, instead using the temporary notion that `isAssignableTo` is similar to `isSubsetOf`, but more complex as is needed for objects.)*
+*(Note: `isAssignableTo` is a deep and complex topic on its own, covered more deeply in [section 3](#sec3).  It can be skipped for now, instead using the temporary notion that `isAssignableTo` is similar to `isSubsetOf`, but more complex as is needed for objects.)*
 
-If `x stronglyMatches y` fails here, as it does in the above example, it is because some calling type is not a subset of its corresponding parameter type, and a error message should be emitted.
+If `x stronglyMatches y` fails here, as it does in the above example, it is because some calling type is not a subset of its corresponding parameter type, an error message is emitted.
 
-## 2 "isAssignableTo": similar to "isSubsetOf", but more complex as needed for objects
+### 1.1
+
+## 2
+
+## <a id="sec3"></a> 3 "isAssignableTo": similar to "isSubsetOf", but more complex as needed for objects
 
 Where `x isAssignableTo y` is true if and only if both of the following are true
 - `plainPart(x) isSubsetOf plainPart(y)`
@@ -109,12 +118,46 @@ Where `x isObjectAssignableToDetail y` is true if and only if
         - let `keys` be the non-optional literal keys of `objectInY`
         - for each key `k` in `keys`, `objectInX[k] isAssignableTo objectInY[k]` is true
 
+Where `plainPart(x)` is any of the subtypes of `x` in any of the following categories, all of which do not have properties whose keys and values must be taken into acount in type checking:
+- primitives: `string, number, bigint, boolean, symbol, null, or undefined`
+- literals: literalTypes of `string`, `number`, or `bigint`, e.g., `"1",2,2n`
+- unique symbols: as defined in the target program
+
+Where `objectPart(x)` is any of the subtypes of which are the complement of `plainPart` types:
+- functions types, tuple types, objects with keys.
+
+
 In the above definition of `x isObjectAssignableTo y`, item (1.3) gives an "out" for any implementation of the definition to avoid falling into an infinite loop in the case of self-recursive or transitively-recursive object defintions.  Any implementation can check if `isObjectAssignableTo` for the pair `x,y` is already in progress, and defer to that future result if so.
 
-An example to demonstrate that an implelemtation is possible: With the help of a map `inProgress: Map<RangeX, Map<RangeY, "true"|"false"|"pending>>`, an implementation could build a logical tree comprised of `or` and `and` nodes with `{x,y}` leaves each denoting a placemark for that pair where the imtermediate result was initially pending in (1.3) above.  Even after the tree build is complete, `inProgress` may still contain some value of `pending` due to recursive object definitions.  However, the conditions for plain parts and required keys will all have been resolved, and the remaining `pending` will only reflect the recursiveness of the type definitions.  Because recusive definitions are acceptable, the `pending` results can then all be changed to `true`, and the logic tree then rendered to get the final boolean result.
+An example implimentation to demonstrate that an implimentation is possible:
+- Phase one:
+    - create a map `inProgress: Map<RangeX, Map<RangeY, "true"|"false"|"pending>>`,
+    - The implemention follows the recursive logical flow of `x isAssignableTo y`.
+    - Recursively build a logic tree with `or`/`and` node, and leaves whose values `{x,y}` correspond to entries `pending` values of `inProgress`.
+    - whenever `x isObjectAssignableToDetail y` is called, set `inProgress.set(x).set(y)` to `pending`
+    - whenever `x isObjectAssignableTo y` item (1.3) is triggered by the condition `inProgress.get(x).get(y)===true`, add an `{x,y}` entry to the logic key.
+    - whenever `x isObjectAssignableToDetail y` returns, set `inProgress.set(x).set(y)` to the return value `true` or `false` (as well as adding `true` or `false` to the logic tree).
+    - for all other trivial test conditions add the resulting `true` or `false` to the logic tree.
+- Phase two:
+    - `inProgress` may still contain some `pending` values due the transitive recursive defintions.
+    - However, the conditions for plain parts and required keys will all have been resolved, and the remaining `pending` will only reflect the recursiveness of the type definitions.  Because recusive definitions are acceptable, change the `pending` results to `true`.
+    - render the logic tree to give a final `true` or `false` answer.
+
+That implemention is easy to visualize because the processing flow tree builds a logic tree with the same structure.
+However it is not necessary to actually set `true` or `false` to the logic tree nodes because
+- Under an `or` node, a result of `false` can be ignored.
+- Under an `or` node, a result of `true` can stop the horizontal iteration, and the node collapses to `true`.
+- Under an `and` node, a result of `true` can be ignored.
+- Under an `and` node, a result of `false` can stop the horizontal iteration, and the node collapses to `false`.
+The tree is smaller and the search potentially trimmed.
 
 
+Footnote: The following category could also moved from object type to plain types
+- (\* optional) an array whose index type `indexTypeOfArray(x)` satisfies `hasObjectPart(indexTypeOfArray(x))`
+    - In JS an array is an object:  They have properties, then have Object.prototype in their prototype chain, they are instanceof Object, and you can call Object.keys on them.  However, within the Typescript type system, the properties of arrays do not come into play type checking.  That level of detail is left to tuples.
 
+
+##
 
 All below is out of date.
 

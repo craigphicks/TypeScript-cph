@@ -124,3 +124,6 @@ const q = j(2,1); // [1 | 2, 1 | 2], fail (expecting error)
 
 const p = j(0,0); // error, pass
 }
+
+declare const arr: string[];
+const x = Object.keys(arr); // string[]
