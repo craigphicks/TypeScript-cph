@@ -1,17 +1,34 @@
 
-# Proposed specifications of type checking and flow of functions
+# Proposed logic formulae for type checking of function calls and function implementation return values
 
 ## Overview
 
-These three kind of function declarations exist in Typescript:
+This document aims to provide specification for type checking of
+1. flow function calls, and
+2. function implementation return values
 
+expressed as logic formulae.
+
+
+## 0. Basics
+
+Typescript function declarations include the following kinds of syntax:
 - Plain functions declarations, with a single non-template signature.
-    - `declare function f(a: 1|2, b:  1|2): 1|2`
-- Template function declarations, which allow constrainted template type variables in a signature.  These template type variables are resolved wherever the function is called prior to type checking the call, but the implementation is written and type checked with the type variable unresolved.
-    - `declare function<A in 1|2, B in 1|2>f(a: A, b: B): A|B`
-- Overload functions, which describe a function using a set of function signatures, see example 0.1.
+- Template function declarations, which allow constrainted template type variables in a signature. See example 0.2.
+- Overload functions, which describe a function using a set of function signatures, see example 0.3.  Overload declaration can also include template function declarations. See example 0.4.
 
-*Example 0.1: simple overload declaration*:
+
+*Example 0.1 single non-template function declaration*
+```
+declare function f(a: 1|2, b:  1|2): 1|2
+```
+
+*Example 0.2 template function declaration*
+```
+declare function<A in 1|2, B in 1|2>f(a: A, b: B): A|B
+```
+
+*Example 0.3: simple overload declaration*:
 ```
 declare function f(a: 1, b: 1): 1
 declare function f(a: 1, b: 2): 1
@@ -19,9 +36,7 @@ declare function f(a: 2, b: 1): 2
 declare function f(a: 2, b: 2): 1|2
 ```
 
-Overload declarations may include template formats.  For example the overloads above could equivalently be written as following example 0.2.
-
-*Example 0.2: mixed overload declaration*:
+*Example 0.4: mixed overload declaration*:
 ```
 declare const f: {
     <A in 1|2, B in 1|2>f(a: A, b: B): A;
@@ -29,12 +44,27 @@ declare const f: {
 };
 ```
 
-A plain function declaration is just a special case of an overload, having one non-template declaration member.
-Generally speaking (*edge cases may exist*), any single template function declaration can be equivalently expressed in overloads, but not visa versa.
 
-Therefore the type checking specifications for each function call and the return values of function implementation should respect the equivalances of declaration meaning.  For example, the type checking results when using either of declarations in example 1 or example 2 should be identical. *(Note: as of 5.2.2 that equivalence is not always respected, but that is a limitiation, not a feature.)*
+<ul>
+*Note:* An obvious question to ask is whether the order of overload declarations is supposed to reflect the order of in which function implementation is checking for cases - the answer is a no.  For the above kinds of function declarations, the resulting mappings are invariant with respect to order of overload declarations.
+</ul>
 
-It should also be mentioned explicitly that order of overload declaration carries no special meaning.  A newcomer might wonder whether the order of overload declaration is supposed to reflect the order of in which function implementation is checking for cases - the answer is absolutely no.  That's an interesting idea and having such an additional feature could potentially allow narrower and more detailed type analysis, but would also bring up many new thorny issues.
+Example 0.3 and 0.4 have the same mappings from input range to output, and therefore they *should* behave identically in terms of type checking.  The behavior should be linked to the resultant mappings, not the syntax that created those mappings.
+
+
+One more way of forming a function declaration is using a distributed template:
+```
+type KFType<A extends 1 | 2, B extends 1 | 2> = [A,B] extends [2,2] ? (a: 2,b: 2) => -1 : (a: A,b: B) => A;
+interface KF1 {
+    <A extends 1 | 2, B extends 1 | 2>(a: A, b: B): ReturnType<KFType<A,B>>;
+    (...args: any[]): never;
+}
+```
+
+The behavior when using a distributed template to define overloads does not seem stable enough to make conclusions about the intended results.
+So it skipped here.  It is usually used for recursive type definitions, where its behavior is predictable.
+
+
 
 In section 1 the type checking specifications for a single non-template function are given.  In section 2 the case of for overloads/templates is covered.  Note that the specifications for overloads/templates collapses exctly to the case of single plain function for an overload declaration with just one non-template member.
 
@@ -98,6 +128,9 @@ If `x stronglyMatches y` fails here, as it does in the above example, it is beca
 
 ## <a id="sec3"></a> 3 "isAssignableTo": similar to "isSubsetOf", but more complex as needed for objects
 
+
+### Abstract algorithm description
+
 Where `x isAssignableTo y` is true if and only if both of the following are true
 - `plainPart(x) isSubsetOf plainPart(y)`
 - any of these conditions are true
@@ -122,14 +155,25 @@ Where `plainPart(x)` is any of the subtypes of `x` in any of the following categ
 - primitives: `string, number, bigint, boolean, symbol, null, or undefined`
 - literals: literalTypes of `string`, `number`, or `bigint`, e.g., `"1",2,2n`
 - unique symbols: as defined in the target program
+- *(Arrays `array` with element type `elementType(array)` satisfying `plainPart(elementType(array))` could be included in plain type - so `[[[number]]]` could be included as a plain type. That is possible because array keys are not used in type checking.)*
 
 Where `objectPart(x)` is any of the subtypes of which are the complement of `plainPart` types:
-- functions types, tuple types, objects with keys.
+- functions types, tuple types, objects with keys, *(and array types if those are not included in `plainPart`)*.
+
+The logical function `isAssignableTo` is recursive, but if run forward as an algorithm it will always terminate - thanks to clause `x isObjectAssignableTo y` (1.3) which prevents recursion.  However, at termination there will not alway be a unique solution, again thanks to clause `x isObjectAssignableTo y` (1.3).  Instead we have a non-unique set of solutions, indexable by the remaining `{x,y}`, where for each such `{x,y}` the value `x isObjectAssignableTo y` may be either `true` or `false`.
+
+We can select a unique solution from that set of solutions by any other criteria we choose.
+
+One criteria is simply to set `x isObjectAssignableTo y` to `true` for every remaining pending `{x,y}`.  That is arguably sound because the relationships between all keys has already been checked completely, and if the only remaining question "is (transitive) recursion acceptable?", the answer is yes.
 
 
-In the above definition of `x isObjectAssignableTo y`, item (1.3) gives an "out" for any implementation of the definition to avoid falling into an infinite loop in the case of self-recursive or transitively-recursive object defintions.  Any implementation can check if `isObjectAssignableTo` for the pair `x,y` is already in progress, and defer to that future result if so.
+### Example of synchrous implementation of the deferred values of `x isObjectAssignableTo y`.
 
-An example implimentation to demonstrate that an implimentation is possible:
+
+
+
+
+An example synchronous implementation to demonstrate that an implementation is possible:
 - Phase one:
     - create a map `inProgress: Map<RangeX, Map<RangeY, "true"|"false"|"pending>>`,
     - The implemention follows the recursive logical flow of `x isAssignableTo y`.
@@ -149,13 +193,16 @@ However it is not necessary to actually set `true` or `false` to the logic tree 
 - Under an `or` node, a result of `true` can stop the horizontal iteration, and the node collapses to `true`.
 - Under an `and` node, a result of `true` can be ignored.
 - Under an `and` node, a result of `false` can stop the horizontal iteration, and the node collapses to `false`.
-The tree is smaller and the search potentially trimmed.
+The collapsing continues recursively up the tree.  With that collapsing the final tree contains only `{x,y}` values referencing `inProgress` values which were originally `pending`.
 
+### Margin optimization?
 
-Footnote: The following category could also moved from object type to plain types
-- (\* optional) an array whose index type `indexTypeOfArray(x)` satisfies `hasObjectPart(indexTypeOfArray(x))`
-    - In JS an array is an object:  They have properties, then have Object.prototype in their prototype chain, they are instanceof Object, and you can call Object.keys on them.  However, within the Typescript type system, the properties of arrays do not come into play type checking.  That level of detail is left to tuples.
+By adding more data structure, all if the tree leaves referencing a particular `{x,y}` can be also be resolved immediately.
+It would require marking the `or` and `and` nodes with the `true` or `false` values they had been resolved to, rather than collapsing the tree.
+The phase one processing would have to check at every loop iteration if the node had alreay been resolved, and quit the loop if so.
+So there are potential savings but it's not clear the it would be worth the effort.  It would not eliminate final unresolved `pending` values in phase one.
 
+A similar approach requiring marking of `or` and `and` nodes would use JS asynchronous features to do a (JS) asynchrous wait at item (1.3).  One resolved, it would simply resume execution.
 
 ##
 

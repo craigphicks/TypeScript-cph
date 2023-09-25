@@ -127,3 +127,21 @@ const p = j(0,0); // error, pass
 
 declare const arr: string[];
 const x = Object.keys(arr); // string[]
+
+// type KFT<A extends 1 | 2, B extends 1 | 2> = [A,B] extends [2,2] ? (a: 2,b: 2) => 1 | 2 : (a: A,b: B) => A;
+// interface KF {
+//     <A extends 1 | 2, B extends 1 | 2>(a: A, b: B): ReturnType<KFT<A,B>>;
+//     <A extends 1 | 2, B extends 1 | 2>(a: A, b: B): ReturnType<KFT<A,B>>;
+// }
+
+// declare const kf: KF;
+// {
+//     const a1 = kf(1,1); // [1,1], pass
+//     const a2 = kf(2,2); // [2,2], pass
+//     const d = kf(1,2); // [1 | 2, 1 | 2], fail (expecting [0,0])
+//     const e = kf(0,1); // [-1,-1], pass
+
+//     const q = kf(2,1); // [1 | 2, 1 | 2], fail (expecting error)
+
+//     const p = kf(0,0); // error, pass
+// };
