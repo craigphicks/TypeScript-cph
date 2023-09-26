@@ -12,6 +12,35 @@ expressed as logic formulae.
 
 ## 0. Basics
 
+### 0.1 Plain vs Object Types, isNonEmptySubset, isSubsetOf, isNonEmptyIntersection
+
+Any type `x` (expect for `any` and `unknown`) can be partioned into mutually exclusive parts `plainPart(x)` and `objectPart(x)`.
+
+`plainPart(x)` is any of the subtypes of `x` which do not have variable (key, value) properties that must be taken into account in type checking.
+They are:
+- primitives: `string, number, bigint, boolean, symbol, null, or undefined`
+- literals: literalTypes of `string`, `number`, or `bigint`, e.g., `"1",2,2n`
+- the generic type symbol
+- unique symbols as defined in the target program
+- *(Arrays `array` with element type `elementType(array)` satisfying `plainPart(elementType(array))` could be included in plain type - so `[[[number]]]` could be included as a plain type. That is possible because array keys are not used in type checking.)*
+
+`objectPart(x)` is any of the subtypes of which are the complement of `plainPart` types:
+- functions types, tuple types, objects with keys, *(and array types which are not included in `plainPart`)*.
+
+We call `type` a plain type when `objectPart(type)` is empty (i.e., `never`).
+
+
+
+For any two plain types `x`, `y`,
+- `intersection(x,y)` is the type with elements in both `x` and `y`.
+- `x isSubsetOf y` iff for every `p` in `x`, `p` in `y`
+- `x isIntersectionNonEmpty y` iff
+    - for some `p` in `x`, `p` in `y`
+
+
+
+### 0.2. Kinds of Function Declarations
+
 Typescript function declarations include the following kinds of syntax:
 - Plain functions declarations, with a single non-template signature.
 - Template function declarations, which allow constrainted template type variables in a signature. See example 0.2.
@@ -76,7 +105,7 @@ In each case the following will be detail in detail:
 
 Section 1.1 discusses type checking a function call.  Section 1.2 discusses type checking the return values in the function.
 
-### 1.1 Type checking a call (in case of single non-template function declaration)
+### 1.1 Type checking a function call in case of single non-template function declaration
 
 Function calls will be type checked based on the inferred type range of each parameter passed.
 ```
@@ -88,9 +117,10 @@ let r = f(a,b);
 // Argument of type '1 | 2 | 3' is not assignable to parameter of type '1 | 2'.
 //  Type '3' is not assignable to type '1 | 2'. (2345)
 ```
+Note: We are assuming no flow information about the correlation between `a` and `b`.
 
 The result of type checking is aiming test the legality what would happen executing the function over the full range calling inputs, e.g.,
-what would happen over each of the possible inputs in the range formed by the cross product formed the full cross product of parameter ranges `(1|2)`, `(1|2|3)`:
+what would happen over each of the possible inputs in the range formed by the cross product formed by the full cross product of parameter ranges `(1|2)`, `(1|2|3)`:
 |---|---|---|
 | a | b | OK |
 |---|---|---|
@@ -114,121 +144,172 @@ which is acceptable, using the below algorithm for `stronglyMatches`.
 
 Lets define the relation `x stronglyMatches y` where `x` and `y` are tuples of types, `x` has fixed length, and the result is a boolean.
 
+In the special case where `x` and `y` are both tuples of plain types:
+
+`x stronglyMatches y` is true if and only if all the following are true
+- `x.length` fits within the range of lengths allowed by `y`
+- for each parameter index `idx` in 0...y.length, `x[idx] isSubsetOf y[idx]`.
+
+
+In the general case where `x` and `y` are both tuples possibly having object parts:
+
 `x stronglyMatches y` is true if and only if all the following are true
 - `x.length` fits within the range of lengths allowed by `y`
 - for each parameter index `idx` in 0...y.length, `x[idx] isAssignableTo y[idx]`.
 
-*(Note: `isAssignableTo` is a deep and complex topic on its own, covered more deeply in [section 3](#sec3).  It can be skipped for now, instead using the temporary notion that `isAssignableTo` is similar to `isSubsetOf`, but more complex as is needed for objects.)*
-
-If `x stronglyMatches y` fails here, as it does in the above example, it is because some calling type is not a subset of its corresponding parameter type, an error message is emitted.
-
-### 1.1
-
-## 2
-
-## <a id="sec3"></a> 3 "isAssignableTo": similar to "isSubsetOf", but more complex as needed for objects
-
-
-### Abstract algorithm description
-
-Where `x isAssignableTo y` is true if and only if both of the following are true
-- `plainPart(x) isSubsetOf plainPart(y)`
-- any of these conditions are true
-    - `hasObjectPart(x)===false`
-    - all of these conditions are true
-        - `hasObjectPart(x)===true`
-        - `objectPart(x) isObjectAssignableTo objectPart(y)`, where `objectPart` may return a union of non-union object types.
-
-Where `x isObjectAssignableTo y` is true if and only if any of the following are true:
-- (1.1) `x isIdenticalTo y` is true
-- (1.2) an already resolved result of `x isObjectAssignableTo y` is true
-- (1.3) a promised pending result of `x isObjectAssignableTo y` will be true
-- (1.4) `x isObjectAssignableToDetail y` is true
-
-Where `x isObjectAssignableToDetail y` is true if and only if
-- for each non-union object type `objectInX` in `x`
-    - for some non-union objectType `objectInY` in `y`
-        - let `keys` be the non-optional literal keys of `objectInY`
-        - for each key `k` in `keys`, `objectInX[k] isAssignableTo objectInY[k]` is true
-
-Where `plainPart(x)` is any of the subtypes of `x` in any of the following categories, all of which do not have properties whose keys and values must be taken into acount in type checking:
-- primitives: `string, number, bigint, boolean, symbol, null, or undefined`
-- literals: literalTypes of `string`, `number`, or `bigint`, e.g., `"1",2,2n`
-- unique symbols: as defined in the target program
-- *(Arrays `array` with element type `elementType(array)` satisfying `plainPart(elementType(array))` could be included in plain type - so `[[[number]]]` could be included as a plain type. That is possible because array keys are not used in type checking.)*
-
-Where `objectPart(x)` is any of the subtypes of which are the complement of `plainPart` types:
-- functions types, tuple types, objects with keys, *(and array types if those are not included in `plainPart`)*.
-
-The logical function `isAssignableTo` is recursive, but if run forward as an algorithm it will always terminate - thanks to clause `x isObjectAssignableTo y` (1.3) which prevents recursion.  However, at termination there will not alway be a unique solution, again thanks to clause `x isObjectAssignableTo y` (1.3).  Instead we have a non-unique set of solutions, indexable by the remaining `{x,y}`, where for each such `{x,y}` the value `x isObjectAssignableTo y` may be either `true` or `false`.
-
-We can select a unique solution from that set of solutions by any other criteria we choose.
-
-One criteria is simply to set `x isObjectAssignableTo y` to `true` for every remaining pending `{x,y}`.  That is arguably sound because the relationships between all keys has already been checked completely, and if the only remaining question "is (transitive) recursion acceptable?", the answer is yes.
-
-
-### Example of synchrous implementation of the deferred values of `x isObjectAssignableTo y`.
+*(Note: `isAssignableTo` is a deep and complex topic on its own, covered more deeply in [section 3](#3-algorithmic-defintion-of-isassignableto).  It can be skipped for now, instead using the temporary notion that `isAssignableTo` is similar to `isSubsetOf`, but more complex as is needed for objects.)*
 
 
 
 
 
-An example synchronous implementation to demonstrate that an implementation is possible:
-- Phase one:
-    - create a map `inProgress: Map<RangeX, Map<RangeY, "true"|"false"|"pending>>`,
-    - The implemention follows the recursive logical flow of `x isAssignableTo y`.
-    - Recursively build a logic tree with `or`/`and` node, and leaves whose values `{x,y}` correspond to entries `pending` values of `inProgress`.
-    - whenever `x isObjectAssignableToDetail y` is called, set `inProgress.set(x).set(y)` to `pending`
-    - whenever `x isObjectAssignableTo y` item (1.3) is triggered by the condition `inProgress.get(x).get(y)===true`, add an `{x,y}` entry to the logic key.
-    - whenever `x isObjectAssignableToDetail y` returns, set `inProgress.set(x).set(y)` to the return value `true` or `false` (as well as adding `true` or `false` to the logic tree).
-    - for all other trivial test conditions add the resulting `true` or `false` to the logic tree.
-- Phase two:
-    - `inProgress` may still contain some `pending` values due the transitive recursive defintions.
-    - However, the conditions for plain parts and required keys will all have been resolved, and the remaining `pending` will only reflect the recursiveness of the type definitions.  Because recusive definitions are acceptable, change the `pending` results to `true`.
-    - render the logic tree to give a final `true` or `false` answer.
+### 1.2 Type checking a implementation return value in case of single non-template function declaration
 
-That implemention is easy to visualize because the processing flow tree builds a logic tree with the same structure.
-However it is not necessary to actually set `true` or `false` to the logic tree nodes because
-- Under an `or` node, a result of `false` can be ignored.
-- Under an `or` node, a result of `true` can stop the horizontal iteration, and the node collapses to `true`.
-- Under an `and` node, a result of `true` can be ignored.
-- Under an `and` node, a result of `false` can stop the horizontal iteration, and the node collapses to `false`.
-The collapsing continues recursively up the tree.  With that collapsing the final tree contains only `{x,y}` values referencing `inProgress` values which were originally `pending`.
+Example 1.2.1
+```
+function func(...): number | string {
+    let r: any;
+    ...
+    if (typeof r ==="number") return r;
+}
+```
 
-### Margin optimization?
-
-By adding more data structure, all if the tree leaves referencing a particular `{x,y}` can be also be resolved immediately.
-It would require marking the `or` and `and` nodes with the `true` or `false` values they had been resolved to, rather than collapsing the tree.
-The phase one processing would have to check at every loop iteration if the node had alreay been resolved, and quit the loop if so.
-So there are potential savings but it's not clear the it would be worth the effort.  It would not eliminate final unresolved `pending` values in phase one.
-
-A similar approach requiring marking of `or` and `and` nodes would use JS asynchronous features to do a (JS) asynchrous wait at item (1.3).  One resolved, it would simply resume execution.
-
-##
-
-All below is out of date.
-
-## Type checking a CallExpression for a function with type Union-of-functions
+The following two conditions must be satisfied
+- For every return statement
+    - `[typeof return value] isAssignableTo [function return type]`
+- The function should have no default return unless `undefined` is included in the function return type.
 
 
-Conceptual (not implemenation) definitions of tasks that would "ideally" be performed.
-
-- (Defn 1) Determine the return type
-    - This is union of return types of any signature that *might* match the cross-type of calling types.
-        - *might* match means some element of the cross-type of calling types is a subset of the cross-type of signature parameter types
-- (Defn 2) Check for errors in the cross-type of calling types passed to the function call.  There are two kinds of errors:
-    - (Defn 2.1) No signature matching error:  There is no signature that *must* match the cross-type of calling types.
-        - *must* match means every elememnt of the cross-type of signature parameter types is a subset of the cross-type of calling types.
-    - (Defn2.2) Excessive calling type error: Some element of the cross-type of calling types is not a subset of any signatures crossstype of parameter types
 
 
-Some of the tasks cannot always be performed as written above because doing so would require exponential complexity.  For example, iterating over every element of a cross-type is exponentially complex. Also, calculating if an object type is a subtype of another object type, or calculating the intersection of object types can be very expensive.
+## 2 Case of overload of non-template functions.
 
-Note that although the task defintion were given in terms of elements of cross-types, task (Defn 1) and (Defn 2.1) can be calculated perfectly without iterating over elements of cross-types:
+### 2.1 Type checking a function call in case of overload of non-template functions
 
-- (Impl 1 non tmpl) The task (Defn 1) can be computed utilizing
-    - A signature *might* match cross-types of calling parameters if and only if
-        -  for each parameter idx, the intersection of `callingTypes[idx]` and `signature.params[idx]` is non-empty.
+The condition for type checking the input range to the overloads is
+- for every element `p` in `inputRange`,
+    - for some signature `sig` in `overloads`
+       - `p stronglyMatches sig`
+
+
+As was done for `strongMatches` in [section](#11-type-checking-a-function-call-in-case-of-single-non-template-function-declaration) we can define the relation per each parameter index reduce complexity without changing the result.
+
+
+We first consider the case where the input range and each signatures parameter range are tuples of plain types (no object parts).
+
+One condition that must be satisfied is:
+
+`x matchesSomeOverload y` iff
+- for some `sig` in `overloads(y)`
+    - x `x weaklyMatches sig`
+
+where `x weaklyMatches sig` iff
+- `x.length` fits within the range of lengths allowed by `sig`
+- for each parameter index `idx` in `0...y.length`, `x[idx] isIntersectionNonEmpty sig[idx]`
+
+Notice the difference from `x stronglyMatches y` (in the case of plain types only) is just that `isSubsetOf` is replaced by `isIntersectionNonEmpty`.
+
+
+Consider the scenario
+Example 2.1.0
+```
+declare function func(a: 1, b: 1): 1;
+declare function func(a: 1, b: 2): 2;
+declare function func(a: 2, b: 1): 3;
+declare function func(a: 2, b: 2): 4;
+declare const a: 1 | 2;
+declare const b: 1 | 2;
+f(a,b);
+```
+
+The condition `x matchesSomeOverload y` evaluates to true, and it seems like there should be no error.
+
+
+However, consider the scenario
+Example 2.1.1
+```
+declare function func(a: 1, b: 1): 1;
+declare function func(a: 2, b: 2): 4;
+declare const a: 1 | 2;
+declare const b: 1 | 2;
+f(a,b);
+```
+
+In this second scenario, the inputs `a:1,b:2` and `a:2,b:1` are not in the range of any signature,
+and so - perhaps? - an error should be emitted.
+Unfortunately, in the general case, there is a complexity problem with computing whether the input range lies within the domain of overload parameters.
+It cannot be done breaking down the problem and comparing per parameter index, so the complexity remains O(#Range(a) * #Range(a)),
+and that should (generally) be avoided.
+
+
+How does TypeScript (version 5.2.2) deal with this problem ?
+
+If errors on scenario Example 2.1.0 as follows:
+```
+No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '1 | 2' is not assignable to parameter of type '2'.
+      Type '1' is not assignable to type '2'.ts(2769)
+```
+What it is doing is trying to do is apply `x stronglyMatches sig` to each signature to decide if it matches.
+
+
+The only way to prevent that error (in TypeScript 5.2.2) is to narrow the inputs:
+```
+if (a===1 && b===1) f(a,b); // this passes
+```
+So TypeScript (5.2.2) simply sidesteps the problem altogether.
+
+
+A reasonable way to deal with "input of of range" issue would be to defer to the coder. They have a choice:
+- Ignore because they are certain it will not happen
+- Add an extra `else` clause to throw an error.
+```
+declare function func(a: 1, b: 1): 1;
+declare function func(a: 2, b: 2): 4;
+declare function func(...args: any[]): never;
+// declare function func(...args: any[]): throws Error;
+function func(a:1 |2, b: 1| 2) {
+    if (a===1 && b===1) return 1;
+    else if (a===2 && b===2) return 4;
+    else {
+        assert(false);
+        // OR throw new Error("func input out of allowed range")
+    }
+}
+declare let a: 1 | 2;
+declare let b: 1 | 2;
+... // perhaps the coder know a,b are now correlated into legal range, but flow doesn't know that
+const x = func(1,1); // expect const x: 1
+```
+
+In fact
+```
+declare function func(...args: any[]): never;
+```
+is already legal TypeScipt (5.2.2).  But the sematics are not sensible and `f(1,1)` evaluates to `never`, for reasons explained in the next section.
+
+### 2.1 Determining return type of a function call in case of overload of non-template functions
+
+
+
+
+
+
+
+
+because the only signature `sig` satisfying `(1|2,1|2) stronglyMatches sig` is `(...args: any[])`
+
+
+
+
+
+
+### 2.2 Type checking a implementation return value in case of overload of non-template functions
+
+
+
+---------------------------
 
 
 In the case of template functions, where one or more template parameters appear in the return type:
@@ -270,6 +351,46 @@ which are quite common cases, (Impl 2.2) does give a perfect result.
 It would be possible to calculate in quick time whether the signatures satisfies that condition, and if not, take some warning action and/or attempt to iterate the cross-type elemnets of the calling type, if not too numerous.
 
 ## Type checking of return Statements in the implemantation of a function with type Union-of-functions
+
+
+## <a id="sec3"></a> 3 Algorithmic Defintion of "isAssignableTo"
+
+let `externalLUTIsObjectAssignableTo` be a preset lookup table over `{x,y}` with range `true|false`
+let `internalLUTisObjectAssignableTo` be an initially empty lookup table `{x,y}` with range `true|false|pending`
+
+`x isAssignableTo y` iff
+- `plainPart(x) isIntersectionNonEmptyAndSubsetOf plainPart(y)` --- *(optional side effect: emit error)*
+- any of
+    - `hasObjectPart(x)===false`
+    - all of
+        - `hasObjectPart(x)===true`
+        - `objectPart(x) isObjectAssignableTo objectPart(y)`, where `objectPart` may be a union of non-union object types.
+
+Where `x isObjectAssignableTo y` is:
+- if `x isIdenticalTo y`or `externalLUTIsObjectAssignableTo(x,y)`  then true
+- else if `internalLUTIsObjectAssignableTo(x,y)===true` then true
+- else if `internalLUTIsObjectAssignableTo(x,y)===false` then false
+- else if `internalLUTIsObjectAssignableTo(x,y)===pending` then
+    - the future value of `internalLUTIsObjectAssignableTo(x,y)` which could be true or false --- *(prevents infinite loop)*
+- else `x isObjectAssignableToDetail y`
+
+Where `x isObjectAssignableToDetail y` iff
+- *(side effect: set `internalLUTisObjectAssignableTo(x,y)` to `pending`)*
+- for each non-union object type `objectInX` in `x`
+    - for some non-union objectType `objectInY` in `y`
+        - let `keys` be the non-optional literal keys of `objectInY`
+        - for each key `k` in `keys`,
+            - *(optional side effect: error if `k` is not a key in `objectInX`, but such an error could be an over restrictive nuisance)*
+            - `objectInX[k] isAssignableTo objectInY[k]` is true
+
+
+The algorithm `isAssignableTo` is recursive, but it will always terminate - thanks to clause marked "*(prevents infinite loop)*, waiting for a future result.  However, at termination there will not alway be a unique solution, again thanks to that same clause marked "*(prevents infinite loop)*.  Some entries in `internalLUTIsObjectAssignableTo` may be "stuck: at `pending`.  This should be considered a set of solutions, indexable by the remaining `{x,y}`, where for each such `{x,y}` the value `x isObjectAssignableTo y` may be `true` or `false`, either one resulting in a consistent solution.
+
+We can select a unique solution from that set of solutions by any other criteria we choose.
+
+One criteria is simply to set `x isObjectAssignableTo y` to `true` for every remaining pending `{x,y}`.  That is arguably sound because the relationships between all keys and plain types has already been checked completely, and if the only remaining question "is (transitive) recursion acceptable?", the answer is yes.
+
+A direct literal implementation of `isAssignableTo` following the above logic exactly would not be an optimal implementation. Also, any implementation might use approximations in order to reduce complexity.  However, the above simple description for `isAssignableTo` is still useful as a reference point.
 
 
 
