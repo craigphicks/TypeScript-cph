@@ -210,8 +210,24 @@ where `x weaklyMatches sig` iff
 Notice the difference from `x stronglyMatches y` (in the case of plain types only) is just that `isSubsetOf` is replaced by `isIntersectionNonEmpty`.
 
 
-Consider the scenario
-Example 2.1.0
+In the general case where both plain types and object type are involved:
+
+`x matchesSomeOverload y` iff
+- for some `sig` in `overloads(y)`
+    - x `x weaklyMatches sig`
+
+where `x weaklyMatches sig` iff
+- `x.length` fits within the range of lengths allowed by `sig`
+- for each parameter index `idx` in `0...y.length`, `x[idx] isWeaklyAssignableTo sig[idx]`
+
+The difference between `isAssignableTo` and `isWeaklyAssignableTo` is that internally use of `isSubsetOf` is in the former is replaced by use of `isIntersectionNonEmpty` in the latter.
+
+
+#### 2.1.1 Checking for input out of parameter-range can be hard
+
+
+<a id="example-2.1.0"></a>
+*Example 2.1.0*
 ```
 declare function func(a: 1, b: 1): 1;
 declare function func(a: 1, b: 2): 2;
@@ -222,11 +238,24 @@ declare const b: 1 | 2;
 f(a,b);
 ```
 
-The condition `x matchesSomeOverload y` evaluates to true, and it seems like there should be no error.
+In [example 2.1.0](#example-2.1.0) The condition `x matchesSomeOverload y` evaluates to true, and it seems like there should be no error.
+
+In the following case then input range of `a` exceeeds the paramater range;
+*Example 2.1.1*
+```
+declare const a: 1 | 2 | 3;
+declare const b: 1 | 2;
+f(a,b);
+```
+
+This can be detected by the indexwise check
+
+`x inputExceedsParameterRange y` iff
+- for every index `idx`, not `x[idx] isWeaklyAssignable y[idx]`
 
 
 However, consider the scenario
-Example 2.1.1
+*Example 2.1.3*
 ```
 declare function func(a: 1, b: 1): 1;
 declare function func(a: 2, b: 2): 4;
@@ -234,36 +263,35 @@ declare const a: 1 | 2;
 declare const b: 1 | 2;
 f(a,b);
 ```
+where the input is out-of-bounds but cannot be detected by `inputExceedsParameterRange`.  The inputs `a:1,b:2` and `a:2,b:1` are not in the range of any signature.  Listing every input in O(`#Range(a) * #Range(b) * ...`) time, to test against the signatures, is prohibitively expensive.
+So we will assume no attemp will be made to detect those.
 
-In this second scenario, the inputs `a:1,b:2` and `a:2,b:1` are not in the range of any signature,
-and so - perhaps? - an error should be emitted.
-Unfortunately, in the general case, there is a complexity problem with computing whether the input range lies within the domain of overload parameters.
-It cannot be done breaking down the problem and comparing per parameter index, so the complexity remains O(#Range(a) * #Range(a)),
-and that should (generally) be avoided.
-
-
-How does TypeScript (version 5.2.2) deal with this problem ?
-
-If errors on scenario Example 2.1.0 as follows:
+Instead, a reasonable strategy to deal with the "input of of range" issue would be to allow the Typescript-using software engineer user to specificy how excess input range would be dealt with, e.g. modifying [Example 2.1.2](#example-2.1.2) to be
+<a id="example-2.1.4"></a>
+*Example-2.1.4*
 ```
-No overload matches this call.
-  The last overload gave the following error.
-    Argument of type '1 | 2' is not assignable to parameter of type '2'.
-      Type '1' is not assignable to type '2'.ts(2769)
+declare function func(a: 1, b: 1): 1;
+declare function func(a: 2, b: 2): 4;
+declare function func(...args:any[]): never;
 ```
-What it is doing is trying to do is apply `x stronglyMatches sig` to each signature to decide if it matches.
+meaning either that:
+- (1) The user controls the input and is assured that out-of-parameter range input will not occur, or
+- (2) The illegal input will be detected and the program will terminate.
 
-
-The only way to prevent that error (in TypeScript 5.2.2) is to narrow the inputs:
+Or
+*Example-2.1.5*
 ```
-if (a===1 && b===1) f(a,b); // this passes
+declare function func(a: 1, b: 1): 1;
+declare function func(a: 2, b: 2): 4;
+declare function func(...args:any[]): throws Error;
 ```
-So TypeScript (5.2.2) simply sidesteps the problem altogether.
+means that out-of-parameter range input will trigger an Error expection.
 
+(With respect to the `never` return type, that is already possible in TypeScript (5.2.2). However, the resulting semantics are not correct - see [this section](#2121-typescript-522-calculation-of-the-return-type)).
 
-A reasonable way to deal with "input of of range" issue would be to defer to the coder. They have a choice:
-- Ignore because they are certain it will not happen
-- Add an extra `else` clause to throw an error.
+Considering that fact that the user is already coding in disambiguation into the implementation:
+<a id="example-2.1.6"></a>
+*Example-2.1.6*
 ```
 declare function func(a: 1, b: 1): 1;
 declare function func(a: 2, b: 2): 4;
@@ -277,35 +305,139 @@ function func(a:1 |2, b: 1| 2) {
         // OR throw new Error("func input out of allowed range")
     }
 }
-declare let a: 1 | 2;
-declare let b: 1 | 2;
-... // perhaps the coder know a,b are now correlated into legal range, but flow doesn't know that
-const x = func(1,1); // expect const x: 1
+```
+it is only one extra `else` clause to add the trap.
+
+##### 2.1.1.1 Typescript (5.2.2) sidesteps the input out of parameter range issue
+
+TypeScript (5.2.2) emit errors on [Example 2.1.0](#example-2.1.0) as follows:
+```
+No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '1 | 2' is not assignable to parameter of type '2'.
+      Type '1' is not assignable to type '2'.ts(2769)
+```
+Clearly TypeScript (5.2.2) is applying a `stronglyMatches` (and not a `weaklyMatches`) algorithm  on each signature to decide if it matches.
+
+
+The only way to prevent that error (in TypeScript 5.2.2) is to narrow the inputs:
+```
+if (a===1 && b===1) f(a,b); // this passes
+```
+So TypeScript (5.2.2) simply sidesteps the input out of parameter range altogether (by using `stronglyMatches`) - at the cost of the coder having to narrow the inputs before the call.  Considering the function being called also narrows with the same logic inside the overload implemention,
+(see [Example 2.1.5](#example-2.1.5)),
+the same logic is being coded twice.
+
+
+#### 2.1.2 Determining return type of a function call in case of overload of non-template functions
+
+Every signature for which `weaklyMatches` is true in `matchesSomeOverload`, also contributes its return type to total return type for the call.
+Revisting `matchesSomeOverload` and adding in collection of the return type:
+
+
+`x matchesSomeOverload y` iff
+- *(side effect: let `returnType=never`)*
+- for some `sig` in `overloads(y)`
+    - if x `x weaklyMatches sig` then
+        - *(side effect: let `returnType=union(returnType, sig.returnType)`)*
+        - true
+
+where `x weaklyMatches sig` iff
+- `x.length` fits within the range of lengths allowed by `sig`
+- for each parameter index `idx` in `0...y.length`, `x[idx] isWeaklyAssignableTo sig[idx]`
+
+##### 2.1.2.1 Typescript (5.2.2) calculation of the return type
+
+
+TypeScript is collecting the signature return types over signatures passing `stronglyMatches`.
+Revisitng the declaration style including a never return trap in [Example 2.1.4](#example-2.1.4)
+```
+declare function func(a: 1, b: 1): 1; // --- rejected by `stronglyMatches`
+declare function func(a: 2, b: 2): 4; // --- rejected by `stronglyMatches`
+declare function func(...args:any[]): never; // --- accepted by `stronglyMatches`
+declare const a:1|2;
+declare const b:1|2;
+const x = f(a,b); // never (in Typescript 5.2.2), fail (expecting 1|4)
+if (a===1 && b===1) f(a,b); // 1, pass
+```
+It is notable the TypeScript (5.2.2) already allows a signature to specifiy the `never` return (as in [Example 2.1.4]()) to add a trap for out-of-bound inputs. However, because TypeScript (5.2.2) is using `stronglyMatches`, only the trap is ativated and the return type is never.
+
+#### 2.1.3 Correlating return type and passed variables of a function call in case of overload of non-template functions
+
+When a signature is selected from an overload by `weaklyMatches`, it may inform flow analysis about the correlation between input variables and output value.
+
+*Example 2.1.3.1*
+```
+declare function f(p:1,q:1): 1;
+declare function f(p:2,q:2): 2;
+declare function f(p:3,q:3): 3;
+declare function f(...args:any[]): never;
+declare const a: 1|2|3;
+declare const b: 1|2|3;
+
+const rt = f(a,b);
+if (rt === 1) {
+    a;b;
+}
+else if (rt === 2) {
+    a;b;
+}
+else if (rt === 3) {
+    a;b;
+}
+else {
+    a;b;
+}
+a;b;
 ```
 
-In fact
+Flow analysis may use that inferred correlation to produce this result:
 ```
-declare function func(...args: any[]): never;
+...
+if (rt === 1) {
+>rt === 1 : boolean
+>rt : 1 | 2 | 3
+>1 : 1
+
+    a;b;
+>a : 1
+>b : 1
+}
+else if (rt === 2) {
+>rt === 2 : boolean
+>rt : 2 | 3
+>2 : 2
+
+    a;b;
+>a : 2
+>b : 2
+}
+else if (rt === 3) {
+>rt === 3 : boolean
+>rt : 3
+>3 : 3
+
+    a;b;
+>a : 3
+>b : 3
+}
+else {
+    a;b;
+>a : never
+>b : never
+}
+a;b;
+>a : 1 | 2 | 3
+>b : 1 | 2 | 3
 ```
-is already legal TypeScipt (5.2.2).  But the sematics are not sensible and `f(1,1)` evaluates to `never`, for reasons explained in the next section.
-
-### 2.1 Determining return type of a function call in case of overload of non-template functions
+*(This result is taken from a TypeScript fork prototype implemention of said correlation.)*
 
 
+While this feature isn't directly related to type checking, it does show the need to for the flow analysis module and the type checking module to share information about type checking results.  Flow analysis needs to know the per signature results of `input weaklyMatches sig`.
+
+## 2 Case of a template function
 
 
-
-
-
-
-because the only signature `sig` satisfying `(1|2,1|2) stronglyMatches sig` is `(...args: any[])`
-
-
-
-
-
-
-### 2.2 Type checking a implementation return value in case of overload of non-template functions
 
 
 
