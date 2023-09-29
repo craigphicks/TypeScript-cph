@@ -29,22 +29,27 @@ They are:
 
 We call `type` a plain type when `objectPart(type)` is empty (i.e., `never`).
 
+The term iff is the standard abbreviation for "if and only if".
+- iff [expression]
+
+is equivalent to
+- if [expression] then true else false.
 
 
 For any two plain types `x`, `y`,
 - `intersection(x,y)` is the type with elements in both `x` and `y`.
 - `x isSubsetOf y` iff for every `p` in `x`, `p` in `y`
-- `x isIntersectionNonEmpty y` iff
-    - for some `p` in `x`, `p` in `y`
+- `x isIntersectionNonEmpty y` iff for some `p` in `x`, `p` in `y`
 
 
 
 ### 0.2. Kinds of Function Declarations
 
 Typescript function declarations include the following kinds of syntax:
-- Plain functions declarations, with a single non-template signature.
+- Plain functions declarations, with a single non-template signature.  See Example 0.1.
 - Template function declarations, which allow constrainted template type variables in a signature. See example 0.2.
-- Overload functions, which describe a function using a set of function signatures, see example 0.3.  Overload declaration can also include template function declarations. See example 0.4.
+- Overload functions, which describe a function using a set of function signatures, see Example 0.3.
+- Overload declaration can also include template function declarations. See example 0.4.
 
 
 *Example 0.1 single non-template function declaration*
@@ -60,38 +65,69 @@ declare function<A in 1|2, B in 1|2>f(a: A, b: B): A|B
 *Example 0.3: simple overload declaration*:
 ```
 declare function f(a: 1, b: 1): 1
-declare function f(a: 1, b: 2): 1
-declare function f(a: 2, b: 1): 2
-declare function f(a: 2, b: 2): 1|2
+declare function f(a: 1, b: 2): 2
+declare function f(a: 2, b: 1): 3
+declare function f(a: 2, b: 2): 4
+```
+
+The overload function `f` in Example 0.3 can be equivalently declared as
+```
+declare const f: {
+    (a: 1, b: 1): 1
+    (a: 1, b: 2): 2
+    (a: 2, b: 1): 3
+    (a: 2, b: 2): 4
+};
 ```
 
 *Example 0.4: mixed overload declaration*:
 ```
 declare const f: {
-    <A in 1|2, B in 1|2>f(a: A, b: B): A;
-    (a: 2, b: 2): 1;
+    <A extends 1, B extends 1|2>f(a: A, b: B): B;
+    (a: 2, b: 1): 3;
+    (a: 2, b: 2): 4;
 };
 ```
 
+An obvious question to ask is whether the order of overload declarations is supposed to reflect the order of in which function implementation is checking for cases.  The following example shows the answer is affirmative.
 
-<ul>
-*Note:* An obvious question to ask is whether the order of overload declarations is supposed to reflect the order of in which function implementation is checking for cases - the answer is a no.  For the above kinds of function declarations, the resulting mappings are invariant with respect to order of overload declarations.
-</ul>
-
-Example 0.3 and 0.4 have the same mappings from input range to output, and therefore they *should* behave identically in terms of type checking.  The behavior should be linked to the resultant mappings, not the syntax that created those mappings.
-
-
-One more way of forming a function declaration is using a distributed template:
 ```
-type KFType<A extends 1 | 2, B extends 1 | 2> = [A,B] extends [2,2] ? (a: 2,b: 2) => -1 : (a: A,b: B) => A;
-interface KF1 {
-    <A extends 1 | 2, B extends 1 | 2>(a: A, b: B): ReturnType<KFType<A,B>>;
-    (...args: any[]): never;
-}
+    type B1 = & {a: 1, b: 1} | {a: 1, b: 2};
+    type B2 = & {a: 1, b: 2} | {a: 2, b: 1};
+
+    declare function f(x: B1): 1;
+    declare function f(x: B2): 2;
+
+    declare const arg1: {a: 1, b: 1} | {a: 1, b: 2};
+    declare const arg2: {a: 1, b: 2} | {a: 2, b: 1};
+
+    const x1 = f(arg1); // 1
+    const x2 = f(arg2); // 2
+    const y1 = f({ a: 1, b: 1 }); // 1
+    const y2 = f({ a: 1, b: 2 }); // 1 (does NOT return 1|2)
+    const y3 = f({ a: 2, b: 1 }); // 2
 ```
 
-The behavior when using a distributed template to define overloads does not seem stable enough to make conclusions about the intended results.
-So it skipped here.  It is usually used for recursive type definitions, where its behavior is predictable.
+It does not appear to be possible to implement overloads using only mappings or distributed types, although they can be used to form unions of functions.
+
+Unions of functions are not overloads.  Unions of functions correspond to alternate branches in flow, e.g. in
+```
+declare const b:boolean;
+const funion = b ? (a: 1)=>1 : (a: 2)=>2;
+funion(1); // error
+// Argument of type 'number' is not assignable to parameter of type 'never'.ts(2345)
+```
+there is an error because the type of `funion` is the union of functions, and for `funion(arg)` to not be an error `arg` would have to be a legal argument for both functions.
+
+However, in the case of the overload
+```
+declare const foverload: {
+    (a: 1)=>1;
+    (a: 2)=>2;
+};
+foverload(1); // no error
+```
+there is no error because one valid overload has been selected.
 
 
 
