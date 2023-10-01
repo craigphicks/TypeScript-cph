@@ -126,8 +126,10 @@ declare const foverload: {
     (a: 2)=>2;
 };
 foverload(1); // no error
+foverload(2); // no error
 ```
 there is no error because one valid overload has been selected.
+
 
 
 
