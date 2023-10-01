@@ -2,7 +2,7 @@
 
 # The Problem
 
-Consider the following overload function and constraints on how it can be called:
+We will consider the following overload function, and also the constraints on how it can be called in current TypeScript:
 
 <a id="problem-example"></a>
 *Problem Example*
@@ -69,9 +69,9 @@ function Workaround2(){
 Both workaround are prohibitibely expensive for the user.
 
 In the case of Workaround 1, the code is duplicating the same code which would found be in the implementation,
-which is redundant.
+which is redundant and laborious.
 
-In the case of Workaround 2, the final overload is already implied by the first 3 overloads, so it is redundant.
+In the case of Workaround 2, the final overload is already implied by the first 3 overloads, so it is redundant and laborious.
 
 Neither workaround is satisfactory.
 
@@ -98,7 +98,7 @@ The proposed psuedo-declaration:
 enum MatchLevel {
     never = 1,
     weakly = 2,
-    strongly = 4
+    strongly = 3
 };
 declare function isAssignable2(sourceType, targetType): [{ matchType: Type, matchLevel: MatchLevel }]
 ```
@@ -239,13 +239,92 @@ but only at the expense excessive labor - actually duplicating the code in the f
 Therefore, if using the proposed algorithm, it is necessary to explain clearly in the TypeScript documentation what kinds of excess types errors will be detected and what will not.  For the function implementor, it is only adding another if case to the logic to handle out-of-bounds input,
 so at least it can be easily caught at run time.
 
-# Pseudocode for `isAssignTo` and `isAssignedTo2`.
+# Algorithmic defintions for `isAssignTo` and `isAssignedTo2`.
 
+## Partitioning Types into "plain" and "object" parts.
+
+Any type `x` (excepting `any` and `unknown` for the moment) can be partioned into
+mutually exclusive parts `plainPart(x)` and `objectPart(x)`.
+
+`plainPart(x)` is any of the subtypes of `x` which do not have variable (key, value) properties that must be taken into account in type checking.
+They are:
+- primitives: `string, number, bigint, boolean, symbol, null, or undefined`
+- literals: literalTypes of `string`, `number`, or `bigint`, e.g., `"1",2,2n`
+- the generic type symbol
+- unique symbols as defined in the target program
+- *(Arrays `array` with element type `elementType(array)` satisfying `plainPart(elementType(array))` could be included in plain type - so `[[[number]]]` could be included as a plain type. That is possible because array keys are not used in type checking.)*
+
+`objectPart(x)` is any of the subtypes of which are the complement of `plainPart` types:
+- functions types, tuple types, objects with keys, and array types (*except those array types which may be included in `plainPart`)*.
+
+We call `type` a plain type when `objectPart(type)` is empty (i.e., `never`).
+
+## Set operations on plain types
+
+Pseudocode declarations for common operations on types:
+```
+function hasPlainPart(t): boolean
+function getPlainPart(t): Type
+function hasObjectPart(t): boolean
+function getObjectPart(t): Type
+```
+
+Pseudocode declarations for common operations on plain type only:
+```
+function isSubset(a,b): boolean;
+/**
+ * Partition x in parts which do (aandb) and do not (anotb) intersection y.
+ * Note: partitionIntersectionPartial(number,1) -> { aandb: 1, anotb: number }
+ * Note: partitionIntersectionPartial(1, number) -> { aandb: 1, anotb: never }
+ */
+function partitionIntersectionPartial(a,b): { aandb: Type, anotb: Type };
+```
+
+## Psuedocode Algorithmic Definition of "isAssignableTo"
+
+This pseudocode is not meant to reflect the exact structure of the current TypeScript implementation of `isTypeAssignableTo(x,y)` function in `checker.ts`.
+This pseudocode does attempt match the observed behavior of that current TypeScript implementation.
+
+```
+// a predefined O(1) lookup table over `{x,y}` with range `true|false`
+declare function externalLUTIsObjectAssignableTo(x,y):boolean
+
+// an O(1) function to check for identical types
+declare function isIdenticalObjectType(x,y): boolean;
+
+// an initially empty lookup table `{x,y}` with range `true|false|pending`
+const internalLUTisObjectAssignableTo: Map<Type,Map<Type,true|false|pending>>
+
+
+type ResultTree = {
+    kind: "and" | "or",
+    children: ResultNode[];
+}
+type ResultPending = {x: Type, y: Type};
+type ResultNode = ResultTree | true | false | ResultPending;
+
+
+
+function isAssignableTo(x,y): boolean {
+    const internalLUTisObjectAssignableTo: Map<Type,Map<Type,true|false|pending>>
+    function isAssignableToHelper(x,y): boolean {
+        if (!isSubset(getPlainPart(x),getPlainPart(y))) return false;
+        if (!hasObjectPart(x)) return true;
+        return isObjectAssignableTo(getObjectType(x),getObjectType(y));
+    }
+    function isObjectAssignableTo(x,y): boolean {
+        if (isIdenticalObjectType(x,y)) return true;
+        if (externalLUTIsObjectAssignableTo(x,y)) return true;
+        if ()
+    }
+}
+
+```
 
 
 ---------------------------
 
-## <a id="sec3"></a> 3 Algorithmic Defintion of "isAssignableTo"
+
 
 let `externalLUTIsObjectAssignableTo` be a preset lookup table over `{x,y}` with range `true|false`
 let `internalLUTisObjectAssignableTo` be an initially empty lookup table `{x,y}` with range `true|false|pending`
@@ -268,10 +347,10 @@ Where `x isObjectAssignableTo y` is:
 
 Where `x isObjectAssignableToDetail y` iff
 - *(side effect: set `internalLUTisObjectAssignableTo(x,y)` to `pending`)*
-- for each non-union object type `objectInX` in `x`
+- for every non-union object type `objectInX` in `x`
     - for some non-union objectType `objectInY` in `y`
-        - let `keys` be the non-optional literal keys of `objectInY`
-        - for each key `k` in `keys`,
+        - let `keys` be the (optional and non-optional) literal keys of `objectInY`
+        - for every key `k` in `keys`,
             - *(optional side effect: error if `k` is not a key in `objectInX`, but such an error could be an over restrictive nuisance)*
             - `objectInX[k] isAssignableTo objectInY[k]` is true
 
