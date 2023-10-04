@@ -40,7 +40,7 @@ Two user workarounds to avoid errors are as follows:
 
 *Workaround 1: narrow inputs by overload*
 ```
-function Workaround1(){
+function Workaround(){
     if (a===2 && b===2) throw Error(); // indicates that 2,2 is known to be not possible
     let r: 0 | 1 | 2 | 3 | 4  = 0;
     if (a===1 && b===1) r=fOverload(a,b);
@@ -52,28 +52,50 @@ function Workaround1(){
 
 *Workaround 2: declare a union of all workarounds as final overload*
 ```
-declare const fOverloadWorkaround2: {
+declare const fOverloadWorkaroundFinalCatchAll: {
     (a: 1, b: 1): 1;
     (a: 1, b: 2): 2;
     (a: 2, b: 1): 3;
     (a: 1 | 2, b: 1 | 2): 1 | 2 | 3;
 };
-function Workaround2(){
+function Workaround(){
     if (a===2 && b===2) throw Error(); // indicates that 2,2 is known to be not possible
     let r: 0 | 1 | 2 | 3 | 4  = 0;
     r = fOverloadWorkaround2(a,b); // no error
-    r; // 1 | 2 | 3
+    r; // 1 | 2 | 3  (pass)
+    r = fOverloadWorkaround2(1,b);
+    r; // 1 | 2 | 3  (fail, want 1 | 2)
 }
+declare const fOverloadWorkaroundElaborate: {
+    (a: 1, b: 1): 1;
+    (a: 1, b: 2): 2;
+    (a: 2, b: 1): 3;
+    (a: 1, b: 1 | 2): 1 | 2;
+    (a: 1 | 2, b: 1 ): 1 | 3;
+    (a: 1 | 2, b: 1 | 2): 1 | 2 | 3;
+};
+
 ```
+
 
 Both workaround are prohibitibely expensive for the user.
 
-In the case of Workaround 1, the code is duplicating the same code which would found be in the implementation,
-which is redundant and laborious.
+In the case of Workaround1, the code is duplicating the same code which would found be in the implementation.
+That is redundant and laborious.
 
-In the case of Workaround 2, the final overload is already implied by the first 3 overloads, so it is redundant and laborious.
+In the case of Workaround2, `fOverloadWorkaroundFinalCatchAll` is added as a final catch all overload is added and it does stop errors.
 
-Neither workaround is satisfactory.
+Unfortunately, besides also being redundant and laborious, there are two more problems:
+
+- (1) it is not possible to write an overload that specifies the case `(a,b)=(1,2)|(2,1)`, returning `2|3`.
+
+
+- (1) `fOverloadWorkaroundFinalCatchAll(a/*1*/,b/*1|2*/)` gives an overly wide result `1|2|3` when `1|2` is more accurate.
+That could be addressed by adding more overloads as shown in `fOverloadWorkaroundElaborate`, but that is even more laborious,
+and the task scales up with combinatorial complexity.
+
+
+None of the above workarounds are satisfactory.
 
 # Proposed Solution
 
@@ -113,14 +135,15 @@ function isAssignableTo(inputType,parameterType): boolean {
 
 ```
 declare function isAssignableTo2(sourceType, targetType): [{ matchType: Type, matchLevel: MatchLevel }]
-    let {anotb,bnota,aandb: matchType} = partitionByIntersection(sourceType, targetType); // bnota is not used, but shown for clarity
+    let {anotb,aandb: matchType} = partitionByIntersectionPartial(sourceType, targetType);
     return {
         matchType,
         matchLevel: isNever(matchType) ? MatchLevel.never : isNever(anotb) ? MatchLevel.strongly : MatchLevel.weakly
     }
 }
 ```
-*(Note: reason for returning `matchType` to be made clear later.)*
+*(Note: reason for returning `matchType` is made clear [below](#included-additional-feature-flow-analysis-may-correlate-return-types-with-matched-input-values).)*
+
 In the case when `sourceType` is a subset of `targetType`, `isAssignableTo` returns `true` while `isAssignableTo2` returns `MatchLevel.strongly`.
 Otherwise `isAssignableTo` returns `false` while `isAssignableTo2` returns either `MatchLevel.never` (in the case of empty intersection) or `MatchLevel.weakly` (in the case of non-empty intersection).
 
@@ -181,7 +204,7 @@ function inputMatchesSignature2(input,sig): { matchTypes?: Type[], matchLevel: M
 In the case where input does not weakly match any signature in overload,
 but does strongly match at least one signature in overload
 the existing algorithm returns `{ matchedIndex, true }`, while the proposed algorithm
-return an array with a single element `[{sigidx: matchedIndex, matchLevel: MatchLevel.strongly, ....}]`,
+return an size one array `[{sigidx: matchedIndex, matchLevel: MatchLevel.strongly, ....}]`,
 i.e., in that special case they behave more or less identicallly.
 However the proposed algorithm can return multiple matches when weak matches are present,
 when the existing algorithm would just return false.
@@ -203,7 +226,7 @@ let matches = inputMatchesOverloads2(input,signatures);
 let callExpressionReturnType = union(matches.map(item=>signatures[item.sigidx].returnType));
 ```
 
-## Included Additional Feature 1: Flow analysis may correlate return types with matched input values.
+## Included Additional Feature: Flow analysis may correlate return types with matched input values.
 
 Morever, the flow analysis could use the correlation between matching input values and return values
 to allow the function calling coder to do this:
@@ -239,7 +262,7 @@ but only at the expense excessive labor - actually duplicating the code in the f
 Therefore, if using the proposed algorithm, it is necessary to explain clearly in the TypeScript documentation what kinds of excess types errors will be detected and what will not.  For the function implementor, it is only adding another if case to the logic to handle out-of-bounds input,
 so at least it can be easily caught at run time.
 
-# Algorithmic defintions for `isAssignTo` and `isAssignedTo2`.
+# Algorithms definitions for `isAssignTo` and `isAssignedTo2`.
 
 ## Partitioning Types into "plain" and "object" parts.
 
@@ -254,7 +277,7 @@ They are:
 - unique symbols as defined in the target program
 - *(Arrays `array` with element type `elementType(array)` satisfying `plainPart(elementType(array))` could be included in plain type - so `[[[number]]]` could be included as a plain type. That is possible because array keys are not used in type checking.)*
 
-`objectPart(x)` is any of the subtypes of which are the complement of `plainPart` types:
+`objectPart(x)` is any of the subtypes of which are the complement of `plainPart` types, or a union thereof:
 - functions types, tuple types, objects with keys, and array types (*except those array types which may be included in `plainPart`)*.
 
 We call `type` a plain type when `objectPart(type)` is empty (i.e., `never`).
@@ -273,94 +296,319 @@ Pseudocode declarations for common operations on plain type only:
 ```
 function isSubset(a,b): boolean;
 /**
- * Partition x in parts which do (aandb) and do not (anotb) intersection y.
+ * Partition x in parts which do (aandb), and do not (anotb), intersect y.
  * Note: partitionIntersectionPartial(number,1) -> { aandb: 1, anotb: number }
  * Note: partitionIntersectionPartial(1, number) -> { aandb: 1, anotb: never }
  */
 function partitionIntersectionPartial(a,b): { aandb: Type, anotb: Type };
 ```
 
-## Psuedocode Algorithmic Definition of "isAssignableTo"
+
+## Algorithm for "isAssignableTo"
 
 This pseudocode is not meant to reflect the exact structure of the current TypeScript implementation of `isTypeAssignableTo(x,y)` function in `checker.ts`.
-This pseudocode does attempt match the observed behavior of that current TypeScript implementation.
+
+However, it does attempt match most of the observed behavior of that current TypeScript implementation.
+This `isAsignableTo` algorithm is also the base upon which the more complex `isAssignableTo2` will be built - and `isAssignableTo2` is required for the proposed solution to the overloads problem.
 
 ```
 // a predefined O(1) lookup table over `{x,y}` with range `true|false`
-declare function externalLUTIsObjectAssignableTo(x,y):boolean
+// declare function externalLUTIsObjectAssignableTo(x,y):boolean
 
 // an O(1) function to check for identical types
 declare function isIdenticalObjectType(x,y): boolean;
 
-// an initially empty lookup table `{x,y}` with range `true|false|pending`
+// an initially empty lookup table `{source,target}` with range `true|false|pending`
 const internalLUTisObjectAssignableTo: Map<Type,Map<Type,true|false|pending>>
 
-
-type ResultTree = {
-    kind: "and" | "or",
-    children: ResultNode[];
+type ResultTreeAnd = {
+    kind: "and",
+    children: ResultTree[];
 }
-type ResultPending = {x: Type, y: Type};
-type ResultNode = ResultTree | true | false | ResultPending;
+type ResultTreeOr = {
+    kind: "or",
+    children: ResultTree[];
+}
+type ResultTreePending = {
+    kind: "pending";
+    source: Type, target: Type
+}
+type ResultTreeResolved = {
+    kind: "resolved",
+    result: boolean
+}
+type ResultTree = ResultTreeAnd | ResultTreeOr | ResultTreePending | ResultTreeResolved;
 
+type createResultTreeResolved(b:boolean):ResultTreeResolved {
+    return {kind:"resolved",result:b};
+}
 
 
 function isAssignableTo(x,y): boolean {
-    const internalLUTisObjectAssignableTo: Map<Type,Map<Type,true|false|pending>>
-    function isAssignableToHelper(x,y): boolean {
-        if (!isSubset(getPlainPart(x),getPlainPart(y))) return false;
-        if (!hasObjectPart(x)) return true;
-        return isObjectAssignableTo(getObjectType(x),getObjectType(y));
+    const internalLUTisObjectAssignableTo: MapWithTwoKeys<Type,Type,true|false|"pending">
+    return resolveTree(isAssignableToWorker(x,y)).result;
+
+    function resolveTree(rt): ResultTreeResolved {
+        switch (rt.kind){
+            case "resolved": return rt;
+            case "pending":
+                if (internalLUTisObjectAssignableTo.get(rt.source,rt.target)===false){
+                    return createResultTreeResolved(false);
+                }
+                // remaining "pendings" and true are both resolved to true
+                return createResultTreeResolved(true);
+            case "and":
+                return createResultTreeResolved(rt.children.every(rtchild=>resolveTree(rtChild).result))
+            case "or":
+                return createResultTreeResolved(rt.children.some(rtchild=>resolveTree(rtChild).result))
+        }
     }
-    function isObjectAssignableTo(x,y): boolean {
-        if (isIdenticalObjectType(x,y)) return true;
-        if (externalLUTIsObjectAssignableTo(x,y)) return true;
-        if ()
+
+    function isAssignableToWorker(x,y): ResultTree {
+        if (!isSubset(getPlainPart(x),getPlainPart(y))) return createResultTreeResolved(false);
+        if (!hasObjectPart(x)) return createResultTreeResolved(true);
+        if (!hasObjectPart(y)) return createResultTreeResolved(false);
+        let xobj = getObjectPart(x);
+        let yobj = getObjectPart(y);
+        if (isIdenticalObjectType(xobj,yobj)) return createResultTreeResolved(true);
+        if (externalLUTIsObjectAssignableTo(xobj,yobj)) return createResultTreeResolved(true);
+        // Next clause prevents calling the
+        if (internalLUTIsObjectAssignableTo.has(xobj,yobj)){
+            switch(internalLUTIsObjectAssignableTo.get(xobj,yobj)){
+                case true: return createResultTreeResolved(true);
+                case false: return createResultTreeResolved(false);
+                case "pending": return {kind:"pending", source:xobj, target:yobj};
+            }
+        }
+        return isObjectAssignableTo(objx,objy);
+    }
+    function isObjectAssignableTo(x,y): ResultTree {
+        internalLUTIsObjectAssignableTo.set(x,y,"pending")
+        let rt = requireForEverySource(x);
+        if (rt.kind==="resolved") internalLUTIsObjectAssignableTo.set(x,y,rt.result);
+        return rt;
+
+        function requireForEverySource(): ResultTree {
+            children = [];
+            if (getNonUnionTypes(y).every(tsource=>{
+                let rt = requireForSomeTarget(tsource);
+                if (rt.kind===resolved) return rt.result;
+                children.push(rt);
+                return true; // keep going
+            }){
+                return {kind: and, children};
+            }
+            else {
+                return createResultTreeResolved(false);
+            }
+        }
+
+        function requireForSomeTarget(tsource): ResultTree {
+            children = [];
+            if (getNonUnionTypes(y).some(ttarget=>{
+                let rt = requireForEveryNonOptionalKey(tsource,ttarget);
+                if (rt.kind===resolved) return rt.result;
+                children.push(rt);
+                return false; // keep going
+            }){
+                return createResultTreeResolved(true);
+            }
+            else {
+                return {kind: or, children};
+            }
+        }
+
+        function requireForEveryNonOptionalKey(tsource,ttarget): ResultTree {
+            children = [];
+            let keys = getNonOptionLiteralKeys(ttarget)
+            if (keys.every(k=>{
+                let rt = isAssignableToWorker(getObjectTypeAtKey(tsource,k),getObjectTypeAtKey(ttarget,k));
+                if (rt.kind===resolved) return rt.result;
+                chidren.push(rt);
+                return true; // keep going
+            }){
+                return {kind: and, children};
+            }
+            else {
+                return createResultTreeResolved(false);
+            }
+        }
     }
 }
-
 ```
 
+The algorithm for `isAssignableTo` will always terminate because in function `isAssignableToWorker` it checks `internalLUTIsObjectAssignableTo` to prevent calling `isObjectAssignableTo` on the same `x,y` pair twice.  If `isObjectAssignableTo` has been called on that `x,y` pair but has not yet resolved, it enters a result of pending into the result tree.
 
----------------------------
+When the algorithm terminates, but before calling `resolveTree`, some of those `pendings` may have resolved, but not necessarily all of them.
 
+What it *means* is that the algorithm described a self referential logic equation that has multiple solutions.  The set of solution is indexed by the remaining `x,y` having "pending" values in `internalLUTIsObjectAssignableTo`, where each such `x,y` pair could be resolved to `true` or `false`, and the logical equation would be logically self-consistent.
 
-
-let `externalLUTIsObjectAssignableTo` be a preset lookup table over `{x,y}` with range `true|false`
-let `internalLUTisObjectAssignableTo` be an initially empty lookup table `{x,y}` with range `true|false|pending`
-
-`x isAssignableTo y` iff
-- `plainPart(x) isIntersectionNonEmptyAndSubsetOf plainPart(y)` --- *(optional side effect: emit error)*
-- any of
-    - `hasObjectPart(x)===false`
-    - all of
-        - `hasObjectPart(x)===true`
-        - `objectPart(x) isObjectAssignableTo objectPart(y)`, where `objectPart` may be a union of non-union object types.
-
-Where `x isObjectAssignableTo y` is:
-- if `x isIdenticalTo y`or `externalLUTIsObjectAssignableTo(x,y)`  then true
-- else if `internalLUTIsObjectAssignableTo(x,y)===true` then true
-- else if `internalLUTIsObjectAssignableTo(x,y)===false` then false
-- else if `internalLUTIsObjectAssignableTo(x,y)===pending` then
-    - the future value of `internalLUTIsObjectAssignableTo(x,y)` which could be true or false --- *(prevents infinite loop)*
-- else `x isObjectAssignableToDetail y`
-
-Where `x isObjectAssignableToDetail y` iff
-- *(side effect: set `internalLUTisObjectAssignableTo(x,y)` to `pending`)*
-- for every non-union object type `objectInX` in `x`
-    - for some non-union objectType `objectInY` in `y`
-        - let `keys` be the (optional and non-optional) literal keys of `objectInY`
-        - for every key `k` in `keys`,
-            - *(optional side effect: error if `k` is not a key in `objectInX`, but such an error could be an over restrictive nuisance)*
-            - `objectInX[k] isAssignableTo objectInY[k]` is true
+We can therefore select a unique solution from that set of solutions by any other criteria we choose.  Note that although some "pending" value remain, all of the relevant keys and all of the relevant plain types in all of the objects have been tested and resolved. All that remains
+is to answer the question "is (transitive) recursion acceptable?".  The answer should be yes, so all the "pendings" are resolved to "true" in `resolveTree`.
 
 
-The algorithm `isAssignableTo` is recursive, but it will always terminate - thanks to clause marked "*(prevents infinite loop)*, waiting for a future result.  However, at termination there will not alway be a unique solution, again thanks to that same clause marked "*(prevents infinite loop)*.  Some entries in `internalLUTIsObjectAssignableTo` may be "stuck: at `pending`.  This should be considered a set of solutions, indexable by the remaining `{x,y}`, where for each such `{x,y}` the value `x isObjectAssignableTo y` may be `true` or `false`, either one resulting in a consistent solution.
+## Algorithm for "isAssignableTo2"
 
-We can select a unique solution from that set of solutions by any other criteria we choose.
+Not done yet.
 
-One criteria is simply to set `x isObjectAssignableTo y` to `true` for every remaining pending `{x,y}`.  That is arguably sound because the relationships between all keys and plain types has already been checked completely, and if the only remaining question "is (transitive) recursion acceptable?", the answer is yes.
+```
+// a predefined O(1) lookup table over `{x,y}` with range `true|false`
+// declare function externalLUTIsObjectAssignableTo(x,y):boolean
 
-A direct literal implementation of `isAssignableTo` following the above logic exactly would not be an optimal implementation. Also, any implementation might use approximations in order to reduce complexity.  However, the above simple description for `isAssignableTo` is still useful as a reference point.
+// an O(1) function to check for identical types
+declare function isIdenticalObjectType(x,y): boolean;
 
+// an initially empty lookup table `{source,target}` with range `true|false|pending`
+const internalLUTisObjectAssignableTo: Map<Type,Map<Type,true|false|pending>>
+
+type ResultTreeAnd = {
+    kind: "and",
+    children: ResultTree[];
+}
+type ResultTreeOr = {
+    kind: "or",
+    children: ResultTree[];
+}
+type ResultTreePending = {
+    kind: "pending";
+    source: Type, target: Type
+}
+type ResultTreeResolved = {
+    kind: "resolved",
+    result: IsAssignableResult
+}
+type ResultTreeSomeTarget = {
+
+}
+type ResultTreeEveryNonOptionalKeys = {
+    kind: "everyKey",
+    byKey: {key: string, matchType: Type, matchLevel: MatchLevel}
+}
+type IsAssignableResult = { matchType?: Type, matchLevel: MatchLevel };
+
+type ResultTree = ResultTreeAnd | ResultTreeOr | ResultTreePending | ResultTreeResolved;
+
+type createResultTreeResolved(matchLevel: MatchLevel, matchType?: Type):ResultTreeResolved {
+    return {kind:"resolved",result:IsAssignableResult};
+}
+
+
+function isAssignableTo(x,y): IsAssignableResult {
+    const internalLUTisObjectAssignableTo: MapWithTwoKeys<Type,Type,true|false|"pending">
+    return resolveTree(isAssignableToWorker(x,y)).result;
+
+    function resolveTree(rt): ResultTreeResolved {
+        switch (rt.kind){
+            case "resolved": return rt;
+            case "pending":
+                if (internalLUTisObjectAssignableTo.get(rt.source,rt.target)===false){
+                    return createResultTreeResolved(false);
+                }
+                // remaining "pendings" and true are both resolved to true
+                return createResultTreeResolved(true);
+            case "and":
+                return createResultTreeResolved(rt.children.every(rtchild=>resolveTree(rtChild).result))
+            case "or":
+                return createResultTreeResolved(rt.children.some(rtchild=>resolveTree(rtChild).result))
+        }
+    }
+
+    function isAssignableToWorker(x,y): ResultTree {
+        let xplain = getPlainPart(x);
+        if (!isNever(xplain))
+        let {anotb:plainUnmatchedType,aandb: plainMatchType} = partitionByIntersectionPartial(x,y);
+        if (isNever(matchType))
+        return {
+            matchType,
+            matchLevel: isNever(matchType) ? MatchLevel.never : isNever(anotb) ? MatchLevel.strongly : MatchLevel.weakly
+        }
+
+
+        if (!isSubset(getPlainPart(x),getPlainPart(y))) return createResultTreeResolved(false);
+        if (!hasObjectPart(x)) return createResultTreeResolved(true);
+        if (!hasObjectPart(y)) return createResultTreeResolved(false);
+        let xobj = getObjectPart(x);
+        let yobj = getObjectPart(y);
+        if (isIdenticalObjectType(xobj,yobj)) return createResultTreeResolved(true);
+        if (externalLUTIsObjectAssignableTo(xobj,yobj)) return createResultTreeResolved(true);
+        // Next clause prevents calling the
+        if (internalLUTIsObjectAssignableTo.has(xobj,yobj)){
+            switch(internalLUTIsObjectAssignableTo.get(xobj,yobj)){
+                case true: return createResultTreeResolved(true);
+                case false: return createResultTreeResolved(false);
+                case "pending": return {kind:"pending", source:xobj, target:yobj};
+            }
+        }
+        return isObjectAssignableTo(objx,objy);
+    }
+    function isObjectAssignableTo(x,y): ResultTree {
+        internalLUTIsObjectAssignableTo.set(x,y,"pending")
+        let rt = requireForEverySource(x);
+        if (rt.kind==="resolved") internalLUTIsObjectAssignableTo.set(x,y,rt.result);
+        return rt;
+
+        function requireForEverySource(): ResultTree {
+            children = [];
+            if (getNonUnionTypes(y).every(tsource=>{
+                let rt = requireForSomeTarget(tsource);
+                if (rt.kind===resolved) return rt.result;
+                children.push(rt);
+                return true; // keep going
+            }){
+                return {kind: and, children};
+            }
+            else {
+                return createResultTreeResolved(false);
+            }
+        }
+
+        function requireForSomeTarget(tsource): ResultTree {
+            children = [];
+            let anyWeak = false;
+            ley anyStrong = false;
+            if (getNonUnionTypes(y).forEach(ttarget=>{
+                let rt = requireForEveryNonOptionalKey(tsource,ttarget);
+                if (rt.kind===resolved) {
+                    if (rt.result.matchKind===matchKind.weak) anyWeak = true;
+                    else if (rt.result.matchKind===matchKind.strong) anyStrong = true;
+                }
+                else children.push(rt)
+            });
+
+            {
+                return createResultTreeResolved(true);
+            }
+            else {
+                return {kind: or, children};
+            }
+        }
+
+        function requireForEveryNonOptionalKey(tsource,ttarget): ResultTree {
+            children = [];
+            let keys = getNonOptionLiteralKeys(ttarget)
+            let anyWeakly = false;
+            if (keys.every(k=>{
+                let rt = isAssignableToWorker(getObjectTypeAtKey(tsource,k),getObjectTypeAtKey(ttarget,k));
+                anyWeakly ||= (rt.matchLevel===MatchLevel.weakly);
+                // Note: the actual weakly matched type for the key is not being used here,
+                // but that could be used here to narrow the type further.
+                // However, for the moment only select from union types, don't narrow at the key level.
+                if (rt.kind===resolved){
+                    if (rt.result.matchKind===matchKind.never) return false; // short circuit
+                    if (rt.result.matchKind===matchKind.weak) anyWeakly = true;
+                    return true;
+                }
+                chidren.push(rt); // must be pending
+                return true; // keep going
+            }){
+                if (children.length) return {kind: and, children, result: anyWeakly ? MatchLevel.weakly : MatchLevel.strongly};
+                return createResultTreeResolved(result: anyWeakly ? MatchLevel.weakly : MatchLevel.strongly);
+            }
+            else {
+                return createResultTreeResolved(MatchLevel.never);
+            }
+        }
+    }
+}
+```
 
