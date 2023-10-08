@@ -835,67 +835,37 @@ namespace ts {
                     consoleGroup(`flough[check return type][in] ${dbgNodeToString(expr.parent)}]`);
                 }
                 // check the return type of the function against the type of the return statement at its location
-                const caller = ((): FunctionLikeDeclaration | undefined =>{
+                const functionLikeDeclaration = ((): FunctionLikeDeclaration | undefined =>{
                     let tmp: Node | undefined = expr.parent;
                     while (tmp && !(tmp.kind & SyntaxKind.FunctionDeclaration)){
                         tmp = tmp.parent;
                     }
                     return tmp as FunctionLikeDeclaration | undefined;
                 })();
-                assertCastType<FunctionLikeDeclaration>(caller);
+                Debug.assert(functionLikeDeclaration, "unexpected functionLikeDeclaration is undefined");
+                assertCastType<FunctionLikeDeclaration>(functionLikeDeclaration);
+                const funcType = checker.getTypeAtLocation(functionLikeDeclaration);
+                /**
+                 * require the parameter type to be a readonly tuple, so at least the top level is readonly.
+                 * That still wouldn't prevent the tuple from containing non-readonly elements, but that is a different issue.
+                 */
+                // IWOZERE
+                
+                const sigs = checker.getSignaturesOfType(funcType, SignatureKind.Call);
                 if (getMyDebug()){
-                    consoleGroup(`flough[check return type][] caller.type is defined: ${!!caller.type},  callerNode: ${dbgNodeToString(caller)}`);
+                    consoleLog(`flough[check return type][] funcType: ${dbgTypeToString(funcType)}`);
+                    consoleLog(`flough[check return type][] sigs.length: ${sigs.length}`);
+                    sigs.forEach((sig,idx) => {
+                        const s= dbgsModule.dbgSignatureToString(sig);
+                        consoleLog(`flough[check return type][] sig[${idx}]: ${s}`);
+                    });
+                    consoleGroupEnd();
                 }
                 /**
-                 * call.type is undefined for function expressions, but defined for function declarations. (says copilot)
-                 * It shows the return type.  If there is no return type, it will be inferred by checker.
-                 * (using checker.getReturnTypesOfSignature says copilot).
+                 * If the number of sigs is 1, and the number of typeParameters is 0, then the function is not overloaded and/or generic.
                  */
-                if (caller.type){
-                    const funcType = checker.getTypeAtLocation(caller);
-                    const sigs = checker.getSignaturesOfType(funcType, SignatureKind.Call);
-                    if (getMyDebug()){
-                        consoleLog(`flough[check return type][] funcType: ${dbgTypeToString(funcType)}`);
-                        consoleLog(`flough[check return type][] sigs.length: ${sigs.length}`);
-                        sigs.forEach((sig,idx) => {
-                            const s= dbgsModule.dbgSignatureToString(sig);
-                            consoleLog(`flough[check return type][] sig[${idx}]: ${s}`);
-                        });
-                        consoleGroupEnd();
-                    }
-                    /**
-                     * for each idx of implementation sig params
-                     * - let implTypes[idx] = the narrowed type coresponding to that index at the return statement.
-                     * set (node, {sigs, implTypes, flowReturnedType}) to a map that will be used by checker to check the return type of the function.
-                     * Actually checking that return type in the checker module must compare implTypes[] to the signature parameter types.
-                     * The checker should be using this algorithm:
-                     * allowedReturnTypes = never;
-                     * For each sig of sigs
-                     *   if weakMatches^(implTypes, sig.parameters)
-                     *     allowedReturnTypes ||= subset(flowReturnedType, sig.returnType)
-                     * if (subset(flowReturnType, allowedReturnTypes)===false) error
-                     * ^Definition of weakMatches:
-                     *   sig.parameters.every((sigparam,idx) => intersection(sigparam.type, implTypes[idx])!==never)
-                     *
-                     * weakMatches implies a certain meaning on the contract for overloads implementation:
-                     *
-                     * - The order of the overloads is not important.  It can be canonically described as union (set) of functions.
-                     *   That means the implementation does not **have to** execute in a given order (although it can).
-                     *   Why use weakMatches then?  Because it simplifies the TypeScript algorithm for matching.
-                     *   If order were important, then the algorithm would have to be hugely more complicated:
-                     *   Accurate matching would have to include subtracting cross set of parameters of earlier failed matches from
-                     *   the cross set of parameters of each later attemped match.  Since that cannot be done in reasonable time,
-                     *   the actual algorithm used is weakMatching, and the contract for that the implementation is de facto order independent.
-                     *
-                     * - weakMatches^(implTypes, sig.parameters)===true does not imply that intersection(flowReturnedType,sig.returnType) is not empty.
-                     *   This is kind of obvious, because the implementation can return only once.
-                     *   However, it still requires that the intersection(flowReturnType, sig.returnType) is not empty for at least one weakMatching sig.
-                     *
-                     * Another benefit describing weakMatching is that unions of functions already occur in the type system, e.g.,
-                     * - user definitions: `type F = ((a: number)=>number) | ((a: string)=>string);`
-                     * - template functions: `function f<T>(a: T): T;` which correlate the parameter and return types (this is a secret undocumented feature of TypeScript)
-                     * - distributed template functions: <example goes here>
-                     */
+                if (sigs.length===1 && !functionLikeDeclaration.typeParameters?.length){
+                    //checker.isTypeAssignableTo()
                 }
                 if (getMyDebug()){
                     consoleLog(`flough[check return type][out] ${dbgNodeToString(expr.parent)}]`);
@@ -1107,7 +1077,69 @@ namespace ts {
                     consoleGroupEnd();
                 }
                 return ret;
-            } // endof mrNarrowIdentifier()
+            } // endof floughIdentifier()
+
+            function floughCheckReturnType(floughReturn: FloughReturn): void {
+                if (getMyDebug()) {
+                    consoleGroup(`floughCheckReturnType[in] ${dbgNodeToString(expr)}`);
+                }
+                /**
+                 * First obtain the signatures against which to check the return type.
+                 */
+                const sigs = ((): readonly Signature[] =>{
+                    const functionLikeDeclaration = ((): FunctionLikeDeclaration | undefined =>{
+                        let tmp: Node | undefined = expr.parent;
+                        while (tmp && !(tmp.kind & SyntaxKind.FunctionDeclaration)){
+                            tmp = tmp.parent;
+                        }
+                        return tmp as FunctionLikeDeclaration | undefined;
+                    })();
+                    Debug.assert(functionLikeDeclaration, "unexpected functionLikeDeclaration is undefined");
+                    // functionLikeDeclaration.type is the (possibly generic) return type, not what we need.
+                    //Debug.assert(functionLikeDeclaration.type, "unexpected functionLikeDeclaration.type is undefined");
+                    assertCastType<FunctionLikeDeclaration>(functionLikeDeclaration);
+                    // if (getMyDebug()){
+                    //     consoleGroup(`flough[check return type][] caller.type is defined: ${!!functionLikeDeclaration.type},  callerNode: ${dbgNodeToString(functionLikeDeclaration)}`);
+                    // }
+                    const funcType = checker.getTypeAtLocation(functionLikeDeclaration);
+                    const sigs1 = checker.getSignaturesOfType(funcType, SignatureKind.Call);
+                    if (getMyDebug()){
+                        consoleLog(`floughCheckReturnType[] funcType: ${dbgTypeToString(funcType)}`);
+                        consoleLog(`floughCheckReturnType[] sigs.length: ${sigs1.length}`);
+                        sigs1.forEach((sig,idx) => {
+                            const s= dbgsModule.dbgSignatureToString(sig);
+                            consoleLog(`floughCheckReturnType[] sig[${idx}]: ${s}, sig.typeParamters?.length: ${sig.typeParameters?.length}`);
+                        });
+                    }
+                    return sigs1;
+                })();
+                floughReturn.unmerged.forEach((rttr,rttridx): void =>{
+                    /**
+                     * If the number of sigs is 1, and the number of typeParameters is 0, then the function is not overloaded and/or generic.
+                     * and rttr.type can just be tested for assignablility to the sig return type.
+                     */
+                    if (sigs.length===1 && !sigs[0].typeParameters?.length){
+                        const sigRtnTsType = checker.getReturnTypeOfSignature(sigs[0]);
+                        const ok = checker.isTypeAssignableTo(floughTypeModule.getTsTypeFromFloughType(rttr.type), sigRtnTsType);
+
+                    }
+                    for (let sigidx = 0; sigidx<sigs.length; ++sigidx){
+                        const sig = sigs[sigidx];
+                        // infer the function arguements at this location in the function body. Wow!
+
+                    }
+
+                });
+
+
+                // floughReturn.unmerged.forEach((rttr,i)=>{
+                //     dbgRefTypesTableToStrings(rttr).forEach(s=>consoleLog(`checkReturnType[in]: unmerged[${i}]: ${s}`));
+                // });
+                if (getMyDebug()) {
+                    consoleLog(`checkReturnType[out] ${dbgNodeToString(expr)}`);
+                    consoleGroupEnd();
+                }
+            };
 
             function floughAux(/* { sci, expr, inferStatus, qdotfallout: qdotfallout }: floughArgs */): FloughReturn {
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
@@ -2058,12 +2090,32 @@ namespace ts {
                                 if (getMyDebug()){
                                     let str = "";
                                     oneMapping.forEach((t,_i)=>str+=`${dbgRefTypesTypeToString(t)}, `);
-                                    consoleLog(`floughByCallExpression[one sig done] rttridx:${rttridx}, sigidx:${sigidx} pass1:${pass1}, oneMapping:[${str}]`);
+                                    consoleLog(`floughByCallExpression[one sig matched] rttridx:${rttridx}, sigidx:${sigidx} pass1:${pass1}, oneMapping:[${str}]`);
                                 }
                                 if (pass1){
                                     allMappings.push(oneMapping);
 
-                                    const functionSigRtnType = floughTypeModule.createRefTypesType(arrsigrettype[sigidx]);
+                                    // if it was a generic function, the return type may depend upon the input types,
+                                    // so we can't just use the return type of the first signature.
+                                    // If we set up the matched inputs and call
+                                    // (coPilotSays) getReturnTypeOfSignature but actually i think it is
+                                    // getSignatureInstantiationWithoutFillingInTypeArguments (expose this function in the TypeChecker API )
+                                    // it will give us the correct return type.
+                                    let sigRtnTsType: Type;
+                                    //if (sig.typeParameters?.length>0) // 'sig.typeParameters.length' is possibly 'undefined'.ts(18048)  Huh?
+                                    if (sig.typeParameters && sig.typeParameters.length>0){
+                                        const narrowedSig = checker.getSignatureInstantiationWithoutFillingInTypeArguments(sig, oneMapping.map(t=>floughTypeModule.getTsTypeFromFloughType(t)));
+                                        sigRtnTsType = checker.getReturnTypeOfSignature(narrowedSig);
+                                        if (getMyDebug()){
+                                            consoleLog(`floughByCallExpression[one sig matched] rttridx:${rttridx}, sigidx:${sigidx}] `
+                                            + `tplfunc narrowed: ${checker.signatureToString(narrowedSig)}`);
+                                            consoleLog(`floughByCallExpression[one sig matched] rttridx:${rttridx}, sigidx:${sigidx}] `
+                                            + `tplfunc narrowed rtn tstype: ${dbgTypeToString(sigRtnTsType)}`);
+                                        }
+                                    }
+                                    else sigRtnTsType = arrsigrettype[sigidx];
+
+                                    const functionSigRtnType = floughTypeModule.createRefTypesType(sigRtnTsType);
                                     if (!floughTypeModule.isNeverType(functionSigRtnType)){
                                         const rttr: RefTypesTableReturnNoSymbol = {
                                             type: functionSigRtnType,

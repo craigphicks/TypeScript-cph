@@ -4329,7 +4329,8 @@ namespace ts {
     }
     export interface TypeChecker {
         ///* @internal */ cloneNonTupleNonArrayObjectType(type: Type): Type;
-        isTypeWriterSortUnionTypesEnabled(): boolean;
+        /* @internal */ getSignatureInstantiationWithoutFillingInTypeArguments(signature: Signature, typeArguments: readonly Type[] | undefined): Signature;
+        /* @internal */ isTypeWriterSortUnionTypesEnabled(): boolean;
         /* @internal */ createTupleType(elementTypes: readonly Type[], elementFlags: readonly ElementFlags[], readonly?: boolean): Type;
         /* @internal */ createReaonlyTupleTypeFromTupleType(type: Readonly<TupleTypeReference>): TupleTypeReference;
         /* @internal */ isReadonlyArrayType(type: Type): boolean;

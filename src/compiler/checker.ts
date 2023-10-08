@@ -677,6 +677,7 @@ namespace ts {
             isTypeWriterSortUnionTypesEnabled(){
                 return enableTypeWriterSortUnionTypes;
             },
+            getSignatureInstantiationWithoutFillingInTypeArguments,
             createReaonlyTupleTypeFromTupleType,
             isReadonlyArrayType,
             getFreshTypeOfLiteralType,

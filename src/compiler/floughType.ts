@@ -784,6 +784,14 @@ namespace ts {
                 }
                 return;
             }
+            if (t.flags & TypeFlags.TypeParameter){
+                // just guessing here
+                assertCastType<TypeParameter>(t);
+                if (t.resolvedBaseConstraint) return doUnionOne(t.resolvedBaseConstraint);
+                //else if (t.constraint) return doUnionOne(t.constraint);
+                Debug.fail("not yet implemented: no resolvedBaseConstraint for ",()=>Debug.formatTypeFlags(tstype.flags));
+
+            }
             Debug.fail("not yet implemented: ",()=>Debug.formatTypeFlags(tstype.flags));
         }
         doUnionOne(tstype);
