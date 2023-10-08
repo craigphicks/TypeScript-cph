@@ -1,0 +1,42 @@
+// Rename this file 'settings.json' or merge its
+// contents into your existing settings.
+{
+    // "eslint.validate": [
+    //     "typescript"
+    // ],
+    // "eslint.options": {
+    //     "rulePaths": ["./scripts/eslint/built/rules/"],
+    //     "ext": [".ts"]
+    // },
+
+
+    "files.eol": "\r\n",
+    "eslint.validate": [
+        "typescript"
+    ],
+    "eslint.options": {
+        "rulePaths": ["./scripts/eslint/built/rules/"],
+        "ext": [".ts"]
+    },
+    "editor.bracketPairColorization.enabled": false,
+    //"editor.renderWhitespace": "all",
+    //"typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "bookmarks.saveBookmarksInProject": true,
+    "github.copilot.enable": {
+        "*": true,
+        "typescript": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    },
+    "github.copilot.advanced": {
+    
+    },
+    // Default node modules :
+    // "typescript.tsdk": "node_modules/typescript/lib"
+    // To use the last-known-good (LKG) compiler version:
+    // "typescript.tsdk": "lib"
+    // To use the locally built compiler, after 'npm run build':
+    //"typescript.tsdk": "built/local"
+}
