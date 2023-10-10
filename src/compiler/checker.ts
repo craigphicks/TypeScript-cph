@@ -23,9 +23,7 @@ namespace ts {
     // export const narrowTypeExports: {
     //     narrowTypeByEquality?: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     // }={};
-
-//    export function getChecker(){return checker;}
-
+    
     createMyConsole({
         myMaxLinesOut,
         getDbgFileCount: ()=>dbgFlowFileCnt,
@@ -1825,6 +1823,8 @@ namespace ts {
                 return (declaration: Declaration) => diagnostics.add(createDiagnosticForNode(declaration, message, id));
             }
         }
+
+
 
         function getSymbolLinks(symbol: Symbol): SymbolLinks {
             if (symbol.flags & SymbolFlags.Transient) return symbol as TransientSymbol;
@@ -32095,6 +32095,7 @@ namespace ts {
                     }
                     const candidate = candidates[candidateIndex];
                     if (!hasCorrectTypeArgumentArity(candidate, typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
+                        consoleLog(`chooseOverload[candidate loop continue #${candidateIndex}], continue@1`);
                         continue;
                     }
 
@@ -32102,11 +32103,13 @@ namespace ts {
                     let inferenceContext: InferenceContext | undefined;
 
                     if (candidate.typeParameters) {
+                        consoleLog(`chooseOverload[candidate loop #${candidateIndex}], candidate has typeParameters`);
                         let typeArgumentTypes: Type[] | undefined;
                         if (some(typeArguments)) {
                             typeArgumentTypes = checkTypeArguments(candidate, typeArguments, /*reportErrors*/ false);
                             if (!typeArgumentTypes) {
                                 candidateForTypeArgumentError = candidate;
+                                consoleLog(`chooseOverload[candidate loop continue #${candidateIndex}], continue@2`);
                                 continue;
                             }
                         }
@@ -32116,10 +32119,14 @@ namespace ts {
                             argCheckMode |= inferenceContext.flags & InferenceFlags.SkippedGenericFunction ? CheckMode.SkipGenericFunctions : CheckMode.Normal;
                         }
                         checkCandidate = getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext && inferenceContext.inferredTypeParameters);
+                        if (getMyDebug()){
+                            consoleLog(`chooseOverload[candidate loop #${candidateIndex}], first checkCandidate: ${dbgSignatureToString(checkCandidate)}`);
+                        }
                         // If the original signature has a generic rest type, instantiation may produce a
                         // signature with different arity and we need to perform another arity check.
                         if (getNonArrayRestType(candidate) && !hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {
                             candidateForArgumentArityError = checkCandidate;
+                            consoleLog(`chooseOverload[candidate loop continue #${candidateIndex}], continue@3`);
                             continue;
                         }
                     }
@@ -32129,6 +32136,7 @@ namespace ts {
                     if (getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
                         // Give preference to error candidates that have no rest parameters (as they are more specific)
                         (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
+                        consoleLog(`chooseOverload[candidate loop continue #${candidateIndex}], continue@4`);
                         continue;
                     }
                     if (argCheckMode) {
@@ -32139,22 +32147,27 @@ namespace ts {
                         if (inferenceContext) {
                             const typeArgumentTypes = inferTypeArguments(node, candidate, args, argCheckMode, inferenceContext);
                             checkCandidate = getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext && inferenceContext.inferredTypeParameters);
-                            // If the original signature has a generic rest type, instantiation may produce a
+                            if (getMyDebug()){
+                                consoleLog(`chooseOverload[candidate loop #${candidateIndex}], second checkCandidate: ${dbgSignatureToString(checkCandidate)}`);
+                            }
+                                // If the original signature has a generic rest type, instantiation may produce a
                             // signature with different arity and we need to perform another arity check.
                             if (getNonArrayRestType(candidate) && !hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {
                                 candidateForArgumentArityError = checkCandidate;
+                                consoleLog(`chooseOverload[candidate loop continue #${candidateIndex}], continue@5`);
                                 continue;
                             }
                         }
                         if (getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
                             // Give preference to error candidates that have no rest parameters (as they are more specific)
                             (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
+                            consoleLog(`chooseOverload[candidate loop continue #${candidateIndex}], continue@6`);
                             continue;
                         }
                     }
                     candidates[candidateIndex] = checkCandidate;
                     if (getMyDebug()){
-                        consoleLog(`chooseOverload[candidate loop selected #${candidateIndex}]`);
+                        consoleLog(`chooseOverload[candidate loop success #${candidateIndex}]`);
                     }
                     return checkCandidate;
                 }
@@ -32364,6 +32377,7 @@ namespace ts {
 
             const results: {signature: Signature, nodeLink: NodeLinks }[] = [];
             const originalNodeLink = { ...getNodeLinks(node) };
+            //const originalSymbolLink = { ...getNodeLinks(node) };
             function doOneApparentType(apparentType: Type): Signature {
                 const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
                 const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
@@ -32429,7 +32443,7 @@ namespace ts {
                     consoleLog(`resolveCallExpression[loop start ${++apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
                 }
                 const nodeId = getNodeId(node);
-                nodeLinks[nodeId] = { ...originalNodeLink };
+                nodeLinks[nodeId] = { ...originalNodeLink }; // start each loop with a fresh copy of the original nodeLinks
                 results.push({ signature:doOneApparentType(apparentType), nodeLink: { ...getNodeLinks(node) } });
                 if (getMyDebug()){
                     consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
@@ -34233,6 +34247,10 @@ namespace ts {
         }
 
         function checkFunctionExpressionOrObjectLiteralMethod(node: FunctionExpression | ArrowFunction | MethodDeclaration, checkMode?: CheckMode): Type {
+        if (getMyDebug()){
+            consoleGroup(`checkFunctionExpressionOrObjectLiteralMethod[in] node:${dbgNodeToString(node)}. checkMode:${checkMode}`);
+        }
+        const result = (()=>{
             Debug.assert(node.kind !== SyntaxKind.MethodDeclaration || isObjectLiteralMethod(node));
             checkNodeDeferred(node);
 
@@ -34249,12 +34267,18 @@ namespace ts {
                     if (contextualSignature && couldContainTypeVariables(getReturnTypeOfSignature(contextualSignature))) {
                         const links = getNodeLinks(node);
                         if (links.contextFreeType) {
+                            if (getMyDebug()){
+                                consoleLog(`checkFunctionExpressionOrObjectLiteralMethod[return cached links.contextFreeType]`);
+                            }
                             return links.contextFreeType;
                         }
                         const returnType = getReturnTypeFromBody(node, checkMode);
                         const returnOnlySignature = createSignature(undefined, undefined, undefined, emptyArray, returnType, /*resolvedTypePredicate*/ undefined, 0, SignatureFlags.None);
                         const returnOnlyType = createAnonymousType(node.symbol, emptySymbols, [returnOnlySignature], emptyArray, emptyArray);
                         returnOnlyType.objectFlags |= ObjectFlags.NonInferrableType;
+                        if (getMyDebug()){
+                            consoleLog(`checkFunctionExpressionOrObjectLiteralMethod[set and return links.contextFreeType]`);
+                        }
                         return links.contextFreeType = returnOnlyType;
                     }
                 }
@@ -34269,25 +34293,45 @@ namespace ts {
 
             contextuallyCheckFunctionExpressionOrObjectLiteralMethod(node, checkMode);
 
+            if (getMyDebug()){
+                consoleLog(`checkFunctionExpressionOrObjectLiteralMethod[return getTypeOfSymbol(getSymbolOfNode(node)]`);
+            }
             return getTypeOfSymbol(getSymbolOfNode(node));
+        })();
+        if (getMyDebug()){
+            consoleLog(`checkFunctionExpressionOrObjectLiteralMethod[out] node:${dbgNodeToString(node)}->type:${typeToString(result)}`);
+            consoleGroupEnd();
+        }
+        return result;
         }
 
-        function contextuallyCheckFunctionExpressionOrObjectLiteralMethod(node: FunctionExpression | ArrowFunction | MethodDeclaration, checkMode?: CheckMode) {
-            if (myDebug) consoleLog(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[in] node:${dbgNodeToString(node)}`);
+        function contextuallyCheckFunctionExpressionOrObjectLiteralMethod(node: FunctionExpression | ArrowFunction | MethodDeclaration, checkMode?: CheckMode): void {
+            if (getMyDebug()) {
+                consoleGroup(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[in] node:${dbgNodeToString(node)}`);
+            }
             contextuallyCheckFunctionExpressionOrObjectLiteralMethod_aux(node, checkMode);
-            if (myDebug) consoleLog(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[out] node:${dbgNodeToString(node)}`);
+            if (getMyDebug()) {
+                consoleLog(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[out] node:${dbgNodeToString(node)}`);
+                consoleGroupEnd();
+            }
         }
-        function contextuallyCheckFunctionExpressionOrObjectLiteralMethod_aux(node: FunctionExpression | ArrowFunction | MethodDeclaration, checkMode?: CheckMode) {
+        function contextuallyCheckFunctionExpressionOrObjectLiteralMethod_aux(node: FunctionExpression | ArrowFunction | MethodDeclaration, checkMode?: CheckMode): void {
             const links = getNodeLinks(node);
             // Check if function expression is contextually typed and assign parameter types if so.
             if (!(links.flags & NodeCheckFlags.ContextChecked)) {
                 const contextualSignature = getContextualSignature(node);
+                if (getMyDebug()){
+                    consoleLog(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[contextualSignature] ${contextualSignature ? signatureToString(contextualSignature) : "<undef>"}`);
+                }
                 // If a type check is started at a function expression that is an argument of a function call, obtaining the
                 // contextual type may recursively get back to here during overload resolution of the call. If so, we will have
                 // already assigned contextual types.
                 if (!(links.flags & NodeCheckFlags.ContextChecked)) {
                     links.flags |= NodeCheckFlags.ContextChecked;
                     const signature = firstOrUndefined(getSignaturesOfType(getTypeOfSymbol(getSymbolOfNode(node)), SignatureKind.Call));
+                    if (getMyDebug()){
+                        consoleLog(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[signature@1] ${signature ? signatureToString(signature) : "<undef>"}`);
+                    }
                     if (!signature) {
                         return;
                     }
@@ -34300,10 +34344,16 @@ namespace ts {
                             const instantiatedContextualSignature = inferenceContext ?
                                 instantiateSignature(contextualSignature, inferenceContext.mapper) : contextualSignature;
                             assignContextualParameterTypes(signature, instantiatedContextualSignature);
+                            if (getMyDebug()){
+                                consoleLog(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[instantiatedContextualSignature] ${signature ? signatureToString(signature) : "<undef>"}`);
+                            }
                         }
                         else {
                             // Force resolution of all parameter types such that the absence of a contextual type is consistently reflected.
                             assignNonContextualParameterTypes(signature);
+                        }
+                        if (getMyDebug()){
+                            consoleLog(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[signature@2] ${signature ? signatureToString(signature) : "<undef>"}`);
                         }
                     }
                     if (contextualSignature && !getReturnTypeFromAnnotation(node) && !signature.resolvedReturnType) {
@@ -34311,6 +34361,9 @@ namespace ts {
                         if (!signature.resolvedReturnType) {
                             signature.resolvedReturnType = returnType;
                         }
+                    }
+                    if (getMyDebug()){
+                        consoleLog(`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[signature@final] ${signature ? signatureToString(signature) : "<undef>"}`);
                     }
                     checkSignatureDeclaration(node);
                 }

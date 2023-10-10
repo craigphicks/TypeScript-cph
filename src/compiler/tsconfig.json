@@ -45,6 +45,7 @@
         "binder.ts",
         "symbolWalker.ts",
         "checker.ts",
+        "differentialTable.ts",
         "heaper.ts",
         "floughType.ts",
         "floughLogicalObjectInner.ts",
