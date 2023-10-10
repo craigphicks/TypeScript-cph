@@ -9824,7 +9824,24 @@ namespace ts {
         // binding pattern [x, s = ""]. Because the contextual type is a tuple type, the resulting type of [1, "one"] is the
         // tuple type [number, string]. Thus, the type inferred for 'x' is number and the type inferred for 's' is string.
         function getWidenedTypeForVariableLikeDeclaration(declaration: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement | JSDocPropertyLikeTag, reportErrors?: boolean): Type {
+            // if (getMyDebug()){
+            //     let str = (declaration as NamedDeclaration).name; //?.escapedText
+            //     if (str && typeof str !== "string") str = (str as any).escapedText;
+            //     if (!str) (str as any) = "<undef>";
+            //     consoleGroup(`getWidenedTypeForVariableLikeDeclaration(name: ${str})`);
+            // }
+            // const typeOut = (()=>{
             return widenTypeForVariableLikeDeclaration(getTypeForVariableLikeDeclaration(declaration, /*includeOptionality*/ true, CheckMode.Normal), declaration, reportErrors);
+            // })();
+            // if (getMyDebug()){
+            //     let str = (declaration as NamedDeclaration).name; //?.escapedText
+            //     if (str && typeof str !== "string") str = (str as any).escapedText;
+            //     if (!str) (str as any) = "<undef>";
+            //     consoleLog(`getWidenedTypeForVariableLikeDeclaration(name: ${str})`
+            //     +`-> type: ${typeToString(typeOut)}`);
+            //     consoleGroupEnd();
+            // }
+            // return typeOut;
         }
 
         function isGlobalSymbolConstructor(node: Node) {
@@ -9878,7 +9895,7 @@ namespace ts {
 
         function getTypeOfVariableOrParameterOrProperty(symbol: Symbol): Type {
             const links = getSymbolLinks(symbol);
-            if (!links.type) {
+            if (true || !links.type) {
                 const type = getTypeOfVariableOrParameterOrPropertyWorker(symbol);
                 // For a contextually typed parameter it is possible that a type has already
                 // been assigned (in assignTypeToParameterAndFixTypeParameters), and we want
@@ -9891,6 +9908,10 @@ namespace ts {
         }
 
         function getTypeOfVariableOrParameterOrPropertyWorker(symbol: Symbol): Type {
+        // if (getMyDebug()){
+        //     consoleGroup(`getTypeOfVariableOrParameterOrPropertyWorker(symbol.name: ${(symbol as any).name ?? "<undef>"})`);
+        // }
+        // const typeOut = (()=>{
             // Handle prototype property
             if (symbol.flags & SymbolFlags.Prototype) {
                 return getTypeOfPrototypeProperty(symbol);
@@ -10013,6 +10034,13 @@ namespace ts {
                 return reportCircularityError(symbol);
             }
             return type;
+        // })();
+        // if (getMyDebug()){
+        //     consoleLog(`getTypeOfVariableOrParameterOrPropertyWorker(symbol.name: ${(symbol as any).name ?? "<undef>"})`
+        //     +` -> ${typeToString(typeOut)}`);
+        //     consoleGroupEnd();
+        // }
+        // return typeOut
         }
 
         function getAnnotatedAccessorTypeNode(accessor: AccessorDeclaration | undefined): TypeNode | undefined {
@@ -11718,7 +11746,9 @@ namespace ts {
         function resolveUnionTypeMembers(type: UnionType) {
             // The members and properties collections are empty for union types. To get all properties of a union
             // type use getPropertiesOfType (only the language service uses this).
-            const callSignatures = getUnionSignatures(map(type.types, t => t === globalFunctionType ? [unknownSignature] : getSignaturesOfType(t, SignatureKind.Call)));
+            const mapped = map(type.types, t => t === globalFunctionType ? [unknownSignature] : getSignaturesOfType(t, SignatureKind.Call));
+            const callSignatures = getUnionSignatures(mapped);
+            // const callSignatures = getUnionSignatures(map(type.types, t => t === globalFunctionType ? [unknownSignature] : getSignaturesOfType(t, SignatureKind.Call)));
             const constructSignatures = getUnionSignatures(map(type.types, t => getSignaturesOfType(t, SignatureKind.Construct)));
             const indexInfos = getUnionIndexInfos(type.types);
             setStructuredTypeMembers(type, emptySymbols, callSignatures, constructSignatures, indexInfos);
@@ -12660,7 +12690,7 @@ namespace ts {
             let syntheticFlag = CheckFlags.SyntheticMethod;
             let checkFlags = isUnion ? 0 : CheckFlags.Readonly;
             let mergedInstantiations = false;
-            for (const current of containingType.types) {
+           for (const current of containingType.types) {
                 const type = getApparentType(current);
                 if (!(isErrorType(type) || type.flags & TypeFlags.Never)) {
                     const prop = getPropertyOfType(type, name, skipObjectFunctionPropertyAugment);
@@ -12952,7 +12982,9 @@ namespace ts {
          * maps primitive types and type parameters are to their apparent types.
          */
         function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
-            return getSignaturesOfStructuredType(getReducedApparentType(type), kind);
+            const reducedType = getReducedApparentType(type);
+            return getSignaturesOfStructuredType(reducedType, kind);
+            //return getSignaturesOfStructuredType(getReducedApparentType(type), kind);
         }
 
         function findIndexInfo(indexInfos: readonly IndexInfo[], keyType: Type) {
@@ -31802,12 +31834,13 @@ namespace ts {
         }
 
         function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, fallbackError?: DiagnosticMessage | undefined, hadErrorRef?: [boolean] | undefined): Signature {
-            if (myDebug) {
+            if (getMyDebug()) {
                 consoleGroup(`resolveCall[in]: node: ${dbgNodeToString(node)}`);
+                signatures.forEach((sig, i) => consoleLog(`resolveCall[in]: sig[${i}]: ${dbgSignatureToString(sig)}`));
             }
             const r = resolveCall_aux(node, signatures, candidatesOutArray, checkMode, callChainFlags, fallbackError, hadErrorRef);
-            if (myDebug) {
-                consoleLog(`resolveCall[out]: node: ${dbgNodeToString(node)}`);
+            if (getMyDebug()) {
+                consoleLog(`resolveCall[out]: node: ${dbgNodeToString(node)}-> signature: ${dbgSignatureToString(r)}`);
                 consoleGroupEnd();
             }
             return r;
@@ -31832,6 +31865,9 @@ namespace ts {
             const candidates = candidatesOutArray || [];
             // reorderCandidates fills up the candidates array directly
             reorderCandidates(signatures, candidates, callChainFlags);
+            if (getMyDebug()) {
+                candidates.forEach((c, i) => consoleLog(`resolveCall[candidate ${i}]:${dbgSignatureToString(c)}`));
+            }
             if (!candidates.length) {
                 if (reportErrors) {
                     diagnostics.add(getDiagnosticForCallNode(node, Diagnostics.Call_target_does_not_contain_any_signatures));
@@ -32026,7 +32062,17 @@ namespace ts {
                 candidateForTypeArgumentError = oldCandidateForTypeArgumentError;
             }
 
-            function chooseOverload(candidates: Signature[], relation: ESMap<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false) {
+            function chooseOverload(candidates: Signature[], relation: ESMap<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false): Signature | undefined {
+            if (getMyDebug()){
+                consoleGroup(`chooseOverload[in]`);
+                candidates.forEach((c, i) => consoleLog(`chooseOverload[candidate ${i}]:${dbgSignatureToString(c)}`));
+                let relationStr = "<?>";
+                if (relation === assignableRelation) relationStr = "assignableRelation";
+                else if (relation === subtypeRelation) relationStr = "subtypeRelation";
+                consoleLog(`chooseOverload[relation]: ${relationStr}`);
+                consoleLog(`chooseOverload[isSingleNonGenericCandidate]: ${isSingleNonGenericCandidate}`);
+            }
+            const result = ((): Signature | undefined =>{
                 candidatesForArgumentError = undefined;
                 candidateForArgumentArityError = undefined;
                 candidateForTypeArgumentError = undefined;
@@ -32044,6 +32090,9 @@ namespace ts {
                 }
 
                 for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+                    if (getMyDebug()){
+                        consoleLog(`chooseOverload[candidate loop start #${candidateIndex}]`);
+                    }
                     const candidate = candidates[candidateIndex];
                     if (!hasCorrectTypeArgumentArity(candidate, typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
                         continue;
@@ -32104,10 +32153,19 @@ namespace ts {
                         }
                     }
                     candidates[candidateIndex] = checkCandidate;
+                    if (getMyDebug()){
+                        consoleLog(`chooseOverload[candidate loop selected #${candidateIndex}]`);
+                    }
                     return checkCandidate;
                 }
 
                 return undefined;
+            })();
+            if (getMyDebug()){
+                consoleLog(`chooseOverload[out]:-> ${result ? dbgSignatureToString(result) : "<undef>"}`);
+                consoleGroupEnd();
+            }
+            return result;
             }
         }
 
@@ -32298,68 +32356,91 @@ namespace ts {
                 return silentNeverSignature;
             }
 
-            const apparentType = getApparentType(funcType);
-            if (isErrorType(apparentType)) {
+            const apparentType0 = getApparentType(funcType);
+            if (isErrorType(apparentType0)) {
                 // Another error has already been reported
                 return resolveErrorCall(node);
             }
 
-            const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
-            const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
+            const results: {signature: Signature, nodeLink: NodeLinks }[] = [];
+            const originalNodeLink = { ...getNodeLinks(node) };
+            function doOneApparentType(apparentType: Type): Signature {
+                const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
+                const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
 
-            // TS 1.0 Spec: 4.12
-            // In an untyped function call no TypeArgs are permitted, Args can be any argument list, no contextual
-            // types are provided for the argument expressions, and the result is always of type Any.
-            if (isUntypedFunctionCall(funcType, apparentType, callSignatures.length, numConstructSignatures)) {
-                // The unknownType indicates that an error already occurred (and was reported).  No
-                // need to report another error in this case.
-                if (!isErrorType(funcType) && node.typeArguments) {
-                    error(node, Diagnostics.Untyped_function_calls_may_not_accept_type_arguments);
-                }
-                return resolveUntypedCall(node);
-            }
-            // If FuncExpr's apparent type(section 3.8.1) is a function type, the call is a typed function call.
-            // TypeScript employs overload resolution in typed function calls in order to support functions
-            // with multiple call signatures.
-            if (!callSignatures.length) {
-                if (numConstructSignatures) {
-                    error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
-                }
-                else {
-                    let relatedInformation: DiagnosticRelatedInformation | undefined;
-                    if (node.arguments.length === 1) {
-                        const text = getSourceFileOfNode(node).text;
-                        if (isLineBreak(text.charCodeAt(skipTrivia(text, node.expression.end, /* stopAfterLineBreak */ true) - 1))) {
-                            relatedInformation = createDiagnosticForNode(node.expression, Diagnostics.Are_you_missing_a_semicolon);
-                        }
+                // TS 1.0 Spec: 4.12
+                // In an untyped function call no TypeArgs are permitted, Args can be any argument list, no contextual
+                // types are provided for the argument expressions, and the result is always of type Any.
+                if (isUntypedFunctionCall(funcType, apparentType, callSignatures.length, numConstructSignatures)) {
+                    // The unknownType indicates that an error already occurred (and was reported).  No
+                    // need to report another error in this case.
+                    if (!isErrorType(funcType) && node.typeArguments) {
+                        error(node, Diagnostics.Untyped_function_calls_may_not_accept_type_arguments);
                     }
-                    invocationError(node.expression, apparentType, SignatureKind.Call, relatedInformation);
+                    return resolveUntypedCall(node);
                 }
-                return resolveErrorCall(node);
-            }
-            // When a call to a generic function is an argument to an outer call to a generic function for which
-            // inference is in process, we have a choice to make. If the inner call relies on inferences made from
-            // its contextual type to its return type, deferring the inner call processing allows the best possible
-            // contextual type to accumulate. But if the outer call relies on inferences made from the return type of
-            // the inner call, the inner call should be processed early. There's no sure way to know which choice is
-            // right (only a full unification algorithm can determine that), so we resort to the following heuristic:
-            // If no type arguments are specified in the inner call and at least one call signature is generic and
-            // returns a function type, we choose to defer processing. This narrowly permits function composition
-            // operators to flow inferences through return types, but otherwise processes calls right away. We
-            // use the resolvingSignature singleton to indicate that we deferred processing. This result will be
-            // propagated out and eventually turned into nonInferrableType (a type that is assignable to anything and
-            // from which we never make inferences).
-            if (checkMode & CheckMode.SkipGenericFunctions && !node.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {
-                skippedGenericFunction(node, checkMode);
-                return resolvingSignature;
-            }
-            // If the function is explicitly marked with `@class`, then it must be constructed.
-            if (callSignatures.some(sig => isInJSFile(sig.declaration) && !!getJSDocClassTag(sig.declaration!))) {
-                error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
-                return resolveErrorCall(node);
-            }
+                // If FuncExpr's apparent type(section 3.8.1) is a function type, the call is a typed function call.
+                // TypeScript employs overload resolution in typed function calls in order to support functions
+                // with multiple call signatures.
+                if (!callSignatures.length) {
+                    if (numConstructSignatures) {
+                        error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
+                    }
+                    else {
+                        let relatedInformation: DiagnosticRelatedInformation | undefined;
+                        if (node.arguments.length === 1) {
+                            const text = getSourceFileOfNode(node).text;
+                            if (isLineBreak(text.charCodeAt(skipTrivia(text, node.expression.end, /* stopAfterLineBreak */ true) - 1))) {
+                                relatedInformation = createDiagnosticForNode(node.expression, Diagnostics.Are_you_missing_a_semicolon);
+                            }
+                        }
+                        invocationError(node.expression, apparentType, SignatureKind.Call, relatedInformation);
+                    }
+                    return resolveErrorCall(node);
+                }
+                // When a call to a generic function is an argument to an outer call to a generic function for which
+                // inference is in process, we have a choice to make. If the inner call relies on inferences made from
+                // its contextual type to its return type, deferring the inner call processing allows the best possible
+                // contextual type to accumulate. But if the outer call relies on inferences made from the return type of
+                // the inner call, the inner call should be processed early. There's no sure way to know which choice is
+                // right (only a full unification algorithm can determine that), so we resort to the following heuristic:
+                // If no type arguments are specified in the inner call and at least one call signature is generic and
+                // returns a function type, we choose to defer processing. This narrowly permits function composition
+                // operators to flow inferences through return types, but otherwise processes calls right away. We
+                // use the resolvingSignature singleton to indicate that we deferred processing. This result will be
+                // propagated out and eventually turned into nonInferrableType (a type that is assignable to anything and
+                // from which we never make inferences).
+                if (checkMode & CheckMode.SkipGenericFunctions && !node.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {
+                    skippedGenericFunction(node, checkMode);
+                    return resolvingSignature;
+                }
+                // If the function is explicitly marked with `@class`, then it must be constructed.
+                if (callSignatures.some(sig => isInJSFile(sig.declaration) && !!getJSDocClassTag(sig.declaration!))) {
+                    error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
+                    return resolveErrorCall(node);
+                }
 
-            return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*fallbackError*/ undefined, hadErrorRef);
+                const resolved = resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*fallbackError*/ undefined, hadErrorRef);
+                return resolved;
+            }
+            let apparentTypeIdx = -1;
+            forEachType(apparentType0, apparentType => {
+                if (getMyDebug()){
+                    consoleLog(`resolveCallExpression[loop start ${++apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
+                }
+                const nodeId = getNodeId(node);
+                nodeLinks[nodeId] = { ...originalNodeLink };
+                results.push({ signature:doOneApparentType(apparentType), nodeLink: { ...getNodeLinks(node) } });
+                if (getMyDebug()){
+                    consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
+                }
+            });
+            if (getMyDebug()){
+                results.forEach((result,sigidx)=>{
+                    consoleLog(`resolveCallExpression[out] signature[${sigidx}]: ${dbgSignatureToString(result.signature)}`);
+                });
+            }
+            return results[0].signature;
         }
 
         function isGenericFunctionReturningFunction(signature: Signature) {

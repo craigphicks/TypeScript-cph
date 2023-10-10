@@ -1592,3 +1592,23 @@ myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --t
 myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_caxnc-ez0024"  
 . cleantmp.sh 
 myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=0 gulp runtests --tests="_caxnc-"  
+gulp runtests --tests=unionOfArrays
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="unionOfArraysFilterCall"  
+myMaxLinesOut=300000 myDebug=0 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+. cleantmp.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+ls
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+node 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
+. cleantmp.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
+. cleantmp.sh 
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
+git status
