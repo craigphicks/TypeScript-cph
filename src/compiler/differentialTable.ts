@@ -7,16 +7,16 @@ export class DifferentialTable<T extends object, K extends number | string | obj
     private copy: (t: Readonly<T>) => T;
     private readonlyMode = false;
     constructor(
-        parent: DifferentialTable<T,K> | undefined,
-        ctor: () => T,
-        copy: (t: Readonly<T>) => T,
+        parent?: DifferentialTable<T,K> | undefined,
+        ctor?: () => T,
+        copy?: (t: Readonly<T>) => T,
     ) {
         this.parent = parent;
         this.map = new Map<K, T>();
         this.ctor = ctor ?? (()=>({} as T));
         this.copy = copy ?? ((t: Readonly<T>) => ({ ...t }));
     }
-    private has(key: K): boolean {
+    public has(key: K): boolean {
         if (this.map.has(key)) return true;
         if (this.parent) return this.parent.has(key);
         return false;
@@ -46,13 +46,40 @@ export class DifferentialTable<T extends object, K extends number | string | obj
     // public set(key: K, value: T): void {
     //     this.map.set(key, value);
     // }
-    public getReadonlyTableAndBranch(): { readonlyTable: Readonly<DifferentialTable<T,K>>, branchTable: DifferentialTable<T,K> } {
+    public getReadonlyTableAndBranchTable(): { readonlyTable: Readonly<DifferentialTable<T,K>>, originalReadonlyMode: boolean, branchTable: DifferentialTable<T,K> } {
+        const r1 = this.getReadonlyTable();
+        const r2 = this.setTableToReadonlyAndGetBranchTable();
+        return {
+            ...r1,
+            ...r2,
+        };
+    }
+    public getReadonlyTable(): { readonlyTable: Readonly<DifferentialTable<T,K>>, originalReadonlyMode: boolean } {
+        const originalReadonlyMode = this.readonlyMode;
         this.readonlyMode = true;
         return {
+            originalReadonlyMode,
             readonlyTable: this,
+        };
+    }
+    public setTableToReadonlyAndGetBranchTable(): { branchTable: DifferentialTable<T,K> }{
+        this.readonlyMode = true;
+        return {
             branchTable: new DifferentialTable(this, this.ctor, this.copy),
         };
     }
+    public setTableReadonlyMode(readonlyMode: boolean): void {
+        this.readonlyMode = readonlyMode;
+    }
+    public getTableReadonlyMode(): boolean {
+        return this.readonlyMode;
+    }
+
+    // public getOwnTableAsReadonlyArray(): Readonly<T>[] {
+    //     const arr: Readonly<T>[] = [];
+    //     this.map.forEach((v) => arr.push(v));
+    //     return arr;
+    // }
 }
 
 

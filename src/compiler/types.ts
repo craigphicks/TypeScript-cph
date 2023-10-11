@@ -5290,6 +5290,7 @@ namespace ts {
 
     /* @internal */
     export const enum NodeCheckFlags {
+        None                                     = 0, // No checks performed
         TypeChecked                              = 0x00000001,  // Node has been type checked
         LexicalThis                              = 0x00000002,  // Lexical 'this' reference
         CaptureThis                              = 0x00000004,  // Lexical 'this' used in body

@@ -23,7 +23,7 @@ namespace ts {
     // export const narrowTypeExports: {
     //     narrowTypeByEquality?: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     // }={};
-    
+
     createMyConsole({
         myMaxLinesOut,
         getDbgFileCount: ()=>dbgFlowFileCnt,
@@ -60,6 +60,9 @@ namespace ts {
     export function getAndIncrNextFlowId(){
         return nextFlowId++;
     }
+    export function getNextNodeId(){
+        return nextNodeId;
+    }; // used in getNodeCheckFlags to determined range of nodeIds without adding a new one.
 
     const enum IterationUse {
         AllowsSyncIterablesFlag = 1 << 0,
@@ -330,12 +333,13 @@ namespace ts {
         Uncapitalize: IntrinsicTypeKind.Uncapitalize
     }));
 
-    function SymbolLinks(this: SymbolLinks) {
-    }
+    // c.f. nodeAndSymbolLinkTable.ts, nodeConstructor and symbolConstructor
+    // function SymbolLinks(this: SymbolLinks) {
+    // }
 
-    function NodeLinks(this: NodeLinks) {
-        this.flags = 0;
-    }
+    // function NodeLinks(this: NodeLinks) {
+    //     this.flags = 0;
+    // }
 
     export function getNodeId(node: Node): number {
         if (!node.id) {
@@ -403,10 +407,12 @@ namespace ts {
             return !node?"<undef>":`[n${getNodeId(node)}] ${dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
         };
         const dbgSignatureToString = (c: Signature): string => {
+            const savedState = nodeAndSymbolLinkTablesState.getReadonlyStateThenBranchState();
             let str = "(,";
             c.parameters.forEach(p=> str += `${typeToString(getTypeOfSymbol(p))},`);
             str = str.slice(0,-1) + ") => ";
             str += c.resolvedReturnType ? typeToString(c.resolvedReturnType) : "<no resolved type>";
+            nodeAndSymbolLinkTablesState.restoreState(savedState);
             return str;
         };
         // @ts-expect-error 6133
@@ -1336,8 +1342,11 @@ namespace ts {
         let suggestionCount = 0;
         const maximumSuggestionCount = 10;
         const mergedSymbols: Symbol[] = [];
-        const symbolLinks: SymbolLinks[] = [];
-        const nodeLinks: NodeLinks[] = [];
+        const nodeAndSymbolLinkTablesState = new NodeAndSymbolTableState();
+        // let symbolLinks = createSymbolLinksTable();
+        // let nodeLinks = createNodeLinksTable();
+        //const symbolLinks: SymbolLinks[] = [];
+        //const nodeLinks: NodeLinks[] = [];
         const flowLoopCaches: ESMap<string, Type>[] = [];
         const flowLoopNodes: FlowNode[] = [];
         const flowLoopKeys: string[] = [];
@@ -1824,17 +1833,12 @@ namespace ts {
             }
         }
 
-
-
         function getSymbolLinks(symbol: Symbol): SymbolLinks {
-            if (symbol.flags & SymbolFlags.Transient) return symbol as TransientSymbol;
-            const id = getSymbolId(symbol);
-            return symbolLinks[id] || (symbolLinks[id] = new (SymbolLinks as any)());
+            return nodeAndSymbolLinkTablesState.getSymbolLinks(symbol);
         }
 
         function getNodeLinks(node: Node): NodeLinks {
-            const nodeId = getNodeId(node);
-            return nodeLinks[nodeId] || (nodeLinks[nodeId] = new (NodeLinks as any)());
+            return nodeAndSymbolLinkTablesState.getNodeLinks(node);
         }
 
         function isGlobalSourceFile(node: Node) {
@@ -5048,23 +5052,33 @@ namespace ts {
         }
 
         function typeToString(type: Type, enclosingDeclaration?: Node, flags: TypeFormatFlags = TypeFormatFlags.AllowUniqueESSymbolType | TypeFormatFlags.UseAliasDefinedOutsideCurrentScope, writer?: EmitTextWriter | undefined, sortUnionTypes?: boolean): string {
-            if (!writer) writer = createTextWriter("");
-            const noTruncation = compilerOptions.noErrorTruncation || flags & TypeFormatFlags.NoTruncation;
-            const typeNode = nodeBuilder.typeToTypeNode(type, enclosingDeclaration, toNodeBuilderFlags(flags) | NodeBuilderFlags.IgnoreErrors | (noTruncation ? NodeBuilderFlags.NoTruncation : 0), writer);
-            if (typeNode === undefined) return Debug.fail("should always get typenode");
-            // The unresolved type gets a synthesized comment on `any` to hint to users that it's not a plain `any`.
-            // Otherwise, we always strip comments out.
-            const options = { removeComments: type !== unresolvedType };
-            const printer = createPrinter(options);
-            const sourceFile = enclosingDeclaration && getSourceFileOfNode(enclosingDeclaration);
-            printer.writeNode(EmitHint.Unspecified, typeNode, /*sourceFile*/ sourceFile, writer, sortUnionTypes);
-            const result = writer.getText();
+            /**
+             * typeToString should not affect global state, so create branch state and then restore it after we're done.
+             */
+            const savedTables = nodeAndSymbolLinkTablesState.getReadonlyStateThenBranchState();
 
-            const maxLength = noTruncation ? noTruncationMaximumTruncationLength * 2 : defaultMaximumTruncationLength * 2;
-            if (maxLength && result && result.length >= maxLength) {
-                return result.substr(0, maxLength - "...".length) + "...";
-            }
-            return result;
+            const r = (() => {
+                if (!writer) writer = createTextWriter("");
+                const noTruncation = compilerOptions.noErrorTruncation || flags & TypeFormatFlags.NoTruncation;
+                const typeNode = nodeBuilder.typeToTypeNode(type, enclosingDeclaration, toNodeBuilderFlags(flags) | NodeBuilderFlags.IgnoreErrors | (noTruncation ? NodeBuilderFlags.NoTruncation : 0), writer);
+                if (typeNode === undefined) return Debug.fail("should always get typenode");
+                // The unresolved type gets a synthesized comment on `any` to hint to users that it's not a plain `any`.
+                // Otherwise, we always strip comments out.
+                const options = { removeComments: type !== unresolvedType };
+                const printer = createPrinter(options);
+                const sourceFile = enclosingDeclaration && getSourceFileOfNode(enclosingDeclaration);
+                printer.writeNode(EmitHint.Unspecified, typeNode, /*sourceFile*/ sourceFile, writer, sortUnionTypes);
+                const result = writer.getText();
+
+                const maxLength = noTruncation ? noTruncationMaximumTruncationLength * 2 : defaultMaximumTruncationLength * 2;
+                if (maxLength && result && result.length >= maxLength) {
+                    return result.substr(0, maxLength - "...".length) + "...";
+                }
+                return result;
+            })();
+
+            nodeAndSymbolLinkTablesState.restoreState(savedTables);
+            return r;
         }
 
         function getTypeNamesForErrorDisplay(left: Type, right: Type): [string, string] {
@@ -9895,7 +9909,7 @@ namespace ts {
 
         function getTypeOfVariableOrParameterOrProperty(symbol: Symbol): Type {
             const links = getSymbolLinks(symbol);
-            if (true || !links.type) {
+            if (!links.type) {
                 const type = getTypeOfVariableOrParameterOrPropertyWorker(symbol);
                 // For a contextually typed parameter it is possible that a type has already
                 // been assigned (in assignTypeToParameterAndFixTypeParameters), and we want
@@ -12690,7 +12704,7 @@ namespace ts {
             let syntheticFlag = CheckFlags.SyntheticMethod;
             let checkFlags = isUnion ? 0 : CheckFlags.Readonly;
             let mergedInstantiations = false;
-           for (const current of containingType.types) {
+            for (const current of containingType.types) {
                 const type = getApparentType(current);
                 if (!(isErrorType(type) || type.flags & TypeFlags.Never)) {
                     const prop = getPropertyOfType(type, name, skipObjectFunctionPropertyAugment);
@@ -32375,9 +32389,6 @@ namespace ts {
                 return resolveErrorCall(node);
             }
 
-            const results: {signature: Signature, nodeLink: NodeLinks }[] = [];
-            const originalNodeLink = { ...getNodeLinks(node) };
-            //const originalSymbolLink = { ...getNodeLinks(node) };
             function doOneApparentType(apparentType: Type): Signature {
                 const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
                 const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
@@ -32437,14 +32448,18 @@ namespace ts {
                 const resolved = resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*fallbackError*/ undefined, hadErrorRef);
                 return resolved;
             }
+            const results: {signature: Signature, readonlyState: ReadonlyNodeAndSymbolLinkTables }[] = [];
+            const savedState = nodeAndSymbolLinkTablesState.getReadonlyStateThenBranchState();
             let apparentTypeIdx = -1;
             forEachType(apparentType0, apparentType => {
+                apparentTypeIdx+=1;
                 if (getMyDebug()){
-                    consoleLog(`resolveCallExpression[loop start ${++apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
+                    consoleLog(`resolveCallExpression[loop start ${apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
                 }
-                const nodeId = getNodeId(node);
-                nodeLinks[nodeId] = { ...originalNodeLink }; // start each loop with a fresh copy of the original nodeLinks
-                results.push({ signature:doOneApparentType(apparentType), nodeLink: { ...getNodeLinks(node) } });
+                if (apparentTypeIdx>0) {
+                    nodeAndSymbolLinkTablesState.restoreState(savedState);
+                }
+                results.push({ signature:doOneApparentType(apparentType), readonlyState: nodeAndSymbolLinkTablesState.getReadonlyState() });
                 if (getMyDebug()){
                     consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
                 }
@@ -32454,6 +32469,7 @@ namespace ts {
                     consoleLog(`resolveCallExpression[out] signature[${sigidx}]: ${dbgSignatureToString(result.signature)}`);
                 });
             }
+            joinStates(results.map(r=>r.readonlyState),nodeAndSymbolLinkTablesState);
             return results[0].signature;
         }
 
@@ -43227,19 +43243,19 @@ namespace ts {
         function checkSourceFile(node: SourceFile) {
             if (!dbgTestFilenameMatched(node)) return checkSourceFileAux(node);
             else {
-                let numLoopCheckSourceFile = Number(process.env.numLoopCheckSourceFile??0);
-                if (isNaN(numLoopCheckSourceFile)) numLoopCheckSourceFile = 0;
-                if (dbgFlowFileCnt>0 || numLoopCheckSourceFile===0) {
-                    return checkSourceFileAux(node);
-                }
+                //let numLoopCheckSourceFile = Number(process.env.numLoopCheckSourceFile??0);
+                // if (isNaN(numLoopCheckSourceFile)) numLoopCheckSourceFile = 0;
+                // if (dbgFlowFileCnt>0 || numLoopCheckSourceFile===0) {
+                //     return checkSourceFileAux(node);
+                // }
 
-                const origNodeLinks = nodeLinks.slice(0, nodeLinks.length);
+                //const origNodeLinks = nodeLinks.slice(0, nodeLinks.length);
                 checkSourceFileAux(node);
 
-                for (let i = 0; i<numLoopCheckSourceFile; i++){
-                    nodeLinks.splice(0, nodeLinks.length, ...origNodeLinks);
-                    checkSourceFileAux(node);
-                }
+                // for (let i = 0; i<numLoopCheckSourceFile; i++){
+                //     nodeLinks.splice(0, nodeLinks.length, ...origNodeLinks);
+                //     checkSourceFileAux(node);
+                // }
             }
         }
         function checkSourceFileAux(node: SourceFile) {
@@ -44563,9 +44579,9 @@ namespace ts {
         }
 
         function getNodeCheckFlags(node: Node): NodeCheckFlags {
-            const nodeId = node.id || 0;
-            if (nodeId < 0 || nodeId >= nodeLinks.length) return 0;
-            return nodeLinks[nodeId]?.flags || 0;
+            return nodeAndSymbolLinkTablesState.getNodeCheckFlags(node);
+            // if (nodeId < 0 || nodeId >= nodeLinks.length) return 0;
+            // return nodeLinks[nodeId]?.flags || 0;
         }
 
         function getEnumMemberValue(node: EnumMember): string | number | undefined {
