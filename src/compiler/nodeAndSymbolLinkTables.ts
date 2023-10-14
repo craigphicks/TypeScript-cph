@@ -1,105 +1,160 @@
 namespace ts {
 
-    type DifferentialSymbolLinksTable = DifferentialTable<SymbolLinks,number>;
-    type DifferentialNodeLinksTable = DifferentialTable<NodeLinks,number>;
+    const symbolLinksKeys = [
+        "immediateTarget",
+        "aliasTarget",
+        "target",
+        "type",
+        "writeType",
+        "nameType",
+        "uniqueESSymbolType",
+        "declaredType",
+        "typeParameters",
+        "outerTypeParameters",
+        "instantiations",
+        "aliasSymbol",
+        "aliasTypeArguments",
+        "inferredClassSymbol",
+        "mapper",
+        "referenced",
+        "constEnumReferenced",
+        "containingType",
+        "leftSpread",
+        "rightSpread",
+        "syntheticOrigin",
+        "isDiscriminantProperty",
+        "resolvedExports",
+        "resolvedMembers",
+        "exportsChecked",
+        "typeParametersChecked",
+        "isDeclarationWithCollidingName",
+        "bindingElement",
+        "exportsSomeValue",
+        "enumKind",
+        "originatingImport",
+        "lateSymbol",
+        "specifierCache",
+        "extendedContainers",
+        "extendedContainersByFile",
+        "variances",
+        "deferralConstituents",
+        "deferralWriteConstituents",
+        "deferralParent",
+        "cjsExportMerged",
+        "typeOnlyDeclaration",
+        "isConstructorDeclaredProperty",
+        "tupleLabelDeclaration",
+        "accessibleChainCache"
+    ] as const;
+    const nodeLinksKeys = [
+        "flags",
+        "resolvedType",
+        "resolvedEnumType",
+        "resolvedSignature",
+        "resolvedSymbol",
+        "resolvedIndexInfo",
+        "effectsSignature",
+        "enumMemberValue",
+        "isVisible",
+        "containsArgumentsReference",
+        "hasReportedStatementInAmbientContext",
+        "jsxFlags",
+        "resolvedJsxElementAttributesType",
+        "resolvedJsxElementAllAttributesType",
+        "resolvedJSDocType",
+        "switchTypes",
+        "jsxNamespace",
+        "jsxImplicitImportContainer",
+        "contextFreeType",
+        "deferredNodes",
+        "capturedBlockScopeBindings",
+        "outerTypeParameters",
+        "isExhaustive",
+        "skipDirectInference",
+        "declarationRequiresScopeChange",
+        "serializedTypes"
+    ] as const;
+
+// {
+//     type SymbolLinksKeysKeys = typeof symbolLinksKeys[number];
+//     type SymbolLinksObjKeys = keyof SymbolLinks;
+//     type CheckSymbolKeys1 = SymbolLinksKeysKeys extends SymbolLinksObjKeys ? true : false;
+//     type CheckSymbolKeys2 = SymbolLinksObjKeys extends SymbolLinksKeysKeys ? true : false;
+//     // @ts-ignore
+//     (undefined as any as CheckSymbolKeys1) satisfies true; // assert that the keys are correct
+//     // @ts-ignore
+//     (undefined as any as CheckSymbolKeys2) satisfies true; // assert that the keys are correct
+// }
+// {
+//     type NodeLinksKeysKeys = typeof nodeLinksKeys[number];
+//     type NodelLinksObjKeys = keyof NodeLinks;
+//     type CheckNodeKeys1 = NodeLinksKeysKeys extends NodelLinksObjKeys ? true : false;
+//     type CheckNodeKeys2 = NodelLinksObjKeys extends NodeLinksKeysKeys ? true : false;
+//     (null as any as CheckNodeKeys1) satisfies true; // assert that the keys are correct
+//     (null as any as CheckNodeKeys2) satisfies true; // assert that the keys are correct
+// }
+
+
+    type DifferentialSymbolLinksTable = DifferentialTable<SymbolLinks, Symbol>;
+    type DifferentialNodeLinksTable = DifferentialTable<NodeLinks, Node>;
+
 
     export type ReadonlyNodeAndSymbolLinkTables = & {
         readonlyNodeLinksTable: { readonlyTable: Readonly<DifferentialNodeLinksTable>, originalReadonlyMode: boolean },
         readonlySymbolLinksTable: { readonlyTable: Readonly<DifferentialSymbolLinksTable>, originalReadonlyMode: boolean },
     };
 
-const symbolLinksKeys = [
-    "immediateTarget",
-    "aliasTarget",
-    "target",
-    "type",
-    "writeType",
-    "nameType",
-    "uniqueESSymbolType",
-    "declaredType",
-    "typeParameters",
-    "outerTypeParameters",
-    "instantiations",
-    "aliasSymbol",
-    "aliasTypeArguments",
-    "inferredClassSymbol",
-    "mapper",
-    "referenced",
-    "constEnumReferenced",
-    "containingType",
-    "leftSpread",
-    "rightSpread",
-    "syntheticOrigin",
-    "isDiscriminantProperty",
-    "resolvedExports",
-    "resolvedMembers",
-    "exportsChecked",
-    "typeParametersChecked",
-    "isDeclarationWithCollidingName",
-    "bindingElement",
-    "exportsSomeValue",
-    "enumKind",
-    "originatingImport",
-    "lateSymbol",
-    "specifierCache",
-    "extendedContainers",
-    "extendedContainersByFile",
-    "variances",
-    "deferralConstituents",
-    "deferralWriteConstituents",
-    "deferralParent",
-    "cjsExportMerged",
-    "typeOnlyDeclaration",
-    "isConstructorDeclaredProperty",
-    "tupleLabelDeclaration",
-    "accessibleChainCache",
-];
+    const NodeLinksProxyCtor = createTableClassProxyRecordRW<NodeLinks>(nodeLinksKeys,"NodeLinks");
+    const SymbolLinksProxyCtor = createTableClassProxyRecordRW<SymbolLinks>(symbolLinksKeys,"SymbolLinks");
+
+    // type SymbolLinksProxy = ClassProxyRecordRW<SymbolLinks>;
+    // type NodeLinksProxy = ClassProxyRecordRW<NodeLinks>;
 
 
-const nodeLinksKeys = [
-    "flags",
-    "resolvedType",
-    "resolvedEnumType",
-    "resolvedSignature",
-    "resolvedSymbol",
-    "resolvedIndexInfo",
-    "effectsSignature",
-    "enumMemberValue",
-    "isVisible",
-    "containsArgumentsReference",
-    "hasReportedStatementInAmbientContext",
-    "jsxFlags",
-    "resolvedJsxElementAttributesType",
-    "resolvedJsxElementAllAttributesType",
-    "resolvedJSDocType",
-    "switchTypes",
-    "jsxNamespace",
-    "jsxImplicitImportContainer",
-    "contextFreeType",
-    "deferredNodes",
-    "capturedBlockScopeBindings",
-    "outerTypeParameters",
-    "isExhaustive",
-    "skipDirectInference",
-    "declarationRequiresScopeChange",
-    "serializedTypes",
-];
-
-    const NodeLinksProxy = createTableClassProxyRecordRW(nodeLinksKeys, "NodeLinks");
-    const SymbolLinksProxy = createTableClassProxyRecordRW(symbolLinksKeys, "SymbolLinks");
-
-    const nodeConstructor = () => ({
+    const nodeLinksConstructor = () => ({
         flags:NodeCheckFlags.None,
         jsxFlags:JsxFlags.None,
     } as NodeLinks);
-    const symbolConstructor = () => ({
+    const symbolLinksConstructor = () => ({
     } as SymbolLinks);
+
+    const overrideCtorCopyForDiagnosis = {
+        nodeLinks:{
+            ctor: ()=>{
+                const obj = nodeLinksConstructor();
+                const proxy = new NodeLinksProxyCtor(obj);
+                return proxy as unknown as NodeLinks;
+            },
+            copy: (nodeLinks: Readonly<NodeLinks>) => {
+                if (nodeLinks instanceof NodeLinksProxyCtor) nodeLinks = nodeLinks.proxied;
+                const obj = { ...nodeLinks };
+                const proxy = new NodeLinksProxyCtor(obj);
+                return proxy as unknown as NodeLinks;
+            }
+        },
+        symbolLinks:{
+            ctor: ()=>{
+                const obj = symbolLinksConstructor();
+                const proxy = new SymbolLinksProxyCtor(obj);
+                return proxy as unknown as SymbolLinks;
+            },
+            copy: (symbolLinks: Readonly<SymbolLinks>) => {
+                if (symbolLinks instanceof SymbolLinksProxyCtor) symbolLinks = symbolLinks.proxied;
+                const obj = { ...symbolLinks };
+                const proxy = new SymbolLinksProxyCtor(obj);
+                return proxy as unknown as SymbolLinks;
+            }
+        },
+    };
+
+
+
     export class NodeAndSymbolTableState {
         nodeLinksTable: DifferentialNodeLinksTable;
         symbolLinksTable: DifferentialSymbolLinksTable;
         constructor() {
-            this.nodeLinksTable = new DifferentialTable<NodeLinks,number>(undefined, nodeConstructor);
-            this.symbolLinksTable = new DifferentialTable<SymbolLinks,number>(undefined, symbolConstructor);
+            this.nodeLinksTable = new DifferentialTable<NodeLinks, Node>(undefined, nodeLinksConstructor);
+            this.symbolLinksTable = new DifferentialTable<SymbolLinks, Symbol>(undefined, symbolLinksConstructor);
         }
         /**
          * whole state operations
@@ -109,13 +164,15 @@ const nodeLinksKeys = [
             const s = this.symbolLinksTable.getReadonlyTable();
             return { readonlySymbolLinksTable: s, readonlyNodeLinksTable: n };
         }
-        branchState(): void {
-            this.nodeLinksTable = this.nodeLinksTable.setTableToReadonlyAndGetBranchTable().branchTable;
-            this.symbolLinksTable = this.symbolLinksTable.setTableToReadonlyAndGetBranchTable().branchTable;
+        branchState(useProxiesForDiagnosis?: boolean): void {
+            this.nodeLinksTable = this.nodeLinksTable.setTableToReadonlyAndGetBranchTable(
+                useProxiesForDiagnosis?overrideCtorCopyForDiagnosis.nodeLinks:undefined).branchTable;
+            this.symbolLinksTable = this.symbolLinksTable.setTableToReadonlyAndGetBranchTable(
+                useProxiesForDiagnosis?overrideCtorCopyForDiagnosis.symbolLinks:undefined).branchTable;
         }
-        getReadonlyStateThenBranchState(): ReadonlyNodeAndSymbolLinkTables {
+        getReadonlyStateThenBranchState(useProxiesForDiagnosis?: boolean): ReadonlyNodeAndSymbolLinkTables {
             const r = this.getReadonlyState();
-            this.branchState();
+            this.branchState(useProxiesForDiagnosis);
             return r;
         }
         restoreState(savedTables: ReadonlyNodeAndSymbolLinkTables): void {
@@ -129,50 +186,232 @@ const nodeLinksKeys = [
          * one link operations
          */
         getSymbolLinks(symbol: Symbol): SymbolLinks {
-            if (symbol.flags & SymbolFlags.Transient) return symbol as TransientSymbol; // why is this OK and not an compile error,
-            const id = getSymbolId(symbol);
-            const obj = this.symbolLinksTable.getWritableAlways(id);
-            const proxy = new SymbolLinksProxy(obj, this.symbolLinksTable.getTableReadonlyMode());
-            return proxy as SymbolLinks;
-            //return symbolLinks[id] || (symbolLinks[id] = new (SymbolLinks as any)());
+            // We should get the symbol id that so that it is allocated which makes debugging easier
+            getSymbolId(symbol);
+            if (symbol.flags & SymbolFlags.Transient) return symbol as TransientSymbol; // why is this OK and not a compile error,
+            return this.symbolLinksTable.getWritableAlways(symbol);
         }
         hasNodeLinks(node: Node): boolean {
-            const nodeId = getNodeId(node);
-            return this.nodeLinksTable.has(nodeId);
-            //return nodeLinks[nodeId] || (nodeLinks[nodeId] = new (NodeLinks as any)());
+            return this.nodeLinksTable.has(node);
         }
         getNodeLinks(node: Node): NodeLinks {
-            const nodeId = getNodeId(node);
-            const obj = this.nodeLinksTable.getWritableAlways(nodeId);
-            const proxy = new NodeLinksProxy(obj, this.nodeLinksTable.getTableReadonlyMode());
-            return proxy as NodeLinks;
-            //return nodeLinks[nodeId] || (nodeLinks[nodeId] = new (NodeLinks as any)());
+            // We should get the node id that so that it is allocated which makes debugging easier
+            getNodeId(node);
+            return this.nodeLinksTable.getWritableAlways(node);
         }
         getNodeCheckFlags(node: Node): NodeCheckFlags {
             // eslint-disable-next-line no-in-operator
-            if (!("id" in node)) return 0 as NodeCheckFlags; // why not make 0 a NodeCheckFlags value if it has meaning,
-            const nodeId = node.id!;
-            if (nodeId < 1 || nodeId >= getNextNodeId()) return 0 as NodeCheckFlags;
+            // if (!("id" in node)) return 0 as NodeCheckFlags; // why not make 0 a NodeCheckFlags value if it has meaning,
+            // const nodeId = node.id!;
+            // if (nodeId < 1 || nodeId >= getNextNodeId()) return 0 as NodeCheckFlags;
             if (this.hasNodeLinks(node)) return this.getNodeLinks(node).flags;
             // some nodes with id between 1 and getNextNodeId()-1 may have no corresponding nodeLinks entry
             return 0 as NodeCheckFlags;
-            // if (nodeId < 0 || nodeId >= nodeLinks.length) return 0;
-            // return nodeLinks[nodeId],
         }
     }
-    function joinStates(states: Readonly<ReadonlyNodeAndSymbolLinkTables[]>, nodeAndSymbolTableState: NodeAndSymbolTableState): void {
-        const state0 = states[0];
-        for (let i = 1; i<states.length; i++) {
-            const state = states[i];
-            //state0.readonlySymbolLinksTable.get
-            state0.readonlySymbolLinksTable.readonlyTable.joinTable(state.readonlySymbolLinksTable.readonlyTable);
-            state0.readonlyNodeLinksTable.readonlyTable.joinTable(state.readonlyNodeLinksTable.readonlyTable);
-        }
+    export function dbgStatesBeforeJoin(
+        nodeAndSymbolLinkTablesState: NodeAndSymbolTableState,
+        checker: TypeChecker,
+        states: Readonly<ReadonlyNodeAndSymbolLinkTables[]>,
+        prevBranch: Readonly<ReadonlyNodeAndSymbolLinkTables>): void {
 
-        // for (const state of states) {
-        //     nodeAndSymbolTableState.symbolLinksTable.joinTable(state.readonlySymbolLinksTable.readonlyTable);
-        //     nodeAndSymbolTableState.nodeLinksTable.joinTable(state.readonlyNodeLinksTable.readonlyTable);
-        // }
+        // Probably the same as prevBranch, but we don't want to assume that
+        const savedState = nodeAndSymbolLinkTablesState.getReadonlyState();
+        for (let i = 0; i<states.length; i++) {
+            consoleLog(`state ${i}`);
+            const state = states[i];
+            /**
+             * Because the debug code will call getSymbolLinks and getNodeLinks, we need to set the current state to state.
+             * This is because getSymbolLinks and getNodeLinks will use the current state to get the links.
+             */
+            nodeAndSymbolLinkTablesState.restoreState(state);
+            /**
+             * We do not branch state because we want to see the differentials in the current branch "state".
+             */
+            {
+                const map = state.readonlySymbolLinksTable.readonlyTable.getReadonlyMapOfCurrentBranch();
+                map.forEach((symbolLinks, tssymbol) => {
+                    consoleGroup(`tssymbol: ${checker.symbolToString(tssymbol)}, id:${getSymbolId(tssymbol)}}`);
+                    if (symbolLinks instanceof SymbolLinksProxyCtor) {
+                        //assertCastType<>(symbolLinks);
+                        const keyset: Set<keyof SymbolLinks> = new Set();
+                        Object.keys(symbolLinks.wasMaybeWrit).forEach((k: keyof SymbolLinks)=>keyset.add(k)); //((_, key) => keyset.add(key));
+                        Object.keys(symbolLinks.wasWrit).forEach((k: keyof SymbolLinks)=>keyset.add(k)); //((_, key) => keyset.add(key));
+                        keyset.forEach(key => {
+                            //const read = symbolLinks.wasRead[key];
+                            const value = symbolLinks.proxied[key];
+                            const writ = symbolLinks.wasWrit[key];
+                            const maybewrit = symbolLinks.wasMaybeWrit[key];
+                            const prev = prevBranch.readonlySymbolLinksTable.readonlyTable.getReadonly(tssymbol)?.[key];
+                            const equalPrev = value === prev;
+                            const state0 = states[0].readonlySymbolLinksTable.readonlyTable.getReadonly(tssymbol)?.[key];
+                            const equalState0 = value === state0;
+                            let str = `  [key:${key}], wasWrit:${writ}, wasMaybeWrit:${maybewrit}`;
+                            if (!prev) str += `, prev:<undef>`;
+                            else str += `, equalPrev:${equalPrev}`;
+                            if (i!==0){
+                                if (!state0) str += `, state0:<undef>`;
+                                else str += `, equalState0:${equalState0}`;
+                            }
+                            consoleLog(str);
+                            str = "    value: ";
+                            switch (key) {
+                                case "declaredType":
+                                    // @ts-ignore-error
+                                    { const x = 1; }
+                                    // falls through
+                                case "type":{
+                                    assertCastType<Type>(value);
+                                    const typestr = checker.typeToString(value);
+                                    str += ("type: " + typestr + `, type.id:${value.id}`);
+                                    break;
+                                }
+                                case "resolvedMembers":{
+                                    const arrstr: string[]=[];
+                                    (value as SymbolTable).forEach((member, _keystr) => arrstr.push(checker.symbolToString(member)));
+                                    str+=("symbols[]: "+arrstr.join(", "));
+                                    break;
+                                }
+                            }
+                            consoleLog(str);
+                        });
+                    }
+                    consoleGroupEnd();
+                });
+            }
+            {
+                const map = state.readonlyNodeLinksTable.readonlyTable.getReadonlyMapOfCurrentBranch();
+                map.forEach((nodeLinks, node) => {
+                    consoleGroup(`node: ${Debug.formatSyntaxKind(node.kind)}, id:${getNodeId(node)}}`);
+                    if (nodeLinks instanceof NodeLinksProxyCtor) {
+                        //assertCastType<>(symbolLinks);
+                        const keyset: Set<keyof NodeLinks> = new Set();
+                        Object.keys(nodeLinks.wasMaybeWrit).forEach((k: keyof NodeLinks)=>keyset.add(k)); //((_, key) => keyset.add(key));
+                        Object.keys(nodeLinks.wasWrit).forEach((k: keyof NodeLinks)=>keyset.add(k)); //((_, key) => keyset.add(key));
+                        keyset.forEach(key => {
+                            //const read = symbolLinks.wasRead[key];
+                            const value = nodeLinks.proxied[key];
+                            const writ = nodeLinks.wasWrit[key];
+                            const maybewrit = nodeLinks.wasMaybeWrit[key];
+                            const prev = prevBranch.readonlyNodeLinksTable.readonlyTable.getReadonly(node)?.[key];
+                            const equalPrev = value === prev;
+                            const state0 = states[0].readonlyNodeLinksTable.readonlyTable.getReadonly(node)?.[key];
+                            const equalState0 = value === state0;
+                            let str = `  [key:${key}], wasWrit:${writ}, wasMaybeWrit:${maybewrit}`;
+                            if (!prev) str += `, prev:<undef>`;
+                            else str += `, equalPrev:${equalPrev}`;
+                            if (i!==0){
+                                if (!state0) str += `, state0:<undef>`;
+                                else str += `, equalState0:${equalState0}`;
+                            }
+                            consoleLog(str);
+                            str = "    value: ";
+                            switch (key) {
+                                // resolvedType?: Type;                // Cached type of type node
+                                // resolvedEnumType?: Type;            // Cached constraint type from enum jsdoc tag
+                                // resolvedSignature?: Signature;      // Cached signature of signature node or call expression
+                                // resolvedSymbol?: Symbol;            // Cached name resolution result
+                                // resolvedIndexInfo?: IndexInfo;      // Cached indexing info resolution result
+                                // effectsSignature?: Signature;       // Signature with possible control flow effects
+                                // enumMemberValue?: string | number;  // Constant value of enum member
+                                case "resolvedType":
+                                case "resolvedEnumType":{
+                                    assertCastType<Type>(value);
+                                    const typestr = checker.typeToString(value);
+                                    str += ("type: " + typestr + `, type.id:${value.id}`);
+                                    break;
+                                }
+                                case "resolvedSignature":
+                                case "effectsSignature":{
+                                    assertCastType<Signature>(value);
+                                    const typestr = checker.signatureToString(value);
+                                    str += (`signature: ${typestr}`);
+                                    break;
+                                }
+                                case "resolvedSymbol":{
+                                    assertCastType<Symbol>(value);
+                                    const typestr = checker.symbolToString(value);
+                                    str += (`symbol: ${typestr}, symbol.id:${value.id}`);
+                                    break;
+                                }
+                            }
+                            consoleLog(str);
+                        });
+                    }
+                    consoleGroupEnd();
+                });
+            }
+        }
+        nodeAndSymbolLinkTablesState.restoreState(savedState);
+        return;
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // For checking which keys have change (used for development only, probably)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    type ObjectToProxy = SymbolLinks | NodeLinks; // T extends object ? object : never; //;
+    interface ClassProxyRecordRW<T extends ObjectToProxy> {
+        proxied: T;
+        wasRead: Record<string,any>; //& { keys(): (keyof T)[]};
+        wasWrit: Record<string,any>; //& { keys(): (keyof T)[]};
+        wasMaybeWrit: Record<string,any>;// & { keys(): (keyof T)[]};
+        readonlyMode: (() => boolean) | undefined;
+        typeName: string;
+    }
+    type ProxyClassConstructor<T extends ObjectToProxy> = new (proxied: T, readonlyMode?: () => boolean) => ClassProxyRecordRW<T>;
+
+    function createTableClassProxyRecordRW<T extends ObjectToProxy>(keys: readonly string[], typeName: string): ProxyClassConstructor<T> {
+        class ClassProxyRecordRwInstance implements ClassProxyRecordRW<T> {
+            proxied: T;
+            wasRead: Record<string,any>; //& { keys(): (keyof T)[]};
+            wasWrit: Record<string,any>; //& { keys(): (keyof T)[]};
+            wasMaybeWrit: Record<string,any>;// & { keys(): (keyof T)[]};
+            readonlyMode: (() => boolean) | undefined;
+            typeName: string;
+
+            constructor(proxied: T, readonlyMode?: () => boolean) {
+                this.proxied = proxied;
+                this.readonlyMode = readonlyMode;
+                this.typeName = typeName;
+                this.wasRead = {} as typeof this.wasRead;
+                this.wasWrit = {} as typeof this.wasWrit;
+                this.wasMaybeWrit = {} as typeof this.wasMaybeWrit;
+            }
+        };
+        for (const key of keys) {
+            Object.defineProperty(ClassProxyRecordRwInstance.prototype, key, {
+                enumerable: true,
+                get() {
+                    assertCastType<keyof T>(key);
+                    const proxy = this as ClassProxyRecordRW<T> ;
+                    const proxied = proxy.proxied;
+                    let retval;
+                    // eslint-disable-next-line no-in-operator
+                    if (key in proxied) {
+                        retval = proxied[key];
+                    }
+                    else {
+                        retval = undefined;
+                    }
+                    proxy.wasRead[key] = true;
+                    if (typeof retval === "object") proxy.wasMaybeWrit[key] = true;
+                    return retval;
+                },
+                set(value: any) {
+                    assertCastType<keyof T>(key);
+                    const proxy = this as ClassProxyRecordRW<T> ;
+                    if (proxy.readonlyMode?.()) {
+                        Debug.assert(false,/*message*/ "",()=>`Cannot set ${String(key)} in readonly mode`);
+                    }
+                    proxy.wasWrit[key] = true;
+                    proxy.proxied[key] = value;
+                }
+            });
+        }
+        return ClassProxyRecordRwInstance;
     }
 
 }

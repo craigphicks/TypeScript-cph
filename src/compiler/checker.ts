@@ -5023,11 +5023,16 @@ namespace ts {
             return writer ? symbolToStringWorker(writer).getText() : usingSingleLineStringWriter(symbolToStringWorker);
 
             function symbolToStringWorker(writer: EmitTextWriter) {
+                /**
+                 * typeToString should not affect global state, so create branch state and then restore it after we're done.
+                 */
+                const savedTables = nodeAndSymbolLinkTablesState.getReadonlyStateThenBranchState();
                 const entity = builder(symbol, meaning!, enclosingDeclaration, nodeFlags)!; // TODO: GH#18217
                 // add neverAsciiEscape for GH#39027
                 const printer = enclosingDeclaration?.kind === SyntaxKind.SourceFile ? createPrinter({ removeComments: true, neverAsciiEscape: true }) : createPrinter({ removeComments: true });
                 const sourceFile = enclosingDeclaration && getSourceFileOfNode(enclosingDeclaration);
                 printer.writeNode(EmitHint.Unspecified, entity, /*sourceFile*/ sourceFile, writer);
+                nodeAndSymbolLinkTablesState.restoreState(savedTables);
                 return writer;
             }
         }
@@ -5036,6 +5041,10 @@ namespace ts {
             return writer ? signatureToStringWorker(writer).getText() : usingSingleLineStringWriter(signatureToStringWorker);
 
             function signatureToStringWorker(writer: EmitTextWriter) {
+                /**
+                 * typeToString should not affect global state, so create branch state and then restore it after we're done.
+                 */
+                const savedTables = nodeAndSymbolLinkTablesState.getReadonlyStateThenBranchState();
                 let sigOutput: SyntaxKind;
                 if (flags & TypeFormatFlags.WriteArrowStyleSignature) {
                     sigOutput = kind === SignatureKind.Construct ? SyntaxKind.ConstructorType : SyntaxKind.FunctionType;
@@ -5047,6 +5056,7 @@ namespace ts {
                 const printer = createPrinter({ removeComments: true, omitTrailingSemicolon: true });
                 const sourceFile = enclosingDeclaration && getSourceFileOfNode(enclosingDeclaration);
                 printer.writeNode(EmitHint.Unspecified, sig!, /*sourceFile*/ sourceFile, getTrailingSemicolonDeferringWriter(writer)); // TODO: GH#18217
+                nodeAndSymbolLinkTablesState.restoreState(savedTables);
                 return writer;
             }
         }
@@ -32449,17 +32459,23 @@ namespace ts {
                 return resolved;
             }
             const results: {signature: Signature, readonlyState: ReadonlyNodeAndSymbolLinkTables }[] = [];
-            const savedState = nodeAndSymbolLinkTablesState.getReadonlyStateThenBranchState();
+            const savedState = nodeAndSymbolLinkTablesState.getReadonlyState();
             let apparentTypeIdx = -1;
             forEachType(apparentType0, apparentType => {
                 apparentTypeIdx+=1;
                 if (getMyDebug()){
-                    consoleLog(`resolveCallExpression[loop start ${apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
+                    consoleLog(`resolveCallExpression[loop apparentType#:${apparentTypeIdx}] apparentType: ${typeToString(apparentType)}`);
                 }
-                if (apparentTypeIdx>0) {
-                    nodeAndSymbolLinkTablesState.restoreState(savedState);
-                }
-                results.push({ signature:doOneApparentType(apparentType), readonlyState: nodeAndSymbolLinkTablesState.getReadonlyState() });
+                nodeAndSymbolLinkTablesState.restoreState(savedState); // no harm in restoring state here in first loop
+                nodeAndSymbolLinkTablesState.branchState(/* useProxiesForDiagnosis */ true);
+                const {signature,readonlyState}={
+                    signature:doOneApparentType(apparentType),
+                    readonlyState: nodeAndSymbolLinkTablesState.getReadonlyState()
+                };
+                // consoleGroup(`examine differential apparentType#:${apparentTypeIdx}`);
+                // dbgStatesBeforeJoin(checker,[readonlyState],savedState);
+                // consoleGroupEnd();
+                results.push({ signature, readonlyState });
                 if (getMyDebug()){
                     consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
                 }
@@ -32469,7 +32485,9 @@ namespace ts {
                     consoleLog(`resolveCallExpression[out] signature[${sigidx}]: ${dbgSignatureToString(result.signature)}`);
                 });
             }
-            joinStates(results.map(r=>r.readonlyState),nodeAndSymbolLinkTablesState);
+            consoleGroup(`examine differential all apparentTypes`);
+            dbgStatesBeforeJoin(nodeAndSymbolLinkTablesState, checker,results.map(r=>r.readonlyState),savedState);
+            consoleGroupEnd();
             return results[0].signature;
         }
 

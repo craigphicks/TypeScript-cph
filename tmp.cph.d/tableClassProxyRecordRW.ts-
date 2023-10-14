@@ -1,0 +1,63 @@
+namespace ts {
+
+    // c.f. playground: https://www.typescriptlang.org/play?#code/MYewdgzgLgBBCeBbARiANgMRAJwArZAA94YBeGAZSVTQAoAifI+egSgG4AobqeABwCmMAPLIAVgOBQAKiCbEAPNJgDCUAWAAmEGCHGSoAPjIwYAbwDaAaRgBLMDADWA+CABmMaQF0AXJ+teAL7sMAD0oZ4qahrauvpSMAD8cRIJfmACAG4C2CHhXNzAaACGEDry8ADCJWVKUepaOqKpMnIEitKGxmacpqZ87bYCmn7SXH0woJBQ2ACuUji0A0RDI9KsPRMTUAAWthAAdMuEqybHq+N9gb19Fggo6Fh47fBetBvBnNecmpIl2EJeIIYBVqqUIJVwNA5gtsHVVA1YnoWsZyBkAO4wJaDYajVhkYygmoQJTGApuWZgKS2cCTAHFdQVeHRRoieKtJmdQy0ZzwCB+aH2ADmFi8rD8RPBkOmMKgOAUzQMsk5XXMN1MRXBIJeYLKAElpsUqUIETFyjriaS1Vs+lNofM5dhsStcetNjathBZoInedhhx1VtrhNPhNFVIDr83PYBEwfbxaJL9YbjUcCHKgQIADRwaiPHAVHPum0aWaIHLFZBoAR+GazbOBiaZYpoeu1uYNkMBwNuHBYu2wXm6Dy8iD44tbcNQSMCaMZOM5BNJiAG6BG4ACNMgDP8bNOFxFxseoUCKDva0ey929CbtAgIW0AAGMBPsAAJGZeYEYABaYwf3Z9i3E5hgsXkgkfANL0vAEoFmbAHEAw4-U0MCXC8S5oJgQIsyPG0IFPWhm1bGsYCNeBxzwoMqMCKCrkDQNYPghxl1XKB1wELhvkzNkxBMT8fDAMtkByT4B33PkTAsehHHoDDOHE1iUw3J5pF3ZoTGAelGReBVxG5UcA3E454GENwNLRARMSUtdjVU9TxFoASAEZaLyCJSjIsASE8plmkMLhxMIZyzheMzmjuPNMALF4MLCCJ3lIQxMhAWxNAUqFYEIAAmEx7hoJ4KjsBwTPC8R3JgVAbyNDLphgQgAGZQuYMqxGA1YDkcCqhJQHJaogG8DjvB96DmMAoFsct6CzYKZuymaGo4eKYFGykJqmnMYDrPcto7TaQu4Q7OCAA
+
+    //export const classProxyRecordRWSymbol = Symbol("classProxyRecordRW");
+
+    //type ObjectToProxy<T extends {[K in keyof T]: T[K]}> = {[K in keyof T]: T[K]}; // T extends object ? object : never; //;
+    //type ObjectToProxy<T extends any> = T extends Record<string,any> ? T : never; // T extends object ? object : never; //;
+    type ObjectToProxy = SymbolLinks | NodeLinks; // T extends object ? object : never; //;
+
+    //type Test = ObjectToProxy<{a: number, b: string}>;
+
+    // export interface ProxyRecordRW<T extends Object> {
+    //     proxied: object;
+    //     wasRead: Record<string, true>;
+    //     wasWrit: Record<string, true>;
+    //     readonlyMode: () => boolean;
+    //     typeName: string;
+    // }
+
+    export class ClassProxyRecordRW<T extends ObjectToProxy> {
+        proxied: T;
+        wasRead: T & { keys(): (keyof T)[]};
+        wasWrit: T & { keys(): (keyof T)[]};
+        readonlyMode: () => boolean;
+        typeName: string;
+
+        constructor(proxied: T, readonlyMode: () => boolean, typeName: string) {
+            this.proxied = proxied;
+            this.readonlyMode = readonlyMode;
+            this.typeName = typeName;
+            this.wasRead = {} as typeof this.wasRead;
+            this.wasWrit = {} as typeof this.wasWrit;
+        }
+    };
+    export type ProxyClassConstructor<T extends ObjectToProxy> = new (proxied: T, readonlyMode: () => boolean) => ClassProxyRecordRW<T>;
+
+    export function createTableClassProxyRecordRW<T extends ObjectToProxy>(keys: readonly string[], typeName: string): ProxyClassConstructor<T> {
+        class ClassProxyRecordRW1 extends ClassProxyRecordRW<T> {
+            constructor(proxied: T, readonlyMode: () => boolean) {
+                super(proxied, readonlyMode, typeName);
+            }
+        }
+        for (const key of keys) {
+            Object.defineProperty(ClassProxyRecordRW.prototype, key, {
+                enumerable: true,
+                get() {
+                    this.wasRead[key] = true;
+                    return this._obj[key];
+                },
+                set(value: any) {
+                    if (this._readonlyMode) {
+                        Debug.assert(false,/*message*/ "",()=>`Cannot set ${String(key)} in readonly mode`);
+                    }
+                    this._wasWrit[key] = true;
+                    this._obj[key] = value;
+                }
+            });
+        }
+
+        return ClassProxyRecordRW1;
+    }
+}

@@ -47,7 +47,6 @@
         "checker.ts",
         "differentialTable.ts",
         "nodeAndSymbolLinkTables.ts",
-        "tableClassProxyRecordRW.ts",
         "heaper.ts",
         "floughType.ts",
         "floughLogicalObjectInner.ts",

@@ -6,6 +6,9 @@
 
 ### Priority: High
 
+getBaseTypes
+  resolveBaseTypesOfClass
+  resolveBaseTypesOfInterface
 
 0. InKeyword
 

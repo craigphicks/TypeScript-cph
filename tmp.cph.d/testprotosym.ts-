@@ -1,0 +1,65 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
+/* eslint-disable no-in-operator */
+const symbolForA = Symbol("A");
+interface A {
+    data: any,
+    [symbolForA]: true
+    fa(): any
+}
+class ClassA implements A {
+//    ~~~~~~
+//Class 'ClassA' incorrectly implements interface 'A'.
+//  Property '[symbolForA]' is missing in type 'ClassA' but required in type 'A'. (2420)
+    static [symbolForA]: true = true; // doesn't work because this goes onto constructor, not prototype
+    data: any;
+    constructor(data: any=undefined){
+        this.data = data;
+    }
+    fa(){}
+}
+const a = new ClassA();
+console.log("symbolForA in a = ", symbolForA in a); // false
+console.log("symbolForA in Object.getPrototypeOf(a) = ", symbolForA in Object.getPrototypeOf(a)); // false
+console.log("symbolForA in a.constructor = ", symbolForA in a.constructor); // true
+const aInstanceOfClassA = a instanceof ClassA; // true
+aInstanceOfClassA; // boolean
+
+const symbolForB = Symbol("B");
+interface B {
+    data: any,
+    [symbolForB](): any
+    fb(): any
+}
+class ClassB implements B {
+    data: any;
+    constructor(data: any=undefined){
+        this.data = data;
+    }
+    [symbolForB](){}
+    fb(){}
+}
+// Object.defineProperty(ClassB.prototype, symbolForB, {
+//     enumerable: true,
+//     value: ,
+// });
+const b = new ClassB();
+console.log("symbolForB in b = ", symbolForB in b); // true
+console.log("symbolForB in Object.getPrototypeOf(B) = ", symbolForB in Object.getPrototypeOf(b)); // true
+console.log("symbolForB in b.constructor = ", symbolForB in b.constructor); // false
+const bInstanceOfClassB = b instanceof ClassB; //
+bInstanceOfClassB; // boolean
+
+const c = (Math.random() > 0.5) ? new ClassA() : new ClassB();
+if (c instanceof ClassA){
+    c[symbolForA](); // no error becuase class A is not sealed
+    c[symbolForB](); // no error because unique symbol type not yet implemented
+    c.fb(); // error
+    c.fa(); // no error
+}
+
+
+
+
+
+
+

@@ -1,6 +1,8 @@
 namespace ts {
 
-export class DifferentialTable<T extends object, K extends number | string | object = number>{
+export type OverrideCtorCopy<T extends object> = {ctor: () => T, copy: (t: Readonly<T>) => T};
+
+export class DifferentialTable<T extends object, K extends object = T>{
     private parent: DifferentialTable<T,K> | undefined;
     private map: ESMap<K, T>;
     private ctor: () => T;
@@ -16,6 +18,10 @@ export class DifferentialTable<T extends object, K extends number | string | obj
         this.ctor = ctor ?? (()=>({} as T));
         this.copy = copy ?? ((t: Readonly<T>) => ({ ...t }));
     }
+    /**
+     * Elementwise functions
+     */
+
     public has(key: K): boolean {
         if (this.map.has(key)) return true;
         if (this.parent) return this.parent.has(key);
@@ -43,12 +49,20 @@ export class DifferentialTable<T extends object, K extends number | string | obj
         if (this.parent && this.parent.has(key)) return this.parent.getReadonly(key);
         return undefined;
     }
+    public getReadonlyMapOfCurrentBranch(): Readonly<ESMap<K, Readonly<T>>> {
+        return this.map;
+    }
     // public set(key: K, value: T): void {
     //     this.map.set(key, value);
     // }
-    public getReadonlyTableAndBranchTable(): { readonlyTable: Readonly<DifferentialTable<T,K>>, originalReadonlyMode: boolean, branchTable: DifferentialTable<T,K> } {
+
+    /**
+     * Whole table functions
+     */
+
+    public getReadonlyTableAndBranchTable(overrideCtorCopy?: OverrideCtorCopy<T>): { readonlyTable: Readonly<DifferentialTable<T,K>>, originalReadonlyMode: boolean, branchTable: DifferentialTable<T,K> } {
         const r1 = this.getReadonlyTable();
-        const r2 = this.setTableToReadonlyAndGetBranchTable();
+        const r2 = this.setTableToReadonlyAndGetBranchTable(overrideCtorCopy);
         return {
             ...r1,
             ...r2,
@@ -62,10 +76,11 @@ export class DifferentialTable<T extends object, K extends number | string | obj
             readonlyTable: this,
         };
     }
-    public setTableToReadonlyAndGetBranchTable(): { branchTable: DifferentialTable<T,K> }{
+
+    public setTableToReadonlyAndGetBranchTable(overrideCtorCopy?: OverrideCtorCopy<T>): { branchTable: DifferentialTable<T,K> }{
         this.readonlyMode = true;
         return {
-            branchTable: new DifferentialTable(this, this.ctor, this.copy),
+            branchTable: new DifferentialTable(this, overrideCtorCopy?overrideCtorCopy.ctor:this.ctor, overrideCtorCopy?overrideCtorCopy.copy:this.copy),
         };
     }
     public setTableReadonlyMode(readonlyMode: boolean): void {

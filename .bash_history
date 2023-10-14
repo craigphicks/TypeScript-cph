@@ -1616,3 +1616,14 @@ git add .
 git commit -m "backup - second call to chooseOverload is encountering hidden state"
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
 git status
+git add . 
+git commit -m "added nodeAndSymbolLinkTables.ts, tableClassProxyRecordRW.ts"
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
+find . -name nodeAndSymbolLinkTables.js
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+grep -R createTableClassProxyRecordRW build
+grep -R createTableClassProxyRecordRW built
+grep -R "function createTableClassProxyRecordRW" built
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
+myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
