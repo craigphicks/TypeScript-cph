@@ -4328,6 +4328,7 @@ namespace ts {
         narrowTypeByEquality: (type: Type, operator: SyntaxKind, value: Expression, assumeTrue: boolean) => Type;
     }
     export interface TypeChecker {
+        /* @internal */ getUnionSignatures(signatureLists: readonly (readonly Signature[])[]): Signature[]
         ///* @internal */ cloneNonTupleNonArrayObjectType(type: Type): Type;
         isTypeWriterSortUnionTypesEnabled(): boolean;
         /* @internal */ createTupleType(elementTypes: readonly Type[], elementFlags: readonly ElementFlags[], readonly?: boolean): Type;

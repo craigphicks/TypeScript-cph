@@ -521,7 +521,12 @@ interface Boolean {
 }
 
 interface BooleanConstructor {
-    new(value?: any): Boolean;
+    new (value?: any): Boolean;
+    <T>(value?: T): boolean;
+    readonly prototype: Boolean;
+}
+
+interface BooleanConverter {
     <T>(value?: T): boolean;
     readonly prototype: Boolean;
 }
@@ -1209,7 +1214,7 @@ interface ReadonlyArray<T> {
      * @param thisArg An object to which the this keyword can refer in the predicate function. If thisArg is omitted, undefined is used as the this value.
      */
     filter<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): S[];
-    filter(predicate: BooleanConstructor, thisArg?: any): (T extends false | 0 | "" | null | undefined | 0n ? never : T)[];
+    filter(predicate: BooleanConverter, thisArg?: any): (T extends false | 0 | "" | null | undefined | 0n ? never : T)[];
     /**
      * Returns the elements of an array that meet the condition specified in a callback function.
      * @param predicate A function that accepts up to three arguments. The filter method calls the predicate function one time for each element in the array.
@@ -1401,7 +1406,7 @@ interface Array<T> {
      * @param thisArg An object to which the this keyword can refer in the predicate function. If thisArg is omitted, undefined is used as the this value.
      */
     filter<S extends T>(predicate: (value: T, index: number, array: T[]) => value is S, thisArg?: any): S[];
-    filter(predicate: BooleanConstructor, thisArg?: any): (T extends false | 0 | "" | null | undefined | 0n ? never : T)[];
+    filter(predicate: BooleanConverter, thisArg?: any): (T extends false | 0 | "" | null | undefined | 0n ? never : T)[];
     /**
      * Returns the elements of an array that meet the condition specified in a callback function.
      * @param predicate A function that accepts up to three arguments. The filter method calls the predicate function one time for each element in the array.

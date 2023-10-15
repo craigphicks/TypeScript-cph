@@ -407,10 +407,12 @@ namespace ts {
             return !node?"<undef>":`[n${getNodeId(node)}] ${dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
         };
         const dbgSignatureToString = (c: Signature): string => {
+            const savedState = nodeAndSymbolLinkTablesState.getReadonlyStateThenBranchState();
             let str = "(,";
             c.parameters.forEach(p=> str += `${typeToString(getTypeOfSymbol(p))},`);
             str = str.slice(0,-1) + ") => ";
             str += c.resolvedReturnType ? typeToString(c.resolvedReturnType) : "<no resolved type>";
+            nodeAndSymbolLinkTablesState.restoreState(savedState);
             return str;
         };
         // @ts-expect-error 6133
@@ -676,6 +678,7 @@ namespace ts {
         // extra cost of calling `getParseTreeNode` when calling these functions from inside the
         // checker.
         const checker: TypeChecker = {
+            getUnionSignatures, //(signatureLists: readonly (readonly Signature[])[]): Signature[]
             isTypeWriterSortUnionTypesEnabled(){
                 return enableTypeWriterSortUnionTypes;
             },
@@ -32364,6 +32367,9 @@ namespace ts {
 
             let callChainFlags: SignatureFlags;
             let funcType = checkExpression(node.expression);
+            if (getMyDebug()){
+                consoleLog(`resolveCallExpression_aux: funcType: ${typeToString(funcType)}, funcType.id: ${funcType.id}, node.expression.kind: ${Debug.formatSyntaxKind(node.expression.kind)}`);
+            }
             if (isCallChain(node)) {
                 const nonOptionalType = getOptionalExpressionType(funcType, node.expression);
                 callChainFlags = nonOptionalType === funcType ? SignatureFlags.None :
@@ -32475,7 +32481,10 @@ namespace ts {
                 // consoleGroupEnd();
                 results.push({ signature, readonlyState });
                 if (getMyDebug()){
-                    consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${typeToString(apparentType)}`);
+                    consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${dbgSignatureToString(signature)}`);
+                    // check if the signature is different when the saved state is restored
+                    nodeAndSymbolLinkTablesState.restoreState(savedState);
+                    consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature w.r.t. "savedState": ${dbgSignatureToString(signature)}`);
                 }
             });
             if (getMyDebug()){
@@ -32484,19 +32493,37 @@ namespace ts {
                     consoleLog(`resolveCallExpression[out] signature[${sigidx}]: ${dbgSignatureToString(result.signature)}`);
                 });
                 consoleGroup(`examine differential all apparentTypes`);
-                dbgStatesBeforeJoin(nodeAndSymbolLinkTablesState, checker,results.map(r=>r.readonlyState),savedState);
+                dbgLinksStatesBeforeJoin(nodeAndSymbolLinkTablesState, checker,results.map(r=>r.readonlyState),savedState);
                 consoleGroupEnd();
             }
             /**
              * [cph]
-             * If the candidatesOutArray is non-null, then fill that array with the individual signatures, which should not depend on
+             * - If the candidatesOutArray is non-null, then fill that array with the individual signatures, which should not depend on
              * the content of nodeAndSymbolLinkTablesState, because that will become a merged state.
-             * The returned single signature is the elementwise (parameters,return) type join of all the signatures,
+             * - The returned single signature is the elementwise (parameters,return) type join of all the signatures,
              * which correspond to the merged state of nodeAndSymbolLinkTablesState.
              * Such a signature might not exist in the flow graph, but it is useful for the language server to offer options
-             * per parameter (for example).
+             * per parameter, etc.
+             * c.f. getUnionSignatures
              */
-            return results[0].signature;
+            if (candidatesOutArray) {
+                results.forEach(r=>candidatesOutArray.push(r.signature));
+            }
+            const unionSignatures = getUnionSignatures(results.map(r=> [r.signature]));
+            if (unionSignatures.length!==1) return resolveErrorCall(node);
+            const singleSignature = unionSignatures[0];
+
+            /**
+             * TODO:
+             * Merge the table branches because
+             * - the node values may be required for reporting and to prevent recaclulation of those values.
+             * - the symbols value may be required for reporting and may be used in subsequent calculations
+             */
+            nodeAndSymbolLinkTablesState.restoreState(savedState); // should be not readonly after restoration
+            joinLinksStatesAndWriteBack(checker,results.map(r=>r.readonlyState),nodeAndSymbolLinkTablesState);
+            //dbgLinksStatesDumpTables(nodeAndSymbolLinkTablesState,checker);
+
+            return singleSignature;
         }
 
         function isGenericFunctionReturningFunction(signature: Signature) {

@@ -49,6 +49,10 @@ export class DifferentialTable<T extends object, K extends object = T>{
         if (this.parent && this.parent.has(key)) return this.parent.getReadonly(key);
         return undefined;
     }
+    public set(key: K, value: T): void {
+        Debug.assert(!this.readonlyMode, "Cannot write to readonly table");
+        this.map.set(key, value);
+    }
     public getReadonlyMapOfCurrentBranch(): Readonly<ESMap<K, Readonly<T>>> {
         return this.map;
     }
