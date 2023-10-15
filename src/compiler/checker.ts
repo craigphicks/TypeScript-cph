@@ -407,12 +407,10 @@ namespace ts {
             return !node?"<undef>":`[n${getNodeId(node)}] ${dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
         };
         const dbgSignatureToString = (c: Signature): string => {
-            const savedState = nodeAndSymbolLinkTablesState.getReadonlyStateThenBranchState();
             let str = "(,";
             c.parameters.forEach(p=> str += `${typeToString(getTypeOfSymbol(p))},`);
             str = str.slice(0,-1) + ") => ";
             str += c.resolvedReturnType ? typeToString(c.resolvedReturnType) : "<no resolved type>";
-            nodeAndSymbolLinkTablesState.restoreState(savedState);
             return str;
         };
         // @ts-expect-error 6133
@@ -32482,12 +32480,22 @@ namespace ts {
             });
             if (getMyDebug()){
                 results.forEach((result,sigidx)=>{
+                    nodeAndSymbolLinkTablesState.restoreState(result.readonlyState); // no harm in restoring state here in first loop
                     consoleLog(`resolveCallExpression[out] signature[${sigidx}]: ${dbgSignatureToString(result.signature)}`);
                 });
+                consoleGroup(`examine differential all apparentTypes`);
+                dbgStatesBeforeJoin(nodeAndSymbolLinkTablesState, checker,results.map(r=>r.readonlyState),savedState);
+                consoleGroupEnd();
             }
-            consoleGroup(`examine differential all apparentTypes`);
-            dbgStatesBeforeJoin(nodeAndSymbolLinkTablesState, checker,results.map(r=>r.readonlyState),savedState);
-            consoleGroupEnd();
+            /**
+             * [cph]
+             * If the candidatesOutArray is non-null, then fill that array with the individual signatures, which should not depend on
+             * the content of nodeAndSymbolLinkTablesState, because that will become a merged state.
+             * The returned single signature is the elementwise (parameters,return) type join of all the signatures,
+             * which correspond to the merged state of nodeAndSymbolLinkTablesState.
+             * Such a signature might not exist in the flow graph, but it is useful for the language server to offer options
+             * per parameter (for example).
+             */
             return results[0].signature;
         }
 

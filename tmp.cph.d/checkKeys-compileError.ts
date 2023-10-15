@@ -1,3 +1,6 @@
+/**
+ * This file produces an error when added to the TypeScript project.
+ */
 const keys = [
 "aH2jK8l4tN6qR3sM9pV5",
 "bJ1kG5l9tN3qR2sM4pV7",
