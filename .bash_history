@@ -1627,3 +1627,4 @@ grep -R createTableClassProxyRecordRW built
 grep -R "function createTableClassProxyRecordRW" built
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  
 myMaxLinesOut=300000 myDebug=1 myDebugLevel=0 myDisableInfer=1 gulp runtests --tests="_uoafc"  -i
+git status

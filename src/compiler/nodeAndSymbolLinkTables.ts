@@ -93,6 +93,7 @@ namespace ts {
 //     (null as any as CheckNodeKeys1) satisfies true; // assert that the keys are correct
 //     (null as any as CheckNodeKeys2) satisfies true; // assert that the keys are correct
 // }
+    export type SignatureWithLinksState = & {signature: Signature, readonlyState: ReadonlyNodeAndSymbolLinkTables };
 
 
     type DifferentialSymbolLinksTable = DifferentialTable<SymbolLinks, Symbol>;
@@ -257,8 +258,10 @@ namespace ts {
                             str = "    value: ";
                             switch (key) {
                                 case "declaredType":
-                                    // @ts-ignore-error
-                                    { const x = 1; }
+                                    // {
+                                    //     // @ts-ignore-error
+                                    //     const x = 1;
+                                    // }
                                     // falls through
                                 case "type":{
                                     assertCastType<Type>(value);

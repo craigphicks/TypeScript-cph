@@ -466,7 +466,7 @@ namespace ts {
             joinMap: JoinMap | undefined,
             other: {
                 isConstReadonly: boolean,
-                flowStackIndex: Number
+                flowStackIndex: number
             }
         };
         // type AliasMode = & {
