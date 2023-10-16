@@ -15,3 +15,14 @@ grep -R  . LogginHost
 grep -R  LoggingHost . 
 hereby
 git status
+git add .
+git commit -m "backup; compiled"
+hereby
+tsc
+tsc --version
+which tsc
+npm install -g typescript@5.2.2
+tsc --version
+which tsc
+git branch 
+git status

@@ -17,6 +17,7 @@ import {
     SymlinkCache,
     ThisContainer,
 } from "./_namespaces/ts";
+import { NodeAndSymbolLinksTableState } from "./nodeAndSymbolLinkTables";
 
 // branded string type used to store absolute, normalized and canonicalized paths
 // arbitrary file name can be converted to Path via toPath function
@@ -5130,6 +5131,7 @@ export interface TypeChecker {
      * is `never`. Instead, use `type.flags & TypeFlags.Never`.
      */
     getNeverType(): Type;
+    /** @internal */ getNodeAndSymbolLinksTableState(): NodeAndSymbolLinksTableState;
     /** @internal */ getOptionalType(): Type;
     /** @internal */ getUnionType(types: Type[], subtypeReduction?: UnionReduction): Type;
     /** @internal */ createArrayType(elementType: Type): Type;

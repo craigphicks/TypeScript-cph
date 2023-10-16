@@ -1085,6 +1085,8 @@ import {
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
 
+import { NodeAndSymbolLinksTableState } from "./nodeAndSymbolLinkTables";
+
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
 
@@ -1491,6 +1493,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // extra cost of calling `getParseTreeNode` when calling these functions from inside the
     // checker.
     const checker: TypeChecker = {
+        getNodeAndSymbolLinksTableState,
         getUnionSignatures, //(signatureLists: readonly (readonly Signature[])[]): Signature[] {
         getNodeCount: () => reduceLeft(host.getSourceFiles(), (n, s) => n + s.nodeCount, 0),
         getIdentifierCount: () => reduceLeft(host.getSourceFiles(), (n, s) => n + s.identifierCount, 0),
@@ -2217,8 +2220,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var suggestionCount = 0;
     var maximumSuggestionCount = 10;
     var mergedSymbols: Symbol[] = [];
-    var symbolLinks: SymbolLinks[] = [];
-    var nodeLinks: NodeLinks[] = [];
+    const nodeAndSymbolLinksTableState = new NodeAndSymbolLinksTableState();
+    // var symbolLinks: SymbolLinks[] = [];
+    // var nodeLinks: NodeLinks[] = [];
     var flowLoopCaches: Map<string, Type>[] = [];
     var flowLoopNodes: FlowNode[] = [];
     var flowLoopKeys: string[] = [];
@@ -2732,15 +2736,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getSymbolLinks(symbol: Symbol): SymbolLinks {
-        if (symbol.flags & SymbolFlags.Transient) return (symbol as TransientSymbol).links;
-        const id = getSymbolId(symbol);
-        return symbolLinks[id] ??= new SymbolLinks();
+        return nodeAndSymbolLinksTableState.getSymbolLinks(symbol);
     }
 
     function getNodeLinks(node: Node): NodeLinks {
-        const nodeId = getNodeId(node);
-        return nodeLinks[nodeId] || (nodeLinks[nodeId] = new (NodeLinks as any)());
+	return nodeAndSymbolLinksTableState.getNodeLinks(node);
     }
+    function getNodeAndSymbolLinksTableState(): NodeAndSymbolLinksTableState { return nodeAndSymbolLinksTableState; }
 
     function isGlobalSourceFile(node: Node) {
         return node.kind === SyntaxKind.SourceFile && !isExternalOrCommonJsModule(node as SourceFile);
@@ -47516,9 +47518,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getNodeCheckFlags(node: Node): NodeCheckFlags {
-        const nodeId = node.id || 0;
-        if (nodeId < 0 || nodeId >= nodeLinks.length) return 0;
-        return nodeLinks[nodeId]?.flags || 0;
+        return nodeAndSymbolLinksTableState.getNodeCheckFlags(node);
+        // const nodeId = node.id || 0;
+        // if (nodeId < 0 || nodeId >= nodeLinks.length) return 0;
+        // return nodeLinks[nodeId]?.flags || 0;
     }
 
     function getEnumMemberValue(node: EnumMember): string | number | undefined {

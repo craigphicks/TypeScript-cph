@@ -151,6 +151,22 @@ function consoleLog(...args: any[]): void {
     args;
 }
 
+function typeToStringSafe(checker: TypeChecker, type?: Type): string {
+    if (!type) return "<undef>";
+    const saved = checker.getNodeAndSymbolLinksTableState().getReadonlyStateThenBranchState();
+    const str = checker.typeToString(type);
+    checker.getNodeAndSymbolLinksTableState().restoreState(saved);
+    return str;
+}
+function signatureToStringSafe(checker: TypeChecker, signature: Signature): string {
+    const saved = checker.getNodeAndSymbolLinksTableState().getReadonlyStateThenBranchState();
+    const str = checker.signatureToString(signature);
+    checker.getNodeAndSymbolLinksTableState().restoreState(saved);
+    return str;
+}
+
+
+
 const nodeLinksConstructor = () => ({
     flags:NodeCheckFlags.None,
     jsxFlags:JsxFlags.None,
@@ -158,7 +174,7 @@ const nodeLinksConstructor = () => ({
 const symbolLinksConstructor = () => ({
 } as SymbolLinks);
 
-const overrideCtorCopyForDiagnosis = {
+const overrideCtorCopy = {
     nodeLinks:{
         ctor: ()=>{
             const obj = nodeLinksConstructor();
@@ -189,7 +205,7 @@ const overrideCtorCopyForDiagnosis = {
 
 
 
-export class NodeAndSymbolTableState {
+export class NodeAndSymbolLinksTableState {
     nodeLinksTable: DifferentialNodeLinksTable;
     symbolLinksTable: DifferentialSymbolLinksTable;
     constructor() {
@@ -204,15 +220,15 @@ export class NodeAndSymbolTableState {
         const s = this.symbolLinksTable.getReadonlyTable();
         return { readonlySymbolLinksTable: s, readonlyNodeLinksTable: n };
     }
-    branchState(useProxiesForDiagnosis?: boolean): void {
+    branchState(useProxies?: boolean): void {
         this.nodeLinksTable = this.nodeLinksTable.setTableToReadonlyAndGetBranchTable(
-            useProxiesForDiagnosis?overrideCtorCopyForDiagnosis.nodeLinks:undefined).branchTable;
+            useProxies?overrideCtorCopy.nodeLinks:undefined).branchTable;
         this.symbolLinksTable = this.symbolLinksTable.setTableToReadonlyAndGetBranchTable(
-            useProxiesForDiagnosis?overrideCtorCopyForDiagnosis.symbolLinks:undefined).branchTable;
+            useProxies?overrideCtorCopy.symbolLinks:undefined).branchTable;
     }
-    getReadonlyStateThenBranchState(useProxiesForDiagnosis?: boolean): ReadonlyNodeAndSymbolLinkTables {
+    getReadonlyStateThenBranchState(useProxies?: boolean): ReadonlyNodeAndSymbolLinkTables {
         const r = this.getReadonlyState();
-        this.branchState(useProxiesForDiagnosis);
+        this.branchState(useProxies);
         return r;
     }
     restoreState(savedTables: ReadonlyNodeAndSymbolLinkTables): void {
@@ -259,7 +275,7 @@ export class NodeAndSymbolTableState {
 export function joinLinksStatesAndWriteBack(
     checker: TypeChecker,
     states: Readonly<ReadonlyNodeAndSymbolLinkTables[]>,
-    writeableTargetBranch: NodeAndSymbolTableState): void {
+    writeableTargetBranch: NodeAndSymbolLinksTableState): void {
 
     function doSymbolLinks(){
         const mapSymbolToChangedKeyValues = new Map<Symbol, Map<keyof SymbolLinks,Set<any>>>();
@@ -393,7 +409,7 @@ export function joinLinksStatesAndWriteBack(
 }
 
 export function dbgLinksStatesBeforeJoin(
-    nodeAndSymbolLinkTablesState: NodeAndSymbolTableState,
+    nodeAndSymbolLinkTablesState: NodeAndSymbolLinksTableState,
     checker: TypeChecker,
     states: Readonly<ReadonlyNodeAndSymbolLinkTables[]>,
     prevBranch: Readonly<ReadonlyNodeAndSymbolLinkTables>): void {
@@ -447,7 +463,7 @@ export function dbgLinksStatesBeforeJoin(
                                 // falls through
                             case "type":{
                                 castHereafter<Type>(value);
-                                const typestr = checker.typeToString(value);
+                                const typestr = typeToStringSafe(checker,value);
                                 str += ("type: " + typestr + `, type.id:${value.id}`);
                                 break;
                             }
@@ -502,14 +518,14 @@ export function dbgLinksStatesBeforeJoin(
                             case "resolvedType":
                             case "resolvedEnumType":{
                                 castHereafter<Type>(value);
-                                const typestr = checker.typeToString(value);
+                                const typestr = typeToStringSafe(checker,value);
                                 str += ("type: " + typestr + `, type.id:${value.id}`);
                                 break;
                             }
                             case "resolvedSignature":
                             case "effectsSignature":{
                                 castHereafter<Signature>(value);
-                                const typestr = checker.signatureToString(value);
+                                const typestr = signatureToStringSafe(checker,value);
                                 str += (`signature: ${typestr}`);
                                 break;
                             }
@@ -533,7 +549,7 @@ export function dbgLinksStatesBeforeJoin(
 
 
 export function dbgLinksStatesDumpTables(
-    nodeAndSymbolLinkTablesState: NodeAndSymbolTableState,
+    nodeAndSymbolLinkTablesState: NodeAndSymbolLinksTableState,
     checker: TypeChecker
 ){
     consoleGroup("dbgDumpTables");
@@ -552,7 +568,7 @@ export function dbgLinksStatesDumpTables(
                 case "declaredType":
                 case "type":{
                     castHereafter<Type>(value);
-                    const typestr = checker.typeToString(value);
+                    const typestr = typeToStringSafe(checker,value);
                     str += ("type: " + typestr + `, type.id:${value.id}`);
                     break;
                 }
@@ -587,14 +603,14 @@ export function dbgLinksStatesDumpTables(
                 case "resolvedType":
                 case "resolvedEnumType":{
                     castHereafter<Type>(value);
-                    const typestr = checker.typeToString(value);
+                    const typestr = typeToStringSafe(checker,value);
                     str += ("type: " + typestr + `, type.id:${value.id}`);
                     break;
                 }
                 case "resolvedSignature":
                 case "effectsSignature":{
                     castHereafter<Signature>(value);
-                    const typestr = checker.signatureToString(value);
+                    const typestr = signatureToStringSafe(checker,value);
                     str += (`signature: ${typestr}`);
                     break;
                 }
