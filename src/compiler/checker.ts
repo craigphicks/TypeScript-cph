@@ -1491,6 +1491,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // extra cost of calling `getParseTreeNode` when calling these functions from inside the
     // checker.
     const checker: TypeChecker = {
+        getUnionSignatures, //(signatureLists: readonly (readonly Signature[])[]): Signature[] {
         getNodeCount: () => reduceLeft(host.getSourceFiles(), (n, s) => n + s.nodeCount, 0),
         getIdentifierCount: () => reduceLeft(host.getSourceFiles(), (n, s) => n + s.identifierCount, 0),
         getSymbolCount: () => reduceLeft(host.getSourceFiles(), (n, s) => n + s.symbolCount, symbolCount),
