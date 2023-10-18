@@ -21,7 +21,8 @@ import {
     DifferentialTable,
 } from "./differentialTable";
 
-const extraAsserts = true;
+import { IDebug } from "./mydebug";
+
 
 const symbolLinksKeys = [
     "immediateTarget",
@@ -106,8 +107,6 @@ const nodeLinksKeys = [
     "assertionExpressionType",
 ] as const;
 
-//const symbol = Symbol("x");
-
 type SymbolKeysFromArray = typeof symbolLinksKeys[number];
 type SymbolKeysFromType = keyof SymbolLinks;
 type SymbolKeysInArrayNotInType = Exclude<SymbolKeysFromArray, SymbolKeysFromType>;
@@ -124,14 +123,14 @@ type NodeKeysInTypeNotInArray = Exclude<NodeKeysFromType, NodeKeysFromArray>;
     (null as any as NodeKeysInTypeNotInArray) satisfies never;
 }
 
-export type SignatureWithLinksState = & {signature: Signature, readonlyState: ReadonlyNodeAndSymbolLinkTables };
+export type SignatureWithLinksState = & {signature: Signature, readonlyState: ReadonlyNodeAndSymbolLinksTable };
 
 
 type DifferentialSymbolLinksTable = DifferentialTable<SymbolLinks, Symbol>;
 type DifferentialNodeLinksTable = DifferentialTable<NodeLinks, Node>;
 
 
-export type ReadonlyNodeAndSymbolLinkTables = & {
+export type ReadonlyNodeAndSymbolLinksTable = & {
     readonlyNodeLinksTable: { readonlyTable: Readonly<DifferentialNodeLinksTable>, originalReadonlyMode: boolean },
     readonlySymbolLinksTable: { readonlyTable: Readonly<DifferentialSymbolLinksTable>, originalReadonlyMode: boolean },
 };
@@ -217,7 +216,7 @@ export class NodeAndSymbolLinksTableState {
     /**
      * whole state operations
      */
-    getReadonlyState(): ReadonlyNodeAndSymbolLinkTables{
+    getReadonlyState(): ReadonlyNodeAndSymbolLinksTable{
         const n = this.nodeLinksTable.getReadonlyTable();
         const s = this.symbolLinksTable.getReadonlyTable();
         return { readonlySymbolLinksTable: s, readonlyNodeLinksTable: n };
@@ -228,12 +227,12 @@ export class NodeAndSymbolLinksTableState {
         this.symbolLinksTable = this.symbolLinksTable.setTableToReadonlyAndGetBranchTable(
             useProxies?overrideCtorCopy.symbolLinks:undefined).branchTable;
     }
-    getReadonlyStateThenBranchState(useProxies?: boolean): ReadonlyNodeAndSymbolLinkTables {
+    getReadonlyStateThenBranchState(useProxies?: boolean): ReadonlyNodeAndSymbolLinksTable {
         const r = this.getReadonlyState();
         this.branchState(useProxies);
         return r;
     }
-    restoreState(savedTables: ReadonlyNodeAndSymbolLinkTables): void {
+    restoreState(savedTables: ReadonlyNodeAndSymbolLinksTable): void {
         this.symbolLinksTable = savedTables.readonlySymbolLinksTable.readonlyTable as DifferentialSymbolLinksTable;
         this.symbolLinksTable.setTableReadonlyMode(savedTables.readonlySymbolLinksTable.originalReadonlyMode);
         this.nodeLinksTable = savedTables.readonlyNodeLinksTable.readonlyTable as DifferentialNodeLinksTable;
@@ -276,7 +275,7 @@ export class NodeAndSymbolLinksTableState {
 }
 export function joinLinksStatesAndWriteBack(
     checker: TypeChecker,
-    states: Readonly<ReadonlyNodeAndSymbolLinkTables[]>,
+    states: Readonly<ReadonlyNodeAndSymbolLinksTable[]>,
     writeableTargetBranch: NodeAndSymbolLinksTableState): void {
 
     function doSymbolLinks(){
@@ -290,7 +289,7 @@ export function joinLinksStatesAndWriteBack(
             //const state = states[i];
             const map = state.readonlySymbolLinksTable.readonlyTable.getReadonlyMapOfCurrentBranch();
             map.forEach((symbolLinksProxy, tssymbol) => {
-                if (extraAsserts) Debug.assert(symbolLinksProxy instanceof SymbolLinksProxyCtor, "symbolLinks should be a proxy");
+                if (IDebug.assertLevel) Debug.assert(symbolLinksProxy instanceof SymbolLinksProxyCtor, "symbolLinks should be a proxy");
                 castHereafter<SymbolLinksProxy>(symbolLinksProxy);
                 const slorig = symbolLinksProxy.proxied;
                 Debug.assert(!(slorig instanceof SymbolLinksProxyCtor), "symbolLinks should not be a proxy");
@@ -300,7 +299,7 @@ export function joinLinksStatesAndWriteBack(
                 let mapWrit = mapSymbolToChangedKeyValues.get(tssymbol);
                 if (!mapWrit) mapSymbolToChangedKeyValues.set(tssymbol, mapWrit = new Map());
                 keys.forEach((key) => {
-                    if (extraAsserts) {
+                    if (IDebug.assertLevel) {
                         Debug.assert(symbolLinksKeys.includes(key as any), "key should be in symbolLinksKeys", ()=>key);
                     }
                     addToSet(mapWrit!, key as any, slorig[key as keyof SymbolLinks]);
@@ -329,6 +328,7 @@ export function joinLinksStatesAndWriteBack(
                         case "resolvedMembers":
                         case "uniqueESSymbolType":
                         case "lateSymbol":
+                        case "resolvedExports":
                         break;
                         default:
                             Debug.assert(false, `Unhandled key of SymbolLinks: `,()=>key);
@@ -349,7 +349,7 @@ export function joinLinksStatesAndWriteBack(
             //const state = states[i];
             const map = state.readonlyNodeLinksTable.readonlyTable.getReadonlyMapOfCurrentBranch();
             map.forEach((nodeLinksProxy, tsnode) => {
-                if (extraAsserts) Debug.assert(nodeLinksProxy instanceof NodeLinksProxyCtor, "nodeLinks should be a proxy");
+                if (IDebug.assertLevel) Debug.assert(nodeLinksProxy instanceof NodeLinksProxyCtor, "nodeLinks should be a proxy");
                 castHereafter<NodeLinksProxy>(nodeLinksProxy);
                 const nlorig = nodeLinksProxy.proxied;
                 Debug.assert(!(nlorig instanceof NodeLinksProxyCtor), "symbolLinks should not be a proxy");
@@ -359,7 +359,7 @@ export function joinLinksStatesAndWriteBack(
                 let mapWrit = mapNodeToChangedKeyValues.get(tsnode);
                 if (!mapWrit) mapNodeToChangedKeyValues.set(tsnode, mapWrit = new Map());
                 keys.forEach((key) => {
-                    if (extraAsserts) {
+                    if (IDebug.assertLevel) {
                         Debug.assert(nodeLinksKeys.includes(key as any), "key should be in nodeLinksKeys", ()=>key);
                     }
                     addToSet(mapWrit!, key as any, nlorig[key as keyof NodeLinks]);
@@ -413,8 +413,8 @@ export function joinLinksStatesAndWriteBack(
 export function dbgLinksStatesBeforeJoin(
     nodeAndSymbolLinkTablesState: NodeAndSymbolLinksTableState,
     checker: TypeChecker,
-    states: Readonly<ReadonlyNodeAndSymbolLinkTables[]>,
-    prevBranch: Readonly<ReadonlyNodeAndSymbolLinkTables>): void {
+    states: Readonly<ReadonlyNodeAndSymbolLinksTable[]>,
+    prevBranch: Readonly<ReadonlyNodeAndSymbolLinksTable>): void {
 
     // Probably the same as prevBranch, but we don't want to assume that
     const savedState = nodeAndSymbolLinkTablesState.getReadonlyState();
@@ -707,4 +707,8 @@ function createTableClassProxyRecordRW<T extends ObjectToProxy>(keys: readonly s
     return ClassProxyRecordRwInstance;
 }
 
-
+export let nouseResolveCallExpressionV2 = false;
+function initialize(){
+    nouseResolveCallExpressionV2 = (process.env.nouseRcev2===undefined || !Number(process.env.nouseRcev2)) ? false : true
+}
+initialize();

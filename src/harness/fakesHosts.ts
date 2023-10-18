@@ -395,8 +395,9 @@ export class CompilerHost implements ts.CompilerHost {
             let fs = this.vfs;
             while (fs.shadowRoot) {
                 try {
-                    const shadowRootStats = fs.shadowRoot.existsSync(canonicalFileName) ? fs.shadowRoot.statSync(canonicalFileName) : undefined!; // TODO: GH#18217
+                    const shadowRootStats = fs.shadowRoot.existsSync(canonicalFileName) ? fs.shadowRoot.statSync(canonicalFileName) : undefined;
                     if (
+                        !shadowRootStats ||
                         shadowRootStats.dev !== stats.dev ||
                         shadowRootStats.ino !== stats.ino ||
                         shadowRootStats.mtimeMs !== stats.mtimeMs

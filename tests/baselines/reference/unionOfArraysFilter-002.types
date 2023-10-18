@@ -1,12 +1,12 @@
-//// [tests/cases/compiler/unionOfArraysFilterCall.ts] ////
+//// [tests/cases/compiler/unionOfArraysFilter-002.ts] ////
 
-=== unionOfArraysFilterCall.ts ===
+=== unionOfArraysFilter-002.ts ===
 interface Fizz {
     id: number;
 >id : number
 
-    fizz: string;
->fizz : string
+    fizz: number;
+>fizz : number
 }
 
 interface Buzz {
@@ -32,7 +32,7 @@ interface Buzz {
 >id : number
 >5 : 5
 
-([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5); 
+([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5);
 >([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5) : Fizz[] | Buzz[]
 >([] as Fizz[] | readonly Buzz[]).filter : { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): (S | S)[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: readonly Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter | BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: readonly Buzz[]) => unknown, thisArg?: any): Buzz[]; }
 >([] as Fizz[] | readonly Buzz[]) : Fizz[] | readonly Buzz[]

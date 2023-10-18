@@ -26,3 +26,39 @@ tsc --version
 which tsc
 git branch 
 git status
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=4 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_uoafc"
+hereby baseline-accept
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
+tsc --version
+myLogLevel=4 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_uoafc"
+hereby baseline-accept
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="unionOfArraysFilter"
+hereby baseline-accept
+ls -al tests/baselines/reference/unionOfArraysFilterCall.symbols
+ls -al tests/baselines/reference/unionOfArraysFilterCall.*
+ls -al tests/baselines/reference/*.symbols
+ls -al tests/baselines/reference/*.symbols | grep union
+ls -al tests/baselines/local/
+ls -al tests/baselines/reference/*.types | grep union
+whoami
+groups
+id
+ls -afl tests/baselines/*
+ls -afl tests/baselines/
+ls -afl tests
+sudo chown -r node:node tests/baselines/
+sudo chown -R node:node tests/baselines/
+ls -afl tests/baselines/
+ls -afl tests/baselines/local
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilter"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilter"
+git status

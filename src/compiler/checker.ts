@@ -1084,8 +1084,21 @@ import {
 } from "./_namespaces/ts";
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
+// cphdebug-start
+import { IDebug } from "./mydebug";
+const dbgsModule = IDebug.dbgsModule;
+// const {
+//    dbgNodeToString,
+//    dbgSignatureToString,
+//    // @ts-expect-error
+//    dbgSymbolToString,
+//    // @ts-expect-error
+//    dbgTypeToString,
+// } = IDebug.dbgsModule;
+// cphdebug-end
 
-import { NodeAndSymbolLinksTableState } from "./nodeAndSymbolLinkTables";
+
+import * as links from "./nodeAndSymbolLinkTables";
 
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
@@ -2220,7 +2233,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var suggestionCount = 0;
     var maximumSuggestionCount = 10;
     var mergedSymbols: Symbol[] = [];
-    const nodeAndSymbolLinksTableState = new NodeAndSymbolLinksTableState();
+    const nodeAndSymbolLinksTableState = new links.NodeAndSymbolLinksTableState();
     // var symbolLinks: SymbolLinks[] = [];
     // var nodeLinks: NodeLinks[] = [];
     var flowLoopCaches: Map<string, Type>[] = [];
@@ -2742,7 +2755,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getNodeLinks(node: Node): NodeLinks {
 	return nodeAndSymbolLinksTableState.getNodeLinks(node);
     }
-    function getNodeAndSymbolLinksTableState(): NodeAndSymbolLinksTableState { return nodeAndSymbolLinksTableState; }
+    function getNodeAndSymbolLinksTableState(): links.NodeAndSymbolLinksTableState { return nodeAndSymbolLinksTableState; }
 
     function isGlobalSourceFile(node: Node) {
         return node.kind === SyntaxKind.SourceFile && !isExternalOrCommonJsModule(node as SourceFile);
@@ -34400,7 +34413,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return maxParamsIndex;
     }
 
-    function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+    function resolveCallExpressionV1(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
         if (node.expression.kind === SyntaxKind.SuperKeyword) {
             const superType = checkSuperExpression(node.expression);
             if (isTypeAny(superType)) {
@@ -34512,7 +34525,33 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
     }
 
-        function resolveCallExpression_aux(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type} | undefined, hadErrorRef?: [boolean] | undefined): Signature {
+    function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+        if (links.nouseResolveCallExpressionV2) {
+            return resolveCallExpressionV1(node, candidatesOutArray, checkMode);
+        }
+        else {
+            return resolveCallExpressionV2(node, candidatesOutArray, checkMode);
+        }
+    }
+
+
+    // if (myDebug) {
+    //     consoleGroup(`resolveCallExpression[in]: node: ${dbgNodeToString(node)}`);
+    // }
+    // const r = resolveCallExpression_aux(node, candidatesOutArray, checkMode, optionalInputs, hadErrorRef);
+    // if (myDebug) {
+    //     consoleLog(`resolveCallExpression[out]: node: ${dbgNodeToString(node)}`);
+    //     consoleGroupEnd();
+    // }
+    // return r;
+
+    function resolveCallExpressionV2(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type} | undefined): Signature {
+    // cphdebug-start
+    if (IDebug.loggingHost) {
+        IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[in]: node: ${dbgsModule.dbgNodeToString(node)}`);
+    }
+    const retsig = (()=>{
+    // cphdebug-end
         if (node.expression.kind === SyntaxKind.SuperKeyword) {
             const superType = checkSuperExpression(node.expression);
             if (isTypeAny(superType)) {
@@ -34535,8 +34574,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         let callChainFlags: SignatureFlags;
         let funcType = checkExpression(node.expression);
-        if (Debug.loggingHost){
-            consoleLog(`resolveCallExpression_aux: funcType: ${typeToString(funcType)}, funcType.id: ${funcType.id}, node.expression.kind: ${Debug.formatSyntaxKind(node.expression.kind)}`);
+        if (IDebug.loggingHost){
+            IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression_aux: funcType: ${typeToString(funcType)}, funcType.id: ${funcType.id}, node.expression.kind: ${Debug.formatSyntaxKind(node.expression.kind)}`);
         }
         if (isCallChain(node)) {
             const nonOptionalType = getOptionalExpressionType(funcType, node.expression);
@@ -34627,16 +34666,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return resolveErrorCall(node);
             }
 
-            const resolved = resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*fallbackError*/ undefined, hadErrorRef);
+            const resolved = resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*fallbackError*/ undefined);
             return resolved;
         }
-        const results: {signature: Signature, readonlyState: ReadonlyNodeAndSymbolLinkTables }[] = [];
+        const results: {signature: Signature, readonlyState: links.ReadonlyNodeAndSymbolLinksTable }[] = [];
         const savedState = nodeAndSymbolLinksTableState.getReadonlyState();
         let apparentTypeIdx = -1;
         forEachType(apparentType0, apparentType => {
             apparentTypeIdx+=1;
-            if (Dbug.loggingHost){
-                consoleLog(`resolveCallExpression[loop apparentType#:${apparentTypeIdx}] apparentType: ${typeToString(apparentType)}`);
+            if (IDebug.loggingHost){
+                IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[loop apparentType#:${apparentTypeIdx}] apparentType: ${typeToString(apparentType)}`);
             }
             nodeAndSymbolLinksTableState.restoreState(savedState); // no harm in restoring state here in first loop
             nodeAndSymbolLinksTableState.branchState(/* useProxiesForDiagnosis */ true);
@@ -34648,19 +34687,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             // dbgStatesBeforeJoin(checker,[readonlyState],savedState);
             // consoleGroupEnd();
             results.push({ signature, readonlyState });
-            if (Dbug.loggingHost){
-                consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${dbgSignatureToString(signature)}`);
+            if (IDebug.loggingHost){
+                IDebug.loggingHost.ilogGroupEnd(()=>`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${dbgsModule.dbgSignatureToString(signature)}`);
             }
             nodeAndSymbolLinksTableState.restoreState(savedState);
         });
-        if (Dbug.loggingHost){
+        if (IDebug.loggingHost){
             results.forEach((result,sigidx)=>{
                 nodeAndSymbolLinksTableState.restoreState(result.readonlyState); // no harm in restoring state here in first loop
-                consoleLog(`resolveCallExpression[out] signature[${sigidx}]: ${dbgSignatureToString(result.signature)}`);
+                if (IDebug.loggingHost){
+                    IDebug.loggingHost.ilog(()=>`resolveCallExpression[out] signature[${sigidx}]: ${dbgsModule.dbgSignatureToString(result.signature)}`);
+                }
             });
-            consoleGroup(`examine differential all apparentTypes`);
-            dbgLinksStatesBeforeJoin(nodeAndSymbolLinksTableState, checker,results.map(r=>r.readonlyState),savedState);
-            consoleGroupEnd();
+            if (IDebug.loggingHost){
+                IDebug.loggingHost.ilog(`examine differential all apparentTypes`);
+                links.dbgLinksStatesBeforeJoin(nodeAndSymbolLinksTableState, checker,results.map(r=>r.readonlyState),savedState);
+                IDebug.loggingHost.ilogGroupEnd();
+            }
         }
         /**
          * [cph]
@@ -34686,10 +34729,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          * - the symbols value may be required for reporting and may be used in subsequent calculations
          */
         nodeAndSymbolLinksTableState.restoreState(savedState); // should be not readonly after restoration
-        joinLinksStatesAndWriteBack(checker,results.map(r=>r.readonlyState),nodeAndSymbolLinksTableState);
+        links.joinLinksStatesAndWriteBack(checker,results.map(r=>r.readonlyState),nodeAndSymbolLinksTableState);
         //dbgLinksStatesDumpTables(nodeAndSymbolLinksTableState,checker);
 
         return singleSignature;
+    // cphdebug-start
+    })();
+    if (IDebug.loggingHost) {
+        IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[in]: node: ${dbgsModule.dbgNodeToString(node)}->${dbgsModule.dbgSignatureToString(retsig)}`);
+    }
+    return retsig;
+    // cphdebug-end
     }
 
 
@@ -46390,6 +46440,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function checkSourceFile(node: SourceFile) {
         tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
         performance.mark("beforeCheck");
+        // cphdebug-start
+        if (IDebug.loggingHost){
+            IDebug.loggingHost.notifySourceFile(node, checker);
+        }
+        // cphdebug-end
         checkSourceFileWorker(node);
         performance.mark("afterCheck");
         performance.measure("Check", "beforeCheck", "afterCheck");
