@@ -62,3 +62,12 @@ myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="unionOfArrays
 hereby baseline-accept
 myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilter"
 git status
+git add .
+git commit -m "backup; reasonable test results for _uoafc, unionOfArrayFiltersCalls, unionOfArrayFilter-002"
+git statis
+git status
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc|unionOfArraysFilter"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="(_uoafc|unionOfArraysFilter)"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="(_uoafc|unionOfArraysFilter)"
