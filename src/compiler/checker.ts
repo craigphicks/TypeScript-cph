@@ -34512,6 +34512,187 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
     }
 
+        function resolveCallExpression_aux(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type} | undefined, hadErrorRef?: [boolean] | undefined): Signature {
+        if (node.expression.kind === SyntaxKind.SuperKeyword) {
+            const superType = checkSuperExpression(node.expression);
+            if (isTypeAny(superType)) {
+                for (const arg of node.arguments) {
+                    checkExpression(arg); // Still visit arguments so they get marked for visibility, etc
+                }
+                return anySignature;
+            }
+            if (!isErrorType(superType)) {
+                // In super call, the candidate signatures are the matching arity signatures of the base constructor function instantiated
+                // with the type arguments specified in the extends clause.
+                const baseTypeNode = getEffectiveBaseTypeNode(getContainingClass(node)!);
+                if (baseTypeNode) {
+                    const baseConstructors = getInstantiatedConstructorsForTypeArguments(superType, baseTypeNode.typeArguments, baseTypeNode);
+                    return resolveCall(node, baseConstructors, candidatesOutArray, checkMode, SignatureFlags.None);
+                }
+            }
+            return resolveUntypedCall(node);
+        }
+
+        let callChainFlags: SignatureFlags;
+        let funcType = checkExpression(node.expression);
+        if (Debug.loggingHost){
+            consoleLog(`resolveCallExpression_aux: funcType: ${typeToString(funcType)}, funcType.id: ${funcType.id}, node.expression.kind: ${Debug.formatSyntaxKind(node.expression.kind)}`);
+        }
+        if (isCallChain(node)) {
+            const nonOptionalType = getOptionalExpressionType(funcType, node.expression);
+            callChainFlags = nonOptionalType === funcType ? SignatureFlags.None :
+                isOutermostOptionalChain(node) ? SignatureFlags.IsOuterCallChain :
+                SignatureFlags.IsInnerCallChain;
+            funcType = nonOptionalType;
+        }
+        else {
+            callChainFlags = SignatureFlags.None;
+        }
+        // @ts-ignore
+        const origFuncType = funcType;
+        if (optionalInputs){
+            if (optionalInputs.ignoreCallChain) callChainFlags = SignatureFlags.None;
+            if (optionalInputs.singleType) funcType = optionalInputs.singleType;
+        }
+
+        funcType = checkNonNullTypeWithReporter(
+            funcType,
+            node.expression,
+            reportCannotInvokePossiblyNullOrUndefinedError
+        );
+
+        if (funcType === silentNeverType) {
+            return silentNeverSignature;
+        }
+
+        const apparentType0 = getApparentType(funcType);
+        if (isErrorType(apparentType0)) {
+            // Another error has already been reported
+            return resolveErrorCall(node);
+        }
+
+        function doOneApparentType(apparentType: Type): Signature {
+            const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
+            const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
+
+            // TS 1.0 Spec: 4.12
+            // In an untyped function call no TypeArgs are permitted, Args can be any argument list, no contextual
+            // types are provided for the argument expressions, and the result is always of type Any.
+            if (isUntypedFunctionCall(funcType, apparentType, callSignatures.length, numConstructSignatures)) {
+                // The unknownType indicates that an error already occurred (and was reported).  No
+                // need to report another error in this case.
+                if (!isErrorType(funcType) && node.typeArguments) {
+                    error(node, Diagnostics.Untyped_function_calls_may_not_accept_type_arguments);
+                }
+                return resolveUntypedCall(node);
+            }
+            // If FuncExpr's apparent type(section 3.8.1) is a function type, the call is a typed function call.
+            // TypeScript employs overload resolution in typed function calls in order to support functions
+            // with multiple call signatures.
+            if (!callSignatures.length) {
+                if (numConstructSignatures) {
+                    error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
+                }
+                else {
+                    let relatedInformation: DiagnosticRelatedInformation | undefined;
+                    if (node.arguments.length === 1) {
+                        const text = getSourceFileOfNode(node).text;
+                        if (isLineBreak(text.charCodeAt(skipTrivia(text, node.expression.end, /* stopAfterLineBreak */ true) - 1))) {
+                            relatedInformation = createDiagnosticForNode(node.expression, Diagnostics.Are_you_missing_a_semicolon);
+                        }
+                    }
+                    invocationError(node.expression, apparentType, SignatureKind.Call, relatedInformation);
+                }
+                return resolveErrorCall(node);
+            }
+            // When a call to a generic function is an argument to an outer call to a generic function for which
+            // inference is in process, we have a choice to make. If the inner call relies on inferences made from
+            // its contextual type to its return type, deferring the inner call processing allows the best possible
+            // contextual type to accumulate. But if the outer call relies on inferences made from the return type of
+            // the inner call, the inner call should be processed early. There's no sure way to know which choice is
+            // right (only a full unification algorithm can determine that), so we resort to the following heuristic:
+            // If no type arguments are specified in the inner call and at least one call signature is generic and
+            // returns a function type, we choose to defer processing. This narrowly permits function composition
+            // operators to flow inferences through return types, but otherwise processes calls right away. We
+            // use the resolvingSignature singleton to indicate that we deferred processing. This result will be
+            // propagated out and eventually turned into nonInferrableType (a type that is assignable to anything and
+            // from which we never make inferences).
+            if (checkMode & CheckMode.SkipGenericFunctions && !node.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {
+                skippedGenericFunction(node, checkMode);
+                return resolvingSignature;
+            }
+            // If the function is explicitly marked with `@class`, then it must be constructed.
+            if (callSignatures.some(sig => isInJSFile(sig.declaration) && !!getJSDocClassTag(sig.declaration!))) {
+                error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
+                return resolveErrorCall(node);
+            }
+
+            const resolved = resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*fallbackError*/ undefined, hadErrorRef);
+            return resolved;
+        }
+        const results: {signature: Signature, readonlyState: ReadonlyNodeAndSymbolLinkTables }[] = [];
+        const savedState = nodeAndSymbolLinksTableState.getReadonlyState();
+        let apparentTypeIdx = -1;
+        forEachType(apparentType0, apparentType => {
+            apparentTypeIdx+=1;
+            if (Dbug.loggingHost){
+                consoleLog(`resolveCallExpression[loop apparentType#:${apparentTypeIdx}] apparentType: ${typeToString(apparentType)}`);
+            }
+            nodeAndSymbolLinksTableState.restoreState(savedState); // no harm in restoring state here in first loop
+            nodeAndSymbolLinksTableState.branchState(/* useProxiesForDiagnosis */ true);
+            const {signature,readonlyState}={
+                signature:doOneApparentType(apparentType),
+                readonlyState: nodeAndSymbolLinksTableState.getReadonlyState()
+            };
+            // consoleGroup(`examine differential apparentType#:${apparentTypeIdx}`);
+            // dbgStatesBeforeJoin(checker,[readonlyState],savedState);
+            // consoleGroupEnd();
+            results.push({ signature, readonlyState });
+            if (Dbug.loggingHost){
+                consoleLog(`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${dbgSignatureToString(signature)}`);
+            }
+            nodeAndSymbolLinksTableState.restoreState(savedState);
+        });
+        if (Dbug.loggingHost){
+            results.forEach((result,sigidx)=>{
+                nodeAndSymbolLinksTableState.restoreState(result.readonlyState); // no harm in restoring state here in first loop
+                consoleLog(`resolveCallExpression[out] signature[${sigidx}]: ${dbgSignatureToString(result.signature)}`);
+            });
+            consoleGroup(`examine differential all apparentTypes`);
+            dbgLinksStatesBeforeJoin(nodeAndSymbolLinksTableState, checker,results.map(r=>r.readonlyState),savedState);
+            consoleGroupEnd();
+        }
+        /**
+         * [cph]
+         * - If the candidatesOutArray is non-null, then fill that array with the individual signatures, which should not depend on
+         * the content of nodeAndSymbolLinksTableState, because that will become a merged state.
+         * - The returned single signature is the elementwise (parameters,return) type join of all the signatures,
+         * which correspond to the merged state of nodeAndSymbolLinksTableState.
+         * Such a signature might not exist in the flow graph, but it is useful for the language server to offer options
+         * per parameter, etc.
+         * c.f. getUnionSignatures
+         */
+        if (candidatesOutArray) {
+            results.forEach(r=>candidatesOutArray.push(r.signature));
+        }
+        const unionSignatures = getUnionSignatures(results.map(r=> [r.signature]));
+        if (unionSignatures.length!==1) return resolveErrorCall(node);
+        const singleSignature = unionSignatures[0];
+
+        /**
+         * TODO:
+         * Merge the table branches because
+         * - the node values may be required for reporting and to prevent recaclulation of those values.
+         * - the symbols value may be required for reporting and may be used in subsequent calculations
+         */
+        nodeAndSymbolLinksTableState.restoreState(savedState); // should be not readonly after restoration
+        joinLinksStatesAndWriteBack(checker,results.map(r=>r.readonlyState),nodeAndSymbolLinksTableState);
+        //dbgLinksStatesDumpTables(nodeAndSymbolLinksTableState,checker);
+
+        return singleSignature;
+    }
+
+
     function isGenericFunctionReturningFunction(signature: Signature) {
         return !!(signature.typeParameters && isFunctionType(getReturnTypeOfSignature(signature)));
     }

@@ -106,6 +106,8 @@ const nodeLinksKeys = [
     "assertionExpressionType",
 ] as const;
 
+//const symbol = Symbol("x");
+
 type SymbolKeysFromArray = typeof symbolLinksKeys[number];
 type SymbolKeysFromType = keyof SymbolLinks;
 type SymbolKeysInArrayNotInType = Exclude<SymbolKeysFromArray, SymbolKeysFromType>;

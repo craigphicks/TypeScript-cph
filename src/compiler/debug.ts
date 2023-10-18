@@ -106,7 +106,7 @@ export enum LogLevel {
 /** @internal */
 export interface LoggingHost {
     log(level: LogLevel, s: string): void;
-}
+};
 
 /** @internal */
 export namespace Debug {
@@ -120,6 +120,7 @@ export namespace Debug {
     type AssertionKeys = MatchingKeys<typeof Debug, AnyFunction>;
 
     export function shouldLog(level: LogLevel): boolean {
+        // [cph] shouldn't this be `currentLogLevel >= level` ?
         return currentLogLevel <= level;
     }
 
@@ -150,6 +151,7 @@ export namespace Debug {
             logMessage(LogLevel.Verbose, s);
         }
     }
+
 
     const assertionCache: Partial<Record<AssertionKeys, { level: AssertionLevel; assertion: AnyFunction; }>> = {};
 
