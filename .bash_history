@@ -71,3 +71,7 @@ myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="(_uoafc|union
 hereby baseline-accept
 myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc"
 myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="(_uoafc|unionOfArraysFilter)"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="(_uoafc|unionOfArraysFilter)"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilter"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"

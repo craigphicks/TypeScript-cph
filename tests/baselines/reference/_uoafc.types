@@ -61,12 +61,12 @@ interface Buzz {
 >[] as Fizz[] | Buzz[] : Fizz[] | Buzz[]
 >[] : undefined[]
 >filter : { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): Buzz[]; }
->item => item.id < 5 : <T>(item: T) => boolean
->item : T
+>item => item.id < 5 : ((item: Fizz | Buzz) => boolean) | ((item: Fizz | Buzz) => boolean)
+>item : Fizz | Buzz
 >item.id < 5 : boolean
->item.id : any
->item : T
->id : any
+>item.id : number
+>item : Fizz | Buzz
+>id : number
 >5 : 5
 
 ([] as Fizz[] | Buzz[]).filter(Boolean) satisfies Fizz[] | Buzz[];
