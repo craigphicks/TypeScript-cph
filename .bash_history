@@ -75,3 +75,72 @@ myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="(_uoafc|union
 hereby baseline-accept
 myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilter"
 myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+git add .
+git commit -m "backup; test results for _uoafc, unionOfArrayFiltersCalls, unionOfArrayFilter-002 for resolveCallExpressionV2"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="(_uoafc|unionOfArraysFilter)"
+myLogLevel=5 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=5 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+hereby baseline-accept
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+hereby baseline-accept
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests-parallel
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests-parallel
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+touch .CPH.DEV.txt
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=10hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom" -i
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom" 
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_auofc" -i
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" -i
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" 
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" -i
+git status
+git add .CPH.DEV.txt 
+git add tests/cases
+git add src
+git status

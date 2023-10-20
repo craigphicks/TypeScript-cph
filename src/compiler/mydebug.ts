@@ -18,7 +18,7 @@ export namespace IDebug {
     //export let isDebugging = false;
     //export let loggingHost: LoggingHost | undefined;
     export let loggingHost: ILoggingHost | undefined = undefined;
-    export let dbgsModule: Dbgs = 0 as any as Dbgs;
+    export let dbgs: Dbgs = 0 as any as Dbgs;
     export let checker: TypeChecker | undefined = undefined;
 }
 
@@ -39,7 +39,7 @@ export class ILoggingClass implements ILoggingHost {
     }
     log(level: LogLevel, message: string | (() => string)) {
         if (!this.logFileFd) return;
-        if (level > Debug.currentLogLevel) return;
+        if (level > IDebug.logLevel) return;
         if (this.numOutLines > this.maxNumOutLines) Debug.fail(`Too many lines (${this.maxNumOutLines}) log file ` + this.logFilename);
 
         if (typeof message === 'function') {
@@ -112,23 +112,31 @@ export class DbgsClass implements Dbgs{
     constructor(){}
     private getNodeId(node: Node){ return node.id??"<undef>"; }
     private getSymbolId(symbol: Symbol){ return symbol.id??"<undef>"; }
+    private getSafeCheckerTypeToString(type: Type): string{
+        return IDebug.checker!.getNodeAndSymbolLinksTableState().safeWrapper(()=>IDebug.checker!.typeToString(type));
+    }
+    private getSafeCheckerTypeOfSymbol(symbol: Symbol): Type {
+        return IDebug.checker!.getNodeAndSymbolLinksTableState().safeWrapper(()=>IDebug.checker!.getTypeOfSymbol(symbol));
+    }
     dbgGetNodeText(node: Node){
         return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
     };
     dbgTypeToString = (type: Type | undefined): string => {
         if (!type) return "<undef>";
-        // const alwaysDetail = false;
-        // if (alwaysDetail) return "(type detail)" + dbgTypeToStringDetail(type).join(", ");
-        return `[t${type.id}] ${IDebug.checker!.typeToString(type)}`;
+        return `[t${type.id}] ${this.getSafeCheckerTypeToString(type)}`;
     };
     dbgNodeToString(node: Node | undefined): string {
-        return !node?"<undef>":`[n${this.getNodeId(node)}] ${this.dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
+        if (!node) return "<undef>";
+        return `[n${this.getNodeId(node)}] ${this.dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
     };
     dbgSignatureToString(c: Signature): string {
         let astr = ["("];
-        c.parameters.forEach(p=> astr.push(`${IDebug.checker!.typeToString(IDebug.checker!.getTypeOfSymbol(p))}`));
-        let str = "(" + astr.join(", ") + ") => ";
-        str += c.resolvedReturnType ? IDebug.checker!.typeToString(c.resolvedReturnType) : "<no resolved type>";
+        c.parameters.forEach(symbol=> {
+            const typeOfSymbol = this.getSafeCheckerTypeOfSymbol(symbol);
+            astr.push(this.dbgTypeToString(typeOfSymbol));
+        });
+        let str = "(" + astr.join("; ") + ") => ";
+        str += c.resolvedReturnType ? this.dbgTypeToString(c.resolvedReturnType) : "<no resolved type>";
         return str;
     };
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string {
@@ -200,7 +208,7 @@ function initialize(){
     IDebug.assertLevel = (process.env.myAssertLevel===undefined) ? 0 : Number(process.env.myAssertLevel);
     if (IDebug.logLevel){
         IDebug.loggingHost = new ILoggingClass();
-        IDebug.dbgsModule = new DbgsClass();
+        IDebug.dbgs = new DbgsClass();
     }
 
 }

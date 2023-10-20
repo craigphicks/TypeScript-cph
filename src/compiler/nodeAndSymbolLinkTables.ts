@@ -21,7 +21,7 @@ import {
     DifferentialTable,
 } from "./differentialTable";
 
-import { IDebug } from "./mydebug";
+import { IDebug, ILoggingHost} from "./mydebug";
 
 
 const symbolLinksKeys = [
@@ -142,30 +142,30 @@ type SymbolLinksProxy = ClassProxyRecordRW<SymbolLinks>;
 type NodeLinksProxy = ClassProxyRecordRW<NodeLinks>;
 
 
-function consoleGroup(...args: any[]): void {
-    args;
-}
-function consoleGroupEnd(...args: any[]): void {
-    args;
-}
-function consoleLog(...args: any[]): void {
-    args;
-}
+// function IDebug.loggingHost.ilogGroup(...args: any[]): void {
+//     args;
+// }
+// function IDebug.loggingHost.ilogGroupEnd(...args: any[]): void {
+//     args;
+// }
+// function IDebug.loggingHost.ilog(...args: any[]): void {
+//     args;
+// }
 
-function typeToStringSafe(checker: TypeChecker, type?: Type): string {
-    if (!type) return "<undef>";
-    const saved = checker.getNodeAndSymbolLinksTableState().getReadonlyStateThenBranchState();
-    const str = checker.typeToString(type);
-    checker.getNodeAndSymbolLinksTableState().restoreState(saved);
-    return str;
-}
-function signatureToStringSafe(checker: TypeChecker, signature: Signature): string {
-    const saved = checker.getNodeAndSymbolLinksTableState().getReadonlyStateThenBranchState();
-    const str = checker.signatureToString(signature);
-    checker.getNodeAndSymbolLinksTableState().restoreState(saved);
-    return str;
-}
 
+// function typeToStringSafe(checker: TypeChecker, type?: Type): string {
+//     if (!type) return "<undef>";
+//     const saved = checker.getNodeAndSymbolLinksTableState().getReadonlyStateThenBranchState();
+//     const str = checker.typeToString(type);
+//     checker.getNodeAndSymbolLinksTableState().restoreState(saved);
+//     return str;
+// }
+// function signatureToStringSafe(checker: TypeChecker, signature: Signature): string {
+//     const saved = checker.getNodeAndSymbolLinksTableState().getReadonlyStateThenBranchState();
+//     const str = checker.signatureToString(signature);
+//     checker.getNodeAndSymbolLinksTableState().restoreState(saved);
+//     return str;
+// }
 
 
 const nodeLinksConstructor = () => ({
@@ -238,6 +238,13 @@ export class NodeAndSymbolLinksTableState {
         this.nodeLinksTable = savedTables.readonlyNodeLinksTable.readonlyTable as DifferentialNodeLinksTable;
         this.nodeLinksTable.setTableReadonlyMode(savedTables.readonlyNodeLinksTable.originalReadonlyMode);
     }
+    safeWrapper<RT>(f:()=>RT){
+        const saved = this.getReadonlyStateThenBranchState();
+        const rt = f();
+        this.restoreState(saved);
+        return rt;
+    }
+
 
     /**
      * one link operations
@@ -367,7 +374,7 @@ export function joinLinksStatesAndWriteBack(
             });
         }
         mapNodeToChangedKeyValues.forEach((innerMap, tsnode) => {
-            const nodeLinksTarget = writeableTargetBranch.getNodeLinks(tsnode);
+                const nodeLinksTarget = writeableTargetBranch.getNodeLinks(tsnode);
             innerMap.forEach((set, key) => {
                 if (set.size === 1) {
                     const value = set.values().next().value;
@@ -392,7 +399,7 @@ export function joinLinksStatesAndWriteBack(
                         }
                         case "resolvedSymbol":
                             Debug.assert(false, "more than one resolvedSymbol, not yet implemented",
-                                ()=>(arrValue as Symbol[]).map(s=>`${checker.symbolToString(s)}, id:${s.id}`).join("; "));
+                                ()=>(arrValue as Symbol[]).map(s=>IDebug.dbgs.dbgSymbolToString(s)).join("; "));
                             break;
                         // explicitly list the ones we *hope* can be ignored
                         case "deferredNodes":
@@ -415,11 +422,12 @@ export function dbgLinksStatesBeforeJoin(
     checker: TypeChecker,
     states: Readonly<ReadonlyNodeAndSymbolLinksTable[]>,
     prevBranch: Readonly<ReadonlyNodeAndSymbolLinksTable>): void {
-
+    Debug.assert(IDebug.loggingHost);
+    castHereafter<ILoggingHost>(IDebug.loggingHost);
     // Probably the same as prevBranch, but we don't want to assume that
     const savedState = nodeAndSymbolLinkTablesState.getReadonlyState();
     for (let i = 0; i<states.length; i++) {
-        consoleLog(`state ${i}`);
+        IDebug.loggingHost.ilog(`state ${i}`);
         const state = states[i];
         /**
          * Because the debug code will call getSymbolLinks and getNodeLinks, we need to set the current state to state.
@@ -432,7 +440,8 @@ export function dbgLinksStatesBeforeJoin(
         {
             const map = state.readonlySymbolLinksTable.readonlyTable.getReadonlyMapOfCurrentBranch();
             map.forEach((symbolLinks, tssymbol) => {
-                consoleGroup(`tssymbol: ${checker.symbolToString(tssymbol)}, id:${getSymbolId(tssymbol)}}`);
+                castHereafter<ILoggingHost>(IDebug.loggingHost);
+                IDebug.loggingHost.ilogGroup(`tssymbol: ${checker.symbolToString(tssymbol)}, id:${getSymbolId(tssymbol)}}`);
                 if (symbolLinks instanceof SymbolLinksProxyCtor) {
                     //castHereafter<>(symbolLinks);
                     const keyset: Set<keyof SymbolLinks> = new Set();
@@ -454,7 +463,8 @@ export function dbgLinksStatesBeforeJoin(
                             if (!state0) str += `, state0:<undef>`;
                             else str += `, equalState0:${equalState0}`;
                         }
-                        consoleLog(str);
+                        castHereafter<ILoggingHost>(IDebug.loggingHost);
+                        IDebug.loggingHost.ilog(str);
                         str = "    value: ";
                         switch (key) {
                             case "declaredType":
@@ -465,27 +475,28 @@ export function dbgLinksStatesBeforeJoin(
                                 // falls through
                             case "type":{
                                 castHereafter<Type>(value);
-                                const typestr = typeToStringSafe(checker,value);
+                                const typestr = IDebug.dbgs.dbgTypeToString(value);
                                 str += ("type: " + typestr + `, type.id:${value.id}`);
                                 break;
                             }
                             case "resolvedMembers":{
                                 const arrstr: string[]=[];
-                                (value as SymbolTable).forEach((member, _keystr) => arrstr.push(checker.symbolToString(member)));
+                                (value as SymbolTable).forEach((member, _keystr) => arrstr.push(IDebug.dbgs.dbgSymbolToString(member)));
                                 str+=("symbols[]: "+arrstr.join(", "));
                                 break;
                             }
                         }
-                        consoleLog(str);
+                        IDebug.loggingHost.ilog(str);
                     });
                 }
-                consoleGroupEnd();
+                IDebug.loggingHost.ilogGroupEnd();
             });
         }
         {
             const map = state.readonlyNodeLinksTable.readonlyTable.getReadonlyMapOfCurrentBranch();
             map.forEach((nodeLinks, node) => {
-                consoleGroup(`node: ${Debug.formatSyntaxKind(node.kind)}, id:${getNodeId(node)}}`);
+                castHereafter<ILoggingHost>(IDebug.loggingHost);
+                IDebug.loggingHost.ilogGroup(`node: ${Debug.formatSyntaxKind(node.kind)}, id:${getNodeId(node)}}`);
                 if (nodeLinks instanceof NodeLinksProxyCtor) {
                     //castHereafter<>(symbolLinks);
                     const keyset: Set<keyof NodeLinks> = new Set();
@@ -507,7 +518,8 @@ export function dbgLinksStatesBeforeJoin(
                             if (!state0) str += `, state0:<undef>`;
                             else str += `, equalState0:${equalState0}`;
                         }
-                        consoleLog(str);
+                        castHereafter<ILoggingHost>(IDebug.loggingHost);
+                        IDebug.loggingHost.ilog(str);
                         str = "    value: ";
                         switch (key) {
                             // resolvedType?: Type;                // Cached type of type node
@@ -520,28 +532,28 @@ export function dbgLinksStatesBeforeJoin(
                             case "resolvedType":
                             case "resolvedEnumType":{
                                 castHereafter<Type>(value);
-                                const typestr = typeToStringSafe(checker,value);
+                                const typestr = IDebug.dbgs.dbgTypeToString(value);
                                 str += ("type: " + typestr + `, type.id:${value.id}`);
                                 break;
                             }
                             case "resolvedSignature":
                             case "effectsSignature":{
                                 castHereafter<Signature>(value);
-                                const typestr = signatureToStringSafe(checker,value);
+                                const typestr = IDebug.dbgs.dbgSignatureToString(value);
                                 str += (`signature: ${typestr}`);
                                 break;
                             }
                             case "resolvedSymbol":{
                                 castHereafter<Symbol>(value);
-                                const typestr = checker.symbolToString(value);
+                                const typestr = IDebug.dbgs.dbgSymbolToString(value);
                                 str += (`symbol: ${typestr}, symbol.id:${value.id}`);
                                 break;
                             }
                         }
-                        consoleLog(str);
+                        IDebug.loggingHost.ilog(str);
                     });
                 }
-                consoleGroupEnd();
+                IDebug.loggingHost.ilogGroupEnd();
             });
         }
     }
@@ -554,13 +566,15 @@ export function dbgLinksStatesDumpTables(
     nodeAndSymbolLinkTablesState: NodeAndSymbolLinksTableState,
     checker: TypeChecker
 ){
-    consoleGroup("dbgDumpTables");
+    castHereafter<ILoggingHost>(IDebug.loggingHost);
+    IDebug.loggingHost.ilogGroup("dbgDumpTables");
     const savedState = nodeAndSymbolLinkTablesState.getReadonlyState();
     const smap = nodeAndSymbolLinkTablesState.symbolLinksTable.getReadonlyMapOfCurrentBranch();
     const nmap = nodeAndSymbolLinkTablesState.nodeLinksTable.getReadonlyMapOfCurrentBranch();
-    nodeAndSymbolLinkTablesState.branchState();
+    //nodeAndSymbolLinkTablesState.branchState();
     smap.forEach((symbolLinks, tssymbol) => {
-        consoleGroup(`tssymbol: ${checker.symbolToString(tssymbol)}, id:${getSymbolId(tssymbol)}}`);
+        castHereafter<ILoggingHost>(IDebug.loggingHost);
+        IDebug.loggingHost.ilogGroup(`tssymbol: ${checker.symbolToString(tssymbol)}, id:${getSymbolId(tssymbol)}}`);
         Debug.assert(!(symbolLinks instanceof SymbolLinksProxyCtor), "symbolLinks should not be a proxy");
         Object.keys(symbolLinks).forEach((key) => {
             const value = symbolLinks[key as keyof SymbolLinks];
@@ -570,7 +584,7 @@ export function dbgLinksStatesDumpTables(
                 case "declaredType":
                 case "type":{
                     castHereafter<Type>(value);
-                    const typestr = typeToStringSafe(checker,value);
+                    const typestr = IDebug.dbgs.dbgTypeToString(value);
                     str += ("type: " + typestr + `, type.id:${value.id}`);
                     break;
                 }
@@ -583,12 +597,14 @@ export function dbgLinksStatesDumpTables(
                 default:
                     str += value;
             }
-            consoleLog(str);
+            castHereafter<ILoggingHost>(IDebug.loggingHost);
+            IDebug.loggingHost.ilog(str);
         });
-        consoleGroupEnd();
+        IDebug.loggingHost.ilogGroupEnd();
     });
     nmap.forEach((nodeLinks, node) => {
-        consoleGroup(`node: ${Debug.formatSyntaxKind(node.kind)}, id:${getNodeId(node)}}`);
+        castHereafter<ILoggingHost>(IDebug.loggingHost);
+        IDebug.loggingHost.ilogGroup(`node: ${Debug.formatSyntaxKind(node.kind)}, id:${getNodeId(node)}}`);
         Debug.assert(!(nodeLinks instanceof NodeLinksProxyCtor), "nodeLinks should not be a proxy");
         Object.keys(nodeLinks).forEach((key) => {
             const value = nodeLinks[key as keyof NodeLinks];
@@ -605,31 +621,32 @@ export function dbgLinksStatesDumpTables(
                 case "resolvedType":
                 case "resolvedEnumType":{
                     castHereafter<Type>(value);
-                    const typestr = typeToStringSafe(checker,value);
+                    const typestr = IDebug.dbgs.dbgTypeToString(value);
                     str += ("type: " + typestr + `, type.id:${value.id}`);
                     break;
                 }
                 case "resolvedSignature":
                 case "effectsSignature":{
                     castHereafter<Signature>(value);
-                    const typestr = signatureToStringSafe(checker,value);
+                    const typestr = IDebug.dbgs.dbgSignatureToString(value);
                     str += (`signature: ${typestr}`);
                     break;
                 }
                 case "resolvedSymbol":{
                     castHereafter<Symbol>(value);
-                    const typestr = checker.symbolToString(value);
+                    const typestr = IDebug.dbgs.dbgSymbolToString(value);
                     str += (`symbol: ${typestr}, symbol.id:${value.id}`);
                     break;
                 }
                 default:
                     str += value;
             }
-            consoleLog(str);
+            castHereafter<ILoggingHost>(IDebug.loggingHost);
+            IDebug.loggingHost.ilog(str);
         });
-        consoleGroupEnd();
+        IDebug.loggingHost.ilogGroupEnd();
     });
-    consoleGroupEnd();
+    IDebug.loggingHost.ilogGroupEnd();
     nodeAndSymbolLinkTablesState.restoreState(savedState);
 }
 

@@ -1,0 +1,120 @@
+The strategy of branching Node/Symbol links table is not able to
+completely insulate the changes during branching.  Somehow there is leakage,
+probably related to caching.
+
+For example in `tests/cases/compiler/_arrayFrom.ts` these orders of lines are ok
+
+ok:
+```
+Array.from(inputB, ({ b }): A => ({ a: b }));
+Array.from(inputA.values());
+```
+
+ok:
+```
+Array.from(inputB, ({ b }): A => ({ a: b }));
+Array.from(inputA.values());
+Array.from(inputB, ({ b }): A => ({ a: b }));
+```
+
+
+but this order is causes `reseolveCallExpressionV2` to error, probably because some chached results
+cause a wrong short cut to be taken.
+
+ng:
+```
+Array.from(inputA.values());
+Array.from(inputB, ({ b }): A => ({ a: b }));
+```
+
+So I think it is better to use types and a [symbol table, type symbol table]
+to search the solution space
+
+
+overloads:
+    [0] from<T>(iterable: Iterable<T> | ArrayLike<T>): T[];
+    [1] from<T, U>(iterable: Iterable<T{0}> | ArrayLike<T{1}>, mapfn: (v: T{2}, k: number) => U, thisArg?: any): U[];
+
+type parameters:
+    typeof this: unnknown[]
+    T: unknown
+    U: unknown
+
+function arguments
+    0: B[]
+    1: ({b})=>{a:b}
+
+(1)
+    overload[0]: too many arguments
+    overload[1]:
+      isAcceptable(B[],Iterable<any>): no
+      isAcceptable(B[],ArrayLike<any>): yes
+      bind(T{1}, B)
+      because it T{1} was inferred from an array all T{n} bind to B
+      isAcceptable({b}, T as B): yes
+      //bind(T{2}, {b:any}):
+      bind(U,{a:string})
+
+
+
+
+      mapfn => bind(T{2}, {b})
+    mapfn => bind(U{0}, A)
+
+
+search for
+function inst.*MappedType
+
+    function instantiateMappedType
+    function instantiateMappedArrayType
+    function instantiateMappedTypeArray(type: MappedType
+    etc
+
+
+function instantiateAnonymousType(type,...)
+type.symbol.escapedName==="filter"
+
+function getObjectTypeInstantiation
+
+typeToString(target)
+'{
+<S extends T>(predicate: (value: T, index: number, array: T[]) => value is S, thisArg?: any): S[];
+(predicate: BooleanConverter, thisArg?: any): (T extends false | "" | 0 | 0n ? never : T)[];
+(predicate: (value: T, index: number, array: T[]) => unknown, thisArg?: any): T[];
+}'[95]
+(same as result type.target)
+
+
+    const newMapper = createTypeMapper(typeParameters, typeArguments);
+
+
+typeToString(typeParameters[0])
+'T'[67]
+typeToString(typeParameters[1])
+'this'[68]
+
+typeToString(typeArguments[0])
+'Fizz'[85]
+typeToString(typeArguments[1])
+'Fizz[]'[87]
+
+    instantiateAnonymousType(target, newMapper, newAliasSymbol, newAliasTypeArguments);
+
+checkPropertyAccessExpressionOrQualifiedName
+node.id===33
+
+
+createUnionOrIntersectionProperty(containingType: UnionOrIntersectionType, name: __String, skipObjectFunctionPropertyAugment?: boolean): Symbol | undefined
+e.g. containingType === "Fizz[]"
+
+This will work ----
+
+typeToString(getTypeOfSymbol(getPropertyOfType(createArrayType(anyType),"filter")))
+'{
+    <S extends any>(predicate: (value: any, index: number, array: any[]) => value is S, thisArg?: any): S[];
+    (predicate: BooleanConverter, thisArg?: any): any[];
+    (predicate: (value: any, index: number, array: any[]) => unknown, thisArg?: any): any[];
+}'
+Great!
+
+

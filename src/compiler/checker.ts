@@ -1086,7 +1086,7 @@ import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
 // cphdebug-start
 import { IDebug } from "./mydebug";
-const dbgsModule = IDebug.dbgsModule;
+//const IDebug.dbgs = IDebug.dbgs;
 // const {
 //    dbgNodeToString,
 //    dbgSignatureToString,
@@ -19474,7 +19474,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             createTupleType(elementTypes, newTupleModifiers, newReadonly, tupleType.target.labeledElementDeclarations);
     }
 
-    function instantiateMappedTypeTemplate(type: MappedType, key: Type, isOptional: boolean, mapper: TypeMapper) {
+   function instantiateMappedTypeTemplate(type: MappedType , key: Type, isOptional: boolean, mapper: TypeMapper) {
         const templateMapper = appendTypeMapping(mapper, getTypeParameterFromMappedType(type), key);
         const propType = instantiateType(getTemplateTypeFromMappedType(type.target as MappedType || type), templateMapper);
         const modifiers = getMappedTypeModifiers(type);
@@ -34534,21 +34534,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-
-    // if (myDebug) {
-    //     consoleGroup(`resolveCallExpression[in]: node: ${dbgNodeToString(node)}`);
-    // }
-    // const r = resolveCallExpression_aux(node, candidatesOutArray, checkMode, optionalInputs, hadErrorRef);
-    // if (myDebug) {
-    //     consoleLog(`resolveCallExpression[out]: node: ${dbgNodeToString(node)}`);
-    //     consoleGroupEnd();
-    // }
-    // return r;
-
     function resolveCallExpressionV2(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, optionalInputs?: {ignoreCallChain?: boolean, singleType?: Type} | undefined): Signature {
     // cphdebug-start
     if (IDebug.loggingHost) {
-        IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[in]: node: ${dbgsModule.dbgNodeToString(node)}`);
+        IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}`);
     }
     const retsig = (()=>{
     // cphdebug-end
@@ -34574,9 +34563,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         let callChainFlags: SignatureFlags;
         let funcType = checkExpression(node.expression);
-        if (IDebug.loggingHost){
-            IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression_aux: funcType: ${typeToString(funcType)}, funcType.id: ${funcType.id}, node.expression.kind: ${Debug.formatSyntaxKind(node.expression.kind)}`);
-        }
+        // if (IDebug.loggingHost){
+        //     IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression_aux: funcType: ${IDebug.dbgs.dbgTypeToString(funcType)}, funcType.id: ${funcType.id}, node.expression.kind: ${Debug.formatSyntaxKind(node.expression.kind)}`);
+        // }
         if (isCallChain(node)) {
             const nonOptionalType = getOptionalExpressionType(funcType, node.expression);
             callChainFlags = nonOptionalType === funcType ? SignatureFlags.None :
@@ -34674,36 +34663,38 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         let apparentTypeIdx = -1;
         forEachType(apparentType0, apparentType => {
             apparentTypeIdx+=1;
-            if (IDebug.loggingHost){
-                IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[loop apparentType#:${apparentTypeIdx}] apparentType: ${typeToString(apparentType)}`);
-            }
+            // if (IDebug.loggingHost){
+            //     IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[loop apparentType#:${apparentTypeIdx}] apparentType: ${IDebug.dbgs.dbgTypeToString(apparentType)}`);
+            // }
             nodeAndSymbolLinksTableState.restoreState(savedState); // no harm in restoring state here in first loop
             nodeAndSymbolLinksTableState.branchState(/* useProxiesForDiagnosis */ true);
             const {signature,readonlyState}={
                 signature:doOneApparentType(apparentType),
                 readonlyState: nodeAndSymbolLinksTableState.getReadonlyState()
             };
-            // consoleGroup(`examine differential apparentType#:${apparentTypeIdx}`);
-            // dbgStatesBeforeJoin(checker,[readonlyState],savedState);
-            // consoleGroupEnd();
+            // if (IDebug.loggingHost){
+            //     IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[loop apparentType#:${apparentTypeIdx}] apparentType: ${IDebug.dbgs.dbgTypeToString(apparentType)}`);
+            // }
             results.push({ signature, readonlyState });
-            if (IDebug.loggingHost){
-                IDebug.loggingHost.ilogGroupEnd(()=>`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${dbgsModule.dbgSignatureToString(signature)}`);
-            }
-            nodeAndSymbolLinksTableState.restoreState(savedState);
+            // if (IDebug.loggingHost){
+            //     IDebug.loggingHost.ilogGroupEnd(()=>`resolveCallExpression[loop end ${apparentTypeIdx}] signature: ${IDebug.dbgs.dbgSignatureToString(signature)}`);
+            // }
         });
+        nodeAndSymbolLinksTableState.restoreState(savedState);
         if (IDebug.loggingHost){
-            results.forEach((result,sigidx)=>{
-                nodeAndSymbolLinksTableState.restoreState(result.readonlyState); // no harm in restoring state here in first loop
-                if (IDebug.loggingHost){
-                    IDebug.loggingHost.ilog(()=>`resolveCallExpression[out] signature[${sigidx}]: ${dbgsModule.dbgSignatureToString(result.signature)}`);
-                }
-            });
-            if (IDebug.loggingHost){
-                IDebug.loggingHost.ilog(`examine differential all apparentTypes`);
-                links.dbgLinksStatesBeforeJoin(nodeAndSymbolLinksTableState, checker,results.map(r=>r.readonlyState),savedState);
-                IDebug.loggingHost.ilogGroupEnd();
-            }
+            // const savedState = nodeAndSymbolLinksTableState.getReadonlyState();
+            // results.forEach((result,sigidx)=>{
+            //     nodeAndSymbolLinksTableState.restoreState(result.readonlyState); // no harm in restoring state here in first loop
+            //     if (IDebug.loggingHost){
+            //         IDebug.loggingHost.ilog(()=>`resolveCallExpression[out] signature[${sigidx}]: ${dbgsModule.dbgSignatureToString(result.signature)}`);
+            //     }
+            // });
+            // nodeAndSymbolLinksTableState.restoreState(savedState);
+            // if (IDebug.loggingHost){
+            //     IDebug.loggingHost.ilog(`examine differential all apparentTypes`);
+            //     links.dbgLinksStatesBeforeJoin(nodeAndSymbolLinksTableState, checker,results.map(r=>r.readonlyState),savedState);
+            //     IDebug.loggingHost.ilogGroupEnd();
+            // }
         }
         /**
          * [cph]
@@ -34736,7 +34727,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // cphdebug-start
     })();
     if (IDebug.loggingHost) {
-        IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[in]: node: ${dbgsModule.dbgNodeToString(node)}->${dbgsModule.dbgSignatureToString(retsig)}`);
+        //IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}->${IDebug.dbgs.dbgSignatureToString(retsig)}`);
+        IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[out]: node: ${IDebug.dbgs.dbgNodeToString(node)}`);
     }
     return retsig;
     // cphdebug-end
