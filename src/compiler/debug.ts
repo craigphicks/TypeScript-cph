@@ -106,8 +106,7 @@ export enum LogLevel {
 /** @internal */
 export interface LoggingHost {
     log(level: LogLevel, s: string): void;
-    [key:string]/*?*/: any; // would like to enforce ?. but that's not supported.
-};
+}
 
 /** @internal */
 export namespace Debug {
@@ -152,7 +151,6 @@ export namespace Debug {
             logMessage(LogLevel.Verbose, s);
         }
     }
-
 
     const assertionCache: Partial<Record<AssertionKeys, { level: AssertionLevel; assertion: AnyFunction; }>> = {};
 

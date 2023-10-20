@@ -1,7 +1,5 @@
 import { Debug, LogLevel } from "./debug";
 import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier } from "./types";
-import * as links from "./nodeAndSymbolLinkTables";
-
 
 export interface ILoggingHost {
     //log(level: LogLevel, message: string | (() => string)) : void;
@@ -20,6 +18,8 @@ export namespace IDebug {
     export let loggingHost: ILoggingHost | undefined = undefined;
     export let dbgs: Dbgs = 0 as any as Dbgs;
     export let checker: TypeChecker | undefined = undefined;
+    // temporary
+    export let nouseResolveCallExpressionV2: boolean = false;
 }
 
 export class ILoggingClass implements ILoggingHost {
@@ -91,7 +91,7 @@ export class ILoggingClass implements ILoggingHost {
         if (!nameMatched) return undefined;
         const nameRet = this.nodePath.basename(node.path, ".ts");
         this.nodeFs.mkdirSync("tmp", {recursive: true});
-        const retfn = "tmp/" + nameRet + `.de${IDebug.logLevel}.rcev${links.nouseResolveCallExpressionV2?1:2}.log`;
+        const retfn = "tmp/" + nameRet + `.de${IDebug.logLevel}.rcev${IDebug.nouseResolveCallExpressionV2?1:2}.log`;
         return retfn;
     }
 }
@@ -113,10 +113,10 @@ export class DbgsClass implements Dbgs{
     private getNodeId(node: Node){ return node.id??"<undef>"; }
     private getSymbolId(symbol: Symbol){ return symbol.id??"<undef>"; }
     private getSafeCheckerTypeToString(type: Type): string{
-        return IDebug.checker!.getNodeAndSymbolLinksTableState().safeWrapper(()=>IDebug.checker!.typeToString(type));
+        return IDebug.checker!.typeToString(type);
     }
     private getSafeCheckerTypeOfSymbol(symbol: Symbol): Type {
-        return IDebug.checker!.getNodeAndSymbolLinksTableState().safeWrapper(()=>IDebug.checker!.getTypeOfSymbol(symbol));
+        return IDebug.checker!.getTypeOfSymbol(symbol);
     }
     dbgGetNodeText(node: Node){
         return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
@@ -206,6 +206,7 @@ export class DbgsClass implements Dbgs{
 function initialize(){
     IDebug.logLevel = (process.env.myLogLevel===undefined) ? 0 : Number(process.env.myLogLevel);
     IDebug.assertLevel = (process.env.myAssertLevel===undefined) ? 0 : Number(process.env.myAssertLevel);
+    IDebug.nouseResolveCallExpressionV2 = (process.env.nouseRcev2===undefined || !Number(process.env.nouseRcev2)) ? false : true
     if (IDebug.logLevel){
         IDebug.loggingHost = new ILoggingClass();
         IDebug.dbgs = new DbgsClass();
