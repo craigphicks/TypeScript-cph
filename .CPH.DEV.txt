@@ -117,4 +117,13 @@ typeToString(getTypeOfSymbol(getPropertyOfType(createArrayType(anyType),"filter"
 }'
 Great!
 
+But it's not the most general way which would be to map the target function, as was somewhere already done for Fizz and Buzz.
 
+apparentType.types[0].target.instantiations.forEach((v,k)=>console.log(typeToString(v)))
+{ <S extends T>(predicate: (value: T, index: number, array: T[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): (T extends false | "" | 0 | 0n ? never : T)[]; (predicate: (value: T, index: number, array: T[]) => unknown, thisArg?: any): T[]; }
+repl:1
+{ <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; }
+repl:1
+{ <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): Buzz[]; }
+
+Then checking that the function is an array property and creating `any[]` would not be necessary.

@@ -67,6 +67,7 @@ import {
     CaseClause,
     CaseOrDefaultClause,
     cast,
+    castHereafter,
     chainDiagnosticMessages,
     CharacterCodes,
     CheckFlags,
@@ -34524,126 +34525,241 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function resolveCallExpressionV2(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
     // cphdebug-start
+    function ilog(...args: Parameters<NonNullable<typeof IDebug.loggingHost>["ilog"]>){
+        IDebug.loggingHost?.ilog(...args);
+    }
     if (IDebug.loggingHost) {
         IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}`);
     }
     const retsig = (()=>{
     // cphdebug-end
-    if (node.expression.kind === SyntaxKind.SuperKeyword) {
-        const superType = checkSuperExpression(node.expression);
-        if (isTypeAny(superType)) {
-            for (const arg of node.arguments) {
-                checkExpression(arg); // Still visit arguments so they get marked for visibility, etc
+        if (node.expression.kind === SyntaxKind.SuperKeyword) {
+            const superType = checkSuperExpression(node.expression);
+            if (isTypeAny(superType)) {
+                for (const arg of node.arguments) {
+                    checkExpression(arg); // Still visit arguments so they get marked for visibility, etc
+                }
+                return anySignature;
             }
-            return anySignature;
-        }
-        if (!isErrorType(superType)) {
-            // In super call, the candidate signatures are the matching arity signatures of the base constructor function instantiated
-            // with the type arguments specified in the extends clause.
-            const baseTypeNode = getEffectiveBaseTypeNode(getContainingClass(node)!);
-            if (baseTypeNode) {
-                const baseConstructors = getInstantiatedConstructorsForTypeArguments(superType, baseTypeNode.typeArguments, baseTypeNode);
-                return resolveCall(node, baseConstructors, candidatesOutArray, checkMode, SignatureFlags.None);
-            }
-        }
-        return resolveUntypedCall(node);
-    }
-
-    let callChainFlags: SignatureFlags;
-    let funcType = checkExpression(node.expression);
-    if (isCallChain(node)) {
-        const nonOptionalType = getOptionalExpressionType(funcType, node.expression);
-        callChainFlags = nonOptionalType === funcType ? SignatureFlags.None :
-            isOutermostOptionalChain(node) ? SignatureFlags.IsOuterCallChain :
-            SignatureFlags.IsInnerCallChain;
-        funcType = nonOptionalType;
-    }
-    else {
-        callChainFlags = SignatureFlags.None;
-    }
-
-    funcType = checkNonNullTypeWithReporter(
-        funcType,
-        node.expression,
-        reportCannotInvokePossiblyNullOrUndefinedError,
-    );
-
-    if (funcType === silentNeverType) {
-        return silentNeverSignature;
-    }
-
-    const apparentType = getApparentType(funcType);
-    if (isErrorType(apparentType)) {
-        // Another error has already been reported
-        return resolveErrorCall(node);
-    }
-
-    // Technically, this signatures list may be incomplete. We are taking the apparent type,
-    // but we are not including call signatures that may have been added to the Object or
-    // Function interface, since they have none by default. This is a bit of a leap of faith
-    // that the user will not add any.
-    const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
-    const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
-
-    // TS 1.0 Spec: 4.12
-    // In an untyped function call no TypeArgs are permitted, Args can be any argument list, no contextual
-    // types are provided for the argument expressions, and the result is always of type Any.
-    if (isUntypedFunctionCall(funcType, apparentType, callSignatures.length, numConstructSignatures)) {
-        // The unknownType indicates that an error already occurred (and was reported).  No
-        // need to report another error in this case.
-        if (!isErrorType(funcType) && node.typeArguments) {
-            error(node, Diagnostics.Untyped_function_calls_may_not_accept_type_arguments);
-        }
-        return resolveUntypedCall(node);
-    }
-    // If FuncExpr's apparent type(section 3.8.1) is a function type, the call is a typed function call.
-    // TypeScript employs overload resolution in typed function calls in order to support functions
-    // with multiple call signatures.
-    if (!callSignatures.length) {
-        if (numConstructSignatures) {
-            error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
-        }
-        else {
-            let relatedInformation: DiagnosticRelatedInformation | undefined;
-            if (node.arguments.length === 1) {
-                const text = getSourceFileOfNode(node).text;
-                if (isLineBreak(text.charCodeAt(skipTrivia(text, node.expression.end, /*stopAfterLineBreak*/ true) - 1))) {
-                    relatedInformation = createDiagnosticForNode(node.expression, Diagnostics.Are_you_missing_a_semicolon);
+            if (!isErrorType(superType)) {
+                // In super call, the candidate signatures are the matching arity signatures of the base constructor function instantiated
+                // with the type arguments specified in the extends clause.
+                const baseTypeNode = getEffectiveBaseTypeNode(getContainingClass(node)!);
+                if (baseTypeNode) {
+                    const baseConstructors = getInstantiatedConstructorsForTypeArguments(superType, baseTypeNode.typeArguments, baseTypeNode);
+                    return resolveCall(node, baseConstructors, candidatesOutArray, checkMode, SignatureFlags.None);
                 }
             }
-            invocationError(node.expression, apparentType, SignatureKind.Call, relatedInformation);
+            return resolveUntypedCall(node);
         }
-        return resolveErrorCall(node);
-    }
-    // When a call to a generic function is an argument to an outer call to a generic function for which
-    // inference is in process, we have a choice to make. If the inner call relies on inferences made from
-    // its contextual type to its return type, deferring the inner call processing allows the best possible
-    // contextual type to accumulate. But if the outer call relies on inferences made from the return type of
-    // the inner call, the inner call should be processed early. There's no sure way to know which choice is
-    // right (only a full unification algorithm can determine that), so we resort to the following heuristic:
-    // If no type arguments are specified in the inner call and at least one call signature is generic and
-    // returns a function type, we choose to defer processing. This narrowly permits function composition
-    // operators to flow inferences through return types, but otherwise processes calls right away. We
-    // use the resolvingSignature singleton to indicate that we deferred processing. This result will be
-    // propagated out and eventually turned into silentNeverType (a type that is assignable to anything and
-    // from which we never make inferences).
-    if (checkMode & CheckMode.SkipGenericFunctions && !node.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {
-        skippedGenericFunction(node, checkMode);
-        return resolvingSignature;
-    }
-    // If the function is explicitly marked with `@class`, then it must be constructed.
-    if (callSignatures.some(sig => isInJSFile(sig.declaration) && !!getJSDocClassTag(sig.declaration!))) {
-        error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
-        return resolveErrorCall(node);
-    }
 
-    return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
+        let callChainFlags: SignatureFlags;
+        let funcType = checkExpression(node.expression);
+        if (isCallChain(node)) {
+            const nonOptionalType = getOptionalExpressionType(funcType, node.expression);
+            callChainFlags = nonOptionalType === funcType ? SignatureFlags.None :
+                isOutermostOptionalChain(node) ? SignatureFlags.IsOuterCallChain :
+                SignatureFlags.IsInnerCallChain;
+            funcType = nonOptionalType;
+        }
+        else {
+            callChainFlags = SignatureFlags.None;
+        }
+
+        funcType = checkNonNullTypeWithReporter(
+            funcType,
+            node.expression,
+            reportCannotInvokePossiblyNullOrUndefinedError,
+        );
+
+        if (funcType === silentNeverType) {
+            return silentNeverSignature;
+        }
+
+        const apparentType0 = getApparentType(funcType);
+        if (isErrorType(apparentType0)) {
+            // Another error has already been reported
+            return resolveErrorCall(node);
+        }
+        let apparentTypePre: ObjectType | undefined;
+        // cphdebug-start
+        if (IDebug.loggingHost){
+            IDebug.loggingHost.ilog(()=>`resolveCallExpression[apparentType0] ${IDebug.dbgs.dbgTypeToString(apparentType0)}`);
+            IDebug.loggingHost.ilog(()=>`resolveCallExpression[in]: check shape`);
+        }
+        // cphdebug-end
+        if (apparentType0.flags & TypeFlags.Union) {
+            castHereafter<UnionType>(apparentType0);
+            if (IDebug.assertLevel) Debug.assert(apparentType0.types.every(t => t.flags & TypeFlags.Object));
+            let type0 = apparentType0.types[0] as Partial<AnonymousType> & ObjectType;
+            let qualifies = !!(type0.callSignatures && type0.callSignatures.length > 1 && type0.target);
+            qualifies &&= apparentType0.types.slice(1).every((t: Partial<Partial<AnonymousType> & ObjectType>) =>
+                (t.callSignatures?.length === type0.callSignatures?.length && t.target === type0.target));
+            // cphdebug-start
+            if (IDebug.loggingHost){
+                IDebug.loggingHost.ilog(()=>`resolveCallExpression[qualifies] ${qualifies}`);
+            }
+            // cphdebug-end
+            if (qualifies){
+                // cphdebug-start
+                if (IDebug.loggingHost){
+                    IDebug.loggingHost.ilog(()=>`resolveCallExpression[target]: ${IDebug.dbgs.dbgTypeToString(type0.target)}`);
+                }
+                // cphdebug-end
+
+                Debug.assert(type0.mapper);
+                const target = type0.target!;
+                let newMapper: TypeMapper;
+                if (type0.mapper.kind===TypeMapKind.Simple){
+                    newMapper = {kind: TypeMapKind.Simple, source: type0.mapper.source, target: getConstraintOfTypeParameter(type0.mapper.source)??anyType };
+                }
+                else if (type0.mapper.kind===TypeMapKind.Array){
+                    const targets: Type[] = [];
+                    for (const t of type0.mapper.sources){
+                        targets.push(getConstraintOfTypeParameter(t) ?? anyType);
+                    }
+                    newMapper = {kind: TypeMapKind.Array, sources: type0.mapper.sources, targets};
+                }
+                else {
+                    Debug.assert(false, "type0.mapper.kind not yet handled: ", ()=>`${type0.mapper!.kind}`);
+                }
+                apparentTypePre = (target.objectFlags & ObjectFlags.Mapped
+                        ? instantiateMappedType(target as MappedType, newMapper, /*aliasSymbol*/ undefined, /*aliasTypeArguments*/ undefined)
+                        : instantiateAnonymousType(target, newMapper, /*aliasSymbol*/ undefined, /*aliasTypeArguments*/ undefined)) as ObjectType;
+
+                // TODO: do instantiations because we might come back here repeatedly
+                //target.instantiations.set(id, result); // Set cached result early in case we recursively invoke instantiation while eagerly computing type variable visibility below
+
+                // cphdebug-start
+                if (IDebug.loggingHost){
+                    if (newMapper.kind===TypeMapKind.Simple){
+                        IDebug.loggingHost.ilog(()=>`resolveCallExpression[newMapper.target]: ${IDebug.dbgs.dbgTypeToString((newMapper as any).target)}`);
+                    }
+                    else if (newMapper.kind===TypeMapKind.Array){
+                        newMapper.targets!.forEach((t, i)=>IDebug.loggingHost!.ilog(
+                            ()=>`resolveCallExpression[newMapper.targets[${i}]]: ${IDebug.dbgs.dbgTypeToString(t)}`));
+                    }
+                    IDebug.loggingHost.ilog("");
+                    IDebug.loggingHost.ilog(()=>`resolveCallExpression[apparentTypePre]: ${IDebug.dbgs.dbgTypeToString(apparentTypePre)}`);
+                    if (!apparentTypePre!.callSignatures) ilog(`resolveCallExpression[apparentTypePre]:<undef>`);
+                    else apparentTypePre.callSignatures.forEach((s, i)=>
+                        ilog(`resolveCallExpression[apparentTypePre.callSignatures[${i}]]: ${IDebug.dbgs.dbgSignatureToString(s)}`));
+                }
+                // cphdebug-end
+
+            }
+
+        }
+
+
+        /**
+         * Development - make sure that calling helper-pre doesn't affect the result of calling helper-main(orig)
+         */
+        const doPre = true;
+        if (doPre && apparentTypePre){
+            const tmpCandidatesOutArray: Signature[] = [];
+            const {signature, wasError} = helper(apparentTypePre, apparentTypePre.callSignatures!,
+                tmpCandidatesOutArray, checkMode | CheckMode.Contextual , callChainFlags, "pre");
+
+            ilog(()=>`resolveCallExpression[helper(pre) return]: wasError: ${!!wasError}, ${IDebug.dbgs.dbgSignatureToString(signature)}`)
+            // tmpCandidatesOutArray.forEach((sig, i)=>
+            //     ilog(()=>`resolveCallExpression[helper(pre) return]: tmpCandidatesOutArray[${i}]: ${IDebug.dbgs.dbgSignatureToString(sig)}`));
+
+        }
+        {
+            const callSignatures = getSignaturesOfType(apparentType0, SignatureKind.Call);
+            return helper(apparentType0, callSignatures, candidatesOutArray, checkMode, callChainFlags, "main(orig)").signature;
+
+        }
+
+        function helper (
+            apparentType: Type, callSignatures: readonly Signature[],
+            candidatesOutArray: Signature[] | undefined,
+            checkMode: CheckMode, callChainFlags: SignatureFlags, pass: string): { signature: Signature, wasError?: true } {
+
+            ilog(()=>`resolveCallExpression.helper[pass:${pass}]: checkMode: ${checkMode.toString(2)}`);
+
+            const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
+
+            // TS 1.0 Spec: 4.12
+            // In an untyped function call no TypeArgs are permitted, Args can be any argument list, no contextual
+            // types are provided for the argument expressions, and the result is always of type Any.
+            if (isUntypedFunctionCall(funcType, apparentType, callSignatures.length, numConstructSignatures)) {
+                // The unknownType indicates that an error already occurred (and was reported).  No
+                // need to report another error in this case.
+                if (!isErrorType(funcType) && node.typeArguments) {
+                    error(node, Diagnostics.Untyped_function_calls_may_not_accept_type_arguments);
+                }
+                return { signature: resolveUntypedCall(node), wasError: true };
+            }
+            // If FuncExpr's apparent type(section 3.8.1) is a function type, the call is a typed function call.
+            // TypeScript employs overload resolution in typed function calls in order to support functions
+            // with multiple call signatures.
+            if (!callSignatures.length) {
+                if (numConstructSignatures) {
+                    error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
+                }
+                else {
+                    let relatedInformation: DiagnosticRelatedInformation | undefined;
+                    if (node.arguments.length === 1) {
+                        const text = getSourceFileOfNode(node).text;
+                        if (isLineBreak(text.charCodeAt(skipTrivia(text, node.expression.end, /*stopAfterLineBreak*/ true) - 1))) {
+                            relatedInformation = createDiagnosticForNode(node.expression, Diagnostics.Are_you_missing_a_semicolon);
+                        }
+                    }
+                    invocationError(node.expression, apparentType, SignatureKind.Call, relatedInformation);
+                }
+                return { signature: resolveErrorCall(node), wasError: true };
+            }
+            // When a call to a generic function is an argument to an outer call to a generic function for which
+            // inference is in process, we have a choice to make. If the inner call relies on inferences made from
+            // its contextual type to its return type, deferring the inner call processing allows the best possible
+            // contextual type to accumulate. But if the outer call relies on inferences made from the return type of
+            // the inner call, the inner call should be processed early. There's no sure way to know which choice is
+            // right (only a full unification algorithm can determine that), so we resort to the following heuristic:
+            // If no type arguments are specified in the inner call and at least one call signature is generic and
+            // returns a function type, we choose to defer processing. This narrowly permits function composition
+            // operators to flow inferences through return types, but otherwise processes calls right away. We
+            // use the resolvingSignature singleton to indicate that we deferred processing. This result will be
+            // propagated out and eventually turned into silentNeverType (a type that is assignable to anything and
+            // from which we never make inferences).
+            if (checkMode & CheckMode.SkipGenericFunctions && !node.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {
+                skippedGenericFunction(node, checkMode);
+                return { signature: resolvingSignature }
+            }
+            // If the function is explicitly marked with `@class`, then it must be constructed.
+            if (callSignatures.some(sig => isInJSFile(sig.declaration) && !!getJSDocClassTag(sig.declaration!))) {
+                error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
+                return { signature: resolveErrorCall(node), wasError: true };
+            }
+
+            if (IDebug.loggingHost){
+                IDebug.loggingHost.ilog(()=>`resolveCallExpression.helper[pass:${pass}]: before calling resolveCall`);
+                callSignatures.forEach((sig, i)=>IDebug.loggingHost!.ilog(
+                    ()=>`resolveCallExpression.helper[pass:${pass}]: callSignature[${i}]: ${IDebug.dbgs.dbgSignatureToString(sig)}`));
+            }
+
+            const signature = resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
+            if (IDebug.loggingHost){
+                IDebug.loggingHost.ilog(()=>`resolveCallExpression.helper[pass:${pass}]: after calling resolveCall`);
+                ilog(()=>`resolveCallExpression.helper[pass:${pass}]: returned signature: ${IDebug.dbgs.dbgSignatureToString(signature)}`);
+                candidatesOutArray?.forEach((cand, i)=>{
+                    IDebug.loggingHost!.ilog(()=>`resolveCallExpression.helper[pass:${pass}]: candidatesOutArray[${i}]: ${IDebug.dbgs.dbgSignatureToString(cand)}`);
+                    const found = callSignatures.findIndex((callSig)=>callSig===cand);
+                    IDebug.loggingHost!.ilog(()=>`resolveCallExpression.helper[pass:${pass}]: is callSignatures[${found}]`);
+                });
+            }
+            return { signature };
+        } // helper
+
+
+
     // cphdebug-start
     })();
     if (IDebug.loggingHost) {
         IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}->${IDebug.dbgs.dbgSignatureToString(retsig)}`);
     }
-    return retsig;
+    return retsig!;
     // cphdebug-end
     }
 
