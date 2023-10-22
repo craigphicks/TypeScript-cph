@@ -233,3 +233,9 @@ myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --te
 myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
 git status
+git add .bash_history src .CPH.DEV.txt tests/cases/
+git commit -m "backup; new function  createMergedMapperFromMappersSharingCommonTarget written (not yet used) for merging horizontal line of candidates, might need to redefine array"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+git status
