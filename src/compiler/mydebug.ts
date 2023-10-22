@@ -57,7 +57,7 @@ export class ILoggingClass implements ILoggingHost {
         this.log(level, message);
         return this.indent++;
     }
-    ilogGroupEnd (message?: string | (()=>string), expectedIndent: number | undefined = undefined, level: LogLevel = LogLevel.Info, ) {
+    ilogGroupEnd (message?: string | (()=>string), level: LogLevel = LogLevel.Info, expectedIndent: number | undefined = undefined) {
         this.indent--;
         if (expectedIndent!==undefined && expectedIndent!==this.indent) {
             Debug.fail('Expected indent ' + expectedIndent + ' but got ' + this.indent);

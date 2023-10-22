@@ -144,3 +144,92 @@ git add .CPH.DEV.txt
 git add tests/cases
 git add src
 git status
+git add .bash_history 
+git commit -m "backup; .CPH.DEV.txt & last commit before removing nodeAndSymbolLinkTables.ts and modifying resolveCallExpressionV2 to use prefilter with any[]"
+hereby
+git status
+git add src
+git status
+git restore tests/baselines/reference/
+git status
+git restore tests/baselines/reference/*errors.txt
+git status
+tm tmp/*.log
+rm tmp/*.log
+git status
+git clean -n
+git clean 
+git clean -f
+git status
+git commit -m "removed nodeAndSymbolLinkTables.ts"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_uoafc" 
+hereby baseline-accept
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+git status
+git add .CPH.DEV.txt  src tests/cases/
+git commit -m "backup; maing sure the pre call doesn't affect the results when the pre call results are ignored in the main call"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=1 hereby runtests-parallel
+find tests -name "_caxnc"
+find tests -name "_caxnc*"
+find tests -name "_caxnc*" -exec rm {} \;
+find tests -name "_caxnc*" -exec rmdir {} \;
+find tests -name "_caxnc*"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests-parallel
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArrayFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -
+find tests/cases -name "unionOfArraysFilterCall"
+find tests/cases -name "unionOfArraysFilter"
+find tests/cases -name "unionOfArraysFilter*"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="unionOfArraysFilterCall" 
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_unionOfArraysFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_unionOfArraysFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_unionOfArraysFilterCall"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_unionOfArraysFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests-parallell
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests-parallel
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_uoafc" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=2 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=4 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=8 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=1 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=64 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+git status

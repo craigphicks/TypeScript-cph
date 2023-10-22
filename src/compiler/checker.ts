@@ -34529,7 +34529,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         IDebug.loggingHost?.ilog(...args);
     }
     if (IDebug.loggingHost) {
-        IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}`);
+        IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}`,2);
     }
     const retsig = (()=>{
     // cphdebug-end
@@ -34587,87 +34587,201 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             IDebug.loggingHost.ilog(()=>`resolveCallExpression[apparentType0] ${IDebug.dbgs.dbgTypeToString(apparentType0)}`);
             IDebug.loggingHost.ilog(()=>`resolveCallExpression[in]: check shape`);
         }
+
+        function createWidenedMapperFromMapper(mapper: TypeMapper): TypeMapper | undefined {
+            let newMapper: TypeMapper;
+            if (mapper.kind===TypeMapKind.Simple){
+                newMapper = {kind: TypeMapKind.Simple, source: mapper.source, target: getConstraintOfTypeParameter(mapper.source)??anyType };
+            }
+            else if (mapper.kind===TypeMapKind.Array){
+                const targets: Type[] = [];
+                for (const t of mapper.sources){
+                    targets.push(getConstraintOfTypeParameter(t) ?? anyType);
+                }
+                newMapper = {kind: TypeMapKind.Array, sources: mapper.sources, targets};
+            }
+            else {
+                ilog(`type0.mapper.kind not yet handled: ${mapper.kind}`);
+                return undefined;
+            }
+            return newMapper;
+        }
+
+        type SimpleTypeMapper = &{ kind: TypeMapKind.Simple; source: Type; target: Type; }
+        type ArrayTypeMapper = &{ kind: TypeMapKind.Array; sources: Type[]; targets: Type[]; }
+        (null as any as SimpleTypeMapper) satisfies TypeMapper;
+        (null as any as ArrayTypeMapper) satisfies TypeMapper;
+        function createMergedMapperFromMappersSharingCommonTarget(mappers: TypeMapper[]): TypeMapper | undefined {
+            let newMapper: TypeMapper;
+            const mapper0 = mappers[0];
+            if (mapper0.kind===TypeMapKind.Simple){
+                newMapper = {
+                    kind: TypeMapKind.Simple, source: mapper0.source,
+                    target: checker.getUnionType(mappers.map(m => {
+                        m satisfies TypeMapper;
+                        castHereafter<SimpleTypeMapper>(m);
+                        return m.target;
+                    })),
+                };
+            }
+            else if (mapper0.kind===TypeMapKind.Array){
+                const targets: Type[] = [];
+                for (let i=0; i<(mapper0 as ArrayTypeMapper).targets.length; i++){
+                    targets.push(checker.getUnionType(mappers.map(m => {
+                        m satisfies TypeMapper;
+                        castHereafter<ArrayTypeMapper>(m);
+                        return m.targets[i];
+                    })));
+                }
+                newMapper = {kind: TypeMapKind.Array, sources: (mapper0 as ArrayTypeMapper).sources, targets};
+            }
+            else {
+                ilog(()=>`type0.mapper.kind not yet handled: ${mapper0.kind}`);
+                return undefined;
+            }
+            return newMapper;
+        }
+
         // cphdebug-end
-        if (apparentType0.flags & TypeFlags.Union) {
+        if (apparentType0.flags & TypeFlags.Union) apparentTypePre = ((): ObjectType | undefined =>{
             castHereafter<UnionType>(apparentType0);
-            if (IDebug.assertLevel) Debug.assert(apparentType0.types.every(t => t.flags & TypeFlags.Object));
-            let type0 = apparentType0.types[0] as Partial<AnonymousType> & ObjectType;
-            let qualifies = !!(type0.callSignatures && type0.callSignatures.length > 1 && type0.target);
-            qualifies &&= apparentType0.types.slice(1).every((t: Partial<Partial<AnonymousType> & ObjectType>) =>
-                (t.callSignatures?.length === type0.callSignatures?.length && t.target === type0.target));
+            if (!apparentType0.types.every(t => t.flags & TypeFlags.Object)) return undefined;
+            const type0 = apparentType0.types[0] as Partial<AnonymousType> & ObjectType;
+            if (!type0.target) return undefined;
+            if (!apparentType0.types.slice(1).every((t: Partial<Partial<AnonymousType> & ObjectType>) =>
+                (t.target === type0.target))) return undefined;
+
+            if (!type0.mapper) {
+                ilog(`type0 has no mapper`);
+                return undefined;
+            }
+
+            const target = type0.target;
+            let newMapper: TypeMapper;
+            if (type0.mapper.kind===TypeMapKind.Simple){
+                newMapper = {kind: TypeMapKind.Simple, source: type0.mapper.source, target: getConstraintOfTypeParameter(type0.mapper.source)??anyType };
+            }
+            else if (type0.mapper.kind===TypeMapKind.Array){
+                const targets: Type[] = [];
+                for (const t of type0.mapper.sources){
+                    targets.push(getConstraintOfTypeParameter(t) ?? anyType);
+                }
+                newMapper = {kind: TypeMapKind.Array, sources: type0.mapper.sources, targets};
+            }
+            else {
+                ilog(`type0.mapper.kind not yet handled: ${type0.mapper.kind}`);
+                return undefined;
+            }
+
+            // This works too - is it better?
+            const useMapSignaturesDirectly = false;
+            if (useMapSignaturesDirectly){
+                const targetSignatures = getSignaturesOfType(type0.target, SignatureKind.Call);
+                if (targetSignatures.length<2) return undefined;
+
+                // cphdebug-start
+                if (IDebug.loggingHost){
+                    IDebug.loggingHost.ilog(
+                        ()=>`resolveCallExpression[acceptable shape] ${apparentType0.types.length} X ${targetSignatures.length}`);
+                }
+                // cphdebug-end
+
+                const genericSignatureTypes = targetSignatures.map(sig=>getOrCreateTypeFromSignature(sig));
+
+                // cphdebug-start
+                if (IDebug.loggingHost){
+                    IDebug.loggingHost.ilog(()=>`resolveCallExpression[genericSignatureTypes.length] ${genericSignatureTypes.length}`);
+                    genericSignatureTypes.forEach((t, i)=>
+                        ilog(`resolveCallExpression[genericSignatureTypes[${i}]] ${
+                            IDebug.dbgs.dbgTypeToString(t)}`));
+                    //IDebug.loggingHost.ilog(()=>`resolveCallExpression[target]: ${IDebug.dbgs.dbgTypeToString(type0.target)}`);
+                }
+                // cphdebug-end
+                    const genericSignatureTypesMappedToAny = genericSignatureTypes.map(t=>instantiateAnonymousType(t, newMapper));
+                if (IDebug.loggingHost){
+                    genericSignatureTypesMappedToAny.forEach((t, i)=>
+                        ilog(`resolveCallExpression[genericSignatureTypesMappedToAny[${i}]] ${
+                            IDebug.dbgs.dbgTypeToString(t)}`));
+                }
+            }
+
+
+            apparentTypePre = (target.objectFlags & ObjectFlags.Mapped
+                    ? instantiateMappedType(target as MappedType, newMapper, /*aliasSymbol*/ undefined, /*aliasTypeArguments*/ undefined)
+                    : instantiateAnonymousType(target, newMapper, /*aliasSymbol*/ undefined, /*aliasTypeArguments*/ undefined)) as ObjectType;
+
+            const apparentTypePreSignatures = getSignaturesOfType(apparentTypePre, SignatureKind.Call);
+            if (apparentTypePreSignatures.length!==getSignaturesOfType(type0, SignatureKind.Call).length) {
+                return undefined;
+            }
+            // TODO: do instantiations because we might come back here repeatedly
+            //target.instantiations.set(id, result); // Set cached result early in case we recursively invoke instantiation while eagerly computing type variable visibility below
+
+            //const apparentTypePreSignatureTypes = apparentTypePreSignatures.map(sig=>getOrCreateTypeFromSignature(sig));
+
+
             // cphdebug-start
             if (IDebug.loggingHost){
-                IDebug.loggingHost.ilog(()=>`resolveCallExpression[qualifies] ${qualifies}`);
+                if (newMapper.kind===TypeMapKind.Simple){
+                    IDebug.loggingHost.ilog(()=>`resolveCallExpression[newMapper.target]: ${IDebug.dbgs.dbgTypeToString((newMapper as any).target)}`);
+                }
+                else if (newMapper.kind===TypeMapKind.Array){
+                    newMapper.targets!.forEach((t, i)=>IDebug.loggingHost!.ilog(
+                        ()=>`resolveCallExpression[newMapper.targets[${i}]]: ${IDebug.dbgs.dbgTypeToString(t)}`));
+                }
+                IDebug.loggingHost.ilog("");
+                IDebug.loggingHost.ilog(()=>`resolveCallExpression[apparentTypePre]: ${IDebug.dbgs.dbgTypeToString(apparentTypePre)}`);
+                if (!apparentTypePre.callSignatures) ilog(`resolveCallExpression[apparentTypePre]:<undef>`);
+                else apparentTypePre.callSignatures.forEach((s, i)=>
+                    ilog(`resolveCallExpression[apparentTypePre.callSignatures[${i}]]: ${IDebug.dbgs.dbgSignatureToString(s)}`));
             }
             // cphdebug-end
-            if (qualifies){
-                // cphdebug-start
-                if (IDebug.loggingHost){
-                    IDebug.loggingHost.ilog(()=>`resolveCallExpression[target]: ${IDebug.dbgs.dbgTypeToString(type0.target)}`);
-                }
-                // cphdebug-end
-
-                Debug.assert(type0.mapper);
-                const target = type0.target!;
-                let newMapper: TypeMapper;
-                if (type0.mapper.kind===TypeMapKind.Simple){
-                    newMapper = {kind: TypeMapKind.Simple, source: type0.mapper.source, target: getConstraintOfTypeParameter(type0.mapper.source)??anyType };
-                }
-                else if (type0.mapper.kind===TypeMapKind.Array){
-                    const targets: Type[] = [];
-                    for (const t of type0.mapper.sources){
-                        targets.push(getConstraintOfTypeParameter(t) ?? anyType);
-                    }
-                    newMapper = {kind: TypeMapKind.Array, sources: type0.mapper.sources, targets};
-                }
-                else {
-                    Debug.assert(false, "type0.mapper.kind not yet handled: ", ()=>`${type0.mapper!.kind}`);
-                }
-                apparentTypePre = (target.objectFlags & ObjectFlags.Mapped
-                        ? instantiateMappedType(target as MappedType, newMapper, /*aliasSymbol*/ undefined, /*aliasTypeArguments*/ undefined)
-                        : instantiateAnonymousType(target, newMapper, /*aliasSymbol*/ undefined, /*aliasTypeArguments*/ undefined)) as ObjectType;
-
-                // TODO: do instantiations because we might come back here repeatedly
-                //target.instantiations.set(id, result); // Set cached result early in case we recursively invoke instantiation while eagerly computing type variable visibility below
-
-                // cphdebug-start
-                if (IDebug.loggingHost){
-                    if (newMapper.kind===TypeMapKind.Simple){
-                        IDebug.loggingHost.ilog(()=>`resolveCallExpression[newMapper.target]: ${IDebug.dbgs.dbgTypeToString((newMapper as any).target)}`);
-                    }
-                    else if (newMapper.kind===TypeMapKind.Array){
-                        newMapper.targets!.forEach((t, i)=>IDebug.loggingHost!.ilog(
-                            ()=>`resolveCallExpression[newMapper.targets[${i}]]: ${IDebug.dbgs.dbgTypeToString(t)}`));
-                    }
-                    IDebug.loggingHost.ilog("");
-                    IDebug.loggingHost.ilog(()=>`resolveCallExpression[apparentTypePre]: ${IDebug.dbgs.dbgTypeToString(apparentTypePre)}`);
-                    if (!apparentTypePre!.callSignatures) ilog(`resolveCallExpression[apparentTypePre]:<undef>`);
-                    else apparentTypePre.callSignatures.forEach((s, i)=>
-                        ilog(`resolveCallExpression[apparentTypePre.callSignatures[${i}]]: ${IDebug.dbgs.dbgSignatureToString(s)}`));
-                }
-                // cphdebug-end
-
-            }
-
-        }
+            return apparentTypePre;
+        })();
 
 
         /**
          * Development - make sure that calling helper-pre doesn't affect the result of calling helper-main(orig)
          */
+        let candidatesFromPre: Signature[] | undefined;
         const doPre = true;
         if (doPre && apparentTypePre){
             const tmpCandidatesOutArray: Signature[] = [];
-            const {signature, wasError} = helper(apparentTypePre, apparentTypePre.callSignatures!,
-                tmpCandidatesOutArray, checkMode | CheckMode.Contextual , callChainFlags, "pre");
+            const callSignatures = getSignaturesOfType(apparentTypePre, SignatureKind.Call);
+            const preCheckMode = Number(process.env.myPreCheckMode??0);
+            ilog(()=>`resolveCallExpression[helper(pre) preCheckMode]: ${preCheckMode}`,2)
+            const {signature, wasError} = helper(apparentTypePre, callSignatures,
+                tmpCandidatesOutArray, preCheckMode , callChainFlags, "pre");
 
-            ilog(()=>`resolveCallExpression[helper(pre) return]: wasError: ${!!wasError}, ${IDebug.dbgs.dbgSignatureToString(signature)}`)
+            ilog(()=>`resolveCallExpression[helper(pre) return]: wasError: ${!!wasError}`,2)
+            ilog(()=>`resolveCallExpression[helper(pre) return]: signature ${IDebug.dbgs.dbgSignatureToString(signature)}`)
             // tmpCandidatesOutArray.forEach((sig, i)=>
             //     ilog(()=>`resolveCallExpression[helper(pre) return]: tmpCandidatesOutArray[${i}]: ${IDebug.dbgs.dbgSignatureToString(sig)}`));
+            if (!wasError) {
+                const origIndex = callSignatures.indexOf(signature);
+                ilog(()=>`resolveCallExpression[origIndex]: ${origIndex}`,2)
+                if (origIndex>0) {
+                    const useUnionOfSignatures = true;
+                    if (useUnionOfSignatures){
+                        candidatesFromPre=[createUnionOfSignaturesForOverloadFailure(
+                            (apparentType0 as UnionType).types.map(t=>getSignaturesOfType(t,SignatureKind.Call)[origIndex]))];
+                    }
+                    else {
+                        const candType = checker.getUnionType((apparentType0 as UnionType).types.map(
+                            t=>getOrCreateTypeFromSignature(getSignaturesOfType(t,SignatureKind.Call)[origIndex])));
 
+                        ilog(()=>`resolveCallExpression[candType from pre]: ${IDebug.dbgs.dbgTypeToString(candType)}`,2)
+
+                        candidatesFromPre = getSignaturesOfType(candType, SignatureKind.Call) as Signature[];
+                        candidatesFromPre.forEach((sig, i)=>
+                            ilog(()=>`resolveCallExpression[candidatesFromPre[${i}]]: ${IDebug.dbgs.dbgSignatureToString(sig)}`,2));
+                    }
+                }
+
+            }
         }
         {
-            const callSignatures = getSignaturesOfType(apparentType0, SignatureKind.Call);
+            const callSignatures = candidatesFromPre ?? getSignaturesOfType(apparentType0, SignatureKind.Call);
             return helper(apparentType0, callSignatures, candidatesOutArray, checkMode, callChainFlags, "main(orig)").signature;
 
         }
@@ -34757,9 +34871,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // cphdebug-start
     })();
     if (IDebug.loggingHost) {
-        IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}->${IDebug.dbgs.dbgSignatureToString(retsig)}`);
+        IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[out]: node: ${IDebug.dbgs.dbgNodeToString(node)}`,2);//->${IDebug.dbgs.dbgSignatureToString(retsig)}`);
     }
-    return retsig!;
+    return retsig;
     // cphdebug-end
     }
 

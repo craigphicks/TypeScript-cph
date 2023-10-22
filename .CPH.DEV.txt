@@ -127,3 +127,7 @@ repl:1
 { <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): Buzz[]; }
 
 Then checking that the function is an array property and creating `any[]` would not be necessary.
+
+Resolve call does not return the narrowed  candidates in 
+This looks helpful because
+`function getOrCreateTypeFromSignature(signature: Signature): ObjectType`
