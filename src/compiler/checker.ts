@@ -1365,13 +1365,107 @@ const intrinsicTypeKinds: ReadonlyMap<string, IntrinsicTypeKind> = new Map(Objec
     Uncapitalize: IntrinsicTypeKind.Uncapitalize,
 }));
 
+// When do not chache links is set to true, trying to set link a link member may/will be silently ignored.
+
+const doNotCacheControl = new class DoNotCacheControl {
+    private _doNotCacheLinks = false;
+    private _cacheForDoNotCacheSymbolLinks: Set<SymbolLinks> | undefined;
+    set doNotCacheLinks(value: boolean) {
+        if (value){
+            this._cacheForDoNotCacheSymbolLinks = new Set<SymbolLinks>;
+            this._doNotCacheLinks = true;
+        }
+        else {
+            this._cacheForDoNotCacheSymbolLinks?.forEach((value) => { (value as any).flushCache(); });
+            this._cacheForDoNotCacheSymbolLinks = undefined;
+            this._doNotCacheLinks = false;
+        }
+    }
+    get doNotCacheLinks() { return this._doNotCacheLinks; }
+    addSymbolLinksToDoNotCacheSet(symbolLinks: SymbolLinks) {
+        Debug.assert(this._cacheForDoNotCacheSymbolLinks);
+        this._cacheForDoNotCacheSymbolLinks.add(symbolLinks);
+    }
+};
+
 const SymbolLinks = class implements SymbolLinks {
     declare _symbolLinksBrand: any;
+    private proxy: any;
+    //private proxied: SymbolLinks;
+    private cacheForDoNotCache?: Map<string, any> | undefined;
+    constructor() {
+        this.proxy = new Proxy(this,{
+            set: function(target, prop, value) {
+                // @ts-ignore
+                if (doNotCacheControl.doNotCacheLinks){
+                    if (IDebug.loggingHost) IDebug.loggingHost.ilog(`SymbolLinks.set: ${prop as string} = ${value}`,2);
+                    // @ts-ignore
+                    if (!target["cacheForDoNotCache"]) {
+                        doNotCacheControl.addSymbolLinksToDoNotCacheSet(target);
+                        target["cacheForDoNotCache"] = new Map<string, any>();
+                    }
+                    // @ts-ignore
+                    target["cacheForDoNotCache"].set(prop as string, value);
+                    return true; // if false is returned, it leads to an exception.
+                }
+                else {
+                    (target as any)[prop] = value;
+                    return true
+                }
+            },
+            get: function(target, prop) {
+                if (doNotCacheControl.doNotCacheLinks){
+                    // @ts-ignore
+                    if (IDebug.loggingHost) IDebug.loggingHost.ilog(`SymbolLinks.set: ${prop} = ${value}`,2);
+                    if (!target["cacheForDoNotCache"] || !target["cacheForDoNotCache"].has(prop as string)) {
+                        // @ts-ignore
+                        return target[prop as string];
+                    }
+                    // @ts-ignore
+                    return (target["cacheForDoNotCache"].get(prop as string));
+                }
+                else {
+                    // @ts-ignore
+                    return target[prop];
+                }
+            },
+        });
+        // @ts-ignore
+        return this.proxy as SymbolLinks;
+    }
+    flushCache() {
+        if (this.cacheForDoNotCache) {
+            this.cacheForDoNotCache = undefined;
+        }
+    }
 };
+
+// function NodeLinks(this: NodeLinks) {
+//     this.flags = NodeCheckFlags.None;
+// }
 
 function NodeLinks(this: NodeLinks) {
     this.flags = NodeCheckFlags.None;
+    // @ts-ignore
+    this.proxy = new Proxy(this,{
+        set: function(target, prop, value) {
+            // @ts-ignore
+            if (doNotCacheLinks){
+                // @ts-ignore
+                if (IDebug.loggingHost) IDebug.loggingHost.ilog(`NodeLinks.set: ${prop} = ${value}`,2);
+                debugger;
+                return false;
+            }
+            else {
+                (target as any)[prop] = value;
+                return true
+            }
+        }
+    });
+    return this; // i guess "this" isn't needed because "this" is the argument?
 }
+
+
 
 /** @internal */
 export function getNodeId(node: Node): number {
@@ -2472,7 +2566,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function createSymbol(flags: SymbolFlags, name: __String, checkFlags?: CheckFlags) {
         symbolCount++;
         const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
-        symbol.links = new SymbolLinks() as TransientSymbolLinks;
+        symbol.links = new SymbolLinks() as unknown as TransientSymbolLinks;
         symbol.links.checkFlags = checkFlags || CheckFlags.None;
         return symbol;
     }
@@ -34719,13 +34813,24 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             // trying 1 (no caching) and 64 (type only) doesn't actually seem to prevent caching is sublevels
             const preCheckMode = Number(process.env.myPreCheckMode??0);
             ilog(()=>`resolveCallExpression[helper(pre) preCheckMode]: ${preCheckMode}`,2)
-            const {signature, wasError} = helper(preData.apparentTypePre, callSignatures,
-                tmpCandidatesOutArray, preCheckMode , callChainFlags, "pre");
 
-            ilog(()=>`resolveCallExpression[helper(pre) return]: wasError: ${!!wasError}`,2)
-            ilog(()=>`resolveCallExpression[helper(pre) return]: signature ${IDebug.dbgs.dbgSignatureToString(signature)}`)
-            // tmpCandidatesOutArray.forEach((sig, i)=>
-            //     ilog(()=>`resolveCallExpression[helper(pre) return]: tmpCandidatesOutArray[${i}]: ${IDebug.dbgs.dbgSignatureToString(sig)}`));
+            let signature: Signature | undefined;
+            let wasError: boolean | undefined = true;
+
+            ////////
+            doNotCacheControl.doNotCacheLinks = true;
+            try {
+                ({signature, wasError} = helper(preData.apparentTypePre, callSignatures,
+                    tmpCandidatesOutArray, preCheckMode , callChainFlags, "pre"));
+            }
+            finally {
+                doNotCacheControl.doNotCacheLinks = false;
+            }
+            Debug.assert(signature);
+            ////////
+
+            ilog(()=>`resolveCallExpression[helper(pre) return]: wasError: ${wasError}`,2)
+            ilog(()=>`resolveCallExpression[helper(pre) return]: signature ${IDebug.dbgs.dbgSignatureToString(signature!)}`)
             if (!wasError) {
                 const origIndex = callSignatures.indexOf(signature);
                 ilog(()=>`resolveCallExpression[origIndex]: ${origIndex}`,2)
