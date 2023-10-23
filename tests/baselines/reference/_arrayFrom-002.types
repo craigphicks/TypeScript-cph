@@ -1,0 +1,77 @@
+//// [tests/cases/compiler/_arrayFrom-002.ts] ////
+
+=== _arrayFrom-002.ts ===
+interface A {
+a: string;
+>a : string
+}
+
+interface B {
+b: string;
+>b : string
+}
+const inputA: A[] = [];
+>inputA : A[]
+>[] : never[]
+
+const inputB: B[] = [];
+>inputB : B[]
+>[] : never[]
+
+//const result4: A[] = Array.from(inputB, ({ b }): A => ({ a: b }));
+type F1 = <T,U>(iterable: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[];
+>F1 : <T, U>(iterable: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[]
+>iterable : ArrayLike<T>
+>mapfn : (v: T, k: number) => U
+>v : T
+>k : number
+>thisArg : any
+
+declare const f1: F1;
+>f1 : F1
+
+f1(inputB, ({ b })=>({ a: b }));
+>f1(inputB, ({ b })=>({ a: b })) : { a: string; }[]
+>f1 : F1
+>inputB : B[]
+>({ b })=>({ a: b }) : ({ b }: B) => { a: string; }
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+
+type F2 = <T,U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[];
+>F2 : <T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[]
+>iterable : Iterable<T> | ArrayLike<T>
+>mapfn : (v: T, k: number) => U
+>v : T
+>k : number
+>thisArg : any
+
+declare const f2: F2;
+>f2 : F2
+
+f2(inputB, ({ b })=>({ a: b }));
+>f2(inputB, ({ b })=>({ a: b })) : { a: string; }[]
+>f2 : F2
+>inputB : B[]
+>({ b })=>({ a: b }) : ({ b }: B) => { a: string; }
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+
+f2(inputB, ({ b }):A=>({ a: b }));
+>f2(inputB, ({ b }):A=>({ a: b })) : A[]
+>f2 : F2
+>inputB : B[]
+>({ b }):A=>({ a: b }) : ({ b }: B) => A
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+
+

@@ -1,0 +1,59 @@
+//// [tests/cases/compiler/_unionOfArraysFilterCall.ts] ////
+
+=== _unionOfArraysFilterCall.ts ===
+interface Fizz {
+>Fizz : Symbol(Fizz, Decl(_unionOfArraysFilterCall.ts, 0, 0))
+
+    id: number;
+>id : Symbol(Fizz.id, Decl(_unionOfArraysFilterCall.ts, 0, 16))
+
+    fizz: string;
+>fizz : Symbol(Fizz.fizz, Decl(_unionOfArraysFilterCall.ts, 1, 15))
+}
+
+interface Buzz {
+>Buzz : Symbol(Buzz, Decl(_unionOfArraysFilterCall.ts, 3, 1))
+
+    id: number;
+>id : Symbol(Buzz.id, Decl(_unionOfArraysFilterCall.ts, 5, 16))
+
+    buzz: string;
+>buzz : Symbol(Buzz.buzz, Decl(_unionOfArraysFilterCall.ts, 6, 15))
+}
+
+// ([] as Fizz[] | Buzz[]).filter(item => item.id < 5);
+// ([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5);
+
+// ([] as Fizz[] | Buzz[]).find(item => item);
+declare function isFizz(x: unknown): x is Fizz;
+>isFizz : Symbol(isFizz, Decl(_unionOfArraysFilterCall.ts, 8, 1))
+>x : Symbol(x, Decl(_unionOfArraysFilterCall.ts, 14, 24))
+>x : Symbol(x, Decl(_unionOfArraysFilterCall.ts, 14, 24))
+>Fizz : Symbol(Fizz, Decl(_unionOfArraysFilterCall.ts, 0, 0))
+
+([] as Fizz[] | Buzz[]).find(isFizz);
+>([] as Fizz[] | Buzz[]).find : Symbol(Array.find, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>Fizz : Symbol(Fizz, Decl(_unionOfArraysFilterCall.ts, 0, 0))
+>Buzz : Symbol(Buzz, Decl(_unionOfArraysFilterCall.ts, 3, 1))
+>find : Symbol(Array.find, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>isFizz : Symbol(isFizz, Decl(_unionOfArraysFilterCall.ts, 8, 1))
+
+// type Find<T> = <S extends T>(predicate: (value: T, index: number, obj: T[]) => value is S, thisArg?: any) => S | undefined;
+
+// isFizz satisfies Find<Fizz>;
+// isFizz satisfies Find<any>;
+
+// type Check<T> = typeof isFizz extends Find<T> ? true : false
+// type C1 = Check<Fizz>;
+// type C2 = Check<any>;
+
+
+// declare function isBuzz(x: unknown): x is Buzz;
+// ([] as Fizz[] | Buzz[]).find(isBuzz);
+
+// ([] as Fizz[] | Buzz[]).every(item => item.id < 5);
+
+// ([] as Fizz[] | Buzz[]).reduce(item => item);
+
+
+// ([] as [Fizz] | readonly [Buzz?]).filter(item => item?.id < 5);

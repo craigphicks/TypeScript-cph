@@ -1,0 +1,88 @@
+//// [tests/cases/compiler/_arrayFrom-002.ts] ////
+
+=== _arrayFrom-002.ts ===
+interface A {
+>A : Symbol(A, Decl(_arrayFrom-002.ts, 0, 0))
+
+a: string;
+>a : Symbol(A.a, Decl(_arrayFrom-002.ts, 0, 13))
+}
+
+interface B {
+>B : Symbol(B, Decl(_arrayFrom-002.ts, 2, 1))
+
+b: string;
+>b : Symbol(B.b, Decl(_arrayFrom-002.ts, 4, 13))
+}
+const inputA: A[] = [];
+>inputA : Symbol(inputA, Decl(_arrayFrom-002.ts, 7, 5))
+>A : Symbol(A, Decl(_arrayFrom-002.ts, 0, 0))
+
+const inputB: B[] = [];
+>inputB : Symbol(inputB, Decl(_arrayFrom-002.ts, 8, 5))
+>B : Symbol(B, Decl(_arrayFrom-002.ts, 2, 1))
+
+//const result4: A[] = Array.from(inputB, ({ b }): A => ({ a: b }));
+type F1 = <T,U>(iterable: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[];
+>F1 : Symbol(F1, Decl(_arrayFrom-002.ts, 8, 23))
+>T : Symbol(T, Decl(_arrayFrom-002.ts, 10, 11))
+>U : Symbol(U, Decl(_arrayFrom-002.ts, 10, 13))
+>iterable : Symbol(iterable, Decl(_arrayFrom-002.ts, 10, 16))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(_arrayFrom-002.ts, 10, 11))
+>mapfn : Symbol(mapfn, Decl(_arrayFrom-002.ts, 10, 39))
+>v : Symbol(v, Decl(_arrayFrom-002.ts, 10, 48))
+>T : Symbol(T, Decl(_arrayFrom-002.ts, 10, 11))
+>k : Symbol(k, Decl(_arrayFrom-002.ts, 10, 53))
+>U : Symbol(U, Decl(_arrayFrom-002.ts, 10, 13))
+>thisArg : Symbol(thisArg, Decl(_arrayFrom-002.ts, 10, 70))
+>U : Symbol(U, Decl(_arrayFrom-002.ts, 10, 13))
+
+declare const f1: F1;
+>f1 : Symbol(f1, Decl(_arrayFrom-002.ts, 11, 13))
+>F1 : Symbol(F1, Decl(_arrayFrom-002.ts, 8, 23))
+
+f1(inputB, ({ b })=>({ a: b }));
+>f1 : Symbol(f1, Decl(_arrayFrom-002.ts, 11, 13))
+>inputB : Symbol(inputB, Decl(_arrayFrom-002.ts, 8, 5))
+>b : Symbol(b, Decl(_arrayFrom-002.ts, 12, 13))
+>a : Symbol(a, Decl(_arrayFrom-002.ts, 12, 22))
+>b : Symbol(b, Decl(_arrayFrom-002.ts, 12, 13))
+
+type F2 = <T,U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[];
+>F2 : Symbol(F2, Decl(_arrayFrom-002.ts, 12, 32))
+>T : Symbol(T, Decl(_arrayFrom-002.ts, 14, 11))
+>U : Symbol(U, Decl(_arrayFrom-002.ts, 14, 13))
+>iterable : Symbol(iterable, Decl(_arrayFrom-002.ts, 14, 16))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(_arrayFrom-002.ts, 14, 11))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(_arrayFrom-002.ts, 14, 11))
+>mapfn : Symbol(mapfn, Decl(_arrayFrom-002.ts, 14, 53))
+>v : Symbol(v, Decl(_arrayFrom-002.ts, 14, 62))
+>T : Symbol(T, Decl(_arrayFrom-002.ts, 14, 11))
+>k : Symbol(k, Decl(_arrayFrom-002.ts, 14, 67))
+>U : Symbol(U, Decl(_arrayFrom-002.ts, 14, 13))
+>thisArg : Symbol(thisArg, Decl(_arrayFrom-002.ts, 14, 84))
+>U : Symbol(U, Decl(_arrayFrom-002.ts, 14, 13))
+
+declare const f2: F2;
+>f2 : Symbol(f2, Decl(_arrayFrom-002.ts, 15, 13))
+>F2 : Symbol(F2, Decl(_arrayFrom-002.ts, 12, 32))
+
+f2(inputB, ({ b })=>({ a: b }));
+>f2 : Symbol(f2, Decl(_arrayFrom-002.ts, 15, 13))
+>inputB : Symbol(inputB, Decl(_arrayFrom-002.ts, 8, 5))
+>b : Symbol(b, Decl(_arrayFrom-002.ts, 16, 13))
+>a : Symbol(a, Decl(_arrayFrom-002.ts, 16, 22))
+>b : Symbol(b, Decl(_arrayFrom-002.ts, 16, 13))
+
+f2(inputB, ({ b }):A=>({ a: b }));
+>f2 : Symbol(f2, Decl(_arrayFrom-002.ts, 15, 13))
+>inputB : Symbol(inputB, Decl(_arrayFrom-002.ts, 8, 5))
+>b : Symbol(b, Decl(_arrayFrom-002.ts, 18, 13))
+>A : Symbol(A, Decl(_arrayFrom-002.ts, 0, 0))
+>a : Symbol(a, Decl(_arrayFrom-002.ts, 18, 24))
+>b : Symbol(b, Decl(_arrayFrom-002.ts, 18, 13))
+
+

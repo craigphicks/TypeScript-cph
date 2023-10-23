@@ -1,32 +1,7 @@
-_uoafc.ts(12,23): error TS2769: No overload matches this call.
-  Overload 1 of 3, '(predicate: (value: Fizz, index: number, array: Fizz[]) => value is Fizz, thisArg?: any): Fizz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type '(value: Fizz, index: number, array: Fizz[]) => value is Fizz'.
-      Type 'Boolean' provides no match for the signature '(value: Fizz, index: number, array: Fizz[]): value is Fizz'.
-  Overload 2 of 3, '(predicate: BooleanConverter, thisArg?: any): Fizz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type 'BooleanConverter'.
-      Property 'prototype' is missing in type 'Boolean' but required in type 'BooleanConverter'.
-  Overload 3 of 3, '(predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type '(value: Fizz, index: number, array: Fizz[]) => unknown'.
-      Type 'Boolean' provides no match for the signature '(value: Fizz, index: number, array: Fizz[]): unknown'.
-_uoafc.ts(16,32): error TS2769: No overload matches this call.
-  Overload 1 of 3, '(predicate: (value: Buzz, index: number, array: Buzz[]) => value is Buzz, thisArg?: any): Buzz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type '(value: Buzz, index: number, array: Buzz[]) => value is Buzz'.
-      Type 'Boolean' provides no match for the signature '(value: Buzz, index: number, array: Buzz[]): value is Buzz'.
-  Overload 2 of 3, '(predicate: BooleanConverter, thisArg?: any): Buzz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type 'BooleanConverter'.
-  Overload 3 of 3, '(predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): Buzz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type '(value: Buzz, index: number, array: Buzz[]) => unknown'.
-      Type 'Boolean' provides no match for the signature '(value: Buzz, index: number, array: Buzz[]): unknown'.
-_uoafc.ts(16,32): error TS2769: No overload matches this call.
-  Overload 1 of 3, '(predicate: (value: Fizz, index: number, array: Fizz[]) => value is Fizz, thisArg?: any): Fizz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type '(value: Fizz, index: number, array: Fizz[]) => value is Fizz'.
-  Overload 2 of 3, '(predicate: BooleanConverter, thisArg?: any): Fizz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type 'BooleanConverter'.
-  Overload 3 of 3, '(predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]', gave the following error.
-    Argument of type 'Boolean' is not assignable to parameter of type '(value: Fizz, index: number, array: Fizz[]) => unknown'.
+_uoafc.ts(14,45): error TS2339: Property 'id' does not exist on type 'T'.
 
 
-==== _uoafc.ts (3 errors) ====
+==== _uoafc.ts (1 errors) ====
     interface Fizz {
         id: number;
         fizz: string;
@@ -36,42 +11,14 @@ _uoafc.ts(16,32): error TS2769: No overload matches this call.
         id: number;
         buzz: string;
     }
-    ([] as Fizz[]).filter(item => item.id < 5) satisfies Fizz[];
-    ([] as Fizz[]).filter(Boolean) satisfies Fizz[];
-    ([] as Fizz[]).filter(new Boolean) satisfies Fizz[]; // expect error
-                          ~~~~~~~~~~~
-!!! error TS2769: No overload matches this call.
-!!! error TS2769:   Overload 1 of 3, '(predicate: (value: Fizz, index: number, array: Fizz[]) => value is Fizz, thisArg?: any): Fizz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type '(value: Fizz, index: number, array: Fizz[]) => value is Fizz'.
-!!! error TS2769:       Type 'Boolean' provides no match for the signature '(value: Fizz, index: number, array: Fizz[]): value is Fizz'.
-!!! error TS2769:   Overload 2 of 3, '(predicate: BooleanConverter, thisArg?: any): Fizz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type 'BooleanConverter'.
-!!! error TS2769:       Property 'prototype' is missing in type 'Boolean' but required in type 'BooleanConverter'.
-!!! error TS2769:   Overload 3 of 3, '(predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type '(value: Fizz, index: number, array: Fizz[]) => unknown'.
-!!! error TS2769:       Type 'Boolean' provides no match for the signature '(value: Fizz, index: number, array: Fizz[]): unknown'.
-!!! related TS2728 lib.es5.d.ts:--:--: 'prototype' is declared here.
+    // ([] as Fizz[]).filter(item => item.id < 5) satisfies Fizz[];
+    // ([] as Fizz[]).filter(Boolean) satisfies Fizz[];
+    // ([] as Fizz[]).filter(new Boolean) satisfies Fizz[]; // expect error
     
-    ([] as Fizz[] | Buzz[]).filter(item => item.id < 5) satisfies Fizz[] | Buzz[];
-    ([] as Fizz[] | Buzz[]).filter(Boolean) satisfies Fizz[] | Buzz[];
-    ([] as Fizz[] | Buzz[]).filter(new Boolean) satisfies Fizz[] | Buzz[]; // expect error
-                                   ~~~~~~~~~~~
-!!! error TS2769: No overload matches this call.
-!!! error TS2769:   Overload 1 of 3, '(predicate: (value: Buzz, index: number, array: Buzz[]) => value is Buzz, thisArg?: any): Buzz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type '(value: Buzz, index: number, array: Buzz[]) => value is Buzz'.
-!!! error TS2769:       Type 'Boolean' provides no match for the signature '(value: Buzz, index: number, array: Buzz[]): value is Buzz'.
-!!! error TS2769:   Overload 2 of 3, '(predicate: BooleanConverter, thisArg?: any): Buzz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type 'BooleanConverter'.
-!!! error TS2769:   Overload 3 of 3, '(predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): Buzz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type '(value: Buzz, index: number, array: Buzz[]) => unknown'.
-!!! error TS2769:       Type 'Boolean' provides no match for the signature '(value: Buzz, index: number, array: Buzz[]): unknown'.
-                                   ~~~~~~~~~~~
-!!! error TS2769: No overload matches this call.
-!!! error TS2769:   Overload 1 of 3, '(predicate: (value: Fizz, index: number, array: Fizz[]) => value is Fizz, thisArg?: any): Fizz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type '(value: Fizz, index: number, array: Fizz[]) => value is Fizz'.
-!!! error TS2769:   Overload 2 of 3, '(predicate: BooleanConverter, thisArg?: any): Fizz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type 'BooleanConverter'.
-!!! error TS2769:   Overload 3 of 3, '(predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]', gave the following error.
-!!! error TS2769:     Argument of type 'Boolean' is not assignable to parameter of type '(value: Fizz, index: number, array: Fizz[]) => unknown'.
+    ([] as Fizz[] | Buzz[]).filter(item => item.id < 5); //satisfies Fizz[] | Buzz[];
+                                                ~~
+!!! error TS2339: Property 'id' does not exist on type 'T'.
+    // ([] as Fizz[] | Buzz[]).filter(Boolean) satisfies Fizz[] | Buzz[];
+    // ([] as Fizz[] | Buzz[]).filter(new Boolean) satisfies Fizz[] | Buzz[]; // expect error
     
     

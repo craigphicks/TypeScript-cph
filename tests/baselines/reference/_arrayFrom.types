@@ -1,0 +1,160 @@
+//// [tests/cases/compiler/_arrayFrom.ts] ////
+
+=== _arrayFrom.ts ===
+interface A {
+a: string;
+>a : string
+
+c: string;
+>c : string
+}
+
+interface B {
+b: string;
+>b : string
+}
+const inputA: A[] = [];
+>inputA : A[]
+>[] : never[]
+
+const inputB: B[] = [];
+>inputB : B[]
+>[] : never[]
+
+//const result4: A[] = Array.from(inputB, ({ b }): A => ({ a: b }));
+type F1 = <T,U>(iterable: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[];
+>F1 : <T, U>(iterable: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[]
+>iterable : ArrayLike<T>
+>mapfn : (v: T, k: number) => U
+>v : T
+>k : number
+>thisArg : any
+
+declare const f1: F1;
+>f1 : F1
+
+f1(inputB, ({ b })=>({ a: b }));
+>f1(inputB, ({ b })=>({ a: b })) : { a: string; }[]
+>f1 : F1
+>inputB : B[]
+>({ b })=>({ a: b }) : ({ b }: B) => { a: string; }
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+
+type F2 = <T,U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[];
+>F2 : <T, U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[]
+>iterable : Iterable<T> | ArrayLike<T>
+>mapfn : (v: T, k: number) => U
+>v : T
+>k : number
+>thisArg : any
+
+declare const f2: F2;
+>f2 : F2
+
+f2(inputB, ({ b })=>({ a: b }));
+>f2(inputB, ({ b })=>({ a: b })) : { a: string; }[]
+>f2 : F2
+>inputB : B[]
+>({ b })=>({ a: b }) : ({ b }: B) => { a: string; }
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+
+f2(inputB, ({ b }):A=>({ a: b }));
+>f2(inputB, ({ b }):A=>({ a: b })) : A[]
+>f2 : F2
+>inputB : B[]
+>({ b }):A=>({ a: b }) : ({ b }: B) => A
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+
+//Array.from(inputB, ({ b }): A => ({ a: b }));
+
+//Array.from(inputA.values()); // no error, but it interferes with the next line
+
+//Array.from(inputB, ({ b }): A => ({ a: b }));
+
+type F3 = <T,U>(mapfn: (v: T, k: number) => U, iterable: Iterable<T> | ArrayLike<T>,thisArg?: any) => U[];
+>F3 : <T, U>(mapfn: (v: T, k: number) => U, iterable: Iterable<T> | ArrayLike<T>, thisArg?: any) => U[]
+>mapfn : (v: T, k: number) => U
+>v : T
+>k : number
+>iterable : Iterable<T> | ArrayLike<T>
+>thisArg : any
+
+declare const f3: F3;
+>f3 : F3
+
+f3(({ b })=>({ a: b }), inputB);
+>f3(({ b })=>({ a: b }), inputB) : { a: string; }[]
+>f3 : F3
+>({ b })=>({ a: b }) : ({ b }: B) => { a: string; }
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+>inputB : B[]
+
+f3(({ b }):A=>({ a: b }), inputB);
+>f3(({ b }):A=>({ a: b }), inputB) : A[]
+>f3 : F3
+>({ b }):A=>({ a: b }) : ({ b }: B) => A
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+>inputB : B[]
+
+type F4 = <T,U>(mapfn: (v: T, k: number) => U) => U[];
+>F4 : <T, U>(mapfn: (v: T, k: number) => U) => U[]
+>mapfn : (v: T, k: number) => U
+>v : T
+>k : number
+
+type F5<T> = <U>(mapfn: (v: T, k: number) => U) => U[];
+>F5 : F5<T>
+>mapfn : (v: T, k: number) => U
+>v : T
+>k : number
+
+declare const f4: F4;
+>f4 : F4
+
+f4<B>(({ b })=>({ a: b }));
+>f4<B>(({ b })=>({ a: b })) : unknown[]
+>f4 : F4
+>({ b })=>({ a: b }) : ({ b }: B) => { a: string; }
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+
+
+declare const f5: F5<B>;
+>f5 : F5<B>
+
+f5(({ b })=>({ a: b }));
+>f5(({ b })=>({ a: b })) : { a: string; }[]
+>f5 : F5<B>
+>({ b })=>({ a: b }) : ({ b }: B) => { a: string; }
+>b : string
+>({ a: b }) : { a: string; }
+>{ a: b } : { a: string; }
+>a : string
+>b : string
+
+
+
+

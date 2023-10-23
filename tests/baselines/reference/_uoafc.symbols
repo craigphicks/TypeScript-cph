@@ -20,58 +20,19 @@ interface Buzz {
     buzz: string;
 >buzz : Symbol(Buzz.buzz, Decl(_uoafc.ts, 6, 15))
 }
-([] as Fizz[]).filter(item => item.id < 5) satisfies Fizz[];
->([] as Fizz[]).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
->filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->item : Symbol(item, Decl(_uoafc.ts, 9, 22))
->item.id : Symbol(Fizz.id, Decl(_uoafc.ts, 0, 16))
->item : Symbol(item, Decl(_uoafc.ts, 9, 22))
->id : Symbol(Fizz.id, Decl(_uoafc.ts, 0, 16))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
+// ([] as Fizz[]).filter(item => item.id < 5) satisfies Fizz[];
+// ([] as Fizz[]).filter(Boolean) satisfies Fizz[];
+// ([] as Fizz[]).filter(new Boolean) satisfies Fizz[]; // expect error
 
-([] as Fizz[]).filter(Boolean) satisfies Fizz[];
->([] as Fizz[]).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
->filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Boolean : Symbol(Boolean, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
-
-([] as Fizz[]).filter(new Boolean) satisfies Fizz[]; // expect error
->([] as Fizz[]).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
->filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Boolean : Symbol(Boolean, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
-
-([] as Fizz[] | Buzz[]).filter(item => item.id < 5) satisfies Fizz[] | Buzz[];
+([] as Fizz[] | Buzz[]).filter(item => item.id < 5); //satisfies Fizz[] | Buzz[];
 >([] as Fizz[] | Buzz[]).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --) ... and 1 more)
 >Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
 >Buzz : Symbol(Buzz, Decl(_uoafc.ts, 3, 1))
 >filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --) ... and 1 more)
 >item : Symbol(item, Decl(_uoafc.ts, 13, 31))
->item.id : Symbol(id, Decl(_uoafc.ts, 0, 16), Decl(_uoafc.ts, 5, 16))
 >item : Symbol(item, Decl(_uoafc.ts, 13, 31))
->id : Symbol(id, Decl(_uoafc.ts, 0, 16), Decl(_uoafc.ts, 5, 16))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
->Buzz : Symbol(Buzz, Decl(_uoafc.ts, 3, 1))
 
-([] as Fizz[] | Buzz[]).filter(Boolean) satisfies Fizz[] | Buzz[];
->([] as Fizz[] | Buzz[]).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --) ... and 1 more)
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
->Buzz : Symbol(Buzz, Decl(_uoafc.ts, 3, 1))
->filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --) ... and 1 more)
->Boolean : Symbol(Boolean, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
->Buzz : Symbol(Buzz, Decl(_uoafc.ts, 3, 1))
-
-([] as Fizz[] | Buzz[]).filter(new Boolean) satisfies Fizz[] | Buzz[]; // expect error
->([] as Fizz[] | Buzz[]).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --) ... and 1 more)
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
->Buzz : Symbol(Buzz, Decl(_uoafc.ts, 3, 1))
->filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --) ... and 1 more)
->Boolean : Symbol(Boolean, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_uoafc.ts, 0, 0))
->Buzz : Symbol(Buzz, Decl(_uoafc.ts, 3, 1))
+// ([] as Fizz[] | Buzz[]).filter(Boolean) satisfies Fizz[] | Buzz[];
+// ([] as Fizz[] | Buzz[]).filter(new Boolean) satisfies Fizz[] | Buzz[]; // expect error
 
 

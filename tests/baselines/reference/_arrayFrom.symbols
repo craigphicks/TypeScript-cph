@@ -1,0 +1,180 @@
+//// [tests/cases/compiler/_arrayFrom.ts] ////
+
+=== _arrayFrom.ts ===
+interface A {
+>A : Symbol(A, Decl(_arrayFrom.ts, 0, 0))
+
+a: string;
+>a : Symbol(A.a, Decl(_arrayFrom.ts, 0, 13))
+
+c: string;
+>c : Symbol(A.c, Decl(_arrayFrom.ts, 1, 10))
+}
+
+interface B {
+>B : Symbol(B, Decl(_arrayFrom.ts, 3, 1))
+
+b: string;
+>b : Symbol(B.b, Decl(_arrayFrom.ts, 5, 13))
+}
+const inputA: A[] = [];
+>inputA : Symbol(inputA, Decl(_arrayFrom.ts, 8, 5))
+>A : Symbol(A, Decl(_arrayFrom.ts, 0, 0))
+
+const inputB: B[] = [];
+>inputB : Symbol(inputB, Decl(_arrayFrom.ts, 9, 5))
+>B : Symbol(B, Decl(_arrayFrom.ts, 3, 1))
+
+//const result4: A[] = Array.from(inputB, ({ b }): A => ({ a: b }));
+type F1 = <T,U>(iterable: ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[];
+>F1 : Symbol(F1, Decl(_arrayFrom.ts, 9, 23))
+>T : Symbol(T, Decl(_arrayFrom.ts, 11, 11))
+>U : Symbol(U, Decl(_arrayFrom.ts, 11, 13))
+>iterable : Symbol(iterable, Decl(_arrayFrom.ts, 11, 16))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(_arrayFrom.ts, 11, 11))
+>mapfn : Symbol(mapfn, Decl(_arrayFrom.ts, 11, 39))
+>v : Symbol(v, Decl(_arrayFrom.ts, 11, 48))
+>T : Symbol(T, Decl(_arrayFrom.ts, 11, 11))
+>k : Symbol(k, Decl(_arrayFrom.ts, 11, 53))
+>U : Symbol(U, Decl(_arrayFrom.ts, 11, 13))
+>thisArg : Symbol(thisArg, Decl(_arrayFrom.ts, 11, 70))
+>U : Symbol(U, Decl(_arrayFrom.ts, 11, 13))
+
+declare const f1: F1;
+>f1 : Symbol(f1, Decl(_arrayFrom.ts, 12, 13))
+>F1 : Symbol(F1, Decl(_arrayFrom.ts, 9, 23))
+
+f1(inputB, ({ b })=>({ a: b }));
+>f1 : Symbol(f1, Decl(_arrayFrom.ts, 12, 13))
+>inputB : Symbol(inputB, Decl(_arrayFrom.ts, 9, 5))
+>b : Symbol(b, Decl(_arrayFrom.ts, 13, 13))
+>a : Symbol(a, Decl(_arrayFrom.ts, 13, 22))
+>b : Symbol(b, Decl(_arrayFrom.ts, 13, 13))
+
+type F2 = <T,U>(iterable: Iterable<T> | ArrayLike<T>, mapfn: (v: T, k: number) => U, thisArg?: any) => U[];
+>F2 : Symbol(F2, Decl(_arrayFrom.ts, 13, 32))
+>T : Symbol(T, Decl(_arrayFrom.ts, 15, 11))
+>U : Symbol(U, Decl(_arrayFrom.ts, 15, 13))
+>iterable : Symbol(iterable, Decl(_arrayFrom.ts, 15, 16))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(_arrayFrom.ts, 15, 11))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(_arrayFrom.ts, 15, 11))
+>mapfn : Symbol(mapfn, Decl(_arrayFrom.ts, 15, 53))
+>v : Symbol(v, Decl(_arrayFrom.ts, 15, 62))
+>T : Symbol(T, Decl(_arrayFrom.ts, 15, 11))
+>k : Symbol(k, Decl(_arrayFrom.ts, 15, 67))
+>U : Symbol(U, Decl(_arrayFrom.ts, 15, 13))
+>thisArg : Symbol(thisArg, Decl(_arrayFrom.ts, 15, 84))
+>U : Symbol(U, Decl(_arrayFrom.ts, 15, 13))
+
+declare const f2: F2;
+>f2 : Symbol(f2, Decl(_arrayFrom.ts, 16, 13))
+>F2 : Symbol(F2, Decl(_arrayFrom.ts, 13, 32))
+
+f2(inputB, ({ b })=>({ a: b }));
+>f2 : Symbol(f2, Decl(_arrayFrom.ts, 16, 13))
+>inputB : Symbol(inputB, Decl(_arrayFrom.ts, 9, 5))
+>b : Symbol(b, Decl(_arrayFrom.ts, 17, 13))
+>a : Symbol(a, Decl(_arrayFrom.ts, 17, 22))
+>b : Symbol(b, Decl(_arrayFrom.ts, 17, 13))
+
+f2(inputB, ({ b }):A=>({ a: b }));
+>f2 : Symbol(f2, Decl(_arrayFrom.ts, 16, 13))
+>inputB : Symbol(inputB, Decl(_arrayFrom.ts, 9, 5))
+>b : Symbol(b, Decl(_arrayFrom.ts, 19, 13))
+>A : Symbol(A, Decl(_arrayFrom.ts, 0, 0))
+>a : Symbol(a, Decl(_arrayFrom.ts, 19, 24))
+>b : Symbol(b, Decl(_arrayFrom.ts, 19, 13))
+
+//Array.from(inputB, ({ b }): A => ({ a: b }));
+
+//Array.from(inputA.values()); // no error, but it interferes with the next line
+
+//Array.from(inputB, ({ b }): A => ({ a: b }));
+
+type F3 = <T,U>(mapfn: (v: T, k: number) => U, iterable: Iterable<T> | ArrayLike<T>,thisArg?: any) => U[];
+>F3 : Symbol(F3, Decl(_arrayFrom.ts, 19, 34))
+>T : Symbol(T, Decl(_arrayFrom.ts, 27, 11))
+>U : Symbol(U, Decl(_arrayFrom.ts, 27, 13))
+>mapfn : Symbol(mapfn, Decl(_arrayFrom.ts, 27, 16))
+>v : Symbol(v, Decl(_arrayFrom.ts, 27, 24))
+>T : Symbol(T, Decl(_arrayFrom.ts, 27, 11))
+>k : Symbol(k, Decl(_arrayFrom.ts, 27, 29))
+>U : Symbol(U, Decl(_arrayFrom.ts, 27, 13))
+>iterable : Symbol(iterable, Decl(_arrayFrom.ts, 27, 46))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>T : Symbol(T, Decl(_arrayFrom.ts, 27, 11))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(_arrayFrom.ts, 27, 11))
+>thisArg : Symbol(thisArg, Decl(_arrayFrom.ts, 27, 84))
+>U : Symbol(U, Decl(_arrayFrom.ts, 27, 13))
+
+declare const f3: F3;
+>f3 : Symbol(f3, Decl(_arrayFrom.ts, 28, 13))
+>F3 : Symbol(F3, Decl(_arrayFrom.ts, 19, 34))
+
+f3(({ b })=>({ a: b }), inputB);
+>f3 : Symbol(f3, Decl(_arrayFrom.ts, 28, 13))
+>b : Symbol(b, Decl(_arrayFrom.ts, 29, 5))
+>a : Symbol(a, Decl(_arrayFrom.ts, 29, 14))
+>b : Symbol(b, Decl(_arrayFrom.ts, 29, 5))
+>inputB : Symbol(inputB, Decl(_arrayFrom.ts, 9, 5))
+
+f3(({ b }):A=>({ a: b }), inputB);
+>f3 : Symbol(f3, Decl(_arrayFrom.ts, 28, 13))
+>b : Symbol(b, Decl(_arrayFrom.ts, 31, 5))
+>A : Symbol(A, Decl(_arrayFrom.ts, 0, 0))
+>a : Symbol(a, Decl(_arrayFrom.ts, 31, 16))
+>b : Symbol(b, Decl(_arrayFrom.ts, 31, 5))
+>inputB : Symbol(inputB, Decl(_arrayFrom.ts, 9, 5))
+
+type F4 = <T,U>(mapfn: (v: T, k: number) => U) => U[];
+>F4 : Symbol(F4, Decl(_arrayFrom.ts, 31, 34))
+>T : Symbol(T, Decl(_arrayFrom.ts, 33, 11))
+>U : Symbol(U, Decl(_arrayFrom.ts, 33, 13))
+>mapfn : Symbol(mapfn, Decl(_arrayFrom.ts, 33, 16))
+>v : Symbol(v, Decl(_arrayFrom.ts, 33, 24))
+>T : Symbol(T, Decl(_arrayFrom.ts, 33, 11))
+>k : Symbol(k, Decl(_arrayFrom.ts, 33, 29))
+>U : Symbol(U, Decl(_arrayFrom.ts, 33, 13))
+>U : Symbol(U, Decl(_arrayFrom.ts, 33, 13))
+
+type F5<T> = <U>(mapfn: (v: T, k: number) => U) => U[];
+>F5 : Symbol(F5, Decl(_arrayFrom.ts, 33, 54))
+>T : Symbol(T, Decl(_arrayFrom.ts, 34, 8))
+>U : Symbol(U, Decl(_arrayFrom.ts, 34, 14))
+>mapfn : Symbol(mapfn, Decl(_arrayFrom.ts, 34, 17))
+>v : Symbol(v, Decl(_arrayFrom.ts, 34, 25))
+>T : Symbol(T, Decl(_arrayFrom.ts, 34, 8))
+>k : Symbol(k, Decl(_arrayFrom.ts, 34, 30))
+>U : Symbol(U, Decl(_arrayFrom.ts, 34, 14))
+>U : Symbol(U, Decl(_arrayFrom.ts, 34, 14))
+
+declare const f4: F4;
+>f4 : Symbol(f4, Decl(_arrayFrom.ts, 35, 13))
+>F4 : Symbol(F4, Decl(_arrayFrom.ts, 31, 34))
+
+f4<B>(({ b })=>({ a: b }));
+>f4 : Symbol(f4, Decl(_arrayFrom.ts, 35, 13))
+>B : Symbol(B, Decl(_arrayFrom.ts, 3, 1))
+>b : Symbol(b, Decl(_arrayFrom.ts, 36, 8))
+>a : Symbol(a, Decl(_arrayFrom.ts, 36, 17))
+>b : Symbol(b, Decl(_arrayFrom.ts, 36, 8))
+
+
+declare const f5: F5<B>;
+>f5 : Symbol(f5, Decl(_arrayFrom.ts, 39, 13))
+>F5 : Symbol(F5, Decl(_arrayFrom.ts, 33, 54))
+>B : Symbol(B, Decl(_arrayFrom.ts, 3, 1))
+
+f5(({ b })=>({ a: b }));
+>f5 : Symbol(f5, Decl(_arrayFrom.ts, 39, 13))
+>b : Symbol(b, Decl(_arrayFrom.ts, 40, 5))
+>a : Symbol(a, Decl(_arrayFrom.ts, 40, 14))
+>b : Symbol(b, Decl(_arrayFrom.ts, 40, 5))
+
+
+
+

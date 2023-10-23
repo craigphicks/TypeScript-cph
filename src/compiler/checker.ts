@@ -1097,6 +1097,13 @@ let nextNodeId = 1;
 let nextMergeId = 1;
 let nextFlowId = 1;
 
+interface SymbolLinksMap {
+    get(symbol: TransientSymbol): TransientSymbolLinks | undefined;
+    set(symbol: TransientSymbol, links: TransientSymbolLinks): void;
+}
+
+const symbolLinksMap: SymbolLinksMap = new WeakMap<Symbol,TransientSymbolLinks>();
+
 const enum IterationUse {
     AllowsSyncIterablesFlag = 1 << 0,
     AllowsAsyncIterablesFlag = 1 << 1,
@@ -1372,10 +1379,12 @@ const doNotCacheControl = new class DoNotCacheControl {
     private _cacheForDoNotCacheSymbolLinks: Set<SymbolLinks> | undefined;
     set doNotCacheLinks(value: boolean) {
         if (value){
+            Debug.assert(!this._doNotCacheLinks);
             this._cacheForDoNotCacheSymbolLinks = new Set<SymbolLinks>;
             this._doNotCacheLinks = true;
         }
         else {
+            Debug.assert(this._doNotCacheLinks);
             this._cacheForDoNotCacheSymbolLinks?.forEach((value) => { (value as any).flushCache(); });
             this._cacheForDoNotCacheSymbolLinks = undefined;
             this._doNotCacheLinks = false;
@@ -1388,44 +1397,43 @@ const doNotCacheControl = new class DoNotCacheControl {
     }
 };
 
-const SymbolLinks = class implements SymbolLinks {
-    declare _symbolLinksBrand: any;
-    private proxy: any;
-    //private proxied: SymbolLinks;
+class SymbolLinksProxyManager {
+    private proxied: SymbolLinks;
     private cacheForDoNotCache?: Map<string, any> | undefined;
-    constructor() {
-        this.proxy = new Proxy(this,{
-            set: function(target, prop, value) {
-                // @ts-ignore
+    private symbol: Symbol;
+    constructor(symbolLinks: SymbolLinks, symbol: Symbol) {
+        this.proxied = symbolLinks;
+        this.symbol = symbol;
+        const that = this;
+        new Proxy(this.proxied,{
+            set: function(target: SymbolLinks, prop: keyof SymbolLinks, value: any) {
                 if (doNotCacheControl.doNotCacheLinks){
-                    if (IDebug.loggingHost) IDebug.loggingHost.ilog(`SymbolLinks.set: ${prop as string} = ${value}`,2);
-                    // @ts-ignore
-                    if (!target["cacheForDoNotCache"]) {
-                        doNotCacheControl.addSymbolLinksToDoNotCacheSet(target);
-                        target["cacheForDoNotCache"] = new Map<string, any>();
+                    if (IDebug.loggingHost) {
+                        let unchangedString = "";
+                        if (value===target[prop]) unchangedString = " ; (unchanged)";
+                        IDebug.loggingHost.ilog(`SymbolLinks[${that.symbol.escapedName}].set: ${prop as string} = ${value} ${unchangedString}`,2);
                     }
-                    // @ts-ignore
-                    target["cacheForDoNotCache"].set(prop as string, value);
+                    if (!that.cacheForDoNotCache) {
+                        doNotCacheControl.addSymbolLinksToDoNotCacheSet(target);
+                        that.cacheForDoNotCache = new Map<string, any>();
+                    }
+                    that.cacheForDoNotCache.set(prop, value);
                     return true; // if false is returned, it leads to an exception.
                 }
                 else {
-                    (target as any)[prop] = value;
+                    target[prop] = value;
                     return true
                 }
             },
-            get: function(target, prop) {
+            get: function(target, prop: keyof SymbolLinks) {
                 if (doNotCacheControl.doNotCacheLinks){
-                    // @ts-ignore
-                    if (IDebug.loggingHost) IDebug.loggingHost.ilog(`SymbolLinks.set: ${prop} = ${value}`,2);
-                    if (!target["cacheForDoNotCache"] || !target["cacheForDoNotCache"].has(prop as string)) {
-                        // @ts-ignore
-                        return target[prop as string];
+                    if (IDebug.loggingHost) IDebug.loggingHost.ilog(`SymbolLinks[${that.symbol.escapedName}].get: ${prop}`,2);
+                    if (!that.cacheForDoNotCache || !that.cacheForDoNotCache.has(prop as string)) {
+                        return target[prop];
                     }
-                    // @ts-ignore
-                    return (target["cacheForDoNotCache"].get(prop as string));
+                    return that.cacheForDoNotCache.get(prop);
                 }
                 else {
-                    // @ts-ignore
                     return target[prop];
                 }
             },
@@ -1439,6 +1447,24 @@ const SymbolLinks = class implements SymbolLinks {
         }
     }
 };
+
+interface SymbolLinksImpl extends SymbolLinks {};
+class SymbolLinksImpl implements SymbolLinksImpl{
+    checkFlags: CheckFlags;
+    // @ts-expect-error
+    private proxy: any;
+    // 'proxy' is declared but its value is never read.ts(6133)
+    // (property) SymbolLinks.proxy: any
+    constructor(symbol: TransientSymbol, checkFlags: CheckFlags = CheckFlags.None) {
+        this.checkFlags = checkFlags;
+        this.proxy = new SymbolLinksProxyManager(this, symbol);
+    }
+}
+
+// function SymbolLinks(this: SymbolLinks, symbol: Symbol) {
+//     const proxy = new SymbolLinksWithProxy(symbol, this) as SymbolLinks;
+//     return proxy;
+// }
 
 // function NodeLinks(this: NodeLinks) {
 //     this.flags = NodeCheckFlags.None;
@@ -1520,6 +1546,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var externalHelpersModule: Symbol;
 
     var Symbol = objectAllocator.getSymbolConstructor();
+    class TransientSymbolImpl extends Symbol implements TransientSymbol {
+        constructor(flags: SymbolFlags, name: __String, checkFlags: CheckFlags) {
+            super(flags, name);
+            const links = symbolLinksMap.get(this)!;
+            links.checkFlags = checkFlags;
+        }
+        // TODO: should return readonly object
+        get links (): TransientSymbolLinks {
+            return symbolLinksMap.get(this)!;
+        }
+        set links(value: TransientSymbolLinks) {
+            symbolLinksMap.set(this, value);
+        }
+    }
+
+
     var Type = objectAllocator.getTypeConstructor();
     var Signature = objectAllocator.getSignatureConstructor();
 
@@ -2315,7 +2357,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var suggestionCount = 0;
     var maximumSuggestionCount = 10;
     var mergedSymbols: Symbol[] = [];
-    var symbolLinks: SymbolLinks[] = [];
+    //var symbolLinks: SymbolLinks[] = [];
     var nodeLinks: NodeLinks[] = [];
     var flowLoopCaches: Map<string, Type>[] = [];
     var flowLoopNodes: FlowNode[] = [];
@@ -2563,11 +2605,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return addDeprecatedSuggestionWorker(declaration, diagnostic);
     }
 
-    function createSymbol(flags: SymbolFlags, name: __String, checkFlags?: CheckFlags) {
+    function createSymbol(flags: SymbolFlags, name: __String, checkFlags: CheckFlags = CheckFlags.None) {
         symbolCount++;
-        const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
-        symbol.links = new SymbolLinks() as unknown as TransientSymbolLinks;
-        symbol.links.checkFlags = checkFlags || CheckFlags.None;
+        const symbol = new TransientSymbolImpl(flags, name, checkFlags);
+        // const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
+        // symbol.links = new SymbolLinksImpl(symbol) as unknown as TransientSymbolLinks;
+        // symbol.links.checkFlags = checkFlags || CheckFlags.None;
         return symbol;
     }
 
@@ -2829,10 +2872,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-    function getSymbolLinks(symbol: Symbol): SymbolLinks {
-        if (symbol.flags & SymbolFlags.Transient) return (symbol as TransientSymbol).links;
-        const id = getSymbolId(symbol);
-        return symbolLinks[id] ??= new SymbolLinks();
+    function getSymbolLinks(symbol: TransientSymbol | Symbol): SymbolLinks {
+        castHereafter<TransientSymbol>(symbol);
+        let links = symbolLinksMap.get(symbol);
+        if (!links) {
+            symbolLinksMap.set(symbol, links = new SymbolLinksImpl(symbol));
+        }
+        return links;
+        // if (symbol.flags & SymbolFlags.Transient) return (symbol as TransientSymbol).links;
+        // const id = getSymbolId(symbol);
+        // return symbolLinks[id] ??= new SymbolLinksImpl(symbol);
     }
 
     function getNodeLinks(node: Node): NodeLinks {
