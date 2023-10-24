@@ -5890,8 +5890,27 @@ export interface TransientSymbolLinks extends SymbolLinks {
 }
 
 /** @internal */
-export interface TransientSymbol extends Symbol {
-    links: TransientSymbolLinks;
+export type ReadonlyIfRecord<T> = T extends Record<any, any> ? Readonly<T> : T;
+
+/** @internal */
+export type ReadonlyAlmightySymbolLinksProperties = {
+    [K in keyof AlmightySymbolLinks]: ReadonlyIfRecord<AlmightySymbolLinks[K]>;
+}
+
+/** @internal */
+export interface AlmightySymbol extends Symbol {
+    getLinksProp<K extends keyof AlmightySymbolLinks>(prop: K): ReadonlyAlmightySymbolLinksProperties[K];
+    setLinksProp<K extends keyof AlmightySymbolLinks>(prop: keyof AlmightySymbolLinks, value: ReadonlyAlmightySymbolLinksProperties[K]): void;
+}
+
+/** @internal */
+export interface TransientSymbol extends AlmightySymbol {}
+export interface MappedSymbol extends AlmightySymbol {}
+export interface ReverseMappedSymbol extends AlmightySymbol {}
+
+/** @internal */
+export interface TransientSymbolLinks extends SymbolLinks {
+    checkFlags: CheckFlags;
 }
 
 /** @internal */
@@ -5901,20 +5920,18 @@ export interface MappedSymbolLinks extends TransientSymbolLinks {
 }
 
 /** @internal */
-export interface MappedSymbol extends TransientSymbol {
-    links: MappedSymbolLinks;
-}
-
-/** @internal */
 export interface ReverseMappedSymbolLinks extends TransientSymbolLinks {
     propertyType: Type;
     mappedType: MappedType;
     constraintType: IndexType;
 }
 
-/** @internal */
-export interface ReverseMappedSymbol extends TransientSymbol {
-    links: ReverseMappedSymbolLinks;
+export interface AlmightySymbolLinks extends SymbolLinks{
+    checkFlags?: CheckFlags;
+    mappedType?: MappedType;
+    keyType?: Type;
+    propertyType?: Type;
+    constraintType?: IndexType;
 }
 
 export const enum InternalSymbolName {

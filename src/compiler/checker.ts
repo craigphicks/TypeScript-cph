@@ -8,6 +8,8 @@ import {
     addSyntheticLeadingComment,
     AliasDeclarationNode,
     AllAccessorDeclarations,
+    AlmightySymbol,
+    AlmightySymbolLinks,
     AmbientModuleDeclaration,
     and,
     AnonymousType,
@@ -927,6 +929,7 @@ import {
     removePrefix,
     replaceElement,
     resolutionExtensionIsTSOrJson,
+    ReadonlyAlmightySymbolLinksProperties,
     ResolutionMode,
     ResolvedModuleFull,
     ResolvedType,
@@ -1097,12 +1100,6 @@ let nextNodeId = 1;
 let nextMergeId = 1;
 let nextFlowId = 1;
 
-interface SymbolLinksMap {
-    get(symbol: TransientSymbol): TransientSymbolLinks | undefined;
-    set(symbol: TransientSymbol, links: TransientSymbolLinks): void;
-}
-
-const symbolLinksMap: SymbolLinksMap = new WeakMap<Symbol,TransientSymbolLinks>();
 
 const enum IterationUse {
     AllowsSyncIterablesFlag = 1 << 0,
@@ -1372,6 +1369,18 @@ const intrinsicTypeKinds: ReadonlyMap<string, IntrinsicTypeKind> = new Map(Objec
     Uncapitalize: IntrinsicTypeKind.Uncapitalize,
 }));
 
+
+// interface SymbolLinksMap {
+//     get(symbol: TransientSymbol): TransientSymbolLinks | undefined;
+//     set(symbol: TransientSymbol, links: TransientSymbolLinks): void;
+// }
+// Should only be accessed through getSymbolLinks.
+const _symbolLinksMap = new WeakMap<Symbol,AlmightySymbolLinks>();
+
+
+
+
+
 // When do not chache links is set to true, trying to set link a link member may/will be silently ignored.
 
 const doNotCacheControl = new class DoNotCacheControl {
@@ -1425,7 +1434,7 @@ class SymbolLinksProxyManager {
                     return true
                 }
             },
-            get: function(target, prop: keyof SymbolLinks) {
+            get: function(target, prop: keyof SymbolLinks){
                 if (doNotCacheControl.doNotCacheLinks){
                     if (IDebug.loggingHost) IDebug.loggingHost.ilog(`SymbolLinks[${that.symbol.escapedName}].get: ${prop}`,2);
                     if (!that.cacheForDoNotCache || !that.cacheForDoNotCache.has(prop as string)) {
@@ -1448,16 +1457,14 @@ class SymbolLinksProxyManager {
     }
 };
 
-interface SymbolLinksImpl extends SymbolLinks {};
-class SymbolLinksImpl implements SymbolLinksImpl{
-    checkFlags: CheckFlags;
+interface AlmightySymbolLinksImpl extends AlmightySymbolLinks {}
+class AlmightySymbolLinksImpl implements AlmightySymbolLinksImpl {
     // @ts-expect-error
     private proxy: any;
     // 'proxy' is declared but its value is never read.ts(6133)
     // (property) SymbolLinks.proxy: any
-    constructor(symbol: TransientSymbol, checkFlags: CheckFlags = CheckFlags.None) {
-        this.checkFlags = checkFlags;
-        this.proxy = new SymbolLinksProxyManager(this, symbol);
+    constructor(symbol: Symbol, initial: AlmightySymbolLinks = { _symbolLinksBrand: true }) {
+        this.proxy = new SymbolLinksProxyManager(initial, symbol) as unknown as AlmightySymbolLinks;
     }
 }
 
@@ -1546,18 +1553,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var externalHelpersModule: Symbol;
 
     var Symbol = objectAllocator.getSymbolConstructor();
-    class TransientSymbolImpl extends Symbol implements TransientSymbol {
-        constructor(flags: SymbolFlags, name: __String, checkFlags: CheckFlags) {
+    class AlmightySymbolImpl extends Symbol implements AlmightySymbol {
+        constructor(flags: SymbolFlags, name: __String, initialSymbolLinks?: AlmightySymbolLinks) {
             super(flags, name);
-            const links = symbolLinksMap.get(this)!;
-            links.checkFlags = checkFlags;
+            _symbolLinksMap.set(this, new AlmightySymbolLinksImpl(this, initialSymbolLinks));
         }
-        // TODO: should return readonly object
-        get links (): TransientSymbolLinks {
-            return symbolLinksMap.get(this)!;
+        getLinksProp<K extends keyof AlmightySymbolLinks>(prop: K): ReadonlyAlmightySymbolLinksProperties[K]{
+            return getSymbolLinks(this)![prop];
         }
-        set links(value: TransientSymbolLinks) {
-            symbolLinksMap.set(this, value);
+        setLinksProp<K extends keyof AlmightySymbolLinks>(prop: keyof AlmightySymbolLinks, value: ReadonlyAlmightySymbolLinksProperties[K]): void{
+            getSymbolLinks(this)![prop] = value;
         }
     }
 
@@ -1602,16 +1607,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var nodeBuilder = createNodeBuilder();
 
     var globals = createSymbolTable();
-    var undefinedSymbol = createSymbol(SymbolFlags.Property, "undefined" as __String);
+    var undefinedSymbol = createSymbolAsTransientSymbol(SymbolFlags.Property, "undefined" as __String);
     undefinedSymbol.declarations = [];
 
-    var globalThisSymbol = createSymbol(SymbolFlags.Module, "globalThis" as __String, CheckFlags.Readonly);
+    var globalThisSymbol = createSymbolAsTransientSymbol(SymbolFlags.Module, "globalThis" as __String, CheckFlags.Readonly);
     globalThisSymbol.exports = globals;
     globalThisSymbol.declarations = [];
     globals.set(globalThisSymbol.escapedName, globalThisSymbol);
 
-    var argumentsSymbol = createSymbol(SymbolFlags.Property, "arguments" as __String);
-    var requireSymbol = createSymbol(SymbolFlags.Property, "require" as __String);
+    var argumentsSymbol = createSymbolAsTransientSymbol(SymbolFlags.Property, "arguments" as __String);
+    var requireSymbol = createSymbolAsTransientSymbol(SymbolFlags.Property, "require" as __String);
     var isolatedModulesLikeFlagName = compilerOptions.verbatimModuleSyntax ? "verbatimModuleSyntax" : "isolatedModules";
     // It is an error to use `importsNotUsedAsValues` alongside `verbatimModuleSyntax`, but we still need to not crash.
     // Given that, in such a scenario, `verbatimModuleSyntax` is basically disabled, as least as far as alias visibility tracking goes.
@@ -1858,7 +1863,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         isTypeAssignableTo,
         createAnonymousType,
         createSignature,
-        createSymbol,
+        createSymbol: createSymbolAsTransientSymbol,
         createIndexInfo,
         getAnyType: () => anyType,
         getStringType: () => stringType,
@@ -2080,8 +2085,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var undefinedProperties: SymbolTable = new Map();
     var markerTypes = new Set<number>();
 
-    var unknownSymbol = createSymbol(SymbolFlags.Property, "unknown" as __String);
-    var resolvingSymbol = createSymbol(0, InternalSymbolName.Resolving);
+    var unknownSymbol = createSymbolAsTransientSymbol(SymbolFlags.Property, "unknown" as __String);
+    var resolvingSymbol = createSymbolAsTransientSymbol(0, InternalSymbolName.Resolving);
     var unresolvedSymbols = new Map<string, TransientSymbol>();
     var errorTypes = new Map<string, Type>();
 
@@ -2160,7 +2165,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var emptyJsxObjectType = createAnonymousType(/*symbol*/ undefined, emptySymbols, emptyArray, emptyArray, emptyArray);
     emptyJsxObjectType.objectFlags |= ObjectFlags.JsxAttributes;
 
-    var emptyTypeLiteralSymbol = createSymbol(SymbolFlags.TypeLiteral, InternalSymbolName.Type);
+    var emptyTypeLiteralSymbol = createSymbolAsTransientSymbol(SymbolFlags.TypeLiteral, InternalSymbolName.Type);
     emptyTypeLiteralSymbol.members = createSymbolTable();
     var emptyTypeLiteralType = createAnonymousType(emptyTypeLiteralSymbol, emptySymbols, emptyArray, emptyArray, emptyArray);
 
@@ -2605,23 +2610,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return addDeprecatedSuggestionWorker(declaration, diagnostic);
     }
 
-    function createSymbol(flags: SymbolFlags, name: __String, checkFlags: CheckFlags = CheckFlags.None) {
+    function createSymbolAsTransientSymbol(flags: SymbolFlags, name: __String, checkFlags: CheckFlags = CheckFlags.None) {
         symbolCount++;
-        const symbol = new TransientSymbolImpl(flags, name, checkFlags);
-        // const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
-        // symbol.links = new SymbolLinksImpl(symbol) as unknown as TransientSymbolLinks;
+        const symbol = new AlmightySymbolImpl(flags, name, { _symbolLinksBrand: true, checkFlags });
+        //const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
+        //symbol.links = new SymbolLinks() as TransientSymbolLinks;
         // symbol.links.checkFlags = checkFlags || CheckFlags.None;
         return symbol;
     }
 
     function createParameter(name: __String, type: Type) {
-        const symbol = createSymbol(SymbolFlags.FunctionScopedVariable, name);
+        const symbol = createSymbolAsTransientSymbol(SymbolFlags.FunctionScopedVariable, name);
         symbol.links.type = type;
         return symbol;
     }
 
     function createProperty(name: __String, type: Type) {
-        const symbol = createSymbol(SymbolFlags.Property, name);
+        const symbol = createSymbolAsTransientSymbol(SymbolFlags.Property, name);
         symbol.links.type = type;
         return symbol;
     }
@@ -2656,7 +2661,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function cloneSymbol(symbol: Symbol): TransientSymbol {
-        const result = createSymbol(symbol.flags, symbol.escapedName);
+        const result = createSymbolAsTransientSymbol(symbol.flags, symbol.escapedName);
         result.declarations = symbol.declarations ? symbol.declarations.slice() : [];
         result.parent = symbol.parent;
         if (symbol.valueDeclaration) result.valueDeclaration = symbol.valueDeclaration;
@@ -2872,11 +2877,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-    function getSymbolLinks(symbol: TransientSymbol | Symbol): SymbolLinks {
+    function getSymbolLinks(symbol: TransientSymbol | Symbol): AlmightySymbolLinks {
         castHereafter<TransientSymbol>(symbol);
-        let links = symbolLinksMap.get(symbol);
+        let links = _symbolLinksMap.get(symbol);
         if (!links) {
-            symbolLinksMap.set(symbol, links = new SymbolLinksImpl(symbol));
+            //Debug.assert(false, "Symbol links not initialized before requested for symbol.")
+            _symbolLinksMap.set(symbol, links = new AlmightySymbolLinksImpl(symbol));
         }
         return links;
         // if (symbol.flags & SymbolFlags.Transient) return (symbol as TransientSymbol).links;
@@ -4370,7 +4376,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (valueSymbol.flags & (SymbolFlags.Type | SymbolFlags.Namespace)) {
             return valueSymbol;
         }
-        const result = createSymbol(valueSymbol.flags | typeSymbol.flags, valueSymbol.escapedName);
+        const result = createSymbolAsTransientSymbol(valueSymbol.flags | typeSymbol.flags, valueSymbol.escapedName);
         Debug.assert(valueSymbol.declarations || typeSymbol.declarations);
         result.declarations = deduplicate(concatenate(valueSymbol.declarations!, typeSymbol.declarations), equateValues);
         result.parent = valueSymbol.parent || typeSymbol.parent;
@@ -5436,7 +5442,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * Create a new symbol which has the module's type less the call and construct signatures
      */
     function cloneTypeAsModuleType(symbol: Symbol, moduleType: Type, referenceParent: ImportDeclaration | ImportCall) {
-        const result = createSymbol(symbol.flags, symbol.escapedName);
+        const result = createSymbolAsTransientSymbol(symbol.flags, symbol.escapedName);
         result.declarations = symbol.declarations ? symbol.declarations.slice() : [];
         result.parent = symbol.parent;
         result.links.target = symbol;
@@ -6850,7 +6856,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const checkTypeNode = typeToTypeNodeHelper(type.checkType, context);
                 context.approximateLength += 15;
                 if (context.flags & NodeBuilderFlags.GenerateNamesForShadowedTypeParams && type.root.isDistributive && !(type.checkType.flags & TypeFlags.TypeParameter)) {
-                    const newParam = createTypeParameter(createSymbol(SymbolFlags.TypeParameter, "T" as __String));
+                    const newParam = createTypeParameter(createSymbolAsTransientSymbol(SymbolFlags.TypeParameter, "T" as __String));
                     const name = typeParameterToName(newParam, context);
                     const newTypeVariable = factory.createTypeReferenceNode(name);
                     context.approximateLength += 37; // 15 each for two added conditionals, 7 for an added infer type
@@ -6930,7 +6936,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     // We have a { [P in keyof T]: X }
                     // We do this to ensure we retain the toplevel keyof-ness of the type which may be lost due to keyof distribution during `getConstraintTypeFromMappedType`
                     if (isHomomorphicMappedTypeWithNonHomomorphicInstantiation(type) && context.flags & NodeBuilderFlags.GenerateNamesForShadowedTypeParams) {
-                        const newParam = createTypeParameter(createSymbol(SymbolFlags.TypeParameter, "T" as __String));
+                        const newParam = createTypeParameter(createSymbolAsTransientSymbol(SymbolFlags.TypeParameter, "T" as __String));
                         const name = typeParameterToName(newParam, context);
                         newTypeVariable = factory.createTypeReferenceNode(name);
                     }
@@ -6938,7 +6944,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
                 else if (needsModifierPreservingWrapper) {
                     // So, step 1: new type variable
-                    const newParam = createTypeParameter(createSymbol(SymbolFlags.TypeParameter, "T" as __String));
+                    const newParam = createTypeParameter(createSymbolAsTransientSymbol(SymbolFlags.TypeParameter, "T" as __String));
                     const name = typeParameterToName(newParam, context);
                     newTypeVariable = factory.createTypeReferenceNode(name);
                     // step 2: make that new type variable itself the constraint node, making the mapped type `{[K in T_1]: Template}`
@@ -11412,7 +11418,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                 createDiagnosticForNode(s.valueDeclaration, Diagnostics._0_was_also_declared_here, unescapedName),
                             );
                         }
-                        const union = createSymbol(s.flags | exportedMember.flags, name);
+                        const union = createSymbolAsTransientSymbol(s.flags | exportedMember.flags, name);
                         union.links.type = getUnionType([getTypeOfSymbol(s), getTypeOfSymbol(exportedMember)]);
                         union.valueDeclaration = exportedMember.valueDeclaration;
                         union.declarations = concatenate(exportedMember.declarations, s.declarations);
@@ -11526,7 +11532,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             const text = getPropertyNameFromType(exprType);
             const flags = SymbolFlags.Property | (e.initializer ? SymbolFlags.Optional : 0);
-            const symbol = createSymbol(flags, text);
+            const symbol = createSymbolAsTransientSymbol(flags, text);
             symbol.links.type = getTypeFromBindingElement(e, includePatternInType, reportErrors);
             symbol.links.bindingElement = e;
             members.set(symbol.escapedName, symbol);
@@ -11677,7 +11683,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         if (symbol.flags & SymbolFlags.ModuleExports && symbol.valueDeclaration) {
             const fileSymbol = getSymbolOfDeclaration(getSourceFileOfNode(symbol.valueDeclaration));
-            const result = createSymbol(fileSymbol.flags, "exports" as __String);
+            const result = createSymbolAsTransientSymbol(fileSymbol.flags, "exports" as __String);
             result.declarations = fileSymbol.declarations ? fileSymbol.declarations.slice() : [];
             result.parent = symbol;
             result.links.target = fileSymbol;
@@ -12950,7 +12956,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
                 // Get or add a late-bound symbol for the member. This allows us to merge late-bound accessor declarations.
                 let lateSymbol = lateSymbols.get(memberName);
-                if (!lateSymbol) lateSymbols.set(memberName, lateSymbol = createSymbol(SymbolFlags.None, memberName, CheckFlags.Late));
+                if (!lateSymbol) lateSymbols.set(memberName, lateSymbol = createSymbolAsTransientSymbol(SymbolFlags.None, memberName, CheckFlags.Late));
 
                 // Report an error if a late-bound member has the same name as an early-bound member,
                 // or if we have another early-bound symbol declaration with the same name and
@@ -12964,7 +12970,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     const name = !(type.flags & TypeFlags.UniqueESSymbol) && unescapeLeadingUnderscores(memberName) || declarationNameToString(declName);
                     forEach(declarations, declaration => error(getNameOfDeclaration(declaration) || declaration, Diagnostics.Property_0_was_also_declared_here, name));
                     error(declName || decl, Diagnostics.Duplicate_property_0, name);
-                    lateSymbol = createSymbol(SymbolFlags.None, memberName, CheckFlags.Late);
+                    lateSymbol = createSymbolAsTransientSymbol(SymbolFlags.None, memberName, CheckFlags.Late);
                 }
                 lateSymbol.links.nameType = type;
                 addDeclarationToLateBoundSymbol(lateSymbol, decl, symbolFlags);
@@ -13242,7 +13248,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const flags = restType.target.elementFlags[i];
                 const checkFlags = flags & ElementFlags.Variable ? CheckFlags.RestParameter :
                     flags & ElementFlags.Optional ? CheckFlags.OptionalParameter : 0;
-                const symbol = createSymbol(SymbolFlags.FunctionScopedVariable, name, checkFlags);
+                const symbol = createSymbolAsTransientSymbol(SymbolFlags.FunctionScopedVariable, name, checkFlags);
                 symbol.links.type = flags & ElementFlags.Rest ? createArrayType(t) : t;
                 return symbol;
             });
@@ -13447,7 +13453,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 !leftName ? rightName :
                 !rightName ? leftName :
                 undefined;
-            const paramSymbol = createSymbol(
+            const paramSymbol = createSymbolAsTransientSymbol(
                 SymbolFlags.FunctionScopedVariable | (isOptional && !isRestParam ? SymbolFlags.Optional : 0),
                 paramName || `arg${i}` as __String,
                 isRestParam ? CheckFlags.RestParameter : isOptional ? CheckFlags.OptionalParameter : 0,
@@ -13456,7 +13462,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             params[i] = paramSymbol;
         }
         if (needsExtraRestElement) {
-            const restParamSymbol = createSymbol(SymbolFlags.FunctionScopedVariable, "args" as __String, CheckFlags.RestParameter);
+            const restParamSymbol = createSymbolAsTransientSymbol(SymbolFlags.FunctionScopedVariable, "args" as __String, CheckFlags.RestParameter);
             restParamSymbol.links.type = createArrayType(getTypeAtPosition(shorter, longestCount));
             if (shorter === right) {
                 restParamSymbol.links.type = instantiateType(restParamSymbol.links.type, mapper);
@@ -13715,7 +13721,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const members = createSymbolTable();
         for (const prop of getPropertiesOfType(type.source)) {
             const checkFlags = CheckFlags.ReverseMapped | (readonlyMask && isReadonlySymbol(prop) ? CheckFlags.Readonly : 0);
-            const inferredProp = createSymbol(SymbolFlags.Property | prop.flags & optionalMask, prop.escapedName, checkFlags) as ReverseMappedSymbol;
+            const inferredProp = createSymbolAsTransientSymbol(SymbolFlags.Property | prop.flags & optionalMask, prop.escapedName, checkFlags) as ReverseMappedSymbol;
             inferredProp.declarations = prop.declarations;
             inferredProp.links.nameType = getSymbolLinks(prop).nameType;
             inferredProp.links.propertyType = getTypeOfSymbol(prop);
@@ -13846,7 +13852,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         !(templateModifiers & MappedTypeModifiers.ExcludeReadonly) && modifiersProp && isReadonlySymbol(modifiersProp));
                     const stripOptional = strictNullChecks && !isOptional && modifiersProp && modifiersProp.flags & SymbolFlags.Optional;
                     const lateFlag: CheckFlags = modifiersProp ? getIsLateCheckFlag(modifiersProp) : 0;
-                    const prop = createSymbol(SymbolFlags.Property | (isOptional ? SymbolFlags.Optional : 0), propName, lateFlag | CheckFlags.Mapped | (isReadonly ? CheckFlags.Readonly : 0) | (stripOptional ? CheckFlags.StripOptional : 0)) as MappedSymbol;
+                    const prop = createSymbolAsTransientSymbol(SymbolFlags.Property | (isOptional ? SymbolFlags.Optional : 0), propName, lateFlag | CheckFlags.Mapped | (isReadonly ? CheckFlags.Readonly : 0) | (stripOptional ? CheckFlags.StripOptional : 0)) as MappedSymbol;
                     prop.links.mappedType = type;
                     prop.links.nameType = propNameType;
                     prop.links.keyType = keyType;
@@ -14654,7 +14660,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             propTypes.push(type);
         }
         addRange(propTypes, indexTypes);
-        const result = createSymbol(SymbolFlags.Property | (optionalFlag ?? 0), name, syntheticFlag | checkFlags);
+        const result = createSymbolAsTransientSymbol(SymbolFlags.Property | (optionalFlag ?? 0), name, syntheticFlag | checkFlags);
         result.links.containingType = containingType;
         if (!hasNonUniformValueDeclaration && firstValueDeclaration) {
             result.valueDeclaration = firstValueDeclaration;
@@ -15151,7 +15157,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (isInJSFile(declaration)) {
                 const thisTag = getJSDocThisTag(declaration);
                 if (thisTag && thisTag.typeExpression) {
-                    thisParameter = createSymbolWithType(createSymbol(SymbolFlags.FunctionScopedVariable, InternalSymbolName.This), getTypeFromTypeNode(thisTag.typeExpression));
+                    thisParameter = createSymbolWithType(createSymbolAsTransientSymbol(SymbolFlags.FunctionScopedVariable, InternalSymbolName.This), getTypeFromTypeNode(thisTag.typeExpression));
                 }
             }
 
@@ -15188,7 +15194,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const lastParamTags = lastParam ? getJSDocParameterTags(lastParam) : getJSDocTags(declaration).filter(isJSDocParameterTag);
         const lastParamVariadicType = firstDefined(lastParamTags, p => p.typeExpression && isJSDocVariadicType(p.typeExpression.type) ? p.typeExpression.type : undefined);
 
-        const syntheticArgsSymbol = createSymbol(SymbolFlags.Variable, "args" as __String, CheckFlags.RestParameter);
+        const syntheticArgsSymbol = createSymbolAsTransientSymbol(SymbolFlags.Variable, "args" as __String, CheckFlags.RestParameter);
         if (lastParamVariadicType) {
             // Parameter has effective annotation, lock in type
             syntheticArgsSymbol.links.type = createArrayType(getTypeFromTypeNode(lastParamVariadicType.type));
@@ -15991,7 +15997,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const path = parentSymbol ? `${getSymbolPath(parentSymbol)}.${text}` : text as string;
             let result = unresolvedSymbols.get(path);
             if (!result) {
-                unresolvedSymbols.set(path, result = createSymbol(SymbolFlags.TypeAlias, text, CheckFlags.Unresolved));
+                unresolvedSymbols.set(path, result = createSymbolAsTransientSymbol(SymbolFlags.TypeAlias, text, CheckFlags.Unresolved));
                 result.parent = parentSymbol;
                 result.links.declaredType = unresolvedType;
             }
@@ -16329,10 +16335,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getGlobalImportMetaExpressionType() {
         if (!deferredGlobalImportMetaExpressionType) {
             // Create a synthetic type `ImportMetaExpression { meta: MetaProperty }`
-            const symbol = createSymbol(SymbolFlags.None, "ImportMetaExpression" as __String);
+            const symbol = createSymbolAsTransientSymbol(SymbolFlags.None, "ImportMetaExpression" as __String);
             const importMetaType = getGlobalImportMetaType();
 
-            const metaPropertySymbol = createSymbol(SymbolFlags.Property, "meta" as __String, CheckFlags.Readonly);
+            const metaPropertySymbol = createSymbolAsTransientSymbol(SymbolFlags.Property, "meta" as __String, CheckFlags.Readonly);
             metaPropertySymbol.parent = symbol;
             metaPropertySymbol.links.type = importMetaType;
 
@@ -16674,7 +16680,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const flags = elementFlags[i];
                 combinedFlags |= flags;
                 if (!(combinedFlags & ElementFlags.Variable)) {
-                    const property = createSymbol(SymbolFlags.Property | (flags & ElementFlags.Optional ? SymbolFlags.Optional : 0), "" + i as __String, readonly ? CheckFlags.Readonly : 0);
+                    const property = createSymbolAsTransientSymbol(SymbolFlags.Property | (flags & ElementFlags.Optional ? SymbolFlags.Optional : 0), "" + i as __String, readonly ? CheckFlags.Readonly : 0);
                     property.links.tupleLabelDeclaration = namedMemberDeclarations?.[i];
                     property.links.type = typeParameter;
                     properties.push(property);
@@ -16682,7 +16688,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         const fixedLength = properties.length;
-        const lengthSymbol = createSymbol(SymbolFlags.Property, "length" as __String, readonly ? CheckFlags.Readonly : 0);
+        const lengthSymbol = createSymbolAsTransientSymbol(SymbolFlags.Property, "length" as __String, readonly ? CheckFlags.Readonly : 0);
         if (combinedFlags & ElementFlags.Variable) {
             lengthSymbol.links.type = numberType;
         }
@@ -18796,7 +18802,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 else if (isSpreadableProperty(prop)) {
                     const isSetonlyAccessor = prop.flags & SymbolFlags.SetAccessor && !(prop.flags & SymbolFlags.GetAccessor);
                     const flags = SymbolFlags.Property | SymbolFlags.Optional;
-                    const result = createSymbol(flags, prop.escapedName, getIsLateCheckFlag(prop) | (readonly ? CheckFlags.Readonly : 0));
+                    const result = createSymbolAsTransientSymbol(flags, prop.escapedName, getIsLateCheckFlag(prop) | (readonly ? CheckFlags.Readonly : 0));
                     result.links.type = isSetonlyAccessor ? undefinedType : addOptionality(getTypeOfSymbol(prop), /*isProperty*/ true);
                     result.declarations = prop.declarations;
                     result.links.nameType = getSymbolLinks(prop).nameType;
@@ -18884,7 +18890,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 if (rightProp.flags & SymbolFlags.Optional) {
                     const declarations = concatenate(leftProp.declarations, rightProp.declarations);
                     const flags = SymbolFlags.Property | (leftProp.flags & SymbolFlags.Optional);
-                    const result = createSymbol(flags, leftProp.escapedName);
+                    const result = createSymbolAsTransientSymbol(flags, leftProp.escapedName);
                     // Optimization: avoid calculating the union type if spreading into the exact same type.
                     // This is common, e.g. spreading one options bag into another where the bags have the
                     // same type, or have properties which overlap. If the unions are large, it may turn out
@@ -18923,7 +18929,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return prop;
         }
         const flags = SymbolFlags.Property | (prop.flags & SymbolFlags.Optional);
-        const result = createSymbol(flags, prop.escapedName, getIsLateCheckFlag(prop) | (readonly ? CheckFlags.Readonly : 0));
+        const result = createSymbolAsTransientSymbol(flags, prop.escapedName, getIsLateCheckFlag(prop) | (readonly ? CheckFlags.Readonly : 0));
         result.links.type = isSetonlyAccessor ? undefinedType : getTypeOfSymbol(prop);
         result.declarations = prop.declarations;
         result.links.nameType = getSymbolLinks(prop).nameType;
@@ -19370,7 +19376,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         // Keep the flags from the symbol we're instantiating.  Mark that is instantiated, and
         // also transient so that we can just store data on it directly.
-        const result = createSymbol(symbol.flags, symbol.escapedName, CheckFlags.Instantiated | getCheckFlags(symbol) & (CheckFlags.Readonly | CheckFlags.Late | CheckFlags.OptionalParameter | CheckFlags.RestParameter));
+        const result = createSymbolAsTransientSymbol(symbol.flags, symbol.escapedName, CheckFlags.Instantiated | getCheckFlags(symbol) & (CheckFlags.Readonly | CheckFlags.Late | CheckFlags.OptionalParameter | CheckFlags.RestParameter));
         result.declarations = symbol.declarations;
         result.parent = symbol.parent;
         result.links.target = symbol;
@@ -24353,7 +24359,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function createSymbolWithType(source: Symbol, type: Type | undefined) {
-        const symbol = createSymbol(source.flags, source.escapedName, getCheckFlags(source) & CheckFlags.Readonly);
+        const initialSymbolLinks = {
+            _symbolLinksBrand: true,
+            checkFlags: getCheckFlags(source) & CheckFlags.Readonly,
+            target: source
+        } as SymbolLinks;
+        if (type) initialSymbolLinks.type = type;
+        
+        //const symbol = createSymbolAsTransientSymbol(source.flags, source.escapedName, getCheckFlags(source) & CheckFlags.Readonly);
+        const symbol = createSymbolAsTransientSymbol(source.flags, source.escapedName, initialSymbolLinks);
         symbol.declarations = source.declarations;
         symbol.parent = source.parent;
         symbol.links.type = type;
@@ -24862,7 +24876,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return;
             }
             const name = escapeLeadingUnderscores((t as StringLiteralType).value);
-            const literalProp = createSymbol(SymbolFlags.Property, name);
+            const literalProp = createSymbolAsTransientSymbol(SymbolFlags.Property, name);
             literalProp.links.type = anyType;
             if (t.symbol) {
                 literalProp.declarations = t.symbol.declarations;
@@ -30739,7 +30753,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 !leftName ? rightName :
                 !rightName ? leftName :
                 undefined;
-            const paramSymbol = createSymbol(
+            const paramSymbol = createSymbolAsTransientSymbol(
                 SymbolFlags.FunctionScopedVariable | (isOptional && !isRestParam ? SymbolFlags.Optional : 0),
                 paramName || `arg${i}` as __String,
             );
@@ -30747,7 +30761,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             params[i] = paramSymbol;
         }
         if (needsExtraRestElement) {
-            const restParamSymbol = createSymbol(SymbolFlags.FunctionScopedVariable, "args" as __String);
+            const restParamSymbol = createSymbolAsTransientSymbol(SymbolFlags.FunctionScopedVariable, "args" as __String);
             restParamSymbol.links.type = createArrayType(getTypeAtPosition(shorter, longestCount));
             if (shorter === right) {
                 restParamSymbol.links.type = instantiateType(restParamSymbol.links.type, mapper);
@@ -31132,8 +31146,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 objectFlags |= getObjectFlags(type) & ObjectFlags.PropagatingFlags;
                 const nameType = computedNameType && isTypeUsableAsPropertyName(computedNameType) ? computedNameType : undefined;
                 const prop = nameType ?
-                    createSymbol(SymbolFlags.Property | member.flags, getPropertyNameFromType(nameType), checkFlags | CheckFlags.Late) :
-                    createSymbol(SymbolFlags.Property | member.flags, member.escapedName, checkFlags);
+                    createSymbolAsTransientSymbol(SymbolFlags.Property | member.flags, getPropertyNameFromType(nameType), checkFlags | CheckFlags.Late) :
+                    createSymbolAsTransientSymbol(SymbolFlags.Property | member.flags, member.escapedName, checkFlags);
                 if (nameType) {
                     prop.links.nameType = nameType;
                 }
@@ -31412,7 +31426,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const exprType = checkJsxAttribute(attributeDecl, checkMode);
                 objectFlags |= getObjectFlags(exprType) & ObjectFlags.PropagatingFlags;
 
-                const attributeSymbol = createSymbol(SymbolFlags.Property | member.flags, member.escapedName);
+                const attributeSymbol = createSymbolAsTransientSymbol(SymbolFlags.Property | member.flags, member.escapedName);
                 attributeSymbol.declarations = member.declarations;
                 attributeSymbol.parent = member.parent;
                 if (member.valueDeclaration) {
@@ -31484,7 +31498,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const contextualType = getApparentTypeOfContextualType(openingLikeElement.attributes, /*contextFlags*/ undefined);
                 const childrenContextualType = contextualType && getTypeOfPropertyOfContextualType(contextualType, jsxChildrenPropertyName);
                 // If there are children in the body of JSX element, create dummy attribute "children" with the union of children types so that it will pass the attribute checking process
-                const childrenPropSymbol = createSymbol(SymbolFlags.Property, jsxChildrenPropertyName);
+                const childrenPropSymbol = createSymbolAsTransientSymbol(SymbolFlags.Property, jsxChildrenPropertyName);
                 childrenPropSymbol.links.type = childrenTypes.length === 1 ? childrenTypes[0] :
                     childrenContextualType && someType(childrenContextualType, isTupleLikeType) ? createTupleType(childrenTypes) :
                     createArrayType(getUnionType(childrenTypes));
@@ -32883,7 +32897,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const primitives = mapDefined(
                     ["string", "number", "boolean", "object", "bigint", "symbol"],
                     s => symbols.has((s.charAt(0).toUpperCase() + s.slice(1)) as __String)
-                        ? createSymbol(SymbolFlags.TypeAlias, s as __String) as Symbol
+                        ? createSymbolAsTransientSymbol(SymbolFlags.TypeAlias, s as __String) as Symbol
                         : undefined,
                 );
                 candidates = primitives.concat(arrayFrom(symbols.values()));
@@ -35472,7 +35486,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const typeSymbol = exports && getSymbol(exports, JsxNames.Element, SymbolFlags.Type);
         const returnNode = typeSymbol && nodeBuilder.symbolToEntityName(typeSymbol, SymbolFlags.Type, node);
         const declaration = factory.createFunctionTypeNode(/*typeParameters*/ undefined, [factory.createParameterDeclaration(/*modifiers*/ undefined, /*dotDotDotToken*/ undefined, "props", /*questionToken*/ undefined, nodeBuilder.typeToTypeNode(result, node))], returnNode ? factory.createTypeReferenceNode(returnNode, /*typeArguments*/ undefined) : factory.createKeywordTypeNode(SyntaxKind.AnyKeyword));
-        const parameterSymbol = createSymbol(SymbolFlags.FunctionScopedVariable, "props" as __String);
+        const parameterSymbol = createSymbolAsTransientSymbol(SymbolFlags.FunctionScopedVariable, "props" as __String);
         parameterSymbol.links.type = result;
         return createSignature(
             declaration,
@@ -35905,7 +35919,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function createDefaultPropertyWrapperForModule(symbol: Symbol, originalSymbol: Symbol | undefined, anonymousSymbol?: Symbol | undefined) {
         const memberTable = createSymbolTable();
-        const newSymbol = createSymbol(SymbolFlags.Alias, InternalSymbolName.Default);
+        const newSymbol = createSymbolAsTransientSymbol(SymbolFlags.Alias, InternalSymbolName.Default);
         newSymbol.parent = originalSymbol;
         newSymbol.links.nameType = getStringLiteralType("default");
         newSymbol.links.aliasTarget = resolveSymbol(symbol);
@@ -35933,7 +35947,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const file = originalSymbol.declarations?.find(isSourceFile);
                 const hasSyntheticDefault = canHaveSyntheticDefault(file, originalSymbol, /*dontResolveAlias*/ false, moduleSpecifier);
                 if (hasSyntheticDefault) {
-                    const anonymousSymbol = createSymbol(SymbolFlags.TypeLiteral, InternalSymbolName.Type);
+                    const anonymousSymbol = createSymbolAsTransientSymbol(SymbolFlags.TypeLiteral, InternalSymbolName.Type);
                     const defaultContainingObject = createDefaultPropertyWrapperForModule(symbol, originalSymbol, anonymousSymbol);
                     anonymousSymbol.links.type = defaultContainingObject;
                     synthType.syntheticType = isValidSpreadType(type) ? getSpreadType(type, defaultContainingObject, anonymousSymbol, /*objectFlags*/ 0, /*readonly*/ false) : defaultContainingObject;
@@ -37001,9 +37015,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function createNewTargetExpressionType(targetType: Type): Type {
         // Create a synthetic type `NewTargetExpression { target: TargetType; }`
-        const symbol = createSymbol(SymbolFlags.None, "NewTargetExpression" as __String);
+        const symbol = createSymbolAsTransientSymbol(SymbolFlags.None, "NewTargetExpression" as __String);
 
-        const targetPropertySymbol = createSymbol(SymbolFlags.Property, "target" as __String, CheckFlags.Readonly);
+        const targetPropertySymbol = createSymbolAsTransientSymbol(SymbolFlags.Property, "target" as __String, CheckFlags.Readonly);
         targetPropertySymbol.parent = symbol;
         targetPropertySymbol.links.type = targetType;
 
@@ -39244,7 +39258,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const name = tp.symbol.escapedName;
             if (hasTypeParameterByName(context.inferredTypeParameters, name) || hasTypeParameterByName(result, name)) {
                 const newName = getUniqueTypeParameterName(concatenate(context.inferredTypeParameters, result), name);
-                const symbol = createSymbol(SymbolFlags.TypeParameter, newName);
+                const symbol = createSymbolAsTransientSymbol(SymbolFlags.TypeParameter, newName);
                 const newTypeParameter = createTypeParameter(symbol);
                 newTypeParameter.target = tp;
                 oldTypeParameters = append(oldTypeParameters, tp);
@@ -47341,7 +47355,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     return symbolLinks.filteredIndexSymbolCache.get(nodeListId)!;
                 }
                 else {
-                    const copy = createSymbol(SymbolFlags.Signature, InternalSymbolName.Index);
+                    const copy = createSymbolAsTransientSymbol(SymbolFlags.Signature, InternalSymbolName.Index);
                     copy.declarations = mapDefined(infos, i => i.declaration);
                     copy.parent = type.aliasSymbol ? type.aliasSymbol : type.symbol ? type.symbol : getSymbolAtLocation(copy.declarations[0].parent);
                     symbolLinks.filteredIndexSymbolCache.set(nodeListId, copy);
