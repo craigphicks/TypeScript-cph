@@ -300,3 +300,6 @@ node src/compiler/plainObjectProxyExplicitGetSet.js
 tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
 node src/compiler/plainObjectProxyExplicitGetSet.js
 git status
+git add .
+git commit -m "backup; not compiling; coded for transient symbol cacheing; next code to revert non-transient symbols to pre existing symbolLinks[] with no cacheing"
+git status
