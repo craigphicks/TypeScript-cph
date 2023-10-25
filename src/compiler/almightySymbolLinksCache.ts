@@ -137,25 +137,33 @@ type AlmightySymbolOwnLinks = AlmightySymbolOwnLinksProto & {readonly [k in keyo
 
 var AlmightySymbol = objectAllocator.getSymbolConstructor();
 
-function AlmightySymbolLinks(this: AlmightySymbolLinks, initial?: AlmightySymbolLinks){
+// Adding the Partial of Partial<AlmightySymbolLinks> in multiple places is a laborious workaround to
+// to prevent an error about _symbolLinksBrand not being present in AlmightySymbolLinks.
+// Unfortunately, if _symbolLinksBrand is made optional, it doesn't fulfill its intended purpose.
+function AlmightySymbolLinks(this: AlmightySymbolLinks, initial?: Partial<AlmightySymbolLinks>): AlmightySymbolLinks{
     if (initial){
         for (const k in initial) this[k as keyof AlmightySymbolLinks] = initial[k as keyof AlmightySymbolLinks];
     }
+    return this;
 }
 
-export type AlmightySymbolWithOwnLinks = Symbol & AlmightySymbolOwnLinks;
+export interface AlmightySymbolWithOwnLinks extends Symbol, AlmightySymbolOwnLinks {};
+type AlmightySymbolWithOwnLinksConstructor = {
+    new(flags: SymbolFlags, name: __String, initialSymbolLinks?: Partial<AlmightySymbolLinks>): AlmightySymbolWithOwnLinks;
+    readonly prototype: AlmightySymbolWithOwnLinks;
+};
 
 export class AlmightySymbolObjectAndCacheControl {
     private ownSymbolLinksCacheControl = new SymbolLinksCacheControl<AlmightySymbol>
     private ownSymbolLinksMap = new WeakMap<AlmightySymbol, AlmightySymbolLinks>();
-    private almightySymbolWithOwnLinksConstructor: AlmightySymbolOwnLinks["constructor"];
+    private almightySymbolWithOwnLinksConstructor: AlmightySymbolWithOwnLinksConstructor;
     constructor() {
         const that = this;
         class AlmightySymbolLinksWithCache {
             readonly symbol: Symbol;
             cache?: Map<string, any> | undefined;
-            readonly proxied: AlmightySymbolLinks;
-            constructor(symbol: Symbol, initial: AlmightySymbolLinks = { _symbolLinksBrand: true }) {
+            readonly proxied: Partial<AlmightySymbolLinks>;
+            constructor(symbol: Symbol , initial: Partial<AlmightySymbolLinks> = { /*_symbolLinksBrand: true*/ }) {
                 this.symbol = symbol;
                 this.proxied = initial;
             }
@@ -173,7 +181,7 @@ export class AlmightySymbolObjectAndCacheControl {
                 that.ownSymbolLinksMap.set(this, this.almightySymbolLinksWithCache as unknown as AlmightySymbolLinks);
             }
         }
-        this.almightySymbolWithOwnLinksConstructor = AlmightySymbolWithOwnLinks;
+        this.almightySymbolWithOwnLinksConstructor = AlmightySymbolWithOwnLinks as unknown as AlmightySymbolWithOwnLinksConstructor;
         createProxyGetAndSetFunctions(
             AlmightySymbolWithOwnLinks.prototype,
             almightySymbolLinksKeys,
@@ -216,7 +224,8 @@ export class AlmightySymbolObjectAndCacheControl {
             }
         );
     }
-    getAlmightySymbolWithOwnLinksConstructor(): AlmightySymbolWithOwnLinks["constructor"]{
-        return this.almightySymbolWithOwnLinksConstructor;
+    static getAlmightySymbolWithOwnLinksConstructor(): AlmightySymbolWithOwnLinksConstructor{
+        return (new AlmightySymbolObjectAndCacheControl).almightySymbolWithOwnLinksConstructor;
     }
 }
+

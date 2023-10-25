@@ -1443,7 +1443,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var requestedExternalEmitHelpers: ExternalEmitHelpers;
     var externalHelpersModule: Symbol;
 
-    var Symbol = objectAllocator.getSymbolConstructor();
+    // var Symbol = objectAllocator.getSymbolConstructor();
     var Type = objectAllocator.getTypeConstructor();
     var Signature = objectAllocator.getSignatureConstructor();
 
@@ -2239,6 +2239,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var maximumSuggestionCount = 10;
     var mergedSymbols: Symbol[] = [];
     var symbolLinks: SymbolLinks[] = [];
+    var almightySymbolWithOwnLinksConstructor = AlmightySymbolObjectAndCacheControl.getAlmightySymbolWithOwnLinksConstructor();
     var nodeLinks: NodeLinks[] = [];
     var flowLoopCaches: Map<string, Type>[] = [];
     var flowLoopNodes: FlowNode[] = [];
@@ -2488,10 +2489,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function createSymbol(flags: SymbolFlags, name: __String, checkFlags?: CheckFlags) {
         symbolCount++;
-        const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
-        symbol.links = new SymbolLinks() as TransientSymbolLinks;
-        symbol.links.checkFlags = checkFlags || CheckFlags.None;
+        checkFlags = checkFlags || CheckFlags.None;
+        // Note: every symbol created here has SymbolFlags.Transient set on flags. (Are any symbols not transient?)
+        const symbol = new almightySymbolWithOwnLinksConstructor(flags | SymbolFlags.Transient, name, { checkFlags });
         return symbol;
+        // const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
+        // symbol.links = new SymbolLinks() as TransientSymbolLinks;
+        // symbol.links.checkFlags = checkFlags || CheckFlags.None;
+        // return symbol;
     }
 
     function createParameter(name: __String, type: Type) {
@@ -2752,10 +2757,25 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-    function getSymbolLinks(symbol: Symbol): SymbolLinks {
-        if (symbol.flags & SymbolFlags.Transient) return (symbol as TransientSymbol).links;
-        const id = getSymbolId(symbol);
-        return symbolLinks[id] ??= new SymbolLinks();
+    // function getSymbolLinks(symbol: Symbol): SymbolLinks {
+    //     if (symbol.flags & SymbolFlags.Transient) return (symbol as TransientSymbol).links;
+    //     const id = getSymbolId(symbol);
+    //     return symbolLinks[id] ??= new SymbolLinks();
+    // }
+    function getSymbolLinks(symbol: Symbol): AlmightySymbolWithOwnLinks {
+        if (symbol instanceof almightySymbolWithOwnLinksConstructor) {
+            return symbol;
+        }
+        if (symbol.flags & SymbolFlags.Transient) {
+            Debug.assert(false, "unexpected transient symbol that isn't instanceof almightySymbolWithOwnLinksConstructor");
+            //return (symbol as TransientSymbol).links;
+        }
+        Debug.assert(false,
+            "hopefully we don't get here because converting an existing symbol to AlmightySymbolWithOwnLinks "
+            +"is going to require more keyboard exercise than I'm willing to do right now.");
+        // almightySymbolWithOwnLinksConstructor()
+        // const id = getSymbolId(symbol);
+        // return symbolLinks[id] ??= new SymbolLinks();
     }
 
     function getNodeLinks(node: Node): NodeLinks {
