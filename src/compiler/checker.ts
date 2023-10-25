@@ -1088,9 +1088,15 @@ import {
 } from "./_namespaces/ts";
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
+import {
+    AlmightySymbolObjectAndCacheControl,
+    AlmightySymbolWithOwnLinks,
+} from "./almightySymbolLinksCache";
+
 // cphdebug-start
 import { IDebug } from "./mydebug";
 // cphdebug-end
+
 
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
@@ -1375,107 +1381,6 @@ const intrinsicTypeKinds: ReadonlyMap<string, IntrinsicTypeKind> = new Map(Objec
 //     set(symbol: TransientSymbol, links: TransientSymbolLinks): void;
 // }
 // Should only be accessed through getSymbolLinks.
-const _symbolLinksMap = new WeakMap<Symbol,AlmightySymbolLinks>();
-
-
-
-
-
-// When do not chache links is set to true, trying to set link a link member may/will be silently ignored.
-
-const doNotCacheControl = new class DoNotCacheControl {
-    private _doNotCacheLinks = false;
-    private _cacheForDoNotCacheSymbolLinks: Set<SymbolLinks> | undefined;
-    set doNotCacheLinks(value: boolean) {
-        if (value){
-            Debug.assert(!this._doNotCacheLinks);
-            this._cacheForDoNotCacheSymbolLinks = new Set<SymbolLinks>;
-            this._doNotCacheLinks = true;
-        }
-        else {
-            Debug.assert(this._doNotCacheLinks);
-            this._cacheForDoNotCacheSymbolLinks?.forEach((value) => { (value as any).flushCache(); });
-            this._cacheForDoNotCacheSymbolLinks = undefined;
-            this._doNotCacheLinks = false;
-        }
-    }
-    get doNotCacheLinks() { return this._doNotCacheLinks; }
-    addSymbolLinksToDoNotCacheSet(symbolLinks: SymbolLinks) {
-        Debug.assert(this._cacheForDoNotCacheSymbolLinks);
-        this._cacheForDoNotCacheSymbolLinks.add(symbolLinks);
-    }
-};
-
-class SymbolLinksProxyManager {
-    private proxied: SymbolLinks;
-    private cacheForDoNotCache?: Map<string, any> | undefined;
-    private symbol: Symbol;
-    constructor(symbolLinks: SymbolLinks, symbol: Symbol) {
-        this.proxied = symbolLinks;
-        this.symbol = symbol;
-        const that = this;
-        new Proxy(this.proxied,{
-            set: function(target: SymbolLinks, prop: keyof SymbolLinks, value: any) {
-                if (doNotCacheControl.doNotCacheLinks){
-                    if (IDebug.loggingHost) {
-                        let unchangedString = "";
-                        if (value===target[prop]) unchangedString = " ; (unchanged)";
-                        IDebug.loggingHost.ilog(`SymbolLinks[${that.symbol.escapedName}].set: ${prop as string} = ${value} ${unchangedString}`,2);
-                    }
-                    if (!that.cacheForDoNotCache) {
-                        doNotCacheControl.addSymbolLinksToDoNotCacheSet(target);
-                        that.cacheForDoNotCache = new Map<string, any>();
-                    }
-                    that.cacheForDoNotCache.set(prop, value);
-                    return true; // if false is returned, it leads to an exception.
-                }
-                else {
-                    target[prop] = value;
-                    return true
-                }
-            },
-            get: function(target, prop: keyof SymbolLinks){
-                if (doNotCacheControl.doNotCacheLinks){
-                    if (IDebug.loggingHost) IDebug.loggingHost.ilog(`SymbolLinks[${that.symbol.escapedName}].get: ${prop}`,2);
-                    if (!that.cacheForDoNotCache || !that.cacheForDoNotCache.has(prop as string)) {
-                        return target[prop];
-                    }
-                    return that.cacheForDoNotCache.get(prop);
-                }
-                else {
-                    return target[prop];
-                }
-            },
-        });
-        // @ts-ignore
-        return this.proxy as SymbolLinks;
-    }
-    flushCache() {
-        if (this.cacheForDoNotCache) {
-            this.cacheForDoNotCache = undefined;
-        }
-    }
-};
-
-interface AlmightySymbolLinksImpl extends AlmightySymbolLinks {}
-class AlmightySymbolLinksImpl implements AlmightySymbolLinksImpl {
-    // @ts-expect-error
-    private proxy: any;
-    // 'proxy' is declared but its value is never read.ts(6133)
-    // (property) SymbolLinks.proxy: any
-    constructor(symbol: Symbol, initial: AlmightySymbolLinks = { _symbolLinksBrand: true }) {
-        this.proxy = new SymbolLinksProxyManager(initial, symbol) as unknown as AlmightySymbolLinks;
-    }
-}
-
-// function SymbolLinks(this: SymbolLinks, symbol: Symbol) {
-//     const proxy = new SymbolLinksWithProxy(symbol, this) as SymbolLinks;
-//     return proxy;
-// }
-
-// function NodeLinks(this: NodeLinks) {
-//     this.flags = NodeCheckFlags.None;
-// }
 
 function NodeLinks(this: NodeLinks) {
     this.flags = NodeCheckFlags.None;
@@ -1553,19 +1458,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var externalHelpersModule: Symbol;
 
     var Symbol = objectAllocator.getSymbolConstructor();
-    class AlmightySymbolImpl extends Symbol implements AlmightySymbol {
+    //var symbolLinkCacheControl = new SymbolLinksCacheControl();
+    var AlmightySymbolLinksIFConstructor = createAlmightySymbolLinksIFConstrutor(new SymbolLinksCacheControl())
+    class AlmightySymbolIF extends Symbol implements AlmightySymbol {
         constructor(flags: SymbolFlags, name: __String, initialSymbolLinks?: AlmightySymbolLinks) {
             super(flags, name);
-            _symbolLinksMap.set(this, new AlmightySymbolLinksImpl(this, initialSymbolLinks));
+            _symbolLinksMap.set(this, new AlmightySymbolLinksIFConstructor(this, initialSymbolLinks));
         }
-        getLinksProp<K extends keyof AlmightySymbolLinks>(prop: K): ReadonlyAlmightySymbolLinksProperties[K]{
-            return getSymbolLinks(this)![prop];
-        }
-        setLinksProp<K extends keyof AlmightySymbolLinks>(prop: keyof AlmightySymbolLinks, value: ReadonlyAlmightySymbolLinksProperties[K]): void{
-            getSymbolLinks(this)![prop] = value;
-        }
+        //getLinks():
+        // getLinksProp<K extends keyof AlmightySymbolLinks>(prop: K): ReadonlyAlmightySymbolLinksProperties[K]{
+        //     return getSymbolLinks(this)![prop];
+        // }
+        // setLinksProp<K extends keyof AlmightySymbolLinks>(prop: keyof AlmightySymbolLinks, value: ReadonlyAlmightySymbolLinksProperties[K]): void{
+        //     getSymbolLinks(this)![prop] = value;
+        // }
     }
-
 
     var Type = objectAllocator.getTypeConstructor();
     var Signature = objectAllocator.getSignatureConstructor();
@@ -2414,6 +2321,24 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     ];
     /* eslint-enable no-var */
 
+    /**
+     * "A WeakMap is a collection of key/value pairs whose keys must be objects or non-registered symbols,
+     * with values of any arbitrary JavaScript type, and which does not create strong references to its keys.
+     * That is, an object's presence as a key in a WeakMap does not prevent the object from being garbage collected.
+     * Once an object used as a key has been collected, its corresponding values in any WeakMap become candidates
+     * for garbage collection as well — as long as they aren't strongly referred to elsewhere.
+     * WeakMap allows associating data to objects in a way that doesn't prevent the key objects from being collected,
+     * even if the values reference the keys." [MDN WeakMap]
+     *
+     * So putting TransientSymbol as key and AlmightySymbolLinks as value is OK, because if/when TransientSymbol
+     * goes out of scope, it and the value it references can be garbage collected.
+     */
+    /* @internal */
+    // This has to go inside createTypeChecker.
+    const _symbolLinksMap = new WeakMap<Symbol,AlmightySymbolLinks>();
+
+
+
     initializeTypeChecker();
 
     return checker;
@@ -2612,7 +2537,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function createSymbolAsTransientSymbol(flags: SymbolFlags, name: __String, checkFlags: CheckFlags = CheckFlags.None) {
         symbolCount++;
-        const symbol = new AlmightySymbolImpl(flags, name, { _symbolLinksBrand: true, checkFlags });
+        const symbol = new AlmightySymbolIF(flags, name, { _symbolLinksBrand: true, checkFlags });
         //const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
         //symbol.links = new SymbolLinks() as TransientSymbolLinks;
         // symbol.links.checkFlags = checkFlags || CheckFlags.None;
@@ -2878,6 +2803,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getSymbolLinks(symbol: TransientSymbol | Symbol): AlmightySymbolLinks {
+        if (!(symbol instanceof AlmightySymbolIF)) {
+            Debug.assert(
+                false,
+                "Symbol links not initialized before requested for symbol. Where does this come from, and does it really not need fine caching?")
+        }
         castHereafter<TransientSymbol>(symbol);
         let links = _symbolLinksMap.get(symbol);
         if (!links) {
@@ -24365,7 +24295,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             target: source
         } as SymbolLinks;
         if (type) initialSymbolLinks.type = type;
-        
+
         //const symbol = createSymbolAsTransientSymbol(source.flags, source.escapedName, getCheckFlags(source) & CheckFlags.Readonly);
         const symbol = createSymbolAsTransientSymbol(source.flags, source.escapedName, initialSymbolLinks);
         symbol.declarations = source.declarations;

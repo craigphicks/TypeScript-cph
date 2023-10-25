@@ -1,0 +1,65 @@
+import { AlmightySymbolLinks } from "./types";
+export const almightySymbolLinksKeys = [
+    "_symbolLinksBrand",
+    "immediateTarget",
+    "aliasTarget",
+    "target",
+    "type",
+    "writeType",
+    "nameType",
+    "uniqueESSymbolType",
+    "declaredType",
+    "typeParameters",
+    "outerTypeParameters",
+    "instantiations",
+    "aliasSymbol",
+    "aliasTypeArguments",
+    "inferredClassSymbol",
+    "mapper",
+    "referenced",
+    "constEnumReferenced",
+    "containingType",
+    "leftSpread",
+    "rightSpread",
+    "syntheticOrigin",
+    "isDiscriminantProperty",
+    "resolvedExports",
+    "resolvedMembers",
+    "exportsChecked",
+    "typeParametersChecked",
+    "isDeclarationWithCollidingName",
+    "bindingElement",
+    "exportsSomeValue",
+    "enumKind",
+    "originatingImport",
+    "lateSymbol",
+    "specifierCache",
+    "extendedContainers",
+    "extendedContainersByFile",
+    "variances",
+    "deferralConstituents",
+    "deferralWriteConstituents",
+    "deferralParent",
+    "cjsExportMerged",
+    "typeOnlyDeclaration",
+    "typeOnlyExportStarMap",
+    "typeOnlyExportStarName",
+    "isConstructorDeclaredProperty",
+    "tupleLabelDeclaration",
+    "accessibleChainCache",
+    "filteredIndexSymbolCache",
+    "checkFlags",
+    "mappedType",
+    "keyType",
+    "propertyType",
+    "constraintType",
+] as const;
+
+type KeysFromArray = typeof almightySymbolLinksKeys[number];
+type KeysFromObject = keyof AlmightySymbolLinks;
+
+type T1 = Exclude<KeysFromObject, KeysFromArray>;
+type T2 = Exclude<KeysFromArray, KeysFromObject>;
+// mouse on T1, T2 if error
+(null as any as T1) satisfies never;
+(null as any as T2) satisfies never;

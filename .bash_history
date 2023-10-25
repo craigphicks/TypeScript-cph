@@ -268,3 +268,35 @@ myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --te
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
 myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
 git status
+git add .
+git commit -m "backup; coding explicit get_x and set_x functions as ooposed to standard getters and setters which fail when a dotted proprety is added to the end.  It should be easier to make changed this way"
+tsc --help
+tsc src/compiler/plainObjectProxyExplicitGetSet.ts 
+tsc --help
+tsc -t es6 src/compiler/plainObjectProxyExplicitGetSet.ts 
+tsc -t es6 -m es6 src/compiler/plainObjectProxyExplicitGetSet.ts 
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+tsc -t es6 -m nodeNext src/compiler/plainObjectProxyExplicitGetSet.ts 
+node src/compiler/plainObjectProxyExplicitGetSet.js
+git status

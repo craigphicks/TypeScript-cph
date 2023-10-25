@@ -5899,8 +5899,8 @@ export type ReadonlyAlmightySymbolLinksProperties = {
 
 /** @internal */
 export interface AlmightySymbol extends Symbol {
-    getLinksProp<K extends keyof AlmightySymbolLinks>(prop: K): ReadonlyAlmightySymbolLinksProperties[K];
-    setLinksProp<K extends keyof AlmightySymbolLinks>(prop: keyof AlmightySymbolLinks, value: ReadonlyAlmightySymbolLinksProperties[K]): void;
+    // getLinksProp<K extends keyof AlmightySymbolLinks>(prop: K): ReadonlyAlmightySymbolLinksProperties[K];
+    // setLinksProp<K extends keyof AlmightySymbolLinks>(prop: keyof AlmightySymbolLinks, value: ReadonlyAlmightySymbolLinksProperties[K]): void;
 }
 
 /** @internal */
