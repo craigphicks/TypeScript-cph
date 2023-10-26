@@ -239,3 +239,14 @@ myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --te
 myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
 myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
 git status
+git checkout 4bf8205a59d20200f92c896da68f3b0278086104
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+git diff --name-only origin-main -- src/compiler
+git status
+git unstage tmp/
+git restore tmp
+git status
+git restore tmp/*
+git status
+git reset tmp/*
+git status
