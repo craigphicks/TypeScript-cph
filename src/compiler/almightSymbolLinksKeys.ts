@@ -1,6 +1,6 @@
 import { AlmightySymbolLinks } from "./types";
 export const almightySymbolLinksKeys = [
-    "_symbolLinksBrand",
+    //"_symbolLinksBrand",
     "immediateTarget",
     "aliasTarget",
     "target",
@@ -56,7 +56,7 @@ export const almightySymbolLinksKeys = [
 ] as const;
 
 type KeysFromArray = typeof almightySymbolLinksKeys[number];
-type KeysFromObject = keyof AlmightySymbolLinks;
+type KeysFromObject = Exclude<keyof AlmightySymbolLinks, "_symbolLinksBrand">;
 
 type T1 = Exclude<KeysFromObject, KeysFromArray>;
 type T2 = Exclude<KeysFromArray, KeysFromObject>;

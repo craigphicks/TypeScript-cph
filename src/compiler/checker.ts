@@ -1883,16 +1883,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         node = findAncestor(node, isCallLikeOrFunctionLikeExpression);
         if (node) {
             const cachedResolvedSignatures = [];
-            const cachedTypes = [];
+            const cachedTypes:[AlmightySymbolWithOwnLinks,Readonly<Type>][] = [];
             while (node) {
                 const nodeLinks = getNodeLinks(node);
                 cachedResolvedSignatures.push([nodeLinks, nodeLinks.resolvedSignature] as const);
                 nodeLinks.resolvedSignature = undefined;
                 if (isFunctionLike(node)) {
                     const symbolLinks = getSymbolLinks(getSymbolOfDeclaration(node));
-                    const type = symbolLinks.type;
-                    cachedTypes.push([symbolLinks, type] as const);
-                    symbolLinks.type = undefined;
+                    const type = symbolLinks.linkget_type();
+                    Debug.assert(type);
+                    cachedTypes.push([symbolLinks, type]);
+                    symbolLinks.linkset_type(undefined);
                 }
                 node = findAncestor(node.parent, isCallLikeOrFunctionLikeExpression);
             }
@@ -1901,7 +1902,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 nodeLinks.resolvedSignature = resolvedSignature;
             }
             for (const [symbolLinks, type] of cachedTypes) {
-                symbolLinks.type = type;
+                symbolLinks.linkset_type(type);
             }
             return result;
         }
@@ -2501,13 +2502,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function createParameter(name: __String, type: Type) {
         const symbol = createSymbol(SymbolFlags.FunctionScopedVariable, name);
-        symbol.links.type = type;
+        //symbol.links.type = type;
+        symbol.linkset_type
         return symbol;
     }
 
     function createProperty(name: __String, type: Type) {
         const symbol = createSymbol(SymbolFlags.Property, name);
-        symbol.links.type = type;
+        //symbol.links.type = type;
+        symbol.linkset_type(type);
         return symbol;
     }
 
@@ -4278,7 +4281,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (symbol.flags & SymbolFlags.Module) {
             const exportSymbol = getExportsOfSymbol(symbol).get(name.escapedText);
             const resolved = resolveSymbol(exportSymbol, dontResolveAlias);
-            const exportStarDeclaration = getSymbolLinks(symbol).typeOnlyExportStarMap?.get(name.escapedText);
+            //const exportStarDeclaration = getSymbolLinks(symbol).typeOnlyExportStarMap?.get(name.escapedText);
+            const exportStarDeclaration = getSymbolLinks(symbol).linkget_typeOnlyExportStarMap()?.get(name.escapedText);
             markSymbolOfAliasDeclarationIfTypeOnly(specifier, exportSymbol, resolved, /*overwriteEmpty*/ false, exportStarDeclaration, name.escapedText);
             return resolved;
         }
@@ -4536,22 +4540,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function resolveAlias(symbol: Symbol): Symbol {
         Debug.assert((symbol.flags & SymbolFlags.Alias) !== 0, "Should only get Alias here.");
         const links = getSymbolLinks(symbol);
-        if (!links.aliasTarget) {
-            links.aliasTarget = resolvingSymbol;
+        if (!links.linkget_aliasTarget()) {
+            links.linkset_aliasTarget(resolvingSymbol);
             const node = getDeclarationOfAliasSymbol(symbol);
             if (!node) return Debug.fail();
             const target = getTargetOfAliasDeclaration(node);
-            if (links.aliasTarget === resolvingSymbol) {
-                links.aliasTarget = target || unknownSymbol;
+            if (links.linkget_aliasTarget() === resolvingSymbol) {
+                links.linkset_aliasTarget(target || unknownSymbol);
             }
             else {
                 error(node, Diagnostics.Circular_definition_of_import_alias_0, symbolToString(symbol));
             }
         }
         else if (links.aliasTarget === resolvingSymbol) {
-            links.aliasTarget = unknownSymbol;
+            links.linkset_aliasTarget(unknownSymbol);
         }
-        return links.aliasTarget;
+        return links.linkget_aliasTarget()!;
     }
 
     function tryResolveAlias(symbol: Symbol): Symbol | undefined {
@@ -4660,14 +4664,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const sourceSymbol = getSymbolOfDeclaration(aliasDeclaration);
         if (isTypeOnlyImportOrExportDeclaration(aliasDeclaration)) {
             const links = getSymbolLinks(sourceSymbol);
-            links.typeOnlyDeclaration = aliasDeclaration;
+            links.linkset_typeOnlyDeclaration(aliasDeclaration);
             return true;
         }
         if (exportStarDeclaration) {
             const links = getSymbolLinks(sourceSymbol);
-            links.typeOnlyDeclaration = exportStarDeclaration;
+            links.linkset_typeOnlyDeclaration(exportStarDeclaration);
             if (sourceSymbol.escapedName !== exportStarName) {
-                links.typeOnlyExportStarName = exportStarName;
+                links.linkset_typeOnlyExportStarName(exportStarName);
             }
             return true;
         }
@@ -4677,13 +4681,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             || markSymbolOfAliasDeclarationIfTypeOnlyWorker(links, finalTarget, overwriteEmpty);
     }
 
-    function markSymbolOfAliasDeclarationIfTypeOnlyWorker(aliasDeclarationLinks: SymbolLinks, target: Symbol | undefined, overwriteEmpty: boolean): boolean {
-        if (target && (aliasDeclarationLinks.typeOnlyDeclaration === undefined || overwriteEmpty && aliasDeclarationLinks.typeOnlyDeclaration === false)) {
+    function markSymbolOfAliasDeclarationIfTypeOnlyWorker(aliasDeclarationLinks: AlmightySymbolWithOwnLinks, target: Symbol | undefined, overwriteEmpty: boolean): boolean {
+        if (target && (aliasDeclarationLinks.linkget_typeOnlyDeclaration() === undefined || overwriteEmpty && aliasDeclarationLinks.linkget_typeOnlyDeclaration() === false)) {
             const exportSymbol = target.exports?.get(InternalSymbolName.ExportEquals) ?? target;
             const typeOnly = exportSymbol.declarations && find(exportSymbol.declarations, isTypeOnlyImportOrExportDeclaration);
-            aliasDeclarationLinks.typeOnlyDeclaration = typeOnly ?? getSymbolLinks(exportSymbol).typeOnlyDeclaration ?? false;
+            aliasDeclarationLinks.linkset_typeOnlyDeclaration(typeOnly ?? getSymbolLinks(exportSymbol).linkget_typeOnlyDeclaration() ?? false);
         }
-        return !!aliasDeclarationLinks.typeOnlyDeclaration;
+        return !!aliasDeclarationLinks.linkget_typeOnlyDeclaration();
     }
 
     /** Indicates that a symbol directly or indirectly resolves to a type-only import or export. */
@@ -4693,13 +4697,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         const links = getSymbolLinks(symbol);
         if (include === undefined) {
-            return links.typeOnlyDeclaration || undefined;
+            return links.linkget_typeOnlyDeclaration() || undefined;
         }
-        if (links.typeOnlyDeclaration) {
-            const resolved = links.typeOnlyDeclaration.kind === SyntaxKind.ExportDeclaration
-                ? resolveSymbol(getExportsOfModule(links.typeOnlyDeclaration.symbol.parent!).get(links.typeOnlyExportStarName || symbol.escapedName))!
-                : resolveAlias(links.typeOnlyDeclaration.symbol);
-            return getSymbolFlags(resolved) & include ? links.typeOnlyDeclaration : undefined;
+        const typeOnlyDeclaration = links.linkget_typeOnlyDeclaration();
+        if (typeOnlyDeclaration) {
+            if (typeOnlyDeclaration.kind === SyntaxKind.ExportDeclaration){
+
+            }
+            const resolved = typeOnlyDeclaration.kind === SyntaxKind.ExportDeclaration
+                ? resolveSymbol(getExportsOfModule(typeOnlyDeclaration.symbol.parent!).get(links.linkget_typeOnlyExportStarName() || symbol.escapedName))!
+                : resolveAlias(typeOnlyDeclaration.symbol);
+            return getSymbolFlags(resolved) & include ? typeOnlyDeclaration : undefined;
         }
         return undefined;
     }
@@ -44797,6 +44805,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // if symbol is instantiated its flags are not copied from the 'target'
         // so we'll need to get back original 'target' symbol to work with correct set of flags
         // NOTE: cast to TransientSymbol should be safe because only TransientSymbols have CheckFlags.Instantiated
+        s = almightySymbolWithOwnLinksConstructor.convert(s);
+        if (s instanceof almightySymbolWithOwnLinksConstructor) {
+            return s.linkget_target();
+        }
         return getCheckFlags(s) & CheckFlags.Instantiated ? (s as TransientSymbol).links.target! : s;
     }
 

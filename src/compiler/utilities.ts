@@ -7676,7 +7676,8 @@ export function closeFileWatcher(watcher: FileWatcher) {
 
 /** @internal */
 export function getCheckFlags(symbol: Symbol): CheckFlags {
-    return symbol.flags & SymbolFlags.Transient ? (symbol as TransientSymbol).links.checkFlags : 0;
+    //return symbol.flags & SymbolFlags.Transient ? (symbol as TransientSymbol).links.checkFlags : 0;
+    return symbol.flags & SymbolFlags.Transient ? (symbol as AlmightySymbolWith).links.checkFlags : 0;
 }
 
 /** @internal */

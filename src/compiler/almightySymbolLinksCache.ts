@@ -132,7 +132,7 @@ class SymbolLinksCacheControl<T extends /*AlmightySymbolLinksIFConstructor*/ | A
 //     return AlmightySymbolLinksIFConstructor;
 // }
 
-type AlmightySymbolOwnLinksProto = PlainObjectProto<AlmightySymbolLinks, "linksget_", "linksset_">;
+type AlmightySymbolOwnLinksProto = PlainObjectProto<AlmightySymbolLinks, "linkget_", "linkset_">;
 type AlmightySymbolOwnLinks = AlmightySymbolOwnLinksProto & {readonly [k in keyof AlmightySymbolLinks]?:unknown};
 
 var AlmightySymbol = objectAllocator.getSymbolConstructor();
@@ -157,6 +157,7 @@ export class AlmightySymbolObjectAndCacheControl {
     private ownSymbolLinksCacheControl = new SymbolLinksCacheControl<AlmightySymbol>
     private ownSymbolLinksMap = new WeakMap<AlmightySymbol, AlmightySymbolLinks>();
     private almightySymbolWithOwnLinksConstructor: AlmightySymbolWithOwnLinksConstructor;
+    private almightySymbolLinksWithOwnLinksPrototype: AlmightySymbolWithOwnLinksConstructor["prototype"];
     constructor() {
         const that = this;
         class AlmightySymbolLinksWithCache {
@@ -185,7 +186,7 @@ export class AlmightySymbolObjectAndCacheControl {
         createProxyGetAndSetFunctions(
             AlmightySymbolWithOwnLinks.prototype,
             almightySymbolLinksKeys,
-            (key)=>`get_${key}`,
+            (key)=>`linkget_${key}`,
             function (key:string) {
                 castHereafter<AlmightySymbolWithOwnLinks>(this);
                 castHereafter<keyof AlmightySymbolLinks>(key);
@@ -202,7 +203,7 @@ export class AlmightySymbolObjectAndCacheControl {
                     return proxied[key];
                 }
             },
-            (key)=>`set_${key}`,
+            (key)=>`linkset_${key}`,
             function (key:string, value:any) {
                 castHereafter<AlmightySymbolWithOwnLinks>(this);
                 castHereafter<keyof AlmightySymbolLinks>(key);
@@ -223,7 +224,9 @@ export class AlmightySymbolObjectAndCacheControl {
                 }
             }
         );
+        this.almightySymbolLinksWithOwnLinksPrototype = AlmightySymbolWithOwnLinks.prototype as unknown as AlmightySymbolWithOwnLinksConstructor["prototype"];;
     }
+
     static getAlmightySymbolWithOwnLinksConstructor(): AlmightySymbolWithOwnLinksConstructor{
         return (new AlmightySymbolObjectAndCacheControl).almightySymbolWithOwnLinksConstructor;
     }

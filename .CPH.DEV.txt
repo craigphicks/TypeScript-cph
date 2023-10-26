@@ -128,6 +128,72 @@ repl:1
 
 Then checking that the function is an array property and creating `any[]` would not be necessary.
 
-Resolve call does not return the narrowed  candidates in 
+Resolve call does not return the narrowed  candidates in
 This looks helpful because
 `function getOrCreateTypeFromSignature(signature: Signature): ObjectType`
+
+-------------------------------------------------------------------
+
+- There are still 317 error messages left - this would take a long time and leave the source in a vastly changed state.
+Going to split this into a branch (origin-main-booleanArrayFilter-linkxet) and go back to the last working
+version.
+From there
+- I think there is a possibility that simply making transient symbols cacheable, and implementing leveled chaching,
+would be enough to solve this problem.
+- But in order to implement leveled caching efficiently it is necessary to know which links have been altered.
+- The transient symbols all one of thes way to access their links:
+- getSymbolLinks(symbol)
+- symbol.links;       (read)
+- symbol.links = ...; (write)
+- symbol.links.XXX;        (read)
+- symbol.links.XXX = ...;  (write)
+- symbol.links.XXX.YYY...;       (read)
+- symbol.links.XXX.YYY... = ...; (write) (will not be informed of write change)
+Actually all cases may result in failure to inform of change because a read element can then be written,
+so we will consider all such cases to concwptually belong to the last case. But those are just the cases where caching might fail anyway, because the links.XXX inner values have been altered. First priority strategy would be to add on-write caching while assuming that such cases do NOT exist, and to do it in way the requires as few changes to the existing code as possible. Reviewing the code with regexp, cases of `links.XXX.YYY` at least do not jump out, so it is reasonable to try assuming all write changes can be detected.
+- SymbolLinks.XXX will be proxied to detect writes.
+- Symbol.links will be proxied to detect writes.
+- We don't actually need to cache each SymbolLinks property independently because in general it is not expensive to create a new links object if even one property has been changed.  That makes multi-level caching easier to implement.
+- We *could* make `links.XXX;` return a readonly value by using `get p(): Readonly<...>`, which would catch shallow access write notification failures, as that code must be changed to enable write detection;
+
+```
+interface X {x: number, y: {z: number}};
+type Links1 = {
+    p: X
+};
+type Links2 = {
+    get p(): Readonly<X>;
+    set p(x:X);
+};
+
+declare let links1: Readonly<Links1>;
+links1.p.x;
+links1.p.x = 1; // not caught
+let p1 = links1.p;
+p1.x = 2; // not caught
+
+declare let links2: Links2;
+links2.p.x;
+links2.p.x = 1; // error, caught
+let p2 = links2.p;
+p2.x = 2; // error, caught
+p2.y.z = 2; // no error, not caught
+
+// Rewrite the erroring code as follows if semantically allowed in the program.
+let p3 = { ... links2.p } // or new(links2.p)
+p3.x = 2; // no error, ok
+links2.p = p3; // write notification.
+// but if somewhere else was crititically referencing the links2.p object directly that would
+// critically change the program logic - a bug.
+```
+Therefore, step 1 does NOT include making read accesses Readonly.  Only if step 1 alone does not succeed,
+then step 2 would add in the Readonly on get(), and try making the necessary changes. Which might be a rats nest.
+
+
+---------------------------------------------------------
+
+In the case of a template function,
+could the returned signature be a temple non-union signature with mapping, but no instantiations?
+So instantiations could be created "on-demand"?
+That still wouldn't handle the general case of a union of signatures.
+

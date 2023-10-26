@@ -304,3 +304,6 @@ git add .
 git commit -m "backup; not compiling; coded for transient symbol cacheing; next code to revert non-transient symbols to pre existing symbolLinks[] with no cacheing"
 git status
 git add .
+git commit -m "modifed createSymbol and getSymbolLinks, now there 337 errors to fix"
+git status
+git add .
