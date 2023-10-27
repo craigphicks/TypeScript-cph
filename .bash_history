@@ -250,3 +250,6 @@ git restore tmp/*
 git status
 git reset tmp/*
 git status
+git add .
+git status
+git commit -m "added objectXetter.ts; almightySymbolLinksCache.ts and plainObjectGetSetProto.ts are there only for reference temproarily - they will be deleted"
