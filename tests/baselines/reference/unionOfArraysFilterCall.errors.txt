@@ -1,0 +1,37 @@
+unionOfArraysFilterCall.ts(11,45): error TS2339: Property 'id' does not exist on type 'T'.
+unionOfArraysFilterCall.ts(12,54): error TS2339: Property 'id' does not exist on type 'T'.
+unionOfArraysFilterCall.ts(25,56): error TS2339: Property 'id' does not exist on type 'T'.
+
+
+==== unionOfArraysFilterCall.ts (3 errors) ====
+    interface Fizz {
+        id: number;
+        fizz: string;
+    }
+    
+    interface Buzz {
+        id: number;
+        buzz: string;
+    }
+    
+    ([] as Fizz[] | Buzz[]).filter(item => item.id < 5);
+                                                ~~
+!!! error TS2339: Property 'id' does not exist on type 'T'.
+    ([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5); 
+                                                         ~~
+!!! error TS2339: Property 'id' does not exist on type 'T'.
+    
+    ([] as Fizz[] | Buzz[]).find(item => item);
+    declare function isFizz(x: unknown): x is Fizz;
+    ([] as Fizz[] | Buzz[]).find(isFizz);
+    declare function isBuzz(x: unknown): x is Buzz;
+    ([] as Fizz[] | Buzz[]).find(isBuzz);
+    
+    ([] as Fizz[] | Buzz[]).every(item => item.id < 5);
+    
+    ([] as Fizz[] | Buzz[]).reduce(item => item);
+    
+    
+    ([] as [Fizz] | readonly [Buzz?]).filter(item => item?.id < 5);
+                                                           ~~
+!!! error TS2339: Property 'id' does not exist on type 'T'.

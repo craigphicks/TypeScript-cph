@@ -3,11 +3,8 @@ import {
     Symbol,
     Node,
     //TransientSymbol,
-    SymbolLinks,
     NodeLinks,
     TransientSymbolLinks,
-    MappedSymbolLinks,
-    ReverseMappedSymbolLinks,
     Debug,
     //castHereafter,
     //SymbolFlags,
@@ -20,18 +17,21 @@ import {
     CheckFlags,
     // cphdebug-end
 } from "./_namespaces/ts";
+import {
+    // @ts-ignore
+    extendedSymbolLinksKeys,
+    // @ts-ignore
+    nodeLinksKeys,
+    ExtendedSymbolLinks,
+} from "./linksKeys";
 
 // cphdebug start
 // @ts-ignore
 import { IDebug } from "./mydebug";
 // cphdebug end
 
-type ExtendedSymbolLinks = SymbolLinks & Partial<TransientSymbolLinks & MappedSymbolLinks & ReverseMappedSymbolLinks>;
 
 type ReadonlyIfRecord<T> = T extends Record<string, any> ? Readonly<T> : T;
-// type ReadonlyValues<T extends Record<string,any>>  = {
-//     [K in keyof T]: ReadonlyIfRecord<T[K]>;
-// }
 
 /**
  * We could use GettersReadonly to cause an error for some (but not all) kinds of potentially unsafe usage, e.g.:
@@ -39,12 +39,12 @@ type ReadonlyIfRecord<T> = T extends Record<string, any> ? Readonly<T> : T;
  * - let p2 = links2.p;
  * - p2.x = 2; // would error, caught
  * - p2.y.z = 2; // would not error, not caught
- * The thing it, chaching can't handle that anyway, because p is not changed.
+ * However chaching can't handle that anyway, because p is not changed.
  */
-// @ts-expect-error
-type GettersReadonly<T extends Record<string,any>> = Required<{
-    readonly [K in keyof T as K extends string ? `get ${K}` : never]: () => ReadonlyIfRecord<T[K]>;
-}>;
+// type GettersReadonly<T extends Record<string,any>> = Required<{
+//     readonly [K in keyof T as K extends string ? `get ${K}` : never]: () => ReadonlyIfRecord<T[K]>;
+// }>;
+
 type Getters<T extends Record<string,any>> = Required<{
     readonly [K in keyof T as K extends string ? `get ${K}` : never]: () => T[K];
 }>;
@@ -136,27 +136,27 @@ export function createLinksOnWriteCacheControl(){
             }
             this.cacheByLevel[level]=undefined;
         }
-        getter(_target: any, key: string, that: ProxyWithOnWriteCache<T,I>): any {
+        getter_(key: string, /*that: ProxyWithOnWriteCache<T,I>*/): any {
             // const index = cacheControl.getLevel();
             // if (index>=0 && that.cacheByLevel[index])
             //     return that.cacheByLevel[index]![key as keyof T];
-            return that.proxied[key as keyof T];
+            return this.proxied[key as keyof T];
         }
-        setter(_target: any, key: string, value: any, that: ProxyWithOnWriteCache<T,I>): boolean {
+        setter_(key: string, value: any, /*this: ProxyWithOnWriteCache<T,I>*/): boolean {
             const index = cacheControl.getLevel();
             if (index>=0){
-                if (!that.cacheByLevel[index]) that.cacheByLevel[index] = {...that.proxied }; // shallow copy
-                cacheControl.addRequest(that);
+                if (!this.cacheByLevel[index]) this.cacheByLevel[index] = {...this.proxied }; // shallow copy
+                cacheControl.addRequest(this);
             }
-            that.proxied[key as keyof T] = value;
+            this.proxied[key as keyof T] = value;
             return true
         }
-        get type(): Type {
-            return this.getter(/*_target*/ undefined, "type", this);
-        }
-        set type(value: Type | undefined) {
-            this.setter(/*_target*/ undefined, "type", value, this);
-        }
+        // get type(): Type {
+        //     return this.getter(/*_target*/ undefined, "type", this);
+        // }
+        // set type(value: Type | undefined) {
+        //     this.setter(/*_target*/ undefined, "type", value, this);
+        // }
     }
     // function setProxyGS<T extends { prototype: { getter: (...args:any[])=>any, setter: (...args:any[])=>any }}>(
     //     obj: Object, t:T
@@ -166,10 +166,48 @@ export function createLinksOnWriteCacheControl(){
     //         set: t.prototype.setter,
     //     });
     // }
-    const ExtendedSymbolLinksWithOnWriteCache = ProxyWithOnWriteCache<ExtendedSymbolLinks, Symbol>;
-    ExtendedSymbolLinksWithOnWriteCache.prototype;
-    ExtendedSymbolLinksWithOnWriteCache.prototype.getter;
-    const NodelLinksWithOnWriteCache = ProxyWithOnWriteCache<NodeLinks, Node>;
+    // const ExtendedSymbolLinksWithOnWriteCache = ProxyWithOnWriteCache<ExtendedSymbolLinks, Symbol>;
+    // const NodelLinksWithOnWriteCache = ProxyWithOnWriteCache<NodeLinks, Node>;
+
+    class ExtendedSymbolLinksWithOnWriteCache extends ProxyWithOnWriteCache<ExtendedSymbolLinks, Symbol> {
+        static kind = "extendedSymbolLinks";
+        constructor(links: ExtendedSymbolLinks, symbol: Symbol) {
+            super(links, symbol);
+        }
+    }
+    class NodelLinksWithOnWriteCache extends ProxyWithOnWriteCache<NodeLinks, Node> {
+        static kind = "nodeLinks";
+        constructor(links: NodeLinks, node: Node) {
+            super(links, node);
+        }
+    }
+
+    //const ExtendedSymbolLinksWithOnWriteCache = ProxyWithOnWriteCache<ExtendedSymbolLinks, Symbol>;
+    setProxyGetAndSetFunctions(ExtendedSymbolLinksWithOnWriteCache, extendedSymbolLinksKeys);
+    // const NodelLinksWithOnWriteCache = ProxyWithOnWriteCache<NodeLinks, Node>;
+    setProxyGetAndSetFunctions(NodelLinksWithOnWriteCache, nodeLinksKeys);
+
+    function setProxyGetAndSetFunctions<T extends { prototype: { getter_: (...args:any[])=>any, setter_: (...args:any[])=>any }}>(
+        t: T,
+        keys: readonly string[],
+        // getNameTransform:(key:string)=>string,
+        // getFunction:((this:Object, key:string)=>any),
+        // setNameTransform?:(key:string)=>string,
+        // setFunction?:(this:Object, key:string, value:any)=>void)
+    ){
+        for (const key of keys) {
+            Object.defineProperty(t.prototype, key, {
+                // get: t.prototype.getter_,
+                // set: t.prototype.setter_,
+                get: function () {
+                    return Reflect.apply(t.prototype.getter_, this, [key]);
+                },
+                set: function (value) {
+                    return Reflect.apply(t.prototype.setter_, this, [key, value]);
+                },
+            });
+        }
+    }
 
     return {
         beginLevel(){ return cacheControl.beginLevel(); },
@@ -262,62 +300,7 @@ export function testLinksOnWriteCache(linksOnWriteCacheControl?: ReturnType<type
         // In the code we hope links without original scoped symbol would never happen.
         Debug.assert(links.type === undefined);
     }
-
 }
 testLinksOnWriteCache();
 
-// export function testLinksOnWriteCache(linksOnWriteCacheControl: ReturnType<typeof createLinksOnWriteCacheControl>, checker: TypeChecker): void {
-//     // symbol should already have .links member and it should be an instance of ExtendedSymbolLinksWithOnWriteCache
-//     const type1 = { name: "type1" } as any as Type;
-//     const type2 = { name: "type2" } as any as Type;
-//     {
-//         const symbol1: TransientSymbol = checker.createSymbol(SymbolFlags.None, "testSymbol" as __String);
-//         Debug.assert(linksOnWriteCacheControl.isInstanceOfExtendedSymbolLinksWithOnWriteCache(symbol1.links));
-//         symbol1.links.type = type1;
-//         Debug.assert(symbol1.links.type === type1);
-//         Debug.assert(symbol1.links.type !== type2);
-//         const handle1 = linksOnWriteCacheControl.beginLevel();
-//         symbol1.links.type = type2;
-//         Debug.assert(symbol1.links.type !== type1);
-//         Debug.assert(symbol1.links.type === type2);
-//         linksOnWriteCacheControl.endLevel(handle1);
-//         Debug.assert(symbol1.links.type === type1);
-//         Debug.assert(symbol1.links.type !== type2);
-//     }
-//     {
-//         const symbol1: TransientSymbol = checker.createSymbol(SymbolFlags.None, "testSymbol" as __String);
-//         const links = symbol1.links;
-//         Debug.assert(linksOnWriteCacheControl.isInstanceOfExtendedSymbolLinksWithOnWriteCache(links));
-//         links.type = type1;
-//         Debug.assert(links.type === type1);
-//         Debug.assert(links.type !== type2);
-//         const handle1 = linksOnWriteCacheControl.beginLevel();
-//         links.type = type2;
-//         Debug.assert(links.type !== type1);
-//         Debug.assert(links.type === type2);
-//         linksOnWriteCacheControl.endLevel(handle1);
-//         Debug.assert(links.type === type1);
-//         Debug.assert(links.type !== type2);
-//     }
-//     {
-//         let links: ExtendedSymbolLinks;
-//         const handle1 = linksOnWriteCacheControl.beginLevel();
-//         {
-//             const symbol1: TransientSymbol = checker.createSymbol(SymbolFlags.None, "testSymbol" as __String);
-//             links = symbol1.links;
-//             Debug.assert(linksOnWriteCacheControl.isInstanceOfExtendedSymbolLinksWithOnWriteCache(symbol1.links));
-//             Debug.assert(symbol1.links.type === undefined);
-//             symbol1.links.type = type1;
-//             Debug.assert(symbol1.links.type === type1);
-//             Debug.assert(symbol1.links.type !== type2);
-//             symbol1.links.type = type2;
-//             Debug.assert(symbol1.links.type !== type1);
-//             Debug.assert(symbol1.links.type === type2);
-//         }
-//         linksOnWriteCacheControl.endLevel(handle1);
-//         // In the code we hope links without original scoped symbol would never happen.
-//         Debug.assert(links.type === undefined);
-//     }
-
-// }
 

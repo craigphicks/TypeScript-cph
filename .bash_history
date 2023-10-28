@@ -291,3 +291,39 @@ rm --help
 find src/compiler -name "*.js" -exec echo {} \;
 find src/compiler -name "*.js" -exec rm {} \;
 git status
+git add .
+git commit -m "coded linsOnWriteCache.ts and passed standalone test"
+hereby
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=1 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=1 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
+hig tsc
+tsc help
+tsc --help
+hig tsc
+tsc -t es6 -m nodeNext -outtDir tmp src/compiler/linksOnWriteCache.ts
+tsc -t es6 -m nodeNext -outDir tmp src/compiler/linksOnWriteCache.ts
+node tmp/linksOnWriteCache.js 
+node --inspect-brk  tmp/linksOnWriteCache.js 
+tsc -t es6 -m nodeNext -outDir tmp src/compiler/linksOnWriteCache.ts
+node -tmp/linksOnWriteCache.js 
+node tmp/linksOnWriteCache.js 
+tsc -t es6 -m nodeNext -outDir tmp src/compiler/linksOnWriteCache.ts
+node tmp/linksOnWriteCache.js 
+node --inspect-brk  tmp/linksOnWriteCache.js 
+tsc -t es6 -m nodeNext -outDir tmp src/compiler/linksOnWriteCache.ts
+node --inspect-brk  tmp/linksOnWriteCache.js 
+hereby
+myLogLevel=0 myAssertLevel=1 nouseRcev2=1 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+hereby baseline-accept
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+hereby
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+hereby
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+git status
+rm tmp/*
+rm -R tmp/*/
+ls tmp
+ls -d tmp
+git status
