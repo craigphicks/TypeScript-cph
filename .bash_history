@@ -1,7 +1,7 @@
-sudo rm -rf .tmp.cph.d/ .devcontainer-original/ .bash_history 
+sudo rm -rf .tmp.cph.d/ .devcontainer-original/ .bash_history
 git status
 git stash branch origin-main-booleanArrayFilter
-git branch 
+git branch
 hereby && hereby runtests-parallel
 git add .
 git status
@@ -12,7 +12,7 @@ hereby
 npm i hereby
 hereby
 grep -R  . LogginHost
-grep -R  LoggingHost . 
+grep -R  LoggingHost .
 hereby
 git status
 git add .
@@ -24,7 +24,7 @@ which tsc
 npm install -g typescript@5.2.2
 tsc --version
 which tsc
-git branch 
+git branch
 git status
 myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
 myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
@@ -81,20 +81,20 @@ myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="(_uoafc|union
 myLogLevel=5 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
 myLogLevel=5 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
 myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
-myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=4 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" 
-myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=4 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc"
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
 hereby baseline-accept
-myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
 hereby baseline-accept
-myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc"
 myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
 myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests-parallel
 hereby baseline-accept
@@ -134,17 +134,17 @@ hereby baseline-accept
 myLogLevel=0 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_arrayFrom"
 myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
 myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom" -i
-myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom" 
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_arrayFrom"
 myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_auofc" -i
 myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" -i
-myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" 
+myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc"
 myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" -i
 git status
-git add .CPH.DEV.txt 
+git add .CPH.DEV.txt
 git add tests/cases
 git add src
 git status
-git add .bash_history 
+git add .bash_history
 git commit -m "backup; .CPH.DEV.txt & last commit before removing nodeAndSymbolLinkTables.ts and modifying resolveCallExpressionV2 to use prefilter with any[]"
 hereby
 git status
@@ -158,7 +158,7 @@ tm tmp/*.log
 rm tmp/*.log
 git status
 git clean -n
-git clean 
+git clean
 git clean -f
 git status
 git commit -m "removed nodeAndSymbolLinkTables.ts"
@@ -166,15 +166,15 @@ myLogLevel=0 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" -i
 myLogLevel=4 myAssertLevel=0 nouseRcev2=1 hereby runtests --tests="_uoafc" -i
 myLogLevel=4 myAssertLevel=0 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
 myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
-myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
 myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
-myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=4 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=4 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_uoafc"
 hereby baseline-accept
-myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
 myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
-myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" 
+myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc"
 git status
 git add .CPH.DEV.txt  src tests/cases/
 git commit -m "backup; maing sure the pre call doesn't affect the results when the pre call results are ignored in the main call"
@@ -193,10 +193,10 @@ myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArrays
 find tests/cases -name "unionOfArraysFilterCall"
 find tests/cases -name "unionOfArraysFilter"
 find tests/cases -name "unionOfArraysFilter*"
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" 
-myLogLevel=0 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="unionOfArraysFilterCall"
 hereby baseline-accept
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall"
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_unionOfArraysFilterCall" -i
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
@@ -207,40 +207,40 @@ myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_unionOfArray
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall"
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_unionOfArraysFilterCall" -i
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall"
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" -i
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests-parallell
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests-parallel
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
 myLogLevel=4 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_uoafc" -i
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_uoafc" 
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=2 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=4 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=8 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall" 
-myLogLevel=1 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=64 hereby runtests --tests="unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_unionOfArraysFilterCall" 
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
-myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_uoafc"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=0 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=2 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=4 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=8 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=1 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=1 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=64 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_unionOfArraysFilterCall"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
 git status
 git add .bash_history src .CPH.DEV.txt tests/cases/
 git commit -m "backup; new function  createMergedMapperFromMappersSharingCommonTarget written (not yet used) for merging horizontal line of candidates, might need to redefine array"
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
 myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
 git status
 git checkout 4bf8205a59d20200f92c896da68f3b0278086104
-myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
 git diff --name-only origin-main -- src/compiler
 git status
 git unstage tmp/
@@ -253,3 +253,41 @@ git status
 git add .
 git status
 git commit -m "added objectXetter.ts; almightySymbolLinksCache.ts and plainObjectGetSetProto.ts are there only for reference temproarily - they will be deleted"
+git add .
+git commit -m "deleted files"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts
+node --inspect-brk src/compiler/linksOnWriteCache.js
+node --help
+node --inspect-brk src/compiler/linksOnWriteCache.js
+git reset src/compiler/binder.js
+ls src/compiler/binder.js
+git status
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts
+node --inspect-brk src/compiler/linksOnWriteCache.js
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts ; node --inspect-brk src/compiler/linksOnWriteCache.js
+node --inspect-brk src/compiler/linksOnWriteCache.js
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts ; node --inspect-brk src/compiler/linksOnWriteCache.js
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts ; node --inspect-brk src/compiler/linksOnWriteCache.ts
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts ;
+node --inspect-brk src/compiler/linksOnWriteCache.js
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts ;
+node --inspect-brk src/compiler/linksOnWriteCache.js
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts ;
+node --inspect-brk src/compiler/linksOnWriteCache.js
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts ;
+node --inspect-brk src/compiler/linksOnWriteCache.js
+node src/compiler/linksOnWriteCache.js
+node --inspect-brk src/compiler/linksOnWriteCache.js
+node src/compiler/linksOnWriteCache.js
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts ;
+node src/compiler/linksOnWriteCache.js
+tsc -t es6 -m nodeNext src/compiler/linksOnWriteCache.ts
+node src/compiler/linksOnWriteCache.js
+git status
+rm --help
+find src/compiler -name "*.js" -exec echo {} \;
+find src/compiler -name "*.js" -exec rm {} \;
+git status
