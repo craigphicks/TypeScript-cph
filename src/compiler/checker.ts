@@ -67,6 +67,8 @@ import {
     CaseClause,
     CaseOrDefaultClause,
     cast,
+    // @ts-ignore (not used yet)
+    castHereafter,
     chainDiagnosticMessages,
     CharacterCodes,
     CheckFlags,
@@ -1084,6 +1086,10 @@ import {
 } from "./_namespaces/ts";
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
+
+// cphdebug-start
+import { IDebug } from "./mydebug";
+// cphdebug-end
 
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
@@ -33961,7 +33967,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return createDiagnosticForNodeArray(getSourceFileOfNode(node), typeArguments, Diagnostics.Expected_0_type_arguments_but_got_1, belowArgCount === -Infinity ? aboveArgCount : belowArgCount, argCount);
     }
 
-    function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, headMessage?: DiagnosticMessage): Signature {
+    function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, headMessage?: DiagnosticMessage, apparentType?: Type | undefined): Signature {
         const isTaggedTemplate = node.kind === SyntaxKind.TaggedTemplateExpression;
         const isDecorator = node.kind === SyntaxKind.Decorator;
         const isJsxOpeningOrSelfClosingElement = isJsxOpeningLikeElement(node);
@@ -34041,11 +34047,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // Whether the call is an error is determined by assignability of the arguments. The subtype pass
         // is just important for choosing the best signature. So in the case where there is only one
         // signature, the subtype pass is useless. So skipping it is an optimization.
-        if (candidates.length > 1) {
-            result = chooseOverload(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+
+        if (apparentType){
+            result = chooseOverloadV2(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma, apparentType);
         }
-        if (!result) {
-            result = chooseOverload(candidates, assignableRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+        else {
+            if (candidates.length > 1) {
+                result = chooseOverload(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+            }
+            if (!result) {
+                result = chooseOverload(candidates, assignableRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+            }
         }
         if (result) {
             return result;
@@ -34189,6 +34201,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             candidateForArgumentArityError = undefined;
             candidateForTypeArgumentError = undefined;
 
+
             if (isSingleNonGenericCandidate) {
                 const candidate = candidates[0];
                 if (some(typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
@@ -34267,7 +34280,130 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             return undefined;
         }
+
+
+        /**
+         * Algorithm psuedocode:
+         * - passing: {overload, subtype}[] = []
+         * - failing: {overload}[] = []
+         * - type AssignableResult = "never" | "weak" | "strong"
+         * - declare psuedoAssignable (arg: Type, t: Type): AssignableResult
+         * - For each generic overload<T0>
+         * -     let T = T0
+         * -     let stronglyMatched = true;
+         * -     overload:
+         * -     For each parameter param<T>[i]
+         * -         For each type t in range of T
+         * -             r = psuedoAssignable(arg[i], param<T@t>[i]));
+         * -             if r==="never"
+         * -                 T = T-t;
+         * -             if T is never break overload;
+         * -             if r!=="strong"
+         * -                 stronglyMatched = false;
+         * -     if T is never
+         * -         failing.push(overload<T0>)
+         * -     else passing.push(overload<T0@T>, T)
+         * -     if stronglyMatched break; //
+         * - As long as there is at least one overload passing (not necessarily a strong match)
+         * - then there is no error.
+         *
+         * @param candidates
+         * @param relation
+         * @param isSingleNonGenericCandidate
+         * @param signatureHelpTrailingComma
+         * @param apparentType
+         * @returns
+         */
+        function chooseOverloadV2(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false, apparentType?: Type | undefined) {
+
+
+
+            candidatesForArgumentError = undefined;
+            candidateForArgumentArityError = undefined;
+            candidateForTypeArgumentError = undefined;
+
+
+            if (isSingleNonGenericCandidate) {
+                const candidate = candidates[0];
+                if (some(typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
+                    return undefined;
+                }
+                if (getSignatureApplicabilityError(node, args, candidate, relation, CheckMode.Normal, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
+                    candidatesForArgumentError = [candidate];
+                    return undefined;
+                }
+                return candidate;
+            }
+
+            for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+                const candidate = candidates[candidateIndex];
+                if (!hasCorrectTypeArgumentArity(candidate, typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
+                    continue;
+                }
+
+                let checkCandidate: Signature;
+                let inferenceContext: InferenceContext | undefined;
+
+                if (candidate.typeParameters) {
+                    let typeArgumentTypes: Type[] | undefined;
+                    if (some(typeArguments)) {
+                        typeArgumentTypes = checkTypeArguments(candidate, typeArguments, /*reportErrors*/ false);
+                        if (!typeArgumentTypes) {
+                            candidateForTypeArgumentError = candidate;
+                            continue;
+                        }
+                    }
+                    else {
+                        inferenceContext = createInferenceContext(candidate.typeParameters, candidate, /*flags*/ isInJSFile(node) ? InferenceFlags.AnyDefault : InferenceFlags.None);
+                        typeArgumentTypes = inferTypeArguments(node, candidate, args, argCheckMode | CheckMode.SkipGenericFunctions, inferenceContext);
+                        argCheckMode |= inferenceContext.flags & InferenceFlags.SkippedGenericFunction ? CheckMode.SkipGenericFunctions : CheckMode.Normal;
+                    }
+                    checkCandidate = getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext && inferenceContext.inferredTypeParameters);
+                    // If the original signature has a generic rest type, instantiation may produce a
+                    // signature with different arity and we need to perform another arity check.
+                    if (getNonArrayRestType(candidate) && !hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {
+                        candidateForArgumentArityError = checkCandidate;
+                        continue;
+                    }
+                }
+                else {
+                    checkCandidate = candidate;
+                }
+                if (getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
+                    // Give preference to error candidates that have no rest parameters (as they are more specific)
+                    (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
+                    continue;
+                }
+                if (argCheckMode) {
+                    // If one or more context sensitive arguments were excluded, we start including
+                    // them now (and keeping do so for any subsequent candidates) and perform a second
+                    // round of type inference and applicability checking for this particular candidate.
+                    argCheckMode = CheckMode.Normal;
+                    if (inferenceContext) {
+                        const typeArgumentTypes = inferTypeArguments(node, candidate, args, argCheckMode, inferenceContext);
+                        checkCandidate = getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext.inferredTypeParameters);
+                        // If the original signature has a generic rest type, instantiation may produce a
+                        // signature with different arity and we need to perform another arity check.
+                        if (getNonArrayRestType(candidate) && !hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {
+                            candidateForArgumentArityError = checkCandidate;
+                            continue;
+                        }
+                    }
+                    if (getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
+                        // Give preference to error candidates that have no rest parameters (as they are more specific)
+                        (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
+                        continue;
+                    }
+                }
+                candidates[candidateIndex] = checkCandidate;
+                return checkCandidate;
+            }
+
+            return undefined;
+        } // chooseOverloadV2
+
     }
+
 
     // No signature was applicable. We have already reported the errors for the invalid signature.
     function getCandidateForOverloadFailure(
@@ -34397,7 +34533,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return maxParamsIndex;
     }
 
-    function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+    function resolveCallExpressionV1(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
         if (node.expression.kind === SyntaxKind.SuperKeyword) {
             const superType = checkSuperExpression(node.expression);
             if (isTypeAny(superType)) {
@@ -34508,6 +34644,155 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
     }
+
+    function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+        if (IDebug.nouseResolveCallExpressionV2) {
+            return resolveCallExpressionV1(node, candidatesOutArray, checkMode);
+        }
+        else {
+            return resolveCallExpressionV2(node, candidatesOutArray, checkMode);
+        }
+    }
+
+    function resolveCallExpressionV2(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+    // cphdebug-start
+    // function ilog(...args: Parameters<NonNullable<typeof IDebug.loggingHost>["ilog"]>){
+    //     IDebug.loggingHost?.ilog(...args);
+    // }
+    if (IDebug.loggingHost) {
+        IDebug.loggingHost.ilogGroup(()=>`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}`,2);
+    }
+    const retsig = (()=>{
+    // cphdebug-end
+        if (node.expression.kind === SyntaxKind.SuperKeyword) {
+            const superType = checkSuperExpression(node.expression);
+            if (isTypeAny(superType)) {
+                for (const arg of node.arguments) {
+                    checkExpression(arg); // Still visit arguments so they get marked for visibility, etc
+                }
+                return anySignature;
+            }
+            if (!isErrorType(superType)) {
+                // In super call, the candidate signatures are the matching arity signatures of the base constructor function instantiated
+                // with the type arguments specified in the extends clause.
+                const baseTypeNode = getEffectiveBaseTypeNode(getContainingClass(node)!);
+                if (baseTypeNode) {
+                    const baseConstructors = getInstantiatedConstructorsForTypeArguments(superType, baseTypeNode.typeArguments, baseTypeNode);
+                    return resolveCall(node, baseConstructors, candidatesOutArray, checkMode, SignatureFlags.None);
+                }
+            }
+            return resolveUntypedCall(node);
+        }
+
+        let callChainFlags: SignatureFlags;
+        let funcType = checkExpression(node.expression);
+        if (isCallChain(node)) {
+            const nonOptionalType = getOptionalExpressionType(funcType, node.expression);
+            callChainFlags = nonOptionalType === funcType ? SignatureFlags.None :
+                isOutermostOptionalChain(node) ? SignatureFlags.IsOuterCallChain :
+                SignatureFlags.IsInnerCallChain;
+            funcType = nonOptionalType;
+        }
+        else {
+            callChainFlags = SignatureFlags.None;
+        }
+
+        funcType = checkNonNullTypeWithReporter(
+            funcType,
+            node.expression,
+            reportCannotInvokePossiblyNullOrUndefinedError,
+        );
+
+        if (funcType === silentNeverType) {
+            return silentNeverSignature;
+        }
+
+        const apparentType = getApparentType(funcType);
+        if (isErrorType(apparentType)) {
+            // Another error has already been reported
+            return resolveErrorCall(node);
+        }
+
+        // [cph] getSignaturesOfType,
+        // [cph] in the case of generics, destroys some information we need,
+        // [cph] because it compresses a 2D (or higher) array (#overload x #types in the template parameter(s)).
+        // [cph] to the 1D array required by getSignaturesOfType.
+        // [cph] That won't be enough information in chooseOverload, so we also have to pass apparentType,
+        // [cph] and can completely ignore the return value of getSignaturesOfType therein.
+        // [cph] (What happens if getSignaturesOfType returns something with no parameters, even though some overloads instances have parameters?
+        // [cph] Maybe we pass signature (...args:any[])=>unknow instead.)
+
+
+        // Technically, this signatures list may be incomplete. We are taking the apparent type,
+        // but we are not including call signatures that may have been added to the Object or
+        // Function interface, since they have none by default. This is a bit of a leap of faith
+        // that the user will not add any.
+        const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
+        const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
+
+        // TS 1.0 Spec: 4.12
+        // In an untyped function call no TypeArgs are permitted, Args can be any argument list, no contextual
+        // types are provided for the argument expressions, and the result is always of type Any.
+        if (isUntypedFunctionCall(funcType, apparentType, callSignatures.length, numConstructSignatures)) {
+            // The unknownType indicates that an error already occurred (and was reported).  No
+            // need to report another error in this case.
+            if (!isErrorType(funcType) && node.typeArguments) {
+                error(node, Diagnostics.Untyped_function_calls_may_not_accept_type_arguments);
+            }
+            return resolveUntypedCall(node);
+        }
+        // If FuncExpr's apparent type(section 3.8.1) is a function type, the call is a typed function call.
+        // TypeScript employs overload resolution in typed function calls in order to support functions
+        // with multiple call signatures.
+        if (!callSignatures.length) {
+            if (numConstructSignatures) {
+                error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
+            }
+            else {
+                let relatedInformation: DiagnosticRelatedInformation | undefined;
+                if (node.arguments.length === 1) {
+                    const text = getSourceFileOfNode(node).text;
+                    if (isLineBreak(text.charCodeAt(skipTrivia(text, node.expression.end, /*stopAfterLineBreak*/ true) - 1))) {
+                        relatedInformation = createDiagnosticForNode(node.expression, Diagnostics.Are_you_missing_a_semicolon);
+                    }
+                }
+                invocationError(node.expression, apparentType, SignatureKind.Call, relatedInformation);
+            }
+            return resolveErrorCall(node);
+        }
+        // When a call to a generic function is an argument to an outer call to a generic function for which
+        // inference is in process, we have a choice to make. If the inner call relies on inferences made from
+        // its contextual type to its return type, deferring the inner call processing allows the best possible
+        // contextual type to accumulate. But if the outer call relies on inferences made from the return type of
+        // the inner call, the inner call should be processed early. There's no sure way to know which choice is
+        // right (only a full unification algorithm can determine that), so we resort to the following heuristic:
+        // If no type arguments are specified in the inner call and at least one call signature is generic and
+        // returns a function type, we choose to defer processing. This narrowly permits function composition
+        // operators to flow inferences through return types, but otherwise processes calls right away. We
+        // use the resolvingSignature singleton to indicate that we deferred processing. This result will be
+        // propagated out and eventually turned into silentNeverType (a type that is assignable to anything and
+        // from which we never make inferences).
+        if (checkMode & CheckMode.SkipGenericFunctions && !node.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {
+            skippedGenericFunction(node, checkMode);
+            return resolvingSignature;
+        }
+        // If the function is explicitly marked with `@class`, then it must be constructed.
+        if (callSignatures.some(sig => isInJSFile(sig.declaration) && !!getJSDocClassTag(sig.declaration!))) {
+            error(node, Diagnostics.Value_of_type_0_is_not_callable_Did_you_mean_to_include_new, typeToString(funcType));
+            return resolveErrorCall(node);
+        }
+
+        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, apparentType);
+
+    // cphdebug-start
+    })();
+    if (IDebug.loggingHost) {
+        IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[out]: node: ${IDebug.dbgs.dbgNodeToString(node)}`,2);//->${IDebug.dbgs.dbgSignatureToString(retsig)}`);
+    }
+    return retsig;
+    // cphdebug-end
+    }
+
 
     function isGenericFunctionReturningFunction(signature: Signature) {
         return !!(signature.typeParameters && isFunctionType(getReturnTypeOfSignature(signature)));
@@ -46206,6 +46491,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function checkSourceFile(node: SourceFile) {
         tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
         performance.mark("beforeCheck");
+        // cphdebug-start
+        if (IDebug.loggingHost){
+            IDebug.loggingHost.notifySourceFile(node, checker);
+        }
+        // cphdebug-end
         checkSourceFileWorker(node);
         performance.mark("afterCheck");
         performance.measure("Check", "beforeCheck", "afterCheck");
