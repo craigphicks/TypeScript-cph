@@ -67,6 +67,7 @@ import {
     CaseClause,
     CaseOrDefaultClause,
     cast,
+    castHereafter,
     chainDiagnosticMessages,
     CharacterCodes,
     CheckFlags,
@@ -1084,6 +1085,14 @@ import {
 } from "./_namespaces/ts";
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
+// cphdebug-start
+import { IDebug } from "./mydebug";
+// cphdebug-end
+import { createLinksOnWriteCacheControl } from "./linksOnWriteCache"
+
+// cphdebug-start
+import { testLinksOnWriteCache } from "./linksOnWriteCache";
+// cphdebug-end
 
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
@@ -1460,6 +1469,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var checkBinaryExpression = createCheckBinaryExpression();
     var emitResolver = createResolver();
     var nodeBuilder = createNodeBuilder();
+
+    const linksOnWriteCacheControl = createLinksOnWriteCacheControl();
 
     var globals = createSymbolTable();
     var undefinedSymbol = createSymbol(SymbolFlags.Property, "undefined" as __String);
@@ -2270,6 +2281,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     initializeTypeChecker();
 
+    // cphdebug-start
+    testLinksOnWriteCache(linksOnWriteCacheControl, checker);
+    // cphdebug-end
+
     return checker;
 
     function getCachedType(key: string | undefined) {
@@ -2467,8 +2482,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function createSymbol(flags: SymbolFlags, name: __String, checkFlags?: CheckFlags) {
         symbolCount++;
         const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
-        symbol.links = new SymbolLinks() as TransientSymbolLinks;
-        symbol.links.checkFlags = checkFlags || CheckFlags.None;
+        const plainSymbolLinks = new SymbolLinks() as TransientSymbolLinks;
+        plainSymbolLinks.checkFlags = checkFlags || CheckFlags.None;
+        const links = linksOnWriteCacheControl.getExtendedSymbolLinksWithOnWriteCache(plainSymbolLinks,symbol);
+        symbol.links = links as TransientSymbolLinks;
+        // symbol.links = new SymbolLinks() as TransientSymbolLinks;
+        // symbol.links.checkFlags = checkFlags || CheckFlags.None;
         return symbol;
     }
 
@@ -2733,12 +2752,26 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getSymbolLinks(symbol: Symbol): SymbolLinks {
         if (symbol.flags & SymbolFlags.Transient) return (symbol as TransientSymbol).links;
         const id = getSymbolId(symbol);
-        return symbolLinks[id] ??= new SymbolLinks();
+        // return symbolLinks[id] ??= new SymbolLinks();
+        if (symbolLinks[id]){
+            Debug.assert(linksOnWriteCacheControl.isInstanceOfExtendedSymbolLinksWithOnWriteCache(symbolLinks[id]));
+            return symbolLinks[id];
+        }
+        const links = linksOnWriteCacheControl.getExtendedSymbolLinksWithOnWriteCache(new SymbolLinks(), symbol);
+        symbolLinks[id] = links;
+        return links;
     }
 
     function getNodeLinks(node: Node): NodeLinks {
         const nodeId = getNodeId(node);
-        return nodeLinks[nodeId] || (nodeLinks[nodeId] = new (NodeLinks as any)());
+        //return nodeLinks[nodeId] || (nodeLinks[nodeId] = new (NodeLinks as any)());
+        if (nodeLinks[nodeId]){
+            Debug.assert(linksOnWriteCacheControl.isInstanceOfNodelLinksWithOnWriteCache(nodeLinks[nodeId]));
+            return nodeLinks[nodeId];
+        }
+        const links = linksOnWriteCacheControl.getNodeLinksWithOnWriteCache(new (NodeLinks as any)(), node);
+        nodeLinks[nodeId] = links;
+        return links;
     }
 
     function isGlobalSourceFile(node: Node) {
@@ -46206,6 +46239,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function checkSourceFile(node: SourceFile) {
         tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
         performance.mark("beforeCheck");
+        // cphdebug-start
+        if (IDebug.loggingHost){
+            IDebug.loggingHost.notifySourceFile(node, checker);
+        }
+        // cphdebug-end
         checkSourceFileWorker(node);
         performance.mark("afterCheck");
         performance.measure("Check", "beforeCheck", "afterCheck");

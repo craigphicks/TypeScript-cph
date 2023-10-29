@@ -1871,6 +1871,12 @@ export function cast<TOut extends TIn, TIn = any>(value: TIn | undefined, test: 
 
     return Debug.fail(`Invalid cast. The supplied value ${value} did not pass the test '${Debug.getFunctionName(test)}'.`);
 }
+/** @internal */
+export function castHereafter<T>(t: any, assertion?: (...args:any[])=>void): asserts t is T {
+    if (assertion) {
+        assertion(t);
+    }
+}
 
 /**
  * Does nothing.
