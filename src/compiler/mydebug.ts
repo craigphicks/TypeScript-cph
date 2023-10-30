@@ -5,7 +5,7 @@ export interface ILoggingHost {
     //log(level: LogLevel, message: string | (() => string)) : void;
     ilog(message: string | (()=>string), level?: LogLevel) : void;
     ilogGroup (message: string | (()=>string), level?: LogLevel): number;
-    ilogGroupEnd (message?: string | (()=>string), expectedIndent?: number, level?: LogLevel): void;
+    ilogGroupEnd (message?: string | (()=>string), level?: LogLevel, expectedIndent?: number): void;
     notifySourceFile(sourceFile: SourceFile, typeChecker: TypeChecker): void;
 }
 
@@ -20,6 +20,15 @@ export namespace IDebug {
     export let checker: TypeChecker | undefined = undefined;
     // temporary
     export let nouseResolveCallExpressionV2: boolean = false;
+    export function ilog(message: string | (()=>string), level?: LogLevel) {
+        if (loggingHost) loggingHost.ilog(message, level);
+    }
+    export function ilogGroup(message: string | (()=>string), level?: LogLevel) {
+        if (loggingHost) loggingHost.ilogGroup(message, level);
+    }
+    export function ilogGroupEnd(message?: string | (()=>string), level?: LogLevel, expectedIndent?: number) {
+        if (loggingHost) loggingHost.ilogGroupEnd(message, level, expectedIndent);
+    }
 }
 
 export class ILoggingClass implements ILoggingHost {

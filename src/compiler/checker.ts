@@ -14717,9 +14717,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * maps primitive types and type parameters are to their apparent types.
      */
     function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
-        const result = getSignaturesOfStructuredType(getReducedApparentType(type), kind);
-        if (kind === SignatureKind.Call && !length(result) && type.flags & TypeFlags.Union) {
+    // cphdebug-start
+    IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type: [t${IDebug.dbgs.dbgTypeToString(type)}], kind: ${kind}`,2);
+    const prevLogLevel = IDebug.logLevel;
+    IDebug.logLevel = 0;
+    // cphdebug-end
+    const r = (()=>{
+        const reducedType = getReducedApparentType(type);
+
+        if (kind === SignatureKind.Call && type.flags & TypeFlags.Union) {
             if ((type as UnionType).arrayFallbackSignatures) {
+                // cphdebug-start
+                if (prevLogLevel){
+                    IDebug.logLevel = prevLogLevel;
+                    IDebug.ilog("return preexisting type.arrayFallbackSignatures");
+                    IDebug.logLevel = 0;
+                }
+                // cphdebug-end
                 return (type as UnionType).arrayFallbackSignatures!;
             }
             // If the union is all different instantiations of a member of the global array type...
@@ -14728,11 +14742,46 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // Transform the type from `(A[] | B[])["member"]` to `(A | B)[]["member"]` (since we pretend array is covariant anyway)
                 const arrayArg = mapType(type, t => getMappedType((isReadonlyArraySymbol(t.symbol.parent) ? globalReadonlyArrayType : globalArrayType).typeParameters![0], (t as AnonymousType).mapper!));
                 const arrayType = createArrayType(arrayArg, someType(type, t => isReadonlyArraySymbol(t.symbol.parent)));
+                // cphdebug-start
+                if (prevLogLevel){
+                    IDebug.logLevel = prevLogLevel;
+                    IDebug.ilog(`arrayArg: ${IDebug.dbgs.dbgTypeToString(arrayArg)}`,2);
+                    IDebug.ilog(`arrayType: ${IDebug.dbgs.dbgTypeToString(arrayType)}`,2);
+                    IDebug.logLevel = 0;
+                }
+                // cphdebug-end
                 return (type as UnionType).arrayFallbackSignatures = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
             }
-            (type as UnionType).arrayFallbackSignatures = result;
+            // cphdebug-start
+            else {
+                if (prevLogLevel){
+                    IDebug.logLevel = prevLogLevel;
+                    IDebug.ilog("not eligible for array mapping");
+                    IDebug.logLevel = 0;
+                }
+            }
+            // cphdebug-end
         }
+        const result = getSignaturesOfStructuredType(reducedType, kind);
+        // cphdebug-start
+        if (prevLogLevel){
+            IDebug.logLevel = prevLogLevel;
+            IDebug.ilog(`reducedType: ${IDebug.dbgs.dbgTypeToString(reducedType)}`);
+            IDebug.ilog(`result.length: ${result.length}`);
+            IDebug.logLevel = 0;
+        }
+        // cphdebug-end
         return result;
+    })();
+    // cphdebug-start
+    IDebug.logLevel = prevLogLevel;
+    IDebug.ilog(()=>`getSignaturesOfType[out]: result.length = ${r.length}`,2);
+    r.forEach((sig,i) => {
+        IDebug.ilog(()=>`getSignaturesOfType[out]: result[${i}] = ${IDebug.dbgs.dbgSignatureToString(sig)}`,2);
+    });
+    IDebug.ilogGroupEnd();
+    return r;
+    // cphdebug-end
     }
 
     function isArrayOrTupleSymbol(symbol: Symbol | undefined) {
@@ -34314,9 +34363,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          * @param apparentType
          * @returns
          */
+        // @ts-expect-error
         function chooseOverloadV2(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false, apparentType?: Type | undefined) {
-
-
 
             candidatesForArgumentError = undefined;
             candidateForArgumentArityError = undefined;
@@ -34401,7 +34449,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             return undefined;
         } // chooseOverloadV2
-
     }
 
 
@@ -34782,7 +34829,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
-        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, apparentType);
+        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, /*apparentType*/);
 
     // cphdebug-start
     })();
