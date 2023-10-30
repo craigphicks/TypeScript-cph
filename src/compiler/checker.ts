@@ -14711,8 +14711,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * maps primitive types and type parameters are to their apparent types.
      */
     function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
-        const result = getSignaturesOfStructuredType(getReducedApparentType(type), kind);
-        if (kind === SignatureKind.Call && !length(result) && type.flags & TypeFlags.Union) {
+
+        if (kind === SignatureKind.Call && type.flags & TypeFlags.Union) {
             if ((type as UnionType).arrayFallbackSignatures) {
                 return (type as UnionType).arrayFallbackSignatures!;
             }
@@ -14724,11 +14724,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const arrayType = createArrayType(arrayArg, someType(type, t => isReadonlyArraySymbol(t.symbol.parent)));
                 return (type as UnionType).arrayFallbackSignatures = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
             }
-            (type as UnionType).arrayFallbackSignatures = result;
         }
+        const reducedType = getReducedApparentType(type);
+        const result = getSignaturesOfStructuredType(reducedType, kind);
         return result;
     }
-
     function isArrayOrTupleSymbol(symbol: Symbol | undefined) {
         if (!symbol || !globalArrayType.symbol || !globalReadonlyArrayType.symbol) {
             return false;
