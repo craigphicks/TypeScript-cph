@@ -40,6 +40,7 @@ export declare const thing: {
     map: <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[];
     filter: {
         <S_1 extends number>(predicate: (value: number, index: number, array: number[]) => value is S_1, thisArg?: any): S_1[];
+        (predicate: BooleanConverter, thisArg?: any): number[];
         (predicate: (value: number, index: number, array: number[]) => unknown, thisArg?: any): number[];
     };
     reduce: {
@@ -146,6 +147,7 @@ mappedTypeWithAsClauseAndLateBoundProperty2.d.ts(24,118): error TS2526: A 'this'
         map: <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[];
         filter: {
             <S_1 extends number>(predicate: (value: number, index: number, array: number[]) => value is S_1, thisArg?: any): S_1[];
+            (predicate: BooleanConverter, thisArg?: any): number[];
             (predicate: (value: number, index: number, array: number[]) => unknown, thisArg?: any): number[];
         };
         reduce: {
