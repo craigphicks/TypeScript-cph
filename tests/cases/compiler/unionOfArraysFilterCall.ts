@@ -10,7 +10,7 @@ interface Buzz {
 }
 
 ([] as Fizz[] | Buzz[]).filter(item => item.id < 5);
-([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5); 
+([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5);
 
 ([] as Fizz[] | Buzz[]).find(item => item);
 declare function isFizz(x: unknown): x is Fizz;

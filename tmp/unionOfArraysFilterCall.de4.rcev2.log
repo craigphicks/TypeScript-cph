@@ -1,0 +1,576 @@
+resolveCallExpression[in]: node: [n14] ([] as Fizz[] | Buzz[]).filter(item => item.id < 5), [106,159], CallExpression
+  getSignaturesOfType[in]: type: [t[t98] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): Buzz[]; }], kind: 0
+    arrayArg: [t118] Fizz | Buzz
+    arrayType: [t119] (Fizz | Buzz)[]
+    getSignaturesOfType[out]: result.length = 3
+    getSignaturesOfType[out]: result[0] = ((; [t122] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[1] = ((; [t105] BooleanConverter; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[2] = ((; [t123] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown; [t1] any) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t98] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): Buzz[]; }], kind: 1
+    reducedType: [t98] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): Buzz[]; }
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 0
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 1
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t101] (value: T, index: number, array: T[]) => value is S], kind: 0
+    reducedType: [t101] (value: T, index: number, array: T[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t67] T; [t18] number; [t66] T[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t101] (value: T, index: number, array: T[]) => value is S], kind: 1
+    reducedType: [t101] (value: T, index: number, array: T[]) => value is S
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t122] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t122] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t127] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t127] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t127] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t127] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t122] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t122] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t127] (item: Fizz | Buzz) => boolean], kind: 1
+    reducedType: [t127] (item: Fizz | Buzz) => boolean
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t127] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t127] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t126] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is Fizz | Buzz], kind: 0
+    reducedType: [t126] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t127] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t127] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t123] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown], kind: 0
+    reducedType: [t123] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => [t9] unknown
+  getSignaturesOfType[in]: type: [t[t127] (item: Fizz | Buzz) => boolean], kind: 1
+    reducedType: [t127] (item: Fizz | Buzz) => boolean
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t123] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown], kind: 1
+    reducedType: [t123] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+resolveCallExpression[out]: node: [n14] ([] as Fizz[] | Buzz[]).filter(item => item.id < 5), [106,159], CallExpression
+resolveCallExpression[in]: node: [n72] ([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5), [160,221], CallExpression
+  getSignaturesOfType[in]: type: [t[t134] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: readonly Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: readonly Buzz[]) => unknown, thisArg?: any): Buzz[]; }], kind: 0
+    arrayArg: [t118] Fizz | Buzz
+    arrayType: [t146] readonly (Fizz | Buzz)[]
+    getSignaturesOfType[out]: result.length = 3
+    getSignaturesOfType[out]: result[0] = ((; [t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[1] = ((; [t105] BooleanConverter; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[2] = ((; [t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown; [t1] any) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t134] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: readonly Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: readonly Buzz[]) => unknown, thisArg?: any): Buzz[]; }], kind: 1
+    reducedType: [t134] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: readonly Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: readonly Buzz[]) => unknown, thisArg?: any): Buzz[]; }
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 0
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 1
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t137] (value: T, index: number, array: readonly T[]) => value is S], kind: 0
+    reducedType: [t137] (value: T, index: number, array: readonly T[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t79] T; [t18] number; [t78] readonly T[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t137] (value: T, index: number, array: readonly T[]) => value is S], kind: 1
+    reducedType: [t137] (value: T, index: number, array: readonly T[]) => value is S
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t146] readonly (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t152] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t152] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t152] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t152] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t146] readonly (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t152] (item: Fizz | Buzz) => boolean], kind: 1
+    reducedType: [t152] (item: Fizz | Buzz) => boolean
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t152] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t152] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t151] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is Fizz | Buzz], kind: 0
+    reducedType: [t151] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t146] readonly (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t152] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t152] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown], kind: 0
+    reducedType: [t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t146] readonly (Fizz | Buzz)[]) => [t9] unknown
+  getSignaturesOfType[in]: type: [t[t152] (item: Fizz | Buzz) => boolean], kind: 1
+    reducedType: [t152] (item: Fizz | Buzz) => boolean
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown], kind: 1
+    reducedType: [t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+resolveCallExpression[out]: node: [n72] ([] as Fizz[] | readonly Buzz[]).filter(item => item.id < 5), [160,221], CallExpression
+resolveCallExpression[in]: node: [n123] ([] as Fizz[] | Buzz[]).find(item => item), [222,267], CallExpression
+  getSignaturesOfType[in]: type: [t[t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }], kind: 0
+    arrayArg: [t118] Fizz | Buzz
+    arrayType: [t119] (Fizz | Buzz)[]
+    getSignaturesOfType[out]: result.length = 2
+    getSignaturesOfType[out]: result[0] = ((; [t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[1] = ((; [t169] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => unknown; [t1] any) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }], kind: 1
+    reducedType: [t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 0
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 1
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t159] (value: T, index: number, obj: T[]) => value is S], kind: 0
+    reducedType: [t159] (value: T, index: number, obj: T[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t67] T; [t18] number; [t66] T[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t159] (value: T, index: number, obj: T[]) => value is S], kind: 1
+    reducedType: [t159] (value: T, index: number, obj: T[]) => value is S
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t171] (item: Fizz | Buzz) => Fizz | Buzz], kind: 0
+    reducedType: [t171] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t171] (item: Fizz | Buzz) => Fizz | Buzz], kind: 0
+    reducedType: [t171] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t171] (item: Fizz | Buzz) => Fizz | Buzz], kind: 1
+    reducedType: [t171] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t171] (item: Fizz | Buzz) => Fizz | Buzz], kind: 0
+    reducedType: [t171] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t170] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Fizz | Buzz], kind: 0
+    reducedType: [t170] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t171] (item: Fizz | Buzz) => Fizz | Buzz], kind: 0
+    reducedType: [t171] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t169] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => unknown], kind: 0
+    reducedType: [t169] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => unknown
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => [t9] unknown
+  getSignaturesOfType[in]: type: [t[t171] (item: Fizz | Buzz) => Fizz | Buzz], kind: 1
+    reducedType: [t171] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t169] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => unknown], kind: 1
+    reducedType: [t169] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => unknown
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+resolveCallExpression[out]: node: [n123] ([] as Fizz[] | Buzz[]).find(item => item), [222,267], CallExpression
+resolveCallExpression[in]: node: [n152] ([] as Fizz[] | Buzz[]).find(isFizz), [316,353], CallExpression
+  getSignaturesOfType[in]: type: [t[t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }], kind: 0
+    return preexisting type.arrayFallbackSignatures
+    getSignaturesOfType[out]: result.length = 2
+    getSignaturesOfType[out]: result[0] = ((; [t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[1] = ((; [t169] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => unknown; [t1] any) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }], kind: 1
+    reducedType: [t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t172] (x: unknown) => x is Fizz], kind: 0
+    reducedType: [t172] (x: unknown) => x is Fizz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t9] unknown) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t172] (x: unknown) => x is Fizz], kind: 1
+    reducedType: [t172] (x: unknown) => x is Fizz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t159] (value: T, index: number, obj: T[]) => value is S], kind: 0
+    reducedType: [t159] (value: T, index: number, obj: T[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t67] T; [t18] number; [t66] T[]) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t159] (value: T, index: number, obj: T[]) => value is S], kind: 1
+    reducedType: [t159] (value: T, index: number, obj: T[]) => value is S
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t172] (x: unknown) => x is Fizz], kind: 0
+    reducedType: [t172] (x: unknown) => x is Fizz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t9] unknown) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t173] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Fizz], kind: 0
+    reducedType: [t173] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Fizz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t172] (x: unknown) => x is Fizz], kind: 1
+    reducedType: [t172] (x: unknown) => x is Fizz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t173] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Fizz], kind: 1
+    reducedType: [t173] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Fizz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+resolveCallExpression[out]: node: [n152] ([] as Fizz[] | Buzz[]).find(isFizz), [316,353], CallExpression
+resolveCallExpression[in]: node: [n165] ([] as Fizz[] | Buzz[]).find(isBuzz), [402,439], CallExpression
+  getSignaturesOfType[in]: type: [t[t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }], kind: 0
+    return preexisting type.arrayFallbackSignatures
+    getSignaturesOfType[out]: result.length = 2
+    getSignaturesOfType[out]: result[0] = ((; [t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S; [t1] any) => [t167] S
+    getSignaturesOfType[out]: result[1] = ((; [t169] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => unknown; [t1] any) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }], kind: 1
+    reducedType: [t156] { <S extends Fizz>(predicate: (value: Fizz, index: number, obj: Fizz[]) => value is S, thisArg?: any): S; (predicate: (value: Fizz, index: number, obj: Fizz[]) => unknown, thisArg?: any): Fizz; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, obj: Buzz[]) => value is S, thisArg?: any): S; (predicate: (value: Buzz, index: number, obj: Buzz[]) => unknown, thisArg?: any): Buzz; }
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t174] (x: unknown) => x is Buzz], kind: 0
+    reducedType: [t174] (x: unknown) => x is Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t9] unknown) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t168] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t174] (x: unknown) => x is Buzz], kind: 1
+    reducedType: [t174] (x: unknown) => x is Buzz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t159] (value: T, index: number, obj: T[]) => value is S], kind: 0
+    reducedType: [t159] (value: T, index: number, obj: T[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t67] T; [t18] number; [t66] T[]) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t159] (value: T, index: number, obj: T[]) => value is S], kind: 1
+    reducedType: [t159] (value: T, index: number, obj: T[]) => value is S
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t174] (x: unknown) => x is Buzz], kind: 0
+    reducedType: [t174] (x: unknown) => x is Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t9] unknown) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t175] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Buzz], kind: 0
+    reducedType: [t175] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t174] (x: unknown) => x is Buzz], kind: 1
+    reducedType: [t174] (x: unknown) => x is Buzz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t175] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Buzz], kind: 1
+    reducedType: [t175] (value: Fizz | Buzz, index: number, obj: (Fizz | Buzz)[]) => value is Buzz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+resolveCallExpression[out]: node: [n165] ([] as Fizz[] | Buzz[]).find(isBuzz), [402,439], CallExpression
+resolveCallExpression[in]: node: [n176] ([] as Fizz[] | Buzz[]).every(item => item.id < 5), [440,492], CallExpression
+  getSignaturesOfType[in]: type: [t[t179] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): this is S[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): boolean; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): this is S[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): boolean; }], kind: 0
+    arrayArg: [t118] Fizz | Buzz
+    arrayType: [t119] (Fizz | Buzz)[]
+    getSignaturesOfType[out]: result.length = 2
+    getSignaturesOfType[out]: result[0] = ((; [t194] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[1] = ((; [t195] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown; [t1] any) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t179] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): this is S[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): boolean; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): this is S[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): boolean; }], kind: 1
+    reducedType: [t179] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): this is S[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): boolean; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: Buzz[]) => value is S, thisArg?: any): this is S[]; (predicate: (value: Buzz, index: number, array: Buzz[]) => unknown, thisArg?: any): boolean; }
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 0
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 1
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t182] (value: T, index: number, array: T[]) => value is S], kind: 0
+    reducedType: [t182] (value: T, index: number, array: T[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t67] T; [t18] number; [t66] T[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t182] (value: T, index: number, array: T[]) => value is S], kind: 1
+    reducedType: [t182] (value: T, index: number, array: T[]) => value is S
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t194] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t194] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t197] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t197] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t197] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t197] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t194] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t194] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t197] (item: Fizz | Buzz) => boolean], kind: 1
+    reducedType: [t197] (item: Fizz | Buzz) => boolean
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t197] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t197] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t196] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is Fizz | Buzz], kind: 0
+    reducedType: [t196] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => value is Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t197] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t197] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t195] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown], kind: 0
+    reducedType: [t195] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => [t9] unknown
+  getSignaturesOfType[in]: type: [t[t197] (item: Fizz | Buzz) => boolean], kind: 1
+    reducedType: [t197] (item: Fizz | Buzz) => boolean
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t195] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown], kind: 1
+    reducedType: [t195] (value: Fizz | Buzz, index: number, array: (Fizz | Buzz)[]) => unknown
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+resolveCallExpression[out]: node: [n176] ([] as Fizz[] | Buzz[]).every(item => item.id < 5), [440,492], CallExpression
+resolveCallExpression[in]: node: [n203] ([] as Fizz[] | Buzz[]).reduce(item => item), [493,539], CallExpression
+  getSignaturesOfType[in]: type: [t[t201] { (callbackfn: (previousValue: Fizz, currentValue: Fizz, currentIndex: number, array: Fizz[]) => Fizz): Fizz; (callbackfn: (previousValue: Fizz, currentValue: Fizz, currentIndex: number, array: Fizz[]) => Fizz, initialValue: Fizz): Fizz; <U>(callbackfn: (previousValue: U, currentValue: Fizz, currentIndex: number, array: Fizz[]) => U, initialValue: U): U; } | { (callbackfn: (previousValue: Buzz, currentValue: Buzz, currentIndex: number, array: Buzz[]) => Buzz): Buzz; (callbackfn: (previousValue: Buzz, currentValue: Buzz, currentIndex: number, array: Buzz[]) => Buzz, initialValue: Buzz): Buzz; <U>(callbackfn: (previousValue: U, currentValue: Buzz, currentIndex: number, array: Buzz[]) => U, initialValue: U): U; }], kind: 0
+    arrayArg: [t118] Fizz | Buzz
+    arrayType: [t119] (Fizz | Buzz)[]
+    getSignaturesOfType[out]: result.length = 3
+    getSignaturesOfType[out]: result[0] = ((; [t216] (previousValue: Fizz | Buzz, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => Fizz | Buzz) => <no resolved type>
+    getSignaturesOfType[out]: result[1] = ((; [t217] (previousValue: Fizz | Buzz, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => Fizz | Buzz; [t118] Fizz | Buzz) => <no resolved type>
+    getSignaturesOfType[out]: result[2] = ((; [t218] (previousValue: U, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => U; [t215] U) => <no resolved type>
+  getSignaturesOfType[in]: type: [t[t201] { (callbackfn: (previousValue: Fizz, currentValue: Fizz, currentIndex: number, array: Fizz[]) => Fizz): Fizz; (callbackfn: (previousValue: Fizz, currentValue: Fizz, currentIndex: number, array: Fizz[]) => Fizz, initialValue: Fizz): Fizz; <U>(callbackfn: (previousValue: U, currentValue: Fizz, currentIndex: number, array: Fizz[]) => U, initialValue: U): U; } | { (callbackfn: (previousValue: Buzz, currentValue: Buzz, currentIndex: number, array: Buzz[]) => Buzz): Buzz; (callbackfn: (previousValue: Buzz, currentValue: Buzz, currentIndex: number, array: Buzz[]) => Buzz, initialValue: Buzz): Buzz; <U>(callbackfn: (previousValue: U, currentValue: Buzz, currentIndex: number, array: Buzz[]) => U, initialValue: U): U; }], kind: 1
+    reducedType: [t201] { (callbackfn: (previousValue: Fizz, currentValue: Fizz, currentIndex: number, array: Fizz[]) => Fizz): Fizz; (callbackfn: (previousValue: Fizz, currentValue: Fizz, currentIndex: number, array: Fizz[]) => Fizz, initialValue: Fizz): Fizz; <U>(callbackfn: (previousValue: U, currentValue: Fizz, currentIndex: number, array: Fizz[]) => U, initialValue: U): U; } | { (callbackfn: (previousValue: Buzz, currentValue: Buzz, currentIndex: number, array: Buzz[]) => Buzz): Buzz; (callbackfn: (previousValue: Buzz, currentValue: Buzz, currentIndex: number, array: Buzz[]) => Buzz, initialValue: Buzz): Buzz; <U>(callbackfn: (previousValue: U, currentValue: Buzz, currentIndex: number, array: Buzz[]) => U, initialValue: U): U; }
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t216] (previousValue: Fizz | Buzz, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => Fizz | Buzz], kind: 0
+    reducedType: [t216] (previousValue: Fizz | Buzz, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t220] (item: Fizz | Buzz) => Fizz | Buzz], kind: 0
+    reducedType: [t220] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t220] (item: Fizz | Buzz) => Fizz | Buzz], kind: 0
+    reducedType: [t220] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t216] (previousValue: Fizz | Buzz, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => Fizz | Buzz], kind: 0
+    reducedType: [t216] (previousValue: Fizz | Buzz, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t118] Fizz | Buzz; [t18] number; [t119] (Fizz | Buzz)[]) => [t118] Fizz | Buzz
+  getSignaturesOfType[in]: type: [t[t220] (item: Fizz | Buzz) => Fizz | Buzz], kind: 1
+    reducedType: [t220] (item: Fizz | Buzz) => Fizz | Buzz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t216] (previousValue: Fizz | Buzz, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => Fizz | Buzz], kind: 1
+    reducedType: [t216] (previousValue: Fizz | Buzz, currentValue: Fizz | Buzz, currentIndex: number, array: (Fizz | Buzz)[]) => Fizz | Buzz
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+resolveCallExpression[out]: node: [n203] ([] as Fizz[] | Buzz[]).reduce(item => item), [493,539], CallExpression
+resolveCallExpression[in]: node: [n240] ([] as [Fizz] | readonly [Buzz?]).filter(item => item?.id < 5), [540,605], CallExpression
+  getSignaturesOfType[in]: type: [t[t236] Fizz[]], kind: 0
+    reducedType: [t236] Fizz[]
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t236] Fizz[]], kind: 1
+    reducedType: [t236] Fizz[]
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t238] readonly Buzz[]], kind: 0
+    reducedType: [t238] readonly Buzz[]
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t238] readonly Buzz[]], kind: 1
+    reducedType: [t238] readonly Buzz[]
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t241] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: readonly Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: readonly Buzz[]) => unknown, thisArg?: any): Buzz[]; }], kind: 0
+    arrayArg: [t118] Fizz | Buzz
+    arrayType: [t146] readonly (Fizz | Buzz)[]
+    getSignaturesOfType[out]: result.length = 3
+    getSignaturesOfType[out]: result[0] = ((; [t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[1] = ((; [t105] BooleanConverter; [t1] any) => <no resolved type>
+    getSignaturesOfType[out]: result[2] = ((; [t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown; [t1] any) => [t119] (Fizz | Buzz)[]
+  getSignaturesOfType[in]: type: [t[t241] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: readonly Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: readonly Buzz[]) => unknown, thisArg?: any): Buzz[]; }], kind: 1
+    reducedType: [t241] { <S extends Fizz>(predicate: (value: Fizz, index: number, array: Fizz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Fizz[]; (predicate: (value: Fizz, index: number, array: Fizz[]) => unknown, thisArg?: any): Fizz[]; } | { <S extends Buzz>(predicate: (value: Buzz, index: number, array: readonly Buzz[]) => value is S, thisArg?: any): S[]; (predicate: BooleanConverter, thisArg?: any): Buzz[]; (predicate: (value: Buzz, index: number, array: readonly Buzz[]) => unknown, thisArg?: any): Buzz[]; }
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 0
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t43] {}], kind: 1
+    reducedType: [t43] {}
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t146] readonly (Fizz | Buzz)[]) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t250] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t250] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t250] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t250] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S], kind: 0
+    reducedType: [t149] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is S
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t146] readonly (Fizz | Buzz)[]) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t250] (item: Fizz | Buzz) => boolean], kind: 1
+    reducedType: [t250] (item: Fizz | Buzz) => boolean
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t250] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t250] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t151] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is Fizz | Buzz], kind: 0
+    reducedType: [t151] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => value is Fizz | Buzz
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t146] readonly (Fizz | Buzz)[]) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t250] (item: Fizz | Buzz) => boolean], kind: 0
+    reducedType: [t250] (item: Fizz | Buzz) => boolean
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz) => [t24] boolean
+  getSignaturesOfType[in]: type: [t[t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown], kind: 0
+    reducedType: [t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown
+    result.length: 1
+    getSignaturesOfType[out]: result.length = 1
+    getSignaturesOfType[out]: result[0] = ((; [t118] Fizz | Buzz; [t18] number; [t146] readonly (Fizz | Buzz)[]) => [t9] unknown
+  getSignaturesOfType[in]: type: [t[t250] (item: Fizz | Buzz) => boolean], kind: 1
+    reducedType: [t250] (item: Fizz | Buzz) => boolean
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+  getSignaturesOfType[in]: type: [t[t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown], kind: 1
+    reducedType: [t150] (value: Fizz | Buzz, index: number, array: readonly (Fizz | Buzz)[]) => unknown
+    result.length: 0
+    getSignaturesOfType[out]: result.length = 0
+resolveCallExpression[out]: node: [n240] ([] as [Fizz] | readonly [Buzz?]).filter(item => item?.id < 5), [540,605], CallExpression
+getSignaturesOfType[in]: type: [t[t234] []], kind: 0
+  reducedType: [t234] []
+  result.length: 0
+  getSignaturesOfType[out]: result.length = 0
+getSignaturesOfType[in]: type: [t[t230] readonly [Buzz?]], kind: 0
+  reducedType: [t230] readonly [Buzz?]
+  result.length: 0
+  getSignaturesOfType[out]: result.length = 0
+getSignaturesOfType[in]: type: [t[t234] []], kind: 1
+  reducedType: [t234] []
+  result.length: 0
+  getSignaturesOfType[out]: result.length = 0
+getSignaturesOfType[in]: type: [t[t230] readonly [Buzz?]], kind: 1
+  reducedType: [t230] readonly [Buzz?]
+  result.length: 0
+  getSignaturesOfType[out]: result.length = 0
