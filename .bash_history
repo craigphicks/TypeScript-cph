@@ -51,3 +51,8 @@ git add tests
 git status
 git commit -m "new test file arrayFilterBooleanOverload.ts"
 git status
+git add .
+git commit -m "modifications to src/lib/es5.d.ts needed to make test case arrayFilterBooleanOverload.ts work as expected"
+hereby runtests-parallel
+hereby baseline-accept
+git status
