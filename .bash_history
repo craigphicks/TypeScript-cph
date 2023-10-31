@@ -12,3 +12,42 @@ git log
 git commit -m "new tests case booleanConverter.ts, baseline-accepted" 
 git commit -f -m "new tests case booleanConverter.ts, baseline-accepted" 
 git commit -m "new tests case booleanConverter.ts, baseline-accepted" 
+git add .
+git commit -m "new tests case booleanConverter.ts, baseline-accepted" 
+git log
+hereby runtests-parallel
+grep -R src/lib Boolean
+grep -R Boolean src/lib 
+hereby runtests --test="booleanConverter.ts"
+hereby
+hereby runtests --test="booleanConverter.ts"
+find . -name "es5.d.ts"
+herby
+hereby
+hereby --help
+hereby --tasks
+find . -name "es5.d.ts"
+diff ./built/local/compiler/transformers/es5.d.ts src/lib/es5.d.ts 
+hereby runtests --test="booleanConverter.ts"
+find tests -name "*booleanConverter*"
+git status
+find tests -name "*booleanConverter*"
+find tests -name "*booleanConverter*" -exec rm {} \;
+find tests -name "*booleanConverter*"
+git status
+hereby runtests --test="arrayFilterBooleanOverload.ts"
+git status
+git add .
+git status
+git restore --staged .
+git status
+git add tests 
+hereby runtests --test="arrayFilterBooleanOverload.ts"
+git add tests 
+git status
+hereby baseline-accept
+git status
+git add tests
+git status
+git commit -m "new test file arrayFilterBooleanOverload.ts"
+git status

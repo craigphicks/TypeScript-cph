@@ -58,3 +58,114 @@ after>        fourslash test completionEntryForUnionMethod.ts runs correctly:
 after> AssertionError: At marker '': quick info text: expected '(method) Array<T>.map<unknown>(callba…' to equal '(method) Array<T>.map<unknown>(callba…'
 
 
+## Try changing es5.d.ts
+
+### test file for Boolean coverter
+
+```
+// @strict: true
+// @declaration: true
+// @target: es6
+
+const btrue = Boolean(true);
+const bobj = Boolean({});
+const bobj1 = Boolean({ a: 1 });
+
+const bfalse = Boolean(false);
+const bundefined = Boolean(undefined);
+const bnull = Boolean(null);
+
+declare const maybe: true | false;
+const bmaybe = Boolean(maybe);
+
+
+const nullableValues = ['a', 'b', null];
+
+const values1 = nullableValues.filter(Boolean);
+
+// @ts-expect-error
+const values2 = nullableValues.filter(new Boolean);
+
+const arr = [0, 1, "", "foo", null] as const;
+
+const arr2 = arr.filter(Boolean);
+
+declare const t:undefined | {};
+
+const x = Boolean(t) ? true : false;
+
+x;
+
+if (x){
+    t;
+}
+
+
+### changes to src/lib/es5.d.ts
+
+
+before:
+```
+interface Boolean {
+    /** Returns the primitive value of the specified object. */
+    valueOf(): boolean;
+}
+interface BooleanConstructor {
+    new (value?: any): Boolean;
+    <T>(value?: T): boolean;
+    readonly prototype: Boolean;
+}
+declare var Boolean: BooleanConstructor;
+```
+
+after:
+```
+interface Boolean {
+    /** Returns the primitive value of the specified object. */
+    valueOf(): boolean;
+}
+interface BooleanConstructor {
+    new (value?: any): Boolean;
+    (value?: false | 0 | "" | null | undefined | 0n): false;
+    (value?: any): true;
+    //readonly prototype: Boolean;
+}
+declare var Boolean: BooleanConstructor;
+```
+but test results are ... almost but not quite
+
+The good:
+```
+const btrue = Boolean(true);
+>btrue : true
+>Boolean(true) : true
+>Boolean : BooleanConstructor
+>true : true
+
+const bfalse = Boolean(false);
+>bfalse : false
+>Boolean(false) : false
+>Boolean : BooleanConstructor
+>false : false
+```
+
+The bad:
+```
+declare const maybe: true | false;
+>maybe : boolean
+>true : true
+>false : false
+
+const bmaybe = Boolean(maybe);
+>bmaybe : true
+>Boolean(maybe) : true
+>Boolean : BooleanConstructor
+>maybe : boolean
+```
+A fix would require modification to chooseOverload.
+That big enough to leave for later
+and try a narrower change affecting Array.filter only.
+
+
+
+
