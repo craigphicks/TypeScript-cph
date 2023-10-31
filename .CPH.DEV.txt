@@ -1,0 +1,19 @@
+
+Directly related
+#50377 Explore adding the Boolean to filter to narrow out null/undefined in array#filter (closed pull)
+#50387 Add BooleanConstructor as an overload to .filter to allow for easy type predicate filtering (inDiscussion)
+#30621 narrow array type with .filter(Boolean) (marked as duplicate of #16655, although #16655 is more broad than #30621)
+
+#56013 Adding an overload to .filter breaks specific inference with nested functions (related?)
+#16655 Boolean() cannot be used to perform a null check (broader than filter(Boolean))
+#29955 Allow Boolean() to be used to perform a null check (accepted pull, may have reverted)
+
+From #29955
+```
+const nullableValues = ['a', 'b', null];
+const values1: string[] = nullableValues.filter<string>(Boolean);
+const values2: string[] = nullableValues.filter(Boolean);
+```
+
+Hmm, lets try with checker code change but no lib change first
+

@@ -14711,20 +14711,32 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * maps primitive types and type parameters are to their apparent types.
      */
     function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
-        const result = getSignaturesOfStructuredType(getReducedApparentType(type), kind);
-        if (kind === SignatureKind.Call && !length(result) && type.flags & TypeFlags.Union) {
-            if ((type as UnionType).arrayFallbackSignatures) {
-                return (type as UnionType).arrayFallbackSignatures!;
+        function carveoutResult(type: Type, kind: SignatureKind): readonly Signature[] | undefined {
+            if (kind === SignatureKind.Call && type.flags & TypeFlags.Union) {
+                // If the union is all different instantiations of a member of the global array type...
+                let memberName: __String;
+                if (everyType(type, t => !!t.symbol?.parent && isArrayOrTupleSymbol(t.symbol.parent) && (!memberName ? (memberName = t.symbol.escapedName, true) : memberName === t.symbol.escapedName))) {
+                    if ((type as UnionType).arrayFallbackSignatures) {
+                        return (type as UnionType).arrayFallbackSignatures!;
+                    }
+                    const arrayArg = mapType(type, t => getMappedType((isReadonlyArraySymbol(t.symbol.parent) ? globalReadonlyArrayType : globalArrayType).typeParameters![0], (t as AnonymousType).mapper!));
+                    const arrayType = createArrayType(arrayArg, someType(type, t => isReadonlyArraySymbol(t.symbol.parent)));
+                    return (type as UnionType).arrayFallbackSignatures = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
+                }
             }
-            // If the union is all different instantiations of a member of the global array type...
-            let memberName: __String;
-            if (everyType(type, t => !!t.symbol?.parent && isArrayOrTupleSymbol(t.symbol.parent) && (!memberName ? (memberName = t.symbol.escapedName, true) : memberName === t.symbol.escapedName))) {
-                // Transform the type from `(A[] | B[])["member"]` to `(A | B)[]["member"]` (since we pretend array is covariant anyway)
-                const arrayArg = mapType(type, t => getMappedType((isReadonlyArraySymbol(t.symbol.parent) ? globalReadonlyArrayType : globalArrayType).typeParameters![0], (t as AnonymousType).mapper!));
-                const arrayType = createArrayType(arrayArg, someType(type, t => isReadonlyArraySymbol(t.symbol.parent)));
-                return (type as UnionType).arrayFallbackSignatures = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
+            return undefined;
+        }
+        let result = carveoutResult(type, kind);
+        if (!result) {
+            // although the logic here seems a bit strange, it is exactly as it was in 61a96b1641 (minus putting the carveout first),
+            // and changing it is beyond the scope of this pull request
+            result = getSignaturesOfStructuredType(getReducedApparentType(type), kind);
+            if (kind === SignatureKind.Call && length(result) && type.flags & TypeFlags.Union) {
+                if ((type as UnionType).arrayFallbackSignatures) {
+                    return (type as UnionType).arrayFallbackSignatures!;
+                }
+                (type as UnionType).arrayFallbackSignatures = result;
             }
-            (type as UnionType).arrayFallbackSignatures = result;
         }
         return result;
     }

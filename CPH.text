@@ -1,0 +1,60 @@
+
+##Related issues
+
+filter(Boolean)
+#50377 Explore adding the Boolean to filter to narrow out null/undefined in array#filter (closed pull)
+#50387 Add BooleanConstructor as an overload to .filter to allow for easy type predicate filtering (inDiscussion)
+#30621 narrow array type with .filter(Boolean) (marked as duplicate of #16655, although #16655 is more broad than #30621)
+
+
+Boolean in gernal
+#56013 Adding an overload to .filter breaks specific inference with nested functions (related?)
+#16655 Boolean() cannot be used to perform a null check (broader than filter(Boolean))
+#29955 Allow Boolean() to be used to perform a null check (accepted pull, may have reverted)
+
+From #29955
+```
+const nullableValues = ['a', 'b', null];
+const values1: string[] = nullableValues.filter<string>(Boolean);
+const values2: string[] = nullableValues.filter(Boolean);
+```
+
+Hmm, lets try with checker code change but no lib change first
+
+
+
+
+##Test result by change
+
+After putting the carveout for union of arrays first before the main case,
+the following change were noted in tests:
+
+arraySlice.types
+
+before >arr.splice(1, 1) : string[] | number[]
+after  >arr.splice(1, 1) : (string|number)[]
+
+bestChoice.ts
+
+before >(''.match(/ /) || []).map(s => s.toLowerCase()) : any[]
+after  >(''.match(/ /) || []).map(s => s.toLowerCase()) : string[]
+(& others similar)
+
+controlFlow.ts  (f6)
+
+before>        x;           // boolean[] | (string | number)[]
+before>        x.push(99);  // Error
+before>               ~~
+before>        !!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'never'.
+
+after >        x;           // boolean[] | (string | number)[]
+after >        x.push(99);  // no error
+
+tests/cases/fourslash/completionEntryForUnionMethod.ts
+
+after>  fourslash tests
+after>    tests/cases/fourslash/completionEntryForUnionMethod.ts
+after>        fourslash test completionEntryForUnionMethod.ts runs correctly:
+after> AssertionError: At marker '': quick info text: expected '(method) Array<T>.map<unknown>(callba…' to equal '(method) Array<T>.map<unknown>(callba…'
+
+
