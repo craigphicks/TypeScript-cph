@@ -372,3 +372,13 @@ git rm -f tests/baselines/reference/unionOfArraysFilterCall.errors.txt
 git status
 echo
 git status
+hereby --tasks
+hereby generate-diagnostics
+ls .bash_history 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+find tests "*"_onionOfArray*s
+find tests -name "*"_onionOfArray*s
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" 
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i

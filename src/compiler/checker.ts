@@ -1089,6 +1089,7 @@ import * as performance from "./_namespaces/ts.performance";
 
 // cphdebug-start
 import { IDebug } from "./mydebug";
+import { TmpChecker, chooseOverloadV2 } from "./chooseOverload2"
 // cphdebug-end
 
 const ambientModuleSymbolRegex = /^".+"$/;
@@ -34099,7 +34100,29 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // signature, the subtype pass is useless. So skipping it is an optimization.
 
         if (apparentType){
-            result = chooseOverloadV2(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma, apparentType);
+            const tmpChecker: TmpChecker = {
+                checkTypeArguments,
+                createInferenceContext,
+                getNonArrayRestType,
+                getSignatureApplicabilityError,
+                getSignatureInstantiation,
+                hasCorrectArity,
+                hasCorrectTypeArgumentArity,
+                inferTypeArguments,
+                isArrayOrTupleSymbol,
+            };
+
+            const tmp = chooseOverloadV2(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma, apparentType,
+                node, checker, tmpChecker, typeArguments, args, argCheckMode);
+            if (tmp) {
+                ({
+                    candidate: result,
+                    argCheckMode,
+                    candidateForArgumentArityError,
+                    candidateForTypeArgumentError,
+                    candidatesForArgumentError,
+                } = tmp);
+            }
         }
         else {
             if (candidates.length > 1) {
@@ -34331,140 +34354,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return undefined;
         }
 
-
-        /**
-         * Algorithm psuedocode:
-         * - passing: {overload, subtype}[] = []
-         * - failing: {overload}[] = []
-         * - type AssignableResult = "never" | "weak" | "strong"
-         * - declare psuedoAssignable (arg: Type, t: Type): AssignableResult
-         * - For each generic overload<T0>
-         * -     let T = T0
-         * -     let stronglyMatched = true;
-         * -     overload:
-         * -     For each parameter param<T>[i]
-         * -         For each type t in range of T
-         * -             r = psuedoAssignable(arg[i], param<T@t>[i]));
-         * -             if r==="never"
-         * -                 T = T-t;
-         * -             if T is never break overload;
-         * -             if r!=="strong"
-         * -                 stronglyMatched = false;
-         * -     if T is never
-         * -         failing.push(overload<T0>)
-         * -     else passing.push(overload<T0@T>, T)
-         * -     if stronglyMatched break; //
-         * - As long as there is at least one overload passing (not necessarily a strong match)
-         * - then there is no error.
-         *
-         * @param candidates
-         * @param relation
-         * @param isSingleNonGenericCandidate
-         * @param signatureHelpTrailingComma
-         * @param apparentType
-         * @returns
-         */
-        // @ ts-expect-error
-        function chooseOverloadV2(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false, apparentType?: Type | undefined) {
-            // get it working first with full explansion, then take shortcuts.
-            const carveout = (()=>{
-                if (apparentType?.flags & TypeFlags.Union) {
-                    let memberName: __String;
-                    if (everyType(apparentType!, t => !!t.symbol?.parent && isArrayOrTupleSymbol(t.symbol.parent) && (!memberName ? (memberName = t.symbol.escapedName, true) : memberName === t.symbol.escapedName))) {
-                        return true;
-                    }
-                return false;
-            }
-            
-            if (carveout){
-
-            }
-
-
-
-            candidatesForArgumentError = undefined;
-            candidateForArgumentArityError = undefined;
-            candidateForTypeArgumentError = undefined;
-
-
-            if (isSingleNonGenericCandidate) {
-                const candidate = candidates[0];
-                if (some(typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
-                    return undefined;
-                }
-                if (getSignatureApplicabilityError(node, args, candidate, relation, CheckMode.Normal, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
-                    candidatesForArgumentError = [candidate];
-                    return undefined;
-                }
-                return candidate;
-            }
-
-            for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
-                const candidate = candidates[candidateIndex];
-                if (!hasCorrectTypeArgumentArity(candidate, typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
-                    continue;
-                }
-
-                let checkCandidate: Signature;
-                let inferenceContext: InferenceContext | undefined;
-
-                if (candidate.typeParameters) {
-                    let typeArgumentTypes: Type[] | undefined;
-                    if (some(typeArguments)) {
-                        typeArgumentTypes = checkTypeArguments(candidate, typeArguments, /*reportErrors*/ false);
-                        if (!typeArgumentTypes) {
-                            candidateForTypeArgumentError = candidate;
-                            continue;
-                        }
-                    }
-                    else {
-                        inferenceContext = createInferenceContext(candidate.typeParameters, candidate, /*flags*/ isInJSFile(node) ? InferenceFlags.AnyDefault : InferenceFlags.None);
-                        typeArgumentTypes = inferTypeArguments(node, candidate, args, argCheckMode | CheckMode.SkipGenericFunctions, inferenceContext);
-                        argCheckMode |= inferenceContext.flags & InferenceFlags.SkippedGenericFunction ? CheckMode.SkipGenericFunctions : CheckMode.Normal;
-                    }
-                    checkCandidate = getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext && inferenceContext.inferredTypeParameters);
-                    // If the original signature has a generic rest type, instantiation may produce a
-                    // signature with different arity and we need to perform another arity check.
-                    if (getNonArrayRestType(candidate) && !hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {
-                        candidateForArgumentArityError = checkCandidate;
-                        continue;
-                    }
-                }
-                else {
-                    checkCandidate = candidate;
-                }
-                if (getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
-                    // Give preference to error candidates that have no rest parameters (as they are more specific)
-                    (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
-                    continue;
-                }
-                if (argCheckMode) {
-                    // If one or more context sensitive arguments were excluded, we start including
-                    // them now (and keeping do so for any subsequent candidates) and perform a second
-                    // round of type inference and applicability checking for this particular candidate.
-                    argCheckMode = CheckMode.Normal;
-                    if (inferenceContext) {
-                        const typeArgumentTypes = inferTypeArguments(node, candidate, args, argCheckMode, inferenceContext);
-                        checkCandidate = getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext.inferredTypeParameters);
-                        // If the original signature has a generic rest type, instantiation may produce a
-                        // signature with different arity and we need to perform another arity check.
-                        if (getNonArrayRestType(candidate) && !hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {
-                            candidateForArgumentArityError = checkCandidate;
-                            continue;
-                        }
-                    }
-                    if (getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
-                        // Give preference to error candidates that have no rest parameters (as they are more specific)
-                        (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
-                        continue;
-                    }
-                }
-                candidates[candidateIndex] = checkCandidate;
-                return checkCandidate;
-            }
-
-            return undefined;
-        } // chooseOverloadV2
     }
 
 
@@ -34845,7 +34734,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
-        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, /*apparentType*/);
+        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, apparentType);
 
     // cphdebug-start
     })();
