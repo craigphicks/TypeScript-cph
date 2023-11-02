@@ -14718,7 +14718,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      */
     function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
     // cphdebug-start
-    IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type: [t${IDebug.dbgs.dbgTypeToString(type)}], kind: ${kind}`,2);
+    const logLevel = 4;
+    IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type: [t${IDebug.dbgs.dbgTypeToString(type)}], kind: ${kind}`,logLevel);
     const prevLogLevel = IDebug.logLevel;
     IDebug.logLevel = 0;
     // cphdebug-end
@@ -14730,7 +14731,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // cphdebug-start
                 if (prevLogLevel){
                     IDebug.logLevel = prevLogLevel;
-                    IDebug.ilog("return preexisting type.arrayFallbackSignatures");
+                    IDebug.ilog("return preexisting type.arrayFallbackSignatures",logLevel);
                     IDebug.logLevel = 0;
                 }
                 // cphdebug-end
@@ -14745,8 +14746,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // cphdebug-start
                 if (prevLogLevel){
                     IDebug.logLevel = prevLogLevel;
-                    IDebug.ilog(`arrayArg: ${IDebug.dbgs.dbgTypeToString(arrayArg)}`,2);
-                    IDebug.ilog(`arrayType: ${IDebug.dbgs.dbgTypeToString(arrayType)}`,2);
+                    IDebug.ilog(`arrayArg: ${IDebug.dbgs.dbgTypeToString(arrayArg)}`,logLevel);
+                    IDebug.ilog(`arrayType: ${IDebug.dbgs.dbgTypeToString(arrayType)}`,logLevel);
                     IDebug.logLevel = 0;
                 }
                 // cphdebug-end
@@ -14756,7 +14757,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             else {
                 if (prevLogLevel){
                     IDebug.logLevel = prevLogLevel;
-                    IDebug.ilog("not eligible for array mapping");
+                    IDebug.ilog("not eligible for array mapping",logLevel);
                     IDebug.logLevel = 0;
                 }
             }
@@ -14766,8 +14767,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // cphdebug-start
         if (prevLogLevel){
             IDebug.logLevel = prevLogLevel;
-            IDebug.ilog(`reducedType: ${IDebug.dbgs.dbgTypeToString(reducedType)}`);
-            IDebug.ilog(`result.length: ${result.length}`);
+            IDebug.ilog(`reducedType: ${IDebug.dbgs.dbgTypeToString(reducedType),logLevel}`);
+            IDebug.ilog(`result.length: ${result.length}`,logLevel);
             IDebug.logLevel = 0;
         }
         // cphdebug-end
@@ -14775,11 +14776,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     })();
     // cphdebug-start
     IDebug.logLevel = prevLogLevel;
-    IDebug.ilog(()=>`getSignaturesOfType[out]: result.length = ${r.length}`,2);
+    IDebug.ilog(()=>`getSignaturesOfType[out]: result.length = ${r.length}`,logLevel);
     r.forEach((sig,i) => {
-        IDebug.ilog(()=>`getSignaturesOfType[out]: result[${i}] = ${IDebug.dbgs.dbgSignatureToString(sig)}`,2);
+        IDebug.ilog(()=>`getSignaturesOfType[out]: result[${i}] = ${IDebug.dbgs.dbgSignatureToString(sig)}`,logLevel);
     });
-    IDebug.ilogGroupEnd();
+    IDebug.ilogGroupEnd("",logLevel);
     return r;
     // cphdebug-end
     }
@@ -34363,8 +34364,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          * @param apparentType
          * @returns
          */
-        // @ts-expect-error
+        // @ ts-expect-error
         function chooseOverloadV2(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false, apparentType?: Type | undefined) {
+            // get it working first with full explansion, then take shortcuts.
+            const carveout = (()=>{
+                if (apparentType?.flags & TypeFlags.Union) {
+                    let memberName: __String;
+                    if (everyType(apparentType!, t => !!t.symbol?.parent && isArrayOrTupleSymbol(t.symbol.parent) && (!memberName ? (memberName = t.symbol.escapedName, true) : memberName === t.symbol.escapedName))) {
+                        return true;
+                    }
+                return false;
+            }
+            
+            if (carveout){
+
+            }
+
+
 
             candidatesForArgumentError = undefined;
             candidateForArgumentArityError = undefined;

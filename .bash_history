@@ -370,3 +370,5 @@ git status
 git rm tests/baselines/reference/unionOfArraysFilterCall.errors.txt
 git rm -f tests/baselines/reference/unionOfArraysFilterCall.errors.txt
 git status
+echo
+git status
