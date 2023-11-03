@@ -103,6 +103,7 @@ export class OverloadStateImpl  {
      * Will be used for arity checking.
      * @param overloadIndex
      */
+    // @ts-ignore
     getCandidateMappedToAny(overloadIndex: number): Signature {
         // TODO:
     }
@@ -190,7 +191,7 @@ export function chooseOverloadV2(
         } satisfies ReturnType<typeof chooseOverloadV2>;
     }
 
-
+    let candidates: Signature[] = [];
     let candidatesForArgumentError: Signature[] | undefined = undefined;
     let candidateForArgumentArityError: Signature | undefined = undefined;
     let candidateForTypeArgumentError: Signature | undefined = undefined;

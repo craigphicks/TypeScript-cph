@@ -1090,6 +1090,7 @@ import * as performance from "./_namespaces/ts.performance";
 // cphdebug-start
 import { IDebug } from "./mydebug";
 import { TmpChecker, chooseOverloadV2 } from "./chooseOverload2"
+let dbgSignaturesOfTypeRecursionLevel = 0;
 // cphdebug-end
 
 const ambientModuleSymbolRegex = /^".+"$/;
@@ -14719,69 +14720,94 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      */
     function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
     // cphdebug-start
-    const logLevel = 4;
-    IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type: [t${IDebug.dbgs.dbgTypeToString(type)}], kind: ${kind}`,logLevel);
-    const prevLogLevel = IDebug.logLevel;
-    IDebug.logLevel = 0;
+    const currentRecursionLevel = dbgSignaturesOfTypeRecursionLevel++;
+    const logLevel = (currentRecursionLevel === 0) ? 2 : 4;
+    IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type.id: ${type.id}], kind: ${kind}`,logLevel);
+    //IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type: [t${IDebug.dbgs.dbgTypeToString(type)}], kind: ${kind}`,logLevel);
     // cphdebug-end
     const r = (()=>{
         const reducedType = getReducedApparentType(type);
+        // cphdebug-start
+        (reducedType as UnionType).types?.forEach((type,i) => {
+            IDebug.ilog(()=>`getSignaturesOfType[]: reducedType[${i}].id: ${type.id}`,logLevel);
+            //IDebug.ilog(()=>`getSignaturesOfType[]: reducedType[${i}]: ${IDebug.dbgs.dbgTypeToString(type)}`,logLevel);
+        });
+        // cphdebug-end
 
         if (kind === SignatureKind.Call && type.flags & TypeFlags.Union) {
             if ((type as UnionType).arrayFallbackSignatures) {
                 // cphdebug-start
-                if (prevLogLevel){
-                    IDebug.logLevel = prevLogLevel;
-                    IDebug.ilog("return preexisting type.arrayFallbackSignatures",logLevel);
-                    IDebug.logLevel = 0;
-                }
+                IDebug.ilog(()=>"return preexisting type.arrayFallbackSignatures",logLevel);
                 // cphdebug-end
                 return (type as UnionType).arrayFallbackSignatures!;
             }
             // If the union is all different instantiations of a member of the global array type...
             let memberName: __String;
             if (everyType(type, t => !!t.symbol?.parent && isArrayOrTupleSymbol(t.symbol.parent) && (!memberName ? (memberName = t.symbol.escapedName, true) : memberName === t.symbol.escapedName))) {
+
+                // calculate return types as union of return types over the associated type, rather than return type associated with the union of types
+                const numTypes = (reducedType as UnionType).types.length;
+                const numSigs = (reducedType as UnionType).types[0].symbol.declarations?.length;
+                Debug.assert(numSigs);
+                const returnTypes = (new Array(numSigs).fill(undefined)).map((_,isig): Type | undefined =>{
+                    // getUnionType(*,UnionReduction.Subtype) doesn't detect duplicate types (unless I'm mistaken) so use set first.
+                    const rtset = new Set<Type>();
+                    new Array(numTypes).fill(undefined).forEach((_,itype)=>{
+                        // Notice we have to generate the whole signature to get the return type.
+                        // Maybe that could be avoided?
+                        const callSignatures = ((reducedType as UnionType).types[itype] as ObjectType).callSignatures
+                            ?? getSignaturesOfStructuredType((reducedType as UnionType).types[itype] as ObjectType, SignatureKind.Call);
+                        if (callSignatures![isig].typeParameters) return; // skip generic signatures, i.e. <S>
+                        const returnType = callSignatures![isig].resolvedReturnType
+                            ?? getReturnTypeOfSignature(callSignatures![isig]);
+                        Debug.assert(returnType);
+                        rtset.add(returnType);
+                    });
+                    const art: Type[]=[];
+                    rtset.forEach((rt)=>art.push(rt));
+                    if (art.length===0) return undefined;
+                    if (art.length===1) return art[0];
+                    return getUnionType(art,UnionReduction.Subtype);
+                });
+                // cphdebug-start
+                returnTypes.forEach((returnType,i) => IDebug.ilog(()=>
+                    `returnTypes[${i}]: ${IDebug.dbgs.dbgTypeToString(returnType)}`,logLevel));
+                // cphdebug-end
+
                 // Transform the type from `(A[] | B[])["member"]` to `(A | B)[]["member"]` (since we pretend array is covariant anyway)
                 const arrayArg = mapType(type, t => getMappedType((isReadonlyArraySymbol(t.symbol.parent) ? globalReadonlyArrayType : globalArrayType).typeParameters![0], (t as AnonymousType).mapper!));
                 const arrayType = createArrayType(arrayArg, someType(type, t => isReadonlyArraySymbol(t.symbol.parent)));
                 // cphdebug-start
-                if (prevLogLevel){
-                    IDebug.logLevel = prevLogLevel;
-                    IDebug.ilog(`arrayArg: ${IDebug.dbgs.dbgTypeToString(arrayArg)}`,logLevel);
-                    IDebug.ilog(`arrayType: ${IDebug.dbgs.dbgTypeToString(arrayType)}`,logLevel);
-                    IDebug.logLevel = 0;
-                }
+                IDebug.ilog(()=>`arrayArg: ${IDebug.dbgs.dbgTypeToString(arrayArg)}`,logLevel);
+                IDebug.ilog(()=>`arrayType: ${IDebug.dbgs.dbgTypeToString(arrayType)}`,logLevel);
                 // cphdebug-end
-                return (type as UnionType).arrayFallbackSignatures = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
+                const result = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
+
+                returnTypes.forEach((returnType,sigidx) => {
+                    if (returnType) result[sigidx].resolvedReturnType = returnTypes[sigidx];
+                });
+                return (type as UnionType).arrayFallbackSignatures = result;
             }
             // cphdebug-start
             else {
-                if (prevLogLevel){
-                    IDebug.logLevel = prevLogLevel;
-                    IDebug.ilog("not eligible for array mapping",logLevel);
-                    IDebug.logLevel = 0;
-                }
+                IDebug.ilog(()=>"not eligible for array mapping",logLevel);
             }
             // cphdebug-end
         }
         const result = getSignaturesOfStructuredType(reducedType, kind);
         // cphdebug-start
-        if (prevLogLevel){
-            IDebug.logLevel = prevLogLevel;
-            IDebug.ilog(`reducedType: ${IDebug.dbgs.dbgTypeToString(reducedType),logLevel}`);
-            IDebug.ilog(`result.length: ${result.length}`,logLevel);
-            IDebug.logLevel = 0;
-        }
+        IDebug.ilog(()=>`reducedType: ${IDebug.dbgs.dbgTypeToString(reducedType),logLevel}`);
+        IDebug.ilog(()=>`result.length: ${result.length}`,logLevel);
         // cphdebug-end
         return result;
     })();
     // cphdebug-start
-    IDebug.logLevel = prevLogLevel;
     IDebug.ilog(()=>`getSignaturesOfType[out]: result.length = ${r.length}`,logLevel);
     r.forEach((sig,i) => {
         IDebug.ilog(()=>`getSignaturesOfType[out]: result[${i}] = ${IDebug.dbgs.dbgSignatureToString(sig)}`,logLevel);
     });
-    IDebug.ilogGroupEnd("",logLevel);
+    IDebug.ilogGroupEnd("getSignaturesOfType[out]",logLevel);
+    dbgSignaturesOfTypeRecursionLevel--;
     return r;
     // cphdebug-end
     }
@@ -34734,7 +34760,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
-        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, apparentType);
+        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, /*apparentType*/);
 
     // cphdebug-start
     })();

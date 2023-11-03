@@ -382,3 +382,13 @@ find tests -name "*"_onionOfArray*s
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
 myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" 
 myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+git add .
+git commit -m "backup"
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" 
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+myLogLevel=2 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall"
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+git status
