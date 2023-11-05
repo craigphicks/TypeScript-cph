@@ -145,6 +145,7 @@ export interface TmpChecker {
  * -     let T = T0
  * -     let stronglyMatched = true;
  * -     overload:
+ * -     t = getConstraintByArg(T,arg[i])
  * -     For each parameter param<T>[i]
  * -         For each type t in range of T
  * -             r = psuedoAssignable(arg[i], param<T@t>[i]));
