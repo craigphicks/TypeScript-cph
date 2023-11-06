@@ -143,7 +143,12 @@ type MatchingSigsIsect<F extends ((args0:any,args1:any)=>any)[], Args extends [a
 
 
 
+{
 
+
+
+
+}
 
 
 
