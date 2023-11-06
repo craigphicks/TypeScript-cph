@@ -31,14 +31,12 @@ With function intersection and overload, we get errors that should not be there.
 A well known problem.
 */
 declare const args2: Args<string> | Args<number>;
-ffi(args2[0],args2[1]);
-ffo(args2[0],args2[1]);
+ffi(args2[0],args2[1]); // error
+ffo(args2[0],args2[1]); // error
 
 
 /*
-Narrow the args to Args<string> and there is a change:
-The function intersection produces an error,
-but the function overload does not
+Narrow the args to Args<string> and there are no errors.
 */
 
 declare const args: Args<string>;
@@ -46,7 +44,7 @@ ffi(args[0],args[1]); // no error, that's good.
 ffo(args[0],args[1]); // no error, that's good.
 
 /*
-The proposed new definition for overloads is this (in psuedocode):
+The proposed new *definition* (not necessarily algorithm) for overloads is this (in psuedocode):
 Let fol = f1,f2,... be an ordered list of function overload signatures
 let args = the call arguments
 matching = [];
@@ -59,11 +57,13 @@ matchingSignatures = matching;
 
 where
 - weaklyMatches(argtypes, params) := arityOK(args,params)
-  && argtypes.every((argtype,i)=> setIntersection(argtype & param) !== never
+  && argtypes.every((argtype,i)=> setIntersection(argtype,param) !== never
 - stronglyMatches(argtypes, params) := arityOK(args,params)
   && argtypes.every((argtype,i)=> argtype extends params[i]
+- setIntersection(argType,paramType) are all the instances of argType that are assignable to paramType.
+    - 
 
-The defintion for intersections is the same, but without stronglyMatches...break.
+The defintion for intersection types is the same, but without stronglyMatches...break.
 That makes sense because intersections are not ordered, so there can be no "first strong match".
 
 */
