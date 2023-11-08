@@ -392,3 +392,21 @@ myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --te
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
 myLogLevel=0 myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
 git status
+hereby generate
+find . -name "*onion*"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" -i
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysBooleanFilter" 
+find tests/cases/ -name "*unionOfArrays*"
+find tests/cases/ -name "*boolean*"
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysBooleanFilter" 
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+git checkout tests/cases/compiler/unionOfArraysFilterCall.ts
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays"
+git status

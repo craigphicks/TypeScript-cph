@@ -1089,6 +1089,7 @@ import * as performance from "./_namespaces/ts.performance";
 
 // cphdebug-start
 import { IDebug } from "./mydebug";
+// @ts-ignore
 import { TmpChecker, chooseOverloadV2 } from "./chooseOverload2"
 let dbgSignaturesOfTypeRecursionLevel = 0;
 // cphdebug-end
@@ -14723,85 +14724,26 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     const currentRecursionLevel = dbgSignaturesOfTypeRecursionLevel++;
     const logLevel = (currentRecursionLevel === 0) ? 2 : 4;
     IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type.id: ${type.id}], kind: ${kind}`,logLevel);
-    //IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type: [t${IDebug.dbgs.dbgTypeToString(type)}], kind: ${kind}`,logLevel);
-    // cphdebug-end
     const r = (()=>{
-        const reducedType = getReducedApparentType(type);
-        // cphdebug-start
-        (reducedType as UnionType).types?.forEach((type,i) => {
-            IDebug.ilog(()=>`getSignaturesOfType[]: reducedType[${i}].id: ${type.id}`,logLevel);
-            //IDebug.ilog(()=>`getSignaturesOfType[]: reducedType[${i}]: ${IDebug.dbgs.dbgTypeToString(type)}`,logLevel);
-        });
-        // cphdebug-end
-
-        if (kind === SignatureKind.Call && type.flags & TypeFlags.Union) {
+    // cphdebug-end
+        const result = getSignaturesOfStructuredType(getReducedApparentType(type), kind);
+        if (kind === SignatureKind.Call && !length(result) && type.flags & TypeFlags.Union) {
             if ((type as UnionType).arrayFallbackSignatures) {
-                // cphdebug-start
-                IDebug.ilog(()=>"return preexisting type.arrayFallbackSignatures",logLevel);
-                // cphdebug-end
                 return (type as UnionType).arrayFallbackSignatures!;
             }
             // If the union is all different instantiations of a member of the global array type...
             let memberName: __String;
             if (everyType(type, t => !!t.symbol?.parent && isArrayOrTupleSymbol(t.symbol.parent) && (!memberName ? (memberName = t.symbol.escapedName, true) : memberName === t.symbol.escapedName))) {
-
-                // calculate return types as union of return types over the associated type, rather than return type associated with the union of types
-                const numTypes = (reducedType as UnionType).types.length;
-                const numSigs = (reducedType as UnionType).types[0].symbol.declarations?.length;
-                Debug.assert(numSigs);
-                const returnTypes = (new Array(numSigs).fill(undefined)).map((_,isig): Type | undefined =>{
-                    // getUnionType(*,UnionReduction.Subtype) doesn't detect duplicate types (unless I'm mistaken) so use set first.
-                    const rtset = new Set<Type>();
-                    new Array(numTypes).fill(undefined).forEach((_,itype)=>{
-                        // Notice we have to generate the whole signature to get the return type.
-                        // Maybe that could be avoided?
-                        const callSignatures = ((reducedType as UnionType).types[itype] as ObjectType).callSignatures
-                            ?? getSignaturesOfStructuredType((reducedType as UnionType).types[itype] as ObjectType, SignatureKind.Call);
-                        if (callSignatures![isig].typeParameters) return; // skip generic signatures, i.e. <S>
-                        const returnType = callSignatures![isig].resolvedReturnType
-                            ?? getReturnTypeOfSignature(callSignatures![isig]);
-                        Debug.assert(returnType);
-                        rtset.add(returnType);
-                    });
-                    const art: Type[]=[];
-                    rtset.forEach((rt)=>art.push(rt));
-                    if (art.length===0) return undefined;
-                    if (art.length===1) return art[0];
-                    return getUnionType(art,UnionReduction.Subtype);
-                });
-                // cphdebug-start
-                returnTypes.forEach((returnType,i) => IDebug.ilog(()=>
-                    `returnTypes[${i}]: ${IDebug.dbgs.dbgTypeToString(returnType)}`,logLevel));
-                // cphdebug-end
-
                 // Transform the type from `(A[] | B[])["member"]` to `(A | B)[]["member"]` (since we pretend array is covariant anyway)
                 const arrayArg = mapType(type, t => getMappedType((isReadonlyArraySymbol(t.symbol.parent) ? globalReadonlyArrayType : globalArrayType).typeParameters![0], (t as AnonymousType).mapper!));
                 const arrayType = createArrayType(arrayArg, someType(type, t => isReadonlyArraySymbol(t.symbol.parent)));
-                // cphdebug-start
-                IDebug.ilog(()=>`arrayArg: ${IDebug.dbgs.dbgTypeToString(arrayArg)}`,logLevel);
-                IDebug.ilog(()=>`arrayType: ${IDebug.dbgs.dbgTypeToString(arrayType)}`,logLevel);
-                // cphdebug-end
-                const result = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
-
-                returnTypes.forEach((returnType,sigidx) => {
-                    if (returnType) result[sigidx].resolvedReturnType = returnTypes[sigidx];
-                });
-                return (type as UnionType).arrayFallbackSignatures = result;
+                return (type as UnionType).arrayFallbackSignatures = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
             }
-            // cphdebug-start
-            else {
-                IDebug.ilog(()=>"not eligible for array mapping",logLevel);
-            }
-            // cphdebug-end
+            (type as UnionType).arrayFallbackSignatures = result;
         }
-        const result = getSignaturesOfStructuredType(reducedType, kind);
-        // cphdebug-start
-        IDebug.ilog(()=>`reducedType: ${IDebug.dbgs.dbgTypeToString(reducedType),logLevel}`);
-        IDebug.ilog(()=>`result.length: ${result.length}`,logLevel);
-        // cphdebug-end
         return result;
-    })();
     // cphdebug-start
+    })();
     IDebug.ilog(()=>`getSignaturesOfType[out]: result.length = ${r.length}`,logLevel);
     r.forEach((sig,i) => {
         IDebug.ilog(()=>`getSignaturesOfType[out]: result[${i}] = ${IDebug.dbgs.dbgSignatureToString(sig)}`,logLevel);
@@ -34044,7 +33986,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return createDiagnosticForNodeArray(getSourceFileOfNode(node), typeArguments, Diagnostics.Expected_0_type_arguments_but_got_1, belowArgCount === -Infinity ? aboveArgCount : belowArgCount, argCount);
     }
 
-    function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, headMessage?: DiagnosticMessage, apparentType?: Type | undefined): Signature {
+    function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, headMessage?: DiagnosticMessage, _apparentType?: Type | undefined): Signature {
         const isTaggedTemplate = node.kind === SyntaxKind.TaggedTemplateExpression;
         const isDecorator = node.kind === SyntaxKind.Decorator;
         const isJsxOpeningOrSelfClosingElement = isJsxOpeningLikeElement(node);
@@ -34125,32 +34067,34 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // is just important for choosing the best signature. So in the case where there is only one
         // signature, the subtype pass is useless. So skipping it is an optimization.
 
-        if (apparentType){
-            const tmpChecker: TmpChecker = {
-                checkTypeArguments,
-                createInferenceContext,
-                getNonArrayRestType,
-                getSignatureApplicabilityError,
-                getSignatureInstantiation,
-                hasCorrectArity,
-                hasCorrectTypeArgumentArity,
-                inferTypeArguments,
-                isArrayOrTupleSymbol,
-            };
+        // if (apparentType){
+        //     const tmpChecker: TmpChecker = {
+        //         checkTypeArguments,
+        //         createInferenceContext,
+        //         getNonArrayRestType,
+        //         getSignatureApplicabilityError,
+        //         getSignatureInstantiation,
+        //         hasCorrectArity,
+        //         hasCorrectTypeArgumentArity,
+        //         inferTypeArguments,
+        //         isArrayOrTupleSymbol,
+        //     };
 
-            const tmp = chooseOverloadV2(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma, apparentType,
-                node, checker, tmpChecker, typeArguments, args, argCheckMode);
-            if (tmp) {
-                ({
-                    candidate: result,
-                    argCheckMode,
-                    candidateForArgumentArityError,
-                    candidateForTypeArgumentError,
-                    candidatesForArgumentError,
-                } = tmp);
-            }
-        }
-        else {
+        //     const tmp = chooseOverloadV2(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma, apparentType,
+        //         node, checker, tmpChecker, typeArguments, args, argCheckMode);
+        //     if (tmp) {
+        //         ({
+        //             candidate: result,
+        //             argCheckMode,
+        //             candidateForArgumentArityError,
+        //             candidateForTypeArgumentError,
+        //             candidatesForArgumentError,
+        //         } = tmp);
+        //     }
+        // }
+        // else
+
+        {
             if (candidates.length > 1) {
                 result = chooseOverload(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
             }
@@ -34158,11 +34102,20 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 result = chooseOverload(candidates, assignableRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
             }
         }
+
         if (result) {
+            const returnType = calculateSignatureReturnTypeForSpecialCases(result,args);
+            result.resolvedReturnType = returnType;
             return result;
         }
 
         result = getCandidateForOverloadFailure(node, candidates, args, !!candidatesOutArray, checkMode);
+        if (result) {
+            const returnType = calculateSignatureReturnTypeForSpecialCases(result,args);
+            result.resolvedReturnType = returnType;
+            return result;
+        }
+
         // Preemptively cache the result; getResolvedSignature will do this after we return, but
         // we need to ensure that the result is present for the error checks below so that if
         // this signature is encountered again, we handle the circularity (rather than producing a
@@ -34273,6 +34226,61 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return result;
+
+        function calculateSignatureReturnTypeForSpecialCases(signature: Readonly<Signature>, args: readonly Expression[]): Type | undefined {
+            if (true) {
+                // IDebug.ilog(()=>`resolveCall apparentType: ${IDebug.dbgs.dbgTypeToString(_apparentType)}`,2);
+                if (signature.declaration?.symbol.escapedName==="filter" && (
+                        signature.declaration?.symbol.parent?.escapedName==="Array"
+                        || signature.declaration?.symbol.parent?.escapedName==="ReadonlyArray"
+                )){
+                    const arg0Type = getTypeOfExpression(args[0]);
+                    IDebug.ilog(()=>`resolveCall args0Type: ${IDebug.dbgs.dbgTypeToString(arg0Type)}`,2);
+                    IDebug.ilog(()=>``);
+                    // This is safe even if a different BooleanConstructor is defined in a namespace,
+                    // because in that case arg0Type.symbol.escapedName will appear as "__type".
+                    if (arg0Type.symbol.escapedName==="BooleanConstructor"){
+                        IDebug.ilog(()=>`result (before): ${IDebug.dbgs.dbgSignatureToString(signature!)}`,2);
+                        // It is a-priori knowledge the filter returns the same type as the array type
+                        // for a signature succeeding when BooleanConstructor is the argument type
+                        let returnType = (signature.mapper as undefined | { targets: readonly Type[] })?.targets[1];
+                        //result.declaration?.symbol.parent?.escapedName==="ReadonlyArray"
+                        IDebug.ilog(()=>`returnType (before): ${IDebug.dbgs.dbgTypeToString(returnType)}`,2);
+                        if (returnType){
+                            let nonFalsieArrayTypesOut: Type[] = [];
+                            // the return type can only be an array type.
+                            // It cant actually be a union of array types for a single signature.
+                            forEachType(returnType!, at => {
+                                const elemType = getElementTypeOfArrayType(at) || anyType; // need test case for anyType
+                                IDebug.ilog(()=>`rt: ${IDebug.dbgs.dbgTypeToString(elemType)}`,2);
+                                const nonFalsieElemTypes: Type[] = [];
+                                nonFalsieElemTypes.push(filterType(
+                                    elemType,
+                                    t => {
+                                        IDebug.ilog(()=>`t: ${IDebug.dbgs.dbgTypeToString(t)}`,2);
+                                        const facts = getTypeFacts(t, TypeFacts.Truthy | TypeFacts.Falsy);
+                                        if (facts === TypeFacts.Falsy){
+                                            IDebug.ilog(()=>`${IDebug.dbgs.dbgTypeToString(t)} -> strictly false`,2);
+                                            return false;
+                                        }
+                                        else {
+                                            IDebug.ilog(()=>`${IDebug.dbgs.dbgTypeToString(t)} -> not strictly false`,2);
+                                            return true;
+                                        }
+                                    }));
+                                const atout = createArrayType(getUnionType(nonFalsieElemTypes), at.symbol.escapedName==="ReadonlyArray");
+                                nonFalsieArrayTypesOut.push(atout);
+                            });
+                            returnType = getUnionType(nonFalsieArrayTypesOut);
+                            return returnType;
+                        }
+                        IDebug.ilog(()=>`returnType (after): ${IDebug.dbgs.dbgTypeToString(returnType)}`,2);
+                    }
+                    IDebug.ilog(()=>``);
+                }
+            }
+        }
+
 
         function addImplementationSuccessElaboration(failed: Signature, diagnostic: Diagnostic) {
             const oldCandidatesForArgumentError = candidatesForArgumentError;
@@ -34691,16 +34699,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
-        // [cph] getSignaturesOfType,
-        // [cph] in the case of generics, destroys some information we need,
-        // [cph] because it compresses a 2D (or higher) array (#overload x #types in the template parameter(s)).
-        // [cph] to the 1D array required by getSignaturesOfType.
-        // [cph] That won't be enough information in chooseOverload, so we also have to pass apparentType,
-        // [cph] and can completely ignore the return value of getSignaturesOfType therein.
-        // [cph] (What happens if getSignaturesOfType returns something with no parameters, even though some overloads instances have parameters?
-        // [cph] Maybe we pass signature (...args:any[])=>unknow instead.)
-
-
         // Technically, this signatures list may be incomplete. We are taking the apparent type,
         // but we are not including call signatures that may have been added to the Object or
         // Function interface, since they have none by default. This is a bit of a leap of faith
@@ -34760,7 +34758,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
-        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, /*apparentType*/);
+        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, apparentType);
 
     // cphdebug-start
     })();
