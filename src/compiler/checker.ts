@@ -14722,7 +14722,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
     // cphdebug-start
     const currentRecursionLevel = dbgSignaturesOfTypeRecursionLevel++;
-    const logLevel = (currentRecursionLevel === 0) ? 2 : 4;
+    const logLevel = (currentRecursionLevel === 0) ? 3 : 4;
     IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type.id: ${type.id}], kind: ${kind}`,logLevel);
     const r = (()=>{
     // cphdebug-end
@@ -34250,8 +34250,24 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             let nonFalsieArrayTypesOut: Type[] = [];
                             // the return type can only be an array type.
                             // It cant actually be a union of array types for a single signature.
+                            // So this forEachType could be skipped.
                             forEachType(returnType!, at => {
-                                const elemType = getElementTypeOfArrayType(at) || anyType; // need test case for anyType
+                                let elemType: Type;
+                                if (isTupleType(at)){
+                                    // The tuple elements are unionized, *abondoning* the tupleness becuase
+                                    // filtering could create result of varying length.
+                                    // For variable length tuples, undefined is *not* added to the union within getElementTypes.
+                                    elemType = getUnionType(getElementTypes(at));
+                                }
+                                else if (isTupleLikeType(at)){
+                                    // doesn't handle tupleLikeTypes
+                                    // just return the orginal type
+                                    nonFalsieArrayTypesOut.push(at);
+                                    return;
+                                }
+                                else {
+                                    elemType = getElementTypeOfArrayType(at) || anyType; // need test case for anyType
+                                }
                                 IDebug.ilog(()=>`rt: ${IDebug.dbgs.dbgTypeToString(elemType)}`,2);
                                 const nonFalsieElemTypes: Type[] = [];
                                 nonFalsieElemTypes.push(filterType(
@@ -34268,7 +34284,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                             return true;
                                         }
                                     }));
-                                const atout = createArrayType(getUnionType(nonFalsieElemTypes), at.symbol.escapedName==="ReadonlyArray");
+                                // output arrays are not not readonly
+                                const atout = createArrayType(getUnionType(nonFalsieElemTypes));
                                 nonFalsieArrayTypesOut.push(atout);
                             });
                             returnType = getUnionType(nonFalsieArrayTypesOut);

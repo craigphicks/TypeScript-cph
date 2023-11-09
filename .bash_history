@@ -410,3 +410,12 @@ myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --t
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays" -i
 myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="_onionOfArrays"
 git status
+git add .
+git commit -m "changes in checker for BooleanFilter"
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests="#56013"
+ls tests/cases/compiler/arrayFilterBooleanOverload.ts
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=tests/cases/compiler/arrayFilterBooleanOverload.ts
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=tests/cases/compiler/arrayFilterBooleanOverload.ts
+myLogLevel=1  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=unionOfArraysBooleanFilterCall
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=onionOfArrays
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=unionOfArraysBooleanFilterCall
