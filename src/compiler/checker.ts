@@ -1494,6 +1494,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var lastGetCombinedModifierFlagsNode: Declaration | undefined;
     var lastGetCombinedModifierFlagsResult = ModifierFlags.None;
 
+    var chooseOverloadRecursionLevel = -1; // #56013
+    var chooseOverloadFlushNodesSignaturesReq: boolean[] = []; // #56013
+
     // for public members that accept a Node or one of its subtypes, we must guard against
     // synthetic nodes created during transformations by calling `getParseTreeNode`.
     // for most of these, we perform the guard only on `checker` to avoid any possible
@@ -14727,17 +14730,19 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     const r = (()=>{
     // cphdebug-end
         const result = getSignaturesOfStructuredType(getReducedApparentType(type), kind);
-        if (kind === SignatureKind.Call && !length(result) && type.flags & TypeFlags.Union) {
+        if (kind === SignatureKind.Call && length(result) <= 1 && type.flags & TypeFlags.Union) {
             if ((type as UnionType).arrayFallbackSignatures) {
                 return (type as UnionType).arrayFallbackSignatures!;
             }
             // If the union is all different instantiations of a member of the global array type...
-            let memberName: __String;
+            let memberName: __String | undefined;
             if (everyType(type, t => !!t.symbol?.parent && isArrayOrTupleSymbol(t.symbol.parent) && (!memberName ? (memberName = t.symbol.escapedName, true) : memberName === t.symbol.escapedName))) {
-                // Transform the type from `(A[] | B[])["member"]` to `(A | B)[]["member"]` (since we pretend array is covariant anyway)
-                const arrayArg = mapType(type, t => getMappedType((isReadonlyArraySymbol(t.symbol.parent) ? globalReadonlyArrayType : globalArrayType).typeParameters![0], (t as AnonymousType).mapper!));
-                const arrayType = createArrayType(arrayArg, someType(type, t => isReadonlyArraySymbol(t.symbol.parent)));
-                return (type as UnionType).arrayFallbackSignatures = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
+                if ((length(result) <= 1 && memberName === "filter") || length(result) === 0) {
+                    // Transform the type from `(A[] | B[])["member"]` to `(A | B)[]["member"]` (since we pretend array is covariant anyway)
+                    const arrayArg = mapType(type, t => getMappedType((isReadonlyArraySymbol(t.symbol.parent) ? globalReadonlyArrayType : globalArrayType).typeParameters![0], (t as AnonymousType).mapper!));
+                    const arrayType = createArrayType(arrayArg, someType(type, t => isReadonlyArraySymbol(t.symbol.parent)));
+                    return (type as UnionType).arrayFallbackSignatures = getSignaturesOfType(getTypeOfPropertyOfType(arrayType, memberName!)!, kind);
+                }
             }
             (type as UnionType).arrayFallbackSignatures = result;
         }
@@ -15343,6 +15348,36 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (returnSignature) {
                 const newReturnSignature = cloneSignature(returnSignature);
                 newReturnSignature.typeParameters = inferredTypeParameters;
+                const newInstantiatedSignature = cloneSignature(instantiatedSignature);
+                newInstantiatedSignature.resolvedReturnType = getOrCreateTypeFromSignature(newReturnSignature);
+                return newInstantiatedSignature;
+            }
+        }
+        return instantiatedSignature;
+    }
+
+    // @ts-expect-error
+    function getSignatureInstantiation_alt(signature: Signature, typeArguments: Type[] | undefined, isJavascript: boolean, inferredTypeParameters?: readonly TypeParameter[]): Signature {
+        let instantiatedSignature;
+        if (inferredTypeParameters?.length) {
+            instantiatedSignature = getSignatureInstantiationWithoutFillingInTypeArguments(signature, fillMissingTypeArguments(typeArguments, signature.typeParameters, getMinTypeArgumentCount(signature.typeParameters), isJavascript));
+        }
+        else instantiatedSignature = signature;
+        if (inferredTypeParameters) {
+            const returnSignature = getSingleCallOrConstructSignature(getReturnTypeOfSignature(instantiatedSignature));
+            if (returnSignature) {
+                const newReturnSignature = cloneSignature(returnSignature);
+                newReturnSignature.typeParameters = inferredTypeParameters;
+                const newInstantiatedSignature = cloneSignature(instantiatedSignature);
+                newInstantiatedSignature.resolvedReturnType = getOrCreateTypeFromSignature(newReturnSignature);
+                return newInstantiatedSignature;
+            }
+        }
+        else {
+            const returnSignature = getSingleCallOrConstructSignature(getReturnTypeOfSignature(instantiatedSignature));
+            if (returnSignature) {
+                const newReturnSignature = cloneSignature(returnSignature);
+                //newReturnSignature.typeParameters = inferredTypeParameters;
                 const newInstantiatedSignature = cloneSignature(instantiatedSignature);
                 newInstantiatedSignature.resolvedReturnType = getOrCreateTypeFromSignature(newReturnSignature);
                 return newInstantiatedSignature;
@@ -30303,6 +30338,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * @returns the contextual type of an expression.
      */
     function getContextualType(node: Expression, contextFlags: ContextFlags | undefined): Type | undefined {
+    // cphdebug-begin
+    const loggerLevel = 2;
+    IDebug.ilogGroup(`getContextualType[in] node: ${IDebug.dbgs.dbgNodeToString(node)}, contextFlags: ${contextFlags}`, loggerLevel);
+    const result = (()=>{
+    //cphdebug-end
         if (node.flags & NodeFlags.InWithStatement) {
             // We cannot answer semantic questions within a with block, do not proceed any further
             return undefined;
@@ -30310,6 +30350,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // Cached contextual types are obtained with no ContextFlags, so we can only consult them for
         // requests with no ContextFlags.
         const index = findContextualNode(node, /*includeCaches*/ !contextFlags);
+        IDebug.ilog(`getContextualType[findContextualNode idx]: ${index}`, loggerLevel);
         if (index >= 0) {
             return contextualTypes[index];
         }
@@ -30384,6 +30425,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return getContextualJsxElementAttributesType(parent as JsxOpeningLikeElement, contextFlags);
         }
         return undefined;
+    // cphdebug-begin
+    })();
+    IDebug.ilogGroupEnd(`getContextualType[out] result: ${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
+    return result;
+    //cphdebug-end
     }
 
     function pushCachedContextualType(node: Expression) {
@@ -33374,9 +33420,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const arg = args[i];
             if (arg.kind !== SyntaxKind.OmittedExpression) {
                 const paramType = getTypeAtPosition(signature, i);
-                if (couldContainTypeVariables(paramType)) {
+                if (couldContainTypeVariables(paramType)) { // #56013
                     const argType = checkExpressionWithContextualType(arg, paramType, context, checkMode);
                     inferTypes(context.inferences, argType, paramType);
+                    //inferTypes(context.inferences, paramType, argType); // #56013
                 }
             }
         }
@@ -33613,7 +33660,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         reportErrors: boolean,
         containingMessageChain: (() => DiagnosticMessageChain | undefined) | undefined,
     ): readonly Diagnostic[] | undefined {
+    // cphdebug-begin
+    const loggerLevel = 2;
+    IDebug.ilogGroup(`getSignatureApplicabilityError[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}`,loggerLevel);
+    args.forEach((arg,i) => IDebug.ilog(`arg[${i}]:${IDebug.dbgs.dbgNodeToString(arg)}`));
+    IDebug.ilog(`signature:${IDebug.dbgs.dbgSignatureToString(signature)}`);
+    // cphdebug-end
         const errorOutputContainer: { errors?: Diagnostic[]; skipLogging?: boolean; } = { errors: undefined, skipLogging: true };
+    // cphdebug-begin
+    const result = (() => {
+    // cphdebug-end
+
         if (isJsxOpeningLikeElement(node)) {
             if (!checkApplicableSignatureForJsxOpeningLikeElement(node, signature, relation, checkMode, reportErrors, containingMessageChain, errorOutputContainer)) {
                 Debug.assert(!reportErrors || !!errorOutputContainer.errors, "jsx should have errors when reporting errors");
@@ -33668,6 +33725,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         return undefined;
+    // cphdebug-begin
+    })();
+    IDebug.ilogGroupEnd(`getSignatureApplicabilityError[out] result.length:${result?.length ?? "<undef>"}`, loggerLevel);
+    return result;
+    // cphdebug-end
 
         function maybeAddMissingAwaitInfo(errorNode: Node | undefined, source: Type, target: Type) {
             if (errorNode && reportErrors && errorOutputContainer.errors && errorOutputContainer.errors.length) {
@@ -34003,6 +34065,28 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 forEach(typeArguments, checkSourceElement);
             }
         }
+        IDebug.ilog(`resolveCall: typeArguments.length:${typeArguments?.length}`);
+        typeArguments?.forEach((typeNode,i)=>(`resolveCall: typeArguments[${i}]:${IDebug.dbgs.dbgNodeToString(typeNode)}`));
+
+        //const args = getEffectiveCallArguments(node);
+        // if (false && !typeArguments){
+        //     typeArguments = (()=>{
+        //         if (!args[0] || args[0].kind!==SyntaxKind.CallExpression) return undefined;
+        //         const symbol = getSymbolAtLocation((args[0] as CallExpression).expression);
+        //         if (!symbol) return undefined;
+        //         const type = getTypeOfSymbol(symbol);
+        //         const callSignatures = getSignaturesOfType(type, SignatureKind.Call);
+        //         if (callSignatures.length!==1) return undefined;
+        //         if (!callSignatures[0].typeParameters?.length) return undefined;
+        //         return callSignatures[0].typeParameters;
+        //     })();
+        // }
+
+        //const argsZeroFunctionType = args[0] && args.kind===SyntaxKind.CallExpression
+        //&&
+        //IDebug.ilog(`resolveCall: args0Type:${IDebug.dbgs.dbgTypeToString(args0Type)}`);
+        //IDebug.ilog(`resolveCall:`);
+
 
         const candidates = candidatesOutArray || [];
         // reorderCandidates fills up the candidates array directly
@@ -34104,17 +34188,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         if (result) {
-            const returnType = calculateSignatureReturnTypeForSpecialCases(result,args);
-            result.resolvedReturnType = returnType;
+            //const returnType = calculateSignatureReturnTypeForSpecialCases(result,args);
+            //result.resolvedReturnType = returnType;
             return result;
         }
 
         result = getCandidateForOverloadFailure(node, candidates, args, !!candidatesOutArray, checkMode);
-        if (result) {
-            const returnType = calculateSignatureReturnTypeForSpecialCases(result,args);
-            result.resolvedReturnType = returnType;
-            return result;
-        }
 
         // Preemptively cache the result; getResolvedSignature will do this after we return, but
         // we need to ensure that the result is present for the error checks below so that if
@@ -34227,6 +34306,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         return result;
 
+        // @ts-expect-error
         function calculateSignatureReturnTypeForSpecialCases(signature: Readonly<Signature>, args: readonly Expression[]): Type | undefined {
             if (true) {
                 // IDebug.ilog(()=>`resolveCall apparentType: ${IDebug.dbgs.dbgTypeToString(_apparentType)}`,2);
@@ -34321,6 +34401,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function chooseOverload(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false) {
+        chooseOverloadRecursionLevel++;
+        chooseOverloadFlushNodesSignaturesReq.push(false);
+        // cphdebug-begin
+        IDebug.ilogGroup(`chooseOverload[in] chooseOverloadRecursionLevel: ${chooseOverloadRecursionLevel}`,2);
+        candidates.map((c,i)=>IDebug.ilog(()=>`chooseOverload[candidate${i}]: ${IDebug.dbgs.dbgSignatureToString(c)}`,2));
+        // cphdebug-end
+        const result = (()=>{
             candidatesForArgumentError = undefined;
             candidateForArgumentArityError = undefined;
             candidateForTypeArgumentError = undefined;
@@ -34338,8 +34425,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return candidate;
             }
 
+//            const perCandidateArgCheckMode = argCheckMode;
             for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+                if (candidateIndex > 0) chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1] = true; // #56013
+//                argCheckMode = perCandidateArgCheckMode;
                 const candidate = candidates[candidateIndex];
+                IDebug.ilog(`candidate[${candidateIndex}]: argCheckMode:${argCheckMode}, ${IDebug.dbgs.dbgSignatureToString(candidate)}`,2);
                 if (!hasCorrectTypeArgumentArity(candidate, typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
                     continue;
                 }
@@ -34370,6 +34461,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                 }
                 else {
+                    // #56013 - it could be only the arguments have type variables.
+                    // inferenceContext = createInferenceContext([] as any as readonly TypeParameter[], candidate, /*flags*/ isInJSFile(node) ? InferenceFlags.AnyDefault : InferenceFlags.None);
                     checkCandidate = candidate;
                 }
                 if (getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, /*reportErrors*/ false, /*containingMessageChain*/ undefined)) {
@@ -34377,13 +34470,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
                     continue;
                 }
-                if (argCheckMode) {
+                if (/* true  #56013 || */ argCheckMode) {
                     // If one or more context sensitive arguments were excluded, we start including
                     // them now (and keeping do so for any subsequent candidates) and perform a second
                     // round of type inference and applicability checking for this particular candidate.
                     argCheckMode = CheckMode.Normal;
                     if (inferenceContext) {
                         const typeArgumentTypes = inferTypeArguments(node, candidate, args, argCheckMode, inferenceContext);
+                        typeArgumentTypes.forEach((tat,i)=>{
+                            IDebug.ilog(()=>`typeArgumentTypes[${i}]: ${IDebug.dbgs.dbgTypeToString(tat)}`,2);
+                        })
                         checkCandidate = getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext.inferredTypeParameters);
                         // If the original signature has a generic rest type, instantiation may produce a
                         // signature with different arity and we need to perform another arity check.
@@ -34398,13 +34494,41 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         continue;
                     }
                 }
+                else if (false){
+                //     // #56013 - this is only done to so that arguments will be evaluated.  The result is not used, and perhaps it was deliberately omitted.
+                //     IDebug.ilog(`for #56013`)
+                //     //const tmpInferenceContext = inferenceContext ?? createInferenceContext([] as any as readonly TypeParameter[], candidate, /*flags*/ isInJSFile(node) ? InferenceFlags.AnyDefault : InferenceFlags.None);
+                //     for (let i = 0; i < args.length; i++) {
+                //         const arg = args[i];
+                //         if (arg.kind !== SyntaxKind.OmittedExpression) {
+                //             const paramType = getTypeAtPosition(checkCandidate, i);
+                //             //if (couldContainTypeVariables(paramType)) {
+                //             const argType = checkExpressionWithContextualType(arg, paramType, inferenceContext, checkMode);
+                //             IDebug.ilog(()=>`argType: ${IDebug.dbgs.dbgTypeToString(argType)}`,2);
+                //             //getNodeLinks(arg).resolvedType = argType; // doesn't help
+                //             //getNodeLinks(arg).typ = argType;
+                //             inferTypes(inferenceContext!.inferences, paramType, argType); // notice the argType is the targetType
+
+                //         }
+                //     }
+                //     // @ ts-expect-error
+                //     //const typeArgumentTypes = inferTypeArguments(node, candidate, args, argCheckMode, tmpInferenceContext);
+                //     //checkCandidate = getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext?.inferredTypeParameters);
+                }
                 candidates[candidateIndex] = checkCandidate;
                 return checkCandidate;
             }
 
             return undefined;
+        })();
+        // cphdebug-begin
+        IDebug.ilog(()=>`chooseOverload[chooseOverloadRecursionLevel]: ${chooseOverloadRecursionLevel}`,2);
+        IDebug.ilogGroupEnd(()=>`chooseOverload[out]: result: ${result?IDebug.dbgs.dbgSignatureToString(result):"<undef>"}`,2);
+        // cphdebug-end
+        chooseOverloadRecursionLevel--;
+        chooseOverloadFlushNodesSignaturesReq.pop();
+        return result;
         }
-
     }
 
 
@@ -38679,6 +38803,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function checkExpressionWithContextualType(node: Expression, contextualType: Type, inferenceContext: InferenceContext | undefined, checkMode: CheckMode): Type {
+    // cphdebug-begin
+    const loggerLevel = 2;
+    IDebug.ilogGroup(`checkExpressionWithContextualType[in]: checkMode:${checkMode}, node:${IDebug.dbgs.dbgNodeToString(node)}, `
+        +`contextualType:${IDebug.dbgs.dbgTypeToString(contextualType)}`, loggerLevel);
+    const result =(()=>{
+    // cphdebug-end
         const contextNode = getContextNode(node);
         pushContextualType(contextNode, contextualType, /*isCache*/ false);
         pushInferenceContext(contextNode, inferenceContext);
@@ -38696,9 +38826,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         popInferenceContext();
         popContextualType();
         return result;
+    // cphdebug-begin
+    })();
+    IDebug.ilogGroupEnd(`checkExpressionWithContextualType[out]: result:${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
+    return result;
+    // cphdebug-end
     }
 
     function checkExpressionCached(node: Expression | QualifiedName, checkMode?: CheckMode): Type {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(`checkExpressionCached: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}`,loggerLevel);
+    const result = (()=>{
         if (checkMode) {
             return checkExpression(node, checkMode);
         }
@@ -38715,7 +38853,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             flowTypeCache = saveFlowTypeCache;
             flowLoopStart = saveFlowLoopStart;
         }
+        else {
+            IDebug.ilog("cache hit",loggerLevel);
+        }
         return links.resolvedType;
+    })();
+    IDebug.ilogGroupEnd(`checkExpressionCached[out]: node:${IDebug.dbgs.dbgNodeToString(node)} -> ${IDebug.dbgs.dbgTypeToString(result)}`,loggerLevel);
+    return result;
     }
 
     function isTypeAssertion(node: Expression) {
@@ -38849,6 +38993,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function instantiateTypeWithSingleGenericCallSignature(node: Expression | MethodDeclaration | QualifiedName, type: Type, checkMode?: CheckMode) {
+    // cphdebug-begin
+    const loggerLevel = 2;
+    IDebug.ilogGroup(`instantiateTypeWithSingleGenericCallSignature[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, type:${IDebug.dbgs.dbgTypeToString(type)}, checkMode: ${checkMode}`, loggerLevel);
+    const result = (()=>{
+    // cphdebug-end
         if (checkMode && checkMode & (CheckMode.Inferential | CheckMode.SkipGenericFunctions)) {
             const callSignature = getSingleSignature(type, SignatureKind.Call, /*allowMembers*/ true);
             const constructSignature = getSingleSignature(type, SignatureKind.Construct, /*allowMembers*/ true);
@@ -38904,6 +39053,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         return type;
+    })();
+    IDebug.ilogGroupEnd(`instantiateTypeWithSingleGenericCallSignature[out]: result:${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
+    return result
     }
 
     function skippedGenericFunction(node: Node, checkMode: CheckMode) {
@@ -39073,17 +39225,38 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function checkExpression(node: Expression | QualifiedName, checkMode?: CheckMode, forceTuple?: boolean): Type {
+        // cphdebug-begin
+        const loggerLevel = 2;
+        IDebug.ilogGroup(`checkExpression[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}, forceTuple:${forceTuple}`, loggerLevel);
+        // cphdebug-end
         tracing?.push(tracing.Phase.Check, "checkExpression", { kind: node.kind, pos: node.pos, end: node.end, path: (node as TracingNode).tracingPath });
         const saveCurrentNode = currentNode;
         currentNode = node;
         instantiationCount = 0;
+        // #56013
+        if (node.kind===SyntaxKind.CallExpression && chooseOverloadRecursionLevel>=0){
+            const links = getNodeLinks(node);
+            IDebug.ilog(`checkExpression[links]: resolvedType:${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`, loggerLevel);
+            IDebug.ilog(`checkExpression[links]: resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
+            if (chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1]){
+                links.resolvedSignature = undefined;
+                chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1] = false;
+                IDebug.ilog(`checkExpression[links]: reset resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
+            }
+        }
         const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
+        // cphdebug-begin
+        IDebug.ilog(`checkExpression[uninstantiatedType]: :${IDebug.dbgs.dbgTypeToString(uninstantiatedType)}`, loggerLevel);
+        // cphdebug-end
         const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
         if (isConstEnumObjectType(type)) {
             checkConstEnumAccess(node, type);
         }
         currentNode = saveCurrentNode;
         tracing?.pop();
+        // cphdebug-begin
+        IDebug.ilogGroupEnd(`checkExpression[out]: return type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+        // cphdebug-end
         return type;
     }
 

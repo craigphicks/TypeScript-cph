@@ -1,5 +1,6 @@
 import { Debug, LogLevel } from "./debug";
 import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier } from "./types";
+import { getNodeId } from "./checker";
 
 export interface ILoggingHost {
     //log(level: LogLevel, message: string | (() => string)) : void;
@@ -36,6 +37,7 @@ export class ILoggingClass implements ILoggingHost {
     oneIndent: string = '  ';
     currentSourceFn: string = '';
     currentSourceFnCount: number = 0;
+    sourceToFilenameCount: Map<string, number> = new Map<string, number>();
     logFilename: string | undefined= undefined;
     logFileFd: number = 0;
     numOutLines: number = 0;
@@ -76,31 +78,43 @@ export class ILoggingClass implements ILoggingHost {
         }
     }
     notifySourceFile(sourceFile: SourceFile, typeChecker: TypeChecker) {
-        if (sourceFile.originalFileName!==this.currentSourceFn){
+        //if (sourceFile.originalFileName!==this.currentSourceFn){
             this.currentSourceFn = sourceFile.originalFileName;
             this.currentSourceFnCount = 0;
             //this.logFilename = this.dbgTestFilenameMatched(sourceFile);
-            if (this.logFilename = this.dbgTestFilenameMatched(sourceFile)){
+            if (this.dbgTestFilenameMatches(sourceFile)){
+                this.sourceToFilenameCount.set(this.currentSourceFn, 0);
+                this.logFilename = this.dbgTestFilename(sourceFile);
                 this.logFileFd = this.nodeFs.openSync(this.logFilename, 'w');
                 this.numOutLines = 0;
                 IDebug.checker = typeChecker;
             }
-        }
-        else {
-            this.currentSourceFnCount++;
-            this.logFileFd = 0;
-            this.logFilename = "";
-            this.numOutLines = 0;
-            IDebug.checker = undefined;
-        }
+        //}
+        // else {
+        //     this.currentSourceFnCount++;
+        //     this.logFilename = this.dbgTestFilename(sourceFile);
+        //     this.logFileFd = this.nodeFs.openSync(this.logFilename, 'w');
+        //     this.numOutLines = 0;
+        //     //IDebug.checker = typeChecker;
+        // }
     }
-    private dbgTestFilenameMatched(node: SourceFile): string | undefined {
+    private dbgTestFilenameMatches(node: SourceFile): boolean {
         const re = /^\/.src\//;
         const nameMatched = (node.path.match(re) && node.path.slice(-5)!==".d.ts");
-        if (!nameMatched) return undefined;
+        return !!nameMatched;
+    }
+    private dbgTestFilename(node: SourceFile): string | undefined {
+        if (!this.sourceToFilenameCount.has(node.path)){
+            this.sourceToFilenameCount.set(node.path, 0);
+            this.currentSourceFnCount = 0;
+        }
+        else {
+            this.currentSourceFnCount = this.sourceToFilenameCount.get(node.path)! + 1;
+            this.sourceToFilenameCount.set(node.path, this.currentSourceFnCount);
+        }
         const nameRet = this.nodePath.basename(node.path, ".ts");
         this.nodeFs.mkdirSync("tmp", {recursive: true});
-        const retfn = "tmp/" + nameRet + `.de${IDebug.logLevel}.rcev${IDebug.nouseResolveCallExpressionV2?1:2}.log`;
+        const retfn = "tmp/" + nameRet +`.#${this.currentSourceFnCount}` +`.de${IDebug.logLevel}.rcev${IDebug.nouseResolveCallExpressionV2?1:2}.log`;
         return retfn;
     }
 }
@@ -112,14 +126,14 @@ export interface Dbgs {
     dbgTypeToString: (type: Type | undefined) => string;
     // dbgTypeToStringDetail: (type: Type) => string[];
     dbgNodeToString: (node: Node | undefined) => string;
-    dbgSignatureToString: (c: Signature) => string;
+    dbgSignatureToString: (c: Signature | undefined) => string;
     // dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string;
 }
 
 export class DbgsClass implements Dbgs{
     constructor(){}
-    private getNodeId(node: Node){ return node.id??"<undef>"; }
+    private getNodeId(node: Node){ return getNodeId(node); /*return node.id??"<undef>";*/ }
     private getSymbolId(symbol: Symbol){ return symbol.id??"<undef>"; }
     private getSafeCheckerTypeToString(type: Type): string{
         return IDebug.checker!.typeToString(type);
@@ -138,7 +152,8 @@ export class DbgsClass implements Dbgs{
         if (!node) return "<undef>";
         return `[n${this.getNodeId(node)}] ${this.dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
     };
-    dbgSignatureToString(c: Signature): string {
+    dbgSignatureToString(c: Signature | undefined): string {
+        if (!c) return "<undef>";
         let astr = ["("];
         c.parameters.forEach(symbol=> {
             const typeOfSymbol = this.getSafeCheckerTypeOfSymbol(symbol);
