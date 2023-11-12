@@ -69,19 +69,19 @@ export class OverloadStateImpl  {
         if (type0.symbol?.declarations?.length) {
             Debug.assert(this.numberOfOverloads === type0.symbol.declarations.length);
         }
-        ilog(`type0=${dbgs.dbgTypeToString(type0)}`,logLevel);
+        ilog(()=>`type0=${dbgs.dbgTypeToString(type0)}`,logLevel);
         // target0 is the generic target for method.  Array, ReadonlyArray, Tuple all have differing generic targets.
         let target0 = type0.target;
         castHereafter<ObjectType & AnonymousType>(target0);
-        ilog(`type0.target=${dbgs.dbgTypeToString(target0)}`,logLevel);
+        ilog(()=>`type0.target=${dbgs.dbgTypeToString(target0)}`,logLevel);
         checker.getSignaturesOfType(target0, SignatureKind.Call); // This should populate target0.callSignatures
         Debug.assert(target0.callSignatures);
         const callSignatures0 = target0.callSignatures[0];
-        ilog(`type0.target.callSignatures[0].resolvedReturnType=`
+        ilog(()=>`type0.target.callSignatures[0].resolvedReturnType=`
             +`${dbgs.dbgTypeToString(callSignatures0.resolvedReturnType)}`,logLevel);
         callSignatures0.parameters.forEach((p,pidx)=>{
             const paramType = checker.getTypeOfSymbol(p);
-            ilog(`getTypeOfSymbol(...callSignatures[0].parameters[${pidx}]): ${dbgs.dbgTypeToString(paramType)}`,logLevel);
+            ilog(()=>`getTypeOfSymbol(...callSignatures[0].parameters[${pidx}]): ${dbgs.dbgTypeToString(paramType)}`,logLevel);
         });
         // @ts-ignore
         let x = 1;

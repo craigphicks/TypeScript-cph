@@ -12,13 +12,13 @@ interface Array<T> {
 
 declare const maybe: boolean;
 {
-    const id = <T>() => (t: T) => !!t;
+    const id = <T,>() => (t: T) => !!t;
 
-    const result1 = (maybe ? ['foo', 'bar', undefined] : [1] ).filter(id());
+    const result1 = (maybe ? ['foo', 'bar', undefined] : [1] ).filter(MyBoolean);
 
     result1;
 
-    const result2 = ['foo', 'bar', undefined].filter(id()); // want id() = (t: string) => boolean
+    const result2 = ['foo', 'bar', undefined].filter(MyBoolean); // want id() = (t: string) => boolean
 
     result2;
 }

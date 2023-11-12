@@ -4,9 +4,9 @@ import { getNodeId } from "./checker";
 
 export interface ILoggingHost {
     //log(level: LogLevel, message: string | (() => string)) : void;
-    ilog(message: string | (()=>string), level?: LogLevel) : void;
-    ilogGroup (message: string | (()=>string), level?: LogLevel): number;
-    ilogGroupEnd (message?: string | (()=>string), level?: LogLevel, expectedIndent?: number): void;
+    ilog(message: (()=>string), level?: LogLevel) : void;
+    ilogGroup (message: (()=>string), level?: LogLevel): number;
+    ilogGroupEnd (message?: (()=>string), level?: LogLevel, expectedIndent?: number): void;
     notifySourceFile(sourceFile: SourceFile, typeChecker: TypeChecker): void;
 }
 
@@ -21,13 +21,13 @@ export namespace IDebug {
     export let checker: TypeChecker | undefined = undefined;
     // temporary
     export let nouseResolveCallExpressionV2: boolean = false;
-    export function ilog(message: string | (()=>string), level?: LogLevel) {
+    export function ilog(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
     }
-    export function ilogGroup(message: string | (()=>string), level?: LogLevel) {
+    export function ilogGroup(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilogGroup(message, level);
     }
-    export function ilogGroupEnd(message?: string | (()=>string), level?: LogLevel, expectedIndent?: number) {
+    export function ilogGroupEnd(message?: (()=>string), level?: LogLevel, expectedIndent?: number) {
         if (loggingHost) loggingHost.ilogGroupEnd(message, level, expectedIndent);
     }
 }
@@ -48,27 +48,24 @@ export class ILoggingClass implements ILoggingHost {
         this.nodeFs = require("fs");
         this.nodePath = require("path");
     }
-    log(level: LogLevel, message: string | (() => string)) {
+    log(level: LogLevel, messagef: (() => string)) {
         if (!this.logFileFd) return;
         if (level > IDebug.logLevel) return;
         if (this.numOutLines > this.maxNumOutLines) Debug.fail(`Too many lines (${this.maxNumOutLines}) log file ` + this.logFilename);
-
-        if (typeof message === 'function') {
-            message = message();
-        }
+        let message = messagef();
         const indent = this.oneIndent.repeat(this.indent);
         const msg = indent + message + '\n';
         this.nodeFs.writeSync(this.logFileFd, msg);
         this.numOutLines++;
     }
-    ilog(message: string | (()=>string), level: LogLevel = LogLevel.Info) {
+    ilog(message: (()=>string), level: LogLevel = LogLevel.Info) {
         this.log(level, message);
     }
-    ilogGroup (message: string | (()=>string), level: LogLevel = LogLevel.Info) {
+    ilogGroup (message: (()=>string), level: LogLevel = LogLevel.Info) {
         this.log(level, message);
         return this.indent++;
     }
-    ilogGroupEnd (message?: string | (()=>string), level: LogLevel = LogLevel.Info, expectedIndent: number | undefined = undefined) {
+    ilogGroupEnd (message?: (()=>string), level: LogLevel = LogLevel.Info, expectedIndent: number | undefined = undefined) {
         this.indent--;
         if (expectedIndent!==undefined && expectedIndent!==this.indent) {
             Debug.fail('Expected indent ' + expectedIndent + ' but got ' + this.indent);

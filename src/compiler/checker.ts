@@ -1497,6 +1497,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var chooseOverloadRecursionLevel = -1; // #56013
     var chooseOverloadFlushNodesSignaturesReq: boolean[] = []; // #56013
 
+    var dbgCheckExpressionLoggerLevel = 4;
+
     // for public members that accept a Node or one of its subtypes, we must guard against
     // synthetic nodes created during transformations by calling `getParseTreeNode`.
     // for most of these, we perform the guard only on `checker` to avoid any possible
@@ -14725,7 +14727,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
     // cphdebug-start
     const currentRecursionLevel = dbgSignaturesOfTypeRecursionLevel++;
-    const logLevel = (currentRecursionLevel === 0) ? 3 : 4;
+    const logLevel = (currentRecursionLevel === 0) ? 1 : 4;
     IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type.id: ${type.id}], kind: ${kind}`,logLevel);
     const r = (()=>{
     // cphdebug-end
@@ -14753,7 +14755,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     r.forEach((sig,i) => {
         IDebug.ilog(()=>`getSignaturesOfType[out]: result[${i}] = ${IDebug.dbgs.dbgSignatureToString(sig)}`,logLevel);
     });
-    IDebug.ilogGroupEnd("getSignaturesOfType[out]",logLevel);
+    IDebug.ilogGroupEnd(()=>"getSignaturesOfType[out]",logLevel);
     dbgSignaturesOfTypeRecursionLevel--;
     return r;
     // cphdebug-end
@@ -30340,7 +30342,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getContextualType(node: Expression, contextFlags: ContextFlags | undefined): Type | undefined {
     // cphdebug-begin
     const loggerLevel = 2;
-    IDebug.ilogGroup(`getContextualType[in] node: ${IDebug.dbgs.dbgNodeToString(node)}, contextFlags: ${contextFlags}`, loggerLevel);
+    IDebug.ilogGroup(()=>`getContextualType[in] node: ${IDebug.dbgs.dbgNodeToString(node)}, contextFlags: ${contextFlags}`, loggerLevel);
     const result = (()=>{
     //cphdebug-end
         if (node.flags & NodeFlags.InWithStatement) {
@@ -30350,7 +30352,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // Cached contextual types are obtained with no ContextFlags, so we can only consult them for
         // requests with no ContextFlags.
         const index = findContextualNode(node, /*includeCaches*/ !contextFlags);
-        IDebug.ilog(`getContextualType[findContextualNode idx]: ${index}`, loggerLevel);
+        IDebug.ilog(()=>`getContextualType[findContextualNode idx]: ${index}`, loggerLevel);
         if (index >= 0) {
             return contextualTypes[index];
         }
@@ -30427,7 +30429,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return undefined;
     // cphdebug-begin
     })();
-    IDebug.ilogGroupEnd(`getContextualType[out] result: ${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
+    IDebug.ilogGroupEnd(()=>`getContextualType[out] result: ${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
     return result;
     //cphdebug-end
     }
@@ -33662,9 +33664,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     ): readonly Diagnostic[] | undefined {
     // cphdebug-begin
     const loggerLevel = 2;
-    IDebug.ilogGroup(`getSignatureApplicabilityError[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}`,loggerLevel);
-    args.forEach((arg,i) => IDebug.ilog(`arg[${i}]:${IDebug.dbgs.dbgNodeToString(arg)}`));
-    IDebug.ilog(`signature:${IDebug.dbgs.dbgSignatureToString(signature)}`);
+    IDebug.ilogGroup(()=>`getSignatureApplicabilityError[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}`,loggerLevel);
+    args.forEach((arg,i) => IDebug.ilog(()=>`arg[${i}]:${IDebug.dbgs.dbgNodeToString(arg)}`));
+    IDebug.ilog(()=>`signature:${IDebug.dbgs.dbgSignatureToString(signature)}`);
     // cphdebug-end
         const errorOutputContainer: { errors?: Diagnostic[]; skipLogging?: boolean; } = { errors: undefined, skipLogging: true };
     // cphdebug-begin
@@ -33727,7 +33729,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return undefined;
     // cphdebug-begin
     })();
-    IDebug.ilogGroupEnd(`getSignatureApplicabilityError[out] result.length:${result?.length ?? "<undef>"}`, loggerLevel);
+    IDebug.ilogGroupEnd(()=>`getSignatureApplicabilityError[out] result.length:${result?.length ?? "<undef>"}`, loggerLevel);
     return result;
     // cphdebug-end
 
@@ -34065,7 +34067,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 forEach(typeArguments, checkSourceElement);
             }
         }
-        IDebug.ilog(`resolveCall: typeArguments.length:${typeArguments?.length}`);
+        IDebug.ilog(()=>`resolveCall: typeArguments.length:${typeArguments?.length}`);
         typeArguments?.forEach((typeNode,i)=>(`resolveCall: typeArguments[${i}]:${IDebug.dbgs.dbgNodeToString(typeNode)}`));
 
         //const args = getEffectiveCallArguments(node);
@@ -34404,7 +34406,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         chooseOverloadRecursionLevel++;
         chooseOverloadFlushNodesSignaturesReq.push(false);
         // cphdebug-begin
-        IDebug.ilogGroup(`chooseOverload[in] chooseOverloadRecursionLevel: ${chooseOverloadRecursionLevel}`,2);
+        IDebug.ilogGroup(()=>`chooseOverload[in] chooseOverloadRecursionLevel: ${chooseOverloadRecursionLevel}`,2);
         candidates.map((c,i)=>IDebug.ilog(()=>`chooseOverload[candidate${i}]: ${IDebug.dbgs.dbgSignatureToString(c)}`,2));
         // cphdebug-end
         const result = (()=>{
@@ -34426,11 +34428,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
 //            const perCandidateArgCheckMode = argCheckMode;
+            dbgCheckExpressionLoggerLevel = 2;
             for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
                 if (candidateIndex > 0) chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1] = true; // #56013
 //                argCheckMode = perCandidateArgCheckMode;
                 const candidate = candidates[candidateIndex];
-                IDebug.ilog(`candidate[${candidateIndex}]: argCheckMode:${argCheckMode}, ${IDebug.dbgs.dbgSignatureToString(candidate)}`,2);
+                IDebug.ilog(()=>`candidate[${candidateIndex}]: argCheckMode:${argCheckMode}, ${IDebug.dbgs.dbgSignatureToString(candidate)}`,2);
                 if (!hasCorrectTypeArgumentArity(candidate, typeArguments) || !hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
                     continue;
                 }
@@ -34524,6 +34527,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // cphdebug-begin
         IDebug.ilog(()=>`chooseOverload[chooseOverloadRecursionLevel]: ${chooseOverloadRecursionLevel}`,2);
         IDebug.ilogGroupEnd(()=>`chooseOverload[out]: result: ${result?IDebug.dbgs.dbgSignatureToString(result):"<undef>"}`,2);
+        dbgCheckExpressionLoggerLevel = 4;
         // cphdebug-end
         chooseOverloadRecursionLevel--;
         chooseOverloadFlushNodesSignaturesReq.pop();
@@ -34904,7 +34908,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // cphdebug-start
     })();
     if (IDebug.loggingHost) {
-        IDebug.loggingHost.ilogGroupEnd(`resolveCallExpression[out]: node: ${IDebug.dbgs.dbgNodeToString(node)}`,2);//->${IDebug.dbgs.dbgSignatureToString(retsig)}`);
+        IDebug.loggingHost.ilogGroupEnd(()=>`resolveCallExpression[out]: node: ${IDebug.dbgs.dbgNodeToString(node)}`,2);//->${IDebug.dbgs.dbgSignatureToString(retsig)}`);
     }
     return retsig;
     // cphdebug-end
@@ -38805,7 +38809,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function checkExpressionWithContextualType(node: Expression, contextualType: Type, inferenceContext: InferenceContext | undefined, checkMode: CheckMode): Type {
     // cphdebug-begin
     const loggerLevel = 2;
-    IDebug.ilogGroup(`checkExpressionWithContextualType[in]: checkMode:${checkMode}, node:${IDebug.dbgs.dbgNodeToString(node)}, `
+    IDebug.ilogGroup(()=>`checkExpressionWithContextualType[in]: checkMode:${checkMode}, node:${IDebug.dbgs.dbgNodeToString(node)}, `
         +`contextualType:${IDebug.dbgs.dbgTypeToString(contextualType)}`, loggerLevel);
     const result =(()=>{
     // cphdebug-end
@@ -38828,14 +38832,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return result;
     // cphdebug-begin
     })();
-    IDebug.ilogGroupEnd(`checkExpressionWithContextualType[out]: result:${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
+    IDebug.ilogGroupEnd(()=>`checkExpressionWithContextualType[out]: result:${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
     return result;
     // cphdebug-end
     }
 
     function checkExpressionCached(node: Expression | QualifiedName, checkMode?: CheckMode): Type {
     const loggerLevel = 2;
-    IDebug.ilogGroup(`checkExpressionCached: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}`,loggerLevel);
+    IDebug.ilogGroup(()=>`checkExpressionCached: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}`,loggerLevel);
     const result = (()=>{
         if (checkMode) {
             return checkExpression(node, checkMode);
@@ -38854,11 +38858,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             flowLoopStart = saveFlowLoopStart;
         }
         else {
-            IDebug.ilog("cache hit",loggerLevel);
+            IDebug.ilog(()=>"cache hit",loggerLevel);
         }
         return links.resolvedType;
     })();
-    IDebug.ilogGroupEnd(`checkExpressionCached[out]: node:${IDebug.dbgs.dbgNodeToString(node)} -> ${IDebug.dbgs.dbgTypeToString(result)}`,loggerLevel);
+    IDebug.ilogGroupEnd(()=>`checkExpressionCached[out]: node:${IDebug.dbgs.dbgNodeToString(node)} -> ${IDebug.dbgs.dbgTypeToString(result)}`,loggerLevel);
     return result;
     }
 
@@ -38995,7 +38999,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function instantiateTypeWithSingleGenericCallSignature(node: Expression | MethodDeclaration | QualifiedName, type: Type, checkMode?: CheckMode) {
     // cphdebug-begin
     const loggerLevel = 2;
-    IDebug.ilogGroup(`instantiateTypeWithSingleGenericCallSignature[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, type:${IDebug.dbgs.dbgTypeToString(type)}, checkMode: ${checkMode}`, loggerLevel);
+    IDebug.ilogGroup(()=>`instantiateTypeWithSingleGenericCallSignature[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, type:${IDebug.dbgs.dbgTypeToString(type)}, checkMode: ${checkMode}`, loggerLevel);
     const result = (()=>{
     // cphdebug-end
         if (checkMode && checkMode & (CheckMode.Inferential | CheckMode.SkipGenericFunctions)) {
@@ -39054,7 +39058,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         return type;
     })();
-    IDebug.ilogGroupEnd(`instantiateTypeWithSingleGenericCallSignature[out]: result:${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
+    IDebug.ilogGroupEnd(()=>`instantiateTypeWithSingleGenericCallSignature[out]: result:${IDebug.dbgs.dbgTypeToString(result)}`, loggerLevel);
     return result
     }
 
@@ -39226,8 +39230,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function checkExpression(node: Expression | QualifiedName, checkMode?: CheckMode, forceTuple?: boolean): Type {
         // cphdebug-begin
-        const loggerLevel = 2;
-        IDebug.ilogGroup(`checkExpression[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}, forceTuple:${forceTuple}`, loggerLevel);
+        const loggerLevel = dbgCheckExpressionLoggerLevel;
+        IDebug.ilogGroup(()=>`checkExpression[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}, forceTuple:${forceTuple}`, loggerLevel);
         // cphdebug-end
         tracing?.push(tracing.Phase.Check, "checkExpression", { kind: node.kind, pos: node.pos, end: node.end, path: (node as TracingNode).tracingPath });
         const saveCurrentNode = currentNode;
@@ -39236,17 +39240,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // #56013
         if (node.kind===SyntaxKind.CallExpression && chooseOverloadRecursionLevel>=0){
             const links = getNodeLinks(node);
-            IDebug.ilog(`checkExpression[links]: resolvedType:${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`, loggerLevel);
-            IDebug.ilog(`checkExpression[links]: resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
+            IDebug.ilog(()=>`checkExpression[links]: resolvedType:${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`, loggerLevel);
+            IDebug.ilog(()=>`checkExpression[links]: resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
             if (chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1]){
                 links.resolvedSignature = undefined;
                 chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1] = false;
-                IDebug.ilog(`checkExpression[links]: reset resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
+                IDebug.ilog(()=>`checkExpression[links]: reset resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
             }
         }
         const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
         // cphdebug-begin
-        IDebug.ilog(`checkExpression[uninstantiatedType]: :${IDebug.dbgs.dbgTypeToString(uninstantiatedType)}`, loggerLevel);
+        IDebug.ilog(()=>`checkExpression[uninstantiatedType]: :${IDebug.dbgs.dbgTypeToString(uninstantiatedType)}`, loggerLevel);
         // cphdebug-end
         const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
         if (isConstEnumObjectType(type)) {
@@ -39255,7 +39259,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         currentNode = saveCurrentNode;
         tracing?.pop();
         // cphdebug-begin
-        IDebug.ilogGroupEnd(`checkExpression[out]: return type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+        IDebug.ilogGroupEnd(()=>`checkExpression[out]: return type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
         // cphdebug-end
         return type;
     }

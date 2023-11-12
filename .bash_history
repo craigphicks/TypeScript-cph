@@ -419,3 +419,36 @@ myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --t
 myLogLevel=1  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=unionOfArraysBooleanFilterCall
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=onionOfArrays
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=unionOfArraysBooleanFilterCall
+herby --tasks
+hereby --tasks
+hereby --generate-diagnostics
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload1 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload2 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload 
+git status
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload 
+git status
+git add src tests
+git commit -m "#56013"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload 
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload 
+myLogLevel=1  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 myPreCheckMode=65 hereby runtests --tests=arrayFilterBooleanExternalOverload 
+hereby baseline-accept
