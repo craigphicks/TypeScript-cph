@@ -1495,7 +1495,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var lastGetCombinedModifierFlagsResult = ModifierFlags.None;
 
     var chooseOverloadRecursionLevel = -1; // #56013
-    var chooseOverloadFlushNodesSignaturesReq: boolean[] = []; // #56013
+    var chooseOverloadFlushNodesSignaturesReq: (Set<Node>|undefined)[] = []; // #56013
 
     var dbgCheckExpressionLoggerLevel = 4;
 
@@ -13250,6 +13250,49 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return result || emptyArray;
     }
 
+    /**
+     * [cph]
+     * @param signatures
+     * @returns
+     */
+    // @ts-ignore
+    function createUnionResultSignature(signatures: Signature[]): Signature { // IWOZERE
+        let returnTypes: Type[]=[];
+        const paramTypes: Type[][] = [];
+        for (const sig of signatures) {
+            // Only process signatures with parameter lists that aren't already in the result list
+            sig.parameters.forEach((param, index) => {
+                // TODO: all the options, etc.
+                const paramType = getTypeOfSymbol(param);
+                if (!paramTypes[index]) paramTypes[index] = [paramType];
+                else paramTypes[index].push(paramType);
+            });
+            const rt = getReturnTypeOfSignature(sig);
+            returnTypes.push(rt);
+        }
+        const params = paramTypes.map((types, index) => {
+            const utype = getUnionType(types);
+            const paramSymbol = createSymbol(SymbolFlags.FunctionScopedVariable, `arg${index}` as __String);
+            paramSymbol.links.type = utype;
+            return paramSymbol;
+        });
+        const returnType = getUnionType(returnTypes);
+
+        const usig = createSignature(
+            /*declaration*/ undefined,
+            /*typeParameters*/ undefined,
+            /*thisParameter*/ undefined,
+            /*parameters*/ params,
+            returnType,
+            /*resolvedTypePredicate*/ undefined,
+            0,
+            SignatureFlags.None);
+
+        const result = createUnionSignature(usig, signatures);
+        return result;
+    }
+
+
     function compareTypeParametersIdentical(sourceParams: readonly TypeParameter[] | undefined, targetParams: readonly TypeParameter[] | undefined): boolean {
         if (length(sourceParams) !== length(targetParams)) {
             return false;
@@ -14729,6 +14772,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     const currentRecursionLevel = dbgSignaturesOfTypeRecursionLevel++;
     const logLevel = (currentRecursionLevel === 0) ? 1 : 4;
     IDebug.ilogGroup(()=>`getSignaturesOfType[in]: type.id: ${type.id}], kind: ${kind}`,logLevel);
+    IDebug.ilog(()=>`getSignaturesOfType[in]: type: ${IDebug.dbgs.dbgTypeToString(type)}]`,logLevel);
     const r = (()=>{
     // cphdebug-end
         const result = getSignaturesOfStructuredType(getReducedApparentType(type), kind);
@@ -34404,8 +34448,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         function chooseOverload(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false) {
         chooseOverloadRecursionLevel++;
-        chooseOverloadFlushNodesSignaturesReq.push(false);
+        chooseOverloadFlushNodesSignaturesReq[chooseOverloadRecursionLevel]=undefined;
+
         // cphdebug-begin
+        const savedbgCheckExpressionLoggerLevel = dbgCheckExpressionLoggerLevel;
+        dbgCheckExpressionLoggerLevel = 2;
         IDebug.ilogGroup(()=>`chooseOverload[in] chooseOverloadRecursionLevel: ${chooseOverloadRecursionLevel}`,2);
         candidates.map((c,i)=>IDebug.ilog(()=>`chooseOverload[candidate${i}]: ${IDebug.dbgs.dbgSignatureToString(c)}`,2));
         // cphdebug-end
@@ -34428,9 +34475,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
 //            const perCandidateArgCheckMode = argCheckMode;
-            dbgCheckExpressionLoggerLevel = 2;
             for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
-                if (candidateIndex > 0) chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1] = true; // #56013
+                if (candidateIndex > 0) chooseOverloadFlushNodesSignaturesReq[chooseOverloadRecursionLevel] = new Set(); // #56013
 //                argCheckMode = perCandidateArgCheckMode;
                 const candidate = candidates[candidateIndex];
                 IDebug.ilog(()=>`candidate[${candidateIndex}]: argCheckMode:${argCheckMode}, ${IDebug.dbgs.dbgSignatureToString(candidate)}`,2);
@@ -34527,10 +34573,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // cphdebug-begin
         IDebug.ilog(()=>`chooseOverload[chooseOverloadRecursionLevel]: ${chooseOverloadRecursionLevel}`,2);
         IDebug.ilogGroupEnd(()=>`chooseOverload[out]: result: ${result?IDebug.dbgs.dbgSignatureToString(result):"<undef>"}`,2);
-        dbgCheckExpressionLoggerLevel = 4;
+        dbgCheckExpressionLoggerLevel = savedbgCheckExpressionLoggerLevel;
         // cphdebug-end
+        chooseOverloadFlushNodesSignaturesReq[chooseOverloadRecursionLevel]=undefined;
         chooseOverloadRecursionLevel--;
-        chooseOverloadFlushNodesSignaturesReq.pop();
         return result;
         }
     }
@@ -34848,6 +34894,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // but we are not including call signatures that may have been added to the Object or
         // Function interface, since they have none by default. This is a bit of a leap of faith
         // that the user will not add any.
+        const useArrCallSignatures = true;
+        let arrCallSignatures: (readonly Signature[])[] | undefined;
+        if (useArrCallSignatures && apparentType.flags & TypeFlags.Union){
+            arrCallSignatures = [];
+            for (const type of (apparentType as UnionType).types){
+                arrCallSignatures.push(getSignaturesOfType(type, SignatureKind.Call));
+            }
+        }
         const callSignatures = getSignaturesOfType(apparentType, SignatureKind.Call);
         const numConstructSignatures = getSignaturesOfType(apparentType, SignatureKind.Construct).length;
 
@@ -34903,6 +34957,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
+        if (arrCallSignatures){
+            const results = arrCallSignatures.map((callSignatures)=>{
+                return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
+            });
+            results.forEach((result,i)=>{
+                IDebug.ilog(()=>`resolveCallExpression[case union type]: results[${i}]: ${IDebug.dbgs.dbgSignatureToString(result)}`,2);
+            });
+            IDebug.ilog(()=>`resolveCallExpression[case union type]`,2);
+            const unionSig = createUnionResultSignature(results);
+            IDebug.ilog(()=>`resolveCallExpression[union sig]: ${IDebug.dbgs.dbgSignatureToString(unionSig)}`,2);
+            return unionSig;
+        }
         return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, /*headMessage*/ undefined, apparentType);
 
     // cphdebug-start
@@ -39240,12 +39306,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // #56013
         if (node.kind===SyntaxKind.CallExpression && chooseOverloadRecursionLevel>=0){
             const links = getNodeLinks(node);
+            IDebug.ilog(()=>`checkExpression[chooseOverloadRecursionLevel]: ${chooseOverloadRecursionLevel}`, loggerLevel);
             IDebug.ilog(()=>`checkExpression[links]: resolvedType:${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`, loggerLevel);
             IDebug.ilog(()=>`checkExpression[links]: resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
-            if (chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1]){
-                links.resolvedSignature = undefined;
-                chooseOverloadFlushNodesSignaturesReq[chooseOverloadFlushNodesSignaturesReq.length-1] = false;
-                IDebug.ilog(()=>`checkExpression[links]: reset resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
+            let setOfNode: Set<Node> | undefined;
+            if (chooseOverloadRecursionLevel>=0 &&  (setOfNode = chooseOverloadFlushNodesSignaturesReq[chooseOverloadRecursionLevel])){
+                if (!setOfNode.has(node)) {
+                    getNodeLinks(node).resolvedSignature = undefined;
+                    setOfNode.add(node);
+                    IDebug.ilog(()=>`checkExpression[links]: reset resolvedSignature:${IDebug.dbgs.dbgSignatureToString(links.resolvedSignature)}`, loggerLevel);
+                }
             }
         }
         const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
