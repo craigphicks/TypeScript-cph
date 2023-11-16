@@ -67,6 +67,8 @@ import {
     CaseClause,
     CaseOrDefaultClause,
     cast,
+    // @ts-ignore (not used yet)
+    castHereafter,
     chainDiagnosticMessages,
     CharacterCodes,
     CheckFlags,
@@ -1087,6 +1089,15 @@ import {
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
 
+import {
+    CettTypeChecker,
+    Cett
+} from "./cett"
+
+// cphdebug-start
+// @ts-ignore
+import { IDebug } from "./mydebug";
+// cphdebug-end
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
 
@@ -2255,6 +2266,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     var builtinGlobals = createSymbolTable();
     builtinGlobals.set(undefinedSymbol.escapedName, undefinedSymbol);
+
+    var globalCallExpresionLevel = -1;
+    var globalCett: Cett | undefined;
 
     // Extensions suggested for path imports when module resolution is node16 or higher.
     // The first element of each tuple is the extension a file has.
@@ -34534,6 +34548,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+        globalCallExpresionLevel++;
+        return resolveCallExpressionHelper(node, candidatesOutArray, checkMode);
+        globalCallExpresionLevel--;
+    }
+    function resolveCallExpressionHelper(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
         if (node.expression.kind === SyntaxKind.SuperKeyword) {
             const superType = checkSuperExpression(node.expression);
             if (isTypeAny(superType)) {
@@ -34581,6 +34600,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (isErrorType(apparentType)) {
             // Another error has already been reported
             return resolveErrorCall(node);
+        }
+
+
+        const isTopCallExpression = globalCallExpresionLevel === 0;
+        if (isTopCallExpression){
+            const cettChecker: CettTypeChecker = {
+
+            };
+            globalCett = new Cett(node,apparentType, checker, cettChecker);
+        }
+        else {
+            Debug.assert(globalCett);
+            if (!globalCett.isCompleted()){
+                globalCett.addCall(node,apparentType,globalCallExpresionLevel);
+                return resolvingSignature;
+            }
+            // else fall through
         }
 
         // Technically, this signatures list may be incomplete. We are taking the apparent type,
