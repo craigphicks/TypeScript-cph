@@ -1,5 +1,5 @@
 import { Debug, LogLevel } from "./debug";
-import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier } from "./types";
+import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain } from "./types";
 import { getNodeId } from "./checker";
 
 export interface ILoggingHost {
@@ -126,6 +126,7 @@ export interface Dbgs {
     dbgSignatureToString: (c: Signature | undefined) => string;
     // dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string;
+    dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[];
 }
 
 export class DbgsClass implements Dbgs{
@@ -163,6 +164,26 @@ export class DbgsClass implements Dbgs{
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string {
         return s ? `{ id:${this.getSymbolId(s)}, ename: ${s.escapedName} }` : "<undef>";
     }
+    dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[] {
+        if (!diagnostic) return ["<undef>"];
+        const astr: string[] = [];
+        let d: Diagnostic | DiagnosticMessageChain | undefined = diagnostic;
+        while (d?.messageText){
+            if (typeof d.messageText === "string") {
+                astr.push(d.messageText);
+                d = undefined;
+            }
+            else if (typeof d.messageText.messageText === "string") {
+                astr.push(d.messageText.messageText);
+                if (d.messageText.next) {
+                    d = d.messageText.next[0] as DiagnosticMessageChain;
+                }
+            }
+        }
+        return astr;
+    }
+
+
 
     // const dbgFlowToString = (flow: FlowNode | undefined, withAntecedants?: boolean): string => {
     //     if (!flow) return "<undef>";

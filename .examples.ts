@@ -34,9 +34,9 @@ const t3 = fproxy(fproxy, fproxy, fol1,"test");
 
 // const y1 = fwrapper(f2,1);
 
-type TupRem<H, T extends [H, AnyTup], N extends number> = T extends [infer H, ...infer R] ? R : never;
+// type TupRem<H, T extends [H, AnyTup], N extends number> = T extends [infer H, ...infer R] ? R : never;
 
-type TupTail<Tup extends AnyTup> = Tup extends [infer H, ...infer R] ? R : never;
+// type TupTail<Tup extends AnyTup> = Tup extends [infer H, ...infer R] ? R : never;
 
 
 declare function fpartial0<A0, AR extends AnyTup, R>(f:(...args:[A0,...AR])=>R,a0:A0): FN<AR,R>;

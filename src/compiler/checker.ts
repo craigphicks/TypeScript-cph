@@ -1089,10 +1089,14 @@ import {
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
 
+// import {
+//     CettTypeChecker,
+//     Cett,
+//     AddCallReturnKind
+// } from "./cett"
 import {
-    CettTypeChecker,
-    Cett
-} from "./cett"
+    TmpChecker, chooseOverload2
+} from "./chooseOverload2"
 
 // cphdebug-start
 // @ts-ignore
@@ -2267,8 +2271,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var builtinGlobals = createSymbolTable();
     builtinGlobals.set(undefinedSymbol.escapedName, undefinedSymbol);
 
-    var globalCallExpresionLevel = -1;
-    var globalCett: Cett | undefined;
 
     // Extensions suggested for path imports when module resolution is node16 or higher.
     // The first element of each tuple is the extension a file has.
@@ -2288,6 +2290,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     /* eslint-enable no-var */
 
     initializeTypeChecker();
+
+   // var globalCett = new Cett(checker);
 
     return checker;
 
@@ -33730,10 +33734,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         reportErrors: boolean,
         containingMessageChain: (() => DiagnosticMessageChain | undefined) | undefined,
     ): readonly Diagnostic[] | undefined {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getSignatureApplicabilityError(checkMode:${checkMode}, node:${IDebug.dbgs.dbgNodeToString(node)}, signature:${IDebug.dbgs.dbgSignatureToString(signature)})`,loggerLevel)
+    const result = (()=>{
         const errorOutputContainer: { errors?: Diagnostic[]; skipLogging?: boolean; } = { errors: undefined, skipLogging: true };
         if (isJsxOpeningLikeElement(node)) {
             if (!checkApplicableSignatureForJsxOpeningLikeElement(node, signature, relation, checkMode, reportErrors, containingMessageChain, errorOutputContainer)) {
                 Debug.assert(!reportErrors || !!errorOutputContainer.errors, "jsx should have errors when reporting errors");
+                IDebug.ilog(()=>`getSignatureApplicabilityError fail@0`,loggerLevel);
                 return errorOutputContainer.errors || emptyArray;
             }
             return undefined;
@@ -33749,6 +33757,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const headMessage = Diagnostics.The_this_context_of_type_0_is_not_assignable_to_method_s_this_of_type_1;
             if (!checkTypeRelatedTo(thisArgumentType, thisType, relation, errorNode, headMessage, containingMessageChain, errorOutputContainer)) {
                 Debug.assert(!reportErrors || !!errorOutputContainer.errors, "this parameter should have errors when reporting errors");
+                IDebug.ilog(()=>`getSignatureApplicabilityError fail@1`,loggerLevel);
                 return errorOutputContainer.errors || emptyArray;
             }
         }
@@ -33767,6 +33776,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 if (!checkTypeRelatedToAndOptionallyElaborate(checkArgType, paramType, relation, reportErrors ? arg : undefined, arg, headMessage, containingMessageChain, errorOutputContainer)) {
                     Debug.assert(!reportErrors || !!errorOutputContainer.errors, "parameter should have errors when reporting errors");
                     maybeAddMissingAwaitInfo(arg, checkArgType, paramType);
+                    IDebug.ilog(()=>`getSignatureApplicabilityError fail@2 arg[${i}]`,loggerLevel);
                     return errorOutputContainer.errors || emptyArray;
                 }
             }
@@ -33781,6 +33791,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (!checkTypeRelatedTo(spreadType, restType, relation, errorNode, headMessage, /*containingMessageChain*/ undefined, errorOutputContainer)) {
                 Debug.assert(!reportErrors || !!errorOutputContainer.errors, "rest parameter should have errors when reporting errors");
                 maybeAddMissingAwaitInfo(errorNode, spreadType, restType);
+                IDebug.ilog(()=>`getSignatureApplicabilityError fail@3`,loggerLevel);
                 return errorOutputContainer.errors || emptyArray;
             }
         }
@@ -33798,6 +33809,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
         }
+    })();
+    IDebug.dbgs.dbgDiagnosticsToStrings(result?.[0]).forEach(s=>IDebug.ilog(()=>`getSignatureApplicabilityError: diagnostic: ${s}`,loggerLevel));
+    IDebug.ilogGroupEnd(()=>`getSignatureApplicabilityError()=>`,loggerLevel);
+    return result;
     }
 
     /**
@@ -34103,7 +34118,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return createDiagnosticForNodeArray(getSourceFileOfNode(node), typeArguments, Diagnostics.Expected_0_type_arguments_but_got_1, belowArgCount === -Infinity ? aboveArgCount : belowArgCount, argCount);
     }
 
-    function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, headMessage?: DiagnosticMessage): Signature {
+    function resolveCall(node: CallLikeExpression, signatures: readonly Signature[], candidatesOutArray: Signature[] | undefined, checkMode: CheckMode, callChainFlags: SignatureFlags, headMessage?: DiagnosticMessage,
+        reducedType?: Type | undefined): Signature {
         const isTaggedTemplate = node.kind === SyntaxKind.TaggedTemplateExpression;
         const isDecorator = node.kind === SyntaxKind.Decorator;
         const isJsxOpeningOrSelfClosingElement = isJsxOpeningLikeElement(node);
@@ -34183,11 +34199,39 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // Whether the call is an error is determined by assignability of the arguments. The subtype pass
         // is just important for choosing the best signature. So in the case where there is only one
         // signature, the subtype pass is useless. So skipping it is an optimization.
-        if (candidates.length > 1) {
-            result = chooseOverload(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+        if (reducedType && reducedType.flags & TypeFlags.Union) {
+            const tmpChecker: TmpChecker = {
+                checkTypeArguments,
+                createInferenceContext,
+                getNonArrayRestType,
+                getSignatureApplicabilityError,
+                getSignatureInstantiation,
+                hasCorrectArity,
+                hasCorrectTypeArgumentArity,
+                inferTypeArguments,
+                isArrayOrTupleSymbol,
+                createUnionSignature,
+                resolveStructuredTypeMembers,
+                getNodeLinks,
+                getSymbolLinks,
+            };
+
+            ({
+                candidate: result,
+                argCheckMode,
+                candidatesForArgumentError,
+                candidateForArgumentArityError,
+                candidateForTypeArgumentError,
+            } = chooseOverload2(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma, reducedType,
+                {node, args, typeArguments, checker, tmpChecker, argCheckMode}));
         }
-        if (!result) {
-            result = chooseOverload(candidates, assignableRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+        else {
+            if (candidates.length > 1) {
+                result = chooseOverload(candidates, subtypeRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+            }
+            if (!result) {
+                result = chooseOverload(candidates, assignableRelation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+            }
         }
         if (result) {
             return result;
@@ -34548,11 +34592,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
-        globalCallExpresionLevel++;
-        return resolveCallExpressionHelper(node, candidatesOutArray, checkMode);
-        globalCallExpresionLevel--;
-    }
-    function resolveCallExpressionHelper(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
         if (node.expression.kind === SyntaxKind.SuperKeyword) {
             const superType = checkSuperExpression(node.expression);
             if (isTypeAny(superType)) {
@@ -34602,22 +34641,38 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
+        // const cettChecker: CettTypeChecker = {
+        //     checkExpression(node: Expression | QualifiedName, checkMode: CheckMode, forceTuple = false) {
+        //         return checkExpression(node, checkMode, forceTuple);
+        //     },
+        //     getEffectiveCallArguments(node: CallLikeExpression): readonly Expression[] {
+        //         return getEffectiveCallArguments(node);
+        //     },
+        //     getReducedApparentType(type: Type) {
+        //         return getReducedApparentType(type);
+        //     },
+        //     resolveStructuredTypeMembers(type: StructuredType): ResolvedType {
+        //         return resolveStructuredTypeMembers(type);
+        //     },
+        // };
 
-        const isTopCallExpression = globalCallExpresionLevel === 0;
-        if (isTopCallExpression){
-            const cettChecker: CettTypeChecker = {
+        // globalCett.setCettChecker(cettChecker);
 
-            };
-            globalCett = new Cett(node,apparentType, checker, cettChecker);
+        // let cettRet = globalCett.addCall(node,apparentType);
+        // if (cettRet===AddCallReturnKind.resolvingSignature)
+        //     return resolvingSignature;
+        // else if (cettRet===AddCallReturnKind.alreadyVisited){
+        //     Debug.assert(false);
+        // }
+        // else if (cettRet===AddCallReturnKind.rootCompleted){
+        //     //Debug.assert(false);
+        // }
+
+        let reducedType: Type | undefined;
+        if (!IDebug.nouseResolveCallExpressionV2){
+            reducedType = getReducedApparentType(apparentType);
         }
-        else {
-            Debug.assert(globalCett);
-            if (!globalCett.isCompleted()){
-                globalCett.addCall(node,apparentType,globalCallExpresionLevel);
-                return resolvingSignature;
-            }
-            // else fall through
-        }
+
 
         // Technically, this signatures list may be incomplete. We are taking the apparent type,
         // but we are not including call signatures that may have been added to the Object or
@@ -34678,7 +34733,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
-        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
+        return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags, undefined, reducedType);
     }
 
     function isGenericFunctionReturningFunction(signature: Signature) {
@@ -36141,6 +36196,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function assignParameterType(parameter: Symbol, contextualType?: Type) {
+        IDebug.ilog(()=>`assignParameterType: ${parameter.escapedName} ${contextualType ? typeToString(contextualType) : ""}`,2);
         const links = getSymbolLinks(parameter);
         if (!links.type) {
             const declaration = parameter.valueDeclaration as ParameterDeclaration | undefined;
@@ -46430,6 +46486,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function checkSourceFile(node: SourceFile) {
         tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
         performance.mark("beforeCheck");
+        // cphdebug-start
+        if (IDebug.loggingHost){
+            IDebug.loggingHost.notifySourceFile(node, checker);
+        }
+        // cphdebug-end
         checkSourceFileWorker(node);
         performance.mark("afterCheck");
         performance.measure("Check", "beforeCheck", "afterCheck");
