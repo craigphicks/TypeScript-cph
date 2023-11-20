@@ -35,6 +35,7 @@ import {
     NodeCheckFlags,
     NodeLinks,
     SymbolLinks,
+    Node,
 } from "./_namespaces/ts";
 
 // cphdebug-start
@@ -128,6 +129,17 @@ export class OverloadStateImpl  {
 
 }
 
+export interface ChooseOverloadInnerValuesTracker {
+    incrementChooseOverloadRecursionLevel(): void;
+    decrementChooseOverloadRecursionLevel(): void;
+    // called from checkExpression and after doOneCandidate if it was successful
+    getChooseOverloadFlushNodesReq(): Set<Node> | undefined;
+    setChooseOverloadFlushNodesReq(value: Set<Node> | undefined): void;
+    // called from assignParameter and after doOneCandidate if it was successful
+    getChooseOverloadFlushSymbolsReq(): Set<Symbol> | undefined;
+    setChooseOverloadFlushSymbolsReq(value: Set<Symbol> | undefined): void;
+}
+
 export interface TmpChecker {
     isArrayOrTupleSymbol(symbol: Symbol): boolean;
     hasCorrectArity(node: CallLikeExpression, args: readonly Expression[], signature: Signature, signatureHelpTrailingComma?: boolean): boolean;
@@ -142,6 +154,12 @@ export interface TmpChecker {
     resolveStructuredTypeMembers(type: StructuredType): ResolvedType;
     getNodeLinks(node: Expression): NodeLinks;
     getSymbolLinks(symbol: Symbol): SymbolLinks;
+    incrementChooseOverloadRecursionLevel(): void;
+    decrementChooseOverloadRecursionLevel(): void;
+    getChooseOverloadFlushNodesSignaturesReq(): Set<Node> | undefined;
+    setChooseOverloadFlushNodesSignaturesReq(value: Set<Node> | undefined): void;
+    getChooseOverloadFlushSymbolsReq(): Set<Symbol> | undefined;
+    setChooseOverloadFlushSymbolsReq(value: Set<Symbol> | undefined): void;
 };
 
 
@@ -230,9 +248,40 @@ interface ChooseOverload2ReturnType {
         return result;
     }
 
+    // chooseOverloadRecursionLevel++; // #56013
+    // chooseOverloadFlushNodesSignaturesReq[chooseOverloadRecursionLevel] = undefined;
+    // return chooseOverloadHelper(candidates, relation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+    // chooseOverloadFlushNodesSignaturesReq[chooseOverloadRecursionLevel] = undefined;
+    // chooseOverloadRecursionLevel--;
+
+    export function chooseOverload2(
+        _candidatesOriginal: Signature[], // gets overwritten
+        relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma: boolean | undefined,
+        reducedType: Type,
+        // @ts-ignore
+        //resolvedTypesOfUnion: readonly {  type: (Type | ResolvedType), fromStructured: boolean}[],
+        x:{
+            node: CallLikeExpression,
+            args: readonly Expression[],
+            typeArguments: NodeArray<TypeNode> | undefined,
+            // @ts-ignore
+            checker: TypeChecker,
+            tmpChecker: TmpChecker,
+            argCheckMode: CheckMode
+        }): ChooseOverload2ReturnType{
+        x.tmpChecker.incrementChooseOverloadRecursionLevel(); // #56013
+        x.tmpChecker.setChooseOverloadFlushNodesSignaturesReq(undefined);
+        x.tmpChecker.setChooseOverloadFlushSymbolsReq(undefined);
+        const result =  chooseOverload2Helper(_candidatesOriginal, relation, isSingleNonGenericCandidate, signatureHelpTrailingComma, reducedType, x);
+        x.tmpChecker.setChooseOverloadFlushNodesSignaturesReq(undefined);
+        x.tmpChecker.setChooseOverloadFlushSymbolsReq(undefined);
+        x.tmpChecker.decrementChooseOverloadRecursionLevel(); // #56013
+        return result;
+    }
 
 
-export function chooseOverload2(
+
+export function chooseOverload2Helper(
     _candidatesOriginal: Signature[], // gets overwritten
     relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma: boolean | undefined,
     reducedType: Type,
@@ -242,7 +291,8 @@ export function chooseOverload2(
         node, args, typeArguments,
         // @ts-ignore
         checker,
-        tmpChecker, argCheckMode
+        tmpChecker,
+        argCheckMode: argCheckModeIn
     }:{
         node: CallLikeExpression,
         args: readonly Expression[],
@@ -299,21 +349,87 @@ export function chooseOverload2(
         }
     });
 
-
+    let argCheckMode = argCheckModeIn;
 
     // The brute force approach for comparison - not performce feasible in the general case.
     const passed2: (Signature| undefined)[][] = [];
+    const innerSymbolAccumTypesMap: Map<Symbol, Type[]> = new Map();
+    const innerNodeAccumSignaturesMap: Map<Node, Signature[]> = new Map();
     resolvedTypesOfUnion.forEach(({type, fromStructured}, typeIndex)=>{
         IDebug.ilogGroup(()=>`type[${typeIndex}]: ${IDebug.dbgs.dbgTypeToString(type)}`,2);
         Debug.assert(fromStructured);
         const candidates: readonly Signature[] = checker.getSignaturesOfType(type, SignatureKind.Call);
         const passed1: (Signature| undefined)[] = Array(candidates.length).fill(undefined);
+        argCheckMode = argCheckModeIn
         for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
             const reportErrors = typeIndex === 1 && candidateIndex === 1;
+
+            tmpChecker.setChooseOverloadFlushNodesSignaturesReq(new Set());
+            tmpChecker.setChooseOverloadFlushSymbolsReq(new Set());
+
             let checkCandidate = doOneCandidate(candidates[candidateIndex], candidateIndex, reportErrors);
             if (checkCandidate) {
                 passed1[candidateIndex] = checkCandidate;
+                // collect the inner nodeLink.resolvedSignature and symbolLink.type for accumulation
+                const setOfInnerSymbols = tmpChecker.getChooseOverloadFlushSymbolsReq();
+                Debug.assert(setOfInnerSymbols);
+                setOfInnerSymbols.forEach((symbol)=>{
+                    const symbolLinks = tmpChecker.getSymbolLinks(symbol);
+                    if (!symbolLinks.type){
+                        Debug.assert(false);
+                    };
+                    if (!innerSymbolAccumTypesMap.has(symbol)) {
+                        innerSymbolAccumTypesMap.set(symbol, [symbolLinks.type]);
+                    }
+                    else {
+                        innerSymbolAccumTypesMap.get(symbol)!.push(symbolLinks.type);
+                    }
+                });
+                // TODO: the same for nodeLinks.resolvedSignature
+                const setOfInnerNodes = tmpChecker.getChooseOverloadFlushNodesSignaturesReq();
+                Debug.assert(setOfInnerNodes);
+                setOfInnerNodes.forEach((node)=>{
+                    const nodeLinks = tmpChecker.getNodeLinks(node as Expression);
+                    if (nodeLinks.resolvedSignature){
+                        if (!innerNodeAccumSignaturesMap.has(node)) {
+                            innerNodeAccumSignaturesMap.set(node, [nodeLinks.resolvedSignature]);
+                        }
+                        else {
+                            innerNodeAccumSignaturesMap.get(node)!.push(nodeLinks.resolvedSignature);
+                        }
+                    }
+                    else {
+                        let str = IDebug.dbgs.dbgNodeToString(node) + ": ";
+                        Object.keys(nodeLinks).forEach((key)=>str += `${key}, `);
+                        IDebug.ilog(()=>`nodeLinks OTHER KEYS: ${str}`,2);
+                    }
+                });
             }
+
+            tmpChecker.getChooseOverloadFlushNodesSignaturesReq()?.forEach((node)=>{
+                const nodeLinks = tmpChecker.getNodeLinks(node as Expression);
+                IDebug.ilogGroup(()=>`node: ${IDebug.dbgs.dbgNodeToString(node)}, after doOneCandidate(${candidateIndex}, candidate: ${IDebug.dbgs.dbgSignatureToString(candidates[candidateIndex])})`,2);
+                let str = "";
+                Object.keys(nodeLinks).forEach((key)=>str += `${key}, `);
+                IDebug.ilog(()=>`nodeLinks keys: ${str}`,2);
+                IDebug.ilogGroupEnd(()=>'',2);
+                //nodeLinks.flags &= ~NodeCheckFlags.ContextChecked;
+                //Object.keys(nodeLinks).forEach((key)=>delete (nodeLinks as any)[key]);
+            });
+
+            tmpChecker.getChooseOverloadFlushSymbolsReq()?.forEach((symbol)=>{
+                const symbolLinks = tmpChecker.getSymbolLinks(symbol);
+                IDebug.ilogGroup(()=>`symbol: ${IDebug.dbgs.dbgSymbolToString(symbol)}, after doOneCandidate(${candidateIndex}, candidate: ${IDebug.dbgs.dbgSignatureToString(candidates[candidateIndex])})`,2);
+                let str = "";
+                Object.keys(symbolLinks).forEach((key)=>str += `${key}, `);
+                IDebug.ilog(()=>`symbolLinks keys: ${str}`,2);
+                IDebug.ilogGroupEnd(()=>'',2);
+                //Object.keys(symbolLinks).forEach((key)=>delete (symbolLinks as any)[key]);
+            });
+
+            tmpChecker.setChooseOverloadFlushNodesSignaturesReq(undefined);
+            tmpChecker.setChooseOverloadFlushSymbolsReq(undefined);
+
         }
         passed2.push(passed1);
         IDebug.ilogGroupEnd(()=>``,2);
@@ -345,7 +461,19 @@ export function chooseOverload2(
     let usig2: Signature | undefined;
     if (usigs1.length === 1) usig2 = usigs1[0];
     else usig2 = createUnionResultSignature(usigs1, checker, tmpChecker);
-    //IDebug.ilogGroupEnd(()=>`chooseOverload2: ${IDebug.dbgs.dbgSignatureToString(usig2)})`,2);
+
+    innerSymbolAccumTypesMap.forEach((types, symbol)=>{
+        const utype = checker.getUnionType(types);
+        const symbolLinks = tmpChecker.getSymbolLinks(symbol);
+        symbolLinks.type = utype;
+    });
+
+    innerNodeAccumSignaturesMap.forEach((signatures, node)=>{
+        const usigInner = createUnionResultSignature(signatures, checker, tmpChecker);
+        const nodeLinks = tmpChecker.getNodeLinks(node as Expression);
+        nodeLinks.resolvedSignature = usigInner;
+    });
+
     const ret =  makeReturn(usig2);
     IDebug.ilogGroupEnd(()=>`chooseOverload2() => ${IDebug.dbgs.dbgSignatureToString(ret.candidate)})`,2);
     return ret;
@@ -353,6 +481,7 @@ export function chooseOverload2(
 
     function doOneCandidate(candidate: Signature, candidateIndex: number, reportErrors = false): undefined | Signature {
         IDebug.ilogGroup(()=>`doOneCandidate(${candidateIndex}, candidate: ${IDebug.dbgs.dbgSignatureToString(candidate)})`,2);
+
         args.forEach((arg, _argIndex) => {
             const links: NodeLinks = tmpChecker.getNodeLinks(arg);
             IDebug.ilog(()=>`(before) arg[${_argIndex}]: ${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`,2);

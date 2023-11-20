@@ -10,13 +10,12 @@ interface Buzz {
     id: number;
     member: string;
 }
-type Falsey = "" | 0 | false | null | undefined;
 
 
 
 //const f = (x: any) => x && typeof x.member === "number";
 
-([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter(x => x && x.member); // expect type (Fizz|Buzz|Falsey)[]
+([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter(x => x && x.member); // expect type (Fizz|Buzz|Falsey)[]
 
 
 //([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter(x => x && typeof x.member === "number"); // expect type (Fizz|Buzz|Falsey)[]
