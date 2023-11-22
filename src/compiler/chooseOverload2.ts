@@ -39,11 +39,16 @@ import {
     TypePredicate,
     JSDocSignature,
     SignatureDeclaration,
+    TransientSymbol,
+    CheckFlags,
 } from "./_namespaces/ts";
 
 // cphdebug-start
 import { IDebug } from "./mydebug";
 // cphdebug-end
+
+// Not working yet
+const enableIsolatedInnerSigs = true;
 
 
 export interface ChooseOverloadInnerValuesTracker {
@@ -80,7 +85,9 @@ export interface TmpChecker {
     cloneSignature(sig: Signature): Signature;
     getResolvingSignature(): Readonly<Signature>;
     getOrCreateTypeFromSignature(signature: Signature): ObjectType;
-    cloneSymbol(symbol: Symbol): Symbol;
+    //cloneSymbol(symbol: Symbol): Symbol;
+    //createSymbol(flags: SymbolFlags, name: __String): Symbol;
+    createSymbol(flags: SymbolFlags, name: __String, checkFlags?: CheckFlags | undefined): TransientSymbol;
     createSignature(
         declaration: SignatureDeclaration | JSDocSignature | undefined,
         typeParameters: readonly TypeParameter[] | undefined,
@@ -137,46 +144,72 @@ interface ChooseOverload2ReturnType {
     candidateForTypeArgumentError: Signature | undefined;
 };
 
-// function cloneSignaturesAndItsSymbolsAndLinks(sig: Signature, _tmpChecker: TmpChecker): Signature {
-//     function cloneSymbol(symbol: Symbol): Symbol {
-//         const symbolLinks = _tmpChecker.getSymbolLinks(symbol);
-//         const result = _tmpChecker.cloneSymbol(symbol);
-//         const resultLinks = _tmpChecker.getSymbolLinks(result);
-//         resultLinks.type = symbolLinks.type;
-//         return result;
-//     }
-
-//     const thisParameter = sig.thisParameter ? cloneSymbol(sig.thisParameter) : undefined;
-//     const parameters = sig.parameters.map(p=>cloneSymbol(p));
-
-//     const result = _tmpChecker.createSignature(sig.declaration, sig.typeParameters, thisParameter, parameters, /*resolvedReturnType*/ undefined, /*resolvedTypePredicate*/ undefined,
-//         sig.minArgumentCount, sig.flags & SignatureFlags.PropagatingFlags);
-//     result.target = sig.target;
-//     result.mapper = sig.mapper;
-//     result.compositeSignatures = sig.compositeSignatures;
-//     result.compositeKind = sig.compositeKind;
-//     return result;
-// }
-
-
 interface VirtualSignature {
     callSignature: Signature;
-    mapParamsToTypes: Map<Symbol, Type>;
-    returnType: Type;
+    paramTypes: Type[];
+    resolvedReturnType: Type;
+    thisType?: Type;
 };
 
 
+
+function cloneSymbolWithoutMerge(symbol: Symbol, _tmpChecker: TmpChecker): TransientSymbol {
+    // CheckFlags.LateBoundSymbol ??
+    const result = _tmpChecker.createSymbol(symbol.flags, symbol.escapedName, /*checkFlags*/ undefined);
+    result.declarations = symbol.declarations ? symbol.declarations.slice() : [];
+    result.parent = symbol.parent;
+    if (symbol.valueDeclaration) result.valueDeclaration = symbol.valueDeclaration;
+    if (symbol.constEnumOnlyModule) result.constEnumOnlyModule = true;
+    if (symbol.members) result.members = new Map(symbol.members);
+    if (symbol.exports) result.exports = new Map(symbol.exports);
+    //recordMergedSymbol(result, symbol);
+    return result;
+}
+
+
+/**
+ * It turns out that cloning a symbol does not really provide an independent copy of the symbol, because there are revrse lookups from the declarations
+ * to the symbol, and that points to the latest symbol clone via mergedSymbols, not the original symbol.
+ * @param vsig
+ * @param _checker
+ * @param _tmpChecker
+ * @returns
+ */
+// @ts-ignore
+function cloneSignatureFromVirtualSignature(vsig: VirtualSignature, _checker: TypeChecker, _tmpChecker: TmpChecker): Signature {
+    function cloneSymbolSetLinksType(symbol: Symbol, type: Type | undefined): Symbol {
+        const result = cloneSymbolWithoutMerge(symbol, _tmpChecker);
+        const resultLinks = _tmpChecker.getSymbolLinks(result);
+        Debug.assert(resultLinks!==_tmpChecker.getSymbolLinks(symbol));
+        resultLinks.type = type;
+        return result;
+    }
+    const sig = vsig.callSignature;
+    const thisParameter = sig.thisParameter ? cloneSymbolSetLinksType(sig.thisParameter, vsig.thisType) : undefined;
+    const parameters = sig.parameters.map((p,i)=>cloneSymbolSetLinksType(p, vsig.paramTypes[i]));
+    const result = _tmpChecker.createSignature(sig.declaration, sig.typeParameters,
+        thisParameter, parameters, vsig.resolvedReturnType, /*resolvedTypePredicate*/ undefined,
+        sig.minArgumentCount, sig.flags & SignatureFlags.PropagatingFlags);
+    result.target = sig.target;
+    result.mapper = sig.mapper;
+    result.compositeSignatures = sig.compositeSignatures;
+    result.compositeKind = sig.compositeKind;
+    return result;
+    //return 0 as any as Signature;
+}
+
+
 function createVirtualSignature(sig: Signature, _checker: TypeChecker, _tmpChecker: TmpChecker): VirtualSignature {
-    const mapParamsToTypes = new Map() as Map<Symbol, Type>;
+    const paramTypes: Type[] = [];
     for (const param of sig.parameters) {
         const paramType = _checker.getTypeOfSymbol(param); // in place snapshot of the current type
-        mapParamsToTypes.set(param, paramType);
+        paramTypes.push(paramType);
     }
     const returnType = _checker.getReturnTypeOfSignature(sig);
     return {
         callSignature: sig,
-        mapParamsToTypes,
-        returnType
+        paramTypes,
+        resolvedReturnType: returnType
     };
 }
 
@@ -546,15 +579,24 @@ export function chooseOverload2Helper(
                 case "resolvedSignature":{
                     castHereafter<VirtualSignature[]>(values);
 
-                    const returnType = checker.getUnionType(values.map((vs, _idx)=>{
-                        return vs.returnType;
-                    }));
-                    // const types = (values as VirtualSignature[]).map((vs)=>{
-                    //     tmpChecker.getOrCreateTypeFromSignature(sig);
-                    // })
                     const symbolLinks = tmpChecker.getSymbolLinks((node as any as ObjectType).symbol);
-                    // const utype = checker.getUnionType(types);
-                    (symbolLinks.type as ObjectType).callSignatures![0].resolvedReturnType = returnType;
+                    if (enableIsolatedInnerSigs){
+                        let sigs = values.map((vs, _idx)=>{
+                            return cloneSignatureFromVirtualSignature(vs, checker, tmpChecker);
+                        });
+                        const types = sigs.map((sig)=>{
+                            return tmpChecker.getOrCreateTypeFromSignature(sig);
+                        });
+                        const utype = checker.getUnionType(types);
+                        symbolLinks.type = utype;
+                    }
+                    else {
+                        const returnType = checker.getUnionType(values.map((vs, _idx)=>{
+                            return vs.resolvedReturnType;
+                        }));
+                        (symbolLinks.type as ObjectType).callSignatures![0].resolvedReturnType = returnType;
+                    }
+
                     IDebug.ilog(()=>`(post accum resolvedSignature) node: ${IDebug.dbgs.dbgNodeToString(node)}, resolvedType: ${IDebug.dbgs.dbgTypeToString(symbolLinks!.type)}`,2);
                     // IDebug.ilog(()=>`(post accum) node: ${IDebug.dbgs.dbgNodeToString(node)}, node.symbol.links.type =  ${IDebug.dbgs.dbgTypeToString(utype)}`,2);
                     break;
@@ -611,24 +653,6 @@ export function chooseOverload2Helper(
         IDebug.ilogGroupEnd(()=>`doOneCandidate() => ${IDebug.dbgs.dbgSignatureToString(ret)})`,2);
         return ret;
     }
-
-    // function getDiagnosticMessageStrings(diagnostic: Diagnostic): string[] {
-    //     const astr: string[] = [];
-    //     let d: Diagnostic | DiagnosticMessageChain | undefined = diagnostic;
-    //     while (d?.messageText){
-    //         if (typeof d.messageText === "string") {
-    //             astr.push(d.messageText);
-    //             d = undefined;
-    //         }
-    //         else if (typeof d.messageText.messageText === "string") {
-    //             astr.push(d.messageText.messageText);
-    //             if (d.messageText.next) {
-    //                 d = d.messageText.next[0] as DiagnosticMessageChain;
-    //             }
-    //         }
-    //     }
-    //     return astr;
-    // }
 
     function doOneCandidateHelper(candidate: Signature, candidateIndex: number, reportErrors = false): undefined | Signature {
 
@@ -703,14 +727,5 @@ export function chooseOverload2Helper(
         return checkCandidate;
     }
 
-
-
-    // for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
-    //     let checkCandidate = doOneCandidate(candidates[candidateIndex], candidateIndex);
-    //     if (checkCandidate) {
-    //         return makeReturn(checkCandidate);
-    //     }
-    // }
-    // return makeReturn(undefined);
 } // chooseOverloadV2
 

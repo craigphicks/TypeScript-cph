@@ -59,3 +59,17 @@ myLogLevel=0  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion
 myLogLevel=1  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
 hereby baseline-accept
 git status
+git add .
+git status
+rm --unstage tmp
+git  --unstage tmp
+git restore --staged tmp/*
+git status
+git commit -m "working with onion"
+myLogLevel=1  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+myLogLevel=1  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+git status
+git add src .bash_history 
+hereby baseline-accept
+git add src .bash_history test

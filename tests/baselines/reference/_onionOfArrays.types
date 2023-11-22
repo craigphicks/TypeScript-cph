@@ -27,7 +27,7 @@ interface Buzz {
 >[] as (Fizz|undefined)[] | (Buzz|undefined)[] : (Fizz | undefined)[] | (Buzz | undefined)[]
 >[] : never[]
 >filter : { <S extends Fizz | undefined>(predicate: (value: Fizz | undefined, index: number, array: (Fizz | undefined)[]) => value is S, thisArg?: any): S[]; (predicate: (value: Fizz | undefined, index: number, array: (Fizz | undefined)[]) => unknown, thisArg?: any): (Fizz | undefined)[]; } | { <S_1 extends Buzz | undefined>(predicate: (value: Buzz | undefined, index: number, array: (Buzz | undefined)[]) => value is S_1, thisArg?: any): S_1[]; (predicate: (value: Buzz | undefined, index: number, array: (Buzz | undefined)[]) => unknown, thisArg?: any): (Buzz | undefined)[]; }
->x => x && x.member : (x: Fizz | Buzz | undefined) => string | number | undefined
+>x => x && x.member : ((x: Fizz | undefined) => number | undefined) | ((x: Buzz | undefined) => string | undefined)
 >x : Fizz | Buzz | undefined
 >x && x.member : string | number | undefined
 >x : Fizz | Buzz | undefined

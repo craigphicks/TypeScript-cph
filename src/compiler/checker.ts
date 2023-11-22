@@ -34261,7 +34261,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     return resolvingSignature;
                 },
                 getOrCreateTypeFromSignature,
-                cloneSymbol,
+                //cloneSymbol,
+                createSymbol,
                 createSignature,
             };
 
