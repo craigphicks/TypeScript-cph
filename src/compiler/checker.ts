@@ -34256,6 +34256,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     Debug.assert(chooseOverloadRecursionLevel>=0);
                     chooseOverloadFlushSymbolsReq[chooseOverloadRecursionLevel] = value;
                 },
+                cloneSignature,
+                getResolvingSignature(){
+                    return resolvingSignature;
+                },
+                getOrCreateTypeFromSignature,
+                cloneSymbol,
+                createSignature,
             };
 
             ({
@@ -37135,7 +37142,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 links.flags |= NodeCheckFlags.ContextChecked;
                 const symbol = getSymbolOfDeclaration(node);
                 const type = getTypeOfSymbol(symbol);
-                IDebug.ilog(()=>`symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}, type:${IDebug.dbgs.dbgTypeToString(type)}`,2);
+                IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}`,2);
+                const symbolLinks = getSymbolLinks(symbol);
+                if (symbolLinks.type){
+                    IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: symbolLinks.type:${
+                        IDebug.dbgs.dbgTypeToString(symbolLinks.type)}`,2);
+                }
+                IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: type:${IDebug.dbgs.dbgTypeToString(type)}`,2);
+                IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: type.callSignatures?.length:${(type as ObjectType).callSignatures?.length}`,2);
+                if ((type as ObjectType).callSignatures?.length) {
+                    IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: type.callSignatures[0].resolvedReturnType:${
+                        IDebug.dbgs.dbgTypeToString((type as ObjectType).callSignatures?.[0].resolvedReturnType)}`,2);
+                }
                 // if (chooseOverloadFlushSymbolsReq[chooseOverloadRecursionLevel]){
                 //     if (!chooseOverloadFlushSymbolsReq[chooseOverloadRecursionLevel]!.has(symbol)){
                 //         const symbolLinks = getSymbolLinks(symbol);
@@ -39174,7 +39192,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                      */
                     let nodeLinks = getNodeLinks(node);
                     nodeLinks.flags &= ~NodeCheckFlags.ContextChecked;
-
+                    IDebug.ilog(()=>`checkExpression: adding ${node.id} to setOfNode`,2);
                     setOfNode.add(node);
                     if (nodeLinks.resolvedSignature && nodeLinks.resolvedSignature !== resolvingSignature){
                         // remove the return type of the signature. the signature is actually libing on with the symbol?

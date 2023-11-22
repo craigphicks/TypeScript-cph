@@ -41,3 +41,21 @@ find tests/baselines/ -name "*onion*"
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion -i
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
 git status
+git add src tests/cases .bash_history 
+git commit -m "making headway"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+git status
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+myLogLevel=1  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_onion 
+hereby baseline-accept
+git status

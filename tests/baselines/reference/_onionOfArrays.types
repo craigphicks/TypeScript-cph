@@ -1,0 +1,55 @@
+//// [tests/cases/compiler/_onionOfArrays.ts] ////
+
+=== _onionOfArrays.ts ===
+interface Fizz {
+    id: number;
+>id : number
+
+    member: number;
+>member : number
+}
+interface Buzz {
+    id: number;
+>id : number
+
+    member: string;
+>member : string
+}
+
+
+
+//const f = (x: any) => x && typeof x.member === "number";
+
+([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter(x => x && x.member); // expect type (Fizz|Buzz|Falsey)[]
+>([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter(x => x && x.member) : (Fizz | undefined)[] | (Buzz | undefined)[]
+>([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter : { <S extends Fizz | undefined>(predicate: (value: Fizz | undefined, index: number, array: (Fizz | undefined)[]) => value is S, thisArg?: any): S[]; (predicate: (value: Fizz | undefined, index: number, array: (Fizz | undefined)[]) => unknown, thisArg?: any): (Fizz | undefined)[]; } | { <S_1 extends Buzz | undefined>(predicate: (value: Buzz | undefined, index: number, array: (Buzz | undefined)[]) => value is S_1, thisArg?: any): S_1[]; (predicate: (value: Buzz | undefined, index: number, array: (Buzz | undefined)[]) => unknown, thisArg?: any): (Buzz | undefined)[]; }
+>([] as (Fizz|undefined)[] | (Buzz|undefined)[]) : (Fizz | undefined)[] | (Buzz | undefined)[]
+>[] as (Fizz|undefined)[] | (Buzz|undefined)[] : (Fizz | undefined)[] | (Buzz | undefined)[]
+>[] : never[]
+>filter : { <S extends Fizz | undefined>(predicate: (value: Fizz | undefined, index: number, array: (Fizz | undefined)[]) => value is S, thisArg?: any): S[]; (predicate: (value: Fizz | undefined, index: number, array: (Fizz | undefined)[]) => unknown, thisArg?: any): (Fizz | undefined)[]; } | { <S_1 extends Buzz | undefined>(predicate: (value: Buzz | undefined, index: number, array: (Buzz | undefined)[]) => value is S_1, thisArg?: any): S_1[]; (predicate: (value: Buzz | undefined, index: number, array: (Buzz | undefined)[]) => unknown, thisArg?: any): (Buzz | undefined)[]; }
+>x => x && x.member : (x: Fizz | Buzz | undefined) => string | number | undefined
+>x : Fizz | Buzz | undefined
+>x && x.member : string | number | undefined
+>x : Fizz | Buzz | undefined
+>x.member : string | number
+>x : Fizz | Buzz
+>member : string | number
+
+
+//([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter(x => x && typeof x.member === "number"); // expect type (Fizz|Buzz|Falsey)[]
+
+// namespace X {
+// type BooleanConstructor = ()=>boolean;
+// //var Boolean: BooleanConstructor = ()=>true;
+// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor)); // expect type (Fizz|Buzz)[]
+// }
+//declare const arr: (Fizz|Falsey)[];
+
+//([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor)); // expect type (Fizz|Buzz)[]
+
+// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor),
+//     ([] as any as (Fizz|Falsey)[] | (Buzz|Falsey)[])); // expect type (Fizz|Buzz)[]
+
+// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor),
+//     ([] as any as (Fizz|Falsey)[] | (Buzz|Falsey)[])); // expect type (Fizz|Buzz)[]
+
