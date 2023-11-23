@@ -73,3 +73,41 @@ git status
 git add src .bash_history 
 hereby baseline-accept
 git add src .bash_history test
+git status
+myLogLevel=1  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload \
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests=_arrayMapOverload 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co/__"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co/_"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co\/_"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co/*"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co\/*"
+find tests/baselines/ -name "_56*"
+find tests/baselines/ -name "_arrayMapOverload*"
+find tests/baselines/ -name "_prox*"
+find tests/baselines/ -name "_onion*"
+find tests/baselines/ -name "_onion*" -exec rm {} \l
+find tests/baselines/ -name "_onion*" -exec rm {} \;
+find tests/baselines/ -name "_onion*"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-"
+hereby baseline-accept
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-arrayMap"
+hereby baseline-accept
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-arrayMap"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-"
+hereby baseline-accept
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-arrayMap"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-arrayMap"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-arrayMap"
+hereby baseline-accept
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-arrayMap"
+git status

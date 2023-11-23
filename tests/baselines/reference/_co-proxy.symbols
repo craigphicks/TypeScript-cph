@@ -1,0 +1,47 @@
+//// [tests/cases/compiler/_co/_co-proxy.ts] ////
+
+=== _co-proxy.ts ===
+type AnyTup = [...any[]];
+>AnyTup : Symbol(AnyTup, Decl(_co-proxy.ts, 0, 0))
+
+type FN<Args extends AnyTup,Ret> = (...args:Args)=>Ret;
+>FN : Symbol(FN, Decl(_co-proxy.ts, 0, 25))
+>Args : Symbol(Args, Decl(_co-proxy.ts, 1, 8))
+>AnyTup : Symbol(AnyTup, Decl(_co-proxy.ts, 0, 0))
+>Ret : Symbol(Ret, Decl(_co-proxy.ts, 1, 28))
+>args : Symbol(args, Decl(_co-proxy.ts, 1, 36))
+>Args : Symbol(Args, Decl(_co-proxy.ts, 1, 8))
+>Ret : Symbol(Ret, Decl(_co-proxy.ts, 1, 28))
+
+declare function fproxy<A extends AnyTup,R>(fn:FN<A,R>, ...args: A):R;
+>fproxy : Symbol(fproxy, Decl(_co-proxy.ts, 1, 55))
+>A : Symbol(A, Decl(_co-proxy.ts, 3, 24))
+>AnyTup : Symbol(AnyTup, Decl(_co-proxy.ts, 0, 0))
+>R : Symbol(R, Decl(_co-proxy.ts, 3, 41))
+>fn : Symbol(fn, Decl(_co-proxy.ts, 3, 44))
+>FN : Symbol(FN, Decl(_co-proxy.ts, 0, 25))
+>A : Symbol(A, Decl(_co-proxy.ts, 3, 24))
+>R : Symbol(R, Decl(_co-proxy.ts, 3, 41))
+>args : Symbol(args, Decl(_co-proxy.ts, 3, 55))
+>A : Symbol(A, Decl(_co-proxy.ts, 3, 24))
+>R : Symbol(R, Decl(_co-proxy.ts, 3, 41))
+
+declare function f1(s:string):number;
+>f1 : Symbol(f1, Decl(_co-proxy.ts, 3, 70))
+>s : Symbol(s, Decl(_co-proxy.ts, 4, 20))
+
+declare function fol1(s:string):string;
+>fol1 : Symbol(fol1, Decl(_co-proxy.ts, 4, 37), Decl(_co-proxy.ts, 6, 39))
+>s : Symbol(s, Decl(_co-proxy.ts, 6, 22))
+
+declare function fol1(n:number):number;
+>fol1 : Symbol(fol1, Decl(_co-proxy.ts, 4, 37), Decl(_co-proxy.ts, 6, 39))
+>n : Symbol(n, Decl(_co-proxy.ts, 7, 22))
+
+
+
+const x1 = fproxy(f1,"test");
+>x1 : Symbol(x1, Decl(_co-proxy.ts, 11, 5))
+>fproxy : Symbol(fproxy, Decl(_co-proxy.ts, 1, 55))
+>f1 : Symbol(f1, Decl(_co-proxy.ts, 3, 70))
+

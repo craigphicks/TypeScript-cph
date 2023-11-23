@@ -136,6 +136,40 @@ export interface TmpChecker {
  */
 
 
+
+// export interface TypeParameter extends InstantiableType {
+//     /**
+//      * Retrieve using getConstraintFromTypeParameter
+//      *
+//      * @internal
+//      */
+//     constraint?: Type;        // Constraint
+//     /** @internal */
+//     default?: Type;
+//     /** @internal */
+//     target?: TypeParameter;  // Instantiation target
+//     /** @internal */
+//     mapper?: TypeMapper;     // Instantiation mapper
+//     /** @internal */
+//     isThisType?: boolean;
+//     /** @internal */
+//     resolvedDefaultType?: Type;
+// }
+
+function dbgTypeParameterToStrings(typeParameter: TypeParameter): string[] {
+    //return `TypeParameter{symbol:${IDebug.dbgs.dbgSymbolToString(typeParameter.symbol)}, constraint:${IDebug.dbgs.dbgTypeToString(typeParameter.constraint)}}`;
+    const astr: string[] = [];
+    if (typeParameter.symbol) astr.push(`symbol:${IDebug.dbgs.dbgSymbolToString(typeParameter.symbol)}`);
+    if (typeParameter.isThisType) astr.push(`isThisType:${typeParameter.isThisType}`);
+    if (typeParameter.constraint) astr.push(`constraint:${IDebug.dbgs.dbgTypeToString(typeParameter.constraint)}`);
+    if (typeParameter.default) astr.push(`default:${IDebug.dbgs.dbgTypeToString(typeParameter.default)}`);
+    if (typeParameter.resolvedDefaultType) astr.push(`resolvedDefaultType: ${IDebug.dbgs.dbgTypeToString(typeParameter.resolvedDefaultType)}`);
+    if (typeParameter.target) dbgTypeParameterToStrings(typeParameter.target).forEach((s)=>astr.push(`    target:${s}`));
+    return astr;
+}
+
+
+
 interface ChooseOverload2ReturnType {
     candidate: Signature | undefined;
     argCheckMode: CheckMode;
@@ -289,12 +323,20 @@ export function chooseOverload2(
 
 type NodeLinksResolvedKeys = keyof NodeLinks & (`resolvedSignature` | `resolvedType`);
 type NodeAccumValueType = {
-    resolvedSignature: VirtualSignature,
+    resolvedSignature: { symbol?: Symbol | undefined, virtualSignature: VirtualSignature },
     resolvedType: Type,
     //resolvedSymbol: {symbol: Symbol, type: Type},
 };
 
 
+function forEachTypeOfUnion(type: Type, cb: (type: Type, index: number)=>void): void {
+    if (type.flags & TypeFlags.Union) {
+        (type as UnionType).types.forEach((t, index)=>cb(t, index));
+    }
+    else {
+        cb(type, 0);
+    }
+}
 
 export function chooseOverload2Helper(
     _candidatesOriginal: Signature[], // gets overwritten
@@ -319,7 +361,10 @@ export function chooseOverload2Helper(
     }): ChooseOverload2ReturnType{
 
     IDebug.ilogGroup(()=>`chooseOverload2(reducedType:${IDebug.dbgs.dbgTypeToString(reducedType)})`,2);
-
+    if (IDebug.logLevel>=2) {
+        typeArguments ? typeArguments.forEach((typeArg, _idx)=>{IDebug.ilog(()=>`typeArg[${_idx}]: ${IDebug.dbgs.dbgNodeToString(typeArg)}`,2);})
+            : IDebug.ilog(()=>`typeArguments: undefined`,2);
+    }
     const makeReturn = (candidate: Signature | undefined): ChooseOverload2ReturnType => {
         return {
             candidate,
@@ -339,7 +384,7 @@ export function chooseOverload2Helper(
     // const state = new OverloadStateImpl(apparentType,checker,tmpChecker);
 
 
-    if (isSingleNonGenericCandidate) {
+    if (!reducedType || !(reducedType.flags & TypeFlags.Union || !isSingleNonGenericCandidate)){
         Debug.assert(false);
         // const candidate = candidates[0];
         // if (typeArguments?.length || !tmpChecker.hasCorrectArity(node, args, candidate, signatureHelpTrailingComma)) {
@@ -353,14 +398,15 @@ export function chooseOverload2Helper(
     }
 
 
-    Debug.assert(reducedType.flags & TypeFlags.Union);
-    let resolvedTypesOfUnion: {type: (ResolvedType | Type), fromStructured: boolean}[] | undefined;
-    resolvedTypesOfUnion = (reducedType as UnionType).types.map(t=>{
+
+    //Debug.assert(reducedType.flags & TypeFlags.Union);
+    const resolvedTypesOfUnion: {type: (ResolvedType | Type), fromStructured: boolean}[] = [];
+    forEachTypeOfUnion(reducedType, (t)=>{
         if (t.flags & TypeFlags.StructuredType) {
-            return {type: tmpChecker.resolveStructuredTypeMembers(t as StructuredType), fromStructured: true};
+            resolvedTypesOfUnion.push({type: tmpChecker.resolveStructuredTypeMembers(t as StructuredType), fromStructured: true});
         }
         else {
-            return {type: t, fromStructured: false};
+            resolvedTypesOfUnion.push({type: t, fromStructured: false});
         }
     });
 
@@ -445,14 +491,25 @@ export function chooseOverload2Helper(
                                 let symbol: Symbol | undefined;
                                 let symbolLinks: SymbolLinks | undefined;
                                 //let symbolLinksType: Type | undefined;
-                                if ((symbol= (node as any as ObjectType).symbol) && (symbolLinks=tmpChecker.getSymbolLinks(symbol)).type) {
-                                    //addToInnerSymbolTypeAccumMap(symbol, symbolLinks.type!);
-                                    IDebug.ilog(()=>`(accum) symbolLinksType: ${IDebug.dbgs.dbgTypeToString(symbolLinks!.type)}`,2);
-                                    //addToInnerNodeAccumMap(node, "resolvedType", symbolLinksType);
-                                    Debug.assert((symbolLinks.type as ObjectType).callSignatures?.length===1);
-                                    const callSignature = (symbolLinks.type as ObjectType).callSignatures![0];
-                                    const virtualSignature = createVirtualSignature(callSignature, checker, tmpChecker);
-                                    addToInnerNodeAccumMap(node, key, virtualSignature);
+                                const isResolvingSignature = nodeLinks.resolvedSignature===tmpChecker.getResolvingSignature();
+                                if (isResolvingSignature) {
+                                    if ((symbol= (node as any as ObjectType).symbol) && (symbolLinks=tmpChecker.getSymbolLinks(symbol)).type) {
+                                        //addToInnerSymbolTypeAccumMap(symbol, symbolLinks.type!);
+                                        IDebug.ilog(()=>`(accum) resolvedSignature from symbolLinksType: ${IDebug.dbgs.dbgTypeToString(symbolLinks!.type)}`,2);
+                                        //addToInnerNodeAccumMap(node, "resolvedType", symbolLinksType);
+                                        Debug.assert((symbolLinks.type as ObjectType).callSignatures?.length===1);
+                                        const callSignature = (symbolLinks.type as ObjectType).callSignatures![0];
+                                        const virtualSignature = createVirtualSignature(callSignature, checker, tmpChecker);
+                                        addToInnerNodeAccumMap(node, key, { symbol, virtualSignature} );
+                                    }
+                                    else {
+                                        Debug.assert(false);
+                                    }
+                                }
+                                else {
+                                    const virtualSignature = createVirtualSignature(nodeLinks.resolvedSignature!, checker, tmpChecker);
+                                    IDebug.ilog(()=>`(accum) resolvedSignature: ${IDebug.dbgs.dbgSignatureToString(nodeLinks.resolvedSignature)}`,2);
+                                    addToInnerNodeAccumMap(node, key, { virtualSignature });
                                 }
                             }
                                 break;
@@ -577,27 +634,53 @@ export function chooseOverload2Helper(
         map.forEach((values, key)=>{
             switch (key){
                 case "resolvedSignature":{
-                    castHereafter<VirtualSignature[]>(values);
-
-                    const symbolLinks = tmpChecker.getSymbolLinks((node as any as ObjectType).symbol);
+                    castHereafter<NodeAccumValueType["resolvedSignature"][]>(values);
+                    values.forEach(({symbol})=>{
+                        // All or nothing
+                        Debug.assert(symbol===values[0].symbol);
+                    });
                     if (enableIsolatedInnerSigs){
-                        let sigs = values.map((vs, _idx)=>{
-                            return cloneSignatureFromVirtualSignature(vs, checker, tmpChecker);
+                        let sigs = values.map(({virtualSignature}, _idx)=>{
+                            return cloneSignatureFromVirtualSignature(virtualSignature, checker, tmpChecker);
                         });
-                        const types = sigs.map((sig)=>{
-                            return tmpChecker.getOrCreateTypeFromSignature(sig);
-                        });
-                        const utype = checker.getUnionType(types);
-                        symbolLinks.type = utype;
+                        if (values[0].symbol) {
+                            const types = sigs.map((sig)=>{
+                                return tmpChecker.getOrCreateTypeFromSignature(sig);
+                            });
+                            const utype = checker.getUnionType(types);
+                            const symbolLinks = tmpChecker.getSymbolLinks(values[0].symbol);
+                            symbolLinks.type = utype;
+                        }
+                        else {
+                            const nodeLinks = tmpChecker.getNodeLinks(node as Expression);
+                            // TODO: this is not correct, but it is not clear what is correct
+                            //nodeLinks.resolvedType = utype;
+                            nodeLinks.resolvedSignature = createUnionResultSignature(sigs, checker, tmpChecker);
+                        }
                     }
                     else {
-                        const returnType = checker.getUnionType(values.map((vs, _idx)=>{
-                            return vs.resolvedReturnType;
+                        const returnType = checker.getUnionType(values.map(({virtualSignature}, _idx)=>{
+                            return virtualSignature.resolvedReturnType;
                         }));
-                        (symbolLinks.type as ObjectType).callSignatures![0].resolvedReturnType = returnType;
+                        if (values[0].symbol) {
+                            const symbolLinks = tmpChecker.getSymbolLinks(values[0].symbol);
+                            (symbolLinks.type as ObjectType).callSignatures![0].resolvedReturnType = returnType;
+                        }
+                        else {
+                            const nodeLinks = tmpChecker.getNodeLinks(node as Expression);
+                            nodeLinks.resolvedSignature!.resolvedReturnType = returnType;
+                        }
                     }
 
-                    IDebug.ilog(()=>`(post accum resolvedSignature) node: ${IDebug.dbgs.dbgNodeToString(node)}, resolvedType: ${IDebug.dbgs.dbgTypeToString(symbolLinks!.type)}`,2);
+                    if (values[0].symbol) {
+                        IDebug.ilog(()=>`(post accum resolvedSignature via symbol) node: ${IDebug.dbgs.dbgNodeToString(node)}, symbol:${
+                            IDebug.dbgs.dbgSymbolToString(values[0].symbol!)}, resolvedType: ${
+                            IDebug.dbgs.dbgTypeToString(tmpChecker.getSymbolLinks(values[0].symbol!).type)}`,2);
+                    }
+                    else {
+                        IDebug.ilog(()=>`(post accum resolvedSignature) node: ${IDebug.dbgs.dbgNodeToString(node)}, resolvedType: ${
+                            IDebug.dbgs.dbgSignatureToString(tmpChecker.getNodeLinks(node as Expression).resolvedSignature)}`,2);
+                    }
                     // IDebug.ilog(()=>`(post accum) node: ${IDebug.dbgs.dbgNodeToString(node)}, node.symbol.links.type =  ${IDebug.dbgs.dbgTypeToString(utype)}`,2);
                     break;
                 }
@@ -664,6 +747,11 @@ export function chooseOverload2Helper(
         let inferenceContext: InferenceContext | undefined;
 
         if (candidate.typeParameters) {
+            if (IDebug.logLevel>=2) {
+                candidate.typeParameters.forEach((typeParameter, _idx)=>{
+                    dbgTypeParameterToStrings(typeParameter).forEach((s)=>IDebug.ilog(()=>`typeParameter[${_idx}]: ${s}`,2));
+                });
+            }
             let typeArgumentTypes: Type[] | undefined;
             if (some(typeArguments)) {
                 typeArgumentTypes = tmpChecker.checkTypeArguments(candidate, typeArguments, reportErrors /*false*/);
@@ -678,7 +766,13 @@ export function chooseOverload2Helper(
                 typeArgumentTypes = tmpChecker.inferTypeArguments(node, candidate, args, argCheckMode | CheckMode.SkipGenericFunctions, inferenceContext);
                 argCheckMode |= inferenceContext.flags & InferenceFlags.SkippedGenericFunction ? CheckMode.SkipGenericFunctions : CheckMode.Normal;
             }
+            // if (IDebug.logLevel>=2) {
+            //     typeArgumentTypes.forEach((typeArg, _idx)=>{IDebug.ilog(()=>`typeArgumentTypes[${_idx}]: ${IDebug.dbgs.dbgTypeToString(typeArg)}`,2);});
+            // }
+
             checkCandidate = tmpChecker.getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext && inferenceContext.inferredTypeParameters);
+            IDebug.ilog(()=>`(instantiated) checkCandidate: ${IDebug.dbgs.dbgSignatureToString(checkCandidate)}`,2);
+
             // If the original signature has a generic rest type, instantiation may produce a
             // signature with different arity and we need to perform another arity check.
             if (tmpChecker.getNonArrayRestType(candidate) && !tmpChecker.hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {

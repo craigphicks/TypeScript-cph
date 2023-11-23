@@ -1,23 +1,23 @@
-//// [tests/cases/compiler/_onionOfArrays.ts] ////
+//// [tests/cases/compiler/_co/_co-onionOfArrays.ts] ////
 
-=== _onionOfArrays.ts ===
+=== _co-onionOfArrays.ts ===
 interface Fizz {
->Fizz : Symbol(Fizz, Decl(_onionOfArrays.ts, 0, 0))
+>Fizz : Symbol(Fizz, Decl(_co-onionOfArrays.ts, 0, 0))
 
     id: number;
->id : Symbol(Fizz.id, Decl(_onionOfArrays.ts, 0, 16))
+>id : Symbol(Fizz.id, Decl(_co-onionOfArrays.ts, 0, 16))
 
     member: number;
->member : Symbol(Fizz.member, Decl(_onionOfArrays.ts, 1, 15))
+>member : Symbol(Fizz.member, Decl(_co-onionOfArrays.ts, 1, 15))
 }
 interface Buzz {
->Buzz : Symbol(Buzz, Decl(_onionOfArrays.ts, 3, 1))
+>Buzz : Symbol(Buzz, Decl(_co-onionOfArrays.ts, 3, 1))
 
     id: number;
->id : Symbol(Buzz.id, Decl(_onionOfArrays.ts, 4, 16))
+>id : Symbol(Buzz.id, Decl(_co-onionOfArrays.ts, 4, 16))
 
     member: string;
->member : Symbol(Buzz.member, Decl(_onionOfArrays.ts, 5, 15))
+>member : Symbol(Buzz.member, Decl(_co-onionOfArrays.ts, 5, 15))
 }
 
 
@@ -26,14 +26,14 @@ interface Buzz {
 
 ([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter(x => x && x.member); // expect type (Fizz|Buzz|Falsey)[]
 >([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_onionOfArrays.ts, 0, 0))
->Buzz : Symbol(Buzz, Decl(_onionOfArrays.ts, 3, 1))
+>Fizz : Symbol(Fizz, Decl(_co-onionOfArrays.ts, 0, 0))
+>Buzz : Symbol(Buzz, Decl(_co-onionOfArrays.ts, 3, 1))
 >filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->x : Symbol(x, Decl(_onionOfArrays.ts, 13, 55))
->x : Symbol(x, Decl(_onionOfArrays.ts, 13, 55))
->x.member : Symbol(member, Decl(_onionOfArrays.ts, 1, 15), Decl(_onionOfArrays.ts, 5, 15))
->x : Symbol(x, Decl(_onionOfArrays.ts, 13, 55))
->member : Symbol(member, Decl(_onionOfArrays.ts, 1, 15), Decl(_onionOfArrays.ts, 5, 15))
+>x : Symbol(x, Decl(_co-onionOfArrays.ts, 13, 55))
+>x : Symbol(x, Decl(_co-onionOfArrays.ts, 13, 55))
+>x.member : Symbol(member, Decl(_co-onionOfArrays.ts, 1, 15), Decl(_co-onionOfArrays.ts, 5, 15))
+>x : Symbol(x, Decl(_co-onionOfArrays.ts, 13, 55))
+>member : Symbol(member, Decl(_co-onionOfArrays.ts, 1, 15), Decl(_co-onionOfArrays.ts, 5, 15))
 
 
 //([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter(x => x && typeof x.member === "number"); // expect type (Fizz|Buzz|Falsey)[]

@@ -152,7 +152,7 @@ export class DbgsClass implements Dbgs{
     };
     dbgSignatureToString(c: Signature | undefined): string {
         if (!c) return "<undef>";
-        let astr = ["("];
+        let astr: string[] = [];
         c.parameters.forEach(symbol=> {
             const typeOfSymbol = this.getSafeCheckerTypeOfSymbol(symbol);
             astr.push(this.dbgTypeToString(typeOfSymbol));

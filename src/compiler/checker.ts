@@ -33438,6 +33438,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function inferTypeArguments(node: CallLikeExpression, signature: Signature, args: readonly Expression[], checkMode: CheckMode, context: InferenceContext): Type[] {
+    IDebug.ilogGroup(()=>`inferTypeArguments(signature: ${IDebug.dbgs.dbgSignatureToString(signature)}, checkMode:${checkMode})`,2);
+    const result = (()=>{
         if (isJsxOpeningLikeElement(node)) {
             return inferJsxTypeArguments(node, signature, checkMode, context);
         }
@@ -33528,6 +33530,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return getInferredTypes(context);
+    })();
+    result.forEach((t,i)=>{
+        IDebug.ilog(()=>`inferTypeArguments: result[${i}]: ${IDebug.dbgs.dbgTypeToString(t)}`,2);
+    })
+    IDebug.ilogGroupEnd(()=>`inferTypeArguments()=>`,2);
+    return result;
     }
 
     function getMutableArrayOrTupleType(type: Type) {
@@ -34219,7 +34227,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // Whether the call is an error is determined by assignability of the arguments. The subtype pass
         // is just important for choosing the best signature. So in the case where there is only one
         // signature, the subtype pass is useless. So skipping it is an optimization.
-        if (reducedType && reducedType.flags & TypeFlags.Union) {
+        if (reducedType && (reducedType.flags & TypeFlags.Union || !isSingleNonGenericCandidate)) {
             const tmpChecker: TmpChecker = {
                 checkTypeArguments,
                 createInferenceContext,
@@ -34422,10 +34430,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         function chooseOverload(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false) {
             chooseOverloadRecursionLevel++; // #56013
+            IDebug.ilogGroup(()=>`chooseOverload()[in] chooseOverloadRecursionLevel=${chooseOverloadRecursionLevel}`,2);
+            candidates.forEach((c,i)=>IDebug.ilog(()=>`candidate[${i}]:${IDebug.dbgs.dbgSignatureToString(c)}`,2));
             chooseOverloadFlushNodesSignaturesReq[chooseOverloadRecursionLevel] = undefined;
-            return chooseOverloadHelper(candidates, relation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
+            const result = chooseOverloadHelper(candidates, relation, isSingleNonGenericCandidate, signatureHelpTrailingComma);
             chooseOverloadFlushNodesSignaturesReq[chooseOverloadRecursionLevel] = undefined;
+            IDebug.ilogGroupEnd(()=>`chooseOverload()[out] result = ${IDebug.dbgs.dbgSignatureToString(result)}`,2);
             chooseOverloadRecursionLevel--;
+            return result;
         }
 
         function chooseOverloadHelper(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false) {

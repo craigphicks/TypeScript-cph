@@ -1,6 +1,6 @@
-//// [tests/cases/compiler/_onionOfArrays.ts] ////
+//// [tests/cases/compiler/_co/_co-onionOfArrays.ts] ////
 
-//// [_onionOfArrays.ts]
+//// [_co-onionOfArrays.ts]
 interface Fizz {
     id: number;
     member: number;
@@ -35,7 +35,7 @@ interface Buzz {
 //     ([] as any as (Fizz|Falsey)[] | (Buzz|Falsey)[])); // expect type (Fizz|Buzz)[]
 
 
-//// [_onionOfArrays.js]
+//// [_co-onionOfArrays.js]
 "use strict";
 //const f = (x: any) => x && typeof x.member === "number";
 [].filter(x => x && x.member); // expect type (Fizz|Buzz|Falsey)[]
@@ -53,7 +53,7 @@ interface Buzz {
 //     ([] as any as (Fizz|Falsey)[] | (Buzz|Falsey)[])); // expect type (Fizz|Buzz)[]
 
 
-//// [_onionOfArrays.d.ts]
+//// [_co-onionOfArrays.d.ts]
 interface Fizz {
     id: number;
     member: number;

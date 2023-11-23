@@ -1,0 +1,64 @@
+//// [tests/cases/compiler/_co/_co-arrayMapOverload.ts] ////
+
+=== _co-arrayMapOverload.ts ===
+declare const arrsn : string[]|number[];
+>arrsn : string[] | number[]
+
+declare function strmapol(x:string):string;
+>strmapol : { (x: string): string; (x: number): number; }
+>x : string
+
+declare function strmapol(x:number):number;
+>strmapol : { (x: string): string; (x: number): number; }
+>x : number
+
+//declare function strmap(x:number|string):number|string;
+
+declare function strmapgen<T extends string|number>(x:T):T;
+>strmapgen : <T extends string | number>(x: T) => T
+>x : T
+
+//type ID = <I>() => (i: I) => I;
+
+declare const fstrmapgen: <T extends string|number>()=>(x:T)=>T;
+>fstrmapgen : <T extends string | number>() => (x: T) => T
+>x : T
+
+const fstrmapol = ()=>strmapol;
+>fstrmapol : () => { (x: string): string; (x: number): number; }
+>()=>strmapol : () => { (x: string): string; (x: number): number; }
+>strmapol : { (x: string): string; (x: number): number; }
+
+
+
+
+arrsn.map(strmapgen); // 5.2.2. no error
+>arrsn.map(strmapgen) : (string | number)[]
+>arrsn.map : (<U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: number, index: number, array: number[]) => U_1, thisArg?: any) => U_1[])
+>arrsn : string[] | number[]
+>map : (<U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: number, index: number, array: number[]) => U_1, thisArg?: any) => U_1[])
+>strmapgen : <T extends string | number>(x: T) => T
+
+arrsn.map(fstrmapgen()); // 5.2.2. error
+>arrsn.map(fstrmapgen()) : number[]
+>arrsn.map : (<U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: number, index: number, array: number[]) => U_1, thisArg?: any) => U_1[])
+>arrsn : string[] | number[]
+>map : (<U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: number, index: number, array: number[]) => U_1, thisArg?: any) => U_1[])
+>fstrmapgen() : (x: number) => number
+>fstrmapgen : <T extends string | number>() => (x: T) => T
+
+arrsn.map(strmapol); // 5.2.2 error
+>arrsn.map(strmapol) : number[]
+>arrsn.map : (<U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: number, index: number, array: number[]) => U_1, thisArg?: any) => U_1[])
+>arrsn : string[] | number[]
+>map : (<U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: number, index: number, array: number[]) => U_1, thisArg?: any) => U_1[])
+>strmapol : { (x: string): string; (x: number): number; }
+
+arrsn.map(fstrmapol()); // 5.2.2. error
+>arrsn.map(fstrmapol()) : number[]
+>arrsn.map : (<U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: number, index: number, array: number[]) => U_1, thisArg?: any) => U_1[])
+>arrsn : string[] | number[]
+>map : (<U>(callbackfn: (value: string, index: number, array: string[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: number, index: number, array: number[]) => U_1, thisArg?: any) => U_1[])
+>fstrmapol() : { (x: string): string; (x: number): number; }
+>fstrmapol : () => { (x: string): string; (x: number): number; }
+

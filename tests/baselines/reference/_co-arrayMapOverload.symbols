@@ -1,0 +1,63 @@
+//// [tests/cases/compiler/_co/_co-arrayMapOverload.ts] ////
+
+=== _co-arrayMapOverload.ts ===
+declare const arrsn : string[]|number[];
+>arrsn : Symbol(arrsn, Decl(_co-arrayMapOverload.ts, 0, 13))
+
+declare function strmapol(x:string):string;
+>strmapol : Symbol(strmapol, Decl(_co-arrayMapOverload.ts, 0, 40), Decl(_co-arrayMapOverload.ts, 1, 43))
+>x : Symbol(x, Decl(_co-arrayMapOverload.ts, 1, 26))
+
+declare function strmapol(x:number):number;
+>strmapol : Symbol(strmapol, Decl(_co-arrayMapOverload.ts, 0, 40), Decl(_co-arrayMapOverload.ts, 1, 43))
+>x : Symbol(x, Decl(_co-arrayMapOverload.ts, 2, 26))
+
+//declare function strmap(x:number|string):number|string;
+
+declare function strmapgen<T extends string|number>(x:T):T;
+>strmapgen : Symbol(strmapgen, Decl(_co-arrayMapOverload.ts, 2, 43))
+>T : Symbol(T, Decl(_co-arrayMapOverload.ts, 5, 27))
+>x : Symbol(x, Decl(_co-arrayMapOverload.ts, 5, 52))
+>T : Symbol(T, Decl(_co-arrayMapOverload.ts, 5, 27))
+>T : Symbol(T, Decl(_co-arrayMapOverload.ts, 5, 27))
+
+//type ID = <I>() => (i: I) => I;
+
+declare const fstrmapgen: <T extends string|number>()=>(x:T)=>T;
+>fstrmapgen : Symbol(fstrmapgen, Decl(_co-arrayMapOverload.ts, 9, 13))
+>T : Symbol(T, Decl(_co-arrayMapOverload.ts, 9, 27))
+>x : Symbol(x, Decl(_co-arrayMapOverload.ts, 9, 56))
+>T : Symbol(T, Decl(_co-arrayMapOverload.ts, 9, 27))
+>T : Symbol(T, Decl(_co-arrayMapOverload.ts, 9, 27))
+
+const fstrmapol = ()=>strmapol;
+>fstrmapol : Symbol(fstrmapol, Decl(_co-arrayMapOverload.ts, 11, 5))
+>strmapol : Symbol(strmapol, Decl(_co-arrayMapOverload.ts, 0, 40), Decl(_co-arrayMapOverload.ts, 1, 43))
+
+
+
+
+arrsn.map(strmapgen); // 5.2.2. no error
+>arrsn.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>arrsn : Symbol(arrsn, Decl(_co-arrayMapOverload.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>strmapgen : Symbol(strmapgen, Decl(_co-arrayMapOverload.ts, 2, 43))
+
+arrsn.map(fstrmapgen()); // 5.2.2. error
+>arrsn.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>arrsn : Symbol(arrsn, Decl(_co-arrayMapOverload.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>fstrmapgen : Symbol(fstrmapgen, Decl(_co-arrayMapOverload.ts, 9, 13))
+
+arrsn.map(strmapol); // 5.2.2 error
+>arrsn.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>arrsn : Symbol(arrsn, Decl(_co-arrayMapOverload.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>strmapol : Symbol(strmapol, Decl(_co-arrayMapOverload.ts, 0, 40), Decl(_co-arrayMapOverload.ts, 1, 43))
+
+arrsn.map(fstrmapol()); // 5.2.2. error
+>arrsn.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>arrsn : Symbol(arrsn, Decl(_co-arrayMapOverload.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>fstrmapol : Symbol(fstrmapol, Decl(_co-arrayMapOverload.ts, 11, 5))
+

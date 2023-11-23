@@ -1,0 +1,41 @@
+//// [tests/cases/compiler/_co/_co-56425.ts] ////
+
+=== _co-56425.ts ===
+interface Foo {
+>Foo : Symbol(Foo, Decl(_co-56425.ts, 0, 0))
+
+    defoo(): never;
+>defoo : Symbol(Foo.defoo, Decl(_co-56425.ts, 0, 15))
+}
+
+interface Bar {
+>Bar : Symbol(Bar, Decl(_co-56425.ts, 2, 1))
+
+    defoo(): void;
+>defoo : Symbol(Bar.defoo, Decl(_co-56425.ts, 4, 15))
+}
+
+type Baz = Foo | Bar;
+>Baz : Symbol(Baz, Decl(_co-56425.ts, 6, 1))
+>Foo : Symbol(Foo, Decl(_co-56425.ts, 0, 0))
+>Bar : Symbol(Bar, Decl(_co-56425.ts, 2, 1))
+
+function defooer(baz: Baz) {
+>defooer : Symbol(defooer, Decl(_co-56425.ts, 8, 21))
+>baz : Symbol(baz, Decl(_co-56425.ts, 10, 17))
+>Baz : Symbol(Baz, Decl(_co-56425.ts, 6, 1))
+
+    baz.defoo()
+>baz.defoo : Symbol(defoo, Decl(_co-56425.ts, 0, 15), Decl(_co-56425.ts, 4, 15))
+>baz : Symbol(baz, Decl(_co-56425.ts, 10, 17))
+>defoo : Symbol(defoo, Decl(_co-56425.ts, 0, 15), Decl(_co-56425.ts, 4, 15))
+
+    // type = void
+    // aka (never | void)
+
+    return baz
+>baz : Symbol(baz, Decl(_co-56425.ts, 10, 17))
+
+    // type = Baz
+    // should narrow to Bar
+}

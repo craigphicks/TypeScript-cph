@@ -1,0 +1,36 @@
+//// [tests/cases/compiler/_co/_co-proxy.ts] ////
+
+=== _co-proxy.ts ===
+type AnyTup = [...any[]];
+>AnyTup : any[]
+
+type FN<Args extends AnyTup,Ret> = (...args:Args)=>Ret;
+>FN : FN<Args, Ret>
+>args : Args
+
+declare function fproxy<A extends AnyTup,R>(fn:FN<A,R>, ...args: A):R;
+>fproxy : <A extends AnyTup, R>(fn: FN<A, R>, ...args: A) => R
+>fn : FN<A, R>
+>args : A
+
+declare function f1(s:string):number;
+>f1 : (s: string) => number
+>s : string
+
+declare function fol1(s:string):string;
+>fol1 : { (s: string): string; (n: number): number; }
+>s : string
+
+declare function fol1(n:number):number;
+>fol1 : { (s: string): string; (n: number): number; }
+>n : number
+
+
+
+const x1 = fproxy(f1,"test");
+>x1 : number
+>fproxy(f1,"test") : number
+>fproxy : <A extends AnyTup, R>(fn: FN<A, R>, ...args: A) => R
+>f1 : (s: string) => number
+>"test" : "test"
+
