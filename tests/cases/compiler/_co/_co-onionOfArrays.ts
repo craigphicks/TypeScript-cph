@@ -1,36 +1,27 @@
 // @strict: true
-// @target: es6
 // @declaration: true
+// @target: es6
 
-interface Fizz {
-    id: number;
-    member: number;
-}
-interface Buzz {
-    id: number;
-    member: string;
-}
+declare const arrsn : string[]|number[];
+declare function strmapol(x:string):string;
+declare function strmapol(x:number):number;
+//declare function strmap(x:number|string):number|string;
+
+declare function strmapgen<T extends string|number>(x:T):T;
+
+// //type ID = <I>() => (i: I) => I;
+
+declare const fstrmapgen: <T extends string|number>()=>(x:T)=>T;
+
+// const fstrmapol = ()=>strmapol;
 
 
 
-//const f = (x: any) => x && typeof x.member === "number";
 
-([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter(x => x && x.member); // expect type (Fizz|Buzz|Falsey)[]
+//arrsn.map(strmapgen); // 5.2.2. no error
 
+// arrsn.map(fstrmapgen()); // 5.2.2. error
 
-//([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter(x => x && typeof x.member === "number"); // expect type (Fizz|Buzz|Falsey)[]
+arrsn.map(strmapol); // 5.2.2 error
 
-// namespace X {
-// type BooleanConstructor = ()=>boolean;
-// //var Boolean: BooleanConstructor = ()=>true;
-// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor)); // expect type (Fizz|Buzz)[]
-// }
-//declare const arr: (Fizz|Falsey)[];
-
-//([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor)); // expect type (Fizz|Buzz)[]
-
-// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor),
-//     ([] as any as (Fizz|Falsey)[] | (Buzz|Falsey)[])); // expect type (Fizz|Buzz)[]
-
-// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor),
-//     ([] as any as (Fizz|Falsey)[] | (Buzz|Falsey)[])); // expect type (Fizz|Buzz)[]
+// arrsn.map(fstrmapol()); // 5.2.2. error

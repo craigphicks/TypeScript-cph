@@ -747,6 +747,7 @@ export function chooseOverload2Helper(
         let inferenceContext: InferenceContext | undefined;
 
         if (candidate.typeParameters) {
+            IDebug.ilog(()=>`doOneCandidateHelper: @1`,2);
             if (IDebug.logLevel>=2) {
                 candidate.typeParameters.forEach((typeParameter, _idx)=>{
                     dbgTypeParameterToStrings(typeParameter).forEach((s)=>IDebug.ilog(()=>`typeParameter[${_idx}]: ${s}`,2));
@@ -754,6 +755,7 @@ export function chooseOverload2Helper(
             }
             let typeArgumentTypes: Type[] | undefined;
             if (some(typeArguments)) {
+                IDebug.ilog(()=>`doOneCandidateHelper: @1.1`,2);
                 typeArgumentTypes = tmpChecker.checkTypeArguments(candidate, typeArguments, reportErrors /*false*/);
                 if (!typeArgumentTypes) {
                     candidateForTypeArgumentError = candidate;
@@ -762,6 +764,7 @@ export function chooseOverload2Helper(
                 }
             }
             else {
+                IDebug.ilog(()=>`doOneCandidateHelper: @1.2`,2);
                 inferenceContext = tmpChecker.createInferenceContext(candidate.typeParameters, candidate, /*flags*/ isInJSFile(node) ? InferenceFlags.AnyDefault : InferenceFlags.None);
                 typeArgumentTypes = tmpChecker.inferTypeArguments(node, candidate, args, argCheckMode | CheckMode.SkipGenericFunctions, inferenceContext);
                 argCheckMode |= inferenceContext.flags & InferenceFlags.SkippedGenericFunction ? CheckMode.SkipGenericFunctions : CheckMode.Normal;
@@ -785,6 +788,7 @@ export function chooseOverload2Helper(
             checkCandidate = candidate;
         }
         //let diagn: readonly Diagnostic[] | undefined;
+        IDebug.ilog(()=>`doOneCandidateHelper: @2.1`,2);
         if (/*diagn=*/tmpChecker.getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, !!reportErrors /*false*/, /*containingMessageChain*/ undefined)) {
             // Give preference to error candidates that have no rest parameters (as they are more specific)
             (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
@@ -795,11 +799,13 @@ export function chooseOverload2Helper(
             return;
         }
         if (argCheckMode) {
+            IDebug.ilog(()=>`doOneCandidateHelper: @2.1`,2);
             // If one or more context sensitive arguments were excluded, we start including
             // them now (and keeping do so for any subsequent candidates) and perform a second
             // round of type inference and applicability checking for this particular candidate.
             argCheckMode = CheckMode.Normal;
             if (inferenceContext) {
+                IDebug.ilog(()=>`doOneCandidateHelper: @2.1.1`,2);
                 const typeArgumentTypes = tmpChecker.inferTypeArguments(node, candidate, args, argCheckMode, inferenceContext);
                 checkCandidate = tmpChecker.getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext.inferredTypeParameters);
                 // If the original signature has a generic rest type, instantiation may produce a
@@ -810,6 +816,7 @@ export function chooseOverload2Helper(
                     return;
                 }
             }
+            IDebug.ilog(()=>`doOneCandidateHelper: @2.2`,2);
             if (tmpChecker.getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, !!reportErrors/*false*/, /*containingMessageChain*/ undefined)) {
                 // Give preference to error candidates that have no rest parameters (as they are more specific)
                 (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);

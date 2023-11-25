@@ -1,55 +1,38 @@
 //// [tests/cases/compiler/_co/_co-onionOfArrays.ts] ////
 
 === _co-onionOfArrays.ts ===
-interface Fizz {
->Fizz : Symbol(Fizz, Decl(_co-onionOfArrays.ts, 0, 0))
+declare const arrsn : string[]|number[];
+>arrsn : Symbol(arrsn, Decl(_co-onionOfArrays.ts, 0, 13))
 
-    id: number;
->id : Symbol(Fizz.id, Decl(_co-onionOfArrays.ts, 0, 16))
+declare function strmapol(x:string):string;
+>strmapol : Symbol(strmapol, Decl(_co-onionOfArrays.ts, 0, 40), Decl(_co-onionOfArrays.ts, 1, 43))
+>x : Symbol(x, Decl(_co-onionOfArrays.ts, 1, 26))
 
-    member: number;
->member : Symbol(Fizz.member, Decl(_co-onionOfArrays.ts, 1, 15))
-}
-interface Buzz {
->Buzz : Symbol(Buzz, Decl(_co-onionOfArrays.ts, 3, 1))
+declare function strmapol(x:number):number;
+>strmapol : Symbol(strmapol, Decl(_co-onionOfArrays.ts, 0, 40), Decl(_co-onionOfArrays.ts, 1, 43))
+>x : Symbol(x, Decl(_co-onionOfArrays.ts, 2, 26))
 
-    id: number;
->id : Symbol(Buzz.id, Decl(_co-onionOfArrays.ts, 4, 16))
+//declare function strmap(x:number|string):number|string;
 
-    member: string;
->member : Symbol(Buzz.member, Decl(_co-onionOfArrays.ts, 5, 15))
-}
+// declare function strmapgen<T extends string|number>(x:T):T;
 
+// //type ID = <I>() => (i: I) => I;
 
+// declare const fstrmapgen: <T extends string|number>()=>(x:T)=>T;
 
-//const f = (x: any) => x && typeof x.member === "number";
-
-([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter(x => x && x.member); // expect type (Fizz|Buzz|Falsey)[]
->([] as (Fizz|undefined)[] | (Buzz|undefined)[]).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->Fizz : Symbol(Fizz, Decl(_co-onionOfArrays.ts, 0, 0))
->Buzz : Symbol(Buzz, Decl(_co-onionOfArrays.ts, 3, 1))
->filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->x : Symbol(x, Decl(_co-onionOfArrays.ts, 13, 55))
->x : Symbol(x, Decl(_co-onionOfArrays.ts, 13, 55))
->x.member : Symbol(member, Decl(_co-onionOfArrays.ts, 1, 15), Decl(_co-onionOfArrays.ts, 5, 15))
->x : Symbol(x, Decl(_co-onionOfArrays.ts, 13, 55))
->member : Symbol(member, Decl(_co-onionOfArrays.ts, 1, 15), Decl(_co-onionOfArrays.ts, 5, 15))
+// const fstrmapol = ()=>strmapol;
 
 
-//([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter(x => x && typeof x.member === "number"); // expect type (Fizz|Buzz|Falsey)[]
 
-// namespace X {
-// type BooleanConstructor = ()=>boolean;
-// //var Boolean: BooleanConstructor = ()=>true;
-// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor)); // expect type (Fizz|Buzz)[]
-// }
-//declare const arr: (Fizz|Falsey)[];
 
-//([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor)); // expect type (Fizz|Buzz)[]
+// arrsn.map(strmapgen); // 5.2.2. no error
 
-// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor),
-//     ([] as any as (Fizz|Falsey)[] | (Buzz|Falsey)[])); // expect type (Fizz|Buzz)[]
+// arrsn.map(fstrmapgen()); // 5.2.2. error
 
-// ([] as (Fizz|Falsey)[] | (Buzz|Falsey)[]).filter((0 as any as BooleanConstructor),
-//     ([] as any as (Fizz|Falsey)[] | (Buzz|Falsey)[])); // expect type (Fizz|Buzz)[]
+arrsn.map(strmapol); // 5.2.2 error
+>arrsn.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>arrsn : Symbol(arrsn, Decl(_co-onionOfArrays.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>strmapol : Symbol(strmapol, Decl(_co-onionOfArrays.ts, 0, 40), Decl(_co-onionOfArrays.ts, 1, 43))
 
+// arrsn.map(fstrmapol()); // 5.2.2. error

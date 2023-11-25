@@ -1101,6 +1101,8 @@ import {
 // cphdebug-start
 // @ts-ignore
 import { IDebug } from "./mydebug";
+const contextualLogLevel = 2;
+
 // cphdebug-end
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
@@ -25839,6 +25841,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // than the target, we infer from the first source signature to the excess target signatures.
                 const targetSignatures = getSignaturesOfType(target, kind);
                 const targetLen = targetSignatures.length;
+                if (sourceLen > targetLen) return;  // Skipping inference for some source types may result in bad match, so do not try [cph]
                 for (let i = 0; i < targetLen; i++) {
                     const sourceIndex = Math.max(sourceLen - targetLen + i, 0);
                     inferFromSignature(getBaseSignature(sourceSignatures[sourceIndex]), getErasedSignature(targetSignatures[i]));
@@ -30513,22 +30516,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function pushContextualType(node: Expression, type: Type | undefined, isCache: boolean) {
-        IDebug.ilogGroup(()=>`pushContextualType(node:${IDebug.dbgs.dbgNodeToString(node)}, type:${IDebug.dbgs.dbgTypeToString(type)}, isCache:${isCache})`,4);
+        IDebug.ilogGroup(()=>`pushContextualType(node:${IDebug.dbgs.dbgNodeToString(node)}, type:${IDebug.dbgs.dbgTypeToString(type)}, isCache:${isCache})`, contextualLogLevel);
         contextualTypeNodes[contextualTypeCount] = node;
         contextualTypes[contextualTypeCount] = type;
         contextualIsCache[contextualTypeCount] = isCache;
         contextualTypeCount++;
-        IDebug.ilogGroupEnd(()=>`contextualTypeCount:${contextualTypeCount}`,4);
+        IDebug.ilogGroupEnd(()=>`contextualTypeCount:${contextualTypeCount}`, contextualLogLevel);
     }
 
     function popContextualType() {
-        IDebug.ilogGroup(()=>`popContextualType()`,4);
+        IDebug.ilogGroup(()=>`popContextualType()`,contextualLogLevel);
         contextualTypeCount--;
-        IDebug.ilogGroupEnd(()=>`contextualTypeCount:${contextualTypeCount}`,4);
+        IDebug.ilogGroupEnd(()=>`contextualTypeCount:${contextualTypeCount}`, contextualLogLevel);
     }
 
     function findContextualNode(node: Node, includeCaches: boolean) {
-    IDebug.ilogGroup(()=>`findContextualNode(node:${IDebug.dbgs.dbgNodeToString(node)}, includesCache:${includeCaches})`,4);
+    IDebug.ilogGroup(()=>`findContextualNode(node:${IDebug.dbgs.dbgNodeToString(node)}, includesCache:${includeCaches})`,contextualLogLevel);
     const result = (()=>{
         for (let i = contextualTypeCount - 1; i >= 0; i--) {
             if (node === contextualTypeNodes[i] && (includeCaches || !contextualIsCache[i])) {
@@ -30537,7 +30540,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         return -1;
     })();
-    IDebug.ilogGroupEnd(()=>`result: ${result}`,4);
+    IDebug.ilogGroupEnd(()=>`result: ${result}`,contextualLogLevel);
     return result;
     }
 
@@ -34655,6 +34658,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+        IDebug.ilogGroup(()=>`resolveCallExpression[in]: node: ${IDebug.dbgs.dbgNodeToString(node)}, checkMode: ${checkMode}`,2);
+        candidatesOutArray?.forEach((c,i)=>{
+            IDebug.ilog(()=>`resolveCallExpression: (in)candidate[${i}]: ${IDebug.dbgs.dbgSignatureToString(c)}`,2);
+        });
+        const result = resolveCallExpressionHelper(node,candidatesOutArray, checkMode);
+        candidatesOutArray?.forEach((c,i)=>{
+            IDebug.ilog(()=>`resolveCallExpression: (out)candidate[${i}]: ${IDebug.dbgs.dbgSignatureToString(c)}`,2);
+        });
+        IDebug.ilogGroup(()=>`resolveCallExpression[out]: result: ${IDebug.dbgs.dbgSignatureToString(result)}`,2);
+        return result;
+    }
+    function resolveCallExpressionHelper(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
         if (node.expression.kind === SyntaxKind.SuperKeyword) {
             const superType = checkSuperExpression(node.expression);
             if (isTypeAny(superType)) {
@@ -39222,24 +39237,42 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
 
         const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
-        const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
+        IDebug.ilog(()=>`uninstantiatedType: ${IDebug.dbgs.dbgTypeToString(uninstantiatedType)}`,2);
+        let type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
+        IDebug.ilog(()=>`(instantiated) type: ${IDebug.dbgs.dbgTypeToString(type)}`,2);
+        if ((checkMode??0) & CheckMode.TypeOnly){
+            const nodeLinks = getNodeLinks(node);
+            if (nodeLinks.resolvedType){
+                type = nodeLinks.resolvedType;
+            }
+        }
         if (isConstEnumObjectType(type)) {
             checkConstEnumAccess(node, type);
         }
 
-        // if (checkAfter) {
-        //     Debug.assert(setOfNode);
-        //     let nodeLinks = getNodeLinks(node);
-        //     if (nodeLinks.resolvedSignature){
-        //         setOfNode.add(node);
-        //     }
-        // }
         {
             let nodeLinks = getNodeLinks(node);
             Object.keys(nodeLinks).forEach((key)=>{
                 let str = `(after)nodeLinks.keys: ${key}`;
-                if (key==="resolvedSignature"){
+                if (key==="flags"){
+                    str += `, ${nodeLinks.flags}`
+                }
+                else if (key==="resolvedSignature"){
                     str += `, ${IDebug.dbgs.dbgSignatureToString(nodeLinks.resolvedSignature)}, `;
+                    let symbol: Symbol | undefined;
+                    if (symbol=(node as any).symbol) {
+                        const ss = IDebug.dbgs.dbgSymbolToString(symbol);
+                        const sl = getSymbolLinks(symbol);
+                        str += `, symbol:${ss}, symbolLinks.type:${IDebug.dbgs.dbgTypeToString(sl.type)}`
+                    }
+                }
+                else if (key==="resolvedType"){
+                    str += `, ${IDebug.dbgs.dbgTypeToString(nodeLinks.resolvedType)}`
+                }
+                else if (key==="resolvedSymbol"){
+                    const ss = IDebug.dbgs.dbgSymbolToString(nodeLinks.resolvedSymbol);
+                    const sl = getSymbolLinks(nodeLinks.resolvedSymbol!);
+                    str += `, symbol:${ss}, symbolLinks.type:${IDebug.dbgs.dbgTypeToString(sl.type)}`
                 }
                 IDebug.ilog(()=>str,2);
             });

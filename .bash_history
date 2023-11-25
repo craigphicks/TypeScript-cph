@@ -111,3 +111,29 @@ myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-arrayMap
 hereby baseline-accept
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-arrayMap"
 git status
+git add .
+git status
+git commit -m "backup; _co-arrayMapOverload strmapol and fstrmapol not working"
+find tests/cases -name "*array*"
+find tests/cases -name "*Array*"
+find -R Fizz tests/cases 
+grep -R Fizz tests/cases 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="-onion"
+hereby baseline-accept
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion"
+rm tmp/*
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" 
+myLogLevel=1  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" 
+rm tmp/*
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo1" -i 
