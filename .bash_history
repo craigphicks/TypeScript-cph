@@ -137,3 +137,10 @@ rm tmp/*
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="-onion" 
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo" 
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo1" -i 
+git status
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo2" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo2" -i
+rm tmp/*
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo2" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-amo2"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-amo2" -i
