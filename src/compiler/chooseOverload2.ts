@@ -41,6 +41,8 @@ import {
     SignatureDeclaration,
     TransientSymbol,
     CheckFlags,
+    // @ts-ignore
+    signatureHasRestParameter,
 } from "./_namespaces/ts";
 
 // cphdebug-start
@@ -98,6 +100,7 @@ export interface TmpChecker {
         minArgumentCount: number,
         flags: SignatureFlags,
     ): Signature;
+    getTypeOfParameter(param: Symbol): Type;
 }
 
 
@@ -201,6 +204,8 @@ function cloneSymbolWithoutMerge(symbol: Symbol, _tmpChecker: TmpChecker): Trans
 }
 
 
+
+
 /**
  * It turns out that cloning a symbol does not really provide an independent copy of the symbol, because there are revrse lookups from the declarations
  * to the symbol, and that points to the latest symbol clone via mergedSymbols, not the original symbol.
@@ -289,6 +294,70 @@ function createUnionResultSignature(signatures: Signature[], _checker: TypeCheck
     const result = _tmpChecker.createUnionSignature(usig, signatures);
     return result;
 }
+
+
+// function createUnionOfSignaturesWithIndependentSymbols(candidates: readonly Signature[], _tmpChecker: TmpChecker, _checker: TypeChecker): Signature {
+//     function setSymbolLinksType(symbol: Symbol, type: Type | undefined): void {
+//         const symbolLinks = _tmpChecker.getSymbolLinks(symbol);
+//         symbolLinks.type = type;
+//     }
+
+//     const thisParameters = candidates.map(c => c.thisParameter).filter(p=>!!p) as Symbol[];
+//     let thisParameter: Symbol | undefined;
+//     if (thisParameters.length) {
+//         thisParameter = _tmpChecker.createSymbol(SymbolFlags.Type, "this" as __String);
+//         const thisType = _checker.getUnionType(thisParameters.map(p => _checker.getTypeOfSymbol(p)));
+//         setSymbolLinksType(thisParameter, thisType);
+//     }
+
+//     // function getNumNonRestParameters(signature: Signature): number {
+//     //     const numParams = signature.parameters.length;
+//     //     return signatureHasRestParameter(signature) ? numParams - 1 : numParams;
+//     // }
+
+//     let maxNonRestParam = 0;
+//     let maxParam = 0;
+//     for (const sig of candidates) {
+//         maxParam = Math.max(maxParam, sig.parameters.length);
+//         maxNonRestParam = Math.max(maxNonRestParam, signatureHasRestParameter(sig) ? sig.parameters.length-1 : sig.parameters.length);
+//     }
+//     const paramTypes: Type[][] = Array(maxParam).fill(undefined).map(()=>[]);
+//     for (const sig of candidates) {
+//         sig.parameters.forEach((param, index) => {
+//         }
+//     }
+
+//     //const { min: minArgumentCount, max: maxNonRestParam } = minAndMax(candidates, getNumNonRestParameters);
+//     const parameters: Symbol[] = [];
+//     for (let i = 0; i < maxNonRestParam; i++) {
+//         const symbols = mapDefined(candidates, s =>
+//             signatureHasRestParameter(s) ?
+//                 i < s.parameters.length - 1 ? s.parameters[i] : last(s.parameters) :
+//                 i < s.parameters.length ? s.parameters[i] : undefined);
+//         Debug.assert(symbols.length !== 0);
+//         parameters.push(createCombinedSymbolFromTypes(symbols, mapDefined(candidates, candidate => tryGetTypeAtPosition(candidate, i))));
+//     }
+//     const restParameterSymbols = mapDefined(candidates, c => signatureHasRestParameter(c) ? last(c.parameters) : undefined);
+//     let flags = SignatureFlags.IsSignatureCandidateForOverloadFailure;
+//     if (restParameterSymbols.length !== 0) {
+//         const type = createArrayType(getUnionType(mapDefined(candidates, tryGetRestTypeOfSignature), UnionReduction.Subtype));
+//         parameters.push(createCombinedSymbolForOverloadFailure(restParameterSymbols, type));
+//         flags |= SignatureFlags.HasRestParameter;
+//     }
+//     if (candidates.some(signatureHasLiteralTypes)) {
+//         flags |= SignatureFlags.HasLiteralTypes;
+//     }
+//     return createSignature(
+//         candidates[0].declaration,
+//         /*typeParameters*/ undefined, // Before calling this we tested for `!candidates.some(c => !!c.typeParameters)`.
+//         thisParameter,
+//         parameters,
+//         /*resolvedReturnType*/ getIntersectionType(candidates.map(getReturnTypeOfSignature)),
+//         /*resolvedTypePredicate*/ undefined,
+//         minArgumentCount,
+//         flags,
+//     );
+// }
 
 
 
@@ -543,21 +612,23 @@ export function chooseOverload2Helper(
                 const nodeLinks = tmpChecker.getNodeLinks(node as Expression);
                 IDebug.ilogGroup(()=>`node: ${IDebug.dbgs.dbgNodeToString(node)}, after doOneCandidate(${candidateIndex}, candidate: ${IDebug.dbgs.dbgSignatureToString(candidates[candidateIndex])})`,2);
                 let str = "";
-                Object.keys(nodeLinks).forEach((key)=>{
-                    if (key==="flags") return;
-                    str += `(post) ${key}:`
-                    if (key==="resolvedSignature") {
-                        // str+= `resolvedSignature: ${IDebug.dbgs.dbgSignatureToString(nodeLinks.resolvedSignature!)}, `;
-                        // let type: Type | undefined;
-                        // if ((node as any as ObjectType).symbol) type = checker.getTypeOfSymbol((node as any).symbol);
-                        // if (type) str+= `type:${IDebug.dbgs.dbgTypeToString(type)}, `;
-                        // let callSignatures: readonly Signature[] | undefined;
-                        // if (callSignatures=(type as ObjectType).callSignatures) str+= `callSignatures[0]:${IDebug.dbgs.dbgSignatureToString(callSignatures[0])}, `;
-                    }
-                    else if (key==="resolvedType") str+= IDebug.dbgs.dbgTypeToString(nodeLinks.resolvedType!);
-                    else if (key==="resolvedSymbol") str+= IDebug.dbgs.dbgSymbolToString(nodeLinks.resolvedSymbol!);
-                    str += ", ";
-                });
+                if (IDebug.logLevel){
+                    Object.keys(nodeLinks).forEach((key)=>{
+                        if (key==="flags") return;
+                        str += `(post) ${key}:`
+                        if (key==="resolvedSignature") {
+                            // str+= `resolvedSignature: ${IDebug.dbgs.dbgSignatureToString(nodeLinks.resolvedSignature!)}, `;
+                            // let type: Type | undefined;
+                            // if ((node as any as ObjectType).symbol) type = checker.getTypeOfSymbol((node as any).symbol);
+                            // if (type) str+= `type:${IDebug.dbgs.dbgTypeToString(type)}, `;
+                            // let callSignatures: readonly Signature[] | undefined;
+                            // if (callSignatures=(type as ObjectType).callSignatures) str+= `callSignatures[0]:${IDebug.dbgs.dbgSignatureToString(callSignatures[0])}, `;
+                        }
+                        else if (key==="resolvedType") str+= IDebug.dbgs.dbgTypeToString(nodeLinks.resolvedType!);
+                        else if (key==="resolvedSymbol") str+= IDebug.dbgs.dbgSymbolToString(nodeLinks.resolvedSymbol!);
+                        str += ", ";
+                    });
+                }
                 IDebug.ilog(()=>`nodeLinks keys: ${str}`,2);
                 IDebug.ilogGroupEnd(()=>'',2);
                 nodeLinks.flags &= ~NodeCheckFlags.ContextChecked;
@@ -576,15 +647,17 @@ export function chooseOverload2Helper(
 
             tmpChecker.getChooseOverloadFlushSymbolsReq()?.forEach((symbol)=>{
                 const symbolLinks = tmpChecker.getSymbolLinks(symbol);
-                IDebug.ilogGroup(()=>`symbol: ${IDebug.dbgs.dbgSymbolToString(symbol)}, after doOneCandidate(${candidateIndex}, candidate: ${IDebug.dbgs.dbgSignatureToString(candidates[candidateIndex])})`,2);
-                let str = "";
-                Object.keys(symbolLinks).forEach((key)=>{
-                    str += `${key}: `;
-                    if (key==="type") str+= IDebug.dbgs.dbgTypeToString(symbolLinks.type!);
-                    str += ", ";
-                });
-                IDebug.ilog(()=>`symbolLinks keys: ${str}`,2);
-                IDebug.ilogGroupEnd(()=>'',2);
+                if (IDebug.logLevel>=2){
+                    IDebug.ilogGroup(()=>`symbol: ${IDebug.dbgs.dbgSymbolToString(symbol)}, after doOneCandidate(${candidateIndex}, candidate: ${IDebug.dbgs.dbgSignatureToString(candidates[candidateIndex])})`,2);
+                    let str = "";
+                    Object.keys(symbolLinks).forEach((key)=>{
+                        str += `${key}: `;
+                        if (key==="type") str+= IDebug.dbgs.dbgTypeToString(symbolLinks.type!);
+                        str += ", ";
+                    });
+                    IDebug.ilog(()=>`symbolLinks keys: ${str}`,2);
+                    IDebug.ilogGroupEnd(()=>'',2);
+                }
                 Object.keys(symbolLinks).forEach((key)=>delete (symbolLinks as any)[key]);
             });
 
@@ -635,10 +708,11 @@ export function chooseOverload2Helper(
             switch (key){
                 case "resolvedSignature":{
                     castHereafter<NodeAccumValueType["resolvedSignature"][]>(values);
-                    values.forEach(({symbol})=>{
-                        // All or nothing
-                        Debug.assert(symbol===values[0].symbol);
-                    });
+                    const identicalSymbols = values.every(({symbol})=>symbol===values[0].symbol);
+                    // values.forEach(({symbol})=>{
+                    //     // All or nothing
+                    //     Debug.assert(symbol===values[0].symbol);
+                    // });
                     if (enableIsolatedInnerSigs){
                         let sigs = values.map(({virtualSignature}, _idx)=>{
                             return cloneSignatureFromVirtualSignature(virtualSignature, checker, tmpChecker);
@@ -648,8 +722,13 @@ export function chooseOverload2Helper(
                                 return tmpChecker.getOrCreateTypeFromSignature(sig);
                             });
                             const utype = checker.getUnionType(types);
-                            const symbolLinks = tmpChecker.getSymbolLinks(values[0].symbol);
-                            symbolLinks.type = utype;
+                            if (identicalSymbols){
+                                const symbolLinks = tmpChecker.getSymbolLinks(values[0].symbol);
+                                symbolLinks.type = utype;
+                            }
+                            else {
+                                tmpChecker.getNodeLinks(node as Expression).resolvedType = utype;
+                            }
                         }
                         else {
                             const nodeLinks = tmpChecker.getNodeLinks(node as Expression);
@@ -759,7 +838,7 @@ export function chooseOverload2Helper(
                 typeArgumentTypes = tmpChecker.checkTypeArguments(candidate, typeArguments, reportErrors /*false*/);
                 if (!typeArgumentTypes) {
                     candidateForTypeArgumentError = candidate;
-                    IDebug.ilog(()=>`doOneCandidateHelper: fail@0`,2);
+                    IDebug.ilog(()=>`doOneCandidateHelper: fail@1.1`,2);
                     return;
                 }
             }
@@ -779,8 +858,9 @@ export function chooseOverload2Helper(
             // If the original signature has a generic rest type, instantiation may produce a
             // signature with different arity and we need to perform another arity check.
             if (tmpChecker.getNonArrayRestType(candidate) && !tmpChecker.hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {
+                IDebug.ilog(()=>`doOneCandidateHelper: @1.3`,2);
                 candidateForArgumentArityError = checkCandidate;
-                IDebug.ilog(()=>`doOneCandidateHelper: fail@1`,2);
+                IDebug.ilog(()=>`doOneCandidateHelper: fail@1.3`,2);
                 return;
             }
         }
@@ -792,35 +872,35 @@ export function chooseOverload2Helper(
         if (/*diagn=*/tmpChecker.getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, !!reportErrors /*false*/, /*containingMessageChain*/ undefined)) {
             // Give preference to error candidates that have no rest parameters (as they are more specific)
             (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
-            IDebug.ilog(()=>`doOneCandidateHelper: fail@2`,2);
+            IDebug.ilog(()=>`doOneCandidateHelper: fail@2.1`,2);
             // if (diagn && diagn?.length) {
             //     IDebug.dbgs.dbgDiagnosticsToStrings(diagn[0]).forEach((s,i)=>IDebug.ilog(()=>`diagn[${i}]="${s}"`,2));
             // }
             return;
         }
         if (argCheckMode) {
-            IDebug.ilog(()=>`doOneCandidateHelper: @2.1`,2);
+            IDebug.ilog(()=>`doOneCandidateHelper: @2.2`,2);
             // If one or more context sensitive arguments were excluded, we start including
             // them now (and keeping do so for any subsequent candidates) and perform a second
             // round of type inference and applicability checking for this particular candidate.
             argCheckMode = CheckMode.Normal;
             if (inferenceContext) {
-                IDebug.ilog(()=>`doOneCandidateHelper: @2.1.1`,2);
+                IDebug.ilog(()=>`doOneCandidateHelper: @2.2.1`,2);
                 const typeArgumentTypes = tmpChecker.inferTypeArguments(node, candidate, args, argCheckMode, inferenceContext);
                 checkCandidate = tmpChecker.getSignatureInstantiation(candidate, typeArgumentTypes, isInJSFile(candidate.declaration), inferenceContext.inferredTypeParameters);
                 // If the original signature has a generic rest type, instantiation may produce a
                 // signature with different arity and we need to perform another arity check.
                 if (tmpChecker.getNonArrayRestType(candidate) && !tmpChecker.hasCorrectArity(node, args, checkCandidate, signatureHelpTrailingComma)) {
                     candidateForArgumentArityError = checkCandidate;
-                    IDebug.ilog(()=>`doOneCandidateHelper: fail@3`,2);
+                    IDebug.ilog(()=>`doOneCandidateHelper: fail@2.2.1`,2);
                     return;
                 }
             }
-            IDebug.ilog(()=>`doOneCandidateHelper: @2.2`,2);
+            IDebug.ilog(()=>`doOneCandidateHelper: @2.3`,2);
             if (tmpChecker.getSignatureApplicabilityError(node, args, checkCandidate, relation, argCheckMode, !!reportErrors/*false*/, /*containingMessageChain*/ undefined)) {
                 // Give preference to error candidates that have no rest parameters (as they are more specific)
                 (candidatesForArgumentError || (candidatesForArgumentError = [])).push(checkCandidate);
-                IDebug.ilog(()=>`doOneCandidateHelper: fail@4`,2);
+                IDebug.ilog(()=>`doOneCandidateHelper: fail@2.3`,2);
                 return;
             }
         }

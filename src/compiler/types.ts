@@ -858,7 +858,7 @@ export const enum ModifierFlags {
     Protected =          1 << 2,  // Property/Method
     Readonly =           1 << 3,  // Property/Method
     Override =           1 << 4,  // Override method.
-    
+
     // Syntactic-only modifiers
     Export =             1 << 5,  // Declarations
     Abstract =           1 << 6,  // Class/Method/ConstructSignature
@@ -6821,7 +6821,8 @@ export const enum InferencePriority {
     LiteralKeyof                 = 1 << 8,  // Inference made from a string literal to a keyof T
     NoConstraints                = 1 << 9,  // Don't infer from constraints of instantiable types
     AlwaysStrict                 = 1 << 10, // Always use strict rules for contravariant inferences
-    MaxValue                     = 1 << 11, // Seed for inference priority tracking
+    TypePredicate                = 1 << 11, // Inference made from a type predicate
+    MaxValue                     = 1 << 12, // Seed for inference priority tracking
 
     PriorityImpliesCombination = ReturnType | MappedTypeConstraint | LiteralKeyof, // These priorities imply that the resulting type should be a combination of all candidates
     Circularity = -1,  // Inference circularity (value less than all other priorities)

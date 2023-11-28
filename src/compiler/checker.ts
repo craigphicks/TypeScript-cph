@@ -24641,11 +24641,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-    function applyToReturnTypes(source: Signature, target: Signature, callback: (s: Type, t: Type) => void) {
+    function applyToReturnTypes(source: Signature, target: Signature, callback: (s: Type, t: Type, priority?: InferencePriority) => void) {
         const sourceTypePredicate = getTypePredicateOfSignature(source);
         const targetTypePredicate = getTypePredicateOfSignature(target);
         if (sourceTypePredicate && targetTypePredicate && typePredicateKindsMatch(sourceTypePredicate, targetTypePredicate) && sourceTypePredicate.type && targetTypePredicate.type) {
-            callback(sourceTypePredicate.type, targetTypePredicate.type);
+            callback(sourceTypePredicate.type, targetTypePredicate.type, InferencePriority.TypePredicate);
         }
         else {
             callback(getReturnTypeOfSignature(source), getReturnTypeOfSignature(target));
@@ -25369,6 +25369,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
 
+        function inferWithPriorityMaybe(source: Type, target: Type, newPriority?: InferencePriority) {
+            if (newPriority !== undefined) {
+                const savePriority = priority;
+                priority |= newPriority;
+                inferFromTypes(source, target);
+                priority = savePriority;
+            }
+            else inferFromTypes(source, target);
+        }
+
+
         function inferWithPriority(source: Type, target: Type, newPriority: InferencePriority) {
             const savePriority = priority;
             priority |= newPriority;
@@ -25841,7 +25852,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // than the target, we infer from the first source signature to the excess target signatures.
                 const targetSignatures = getSignaturesOfType(target, kind);
                 const targetLen = targetSignatures.length;
-                if (sourceLen > targetLen) return;  // Skipping inference for some source types may result in bad match, so do not try [cph]
+                //if (sourceLen > targetLen) return;  // Skipping inference for some source types may result in bad match, so do not try [cph]
                 for (let i = 0; i < targetLen; i++) {
                     const sourceIndex = Math.max(sourceLen - targetLen + i, 0);
                     inferFromSignature(getBaseSignature(sourceSignatures[sourceIndex]), getErasedSignature(targetSignatures[i]));
@@ -25858,7 +25869,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 applyToParameterTypes(source, target, inferFromContravariantTypesIfStrictFunctionTypes);
                 bivariant = saveBivariant;
             }
-            applyToReturnTypes(source, target, inferFromTypes);
+            applyToReturnTypes(source, target, (source, target, priority) => {
+                inferWithPriorityMaybe(source, target, priority);
+            });
         }
 
         function inferFromIndexTypes(source: Type, target: Type) {
@@ -26003,7 +26016,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const instantiatedConstraint = instantiateType(constraint, context.nonFixingMapper);
                 if (!inferredType || !context.compareTypes(inferredType, getTypeWithThisArgument(instantiatedConstraint, inferredType))) {
                     // If the fallback type satisfies the constraint, we pick it. Otherwise, we pick the constraint.
-                    inference.inferredType = fallbackType && context.compareTypes(fallbackType, getTypeWithThisArgument(instantiatedConstraint, fallbackType)) ? fallbackType : instantiatedConstraint;
+                    if (inferredType && inference.priority===InferencePriority.TypePredicate) {
+                        inference.inferredType = inferredType; // no change
+                    }
+                    else inference.inferredType = fallbackType && context.compareTypes(fallbackType, getTypeWithThisArgument(instantiatedConstraint, fallbackType)) ? fallbackType : instantiatedConstraint;
                 }
             }
         }
@@ -33841,7 +33857,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
     })();
-    IDebug.dbgs.dbgDiagnosticsToStrings(result?.[0]).forEach(s=>IDebug.ilog(()=>`getSignatureApplicabilityError: diagnostic: ${s}`,loggerLevel));
+    if (IDebug.logLevel){
+        IDebug.dbgs.dbgDiagnosticsToStrings(result?.[0]).forEach(s=>IDebug.ilog(()=>`getSignatureApplicabilityError: diagnostic: ${s}`,loggerLevel));
+    }
     IDebug.ilogGroupEnd(()=>`getSignatureApplicabilityError()=>`,loggerLevel);
     return result;
     }
@@ -34275,6 +34293,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 //cloneSymbol,
                 createSymbol,
                 createSignature,
+                getTypeOfParameter,
             };
 
             ({
@@ -39240,6 +39259,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         IDebug.ilog(()=>`uninstantiatedType: ${IDebug.dbgs.dbgTypeToString(uninstantiatedType)}`,2);
         let type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
         IDebug.ilog(()=>`(instantiated) type: ${IDebug.dbgs.dbgTypeToString(type)}`,2);
+        if (type!==uninstantiatedType){
+            if (type===anyFunctionType){
+                IDebug.ilog(()=>`type is anyFunctionType`,2);
+            }
+            else {
+                let nodeLinks = getNodeLinks(node);
+                nodeLinks.resolvedType = type;
+                // if (nodeLinks.resolvedSymbol){
+                //     const symbolLinks = getSymbolLinks(nodeLinks.resolvedSymbol);
+                //     IDebug.ilog(()=>`symbolLinks.type (before): ${IDebug.dbgs.dbgTypeToString(symbolLinks.type)}`,2);
+                //     symbolLinks.type = type;
+                //     IDebug.ilog(()=>`symbolLinks.type (after) ${IDebug.dbgs.dbgTypeToString(type)}`,2);
+                //     //symbolLinks.type = type;
+                // }
+            }
+            // else ???
+        }
         if ((checkMode??0) & CheckMode.TypeOnly){
             const nodeLinks = getNodeLinks(node);
             if (nodeLinks.resolvedType){
@@ -39250,7 +39286,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             checkConstEnumAccess(node, type);
         }
 
-        {
+        if (IDebug.logLevel) {
             let nodeLinks = getNodeLinks(node);
             Object.keys(nodeLinks).forEach((key)=>{
                 let str = `(after)nodeLinks.keys: ${key}`;

@@ -144,3 +144,25 @@ rm tmp/*
 myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo2" -i
 myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-amo2"
 myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-amo2" -i
+git checkout -f cett
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-amo2" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=1 hereby runtests --tests="_co-amo2" -i
+find . tests/cases/ -name "*arrayOf*"
+find . tests/cases/ -name "*filter*"
+find tests/cases/ -name "*Filter*"
+find tests/cases/ -name "*unionOfArrays*"
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" 
+find tests/cases/ -name "*unionOfArrays*"
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-isFizz" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-amo2" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-unionOfArraysMap" 
+node
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-uoa1" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-uoa1" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-uoa1" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-unionOfArraysMap" 
+myLogLevel=0  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="unionOfArraysFilterCall" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-isFizz" 
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-isFizz" -i
+myLogLevel=2  myAssertLevel=1 nouseRcev2=0 hereby runtests --tests="_co-isFizz" 
+git status
