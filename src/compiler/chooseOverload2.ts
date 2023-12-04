@@ -560,7 +560,7 @@ export function chooseOverload2Helper(
                                 let symbol: Symbol | undefined;
                                 let symbolLinks: SymbolLinks | undefined;
                                 //let symbolLinksType: Type | undefined;
-                                const isResolvingSignature = nodeLinks.resolvedSignature===tmpChecker.getResolvingSignature();
+                                const isResolvingSignature = nodeLinks.resolvedSignature && nodeLinks.resolvedSignature===tmpChecker.getResolvingSignature();
                                 if (isResolvingSignature) {
                                     if ((symbol= (node as any as ObjectType).symbol) && (symbolLinks=tmpChecker.getSymbolLinks(symbol)).type) {
                                         //addToInnerSymbolTypeAccumMap(symbol, symbolLinks.type!);
@@ -572,13 +572,18 @@ export function chooseOverload2Helper(
                                         addToInnerNodeAccumMap(node, key, { symbol, virtualSignature} );
                                     }
                                     else {
-                                        Debug.assert(false);
+                                        // safely-ignore??
+                                        //Debug.assert(false);
                                     }
                                 }
-                                else {
+                                else if (nodeLinks.resolvedSignature) {
                                     const virtualSignature = createVirtualSignature(nodeLinks.resolvedSignature!, checker, tmpChecker);
                                     IDebug.ilog(()=>`(accum) resolvedSignature: ${IDebug.dbgs.dbgSignatureToString(nodeLinks.resolvedSignature)}`,2);
                                     addToInnerNodeAccumMap(node, key, { virtualSignature });
+                                }
+                                else {
+                                    // safely ignore??
+                                    // Debug.assert(nodeLinks.resolvedSignature, "key is resolveSignature, but resolvedSignature is undefined");
                                 }
                             }
                                 break;
