@@ -1089,11 +1089,11 @@ import {
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
 
-// import {
-//     CettTypeChecker,
-//     Cett,
-//     AddCallReturnKind
-// } from "./cett"
+import {
+    CettTypeChecker,
+    Cett,
+    AddCallReturnKind
+} from "./cett"
 import {
     TmpChecker, chooseOverload2
 } from "./chooseOverload2"
@@ -2290,11 +2290,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         [".jsx", ".jsx"],
         [".json", ".json"],
     ];
+    var preventInferTypes = false;
     /* eslint-enable no-var */
 
     initializeTypeChecker();
 
-   // var globalCett = new Cett(checker);
+    var globalCett = new Cett(checker);
 
     return checker;
 
@@ -25144,6 +25145,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function inferTypes(inferences: InferenceInfo[], originalSource: Type, originalTarget: Type, priority = InferencePriority.None, contravariant = false) {
+        if (preventInferTypes) return;
         let bivariant = false;
         let propagationType: Type;
         let inferencePriority: number = InferencePriority.MaxValue;
@@ -34709,6 +34711,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveUntypedCall(node);
         }
 
+
+
         let callChainFlags: SignatureFlags;
         let funcType = checkExpression(node.expression);
         if (isCallChain(node)) {
@@ -34738,32 +34742,33 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return resolveErrorCall(node);
         }
 
-        // const cettChecker: CettTypeChecker = {
-        //     checkExpression(node: Expression | QualifiedName, checkMode: CheckMode, forceTuple = false) {
-        //         return checkExpression(node, checkMode, forceTuple);
-        //     },
-        //     getEffectiveCallArguments(node: CallLikeExpression): readonly Expression[] {
-        //         return getEffectiveCallArguments(node);
-        //     },
-        //     getReducedApparentType(type: Type) {
-        //         return getReducedApparentType(type);
-        //     },
-        //     resolveStructuredTypeMembers(type: StructuredType): ResolvedType {
-        //         return resolveStructuredTypeMembers(type);
-        //     },
-        // };
+        const cettChecker: CettTypeChecker = {
+            checkExpression(node: Expression | QualifiedName, checkMode: CheckMode, forceTuple = false) {
+                return checkExpression(node, checkMode, forceTuple);
+            },
+            getEffectiveCallArguments(node: CallLikeExpression): readonly Expression[] {
+                return getEffectiveCallArguments(node);
+            },
+            getReducedApparentType(type: Type) {
+                return getReducedApparentType(type);
+            },
+            resolveStructuredTypeMembers(type: StructuredType): ResolvedType {
+                return resolveStructuredTypeMembers(type);
+            },
+        };
 
-        // globalCett.setCettChecker(cettChecker);
+        globalCett.setCettChecker(cettChecker);
 
-        // let cettRet = globalCett.addCall(node,apparentType);
-        // if (cettRet===AddCallReturnKind.resolvingSignature)
-        //     return resolvingSignature;
-        // else if (cettRet===AddCallReturnKind.alreadyVisited){
-        //     Debug.assert(false);
-        // }
-        // else if (cettRet===AddCallReturnKind.rootCompleted){
-        //     //Debug.assert(false);
-        // }
+        let cettRet = globalCett.addCall(node,apparentType);
+        if (cettRet===AddCallReturnKind.resolvingSignature)
+            return resolvingSignature;
+        else if (cettRet===AddCallReturnKind.alreadyVisited){
+            Debug.assert(false);
+        }
+        else if (cettRet===AddCallReturnKind.rootCompleted){
+            debugger;
+            //Debug.assert(false);
+        }
 
         let reducedType: Type | undefined;
         if (!IDebug.nouseResolveCallExpressionV2){

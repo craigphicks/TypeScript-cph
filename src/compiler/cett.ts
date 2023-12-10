@@ -83,29 +83,29 @@ export enum AddCallReturnKind {
 };
 
 
-enum TreeElementKind {
-    root = "root",
-    arg = "arg",
-    returnType = "returnType",
-};
-
 interface ArgAndType {
     node: Node, type: Type, isTaggedCallExpression?: boolean
 };
 
 interface TreeElement {
-    kind: TreeElementKind;
     node: CallExpression;
     apparentType: Type;
-    parentCall: CallExpression | null;
     argsAndTypes: ArgAndType[];
+    parentRelationInfo?: ParentRelationInfo | undefined;
 }
 
-interface WaitingInfo {
+// We need a map such that downstream call expressions can find their parent and their relationship to parent
+interface ParentRelationInfo {
+    node: Expression; // key that defines relationship;
     parentCallExpression: CallExpression;
-    childNode: Node; // might not be a call expression at all, or might be an Identifier representing a call expression.
-    argIndex: number; // -1 for return type
-};
+    relation?: number; // -1:parentCallExpression itself, >=0 arg index
+}
+
+// interface WaitingInfo {
+//     parentCallExpression: CallExpression;
+//     childNode: Node; // might not be a call expression at all, or might be an Identifier representing a call expression.
+//     argIndex: number; // -1 for return type
+// };
 
 function unionForEach(type: Type, callbackfn: (value: Type, index: number) => void): void {
     if (type.flags & TypeFlags.Union) {
@@ -124,7 +124,8 @@ export class Cett {
     cettChecker: CettTypeChecker | undefined;
     //parentCallAndLevel: [CallExpression, number];
     treeElements: Map<CallExpression, TreeElement> = new Map();
-    nodeToParentWaitingMap: Map<Node /*child*/, WaitingInfo> = new Map();
+    parentRelationInfoMap: Map<Expression, ParentRelationInfo> = new Map();
+    //nodeToParentWaitingMap: Map<Node /*child*/, WaitingInfo> = new Map();
     constructor(checker: TypeChecker) {
         this.checker = checker;
         // this.topNode = node;
@@ -145,7 +146,8 @@ export class Cett {
         this.cettChecker = cettChecker;
     }
     addCall(node: CallExpression, apparentType: Type): AddCallReturnKind {
-        IDebug.ilogGroup(()=>`addCall[in] node:${IDebug.dbgs.dbgNodeToString(node)}, apparentType:${IDebug.dbgs.dbgTypeToString(apparentType)}`,2);
+        const loggerLevel = 1;
+        IDebug.ilogGroup(()=>`addCall[in] node:${IDebug.dbgs.dbgNodeToString(node)}, apparentType:${IDebug.dbgs.dbgTypeToString(apparentType)}`, loggerLevel);
         const cettChecker = this.cettChecker!;
         // @ts-ignore
         const checker = this.checker;
@@ -160,49 +162,61 @@ export class Cett {
         }
 
         if (this.treeElements.has(node)) {
+            // This shouldn't happen
+            Debug.assert(false);
             return AddCallReturnKind.alreadyVisited;
         }
-        //let treeKind = TreeElementKind.root;
+        let parentRelationInfo: ParentRelationInfo | undefined;
+
+        if (this.parentRelationInfoMap.size) {
+            let p = node.parent;
+            while (p && p.kind !== SyntaxKind.SourceFile){
+                if (this.parentRelationInfoMap.has(p as Expression)){
+                    parentRelationInfo = this.parentRelationInfoMap.get(p as Expression);
+                }
+            }
+        }
 
         const reducedType = cettChecker.getReducedApparentType(apparentType);
         const resolvedTypes: ResolvedType[] = getResolvedTypes(reducedType) as ResolvedType[];
         resolvedTypes.forEach((resolvedType,i)=>{
-            IDebug.ilog(()=>`resolvedTypes[${i}]:${IDebug.dbgs.dbgTypeToString(resolvedType)}`,2);
+            IDebug.ilog(()=>`resolvedTypes[${i}]:${IDebug.dbgs.dbgTypeToString(resolvedType)}`, loggerLevel);
         });
 
 
         // TODO: if the arg is expanded tuple, it should be flattened first.
-        const args = cettChecker.getEffectiveCallArguments(node); // temporary
-        args.forEach((arg, _index) => {
-            this.nodeToParentWaitingMap.set(arg, {parentCallExpression:node, childNode:arg, argIndex:_index});
+        const args = cettChecker.getEffectiveCallArguments(node);
+        args.forEach((arg, index) => {
+            this.parentRelationInfoMap.set(arg, {parentCallExpression:node, node:arg, relation: index});
         });
+        this.parentRelationInfoMap.set(node, {parentCallExpression:node, node, relation: -1});
 
-        const parentWaitingInfo = this.nodeToParentWaitingMap.get(node);
-        if (parentWaitingInfo){
-            const parentTreeElement = this.treeElements.get(parentWaitingInfo.parentCallExpression)!;
-            Debug.assert(parentTreeElement);
+        // const parentWaitingInfo = this.nodeToParentWaitingMap.get(node);
+        // if (parentWaitingInfo){
+        //     const parentTreeElement = this.treeElements.get(parentWaitingInfo.parentCallExpression)!;
+        //     Debug.assert(parentTreeElement);
 
-        }
-        if (parentWaitingInfo){
-            const parentTreeElement = this.treeElements.get(parentWaitingInfo.parentCallExpression)!;
-            Debug.assert(parentTreeElement);
-            if (parentWaitingInfo.argIndex === -1){
-                Debug.assert(false,"return type not implemented");
-                // parentTreeElement.apparentType = apparentType;
-                // parentTreeElement.kind = TreeElementKind.returnType;
-            }
-            else {
-                // see if apparent type is a tagged call expression
-                IDebug.ilog(()=>``);
-                //parentTreeElement.argsAndTypes[parentWaitingInfo.argIndex].isTaggedCallExpression.;
-            }
-        }
+        // }
+        // if (parentWaitingInfo){
+        //     const parentTreeElement = this.treeElements.get(parentWaitingInfo.parentCallExpression)!;
+        //     Debug.assert(parentTreeElement);
+        //     if (parentWaitingInfo.argIndex === -1){
+        //         Debug.assert(false,"return type not implemented");
+        //         // parentTreeElement.apparentType = apparentType;
+        //         // parentTreeElement.kind = TreeElementKind.returnType;
+        //     }
+        //     else {
+        //         // see if apparent type is a tagged call expression
+        //         IDebug.ilog(()=>``);
+        //         //parentTreeElement.argsAndTypes[parentWaitingInfo.argIndex].isTaggedCallExpression.;
+        //     }
+        // }
 
         const argsAndTypes: ArgAndType[] = [];
         args.forEach((arg, _index) => {
             const type = cettChecker.checkExpression(arg, CheckMode.Normal, true);
             const argAndType: ArgAndType = {node: arg, type};
-            IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}, type:${IDebug.dbgs.dbgTypeToString(type)}`,2);
+            IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}, type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
 
 
             // const symbol = this.checker.getSymbolAtLocation(arg);
@@ -218,24 +232,23 @@ export class Cett {
             // }
             // if (isTaggedCallExpression)
             //    argAndType.isTaggedCallExpression = true;
-            IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}, type:${IDebug.dbgs.dbgTypeToString(type)}`,2);
+            IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}, type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
             argsAndTypes.push(argAndType);
         });
 
-        const treeElementKind: TreeElementKind = parentWaitingInfo ?
-            (parentWaitingInfo.argIndex === -1 ? TreeElementKind.returnType : TreeElementKind.arg)
-            : TreeElementKind.root;
+        // const treeElementKind: TreeElementKind = parentWaitingInfo ?
+        //     (parentWaitingInfo.argIndex === -1 ? TreeElementKind.returnType : TreeElementKind.arg)
+        //     : TreeElementKind.root;
 
         const treeElement: TreeElement = {
             node,
             apparentType,
             argsAndTypes,
-            parentCall: parentWaitingInfo?.parentCallExpression ?? null,
-            kind: treeElementKind
+            parentRelationInfo
         };
         this.treeElements.set(node, treeElement);
-        const ret = treeElementKind === TreeElementKind.root ? AddCallReturnKind.rootCompleted : AddCallReturnKind.resolvingSignature;
-        IDebug.ilogGroupEnd(()=>`addCall[in] node:${IDebug.dbgs.dbgNodeToString(node)}, ret: ${ret}`,2);
+        const ret: AddCallReturnKind = parentRelationInfo? AddCallReturnKind.resolvingSignature : AddCallReturnKind.rootCompleted;
+        IDebug.ilogGroupEnd(()=>`addCall[in] node:${IDebug.dbgs.dbgNodeToString(node)}, has: ${ret}`, loggerLevel);
         return ret;
 
     }

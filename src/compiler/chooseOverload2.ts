@@ -363,6 +363,9 @@ function createUnionResultSignature(signatures: Signature[], _checker: TypeCheck
 
 
 
+
+
+
 export function chooseOverload2(
     _candidatesOriginal: Signature[], // gets overwritten
     relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma: boolean | undefined,
