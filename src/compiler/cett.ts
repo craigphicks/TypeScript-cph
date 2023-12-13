@@ -20,6 +20,9 @@ import {
     StructuredType,
     TypeFlags,
     UnionType,
+    ObjectType,
+    AnonymousType,
+    ObjectFlags,
 } from "./_namespaces/ts";
 // cphdebug-start
 import { IDebug } from "./mydebug";
@@ -73,6 +76,8 @@ export interface CettTypeChecker {
     checkExpression(node: Expression | QualifiedName, checkMode?: CheckMode, forceTuple?: boolean): Type;
     resolveStructuredTypeMembers(type: StructuredType): ResolvedType;
     getReducedApparentType(type: Type): Type;
+    getApparentType(type: Type): Type;
+    getReducedType(type: Type): Type;
 
 };
 
@@ -107,6 +112,7 @@ interface ParentRelationInfo {
 //     argIndex: number; // -1 for return type
 // };
 
+// @ts-ignore
 function unionForEach(type: Type, callbackfn: (value: Type, index: number) => void): void {
     if (type.flags & TypeFlags.Union) {
         (type as UnionType).types.forEach(callbackfn);
@@ -114,6 +120,36 @@ function unionForEach(type: Type, callbackfn: (value: Type, index: number) => vo
     else {
         callbackfn(type, 0);
     }
+}
+
+function dbgCallExpressionTypeToStrings(type: Type): string[] {
+    const ret: string[] = [];
+    // ret.push(`type.kind:${type.kind}`);
+    // ret.push(`type.flags:${type.flags}`);
+    // ret.push(`type.symbol:${type.symbol}`);
+    // ret.push(`type.escapedText:${type.escapedText}`);
+    // ret.push(`type.escapedText:${type.escapedText}`);
+    // ret.push(`type.expression:${type.expression}`);
+    // ret.push(`type.typeArguments:${type.typeArguments}`);
+    // ret.push(`type.typeArguments:${type.typeArguments}`);
+    // ret.push(`type.typeArguments:${type.typeArguments}`);
+    // ret.push(`type.typeArguments:${type.type
+    ret.push(`typeToString: ${IDebug.dbgs.dbgTypeToString(type)}`);
+    ret.push(`type.flags: ${Debug.formatTypeFlags(type.flags)}`);
+    ret.push(`type.symbol: ${IDebug.dbgs.dbgSymbolToString(type.symbol)}`);
+    castHereafter<ObjectType>(type);
+    if (type.flags & TypeFlags.Object && (type as ObjectType).objectFlags & (ObjectFlags.Instantiated | ObjectFlags.Anonymous)) {
+        ret.push(`type.target: ${IDebug.dbgs.dbgTypeToString((type as AnonymousType).target)}`);
+        if ((type as AnonymousType).mapper) {
+            ret.push(`type.mapper: ${((type as AnonymousType).mapper! as unknown as Debug.DebugTypeMapper).__debugToString()}`);
+        }
+    }
+    if (type.flags & TypeFlags.Union) {
+        (type as UnionType).types.forEach((t, i) => {
+            dbgCallExpressionTypeToStrings(t).forEach(s => ret.push(`type.types[${i}]:     ${s}`));
+        });
+    }
+    return ret;
 }
 
 export class Cett {
@@ -145,21 +181,21 @@ export class Cett {
         if (this.cettChecker) return;
         this.cettChecker = cettChecker;
     }
-    addCall(node: CallExpression, apparentType: Type): AddCallReturnKind {
+    addCall(node: CallExpression, funcType: Type): AddCallReturnKind {
         const loggerLevel = 1;
-        IDebug.ilogGroup(()=>`addCall[in] node:${IDebug.dbgs.dbgNodeToString(node)}, apparentType:${IDebug.dbgs.dbgTypeToString(apparentType)}`, loggerLevel);
+        IDebug.ilogGroup(()=>`addCall[in] node:${IDebug.dbgs.dbgNodeToString(node)}, funcType:${IDebug.dbgs.dbgTypeToString(funcType)}`, loggerLevel);
         const cettChecker = this.cettChecker!;
         // @ts-ignore
         const checker = this.checker;
 
-        function getResolvedTypes(reducedType: Type): (Type | ResolvedType)[] {
-            const resolvedTypes: (Type | ResolvedType)[] = [];
-            unionForEach(reducedType, t=>{
-                if (t.flags & TypeFlags.StructuredType) resolvedTypes.push(cettChecker.resolveStructuredTypeMembers(t as StructuredType));
-                else resolvedTypes.push(t);
-            });
-            return resolvedTypes;
-        }
+        // function getResolvedTypes(reducedType: Type): (Type | ResolvedType)[] {
+        //     const resolvedTypes: (Type | ResolvedType)[] = [];
+        //     unionForEach(reducedType, t=>{
+        //         if (t.flags & TypeFlags.StructuredType) resolvedTypes.push(cettChecker.resolveStructuredTypeMembers(t as StructuredType));
+        //         else resolvedTypes.push(t);
+        //     });
+        //     return resolvedTypes;
+        // }
 
         if (this.treeElements.has(node)) {
             // This shouldn't happen
@@ -170,18 +206,34 @@ export class Cett {
 
         if (this.parentRelationInfoMap.size) {
             let p = node.parent;
-            while (p && p.kind !== SyntaxKind.SourceFile){
+            while (!parentRelationInfo && p.kind !== SyntaxKind.SourceFile){
                 if (this.parentRelationInfoMap.has(p as Expression)){
                     parentRelationInfo = this.parentRelationInfoMap.get(p as Expression);
                 }
+                else p = p.parent;
             }
+            IDebug.ilog(()=>`parentRelationInfo.parentCallExpression:${IDebug.dbgs.dbgNodeToString(parentRelationInfo?.parentCallExpression)}`, loggerLevel);
+        }
+        const apparentType = cettChecker.getApparentType(funcType);
+        const reducedType = cettChecker.getApparentType(cettChecker.getReducedType(apparentType));
+
+        if (IDebug.logLevel<=loggerLevel){
+            dbgCallExpressionTypeToStrings(reducedType).forEach(s => IDebug.ilog(()=>`reducedType: ${s}`, loggerLevel));
         }
 
-        const reducedType = cettChecker.getReducedApparentType(apparentType);
-        const resolvedTypes: ResolvedType[] = getResolvedTypes(reducedType) as ResolvedType[];
-        resolvedTypes.forEach((resolvedType,i)=>{
-            IDebug.ilog(()=>`resolvedTypes[${i}]:${IDebug.dbgs.dbgTypeToString(resolvedType)}`, loggerLevel);
-        });
+        IDebug.ilog(()=>`reducedType:${IDebug.dbgs.dbgTypeToString(reducedType)}`, loggerLevel);
+        // It may be a union type, show those members too.
+        if (reducedType.flags & TypeFlags.Union) {
+            (reducedType as UnionType).types.forEach((t, i) => {
+                IDebug.ilog(()=>`reducedType.types[${i}]:${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel);
+            });
+        }
+
+        // This would resolved the members of each structured type, don't want to do that yet.
+        //  const resolvedTypes: ResolvedType[] = getResolvedTypes(reducedType) as ResolvedType[];
+        // resolvedTypes.forEach((resolvedType,i)=>{
+        //     IDebug.ilog(()=>`resolvedTypes[${i}]:${IDebug.dbgs.dbgTypeToString(resolvedType)}`, loggerLevel);
+        // });
 
 
         // TODO: if the arg is expanded tuple, it should be flattened first.
@@ -191,58 +243,30 @@ export class Cett {
         });
         this.parentRelationInfoMap.set(node, {parentCallExpression:node, node, relation: -1});
 
-        // const parentWaitingInfo = this.nodeToParentWaitingMap.get(node);
-        // if (parentWaitingInfo){
-        //     const parentTreeElement = this.treeElements.get(parentWaitingInfo.parentCallExpression)!;
-        //     Debug.assert(parentTreeElement);
-
-        // }
-        // if (parentWaitingInfo){
-        //     const parentTreeElement = this.treeElements.get(parentWaitingInfo.parentCallExpression)!;
-        //     Debug.assert(parentTreeElement);
-        //     if (parentWaitingInfo.argIndex === -1){
-        //         Debug.assert(false,"return type not implemented");
-        //         // parentTreeElement.apparentType = apparentType;
-        //         // parentTreeElement.kind = TreeElementKind.returnType;
-        //     }
-        //     else {
-        //         // see if apparent type is a tagged call expression
-        //         IDebug.ilog(()=>``);
-        //         //parentTreeElement.argsAndTypes[parentWaitingInfo.argIndex].isTaggedCallExpression.;
-        //     }
-        // }
-
         const argsAndTypes: ArgAndType[] = [];
         args.forEach((arg, _index) => {
-            const type = cettChecker.checkExpression(arg, CheckMode.Normal, true);
+            const type = cettChecker.checkExpression(arg);
+            if (!this.treeElements.has(arg as CallExpression)) {
+                if (loggerLevel<=IDebug.logLevel){
+                    IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}: adding callExpression from addCall`, loggerLevel);
+                    // IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}, type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+                    // unionForEach(type, (t,uidx)=>{
+                    //     if (t!=type) IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}, type[${uidx}]:${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel);
+                    //     if (type.flags & TypeFlags.Object && (type as ObjectType).callSignatures?.length){
+                    //         dbgCallExpressionTypeToStrings(reducedType).forEach(s => IDebug.ilog(()=>`reducedType: ${s}`, loggerLevel));
+                    //     }
+                    // });
+                }
+                this.addCall(arg as CallExpression, type);
+            }
             const argAndType: ArgAndType = {node: arg, type};
-            IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}, type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
-
-
-            // const symbol = this.checker.getSymbolAtLocation(arg);
-            // let isTaggedCallExpression = false;
-            // // @ts-ignore
-            // let returnsFunction = false;
-            // // Might not need to do this here, but rather do it when addCall is called for the child.
-            // if (symbol && symbol.flags & SymbolFlags.Function && symbol.declarations && symbol.declarations.length > 0){
-            //     symbol.declarations.forEach(decl => {
-            //         if (decl.kind === SyntaxKind.CallSignature &&(decl as SignatureDeclarationBase).typeParameters?.length)
-            //             isTaggedCallExpression = true;
-            //     });
-            // }
-            // if (isTaggedCallExpression)
-            //    argAndType.isTaggedCallExpression = true;
             IDebug.ilog(()=>`idx: ${_index}, arg:${IDebug.dbgs.dbgNodeToString(arg)}, type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
             argsAndTypes.push(argAndType);
         });
 
-        // const treeElementKind: TreeElementKind = parentWaitingInfo ?
-        //     (parentWaitingInfo.argIndex === -1 ? TreeElementKind.returnType : TreeElementKind.arg)
-        //     : TreeElementKind.root;
-
         const treeElement: TreeElement = {
             node,
-            apparentType,
+            apparentType: funcType,
             argsAndTypes,
             parentRelationInfo
         };

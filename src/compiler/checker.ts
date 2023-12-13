@@ -34736,12 +34736,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return silentNeverSignature;
         }
 
-        const apparentType = getApparentType(funcType);
-        if (isErrorType(apparentType)) {
-            // Another error has already been reported
-            return resolveErrorCall(node);
-        }
-
         const cettChecker: CettTypeChecker = {
             checkExpression(node: Expression | QualifiedName, checkMode: CheckMode, forceTuple = false) {
                 return checkExpression(node, checkMode, forceTuple);
@@ -34752,6 +34746,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             getReducedApparentType(type: Type) {
                 return getReducedApparentType(type);
             },
+            getApparentType,
+            getReducedType,
             resolveStructuredTypeMembers(type: StructuredType): ResolvedType {
                 return resolveStructuredTypeMembers(type);
             },
@@ -34759,7 +34755,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         globalCett.setCettChecker(cettChecker);
 
-        let cettRet = globalCett.addCall(node,apparentType);
+        let cettRet = globalCett.addCall(node,funcType);
         if (cettRet===AddCallReturnKind.resolvingSignature)
             return resolvingSignature;
         else if (cettRet===AddCallReturnKind.alreadyVisited){
@@ -34770,11 +34766,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             //Debug.assert(false);
         }
 
+        const apparentType = getApparentType(funcType);
         let reducedType: Type | undefined;
         if (!IDebug.nouseResolveCallExpressionV2){
             reducedType = getReducedApparentType(apparentType);
         }
 
+        if (isErrorType(apparentType)) {
+            // Another error has already been reported
+            return resolveErrorCall(node);
+        }
 
         // Technically, this signatures list may be incomplete. We are taking the apparent type,
         // but we are not including call signatures that may have been added to the Object or
