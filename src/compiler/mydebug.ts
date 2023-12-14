@@ -1,5 +1,5 @@
 import { Debug, LogLevel } from "./debug";
-import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain } from "./types";
+import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper } from "./types";
 import { getNodeId } from "./checker";
 
 export interface ILoggingHost {
@@ -127,6 +127,7 @@ export interface Dbgs {
     // dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string;
     dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[];
+    dbgMapperToString(mapper: TypeMapper | undefined): string;
 }
 
 export class DbgsClass implements Dbgs{
@@ -181,6 +182,14 @@ export class DbgsClass implements Dbgs{
             }
         }
         return astr;
+    }
+    dbgMapperToString(mapper: TypeMapper | undefined): string {
+        if (!mapper) return "<#undef>";
+        return (mapper as any as Debug.DebugTypeMapper).__debugToString();
+        //const dtm = new Debug.DebugTypeMapper();
+        //dtm.__debugToString;
+        //Debug.assert(dtm.__debugToString);
+        //return dtm.__debugToString.call(mapper);
     }
 
 
@@ -250,6 +259,7 @@ function initialize(){
     IDebug.assertLevel = (process.env.myAssertLevel===undefined) ? 0 : Number(process.env.myAssertLevel);
     IDebug.nouseResolveCallExpressionV2 = (process.env.nouseRcev2===undefined || !Number(process.env.nouseRcev2)) ? false : true
     if (IDebug.logLevel){
+        Debug.isDebugging = true;
         IDebug.loggingHost = new ILoggingClass();
         IDebug.dbgs = new DbgsClass();
     }

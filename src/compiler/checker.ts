@@ -18379,6 +18379,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getConditionalType(root: ConditionalRoot, mapper: TypeMapper | undefined, aliasSymbol?: Symbol, aliasTypeArguments?: readonly Type[]): Type {
+        const loggerLevel = 1;
+        IDebug.ilogGroup(()=>`getConditionalType[in] root: ${IDebug.dbgs.dbgNodeToString(root.node)}`,loggerLevel);
+        const result = getConditionalTypeHelper(root, mapper, aliasSymbol, aliasTypeArguments);
+        IDebug.ilogGroupEnd(()=>`getConditionalType[out] root: ${IDebug.dbgs.dbgNodeToString(root.node)}, type: ${IDebug.dbgs.dbgTypeToString(result)}`,loggerLevel);
+        return result;
+    }
+    function getConditionalTypeHelper(root: ConditionalRoot, mapper: TypeMapper | undefined, aliasSymbol?: Symbol, aliasTypeArguments?: readonly Type[]): Type {
+        const loggerLevel = 1;
         let result;
         let extraTypes: Type[] | undefined;
         let tailCount = 0;
@@ -18387,17 +18395,30 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // purposes of resolution. We also loop here when resolution of a conditional type ends in resolution of
         // another (or, through recursion, possibly the same) conditional type. In the potentially tail-recursive
         // cases we increment the tail recursion counter and stop after 1000 iterations.
+        let loopIter = -1;
         while (true) {
+            loopIter++;
+            IDebug.ilog(()=>`getConditionalType loopIter: ${loopIter}`,loggerLevel);
+            //function doOneLoop() {
             if (tailCount === 1000) {
                 error(currentNode, Diagnostics.Type_instantiation_is_excessively_deep_and_possibly_infinite);
                 return errorType;
             }
             const checkType = instantiateType(getActualTypeVariable(root.checkType), mapper);
+            IDebug.ilog(()=>`getConditionalType: checkType: ${IDebug.dbgs.dbgTypeToString(checkType)}`,loggerLevel);
+            IDebug.ilog(()=>`getConditionalType: checkType.mapper: ${IDebug.dbgs.dbgMapperToString((checkType as any).mapper)}`,loggerLevel);
+
             const extendsType = instantiateType(root.extendsType, mapper);
+            IDebug.ilog(()=>`getConditionalType: extendsType: ${IDebug.dbgs.dbgTypeToString(extendsType)}`,loggerLevel);
+            IDebug.ilog(()=>`getConditionalType: extendsType.mapper: ${IDebug.dbgs.dbgMapperToString((extendsType as any).mapper)}`,loggerLevel);
+
+
             if (checkType === errorType || extendsType === errorType) {
+                IDebug.ilog(()=>`getConditionalType: return errorType`);
                 return errorType;
             }
             if (checkType === wildcardType || extendsType === wildcardType) {
+                IDebug.ilog(()=>`getConditionalType: return wildCardType`);
                 return wildcardType;
             }
             // When the check and extends types are simple tuple types of the same arity, we defer resolution of the
@@ -18408,6 +18429,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const checkTypeDeferred = isDeferredType(checkType, checkTuples);
             let combinedMapper: TypeMapper | undefined;
             if (root.inferTypeParameters) {
+                IDebug.ilog(()=>`root.inferTypeParameters.length: ${root.inferTypeParameters!.length}`);
+
                 // When we're looking at making an inference for an infer type, when we get its constraint, it'll automagically be
                 // instantiated with the context, so it doesn't need the mapper for the inference contex - however the constraint
                 // may refer to another _root_, _uncloned_ `infer` type parameter [1], or to something mapped by `mapper` [2].
@@ -18450,8 +18473,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             // Instantiate the extends type including inferences for 'infer T' type parameters
             const inferredExtendsType = combinedMapper ? instantiateType(root.extendsType, combinedMapper) : extendsType;
+            IDebug.ilog(()=>`inferredExtendsType, ${IDebug.dbgs.dbgTypeToString(inferredExtendsType)}`,loggerLevel);
             // We attempt to resolve the conditional type only when the check and extends types are non-generic
             if (!checkTypeDeferred && !isDeferredType(inferredExtendsType, checkTuples)) {
+                IDebug.ilog(()=>`!checkTypeDeferred && !isDeferredType(inferredExtendsType, checkTuples): true`);
                 // Return falseType for a definitely false extends check. We check an instantiations of the two
                 // types with type parameters mapped to the wildcard type, the most permissive instantiations
                 // possible (the wildcard type is assignable to and from all types). If those are not related,
