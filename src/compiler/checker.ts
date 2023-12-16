@@ -2291,6 +2291,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         [".json", ".json"],
     ];
     var preventInferTypes = false;
+    var getUnmatchedPropertiesInstanceId = 0;
     /* eslint-enable no-var */
 
     initializeTypeChecker();
@@ -15319,6 +15320,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getReturnTypeOfSignature(signature: Signature): Type {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getReturnTypeOfSignature[in]: signature: ${IDebug.dbgs.dbgSignatureToString(signature)}`,loggerLevel);
+    const result = (()=>{
         if (!signature.resolvedReturnType) {
             if (!pushTypeResolution(signature, TypeSystemPropertyName.ResolvedReturnType)) {
                 return errorType;
@@ -15355,6 +15359,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             signature.resolvedReturnType = type;
         }
         return signature.resolvedReturnType;
+    })();
+    IDebug.ilogGroupEnd(()=>`getReturnTypeOfSignature[out]: signature: ${IDebug.dbgs.dbgSignatureToString(signature)}, result: ${IDebug.dbgs.dbgTypeToString(result)}`,loggerLevel);
+    return result;
     }
 
     function getReturnTypeFromAnnotation(declaration: SignatureDeclaration | JSDocSignature) {
@@ -24942,14 +24949,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function* getUnmatchedProperties(source: Type, target: Type, requireOptionalProperties: boolean, matchDiscriminantProperties: boolean): IterableIterator<Symbol> {
         const properties = getPropertiesOfType(target);
+        const loggerLevel = 4;
+        const dbgInstanceId = getUnmatchedPropertiesInstanceId++;
+        IDebug.ilog(()=>`getUnmatchedProperties[id:${dbgInstanceId},enter] source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)
+            }, properties.length: ${properties.length}`, loggerLevel);
+
+        let iter = -1;
         for (const targetProp of properties) {
-            // TODO: remove this when we support static private identifier fields and find other solutions to get privateNamesAndStaticFields test to pass
+            iter++;
+            IDebug.ilog(()=>`getUnmatchedProperties[id:${dbgInstanceId},#${iter}] source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}, targetProp:${IDebug.dbgs.dbgSymbolToString(targetProp)}`, loggerLevel);
+                // TODO: remove this when we support static private identifier fields and find other solutions to get privateNamesAndStaticFields test to pass
             if (isStaticPrivateIdentifierProperty(targetProp)) {
                 continue;
             }
             if (requireOptionalProperties || !(targetProp.flags & SymbolFlags.Optional || getCheckFlags(targetProp) & CheckFlags.Partial)) {
                 const sourceProp = getPropertyOfType(source, targetProp.escapedName);
                 if (!sourceProp) {
+                    IDebug.ilog(()=>`getUnmatchedProperties: yield[.1] targetProp:${IDebug.dbgs.dbgSymbolToString(targetProp)}`, loggerLevel);
                     yield targetProp;
                 }
                 else if (matchDiscriminantProperties) {
@@ -24957,12 +24973,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     if (targetType.flags & TypeFlags.Unit) {
                         const sourceType = getTypeOfSymbol(sourceProp);
                         if (!(sourceType.flags & TypeFlags.Any || getRegularTypeOfLiteralType(sourceType) === getRegularTypeOfLiteralType(targetType))) {
+                            IDebug.ilog(()=>`getUnmatchedProperties: yield[.2] targetProp:${IDebug.dbgs.dbgSymbolToString(targetProp)}`, loggerLevel);
                             yield targetProp;
                         }
                     }
                 }
             }
         }
+        IDebug.ilog(()=>`getUnmatchedProperties[id:${dbgInstanceId},exit] source:${
+            IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}`, loggerLevel);
     }
 
     function getUnmatchedProperty(source: Type, target: Type, requireOptionalProperties: boolean, matchDiscriminantProperties: boolean): Symbol | undefined {
@@ -24977,9 +24996,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function typesDefinitelyUnrelated(source: Type, target: Type) {
         // Two tuple types with incompatible arities are definitely unrelated.
         // Two object types that each have a property that is unmatched in the other are definitely unrelated.
-        return isTupleType(source) && isTupleType(target) ? tupleTypesDefinitelyUnrelated(source, target) :
-            !!getUnmatchedProperty(source, target, /*requireOptionalProperties*/ false, /*matchDiscriminantProperties*/ true) &&
-            !!getUnmatchedProperty(target, source, /*requireOptionalProperties*/ false, /*matchDiscriminantProperties*/ false);
+        let unrelated: boolean | Symbol | undefined;
+        if (isTupleType(source) && isTupleType(target)){
+            unrelated = tupleTypesDefinitelyUnrelated(source, target);
+        }
+        unrelated = getUnmatchedProperty(source, target, /*requireOptionalProperties*/ false, /*matchDiscriminantProperties*/ true);
+        unrelated &&= getUnmatchedProperty(target, source, /*requireOptionalProperties*/ false, /*matchDiscriminantProperties*/ false);
+
+        // return isTupleType(source) && isTupleType(target) ? tupleTypesDefinitelyUnrelated(source, target) :
+        //     !!getUnmatchedProperty(source, target, /*requireOptionalProperties*/ false, /*matchDiscriminantProperties*/ true) &&
+        //     !!getUnmatchedProperty(target, source, /*requireOptionalProperties*/ false, /*matchDiscriminantProperties*/ false);
+        return !!unrelated;
     }
 
     function getTypeFromInference(inference: InferenceInfo) {
@@ -25178,7 +25205,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         let sourceStack: Type[];
         let targetStack: Type[];
         let expandingFlags = ExpandingFlags.None;
+        IDebug.ilogGroup(()=>`inferFromTypes[in]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)}`);
         inferFromTypes(originalSource, originalTarget);
+        IDebug.ilogGroupEnd(()=>`inferFromTypes[out]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)}`);
 
         function inferFromTypes(source: Type, target: Type): void {
             if (!couldContainTypeVariables(target)) {
@@ -25299,11 +25328,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             // i.e. only if we have not descended into a bivariant position.
                             if (contravariant && !bivariant) {
                                 if (!contains(inference.contraCandidates, candidate)) {
+                                    IDebug.ilog(()=>`inferFromTypes: add contraCandidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`);
                                     inference.contraCandidates = append(inference.contraCandidates, candidate);
                                     clearCachedInferences(inferences);
                                 }
                             }
                             else if (!contains(inference.candidates, candidate)) {
+                                IDebug.ilog(()=>`inferFromTypes: add candidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`);
                                 inference.candidates = append(inference.candidates, candidate);
                                 clearCachedInferences(inferences);
                             }
@@ -25333,6 +25364,20 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                 }
             }
+            let intersectionSomeInferredFromTypeArguments = false;
+            if (source.flags & TypeFlags.Intersection){
+                // The candidates are classified as covariant.  That might be an issue.
+                (source as IntersectionType).types.forEach(s => {
+                    if (getObjectFlags(s) & ObjectFlags.Reference && getObjectFlags(target) & ObjectFlags.Reference && (
+                        (s as TypeReference).target === (target as TypeReference).target || isArrayType(s) && isArrayType(target)
+                    ) &&
+                    !((s as TypeReference).node && (target as TypeReference).node)) {
+                        inferFromTypeArguments(getTypeArguments(s as TypeReference), getTypeArguments(target as TypeReference), getVariances((s as TypeReference).target));
+                        intersectionSomeInferredFromTypeArguments = true;
+                    }
+                });
+            }
+            if (intersectionSomeInferredFromTypeArguments) return;
             if (
                 getObjectFlags(source) & ObjectFlags.Reference && getObjectFlags(target) & ObjectFlags.Reference && (
                     (source as TypeReference).target === (target as TypeReference).target || isArrayType(source) && isArrayType(target)
@@ -30588,22 +30633,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function pushInferenceContext(node: Node, inferenceContext: InferenceContext | undefined) {
-        IDebug.ilogGroup(()=>`pushInferenceContext(node:${IDebug.dbgs.dbgNodeToString(node)}, inferenceContext:${inferenceContext})`,4);
+        IDebug.ilogGroup(()=>`pushInferenceContext(node:${IDebug.dbgs.dbgNodeToString(node)}, inferenceContext:${inferenceContext})`,contextualLogLevel);
         if (inferenceContext) IDebug.ilog(()=>`inferenceContext.signature:${IDebug.dbgs.dbgSignatureToString(inferenceContext.signature)}`)
         inferenceContextNodes[inferenceContextCount] = node;
         inferenceContexts[inferenceContextCount] = inferenceContext;
         inferenceContextCount++;
-        IDebug.ilogGroupEnd(()=>`inferenceContextCount:${inferenceContextCount}`,4);
+        IDebug.ilogGroupEnd(()=>`inferenceContextCount:${inferenceContextCount}`,contextualLogLevel);
     }
 
     function popInferenceContext() {
         IDebug.ilogGroup(()=>`popInferenceContext()`,4);
         inferenceContextCount--;
-        IDebug.ilogGroupEnd(()=>`inferenceContextCount:${inferenceContextCount}`,4);
+        IDebug.ilogGroupEnd(()=>`inferenceContextCount:${inferenceContextCount}`,contextualLogLevel);
     }
 
     function getInferenceContext(node: Node) {
-    IDebug.ilogGroup(()=>`getInferenceContext(node:${IDebug.dbgs.dbgNodeToString(node)}`,4);
+    IDebug.ilogGroup(()=>`getInferenceContext(node:${IDebug.dbgs.dbgNodeToString(node)}`,contextualLogLevel);
     const result = (()=>{
         for (let i = inferenceContextCount - 1; i >= 0; i--) {
             if (isNodeDescendantOf(node, inferenceContextNodes[i])) {
@@ -34712,7 +34757,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         candidatesOutArray?.forEach((c,i)=>{
             IDebug.ilog(()=>`resolveCallExpression: (out)candidate[${i}]: ${IDebug.dbgs.dbgSignatureToString(c)}`,2);
         });
-        IDebug.ilogGroup(()=>`resolveCallExpression[out]: result: ${IDebug.dbgs.dbgSignatureToString(result)}`,2);
+        IDebug.ilogGroupEnd(()=>`resolveCallExpression[out]: result: ${IDebug.dbgs.dbgSignatureToString(result)}`,2);
         return result;
     }
     function resolveCallExpressionHelper(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
@@ -34761,34 +34806,37 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return silentNeverSignature;
         }
 
-        const cettChecker: CettTypeChecker = {
-            checkExpression(node: Expression | QualifiedName, checkMode: CheckMode, forceTuple = false) {
-                return checkExpression(node, checkMode, forceTuple);
-            },
-            getEffectiveCallArguments(node: CallLikeExpression): readonly Expression[] {
-                return getEffectiveCallArguments(node);
-            },
-            getReducedApparentType(type: Type) {
-                return getReducedApparentType(type);
-            },
-            getApparentType,
-            getReducedType,
-            resolveStructuredTypeMembers(type: StructuredType): ResolvedType {
-                return resolveStructuredTypeMembers(type);
-            },
-        };
+        const enableCett = false;
+        if (enableCett) {
+            const cettChecker: CettTypeChecker = {
+                checkExpression(node: Expression | QualifiedName, checkMode: CheckMode, forceTuple = false) {
+                    return checkExpression(node, checkMode, forceTuple);
+                },
+                getEffectiveCallArguments(node: CallLikeExpression): readonly Expression[] {
+                    return getEffectiveCallArguments(node);
+                },
+                getReducedApparentType(type: Type) {
+                    return getReducedApparentType(type);
+                },
+                getApparentType,
+                getReducedType,
+                resolveStructuredTypeMembers(type: StructuredType): ResolvedType {
+                    return resolveStructuredTypeMembers(type);
+                },
+            };
 
-        globalCett.setCettChecker(cettChecker);
+            globalCett.setCettChecker(cettChecker);
 
-        let cettRet = globalCett.addCall(node,funcType);
-        if (cettRet===AddCallReturnKind.resolvingSignature)
-            return resolvingSignature;
-        else if (cettRet===AddCallReturnKind.alreadyVisited){
-            Debug.assert(false);
-        }
-        else if (cettRet===AddCallReturnKind.rootCompleted){
-            debugger;
-            //Debug.assert(false);
+            let cettRet = globalCett.addCall(node,funcType);
+            if (cettRet===AddCallReturnKind.resolvingSignature)
+                return resolvingSignature;
+            else if (cettRet===AddCallReturnKind.alreadyVisited){
+                Debug.assert(false);
+            }
+            else if (cettRet===AddCallReturnKind.rootCompleted){
+                debugger;
+                //Debug.assert(false);
+            }
         }
 
         const apparentType = getApparentType(funcType);

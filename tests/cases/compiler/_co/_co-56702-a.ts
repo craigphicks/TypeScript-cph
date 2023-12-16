@@ -20,7 +20,10 @@ interface JQuery<TElement = HTMLElement> {
 
 declare function jQuery<TElement = HTMLElement>(): JQuery<TElement>;
 
+const t1: (JQuery<HTMLElement> | string) & (JQuery<HTMLElement> | string | undefined)= jQuery();
+
 // const t11: string | JQuery<HTMLElement> = jQuery(); // no error
+//const t11: JQuery<HTMLElement> & string = jQuery(); // no error
 
 // const t12: (string | JQuery<HTMLElement>) & (string | JQuery<HTMLElement> | undefined) = jQuery(); // error
-const t11: string | JQuery<HTMLElement> = jQuery(); // no error
+//const t11: string = jQuery(); // no error
