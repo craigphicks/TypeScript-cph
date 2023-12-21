@@ -24674,7 +24674,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-    function applyToReturnTypes(source: Signature, target: Signature, callback: (s: Type, t: Type, priority?: InferencePriority) => void) {
+    function applyToReturnTypes(source: Signature, target: Signature, callback: (s: Type, t: Type, priority?: InferencePriority | undefined) => void) {
         const sourceTypePredicate = getTypePredicateOfSignature(source);
         const targetTypePredicate = getTypePredicateOfSignature(target);
         if (sourceTypePredicate && targetTypePredicate && typePredicateKindsMatch(sourceTypePredicate, targetTypePredicate) && sourceTypePredicate.type && targetTypePredicate.type) {
@@ -25205,11 +25205,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         let sourceStack: Type[];
         let targetStack: Type[];
         let expandingFlags = ExpandingFlags.None;
-        IDebug.ilogGroup(()=>`inferFromTypes[in]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)}`);
+        const loggerLevel = 2;
+
         inferFromTypes(originalSource, originalTarget);
-        IDebug.ilogGroupEnd(()=>`inferFromTypes[out]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)}`);
 
         function inferFromTypes(source: Type, target: Type): void {
+            IDebug.ilogGroup(()=>`inferFromTypes[in]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)}`, loggerLevel);
+            inferFromTypesHelper(source, target);
+            IDebug.ilogGroupEnd(()=>`inferFromTypes[out]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)}`, loggerLevel);
+        }
+
+        function inferFromTypesHelper(source: Type, target: Type): void {
             if (!couldContainTypeVariables(target)) {
                 return;
             }
@@ -25328,13 +25334,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             // i.e. only if we have not descended into a bivariant position.
                             if (contravariant && !bivariant) {
                                 if (!contains(inference.contraCandidates, candidate)) {
-                                    IDebug.ilog(()=>`inferFromTypes: add contraCandidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`);
+                                    IDebug.ilog(()=>`inferFromTypes: add contraCandidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`, loggerLevel);
                                     inference.contraCandidates = append(inference.contraCandidates, candidate);
                                     clearCachedInferences(inferences);
                                 }
                             }
                             else if (!contains(inference.candidates, candidate)) {
-                                IDebug.ilog(()=>`inferFromTypes: add candidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`);
+                                IDebug.ilog(()=>`inferFromTypes: add candidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`, loggerLevel);
                                 inference.candidates = append(inference.candidates, candidate);
                                 clearCachedInferences(inferences);
                             }
@@ -25364,20 +25370,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                 }
             }
+            const doIntersectionTypeArguments = false;
+            if (doIntersectionTypeArguments){
             let intersectionSomeInferredFromTypeArguments = false;
-            if (source.flags & TypeFlags.Intersection){
-                // The candidates are classified as covariant.  That might be an issue.
+                if (source.flags & TypeFlags.Intersection){
                 (source as IntersectionType).types.forEach(s => {
                     if (getObjectFlags(s) & ObjectFlags.Reference && getObjectFlags(target) & ObjectFlags.Reference && (
                         (s as TypeReference).target === (target as TypeReference).target || isArrayType(s) && isArrayType(target)
                     ) &&
                     !((s as TypeReference).node && (target as TypeReference).node)) {
-                        inferFromTypeArguments(getTypeArguments(s as TypeReference), getTypeArguments(target as TypeReference), getVariances((s as TypeReference).target));
+                            inferFromTypeArguments(getTypeArguments(s as TypeReference), getTypeArguments(target as TypeReference), getVariances((s as TypeReference).target), /*doContraVariant*/ true);
                         intersectionSomeInferredFromTypeArguments = true;
                     }
                 });
             }
             if (intersectionSomeInferredFromTypeArguments) return;
+            }
             if (
                 getObjectFlags(source) & ObjectFlags.Reference && getObjectFlags(target) & ObjectFlags.Reference && (
                     (source as TypeReference).target === (target as TypeReference).target || isArrayType(source) && isArrayType(target)
@@ -25441,15 +25449,19 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
 
-        function inferWithPriorityMaybe(source: Type, target: Type, newPriority?: InferencePriority) {
+        function inferWithPriorityMaybe(source: Type, target: Type, newPriority?: InferencePriority, doContraVariant?: boolean) {
             if (newPriority !== undefined) {
                 const savePriority = priority;
                 priority |= newPriority;
-                inferFromTypes(source, target);
+                if (doContraVariant) inferFromContravariantTypes(source, target);
+                else inferFromTypes(source, target);
                 priority = savePriority;
             }
-            else inferFromTypes(source, target);
-        }
+            else {
+                if (doContraVariant) inferFromContravariantTypes(source, target);
+                else inferFromTypes(source, target);
+            }
+    }
 
 
         function inferWithPriority(source: Type, target: Type, newPriority: InferencePriority) {
@@ -25521,15 +25533,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             ];
         }
 
-        function inferFromTypeArguments(sourceTypes: readonly Type[], targetTypes: readonly Type[], variances: readonly VarianceFlags[]) {
+        function inferFromTypeArguments(sourceTypes: readonly Type[], targetTypes: readonly Type[], variances: readonly VarianceFlags[], doContraVariant = false) {
             const count = sourceTypes.length < targetTypes.length ? sourceTypes.length : targetTypes.length;
             for (let i = 0; i < count; i++) {
                 if (i < variances.length && (variances[i] & VarianceFlags.VarianceMask) === VarianceFlags.Contravariant) {
-                    inferFromContravariantTypes(sourceTypes[i], targetTypes[i]);
+                    doContraVariant = !doContraVariant;
+                    //inferFromContravariantTypes(sourceTypes[i], targetTypes[i])
                 }
                 else {
-                    inferFromTypes(sourceTypes[i], targetTypes[i]);
+                    //inferFromTypes(sourceTypes[i], targetTypes[i]);
                 }
+                if (doContraVariant) inferFromContravariantTypes(sourceTypes[i], targetTypes[i]);
+                else inferFromTypes(sourceTypes[i], targetTypes[i]);
             }
         }
 
@@ -25781,6 +25796,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function inferFromObjectTypes(source: Type, target: Type) {
+            IDebug.ilogGroup(()=>`inferFromObjectTypes[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,2)
+            inferFromObjectTypesHelper(source, target);
+            IDebug.ilogGroupEnd(()=>`inferFromObjectTypes[out]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,2)
+        }
+        function inferFromObjectTypesHelper(source: Type, target: Type) {
             if (
                 getObjectFlags(source) & ObjectFlags.Reference && getObjectFlags(target) & ObjectFlags.Reference && (
                     (source as TypeReference).target === (target as TypeReference).target || isArrayType(source) && isArrayType(target)
@@ -25917,6 +25937,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function inferFromSignatures(source: Type, target: Type, kind: SignatureKind) {
+            IDebug.ilogGroup(()=>`inferFromSignatures[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,2)
+            inferFromSignaturesHelper(source, target, kind);
+            IDebug.ilogGroupEnd(()=>`inferFromSignatures[out]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,2)
+        }
+        function inferFromSignaturesHelper(source: Type, target: Type, kind: SignatureKind) {
             const sourceSignatures = getSignaturesOfType(source, kind);
             const sourceLen = sourceSignatures.length;
             if (sourceLen > 0) {
@@ -25924,6 +25949,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // than the target, we infer from the first source signature to the excess target signatures.
                 const targetSignatures = getSignaturesOfType(target, kind);
                 const targetLen = targetSignatures.length;
+                const doSignaturesMultiSourceSingleTarget = true;
+                if (doSignaturesMultiSourceSingleTarget){
+                    if (targetLen===1 && sourceLen>1) {
+                        IDebug.ilog(()=>`inferFromSignatures: multiSourceSingleTarget`);
+                        for (let i = 0; i < sourceLen; i++) {
+                            inferFromSignature(getBaseSignature(sourceSignatures[i]), getErasedSignature(targetSignatures[targetLen-1]), /* doContraVariant */ true);
+                        }
+                    }
+                }
                 //if (sourceLen > targetLen) return;  // Skipping inference for some source types may result in bad match, so do not try [cph]
                 for (let i = 0; i < targetLen; i++) {
                     const sourceIndex = Math.max(sourceLen - targetLen + i, 0);
@@ -25932,7 +25966,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
 
-        function inferFromSignature(source: Signature, target: Signature) {
+        function inferFromSignature(source: Signature, target: Signature, doContraVariant?: boolean) {
+            IDebug.ilogGroup(()=>`inferFromSignature[in]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,2)
+            inferFromSignatureHelper(source, target, doContraVariant);
+            IDebug.ilogGroup(()=>`inferFromSignature[out]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,2)
+        }
+        function inferFromSignatureHelper(source: Signature, target: Signature, doContraVariant?: boolean) {
             if (!(source.flags & SignatureFlags.IsNonInferrable)) {
                 const saveBivariant = bivariant;
                 const kind = target.declaration ? target.declaration.kind : SyntaxKind.Unknown;
@@ -25942,7 +25981,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 bivariant = saveBivariant;
             }
             applyToReturnTypes(source, target, (source, target, priority) => {
-                inferWithPriorityMaybe(source, target, priority);
+                inferWithPriorityMaybe(source, target, priority, doContraVariant);
             });
         }
 
