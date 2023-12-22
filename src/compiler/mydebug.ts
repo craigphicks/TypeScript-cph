@@ -1,6 +1,7 @@
 import { Debug, LogLevel } from "./debug";
-import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper } from "./types";
+import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite } from "./types";
 import { getNodeId } from "./checker";
+//import { castHereafter } from "./core";
 
 export interface ILoggingHost {
     //log(level: LogLevel, message: string | (() => string)) : void;
@@ -128,6 +129,9 @@ export interface Dbgs {
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string;
     dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[];
     dbgMapperToString(mapper: TypeMapper | undefined): string;
+    dbgInferenceInfoToStrings(info: InferenceInfo): string[];
+    dbgInferenceContextToStrings(ic: InferenceContext): string[];
+    dbgInferenceContextToStrings(ic: InferenceContext): string[];
 }
 
 export class DbgsClass implements Dbgs{
@@ -192,67 +196,58 @@ export class DbgsClass implements Dbgs{
         //return dtm.__debugToString.call(mapper);
     }
 
+    dbgInferenceInfoToStrings(info: InferenceInfo): string[] {
+        //castHereafter<DbgsClass>(this);
+        const ret: string[] = [];
+        ret.push(`typeParameter: ${this.dbgTypeToString(info.typeParameter)}`);
+        ret.push(`candidates: ${info.candidates?.map(this.dbgTypeToString).join(",")}`);
+        ret.push(`contraCandidates: ${info.contraCandidates?.map(this.dbgTypeToString).join(",")}`);
+        ret.push(`inferredType: ${this.dbgTypeToString(info.inferredType)}`);
+        ret.push(`priority: ${info.priority}`);
+        ret.push(`topLevel: ${info.topLevel}`);
+        ret.push(`isFixed: ${info.isFixed}`);
+        ret.push(`impliedArity: ${info.impliedArity}`);
+        return ret;
+    }
+
+    dbgIntraExpressionInferenceSite(site: IntraExpressionInferenceSite): string {
+        return `node: ${this.dbgNodeToString(site.node)}, type: ${this.dbgTypeToString(site.type)}`;
+    }
+
+    dbgInferenceContextToStrings(ic: InferenceContext): string[] {
+        const ret: string[] = [];
+        ret.push(`signature: ${this.dbgSignatureToString(ic.signature)}`);
+        ret.push(`flags: ${ic.flags}`);
+        ret.push(`inferredTypeParameters: ${ic.inferredTypeParameters?.map(this.dbgTypeToString).join(",")}`);
+        ret.push(`mapper: ${this.dbgMapperToString(ic.mapper)}`);
+        ret.push(`nonFixingMapper: ${this.dbgMapperToString(ic.nonFixingMapper)}`);
+        ret.push(`returnMapper: ${this.dbgMapperToString(ic.returnMapper)}`);
+        ic.intraExpressionInferenceSites?.forEach((site,i)=>{
+            ret.push(`intraExpressionInferenceSite[${i}]: ${this.dbgIntraExpressionInferenceSite(site)}`);
+        });
+        ic.inferences.forEach((inf,i)=>{
+            this.dbgInferenceInfoToStrings(inf).forEach(s=>ret.push(`inference[${i}]: ${s}`));
+        });
+        ret.push(`compareTypes: TODO`);
+        return ret;
+    }
 
 
-    // const dbgFlowToString = (flow: FlowNode | undefined, withAntecedants?: boolean): string => {
-    //     if (!flow) return "<undef>";
-    //     let str = "";
-    //     //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
-    //     str += `[f${checker.getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
-    //     if (isFlowLabel(flow)){
-    //         str += `branchKind: ${flow.branchKind}, `;
-    //     }
-    //     if (isFlowWithNode(flow)) str += dbgNodeToString(flow.node);
-    //     if (isFlowLabel(flow) && flow.originatingExpression){
-    //         str += `originatingExpression: [n${flow.originatingExpression.id}]{pos:${flow.originatingExpression.pos},end:${flow.originatingExpression.end}}, `;
-    //         // str += `originatingExpression: ${dbgNodeToString(flow.originatingExpression)},`;
-    //     }
-    //     // if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;aaaaaa
-    //     if (!withAntecedants) return str;
-    //     const antefn = getFlowAntecedents(flow);
-    //     if (antefn.length) {
-    //         str += `antecedents(${antefn.length}):[`;
-    //         antefn.forEach(fn=>{
-    //             str += "[";
-    //             const withAntecedants2 = isFlowLabel(fn) /*&& fn.branchKind===BranchKind.postIf*/;
-    //             str += dbgFlowToString(fn, withAntecedants2);
-    //             str += "]";
-    //         });
-    //         str += "]";
-    //     }
-    //     if (isFlowLabel(flow) && flow.controlExits){
-    //         str += `controlExits:`;
-    //         str += "["+flow.controlExits.map(fn=>`${fn.id}`).join(",")+"]";
-    //     }
-    //     return str;
-    // };
-    // const dbgTypeToStringDetail = (type: Type): string[] => {
-    //     const doOne = (t: Type): string => {
-    //         let str = `${checker.typeToString(t)}, id:${t.id}, flags:${Debug.formatTypeFlags(t.flags)}, symbol:${t.symbol?`{${t.symbol.escapedName},${t.symbol.id}}`:`undefined`}`;
-    //         if ((t as any).regularType && (t as any).regularType.id !== t.id){
-    //             str += `, regularType:{id:${(t as any).regularType.id}}`;
-    //         }
-    //         return str;
-    //     };
-    //     const as: string[] = [];
-    //     as.push(doOne(type));
-    //     if (type.flags & TypeFlags.UnionOrIntersection) {
-    //         checker.forEachType(type, t=>{
-    //             //Debug.formatTypeFlags(t.flags);
-    //             as.push(doOne(t));
-    //             return true; // dont stop
-    //         });
-    //     }
-    //     if (as.length===1) return as;
-    //     else return ["[", ...as, "]"];
-    // };
-    // const dbgFloughTypeToString = (ft: FloughType): string => {
-    //     return floughTypeModule.dbgFloughTypeToString(ft);
-    // };
-    // const dbgWriteSignatureArray = (sa: readonly Signature[], write: (s: string) => void = consoleLog): void => {
-    //     sa.forEach(s=> write(dbgSignatureToString(s)));
-    // };
 }
+
+// export interface InferenceInfo {
+//     typeParameter: TypeParameter;            // Type parameter for which inferences are being made
+//     candidates: Type[] | undefined;          // Candidates in covariant positions (or undefined)
+//     contraCandidates: Type[] | undefined;    // Candidates in contravariant positions (or undefined)
+//     inferredType?: Type;                     // Cache for resolved inferred type
+//     priority?: InferencePriority;            // Priority of current inference set
+//     topLevel: boolean;                       // True if all inferences are to top level occurrences
+//     isFixed: boolean;                        // True if inferences are fixed
+//     impliedArity?: number;
+// }
+
+
+
 
 function initialize(){
     IDebug.logLevel = (process.env.myLogLevel===undefined) ? 0 : Number(process.env.myLogLevel);

@@ -15320,7 +15320,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getReturnTypeOfSignature(signature: Signature): Type {
-    const loggerLevel = 2;
+    const loggerLevel = 4;
     IDebug.ilogGroup(()=>`getReturnTypeOfSignature[in]: signature: ${IDebug.dbgs.dbgSignatureToString(signature)}`,loggerLevel);
     const result = (()=>{
         if (!signature.resolvedReturnType) {
@@ -25210,9 +25210,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         inferFromTypes(originalSource, originalTarget);
 
         function inferFromTypes(source: Type, target: Type): void {
-            IDebug.ilogGroup(()=>`inferFromTypes[in]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)}`, loggerLevel);
+            IDebug.ilogGroup(()=>`inferFromTypes[in]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)
+            }, contravariant: ${contravariant}, inferencePriority: ${inferencePriority}`, loggerLevel);
             inferFromTypesHelper(source, target);
-            IDebug.ilogGroupEnd(()=>`inferFromTypes[out]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)}`, loggerLevel);
+            IDebug.ilogGroupEnd(()=>`inferFromTypes[out]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)
+            }, contravariant: ${contravariant}, inferencePriority: ${inferencePriority}`, loggerLevel);
         }
 
         function inferFromTypesHelper(source: Type, target: Type): void {
@@ -25949,13 +25951,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // than the target, we infer from the first source signature to the excess target signatures.
                 const targetSignatures = getSignaturesOfType(target, kind);
                 const targetLen = targetSignatures.length;
-                const doSignaturesMultiSourceSingleTarget = true;
+                const doSignaturesMultiSourceSingleTarget = false;
                 if (doSignaturesMultiSourceSingleTarget){
                     if (targetLen===1 && sourceLen>1) {
                         IDebug.ilog(()=>`inferFromSignatures: multiSourceSingleTarget`);
                         for (let i = 0; i < sourceLen; i++) {
-                            inferFromSignature(getBaseSignature(sourceSignatures[i]), getErasedSignature(targetSignatures[targetLen-1]), /* doContraVariant */ true);
+                            inferFromSignature(getBaseSignature(sourceSignatures[i]), getErasedSignature(targetSignatures[targetLen-1]), {priority: InferencePriority.Combination});
                         }
+                        return;
                     }
                 }
                 //if (sourceLen > targetLen) return;  // Skipping inference for some source types may result in bad match, so do not try [cph]
@@ -25966,12 +25969,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
 
-        function inferFromSignature(source: Signature, target: Signature, doContraVariant?: boolean) {
+        function inferFromSignature(source: Signature, target: Signature, options?: { priority?: InferencePriority,  doContraVariant?: boolean}) {
             IDebug.ilogGroup(()=>`inferFromSignature[in]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,2)
-            inferFromSignatureHelper(source, target, doContraVariant);
-            IDebug.ilogGroup(()=>`inferFromSignature[out]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,2)
+            inferFromSignatureHelper(source, target, options);
+            IDebug.ilogGroupEnd(()=>`inferFromSignature[out]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,2)
         }
-        function inferFromSignatureHelper(source: Signature, target: Signature, doContraVariant?: boolean) {
+        function inferFromSignatureHelper(source: Signature, target: Signature, options?: { priority?: InferencePriority,  doContraVariant?: boolean}) {
             if (!(source.flags & SignatureFlags.IsNonInferrable)) {
                 const saveBivariant = bivariant;
                 const kind = target.declaration ? target.declaration.kind : SyntaxKind.Unknown;
@@ -25981,7 +25984,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 bivariant = saveBivariant;
             }
             applyToReturnTypes(source, target, (source, target, priority) => {
-                inferWithPriorityMaybe(source, target, priority, doContraVariant);
+                Debug.assert(!priority || priority & InferencePriority.TypePredicate); // unusual special branch in applyToReturnTypes
+                priority ||= options?.priority;
+                inferWithPriorityMaybe(source, target, priority, options?.doContraVariant);
             });
         }
 
@@ -26077,6 +26082,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getInferredType(context: InferenceContext, index: number): Type {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`getInferredType[in]: index:${index}`,2);
         const inference = context.inferences[index];
         if (!inference.inferredType) {
             let inferredType: Type | undefined;
@@ -26134,6 +26141,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
         }
+        IDebug.ilogGroupEnd(()=>`getInferredType[in]: index:${index}, inference.inferredType:${IDebug.dbgs.dbgTypeToString(inference.inferredType)}`, loggerLevel);
 
         return inference.inferredType;
     }
@@ -33568,7 +33576,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function inferTypeArguments(node: CallLikeExpression, signature: Signature, args: readonly Expression[], checkMode: CheckMode, context: InferenceContext): Type[] {
-    IDebug.ilogGroup(()=>`inferTypeArguments(signature: ${IDebug.dbgs.dbgSignatureToString(signature)}, checkMode:${checkMode})`,2);
+    const detailLoggerLevel = 2;
+    IDebug.ilogGroup(()=>`inferTypeArguments[in]: signature: ${IDebug.dbgs.dbgSignatureToString(signature)}, checkMode:${checkMode})`,2);
+    if (IDebug.logLevel <= detailLoggerLevel){
+        IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>IDebug.ilog(()=>`(in) inferenceContext: ${s}`, detailLoggerLevel));
+    }
     const result = (()=>{
         if (isJsxOpeningLikeElement(node)) {
             return inferJsxTypeArguments(node, signature, checkMode, context);
@@ -33658,13 +33670,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const spreadType = getSpreadArgumentType(args, argCount, args.length, restType, context, checkMode);
             inferTypes(context.inferences, spreadType, restType);
         }
-
+        if (IDebug.logLevel <= detailLoggerLevel){
+            IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>IDebug.ilog(()=>`(pre getInferredType) inferenceContext: ${s}`, detailLoggerLevel));
+        }
         return getInferredTypes(context);
     })();
+    if (IDebug.logLevel <= detailLoggerLevel){
+        IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>IDebug.ilog(()=>`(post getInferredType) inferenceContext: ${s}`, detailLoggerLevel));
+    }
     result.forEach((t,i)=>{
         IDebug.ilog(()=>`inferTypeArguments: result[${i}]: ${IDebug.dbgs.dbgTypeToString(t)}`,2);
     })
-    IDebug.ilogGroupEnd(()=>`inferTypeArguments()=>`,2);
+    IDebug.ilogGroupEnd(()=>`inferTypeArguments[out]`,2);
     return result;
     }
 
