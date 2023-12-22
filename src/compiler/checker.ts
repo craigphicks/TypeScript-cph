@@ -24674,7 +24674,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-    function applyToReturnTypes(source: Signature, target: Signature, callback: (s: Type, t: Type, priority?: InferencePriority | undefined) => void) {
+    function applyToReturnTypes(source: Signature, target: Signature, callback: (s: Type, t: Type, priority?: InferencePriority) => void) {
         const sourceTypePredicate = getTypePredicateOfSignature(source);
         const targetTypePredicate = getTypePredicateOfSignature(target);
         if (sourceTypePredicate && targetTypePredicate && typePredicateKindsMatch(sourceTypePredicate, targetTypePredicate) && sourceTypePredicate.type && targetTypePredicate.type) {
@@ -25451,19 +25451,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
 
-        function inferWithPriorityMaybe(source: Type, target: Type, newPriority?: InferencePriority, doContraVariant?: boolean) {
+        function inferWithPriorityMaybe(source: Type, target: Type, newPriority?: InferencePriority) {
             if (newPriority !== undefined) {
                 const savePriority = priority;
                 priority |= newPriority;
-                if (doContraVariant) inferFromContravariantTypes(source, target);
-                else inferFromTypes(source, target);
+                inferFromTypes(source, target);
                 priority = savePriority;
             }
-            else {
-                if (doContraVariant) inferFromContravariantTypes(source, target);
-                else inferFromTypes(source, target);
-            }
-    }
+            else inferFromTypes(source, target);
+        }
 
 
         function inferWithPriority(source: Type, target: Type, newPriority: InferencePriority) {
@@ -25951,16 +25947,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // than the target, we infer from the first source signature to the excess target signatures.
                 const targetSignatures = getSignaturesOfType(target, kind);
                 const targetLen = targetSignatures.length;
-                const doSignaturesMultiSourceSingleTarget = false;
-                if (doSignaturesMultiSourceSingleTarget){
-                    if (targetLen===1 && sourceLen>1) {
-                        IDebug.ilog(()=>`inferFromSignatures: multiSourceSingleTarget`);
-                        for (let i = 0; i < sourceLen; i++) {
-                            inferFromSignature(getBaseSignature(sourceSignatures[i]), getErasedSignature(targetSignatures[targetLen-1]), {priority: InferencePriority.Combination});
-                        }
-                        return;
-                    }
-                }
+                // const doSignaturesMultiSourceSingleTarget = false;
+                // if (doSignaturesMultiSourceSingleTarget){
+                //     if (targetLen===1 && sourceLen>1) {
+                //         IDebug.ilog(()=>`inferFromSignatures: multiSourceSingleTarget`);
+                //         for (let i = 0; i < sourceLen; i++) {
+                //             inferFromSignature(getBaseSignature(sourceSignatures[i]), getErasedSignature(targetSignatures[targetLen-1]));
+                //         }
+                //         return;
+                //     }
+                // }
                 //if (sourceLen > targetLen) return;  // Skipping inference for some source types may result in bad match, so do not try [cph]
                 for (let i = 0; i < targetLen; i++) {
                     const sourceIndex = Math.max(sourceLen - targetLen + i, 0);
@@ -25969,12 +25965,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
 
-        function inferFromSignature(source: Signature, target: Signature, options?: { priority?: InferencePriority,  doContraVariant?: boolean}) {
-            IDebug.ilogGroup(()=>`inferFromSignature[in]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,2)
-            inferFromSignatureHelper(source, target, options);
-            IDebug.ilogGroupEnd(()=>`inferFromSignature[out]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,2)
-        }
-        function inferFromSignatureHelper(source: Signature, target: Signature, options?: { priority?: InferencePriority,  doContraVariant?: boolean}) {
+        function inferFromSignature(source: Signature, target: Signature) {
             if (!(source.flags & SignatureFlags.IsNonInferrable)) {
                 const saveBivariant = bivariant;
                 const kind = target.declaration ? target.declaration.kind : SyntaxKind.Unknown;
@@ -25984,9 +25975,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 bivariant = saveBivariant;
             }
             applyToReturnTypes(source, target, (source, target, priority) => {
-                Debug.assert(!priority || priority & InferencePriority.TypePredicate); // unusual special branch in applyToReturnTypes
-                priority ||= options?.priority;
-                inferWithPriorityMaybe(source, target, priority, options?.doContraVariant);
+                inferWithPriorityMaybe(source, target, priority);
             });
         }
 
