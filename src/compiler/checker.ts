@@ -25210,10 +25210,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         inferFromTypes(originalSource, originalTarget);
 
         function inferFromTypes(source: Type, target: Type): void {
-            IDebug.ilogGroup(()=>`inferFromTypes[in]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)
+            IDebug.ilogGroup(()=>`inferFromTypes[in]: ${IDebug.dbgs.dbgTypeToString(source)} ${IDebug.dbgs.dbgTypeToString(target)
             }, contravariant: ${contravariant}, inferencePriority: ${inferencePriority}`, loggerLevel);
             inferFromTypesHelper(source, target);
-            IDebug.ilogGroupEnd(()=>`inferFromTypes[out]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)
+            IDebug.ilogGroupEnd(()=>`inferFromTypes[out]: ${IDebug.dbgs.dbgTypeToString(source)} ${IDebug.dbgs.dbgTypeToString(target)
             }, contravariant: ${contravariant}, inferencePriority: ${inferencePriority}`, loggerLevel);
         }
 
@@ -25799,6 +25799,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             IDebug.ilogGroupEnd(()=>`inferFromObjectTypes[out]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,2)
         }
         function inferFromObjectTypesHelper(source: Type, target: Type) {
+            // const doContravariantForIntersectingSourceObject = true;
+            // if (doContravariantForIntersectingSourceObject){
+            //     if (source.flags & TypeFlags.Intersection) {
+            //         if (typesDefinitelyUnrelated(source, target)) {
+            //             return;
+            //         }
+            //         const sourceTypes = (source as IntersectionType).types;
+            //         sourceTypes.forEach(s=>inferFromContravariantTypes(s,target));
+            //         return;
+            //     }
+            // }
             if (
                 getObjectFlags(source) & ObjectFlags.Reference && getObjectFlags(target) & ObjectFlags.Reference && (
                     (source as TypeReference).target === (target as TypeReference).target || isArrayType(source) && isArrayType(target)
@@ -25925,13 +25936,46 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function inferFromProperties(source: Type, target: Type) {
+            const loggerLevel = 2;
+            IDebug.ilogGroup(()=>`inferFromProperties[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,loggerLevel)
             const properties = getPropertiesOfObjectType(target);
-            for (const targetProp of properties) {
-                const sourceProp = getPropertyOfType(source, targetProp.escapedName);
-                if (sourceProp && !some(sourceProp.declarations, hasSkipDirectInferenceFlag)) {
-                    inferFromTypes(getTypeOfSymbol(sourceProp), getTypeOfSymbol(targetProp));
+            const doIntersectionSourcesPossiblyGenericOnly = true;
+            if (doIntersectionSourcesPossiblyGenericOnly) {
+                const arrSourceThatCouldContainTypeVars: Type[] = [];
+
+                if (source.flags & TypeFlags.Intersection) {
+                    (source as IntersectionType).types.forEach(st=>{
+                        const couldTypeVars = couldContainTypeVariables(st);
+                        IDebug.ilog(()=>`inferFromProperties: st: ${IDebug.dbgs.dbgTypeToString(st)}, couldTypeVars:${couldTypeVars}`,loggerLevel);
+                        if (couldTypeVars) arrSourceThatCouldContainTypeVars.push(st);
+                    });
+                }
+                else arrSourceThatCouldContainTypeVars.push(source);
+
+                for (const targetProp of properties) {
+                    IDebug.ilog(()=>`inferFromProperties: targetProp: ${IDebug.dbgs.dbgSymbolToString(targetProp)}`,loggerLevel);
+                    arrSourceThatCouldContainTypeVars.forEach(st=>{
+                        IDebug.ilog(()=>`inferFromProperties: st: ${IDebug.dbgs.dbgTypeToString(st)}`,loggerLevel)
+                        const stProp = getPropertyOfType(st, targetProp.escapedName);
+                        if (!stProp) return;
+                        IDebug.ilog(()=>`inferFromProperties: stProp: ${IDebug.dbgs.dbgSymbolToString(stProp)}`,loggerLevel)
+                        if (stProp && !some(stProp.declarations, hasSkipDirectInferenceFlag)) {
+                            inferFromTypes(getTypeOfSymbol(stProp), getTypeOfSymbol(targetProp));
+                        }
+                    });
                 }
             }
+            else {
+                for (const targetProp of properties) {
+                    IDebug.ilog(()=>`inferFromProperties: targetProp: ${IDebug.dbgs.dbgSymbolToString(targetProp)}`,loggerLevel)
+                    const sourceProp = getPropertyOfType(source, targetProp.escapedName);
+                    IDebug.ilog(()=>`inferFromProperties: sourceProp: ${IDebug.dbgs.dbgSymbolToString(sourceProp)}`,loggerLevel)
+                    if (sourceProp && !some(sourceProp.declarations, hasSkipDirectInferenceFlag)) {
+                        inferFromTypes(getTypeOfSymbol(sourceProp), getTypeOfSymbol(targetProp));
+                    }
+                }
+            }
+            IDebug.ilogGroupEnd(()=>`inferFromProperties[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,loggerLevel)
         }
 
         function inferFromSignatures(source: Type, target: Type, kind: SignatureKind) {
@@ -33567,7 +33611,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function inferTypeArguments(node: CallLikeExpression, signature: Signature, args: readonly Expression[], checkMode: CheckMode, context: InferenceContext): Type[] {
     const detailLoggerLevel = 2;
     IDebug.ilogGroup(()=>`inferTypeArguments[in]: signature: ${IDebug.dbgs.dbgSignatureToString(signature)}, checkMode:${checkMode})`,2);
-    if (IDebug.logLevel <= detailLoggerLevel){
+    if (IDebug.logLevel >= detailLoggerLevel){
         IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>IDebug.ilog(()=>`(in) inferenceContext: ${s}`, detailLoggerLevel));
     }
     const result = (()=>{
@@ -33659,12 +33703,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const spreadType = getSpreadArgumentType(args, argCount, args.length, restType, context, checkMode);
             inferTypes(context.inferences, spreadType, restType);
         }
-        if (IDebug.logLevel <= detailLoggerLevel){
+        if (IDebug.logLevel >= detailLoggerLevel){
             IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>IDebug.ilog(()=>`(pre getInferredType) inferenceContext: ${s}`, detailLoggerLevel));
         }
         return getInferredTypes(context);
     })();
-    if (IDebug.logLevel <= detailLoggerLevel){
+    if (IDebug.logLevel >= detailLoggerLevel){
         IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>IDebug.ilog(()=>`(post getInferredType) inferenceContext: ${s}`, detailLoggerLevel));
     }
     result.forEach((t,i)=>{

@@ -131,7 +131,6 @@ export interface Dbgs {
     dbgMapperToString(mapper: TypeMapper | undefined): string;
     dbgInferenceInfoToStrings(info: InferenceInfo): string[];
     dbgInferenceContextToStrings(ic: InferenceContext): string[];
-    dbgInferenceContextToStrings(ic: InferenceContext): string[];
 }
 
 export class DbgsClass implements Dbgs{
@@ -189,6 +188,7 @@ export class DbgsClass implements Dbgs{
     }
     dbgMapperToString(mapper: TypeMapper | undefined): string {
         if (!mapper) return "<#undef>";
+        return "CANNOT DO - using Debug.DebugTypeMapper.__debugToString() may change inference results"
         return (mapper as any as Debug.DebugTypeMapper).__debugToString();
         //const dtm = new Debug.DebugTypeMapper();
         //dtm.__debugToString;
@@ -219,9 +219,9 @@ export class DbgsClass implements Dbgs{
         ret.push(`signature: ${this.dbgSignatureToString(ic.signature)}`);
         ret.push(`flags: ${ic.flags}`);
         ret.push(`inferredTypeParameters: ${ic.inferredTypeParameters?.map(this.dbgTypeToString).join(",")}`);
-        ret.push(`mapper: ${this.dbgMapperToString(ic.mapper)}`);
-        ret.push(`nonFixingMapper: ${this.dbgMapperToString(ic.nonFixingMapper)}`);
-        ret.push(`returnMapper: ${this.dbgMapperToString(ic.returnMapper)}`);
+        // ret.push(`mapper: ${this.dbgMapperToString(ic.mapper)}`);
+        // ret.push(`nonFixingMapper: ${this.dbgMapperToString(ic.nonFixingMapper)}`);
+        // ret.push(`returnMapper: ${this.dbgMapperToString(ic.returnMapper)}`);
         ic.intraExpressionInferenceSites?.forEach((site,i)=>{
             ret.push(`intraExpressionInferenceSite[${i}]: ${this.dbgIntraExpressionInferenceSite(site)}`);
         });
