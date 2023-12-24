@@ -25335,16 +25335,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             // We make contravariant inferences only if we are in a pure contravariant position,
                             // i.e. only if we have not descended into a bivariant position.
                             if (contravariant && !bivariant) {
+                                IDebug.ilog(()=>`inferFromTypes: add contraCandidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`, loggerLevel);
                                 if (!contains(inference.contraCandidates, candidate)) {
-                                    IDebug.ilog(()=>`inferFromTypes: add contraCandidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`, loggerLevel);
                                     inference.contraCandidates = append(inference.contraCandidates, candidate);
                                     clearCachedInferences(inferences);
                                 }
                             }
-                            else if (!contains(inference.candidates, candidate)) {
+                            else {
                                 IDebug.ilog(()=>`inferFromTypes: add candidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (target: ${IDebug.dbgs.dbgTypeToString(target)})`, loggerLevel);
-                                inference.candidates = append(inference.candidates, candidate);
-                                clearCachedInferences(inferences);
+                                if (!contains(inference.candidates, candidate)) {
+                                    inference.candidates = append(inference.candidates, candidate);
+                                    clearCachedInferences(inferences);
+                                }
                             }
                         }
                         if (!(priority & InferencePriority.ReturnType) && target.flags & TypeFlags.TypeParameter && inference.topLevel && !isTypeParameterAtTopLevel(originalTarget, target as TypeParameter)) {
@@ -25936,33 +25938,79 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function inferFromProperties(source: Type, target: Type) {
+            Debug.assert(target.flags & TypeFlags.Object);
             const loggerLevel = 2;
             IDebug.ilogGroup(()=>`inferFromProperties[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,loggerLevel)
             const properties = getPropertiesOfObjectType(target);
-            const doIntersectionSourcesPossiblyGenericOnly = true;
+
+            const doIntersectionSourcesPossiblyGenericOnly = false;
             if (doIntersectionSourcesPossiblyGenericOnly) {
-                const arrSourceThatCouldContainTypeVars: Type[] = [];
-
-                if (source.flags & TypeFlags.Intersection) {
-                    (source as IntersectionType).types.forEach(st=>{
-                        const couldTypeVars = couldContainTypeVariables(st);
-                        IDebug.ilog(()=>`inferFromProperties: st: ${IDebug.dbgs.dbgTypeToString(st)}, couldTypeVars:${couldTypeVars}`,loggerLevel);
-                        if (couldTypeVars) arrSourceThatCouldContainTypeVars.push(st);
-                    });
-                }
-                else arrSourceThatCouldContainTypeVars.push(source);
-
                 for (const targetProp of properties) {
+                    const targetType = getTypeOfSymbol(targetProp);
                     IDebug.ilog(()=>`inferFromProperties: targetProp: ${IDebug.dbgs.dbgSymbolToString(targetProp)}`,loggerLevel);
-                    arrSourceThatCouldContainTypeVars.forEach(st=>{
-                        IDebug.ilog(()=>`inferFromProperties: st: ${IDebug.dbgs.dbgTypeToString(st)}`,loggerLevel)
-                        const stProp = getPropertyOfType(st, targetProp.escapedName);
-                        if (!stProp) return;
-                        IDebug.ilog(()=>`inferFromProperties: stProp: ${IDebug.dbgs.dbgSymbolToString(stProp)}`,loggerLevel)
-                        if (stProp && !some(stProp.declarations, hasSkipDirectInferenceFlag)) {
-                            inferFromTypes(getTypeOfSymbol(stProp), getTypeOfSymbol(targetProp));
+                    if (source.flags & TypeFlags.Intersection && (targetType as ObjectType).callSignatures?.length || (targetType as ObjectType).constructSignatures?.length) {
+                        IDebug.ilogGroup(()=>`inferFromProperties: [start] case source intersection and taget *signatures`,loggerLevel);
+                        const sourceTypes = (source as IntersectionType).types;
+                        /**
+                         * For each intersection source type, infer contravariant relative to target, but that must be converted to covariant
+                         * for the property.
+                         */
+                        //
+                        const savedInferences = inferences.map(cloneInferenceInfo);
+                        inferences.forEach(inference=>{
+                            inference.candidates = [];
+                            inference.contraCandidates = [];
+                        });
+
+                        sourceTypes.forEach(st=>{
+                            IDebug.ilog(()=>`inferFromProperties: st: ${IDebug.dbgs.dbgTypeToString(st)}`,loggerLevel)
+                            const stProp = getPropertyOfType(st, targetProp.escapedName);
+                            if (!stProp) return;
+                            IDebug.ilog(()=>`inferFromProperties: stProp: ${IDebug.dbgs.dbgSymbolToString(stProp)}`,loggerLevel)
+                            if (stProp && !some(stProp.declarations, hasSkipDirectInferenceFlag)) {
+                                inferFromContravariantTypes(getTypeOfSymbol(stProp), getTypeOfSymbol(targetProp));
+                            }
+                        });
+                        Debug.assert(inferences.length===savedInferences.length); // This won't be true, but lets find an example to work with.
+                        //const reseultInferences = inferences.map(cloneInferenceInfo);
+
+                        const arr: {typeParameter: Type, candidate?: Type|undefined, contraCandidate?: Type|undefined }[] = [];
+                        for (let i = 0; i<inferences.length; i++){
+                            const inference = inferences[i];
+                            let candidate: Type | undefined;
+                            let contraCandidate: Type | undefined;
+                            if (inference.candidates?.length) {
+                                contraCandidate = getUnionType(inference.candidates!);
+                                if (loggerLevel>=loggerLevel){
+                                    IDebug.ilog(()=>`inferFromProperties: from candidates to contraCondidate: ${IDebug.dbgs.dbgTypeToString(contraCandidate)}, (typeParam: ${IDebug.dbgs.dbgTypeToString(inference.typeParameter)})`, loggerLevel);
+                                }
+                                // savedInferences[i].contraCandidates = append(savedInferences[i].contraCandidates, c);
+                            }
+                            if (inference.contraCandidates?.length) {
+                                candidate = getIntersectionType(inference.contraCandidates!);
+                                if (loggerLevel>=loggerLevel){
+                                    IDebug.ilog(()=>`inferFromProperties: from contraCandidates to candidate: ${IDebug.dbgs.dbgTypeToString(candidate)}, (typeParam: ${IDebug.dbgs.dbgTypeToString(inference.typeParameter)})`, loggerLevel);
+                                }
+                                // savedInferences[i].candidates = append(savedInferences[i].candidates, c);
+                            }
+                            if (candidate || contraCandidate){
+                                arr.push({typeParameter: inference.typeParameter, candidate, contraCandidate});
+                            }
                         }
-                    });
+                        inferences = savedInferences;
+                        arr.forEach(a=>{
+                            if (a.candidate) inferFromTypes(a.candidate, a.typeParameter);
+                            if (a.contraCandidate) inferFromContravariantTypes(a.contraCandidate, a.typeParameter);
+                        });
+                        IDebug.ilogGroupEnd(()=>`inferFromProperties: [end] case source intersection and taget *signatures`,loggerLevel);
+                    }
+                    else {
+                        const sourceProp = getPropertyOfType(source, targetProp.escapedName);
+                        IDebug.ilog(()=>`inferFromProperties: sourceProp: ${IDebug.dbgs.dbgSymbolToString(sourceProp)}`,loggerLevel)
+                        if (sourceProp && !some(sourceProp.declarations, hasSkipDirectInferenceFlag)) {
+                            inferFromTypes(getTypeOfSymbol(sourceProp), getTypeOfSymbol(targetProp));
+                        }
+                    }
                 }
             }
             else {
