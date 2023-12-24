@@ -20,7 +20,7 @@ interface JKuery<TElement = Foobar> {
 
 declare function jKuery<TElement = Foobar>(): JKuery<TElement>;
 
-// const ta: (JKuery<Foobar>&string) = jKuery<never>();
+//const ta: (JKuery<Foobar>&string) = jKuery<any>();
 
 // const tb: JKuery<Foobar> = jKuery<never>();
 // tb;
@@ -36,12 +36,39 @@ const t10: (JKuery<Foobar> | string) & (JKuery<Foobar> | string | undefined)= jK
 
 
 
-// declare function  kKuery<TElement=Foobar>():{
-//     fooElement: { foobar: 1 },
-//     [Symbol.iterator]: ()=>IterableIterator<TElement>;
-// }
+interface KKuery<TElement = Foobar> {
+    fooElement: Foobar;
+    [Symbol.iterator]: () => IterableIterator<TElement>;
+    // [Symbol.iterator]: () => {
+    //     next(): {
+    //         value: TElement;
+    //     }
+    //     | {
+    //         done: true;
+    //         value: any;
+    //     };
+    // }
+}
 
-// const test1: (JKuery<Foobar> | string) & (JKuery<Foobar> | string | undefined) = kKuery();
+
+const test1: (KKuery<Foobar> | string) & (KKuery<Foobar> | string | undefined) = jKuery();
+
+
+interface LKuery<TElement = Foobar> {
+    fooElement: Foobar;
+    [Symbol.iterator]: () => {
+        next(): {
+            value: TElement;
+        }
+        | {
+            done: true;
+            value: any;
+        };
+    }
+}
+
+const test2: (LKuery<Foobar> | string) & (LKuery<Foobar> | string | undefined) = jKuery();
+
 
 // const test1a: (JKuery<Foobar> & string)  = kKuery();
 
@@ -60,5 +87,5 @@ const t10: (JKuery<Foobar> | string) & (JKuery<Foobar> | string | undefined)= jK
 
 //const t11: JKuery<Foobar> & string = JKuery(); // no error
 
-// const t12: (string | JKuery<Foobar>) & (string | JKuery<Foobar> | undefined) = JKuery(); // error
+//const t12: (string | JKuery<Foobar>) & (string | JKuery<Foobar> | undefined) = JKuery(); // error
 //const t11: string = JKuery(); // no error
