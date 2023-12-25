@@ -25196,7 +25196,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-    function inferTypes(inferences: InferenceInfo[], originalSource: Type, originalTarget: Type, priority = InferencePriority.None, contravariant = false) {
+    /**
+     * `VisitedInferTypesSentry` is used to prevent infinite recursion in calls to `inferTypes`.
+     * Prior to changes to `inferFromProperties` made to handles the case of target properties types which which have signatures when the source property type is an intersection,
+     * there were no known cases of infiinte recursion when calling `inferTypes` recursively.
+     * However, with the changes to `inferFromProperties` it is possible to have infinite recursion.
+     * Therefore creation of the `visitedInferTypesSentry` map, when it does not already exist. takes place only in calls to `inferTypes` from `inferFromProperties`.
+     */
+    type VisitedInferTypesSentry = Map</*source*/ Type, { source: Type, target: Type, contravariant: boolean }>;
+    function inferTypes(inferences: InferenceInfo[], originalSource: Type, originalTarget: Type, priority = InferencePriority.None, contravariant = false, visitedInferTypesSentry: undefined |  VisitedInferTypesSentry = undefined) {
         if (preventInferTypes) return;
         let bivariant = false;
         let propagationType: Type;
@@ -25206,6 +25214,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         let targetStack: Type[];
         let expandingFlags = ExpandingFlags.None;
         const loggerLevel = 2;
+
+        if (visitedInferTypesSentry){
+            const got = visitedInferTypesSentry.get(originalSource);
+            if (got?.target === originalTarget && got.contravariant === contravariant){
+                return;
+            }
+            visitedInferTypesSentry.set(originalSource, {source: originalSource, target: originalTarget, contravariant: contravariant});
+        }
 
         inferFromTypes(originalSource, originalTarget);
 
@@ -25958,12 +25974,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                          * For each intersection source type, infer contravariant relative to target, but that must be converted to covariant
                          * for the property.
                          */
-                        //
-                        // const savedInferences = inferences.map(cloneInferenceInfo);
-                        // inferences.forEach(inference=>{
-                        //     inference.candidates = [];
-                        //     inference.contraCandidates = [];
-                        // });
 
                         const propInferences = inferences.map(cloneInferenceInfo);
                         propInferences.forEach(inference=>{
@@ -25971,14 +25981,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             inference.contraCandidates = [];
                         });
 
-
                         sourceTypes.forEach(st=>{
                             IDebug.ilog(()=>`inferFromProperties: st: ${IDebug.dbgs.dbgTypeToString(st)}`,loggerLevel)
                             const stProp = getPropertyOfType(st, targetProp.escapedName);
                             if (!stProp) return;
                             IDebug.ilog(()=>`inferFromProperties: stProp: ${IDebug.dbgs.dbgSymbolToString(stProp)}`,loggerLevel)
                             if (stProp && !some(stProp.declarations, hasSkipDirectInferenceFlag)) {
-                                inferTypes(propInferences, getTypeOfSymbol(stProp), getTypeOfSymbol(targetProp), priority, /*contravariant*/ true);
+                                inferTypes(propInferences, getTypeOfSymbol(stProp), targetPropType, priority, /*contravariant*/ true,  visitedInferTypesSentry ?? new Map());
                             }
                         });
                         Debug.assert(inferences.length===propInferences.length); // This won't be true, but lets find an example to work with.
