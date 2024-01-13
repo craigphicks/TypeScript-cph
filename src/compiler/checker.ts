@@ -13998,6 +13998,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getPropertiesOfUnionOrIntersectionType(type: UnionOrIntersectionType): Symbol[] {
+        IDebug.ilogGroup(()=>`getPropertiesOfUnionOrIntersectionType[in]: type:${IDebug.dbgs.dbgTypeToString(type)}`);
         if (!type.resolvedProperties) {
             const members = createSymbolTable();
             for (const current of type.types) {
@@ -14017,6 +14018,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             type.resolvedProperties = getNamedMembers(members);
         }
+        IDebug.ilogGroupEnd(()=>{
+            return `getPropertiesOfUnionOrIntersectionType[out]: type.resolvedProperties: `
+             + type.resolvedProperties.map(sym=>sym.escapedName).join(',');
+        });
         return type.resolvedProperties;
     }
 
@@ -26071,7 +26076,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 //         return;
                 //     }
                 // }
-                //if (sourceLen > targetLen) return;  // Skipping inference for some source types may result in bad match, so do not try [cph]
                 for (let i = 0; i < targetLen; i++) {
                     const sourceIndex = Math.max(sourceLen - targetLen + i, 0);
                     inferFromSignature(getBaseSignature(sourceSignatures[sourceIndex]), getErasedSignature(targetSignatures[i]));
