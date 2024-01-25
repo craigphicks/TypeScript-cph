@@ -1,5 +1,5 @@
 import { Debug, LogLevel } from "./debug";
-import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite } from "./types";
+import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite, TypeFlags, UnionOrIntersectionType, Ternary } from "./types";
 import { getNodeId } from "./checker";
 //import { castHereafter } from "./core";
 
@@ -25,8 +25,9 @@ export namespace IDebug {
     export function ilog(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
     }
-    export function ilogGroup(message: (()=>string), level?: LogLevel) {
-        if (loggingHost) loggingHost.ilogGroup(message, level);
+    export function ilogGroup(message: (()=>string), level?: LogLevel): number {
+        if (loggingHost) return loggingHost.ilogGroup(message, level);
+        return 0;
     }
     export function ilogGroupEnd(message?: (()=>string), level?: LogLevel, expectedIndent?: number) {
         if (loggingHost) loggingHost.ilogGroupEnd(message, level, expectedIndent);
@@ -59,14 +60,14 @@ export class ILoggingClass implements ILoggingHost {
         this.nodeFs.writeSync(this.logFileFd, msg);
         this.numOutLines++;
     }
-    ilog(message: (()=>string), level: LogLevel = LogLevel.Info) {
+    ilog(message: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER) {
         this.log(level, message);
     }
-    ilogGroup (message: (()=>string), level: LogLevel = LogLevel.Info) {
+    ilogGroup (message: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER) {
         this.log(level, message);
         return this.indent++;
     }
-    ilogGroupEnd (message?: (()=>string), level: LogLevel = LogLevel.Info, expectedIndent: number | undefined = undefined) {
+    ilogGroupEnd (message?: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER, expectedIndent: number | undefined = undefined) {
         this.indent--;
         if (expectedIndent!==undefined && expectedIndent!==this.indent) {
             Debug.fail('Expected indent ' + expectedIndent + ' but got ' + this.indent);
@@ -121,6 +122,9 @@ export interface Dbgs {
     dbgGetNodeText: (node: Node) => any;
     // dbgFlowToString: (flow: FlowNode | undefined, withAntecedants?: boolean) => string;
     // dbgFloughTypeToString: (flowType: FloughType) => string;
+    dbgIntersectionState(x: /*IntersectionState*/0|1|2): string;
+    dbgRecursionFlags(x: 0|1|2|3): string;
+    dbgTernaryToString(x: Ternary): string;
     dbgTypeToString: (type: Type | undefined) => string;
     // dbgTypeToStringDetail: (type: Type) => string[];
     dbgNodeToString: (node: Node | undefined) => string;
@@ -138,6 +142,11 @@ export class DbgsClass implements Dbgs{
     private getNodeId(node: Node){ return getNodeId(node); /*return node.id??"<undef>";*/ }
     private getSymbolId(symbol: Symbol){ return symbol.id??"<undef>"; }
     private getSafeCheckerTypeToString(type: Type): string{
+        if (type.flags & TypeFlags.Intersection) {
+            const astr: string[] = [];
+            (type as UnionOrIntersectionType).types.forEach(t=>astr.push(this.getSafeCheckerTypeToString(t)));
+            return astr.join(" & ");
+        }
         return IDebug.checker!.typeToString(type);
     }
     private getSafeCheckerTypeOfSymbol(symbol: Symbol): Type {
@@ -146,6 +155,44 @@ export class DbgsClass implements Dbgs{
     dbgGetNodeText(node: Node){
         return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
     };
+    dbgTernaryToString(x: Ternary): string {
+        switch (x){
+            case Ternary.True: return "True";
+            case Ternary.False: return "False";
+            case Ternary.Maybe: return "Maybe";
+            case Ternary.Unknown: return "Unknown";
+            default: Debug.assertNever(0 as any as never);
+        }
+    }
+    // const enum IntersectionState {
+    //     None = 0,
+    //     Source = 1 << 0, // Source type is a constituent of an outer intersection
+    //     Target = 1 << 1, // Target type is a constituent of an outer intersection
+    // }
+    dbgIntersectionState(x: /*IntersectionState*/0|1|2): string {
+        switch (x){
+            case 0: return "None";
+            case 1: return "Source";
+            case 2: return "Target";
+            default: Debug.assertNever(x);
+        }
+    }
+    // const enum RecursionFlags {
+    //     None = 0,
+    //     Source = 1 << 0,
+    //     Target = 1 << 1,
+    //     Both = Source | Target,
+    // }
+    dbgRecursionFlags(x: 0|1|2|3): string {
+        switch (x){
+            case 0: return "None";
+            case 1: return "Source";
+            case 2: return "Target";
+            case 3: return "Both";
+            default: Debug.assertNever(x);
+        }
+    }
+
     dbgTypeToString = (type: Type | undefined): string => {
         if (!type) return "<undef>";
         return `[t${type.id}] ${this.getSafeCheckerTypeToString(type)}`;
