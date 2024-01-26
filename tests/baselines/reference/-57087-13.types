@@ -1,0 +1,10 @@
+//// [tests/cases/compiler/-test/-57087-13.ts] ////
+
+=== -57087-13.ts ===
+declare const f42: () => string | number;
+>f42 : () => string | number
+
+f42 satisfies (() => string) & (() => number);
+>f42 satisfies (() => string) & (() => number) : () => string | number
+>f42 : () => string | number
+

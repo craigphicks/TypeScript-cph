@@ -1,0 +1,53 @@
+//// [tests/cases/compiler/-test/-57087-03.ts] ////
+
+=== -57087-03.ts ===
+interface A9<T> {
+>A9 : Symbol(A9, Decl(-57087-03.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-03.ts, 0, 13))
+
+    t: T;
+>t : Symbol(A9.t, Decl(-57087-03.ts, 0, 17))
+>T : Symbol(T, Decl(-57087-03.ts, 0, 13))
+
+    f():T;
+>f : Symbol(A9.f, Decl(-57087-03.ts, 1, 9))
+>T : Symbol(T, Decl(-57087-03.ts, 0, 13))
+
+    g(f: ()=>T):T[];
+>g : Symbol(A9.g, Decl(-57087-03.ts, 2, 10))
+>f : Symbol(f, Decl(-57087-03.ts, 3, 6))
+>T : Symbol(T, Decl(-57087-03.ts, 0, 13))
+>T : Symbol(T, Decl(-57087-03.ts, 0, 13))
+
+};
+
+declare const a9: A9<string> | A9<number>;
+>a9 : Symbol(a9, Decl(-57087-03.ts, 6, 13))
+>A9 : Symbol(A9, Decl(-57087-03.ts, 0, 0))
+>A9 : Symbol(A9, Decl(-57087-03.ts, 0, 0))
+
+// declare const f9: A9<string>["f"] & A9<number>["f"];
+// a9.g(f9); // NO ERROR when argument is defined as an intersection of functions type
+
+const f91 = ()=>Math.random() < 0.5 ? Math.random().toString() : Math.random();
+>f91 : Symbol(f91, Decl(-57087-03.ts, 11, 5))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math.random().toString : Symbol(Number.toString, Decl(lib.es5.d.ts, --, --))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>toString : Symbol(Number.toString, Decl(lib.es5.d.ts, --, --))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+//f91 satisfies A9<string>["f"] & A9<number>["f"] // but is not a valid implementation of either.
+
+a9.g(f91); // INCORRECT ERROR;  argument is as an actual valid implementation, should not be error.
+>a9.g : Symbol(A9.g, Decl(-57087-03.ts, 2, 10), Decl(-57087-03.ts, 2, 10))
+>a9 : Symbol(a9, Decl(-57087-03.ts, 6, 13))
+>g : Symbol(A9.g, Decl(-57087-03.ts, 2, 10), Decl(-57087-03.ts, 2, 10))
+>f91 : Symbol(f91, Decl(-57087-03.ts, 11, 5))
+

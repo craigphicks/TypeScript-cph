@@ -1,0 +1,53 @@
+//// [tests/cases/compiler/-test/-57087-03.ts] ////
+
+=== -57087-03.ts ===
+interface A9<T> {
+    t: T;
+>t : T
+
+    f():T;
+>f : () => T
+
+    g(f: ()=>T):T[];
+>g : (f: () => T) => T[]
+>f : () => T
+
+};
+
+declare const a9: A9<string> | A9<number>;
+>a9 : A9<string> | A9<number>
+
+// declare const f9: A9<string>["f"] & A9<number>["f"];
+// a9.g(f9); // NO ERROR when argument is defined as an intersection of functions type
+
+const f91 = ()=>Math.random() < 0.5 ? Math.random().toString() : Math.random();
+>f91 : () => string | number
+>()=>Math.random() < 0.5 ? Math.random().toString() : Math.random() : () => string | number
+>Math.random() < 0.5 ? Math.random().toString() : Math.random() : string | number
+>Math.random() < 0.5 : boolean
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>0.5 : 0.5
+>Math.random().toString() : string
+>Math.random().toString : (radix?: number) => string
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>toString : (radix?: number) => string
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+
+//f91 satisfies A9<string>["f"] & A9<number>["f"] // but is not a valid implementation of either.
+
+a9.g(f91); // INCORRECT ERROR;  argument is as an actual valid implementation, should not be error.
+>a9.g(f91) : string[] | number[]
+>a9.g : ((f: () => string) => string[]) | ((f: () => number) => number[])
+>a9 : A9<string> | A9<number>
+>g : ((f: () => string) => string[]) | ((f: () => number) => number[])
+>f91 : () => string | number
+

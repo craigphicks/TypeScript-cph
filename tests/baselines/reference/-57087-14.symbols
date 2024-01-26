@@ -1,0 +1,121 @@
+//// [tests/cases/compiler/-test/-57087-14.ts] ////
+
+=== -57087-14.ts ===
+declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number | "1" | "2" | "3"; }
+>foo : Symbol(foo, Decl(-57087-14.ts, 0, 13))
+>x : Symbol(x, Decl(-57087-14.ts, 0, 22))
+>x : Symbol(x, Decl(-57087-14.ts, 0, 35))
+>x : Symbol(x, Decl(-57087-14.ts, 0, 48))
+>x : Symbol(x, Decl(-57087-14.ts, 0, 61))
+
+interface C {
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+
+    (x:1):"1";
+>x : Symbol(x, Decl(-57087-14.ts, 3, 5))
+
+    (x:2):"20";
+>x : Symbol(x, Decl(-57087-14.ts, 4, 5))
+
+    (x:number):number;
+>x : Symbol(x, Decl(-57087-14.ts, 5, 5))
+
+    (x:number):"1"|"20"|number;
+>x : Symbol(x, Decl(-57087-14.ts, 6, 5))
+
+};
+interface B {
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+
+    (x:2):"2"
+>x : Symbol(x, Decl(-57087-14.ts, 9, 5))
+
+    (x:3):"30"
+>x : Symbol(x, Decl(-57087-14.ts, 10, 5))
+
+    (x:number):number;
+>x : Symbol(x, Decl(-57087-14.ts, 11, 5))
+
+    (x:2|3|number):"2"|"30"|number;
+>x : Symbol(x, Decl(-57087-14.ts, 12, 5))
+
+};
+interface A {
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+
+    (x:3):"3"
+>x : Symbol(x, Decl(-57087-14.ts, 15, 5))
+
+    (x:1):"10"
+>x : Symbol(x, Decl(-57087-14.ts, 16, 5))
+
+    (x:number):number;
+>x : Symbol(x, Decl(-57087-14.ts, 17, 5))
+
+    (x:1|3|number):"3"|"10"|number;
+>x : Symbol(x, Decl(-57087-14.ts, 18, 5))
+
+};
+
+
+foo satisfies A & B & C;
+>foo : Symbol(foo, Decl(-57087-14.ts, 0, 13))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+
+foo satisfies A & C & B;
+>foo : Symbol(foo, Decl(-57087-14.ts, 0, 13))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+
+foo satisfies B & A & C;
+>foo : Symbol(foo, Decl(-57087-14.ts, 0, 13))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+
+foo satisfies B & C & A;
+>foo : Symbol(foo, Decl(-57087-14.ts, 0, 13))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+
+foo satisfies C & A & B;
+>foo : Symbol(foo, Decl(-57087-14.ts, 0, 13))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+
+foo satisfies C & B & A;
+>foo : Symbol(foo, Decl(-57087-14.ts, 0, 13))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+
+type W = (A & B & C)|(A & C & B)|(B & A & C)|(B & C & A)|(C & A & B)|(C & B & A);
+>W : Symbol(W, Decl(-57087-14.ts, 27, 24))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>C : Symbol(C, Decl(-57087-14.ts, 0, 100))
+>B : Symbol(B, Decl(-57087-14.ts, 7, 2))
+>A : Symbol(A, Decl(-57087-14.ts, 13, 2))
+
+foo satisfies W;
+>foo : Symbol(foo, Decl(-57087-14.ts, 0, 13))
+>W : Symbol(W, Decl(-57087-14.ts, 27, 24))
+
