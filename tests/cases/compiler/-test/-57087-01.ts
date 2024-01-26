@@ -15,6 +15,7 @@ x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3
 
 function ft2(x:1|2):1|2;
 function ft2(x:3):"2"|"3";
+function ft2(x:1|2|3):1|2|"2"|"3";
 function ft2(x:1|2|3):1|2|"2"|"3" {
     if (x!==3) return x1.f(x);
     else return x2.f(x);
