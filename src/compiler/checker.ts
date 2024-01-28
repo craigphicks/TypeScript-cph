@@ -21654,13 +21654,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return prop.valueDeclaration && container.valueDeclaration && prop.valueDeclaration.parent === container.valueDeclaration;
         }
 
-        // function parameterswiseUnionOfSignatures(sigs: Readonly<Signature>[]): Signature {
-        //     //const sourceCount = getParameterCount(source);
-        //     //const sourceRestType = getNonArrayRestType(source);
-
-
-
-        // }
 
         interface CheckFunctionRelatedToIntersectionHelperArgsFunctionCache {
             restType: Type | undefined,
@@ -21672,6 +21665,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         interface CheckFunctionRelatedToIntersectionHelperArgs {
             source: Signature, target: Signature,
+            functionCacheIn: CheckFunctionRelatedToIntersectionHelperArgsFunctionCache,
             refSourceParamsOut: [
                 ({ wasCreatedByTemplate?: boolean } & CheckFunctionRelatedToIntersectionHelperArgsFunctionCache) | undefined
             ] | undefined,
@@ -21730,7 +21724,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
 
         function checkFunctionRelatedToIntersectionHelper(
-            {source,target,refSourceParamsOut:_refSourceParamsOut,refTargetParamsOut}: CheckFunctionRelatedToIntersectionHelperArgs
+            {source,target, functionCacheIn, refSourceParamsOut:_refSourceParamsOut,refTargetParamsOut}: CheckFunctionRelatedToIntersectionHelperArgs
         ): boolean {
         const logLevel = 2;
         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersectionHelper[in]: source:${IDebug.dbgs.dbgSignatureToString(source)}, target:${IDebug.dbgs.dbgSignatureToString(target)}`,logLevel);
@@ -21778,8 +21772,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
 
-            const sourceCount = getParameterCount(source);
-            const sourceRestType = getNonArrayRestType(source);
+            //const sourceCount = getParameterCount(source);
+            //const sourceRestType = getNonArrayRestType(source);
             const targetRestType = getNonArrayRestType(target);
             // if (sourceRestType || targetRestType) {
             //     void instantiateType(sourceRestType || targetRestType, reportUnreliableMarkers);
@@ -21829,11 +21823,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
 
+            const {count:sourceCount,fixedLength:_sourceFixedLength,params:sourceParams,restType:sourceRestType,returnType:_sourceReturnType} = functionCacheIn;
+
             const paramCount = sourceRestType || targetRestType ? Math.min(sourceCount, targetCount) : Math.max(sourceCount, targetCount);
             const restIndex = sourceRestType || targetRestType ? paramCount - 1 : -1;
 
             for (let i = 0; i < paramCount; i++) {
-                const sourceType = i === restIndex ? getRestTypeAtPosition(source, i) : tryGetTypeAtPosition(source, i);
+                const sourceType = i === restIndex ? sourceRestType : (i<sourceParams.length) ? sourceParams[i] : undefined;
+                //const sourceType = i === restIndex ? getRestTypeAtPosition(source, i) : tryGetTypeAtPosition(source, i);
                 const targetType = i === restIndex ? getRestTypeAtPosition(target, i) : tryGetTypeAtPosition(target, i);
                 // [cph] Note: case sourceType===undefined will possibly result in error when checking that target domain extends source domain.
                 if (sourceType && targetType) {
@@ -22029,7 +22026,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         if (si===0){
                             refTargetParamsOut = [undefined];
                         }
-                        if (checkFunctionRelatedToIntersectionHelper({source:ssig, target:tsig, refSourceParamsOut: undefined, refTargetParamsOut})) {
+                        if (checkFunctionRelatedToIntersectionHelper({
+                            source:ssig, target:tsig,
+                            functionCacheIn: sourceOverloadsCached.paramsAndReturn[si],
+                            refSourceParamsOut: undefined, refTargetParamsOut
+                        })) {
                             hadMatch = true;
                             gReturn = getUnionType([gReturn, getReturnTypeOfSignature(tsig)]);
 
