@@ -1,14 +1,14 @@
--57087-22.ts(7,1): error TS2304: Cannot find name 'f1'.
+-57087-22.ts(7,4): error TS1360: Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg2'.
 
 
 ==== -57087-22.ts (1 errors) ====
     // test f range exceeds Garg range - should not satisfy
     
-    declare const f2: { (x: 1 | 2): 0 |1 | 2; (x: 3): "2" | "3"; (x: 1 | 2 | 3): 0 | 1 | 2 | "2" |"3";}
+    declare const f2: { (x: 1 | 2): 0 |1 | 2; (x: 3): "2" | "3"; }
     
     type Garg2 = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
     
-    f1 satisfies Garg2; // should not satisfy
-    ~~
-!!! error TS2304: Cannot find name 'f1'.
+    f2 satisfies Garg2; // should not satisfy
+       ~~~~~~~~~
+!!! error TS1360: Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg2'.
     

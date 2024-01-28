@@ -6775,6 +6775,19 @@ export interface Signature {
     isolatedSignatureType?: ObjectType; // A manufactured type that just contains the signature for purposes of signature comparison
     /** @internal */
     instantiations?: Map<string, Signature>;    // Generic signature instantiation cache
+    /** @internal */
+    /**
+     * Only the last overload of a signature can be an overload catchAll.
+     */
+    overloadCatchAll?: {
+        kind: "implicit";
+        catchAllFlag: "compileError";
+    } | {
+        kind: "explcit";
+        gapReturnType: Type; // not including the union of return types of previous overloads, can be neverType
+        catchAllFlag?: "throws" | "compileError" | "returns";
+        throwsType?: Type;
+    };
 }
 
 export const enum IndexKind {
@@ -7104,6 +7117,7 @@ export interface CompilerOptions {
     allowUnreachableCode?: boolean;
     allowUnusedLabels?: boolean;
     alwaysStrict?: boolean; // Always combine with strict property
+    autoOverloadCatchAll?: boolean;
     baseUrl?: string;
     /**
      * An error if set - this should only go through the -b pipeline and not actually be observed

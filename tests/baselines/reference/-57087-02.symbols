@@ -58,23 +58,20 @@ x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3
 >g : Symbol(FMap.g, Decl(-57087-02.ts, 1, 14), Decl(-57087-02.ts, 1, 14))
 
 function ft3(x:1):1|2;
->ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30), Decl(-57087-02.ts, 14, 34))
+>ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30))
 >x : Symbol(x, Decl(-57087-02.ts, 11, 13))
 
 function ft3(x:3):"2"|"3";
->ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30), Decl(-57087-02.ts, 14, 34))
+>ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30))
 >x : Symbol(x, Decl(-57087-02.ts, 12, 13))
 
 function ft3(x:2):1|2|"2"|"3";
->ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30), Decl(-57087-02.ts, 14, 34))
+>ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30))
 >x : Symbol(x, Decl(-57087-02.ts, 13, 13))
 
-function ft3(x:1|2|3):1|2|"2"|"3";
->ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30), Decl(-57087-02.ts, 14, 34))
->x : Symbol(x, Decl(-57087-02.ts, 14, 13))
-
+//function ft3(x:1|2|3):1|2|"2"|"3";
 function ft3(x:1|2|3):1|2|"2"|"3"{
->ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30), Decl(-57087-02.ts, 14, 34))
+>ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30))
 >x : Symbol(x, Decl(-57087-02.ts, 15, 13))
 
     if (x===1) return x1.f(x);
@@ -108,5 +105,5 @@ x.g(ft3); // error
 >x.g : Symbol(FMap.g, Decl(-57087-02.ts, 1, 14), Decl(-57087-02.ts, 1, 14))
 >x : Symbol(x, Decl(-57087-02.ts, 8, 5))
 >g : Symbol(FMap.g, Decl(-57087-02.ts, 1, 14), Decl(-57087-02.ts, 1, 14))
->ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30), Decl(-57087-02.ts, 14, 34))
+>ft3 : Symbol(ft3, Decl(-57087-02.ts, 9, 4), Decl(-57087-02.ts, 11, 22), Decl(-57087-02.ts, 12, 26), Decl(-57087-02.ts, 13, 30))
 

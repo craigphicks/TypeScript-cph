@@ -3,17 +3,17 @@
 === -57087-22.ts ===
 // test f range exceeds Garg range - should not satisfy
 
-declare const f2: { (x: 1 | 2): 0 |1 | 2; (x: 3): "2" | "3"; (x: 1 | 2 | 3): 0 | 1 | 2 | "2" |"3";}
+declare const f2: { (x: 1 | 2): 0 |1 | 2; (x: 3): "2" | "3"; }
 >f2 : Symbol(f2, Decl(-57087-22.ts, 2, 13))
 >x : Symbol(x, Decl(-57087-22.ts, 2, 21))
 >x : Symbol(x, Decl(-57087-22.ts, 2, 43))
->x : Symbol(x, Decl(-57087-22.ts, 2, 62))
 
 type Garg2 = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
->Garg2 : Symbol(Garg2, Decl(-57087-22.ts, 2, 99))
+>Garg2 : Symbol(Garg2, Decl(-57087-22.ts, 2, 62))
 >x : Symbol(x, Decl(-57087-22.ts, 4, 15))
 >x : Symbol(x, Decl(-57087-22.ts, 4, 39))
 
-f1 satisfies Garg2; // should not satisfy
->Garg2 : Symbol(Garg2, Decl(-57087-22.ts, 2, 99))
+f2 satisfies Garg2; // should not satisfy
+>f2 : Symbol(f2, Decl(-57087-22.ts, 2, 13))
+>Garg2 : Symbol(Garg2, Decl(-57087-22.ts, 2, 62))
 

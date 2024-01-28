@@ -907,6 +907,17 @@ const commandOptionsWithoutBuild: CommandLineOption[] = [
         description: Diagnostics.Ensure_use_strict_is_always_emitted,
         defaultValueDescription: Diagnostics.false_unless_strict_is_set,
     },
+    {
+        name: "autoOverloadCatchAll",
+        type: "boolean",
+        affectsSourceFile: true,
+        affectsEmit: true,
+        affectsBuildInfo: true,
+        //strictFlag: false,
+        category: Diagnostics.Type_Checking,
+        description: Diagnostics.Ensure_use_strict_is_always_emitted,
+        defaultValueDescription: Diagnostics.false_unless_strict_is_set,
+    },
 
     // Additional Checks
     {

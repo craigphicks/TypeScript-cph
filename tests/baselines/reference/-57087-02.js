@@ -15,7 +15,7 @@ x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3
 function ft3(x:1):1|2;
 function ft3(x:3):"2"|"3";
 function ft3(x:2):1|2|"2"|"3";
-function ft3(x:1|2|3):1|2|"2"|"3";
+//function ft3(x:1|2|3):1|2|"2"|"3";
 function ft3(x:1|2|3):1|2|"2"|"3"{
     if (x===1) return x1.f(x);
     if (x===3) return x2.f(x);
@@ -29,6 +29,7 @@ x1.g(x1.f); // no error
 x2.g(x2.f); // no error
 const x = Math.random() < 0.5 ? x1 : x2;
 x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+//function ft3(x:1|2|3):1|2|"2"|"3";
 function ft3(x) {
     if (x === 1)
         return x1.f(x);
@@ -50,4 +51,3 @@ declare const x: FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">;
 declare function ft3(x: 1): 1 | 2;
 declare function ft3(x: 3): "2" | "3";
 declare function ft3(x: 2): 1 | 2 | "2" | "3";
-declare function ft3(x: 1 | 2 | 3): 1 | 2 | "2" | "3";

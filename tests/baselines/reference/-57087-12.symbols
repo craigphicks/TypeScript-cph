@@ -1,19 +1,18 @@
 //// [tests/cases/compiler/-test/-57087-12.ts] ////
 
 === -57087-12.ts ===
-declare const f: { (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; (x:1|2|3):1|2|"2"|"3";}
+declare const f: { (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }
 >f : Symbol(f, Decl(-57087-12.ts, 0, 13))
 >x : Symbol(x, Decl(-57087-12.ts, 0, 20))
 >x : Symbol(x, Decl(-57087-12.ts, 0, 35))
 >x : Symbol(x, Decl(-57087-12.ts, 0, 54))
->x : Symbol(x, Decl(-57087-12.ts, 0, 81))
 
 type Garg = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
->Garg : Symbol(Garg, Decl(-57087-12.ts, 0, 103))
+>Garg : Symbol(Garg, Decl(-57087-12.ts, 0, 81))
 >x : Symbol(x, Decl(-57087-12.ts, 2, 14))
 >x : Symbol(x, Decl(-57087-12.ts, 2, 38))
 
 f satisfies Garg;
 >f : Symbol(f, Decl(-57087-12.ts, 0, 13))
->Garg : Symbol(Garg, Decl(-57087-12.ts, 0, 103))
+>Garg : Symbol(Garg, Decl(-57087-12.ts, 0, 81))
 

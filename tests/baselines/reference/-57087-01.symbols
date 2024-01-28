@@ -58,19 +58,16 @@ x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3
 >g : Symbol(FMap.g, Decl(-57087-01.ts, 1, 14), Decl(-57087-01.ts, 1, 14))
 
 function ft2(x:1|2):1|2;
->ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26), Decl(-57087-01.ts, 13, 34))
+>ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26))
 >x : Symbol(x, Decl(-57087-01.ts, 11, 13))
 
 function ft2(x:3):"2"|"3";
->ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26), Decl(-57087-01.ts, 13, 34))
+>ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26))
 >x : Symbol(x, Decl(-57087-01.ts, 12, 13))
 
-function ft2(x:1|2|3):1|2|"2"|"3";
->ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26), Decl(-57087-01.ts, 13, 34))
->x : Symbol(x, Decl(-57087-01.ts, 13, 13))
-
+//function ft2(x:1|2|3):1|2|"2"|"3";
 function ft2(x:1|2|3):1|2|"2"|"3" {
->ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26), Decl(-57087-01.ts, 13, 34))
+>ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26))
 >x : Symbol(x, Decl(-57087-01.ts, 14, 13))
 
     if (x!==3) return x1.f(x);
@@ -90,5 +87,5 @@ x.g(ft2); // error
 >x.g : Symbol(FMap.g, Decl(-57087-01.ts, 1, 14), Decl(-57087-01.ts, 1, 14))
 >x : Symbol(x, Decl(-57087-01.ts, 8, 5))
 >g : Symbol(FMap.g, Decl(-57087-01.ts, 1, 14), Decl(-57087-01.ts, 1, 14))
->ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26), Decl(-57087-01.ts, 13, 34))
+>ft2 : Symbol(ft2, Decl(-57087-01.ts, 9, 4), Decl(-57087-01.ts, 11, 24), Decl(-57087-01.ts, 12, 26))
 
