@@ -11519,8 +11519,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // Here, the array literal [1, "one"] is contextually typed by the type [any, string], which is the implied type of the
     // binding pattern [x, s = ""]. Because the contextual type is a tuple type, the resulting type of [1, "one"] is the
     // tuple type [number, string]. Thus, the type inferred for 'x' is number and the type inferred for 's' is string.
-    function getWidenedTypeForVariableLikeDeclaration(declaration: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement | JSDocPropertyLikeTag, reportErrors?: boolean): Type {
-        return widenTypeForVariableLikeDeclaration(getTypeForVariableLikeDeclaration(declaration, /*includeOptionality*/ true, CheckMode.Normal), declaration, reportErrors);
+    function getWidenedTypeForVariableLikeDeclaration(
+        declaration: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement | JSDocPropertyLikeTag,
+        reportErrors?: boolean, includeOptionality = false): Type {
+        return widenTypeForVariableLikeDeclaration(getTypeForVariableLikeDeclaration(declaration, includeOptionality, CheckMode.Normal), declaration, reportErrors);
     }
 
     function isGlobalSymbolConstructor(node: Node) {
@@ -11586,10 +11588,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return false;
     }
 
-    function getTypeOfVariableOrParameterOrProperty(symbol: Symbol): Type {
+    function getTypeOfVariableOrParameterOrProperty(symbol: Symbol, includeOptionality=false): Type {
         const links = getSymbolLinks(symbol);
-        if (!links.type) {
-            const type = getTypeOfVariableOrParameterOrPropertyWorker(symbol);
+        let noCacheTmp = true; // IWOZERE
+        if (noCacheTmp || !links.type) {
+            const type = getTypeOfVariableOrParameterOrPropertyWorker(symbol, includeOptionality);
             // For a contextually typed parameter it is possible that a type has already
             // been assigned (in assignTypeToParameterAndFixTypeParameters), and we want
             // to preserve this type. In fact, we need to _prefer_ that type, but it won't
@@ -11603,7 +11606,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return links.type;
     }
 
-    function getTypeOfVariableOrParameterOrPropertyWorker(symbol: Symbol): Type {
+    function getTypeOfVariableOrParameterOrPropertyWorker(symbol: Symbol, includeOptionality = false): Type {
         // Handle prototype property
         if (symbol.flags & SymbolFlags.Prototype) {
             return getTypeOfPrototypeProperty(symbol);
@@ -11699,7 +11702,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             || isBindingElement(declaration)
             || isJSDocPropertyLikeTag(declaration)
         ) {
-            type = getWidenedTypeForVariableLikeDeclaration(declaration, /*reportErrors*/ true);
+            type = getWidenedTypeForVariableLikeDeclaration(declaration, /*reportErrors*/ true, includeOptionality);
         }
         // getTypeOfSymbol dispatches some JS merges incorrectly because their symbol flags are not mutually exclusive.
         // Re-dispatch based on valueDeclaration.kind instead.
@@ -12000,7 +12003,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return getTypeOfSymbol(symbol);
     }
 
-    function getTypeOfSymbol(symbol: Symbol): Type {
+    function getTypeOfSymbol(symbol: Symbol, includeOptionality = false): Type {
         const checkFlags = getCheckFlags(symbol);
         if (checkFlags & CheckFlags.DeferredType) {
             return getTypeOfSymbolWithDeferredType(symbol);
@@ -12015,7 +12018,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return getTypeOfReverseMappedSymbol(symbol as ReverseMappedSymbol);
         }
         if (symbol.flags & (SymbolFlags.Variable | SymbolFlags.Property)) {
-            return getTypeOfVariableOrParameterOrProperty(symbol);
+            return getTypeOfVariableOrParameterOrProperty(symbol, includeOptionality);
         }
         if (symbol.flags & (SymbolFlags.Function | SymbolFlags.Method | SymbolFlags.Class | SymbolFlags.Enum | SymbolFlags.ValueModule)) {
             return getTypeOfFuncClassEnumModule(symbol);
@@ -21692,7 +21695,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             for (let i=0,ie=count-1; i<ie;i++) {
                 // const declaration = sig.parameters[i].valueDeclaration;
                 const symbol = sig.parameters[i];
-                params.push(getTypeOfSymbol(symbol));
+                // getTypeOfSymbol returns optional types already unioned with plain "undefined" even when the exactOptionalPropertyTypes option is true/
+                const type = getTypeOfSymbol(symbol, /*includeOptionality*/ false);
+                params.push(type);
                 if (isOptionalParameterSymbol(symbol)) {
                     fixedLength = i+1;
                 }
@@ -22056,12 +22061,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                 }
                 if (!hadMatch) {
-                    IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, FAIL @3`,logLevel);
+                    IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, FAIL @3 (no match)`,logLevel);
                     return Ternary.False;
                 }
-                else if (!isTypeAssignableTo(getReturnTypeOfSignature(ssig), gReturn)) {
-                    IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, FAIL @4`,logLevel);
-                    return Ternary.False;
+                else {
+                    const returnType = sourceOverloadsCached.paramsAndReturn[si].returnType;
+                    Debug.assert(returnType, "returnType is unexpectedly undefined");
+                    const tmpReturnType = getReturnTypeOfSignature(ssig);
+                    Debug.assert(returnType===tmpReturnType);
+                    if (!isTypeAssignableTo(returnType, gReturn)) {
+                        IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, FAIL @4 (sig return type not assignable to accum return type)`,logLevel);
+                        return Ternary.False;
+                    }
                 }
             }
             // ensure that domain of source includes domain of target
@@ -26256,7 +26267,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
                 // If no inferences can be made to K's constraint, infer from a union of the property types
                 // in the source to the template type X.
-                const propTypes = map(getPropertiesOfType(source), getTypeOfSymbol);
+                const propTypes = map(getPropertiesOfType(source), (sym:Symbol)=>getTypeOfSymbol(sym));
                 const indexTypes = map(getIndexInfosOfType(source), info => info !== enumNumberIndexInfo ? info.type : neverType);
                 inferFromTypes(getUnionType(concatenate(propTypes, indexTypes)), getTemplateTypeFromMappedType(target));
                 return true;
