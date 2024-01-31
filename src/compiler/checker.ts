@@ -21598,6 +21598,27 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          * * Ternary.False if they are not related.
          */
         function isRelatedTo(originalSource: Type, originalTarget: Type, recursionFlags: RecursionFlags = RecursionFlags.Both, reportErrors = false, headMessage?: DiagnosticMessage, intersectionState = IntersectionState.None): Ternary {
+        const logLevel = 2;
+        IDebug.ilogGroup(()=>{
+            let str = "recursionFlags:";
+            switch (recursionFlags){
+                case RecursionFlags.None: str+="None"; break;
+                case RecursionFlags.Source: str+="Source"; break;
+                case RecursionFlags.Target: str+="Target"; break;
+                case RecursionFlags.Both: str+="Both"; break;
+                default: Debug.assertNever(recursionFlags);
+            }
+            str+=", intersectionState:";
+            switch (intersectionState){
+                case IntersectionState.None: str+=", None"; break;
+                case IntersectionState.Source: str+=", Source"; break;
+                case IntersectionState.Target: str+=", Target"; break;
+                // case IntersectionState.Both: str+=", Both"; break;
+                default: Debug.assertNever(intersectionState);
+            }
+            return `isRelatedTo[in]: originalSource:${IDebug.dbgs.dbgTypeToString(originalSource)}, originalTarget:${IDebug.dbgs.dbgTypeToString(originalTarget)}, ${str}`;
+        },logLevel);
+        const ret = (()=>{
             if (originalSource === originalTarget) return Ternary.True;
 
             // Before normalization: if `source` is type an object type, and `target` is primitive,
@@ -21710,6 +21731,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 reportErrorResults(originalSource, originalTarget, source, target, headMessage);
             }
             return Ternary.False;
+        })();
+        IDebug.ilogGroupEnd(()=>{
+            return `isRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`;
+        },logLevel);
+        return ret;
         }
 
         function reportErrorResults(originalSource: Type, originalTarget: Type, source: Type, target: Type, headMessage: DiagnosticMessage | undefined) {
@@ -23464,6 +23490,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function typeRelatedToDiscriminatedType(source: Type, target: UnionType) {
+        const logLevel = 2;
+        IDebug.ilogGroup(()=>`typeRelatedToDiscriminatedType[in]: ${IDebug.dbgs.dbgTypeToString(source)}, ${IDebug.dbgs.dbgTypeToString(target)}`,logLevel);
+        const ret = (()=>{
             // 1. Generate the combinations of discriminant properties & types 'source' can satisfy.
             //    a. If the number of combinations is above a set limit, the comparison is too complex.
             // 2. Filter 'target' to the subset of types whose discriminants exist in the matrix.
@@ -23476,6 +23505,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             const sourceProperties = getPropertiesOfType(source);
             const sourcePropertiesFiltered = findDiscriminantProperties(sourceProperties, target);
+            // [cph] how about only use properties that are not optional in source
+            // const sourcePropertiesFiltered = (()=>{
+            //     function isOptionalParameterSymbol(symbol: Symbol) {
+            //         const declaration = symbol.valueDeclaration;
+            //         const isOptional = !!declaration && (hasInitializer(declaration) || isOptionalDeclaration(declaration));
+            //         return isOptional;
+            //     }
+            //     let tmp: Symbol[] | undefined = sourceProperties.filter(p=>!isOptionalParameterSymbol(p));
+            //     tmp = findDiscriminantProperties(tmp, target);
+            //     return tmp?.length ? tmp : undefined;
+            // })();
+
             if (!sourcePropertiesFiltered) return Ternary.False;
 
             // Though we could compute the number of combinations as we generate
@@ -23557,6 +23598,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
             return result;
+        })();
+        IDebug.ilogGroupEnd(()=>`typeRelatedToDiscriminatedType[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`, logLevel);
+        return ret;
         }
 
         function excludeProperties(properties: Symbol[], excludedProperties: Set<__String> | undefined) {
@@ -36734,7 +36778,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return checkSatisfiesExpressionWorker(node.expression, node.type);
     }
 
-    function checkSatisfiesExpressionWorker(expression: Expression, target: TypeNode, checkMode?: CheckMode) {
+    function checkSatisfiesExpressionWorker(expression: Expression, target: TypeNode, checkMode?: CheckMode): Type {
+        const logLevel = 2;
+        IDebug.ilogGroup(()=>`checkSatisfiesExpressionWorker[in]: expr:${IDebug.dbgs.dbgNodeToString(expression)}, target:${IDebug.dbgs.dbgNodeToString(target)}`, logLevel);
+        const ret = (()=>{
         const exprType = checkExpression(expression, checkMode);
         const targetType = getTypeFromTypeNode(target);
         if (isErrorType(targetType)) {
@@ -36743,6 +36790,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const errorNode = findAncestor(target.parent, n => n.kind === SyntaxKind.SatisfiesExpression || n.kind === SyntaxKind.JSDocSatisfiesTag);
         checkTypeAssignableToAndOptionallyElaborate(exprType, targetType, errorNode, expression, Diagnostics.Type_0_does_not_satisfy_the_expected_type_1);
         return exprType;
+        })();
+        IDebug.ilogGroupEnd(()=>`checkSatisfiesExpressionWorker[out]: return: ${IDebug.dbgs.dbgTypeToString(ret)}`, logLevel);
+        return ret;
     }
 
     function checkMetaProperty(node: MetaProperty): Type {
@@ -47430,6 +47480,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function checkSourceFile(node: SourceFile) {
         tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
         performance.mark("beforeCheck");
+        // cphdebug-start
+        if (IDebug.loggingHost){
+            IDebug.loggingHost.notifySourceFile(node, checker);
+        }
+        // cphdebug-end
         checkSourceFileWorker(node);
         performance.mark("afterCheck");
         performance.measure("Check", "beforeCheck", "afterCheck");

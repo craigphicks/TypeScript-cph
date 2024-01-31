@@ -1,0 +1,14 @@
+checkSatisfiesExpressionWorker[in]: expr:[n26] x, [30,32], Identifier, target:[n25] { x: 1; y: 1; } | { x: 2; y: 1; } | { x: 2; y: 2; }, [42,94], UnionType
+  isRelatedTo[in]: originalSource:[t90] { x?: 2; y?: 1; }, originalTarget:[t94] { x: 1; y: 1; } | { x: 2; y: 1; } | { x: 2; y: 2; }, recursionFlags:Both, intersectionState:, None
+    recursiveTypeRelatedTo[in]: source:[t90] { x?: 2; y?: 1; }, target:[t94] { x: 1; y: 1; } | { x: 2; y: 1; } | { x: 2; y: 2; }, intersectionState:None, recursionFlags:Both
+    recursiveTypeRelatedTo[out]: False
+  isRelatedTo[out]: False
+  isRelatedTo[in]: originalSource:[t90] { x?: 2; y?: 1; }, originalTarget:[t94] { x: 1; y: 1; } | { x: 2; y: 1; } | { x: 2; y: 2; }, recursionFlags:Both, intersectionState:, None
+    recursiveTypeRelatedTo[in]: source:[t90] { x?: 2; y?: 1; }, target:[t94] { x: 1; y: 1; } | { x: 2; y: 1; } | { x: 2; y: 2; }, intersectionState:None, recursionFlags:Both
+    recursiveTypeRelatedTo[out]: False
+  isRelatedTo[out]: False
+  isRelatedTo[in]: originalSource:[t90] { x?: 2; y?: 1; }, originalTarget:[t94] { x: 1; y: 1; } | { x: 2; y: 1; } | { x: 2; y: 2; }, recursionFlags:Both, intersectionState:, None
+    recursiveTypeRelatedTo[in]: source:[t90] { x?: 2; y?: 1; }, target:[t94] { x: 1; y: 1; } | { x: 2; y: 1; } | { x: 2; y: 2; }, intersectionState:None, recursionFlags:Both
+    recursiveTypeRelatedTo[out]: False
+  isRelatedTo[out]: False
+checkSatisfiesExpressionWorker[out]: return: [t90] { x?: 2; y?: 1; }
