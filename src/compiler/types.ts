@@ -5854,6 +5854,7 @@ export interface SymbolLinks {
     aliasTarget?: Symbol,                       // Resolved (non-alias) target of an alias
     target?: Symbol;                            // Original version of an instantiated symbol
     type?: Type;                                // Type of value symbol
+    typeIncludingOptionality?: Type;            // Type of value symbol including optionality (when that has been requested)
     writeType?: Type;                           // Type of value symbol in write contexts
     nameType?: Type;                            // Type associated with a late-bound symbol
     uniqueESSymbolType?: Type;                  // UniqueESSymbol type for a symbol

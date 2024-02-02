@@ -6,7 +6,7 @@
 // @noImplicitThis: true
 // @alwaysStrict: true
 // @noImplicitReturns: true
-// @exactOptionalPropertyTypes: true
+// @exactOptionalPropertyTypes: false
 // @strictNullChecks: true
 
 
