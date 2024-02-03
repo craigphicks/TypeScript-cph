@@ -1,7 +1,7 @@
 // @strict: true
 // @target: esnext
 // @declaration: true
-// @exactOptionalPropertyTypes: false
+// @exactOptionalPropertyTypes: true
 
 interface Garg36A {
     ({x,y}:{x:1, y:1}): "111"

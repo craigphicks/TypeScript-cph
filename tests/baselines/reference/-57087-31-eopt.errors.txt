@@ -1,0 +1,34 @@
+-57087-31-eopt.ts(15,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+-57087-31-eopt.ts(18,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+-57087-31-eopt.ts(21,6): error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+
+
+==== -57087-31-eopt.ts (3 errors) ====
+    interface Garg31A {
+        (): "01";
+        (x:1, y:1): "211"
+    };
+    interface Garg31B {
+        (): "02";
+        (x:2, y:2): "222";
+        (x:2, y:1): "221"
+    };
+    
+    declare const f31a: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+    f31a satisfies Garg31A & Garg31B; // should satisfy
+    
+    declare const f31b: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221" /*should fail match*/; (x: 2, y: 1): "221"; }
+    f31b satisfies Garg31A & Garg31B; // should not satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+    
+    declare const f31c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221" /*should fail match*/; }
+    f31c satisfies Garg31A & Garg31B; // should not satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+    
+    declare const f31d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+    f31d satisfies Garg31A & Garg31B; // should (probably) not satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+    

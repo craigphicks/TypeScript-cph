@@ -1,0 +1,89 @@
+//// [tests/cases/compiler/-test/-57087-33-eopt.ts] ////
+
+=== -57087-33-eopt.ts ===
+interface Garg33A {
+    (): "01";
+    (x?:1, y?:1): "211"
+>x : 1 | undefined
+>y : 1 | undefined
+
+};
+interface Garg33B {
+    (): "02";
+    (x?:2, y?:2): "222";
+>x : 2 | undefined
+>y : 2 | undefined
+
+    (x?:2, y?:1): "221"
+>x : 2 | undefined
+>y : 1 | undefined
+
+};
+
+declare const f33a: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>f33a : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>x : 1
+>y : 1
+>x : 2
+>y : 2
+>x : 2
+>y : 1
+
+f33a satisfies Garg33A & Garg33B; // should not satisfy
+>f33a satisfies Garg33A & Garg33B : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>f33a : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+
+declare const f33b: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221" /*should fail match*/; (x: 2, y: 1): "221"; }
+>f33b : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }
+>x : 1
+>y : 1
+>x : 2
+>y : 2
+>x : 2
+>y : 1
+
+f33b satisfies Garg33A & Garg33B; // should not satisfy
+>f33b satisfies Garg33A & Garg33B : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }
+>f33b : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }
+
+declare const f33c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221" /*should fail match*/; }
+>f33c : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }
+>x : 1
+>y : 1
+>x : 2
+>y : 2
+>x : 2
+>y : 1
+>x : 1
+>y : 2
+
+f33c satisfies Garg33A & Garg33B; // should not satisfy
+>f33c satisfies Garg33A & Garg33B : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }
+>f33c : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }
+
+declare const f33d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>f33d : { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>x : 1 | undefined
+>y : 1 | undefined
+>x : 2
+>y : 2
+>x : 2
+>y : 1
+
+f33d satisfies Garg33A & Garg33B; // should not satisfy
+>f33d satisfies Garg33A & Garg33B : { (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>f33d : { (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+
+declare const f33e: { (): "01"; (x?: 1, y?: 1): "211"; (x?: 2, y?: 2): "222"; (x: 2, y: 1): "221"; }
+>f33e : { (): "01"; (x?: 1, y?: 1): "211"; (x?: 2, y?: 2): "222"; (x: 2, y: 1): "221"; }
+>x : 1 | undefined
+>y : 1 | undefined
+>x : 2 | undefined
+>y : 2 | undefined
+>x : 2
+>y : 1
+
+f33e satisfies Garg33A & Garg33B; // should satisfy
+>f33e satisfies Garg33A & Garg33B : { (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x?: 2 | undefined, y?: 2 | undefined): "222"; (x: 2, y: 1): "221"; }
+>f33e : { (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x?: 2 | undefined, y?: 2 | undefined): "222"; (x: 2, y: 1): "221"; }
+

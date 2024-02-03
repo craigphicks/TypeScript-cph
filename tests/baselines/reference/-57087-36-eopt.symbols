@@ -1,0 +1,51 @@
+//// [tests/cases/compiler/-test/-57087-36-eopt.ts] ////
+
+=== -57087-36-eopt.ts ===
+interface Garg36A {
+>Garg36A : Symbol(Garg36A, Decl(-57087-36-eopt.ts, 0, 0))
+
+    ({x,y}:{x:1, y:1}): "111"
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 1, 6))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 1, 8))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 1, 12))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 1, 16))
+
+};
+interface Garg36B {
+>Garg36B : Symbol(Garg36B, Decl(-57087-36-eopt.ts, 2, 2))
+
+    ({x,y}:{x?:2, y?:1}): "221"
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 4, 6))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 4, 8))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 4, 12))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 4, 17))
+
+    ({x,y}:{x:2, y?:2}): "222";
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 5, 6))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 5, 8))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 5, 12))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 5, 16))
+
+};
+
+
+declare const f36d: { ({x,y}:{x:1, y:1}): "111"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
+>f36d : Symbol(f36d, Decl(-57087-36-eopt.ts, 9, 13))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 9, 24))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 9, 26))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 9, 30))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 9, 34))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 9, 51))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 9, 53))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 9, 57))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 9, 61))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 9, 78))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 9, 80))
+>x : Symbol(x, Decl(-57087-36-eopt.ts, 9, 84))
+>y : Symbol(y, Decl(-57087-36-eopt.ts, 9, 88))
+
+f36d satisfies Garg36A & Garg36B; // should not satisfy
+>f36d : Symbol(f36d, Decl(-57087-36-eopt.ts, 9, 13))
+>Garg36A : Symbol(Garg36A, Decl(-57087-36-eopt.ts, 0, 0))
+>Garg36B : Symbol(Garg36B, Decl(-57087-36-eopt.ts, 2, 2))
+

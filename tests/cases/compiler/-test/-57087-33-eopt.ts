@@ -1,7 +1,7 @@
 // @strict: true
 // @target: esnext
 // @declaration: true
-// @exactOptionalPropertyTypes: false
+// @exactOptionalPropertyTypes: true
 
 interface Garg33A {
     (): "01";
@@ -27,4 +27,3 @@ f33d satisfies Garg33A & Garg33B; // should not satisfy
 
 declare const f33e: { (): "01"; (x?: 1, y?: 1): "211"; (x?: 2, y?: 2): "222"; (x: 2, y: 1): "221"; }
 f33e satisfies Garg33A & Garg33B; // should satisfy
-

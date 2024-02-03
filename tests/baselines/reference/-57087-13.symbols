@@ -1,0 +1,9 @@
+//// [tests/cases/compiler/-test/-57087-13.ts] ////
+
+=== -57087-13.ts ===
+declare const f42: () => string | number;
+>f42 : Symbol(f42, Decl(-57087-13.ts, 0, 13))
+
+f42 satisfies (() => string) & (() => number);
+>f42 : Symbol(f42, Decl(-57087-13.ts, 0, 13))
+
