@@ -21932,7 +21932,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             restType: Type | undefined,
             count: number, // // includes rest type if present
             params: Type[], // includes rest type if present
-            fixedLength: number;
+            paramsAsTupleType: Type;
+            requiredCount: number;
             returnType?: Type
         };
 
@@ -21961,39 +21962,70 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const restType1 = getNonArrayRestType(sig);
             let restType: Type | undefined;
             const params:Type[] = [];
-            let fixedLength = 0;
-            for (let i=0,ie=count-1; i<ie;i++) {
+            let requiredCount = 0;
+            const tupleElementFlags: ElementFlags[] = [];
+            const tupleElementTypes: Type[] = [];
+            for (let i=0; i<count;i++) {
+                if (i===count-1){
+                    if (signatureHasRestParameter(sig)) {
+                        const restParamType = getTypeOfSymbol(sig.parameters[count-1]);
+                        Debug.assert(isArrayType(restParamType));
+                        restType = getElementTypeOfArrayType(restParamType);
+                        Debug.assert(restType);
+                        Debug.assert(restType===restType1);
+                        params.push(restType);
+                        //(restType as ArrayType).target.hasRestElement = true;
+                        // const index = pos - paramCount;
+                        // if (!isTupleType(restType) || restType.target.hasRestElement || index < restType.target.fixedLength) {
+                        //     return getIndexedAccessType(restType, getNumberLiteralType(index));
+                        // }
+                        tupleElementTypes.push(restParamType);
+                        tupleElementFlags.push(ElementFlags.Rest);
+                        break;
+                    }
+                }
                 // const declaration = sig.parameters[i].valueDeclaration;
                 const symbol = sig.parameters[i];
                 // getTypeOfSymbol returns optional types already unioned with plain "undefined" even when the exactOptionalPropertyTypes option is true/
                 const type = getTypeOfSymbol(symbol, /*checkMode*/ undefined, /*includeOptionality*/ false);
                 params.push(type);
+                tupleElementTypes.push(type);
                 if (isOptionalParameterSymbol(symbol)) {
-                    fixedLength = i+1;
-                }
-            }
-            if (count){
-                // The count-1'th parameter
-                if (signatureHasRestParameter(sig)) {
-                    const restParamType = getTypeOfSymbol(sig.parameters[count-1]);
-                    Debug.assert(isArrayType(restParamType));
-                    restType = getElementTypeOfArrayType(restParamType);
-                    Debug.assert(restType);
-                    Debug.assert(restType===restType1);
-                    params.push(restType);
-                    //(restType as ArrayType).target.hasRestElement = true;
-                    // const index = pos - paramCount;
-                    // if (!isTupleType(restType) || restType.target.hasRestElement || index < restType.target.fixedLength) {
-                    //     return getIndexedAccessType(restType, getNumberLiteralType(index));
-                    // }
+                    tupleElementFlags.push(ElementFlags.Optional);
                 }
                 else {
-                    params.push(getTypeOfSymbol(sig.parameters[count-1]));
+                    requiredCount = i+1;
+                    tupleElementFlags.push(ElementFlags.Required);
                 }
             }
+            // if (count){
+            //     // The count-1'th parameter
+            //     if (signatureHasRestParameter(sig)) {
+            //         const restParamType = getTypeOfSymbol(sig.parameters[count-1]);
+            //         Debug.assert(isArrayType(restParamType));
+            //         restType = getElementTypeOfArrayType(restParamType);
+            //         Debug.assert(restType);
+            //         Debug.assert(restType===restType1);
+            //         params.push(restType);
+            //         //(restType as ArrayType).target.hasRestElement = true;
+            //         // const index = pos - paramCount;
+            //         // if (!isTupleType(restType) || restType.target.hasRestElement || index < restType.target.fixedLength) {
+            //         //     return getIndexedAccessType(restType, getNumberLiteralType(index));
+            //         // }
+            //         tupleElementFlags.push(ElementFlags.Rest);
+            //     }
+            //     else {
+            //         params.push(getTypeOfSymbol(sig.parameters[count-1]));
+            //     }
+            // }
+            sig.declaration?.parameters;
+            sig.parameters;
+            Debug.assert(sig.declaration?.parameters);
+            const paramsAsTupleType = createTupleType(tupleElementTypes, tupleElementFlags, false, /*(sig.declaration?.parameters)! as ParameterDeclaration[]*/);
+            //const paramsAsTuple = createTupleType()
             const returnType = getReturnTypeOfSignature(sig);
             return {
-                count, restType, params, fixedLength, returnType
+                count, restType, params, paramsAsTupleType, requiredCount, returnType
             };
         }
 
@@ -22098,7 +22130,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
 
-            const {count:sourceCount,fixedLength:_sourceFixedLength,params:sourceParams,restType:sourceRestType,returnType:_sourceReturnType} = functionCacheIn;
+            const {count:sourceCount,requiredCount:_sourceFixedLength,params:sourceParams,restType:sourceRestType,returnType:_sourceReturnType} = functionCacheIn;
 
             const paramCount = sourceRestType || targetRestType ? Math.min(sourceCount, targetCount) : Math.max(sourceCount, targetCount);
             const restIndex = sourceRestType || targetRestType ? paramCount - 1 : -1;
@@ -22304,43 +22336,54 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         if (si===0){
                             refTargetParamsOut = [undefined];
                         }
-                        if (checkFunctionRelatedToIntersectionHelper({
-                            source:ssig, target:tsig,
-                            functionCacheIn: sourceOverloadsCached.paramsAndReturn[si],
-                            refSourceParamsOut: undefined, refTargetParamsOut
-                        })) {
-                            hadMatch = true;
-                            let mti = maptts.get(tti);
-                            if (!mti) {
-                                mti = new Map();
-                                maptts.set(tti, mti);
+                        const targetReturnType = getReturnTypeOfSignature(tsig);
+                        const sourceReturnType = sourceOverloadsCached.paramsAndReturn[si].returnType!;
+                        const someAssignable = (src:Type,tar:Type)=>{
+                            if (src.flags & TypeFlags.Union){
+                                return (src as UnionType).types.some(srct=>isTypeAssignableTo(srct,tar));
                             }
-                            let setsi = mti.get(ti);
-                            if (!setsi) {
-                                setsi = new Set();
-                                mti.set(ti, setsi);
-                            }
-                            setsi.add(si);
-                            IDebug.ilog(()=>`checkFunctionRelatedToIntersection: match tti:${tti}, ti:${ti} <- si:${si}`,loggerLevel);
-
-                            gReturn = getUnionType([gReturn, getReturnTypeOfSignature(tsig)]);
-
-
-                            //Debug.assert(!(refSourceParamsOut?.[0]?.wasCreatedByTemplate));
-                            // if (refTargetParamsOut && endDomainCheck) {
-                            //     arefTargetParamsOut.push(refTargetParamsOut);
-                            // }
+                            else return isTypeAssignableTo(src,tar);
                         }
-                        if (refTargetParamsOut){
-                            const clen = Math.min(sourceOverloadsCached.parameterwiseUnionOfParams.length, refTargetParamsOut[0]!.params.length);
-                            for (let c=0; c<clen; ++c) {
-                                const pass = compareTypesAssignable(refTargetParamsOut[0]!.params[c], sourceOverloadsCached.parameterwiseUnionOfParams[c]);
-                                IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti}, c:${c}, compareTypesAssignable(target${
-                                    IDebug.dbgs.dbgTypeToString(refTargetParamsOut![0]!.params[c])}, source:${
-                                    IDebug.dbgs.dbgTypeToString(sourceOverloadsCached.parameterwiseUnionOfParams[c])}) ${pass?"passed":"failed"} `,loggerLevel);
-                                if (!pass) {
-                                    IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti}, FAIL @2`,loggerLevel);
-                                    return Ternary.False;
+
+                        if (someAssignable(sourceReturnType,targetReturnType)){
+                            if (checkFunctionRelatedToIntersectionHelper({
+                                source:ssig, target:tsig,
+                                functionCacheIn: sourceOverloadsCached.paramsAndReturn[si],
+                                refSourceParamsOut: undefined, refTargetParamsOut
+                            })) {
+                                hadMatch = true;
+                                let mti = maptts.get(tti);
+                                if (!mti) {
+                                    mti = new Map();
+                                    maptts.set(tti, mti);
+                                }
+                                let setsi = mti.get(ti);
+                                if (!setsi) {
+                                    setsi = new Set();
+                                    mti.set(ti, setsi);
+                                }
+                                setsi.add(si);
+                                IDebug.ilog(()=>`checkFunctionRelatedToIntersection: match tti:${tti}, ti:${ti} <- si:${si}`,loggerLevel);
+
+                                gReturn = getUnionType([gReturn, getReturnTypeOfSignature(tsig)]);
+
+
+                                //Debug.assert(!(refSourceParamsOut?.[0]?.wasCreatedByTemplate));
+                                // if (refTargetParamsOut && endDomainCheck) {
+                                //     arefTargetParamsOut.push(refTargetParamsOut);
+                                // }
+                            }
+                            if (refTargetParamsOut){
+                                const clen = Math.min(sourceOverloadsCached.parameterwiseUnionOfParams.length, refTargetParamsOut[0]!.params.length);
+                                for (let c=0; c<clen; ++c) {
+                                    const pass = compareTypesAssignable(refTargetParamsOut[0]!.params[c], sourceOverloadsCached.parameterwiseUnionOfParams[c]);
+                                    IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti}, c:${c}, compareTypesAssignable(target${
+                                        IDebug.dbgs.dbgTypeToString(refTargetParamsOut![0]!.params[c])}, source:${
+                                        IDebug.dbgs.dbgTypeToString(sourceOverloadsCached.parameterwiseUnionOfParams[c])}) ${pass?"passed":"failed"} `,loggerLevel);
+                                    if (!pass) {
+                                        IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti}, FAIL @2`,loggerLevel);
+                                        return Ternary.False;
+                                    }
                                 }
                             }
                         }
@@ -22361,70 +22404,54 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                 }
             }
-            // ensure that domain of source includes domain of target
-
+            let hadError = false;
             maptts.forEach((mapti,tti)=>{
+                if (hadError) return ;
                 mapti.forEach((setsi,ti)=>{
+                    if (hadError) return ;
                     const targetSig = getSignaturesOfType((target as IntersectionType).types[tti], SignatureKind.Call)[ti];
                     const targetReturnType = getReturnTypeOfSignature(targetSig);
-                    const validsi: number[]=[];
-                    const invalidsi: number[]=[];
-                    setsi.forEach((_,si)=>{
-                        const sourceReturnType = getReturnTypeOfSignature(sourceSignatures[si]);
-                        if (isTypeAssignableTo(sourceReturnType, targetReturnType)){
-                            validsi.push(si);
-                        }
-                        else {
-                            invalidsi.push(si);
-                        }
-                    });
 
                     //const matchedSourceSigs = sourceSignatures.filter((_,si)=>setsi.has(si));
                     if (IDebug.logLevel>=loggerLevel){
                         let str = `target[${ti},${tti}]:${IDebug.dbgs.dbgSignatureToString(targetSig)} matched by (count:${setsi.size}): `;
                         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersection: ${str}`, loggerLevel);
-                        validsi.forEach((si)=>{
-                            IDebug.ilog(()=>`valid: [[${si}] ${IDebug.dbgs.dbgSignatureToString(sourceSignatures[si])}]`,loggerLevel);
-                        });
-                        invalidsi.forEach((si)=>{
-                            IDebug.ilog(()=>`invalid: [[${si}] ${IDebug.dbgs.dbgSignatureToString(sourceSignatures[si])}]`,loggerLevel);
+                        setsi.forEach((si)=>{
+                            IDebug.ilog(()=>`[[${si}] ${IDebug.dbgs.dbgSignatureToString(sourceSignatures[si])}]`,loggerLevel);
                         });
                         IDebug.ilogGroupEnd(()=>``, loggerLevel);
                     }
+                    let checkTargetDomainExtendsTotalSourceDomain = false;
+                    if (checkTargetDomainExtendsTotalSourceDomain) {
+
+                        let maxparamcnt = 0;
+                        setsi.forEach((si)=> {
+                            let n;
+                            if ((n=sourceOverloadsCached.paramsAndReturn[si].count)>maxparamcnt) maxparamcnt = n;
+                        });
+                        if (maxparamcnt > targetSig.parameters.length) {
+                            maxparamcnt = targetSig.parameters.length;
+                        }
+                        const cover: Type[] = Array.from({length: maxparamcnt}, () => neverType);
+                        setsi.forEach((si)=>{
+                            //IDebug.ilog(()=>`[[${si}] ${IDebug.dbgs.dbgSignatureToString(sourceSignatures[si])}]`,loggerLevel);
+                            for (let c = 0; c<maxparamcnt; c++)
+                                cover[c] = getUnionType([cover[c], sourceOverloadsCached.paramsAndReturn[si].params[c]]);
+                        });
+                        cover.forEach((t,c)=>{
+                            if (hadError) return ;
+                            const targetParamType = getTypeOfParameter(targetSig.parameters[c]);
+                            if (!isTypeAssignableTo(targetParamType, cover[c])){
+                                IDebug.ilog(()=>`checkFunctionRelatedToIntersection: FAIL @5, tti:${tti}, ti:${ti}, c:${c
+                                }, ${IDebug.dbgs.dbgTypeToString(targetParamType)} not assignable to ${IDebug.dbgs.dbgTypeToString(cover[c])}`,loggerLevel);
+                                hadError = true;
+                            }
+                        });
+                    }
                 });
             });
+            if (hadError) return Ternary.False;
 
-            // if (endDomainCheck){
-            //     const sourceCoverSignature = sourceSignatures[sourceSignatures.length-1];
-            //     const sourceCount = getParameterCount(sourceCoverSignature);
-            //     const sourceRest = getNonArrayRestType(sourceCoverSignature);
-            //     const sourceParams = [];
-            //     for (let i=0; i<sourceCount; i++) sourceParams.push(tryGetTypeAtPosition(sourceCoverSignature, i)!);
-            //     // const sourceCover = refSourceParamsOut![0]!;
-            //     // const sourceRest = sourceCover.restType;
-            //     //const targetHasRest = arefTargetParamsOut.some(a=>a![0]!.restType);
-            //     const maxcount = Math.max(...arefTargetParamsOut.map(a=>a![0]!.count));
-            //     // If the source count is less than maxcount then should already have failed before reaching here.
-            //     Debug.assert(sourceRest || maxcount<=sourceCount);
-            //     for (let c=0; c<maxcount; ++c) {
-            //         //let unionTargetType: Type = neverType;
-            //         const at:Type[]=[];
-            //         arefTargetParamsOut.forEach((a,_i)=>{
-            //             const targetCover = a![0]!;
-            //             if (c<targetCover.count) {
-            //                 at.push(targetCover.params[c]);
-            //             }
-            //             else if (targetCover.restType) at.push(targetCover.restType);
-            //         });
-            //         const unionTargetType = getUnionType(at);
-            //         const sourceType = c<sourceCount? sourceParams[c] : sourceRest!;
-            //         const pass = compareTypesAssignable(unionTargetType, sourceType);
-            //         IDebug.ilog(()=>`checkFunctionRelatedToIntersection: compareTypesAssignable(target: ${
-            //             IDebug.dbgs.dbgTypeToString(unionTargetType)}, source:${
-            //             IDebug.dbgs.dbgTypeToString(sourceType)}) ${pass?"passed":"failed"} `,logLevel);
-            //         if (!pass) return Ternary.False;
-            //     }
-            // }
             return Ternary.True;
         })();
         IDebug.ilogGroupEnd(()=>`checkFunctionRelatedToIntersection[out]: returns Ternary.${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);

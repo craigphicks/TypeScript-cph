@@ -6,20 +6,17 @@ declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number 
 interface C {
     (x:1):"1";
     (x:2):"20";
-    (x:number):number;
-    (x:number):"1"|"20"|number;
+    (x:number):number | "1" | "20";
 };
 interface B {
     (x:2):"2"
     (x:3):"30"
-    (x:number):number;
-    (x:2|3|number):"2"|"30"|number;
+    (x:number):number | "2" | "30";
 };
 interface A {
     (x:3):"3"
     (x:1):"10"
-    (x:number):number;
-    (x:1|3|number):"3"|"10"|number;
+    (x:number):number | "3" | "10";
 };
 
 

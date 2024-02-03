@@ -1,14 +1,25 @@
--57087-21.ts(7,4): error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 2): "2" | "3"; }' does not satisfy the expected type 'Garg1'.
+-57087-21.ts(9,4): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(x: 2): "2" | "3"', gave the following error.
+    Argument of type '3' is not assignable to parameter of type '2'.
+  Overload 2 of 2, '(x: 1 | 2): 1 | 2', gave the following error.
+    Argument of type '3' is not assignable to parameter of type '1 | 2'.
 
 
 ==== -57087-21.ts (1 errors) ====
-    // test f domain does not support Garg domain (3 omitted from f domain) - should not satisfy
+    // test f domain does not support Garg domain (3 omitted from f domain) - cannot detect during satisfies but can detect during call to f1
     
     declare const f1: { (x: 1 | 2): 1 | 2; (x: 2): "2" | "3";}
     
     type Garg1 = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
     
-    f1 satisfies Garg1; // should not satisfy
-       ~~~~~~~~~
-!!! error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 2): "2" | "3"; }' does not satisfy the expected type 'Garg1'.
+    f1 satisfies Garg1; // no error expected
+    
+    f1(3); // error exptected - No overload matches this call. (ts2769)
+       ~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   Overload 1 of 2, '(x: 2): "2" | "3"', gave the following error.
+!!! error TS2769:     Argument of type '3' is not assignable to parameter of type '2'.
+!!! error TS2769:   Overload 2 of 2, '(x: 1 | 2): 1 | 2', gave the following error.
+!!! error TS2769:     Argument of type '3' is not assignable to parameter of type '1 | 2'.
+    // ~
     

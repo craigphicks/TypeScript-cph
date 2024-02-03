@@ -24,76 +24,77 @@ interface Garg33B {
 
 };
 
-declare const f33a: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
->f33a : Symbol(f33a, Decl(-57087-33.ts, 10, 13))
->x : Symbol(x, Decl(-57087-33.ts, 10, 33))
->y : Symbol(y, Decl(-57087-33.ts, 10, 38))
->x : Symbol(x, Decl(-57087-33.ts, 10, 54))
->y : Symbol(y, Decl(-57087-33.ts, 10, 59))
->x : Symbol(x, Decl(-57087-33.ts, 10, 75))
->y : Symbol(y, Decl(-57087-33.ts, 10, 80))
-
-f33a satisfies Garg33A & Garg33B; // should not satisfy
->f33a : Symbol(f33a, Decl(-57087-33.ts, 10, 13))
->Garg33A : Symbol(Garg33A, Decl(-57087-33.ts, 0, 0))
->Garg33B : Symbol(Garg33B, Decl(-57087-33.ts, 3, 2))
 
 declare const f33b: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221" /*should fail match*/; (x: 2, y: 1): "221"; }
->f33b : Symbol(f33b, Decl(-57087-33.ts, 13, 13))
->x : Symbol(x, Decl(-57087-33.ts, 13, 33))
->y : Symbol(y, Decl(-57087-33.ts, 13, 38))
->x : Symbol(x, Decl(-57087-33.ts, 13, 54))
->y : Symbol(y, Decl(-57087-33.ts, 13, 59))
->x : Symbol(x, Decl(-57087-33.ts, 13, 97))
->y : Symbol(y, Decl(-57087-33.ts, 13, 102))
+>f33b : Symbol(f33b, Decl(-57087-33.ts, 11, 13))
+>x : Symbol(x, Decl(-57087-33.ts, 11, 33))
+>y : Symbol(y, Decl(-57087-33.ts, 11, 38))
+>x : Symbol(x, Decl(-57087-33.ts, 11, 54))
+>y : Symbol(y, Decl(-57087-33.ts, 11, 59))
+>x : Symbol(x, Decl(-57087-33.ts, 11, 97))
+>y : Symbol(y, Decl(-57087-33.ts, 11, 102))
 
 f33b satisfies Garg33A & Garg33B; // should not satisfy
->f33b : Symbol(f33b, Decl(-57087-33.ts, 13, 13))
+>f33b : Symbol(f33b, Decl(-57087-33.ts, 11, 13))
 >Garg33A : Symbol(Garg33A, Decl(-57087-33.ts, 0, 0))
 >Garg33B : Symbol(Garg33B, Decl(-57087-33.ts, 3, 2))
 
 declare const f33c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221" /*should fail match*/; }
->f33c : Symbol(f33c, Decl(-57087-33.ts, 16, 13))
->x : Symbol(x, Decl(-57087-33.ts, 16, 33))
->y : Symbol(y, Decl(-57087-33.ts, 16, 38))
->x : Symbol(x, Decl(-57087-33.ts, 16, 54))
->y : Symbol(y, Decl(-57087-33.ts, 16, 59))
->x : Symbol(x, Decl(-57087-33.ts, 16, 75))
->y : Symbol(y, Decl(-57087-33.ts, 16, 80))
->x : Symbol(x, Decl(-57087-33.ts, 16, 96))
->y : Symbol(y, Decl(-57087-33.ts, 16, 101))
+>f33c : Symbol(f33c, Decl(-57087-33.ts, 14, 13))
+>x : Symbol(x, Decl(-57087-33.ts, 14, 33))
+>y : Symbol(y, Decl(-57087-33.ts, 14, 38))
+>x : Symbol(x, Decl(-57087-33.ts, 14, 54))
+>y : Symbol(y, Decl(-57087-33.ts, 14, 59))
+>x : Symbol(x, Decl(-57087-33.ts, 14, 75))
+>y : Symbol(y, Decl(-57087-33.ts, 14, 80))
+>x : Symbol(x, Decl(-57087-33.ts, 14, 96))
+>y : Symbol(y, Decl(-57087-33.ts, 14, 101))
 
 f33c satisfies Garg33A & Garg33B; // should not satisfy
->f33c : Symbol(f33c, Decl(-57087-33.ts, 16, 13))
+>f33c : Symbol(f33c, Decl(-57087-33.ts, 14, 13))
+>Garg33A : Symbol(Garg33A, Decl(-57087-33.ts, 0, 0))
+>Garg33B : Symbol(Garg33B, Decl(-57087-33.ts, 3, 2))
+
+
+declare const f33a: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>f33a : Symbol(f33a, Decl(-57087-33.ts, 18, 13))
+>x : Symbol(x, Decl(-57087-33.ts, 18, 33))
+>y : Symbol(y, Decl(-57087-33.ts, 18, 38))
+>x : Symbol(x, Decl(-57087-33.ts, 18, 54))
+>y : Symbol(y, Decl(-57087-33.ts, 18, 59))
+>x : Symbol(x, Decl(-57087-33.ts, 18, 75))
+>y : Symbol(y, Decl(-57087-33.ts, 18, 80))
+
+f33a satisfies Garg33A & Garg33B; // should satisfy
+>f33a : Symbol(f33a, Decl(-57087-33.ts, 18, 13))
 >Garg33A : Symbol(Garg33A, Decl(-57087-33.ts, 0, 0))
 >Garg33B : Symbol(Garg33B, Decl(-57087-33.ts, 3, 2))
 
 declare const f33d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
->f33d : Symbol(f33d, Decl(-57087-33.ts, 19, 13))
->x : Symbol(x, Decl(-57087-33.ts, 19, 33))
->y : Symbol(y, Decl(-57087-33.ts, 19, 39))
->x : Symbol(x, Decl(-57087-33.ts, 19, 56))
->y : Symbol(y, Decl(-57087-33.ts, 19, 61))
->x : Symbol(x, Decl(-57087-33.ts, 19, 77))
->y : Symbol(y, Decl(-57087-33.ts, 19, 82))
+>f33d : Symbol(f33d, Decl(-57087-33.ts, 21, 13))
+>x : Symbol(x, Decl(-57087-33.ts, 21, 33))
+>y : Symbol(y, Decl(-57087-33.ts, 21, 39))
+>x : Symbol(x, Decl(-57087-33.ts, 21, 56))
+>y : Symbol(y, Decl(-57087-33.ts, 21, 61))
+>x : Symbol(x, Decl(-57087-33.ts, 21, 77))
+>y : Symbol(y, Decl(-57087-33.ts, 21, 82))
 
-f33d satisfies Garg33A & Garg33B; // should not satisfy
->f33d : Symbol(f33d, Decl(-57087-33.ts, 19, 13))
+f33d satisfies Garg33A & Garg33B; // should satisfy
+>f33d : Symbol(f33d, Decl(-57087-33.ts, 21, 13))
 >Garg33A : Symbol(Garg33A, Decl(-57087-33.ts, 0, 0))
 >Garg33B : Symbol(Garg33B, Decl(-57087-33.ts, 3, 2))
 
 declare const f33e: { (): "01"; (x?: 1, y?: 1): "211"; (x?: 2, y?: 2): "222"; (x: 2, y: 1): "221"; }
->f33e : Symbol(f33e, Decl(-57087-33.ts, 22, 13))
->x : Symbol(x, Decl(-57087-33.ts, 22, 33))
->y : Symbol(y, Decl(-57087-33.ts, 22, 39))
->x : Symbol(x, Decl(-57087-33.ts, 22, 56))
->y : Symbol(y, Decl(-57087-33.ts, 22, 62))
->x : Symbol(x, Decl(-57087-33.ts, 22, 79))
->y : Symbol(y, Decl(-57087-33.ts, 22, 84))
+>f33e : Symbol(f33e, Decl(-57087-33.ts, 24, 13))
+>x : Symbol(x, Decl(-57087-33.ts, 24, 33))
+>y : Symbol(y, Decl(-57087-33.ts, 24, 39))
+>x : Symbol(x, Decl(-57087-33.ts, 24, 56))
+>y : Symbol(y, Decl(-57087-33.ts, 24, 62))
+>x : Symbol(x, Decl(-57087-33.ts, 24, 79))
+>y : Symbol(y, Decl(-57087-33.ts, 24, 84))
 
 f33e satisfies Garg33A & Garg33B; // should satisfy
->f33e : Symbol(f33e, Decl(-57087-33.ts, 22, 13))
+>f33e : Symbol(f33e, Decl(-57087-33.ts, 24, 13))
 >Garg33A : Symbol(Garg33A, Decl(-57087-33.ts, 0, 0))
 >Garg33B : Symbol(Garg33B, Decl(-57087-33.ts, 3, 2))
-
 

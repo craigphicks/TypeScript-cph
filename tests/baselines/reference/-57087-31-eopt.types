@@ -70,7 +70,7 @@ declare const f31d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 
 >x : 2
 >y : 1
 
-f31d satisfies Garg31A & Garg31B; // should (probably) not satisfy
+f31d satisfies Garg31A & Garg31B; // should not satisfy
 >f31d satisfies Garg31A & Garg31B : { (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
 >f31d : { (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
 

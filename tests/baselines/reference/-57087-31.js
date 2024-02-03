@@ -21,7 +21,7 @@ declare const f31c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2,
 f31c satisfies Garg31A & Garg31B; // should not satisfy
 
 declare const f31d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
-f31d satisfies Garg31A & Garg31B; // should (probably) not satisfy
+f31d satisfies Garg31A & Garg31B; // should not satisfy
 
 
 //// [-57087-31.js]
@@ -31,7 +31,7 @@ f31d satisfies Garg31A & Garg31B; // should (probably) not satisfy
 f31a; // should satisfy
 f31b; // should not satisfy
 f31c; // should not satisfy
-f31d; // should (probably) not satisfy
+f31d; // should not satisfy
 
 
 //// [-57087-31.d.ts]

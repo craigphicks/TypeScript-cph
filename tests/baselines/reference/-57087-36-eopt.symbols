@@ -44,7 +44,7 @@ declare const f36d: { ({x,y}:{x:1, y:1}): "111"; ({x,y}:{x:2, y:1}): "221"; ({x,
 >x : Symbol(x, Decl(-57087-36-eopt.ts, 9, 84))
 >y : Symbol(y, Decl(-57087-36-eopt.ts, 9, 88))
 
-f36d satisfies Garg36A & Garg36B; // should not satisfy
+f36d satisfies Garg36A & Garg36B; // should satisfy
 >f36d : Symbol(f36d, Decl(-57087-36-eopt.ts, 9, 13))
 >Garg36A : Symbol(Garg36A, Decl(-57087-36-eopt.ts, 0, 0))
 >Garg36B : Symbol(Garg36B, Decl(-57087-36-eopt.ts, 2, 2))

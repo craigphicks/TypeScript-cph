@@ -1,10 +1,10 @@
--57087-37.ts(13,6): error TS2769: No overload matches this call.
+-57087-37-eopt.ts(13,6): error TS2769: No overload matches this call.
   The last overload gave the following error.
     Argument of type '{}' is not assignable to parameter of type '{ x: 2; y: 2; }'.
       Type '{}' is missing the following properties from type '{ x: 2; y: 2; }': x, y
 
 
-==== -57087-37.ts (1 errors) ====
+==== -57087-37-eopt.ts (1 errors) ====
     interface Garg37A {
         ({x,y}:{x:1, y:1}): "111"
     };
@@ -23,5 +23,5 @@
 !!! error TS2769:   The last overload gave the following error.
 !!! error TS2769:     Argument of type '{}' is not assignable to parameter of type '{ x: 2; y: 2; }'.
 !!! error TS2769:       Type '{}' is missing the following properties from type '{ x: 2; y: 2; }': x, y
-!!! related TS2771 -57087-37.ts:10:128: The last overload is declared here.
+!!! related TS2771 -57087-37-eopt.ts:10:128: The last overload is declared here.
     

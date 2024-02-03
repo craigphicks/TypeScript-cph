@@ -68,28 +68,64 @@ f35b satisfies Garg35A & Garg35B; // should satisfy
 >Garg35A : Symbol(Garg35A, Decl(-57087-35.ts, 0, 0))
 >Garg35B : Symbol(Garg35B, Decl(-57087-35.ts, 2, 2))
 
-declare const f35c: { ({x,y}:{x:1, y:1}): "111"; ({}): "221"; ({x}:{x:2}): "221"; ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
+declare const f35c: { ({x,y}:{x:1, y:1}): "111"; (arg:Record<string,never>): "221"; ({x}:{x:2}): "221"; ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
 >f35c : Symbol(f35c, Decl(-57087-35.ts, 14, 13))
 >x : Symbol(x, Decl(-57087-35.ts, 14, 24))
 >y : Symbol(y, Decl(-57087-35.ts, 14, 26))
 >x : Symbol(x, Decl(-57087-35.ts, 14, 30))
 >y : Symbol(y, Decl(-57087-35.ts, 14, 34))
->x : Symbol(x, Decl(-57087-35.ts, 14, 64))
->x : Symbol(x, Decl(-57087-35.ts, 14, 68))
->y : Symbol(y, Decl(-57087-35.ts, 14, 84))
->y : Symbol(y, Decl(-57087-35.ts, 14, 88))
->x : Symbol(x, Decl(-57087-35.ts, 14, 104))
+>arg : Symbol(arg, Decl(-57087-35.ts, 14, 50))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(-57087-35.ts, 14, 86))
+>x : Symbol(x, Decl(-57087-35.ts, 14, 90))
 >y : Symbol(y, Decl(-57087-35.ts, 14, 106))
->x : Symbol(x, Decl(-57087-35.ts, 14, 110))
->y : Symbol(y, Decl(-57087-35.ts, 14, 114))
->x : Symbol(x, Decl(-57087-35.ts, 14, 131))
->y : Symbol(y, Decl(-57087-35.ts, 14, 133))
->x : Symbol(x, Decl(-57087-35.ts, 14, 137))
->y : Symbol(y, Decl(-57087-35.ts, 14, 141))
+>y : Symbol(y, Decl(-57087-35.ts, 14, 110))
+>x : Symbol(x, Decl(-57087-35.ts, 14, 126))
+>y : Symbol(y, Decl(-57087-35.ts, 14, 128))
+>x : Symbol(x, Decl(-57087-35.ts, 14, 132))
+>y : Symbol(y, Decl(-57087-35.ts, 14, 136))
+>x : Symbol(x, Decl(-57087-35.ts, 14, 153))
+>y : Symbol(y, Decl(-57087-35.ts, 14, 155))
+>x : Symbol(x, Decl(-57087-35.ts, 14, 159))
+>y : Symbol(y, Decl(-57087-35.ts, 14, 163))
 
 f35c satisfies Garg35A & Garg35B; // should satisfy
 >f35c : Symbol(f35c, Decl(-57087-35.ts, 14, 13))
 >Garg35A : Symbol(Garg35A, Decl(-57087-35.ts, 0, 0))
 >Garg35B : Symbol(Garg35B, Decl(-57087-35.ts, 2, 2))
 
+const t1 = f35c({}); // no error, return 221
+>t1 : Symbol(t1, Decl(-57087-35.ts, 17, 5))
+>f35c : Symbol(f35c, Decl(-57087-35.ts, 14, 13))
+
+declare const f35d: { ({x,y}:{x:1, y:1}): "111"; (arg:Record<string,never>): "221"; /*({x}:{x:2}): "221";*/ ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
+>f35d : Symbol(f35d, Decl(-57087-35.ts, 19, 13))
+>x : Symbol(x, Decl(-57087-35.ts, 19, 24))
+>y : Symbol(y, Decl(-57087-35.ts, 19, 26))
+>x : Symbol(x, Decl(-57087-35.ts, 19, 30))
+>y : Symbol(y, Decl(-57087-35.ts, 19, 34))
+>arg : Symbol(arg, Decl(-57087-35.ts, 19, 50))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(-57087-35.ts, 19, 110))
+>y : Symbol(y, Decl(-57087-35.ts, 19, 114))
+>x : Symbol(x, Decl(-57087-35.ts, 19, 130))
+>y : Symbol(y, Decl(-57087-35.ts, 19, 132))
+>x : Symbol(x, Decl(-57087-35.ts, 19, 136))
+>y : Symbol(y, Decl(-57087-35.ts, 19, 140))
+>x : Symbol(x, Decl(-57087-35.ts, 19, 157))
+>y : Symbol(y, Decl(-57087-35.ts, 19, 159))
+>x : Symbol(x, Decl(-57087-35.ts, 19, 163))
+>y : Symbol(y, Decl(-57087-35.ts, 19, 167))
+
+f35d satisfies Garg35A & Garg35B; // should satisfy
+>f35d : Symbol(f35d, Decl(-57087-35.ts, 19, 13))
+>Garg35A : Symbol(Garg35A, Decl(-57087-35.ts, 0, 0))
+>Garg35B : Symbol(Garg35B, Decl(-57087-35.ts, 2, 2))
+
+const t2 = f35d({x:2}); // error expected - no overload matches this call
+>t2 : Symbol(t2, Decl(-57087-35.ts, 22, 5))
+>f35d : Symbol(f35d, Decl(-57087-35.ts, 19, 13))
+>x : Symbol(x, Decl(-57087-35.ts, 22, 17))
+
+//              ~~~~~
 

@@ -48,8 +48,11 @@ declare const f37d: { ({x,y}:{x:1, y:1}): "111"; (): "221"; ({x}:{x:2}): "221"; 
 >x : Symbol(x, Decl(-57087-37.ts, 9, 135))
 >y : Symbol(y, Decl(-57087-37.ts, 9, 139))
 
-f37d satisfies Garg37A & Garg37B; // should satisfy but can't (known limitation)
+f37d satisfies Garg37A & Garg37B; // should satisfy
 >f37d : Symbol(f37d, Decl(-57087-37.ts, 9, 13))
 >Garg37A : Symbol(Garg37A, Decl(-57087-37.ts, 0, 0))
 >Garg37B : Symbol(Garg37B, Decl(-57087-37.ts, 2, 2))
+
+f37d({}); // error expected - no overload matches this call
+>f37d : Symbol(f37d, Decl(-57087-37.ts, 9, 13))
 
