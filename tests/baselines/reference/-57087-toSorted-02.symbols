@@ -1,0 +1,21 @@
+//// [tests/cases/compiler/-test/-57087-toSorted-02.ts] ////
+
+=== -57087-toSorted-02.ts ===
+const a = 0 as any as ({ id: number; description: null; } | { id: number; description: string; })[];
+>a : Symbol(a, Decl(-57087-toSorted-02.ts, 0, 5))
+>id : Symbol(id, Decl(-57087-toSorted-02.ts, 0, 24))
+>description : Symbol(description, Decl(-57087-toSorted-02.ts, 0, 36))
+>id : Symbol(id, Decl(-57087-toSorted-02.ts, 0, 61))
+>description : Symbol(description, Decl(-57087-toSorted-02.ts, 0, 73))
+
+type A = { id: number; }[] & { id: number; description: string | null; }[];
+>A : Symbol(A, Decl(-57087-toSorted-02.ts, 0, 100))
+>id : Symbol(id, Decl(-57087-toSorted-02.ts, 1, 10))
+>id : Symbol(id, Decl(-57087-toSorted-02.ts, 1, 30))
+>description : Symbol(description, Decl(-57087-toSorted-02.ts, 1, 42))
+
+a satisfies A;
+>a : Symbol(a, Decl(-57087-toSorted-02.ts, 0, 5))
+>A : Symbol(A, Decl(-57087-toSorted-02.ts, 0, 100))
+
+

@@ -1509,6 +1509,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var lastGetCombinedModifierFlagsNode: Declaration | undefined;
     var lastGetCombinedModifierFlagsResult = ModifierFlags.None;
 
+    var checkTypeRelatedToDepth = 0;
+    var checkTypeRelatedToCurrentlyVisitingSet: Set<string> | undefined;
+
     // for public members that accept a Node or one of its subtypes, we must guard against
     // synthetic nodes created during transformations by calling `getParseTreeNode`.
     // for most of these, we perform the guard only on `checker` to avoid any possible
@@ -2272,6 +2275,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var comparableRelation = new Map<string, RelationComparisonResult>();
     var identityRelation = new Map<string, RelationComparisonResult>();
     var enumRelation = new Map<string, RelationComparisonResult>();
+
+    var relationMap = new Map<Map<string, RelationComparisonResult>, string>([
+        [subtypeRelation, "subtypeRelation"],
+        [strictSubtypeRelation, "strictSubtypeRelation"],
+        [assignableRelation, "assignableRelation"],
+        [comparableRelation, "comparableRelation"],
+        [identityRelation, "identityRelation"],
+        [enumRelation, "enumRelation"],
+    ]);
 
     var builtinGlobals = createSymbolTable();
     builtinGlobals.set(undefinedSymbol.escapedName, undefinedSymbol);
@@ -21241,6 +21253,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         containingMessageChain?: () => DiagnosticMessageChain | undefined,
         errorOutputContainer?: { errors?: Diagnostic[]; skipLogging?: boolean; },
     ): boolean {
+    const loggerLevel = 2;
+    if (IDebug.logLevel>=loggerLevel){
+        IDebug.ilogGroup(()=>`checkTypeRelatedTo[in]: source: ${
+            IDebug.dbgs.dbgTypeToString(source)}, target: ${
+                IDebug.dbgs.dbgTypeToString(target)} relation:${
+                    relationMap.get(relation)!}, !!errorNode:${!!errorNode}, headMessage: ${!!headMessage}`,loggerLevel);
+    }
         let errorInfo: DiagnosticMessageChain | undefined;
         let relatedInfo: [DiagnosticRelatedInformation, ...DiagnosticRelatedInformation[]] | undefined;
         let maybeKeys: string[];
@@ -21261,6 +21280,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         let relationCount = (16_000_000 - relation.size) >> 3;
 
         Debug.assert(relation !== identityRelation || !errorNode, "no error reporting in identity checking");
+
+    const ret = (()=>{
+        if (!errorNode && !headMessage){
+            // There might be other state to add such as constraints
+            //const visitedKey = `s:${source.id},t:${target.id},r:${relationMap.get(relation)!}`;
+            const visitingKey = getRelationKey(source, target, /*intersectionState*/ IntersectionState.None, relation, /*ignoreConstraints*/ false);
+            if (checkTypeRelatedToDepth===0){
+                checkTypeRelatedToCurrentlyVisitingSet = new Set();
+            }
+            if (checkTypeRelatedToCurrentlyVisitingSet!.has(visitingKey)){
+                relation.set(visitingKey, RelationComparisonResult.Succeeded);
+                return true;
+            }
+            else checkTypeRelatedToCurrentlyVisitingSet!.add(visitingKey);
+        }
+        checkTypeRelatedToDepth++;
 
         const result = isRelatedTo(source, target, RecursionFlags.Both, /*reportErrors*/ !!errorNode, headMessage);
         if (incompatibleStack) {
@@ -21316,7 +21351,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             Debug.assert(!!errorOutputContainer.errors, "missed opportunity to interact with error.");
         }
 
+        checkTypeRelatedToDepth--;
+        if (checkTypeRelatedToDepth===0){
+            checkTypeRelatedToCurrentlyVisitingSet = undefined;
+        }
         return result !== Ternary.False;
+    })();
+    IDebug.ilogGroupEnd(()=>`checkTypeRelatedTo[out]: returns ${ret}`,loggerLevel);
+    return ret;
 
         function resetErrorInfo(saved: ReturnType<typeof captureErrorCalculationState>) {
             errorInfo = saved.errorInfo;
@@ -21959,7 +22001,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
 
             const count = getParameterCount(sig);
-            const restType1 = getNonArrayRestType(sig);
+            //const restType1 = getNonArrayRestType(sig);
             let restType: Type | undefined;
             const params:Type[] = [];
             let requiredCount = 0;
@@ -21972,7 +22014,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         Debug.assert(isArrayType(restParamType));
                         restType = getElementTypeOfArrayType(restParamType);
                         Debug.assert(restType);
-                        Debug.assert(restType===restType1);
+                        //Debug.assert(restType===restType1);
                         params.push(restType);
                         //(restType as ArrayType).target.hasRestElement = true;
                         // const index = pos - paramCount;
@@ -22082,7 +22124,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             //const sourceCount = getParameterCount(source);
             //const sourceRestType = getNonArrayRestType(source);
+
+
+            const sourceRestType = getNonArrayRestType(source);
             const targetRestType = getNonArrayRestType(target);
+            if (sourceRestType || targetRestType) {
+                Debug.assert(false,`case getNonArrayRestType(source) || getNonArrayRestType(target), not yet implemented`);
+                void instantiateType(sourceRestType || targetRestType, reportUnreliableMarkers);
+            }
+
+
+           // const targetRestType = getNonArrayRestType(target);
             if (refTargetParamsOut){
                 refTargetParamsOut[0] = getSignatureCacheData(target);
             }
@@ -22109,7 +22161,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
 
-            const {count:sourceCount,requiredCount:_sourceFixedLength,params:sourceParams,restType:sourceRestType,returnType:_sourceReturnType} = functionCacheIn;
+            const {count:sourceCount,requiredCount:_sourceFixedLength,params:sourceParams,/*restType:sourceRestType,*/returnType:_sourceReturnType} = functionCacheIn;
 
             const paramCount = sourceRestType || targetRestType ? Math.min(sourceCount, targetCount) : Math.max(sourceCount, targetCount);
             const restIndex = sourceRestType || targetRestType ? paramCount - 1 : -1;
@@ -22225,10 +22277,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         const targetReturnType = getReturnTypeOfSignature(tsig);
                         const sourceReturnType = sourceOverloadsCached.paramsAndReturn[si].returnType!;
                         const someAssignable = (src:Type,tar:Type)=>{
+                        IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, tar:${IDebug.dbgs.dbgTypeToString(tar)}`,loggerLevel);
+                        const ret = (()=>{
                             if (src.flags & TypeFlags.Union){
                                 return (src as UnionType).types.some(srct=>isTypeAssignableTo(srct,tar));
                             }
                             else return isTypeAssignableTo(src,tar);
+                        })();
+                        IDebug.ilogGroupEnd(()=>`someAssignable@checkFunctionRelatedToIntersection: returns ${ret}`,loggerLevel);
+                        return ret;
                         }
 
                         if (someAssignable(sourceReturnType,targetReturnType)){
@@ -22329,7 +22386,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return typeRelatedToSomeType(getRegularTypeOfObjectLiteral(source), target as UnionType, reportErrors && !(source.flags & TypeFlags.Primitive) && !(target.flags & TypeFlags.Primitive), intersectionState);
             }
             if (target.flags & TypeFlags.Intersection) {
-                const enableFunctionRelatedToIntersection = (process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
+                const enableFunctionRelatedToIntersection = false; //(process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
                 if (enableFunctionRelatedToIntersection){
                     /**
                      * [cph] In the case of target intersections of functions, use the algorithm described in #57087
@@ -24267,6 +24324,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // instantiations of the generic type for type arguments with known relations. The function
     // returns the emptyArray singleton when invoked recursively for the given generic type.
     function getVariancesWorker(symbol: Symbol, typeParameters: readonly TypeParameter[] = emptyArray): VarianceFlags[] {
+        const loggerLevel = 2;
+        if (IDebug.logLevel>=loggerLevel){
+            const astr = [`getVariancesWorker[in]: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}`];
+            typeParameters.forEach((t,i)=>{
+                astr.push(`typeParameter[${[i]}]:${IDebug.dbgs.dbgTypeToString(t)}`);
+            });
+            IDebug.ilogGroup(()=>astr.join(", "),loggerLevel);
+        }
         const links = getSymbolLinks(symbol);
         if (!links.variances) {
             tracing?.push(tracing.Phase.CheckTypes, "getVariancesWorker", { arity: typeParameters.length, id: getTypeId(getDeclaredTypeOfSymbol(symbol)) });
@@ -24320,6 +24385,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             links.variances = variances;
             tracing?.pop({ variances: variances.map(Debug.formatVariance) });
         }
+        if (IDebug.logLevel>=loggerLevel){
+            let str = [`getVariancesWorker[out]: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}. links.variances:`];
+            const astr: string[] = [];
+            links.variances.forEach((v,i)=>{
+                astr.push(`${v}`);
+            });
+            IDebug.ilogGroupEnd(()=>`${str}[${astr.join(",")}]`,loggerLevel);
+        }
+
         return links.variances;
     }
 

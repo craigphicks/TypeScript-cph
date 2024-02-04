@@ -1,0 +1,74 @@
+//// [tests/cases/compiler/-test/-57087-toSorted-01.ts] ////
+
+=== -57087-toSorted-01.ts ===
+// interface Arr<T> {
+//     toSorted(compareFn?: (a: T, b: T) => number): T[];
+// }
+
+// declare const arr: Arr<number> | Arr<string>;/workspaces/ts+dt/-test
+
+
+const f = (compareFn?: ((
+>f : Symbol(f, Decl(-57087-toSorted-01.ts, 7, 5))
+>compareFn : Symbol(compareFn, Decl(-57087-toSorted-01.ts, 7, 11))
+
+    a: { id: number; description: null; } | { id: number; description: string; },
+>a : Symbol(a, Decl(-57087-toSorted-01.ts, 7, 25))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 8, 8))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 8, 20))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 8, 45))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 8, 57))
+
+    b: { id: number; description: null; } | { id: number; description: string; }) => number) | undefined) => {
+>b : Symbol(b, Decl(-57087-toSorted-01.ts, 8, 81))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 9, 8))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 9, 20))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 9, 45))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 9, 57))
+
+    return 0 as any as ({ id: number; description: null; } | { id: number; description: string; })[]
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 10, 25))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 10, 37))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 10, 62))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 10, 74))
+
+};
+
+
+type F1 =  (compareFn?: ((a: { id: number; }, b: { id: number; }) => number) | undefined) =>
+>F1 : Symbol(F1, Decl(-57087-toSorted-01.ts, 11, 2))
+>compareFn : Symbol(compareFn, Decl(-57087-toSorted-01.ts, 14, 12))
+>a : Symbol(a, Decl(-57087-toSorted-01.ts, 14, 26))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 14, 30))
+>b : Symbol(b, Decl(-57087-toSorted-01.ts, 14, 45))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 14, 50))
+
+            { id: number; }[] & { id: number; description: string | null; }[];
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 15, 13))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 15, 33))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 15, 45))
+
+type F2 = (compareFn?: ((a: { id: number; description: string | null; }, b: { id: number; description: string | null; }) => number) | undefined) =>
+>F2 : Symbol(F2, Decl(-57087-toSorted-01.ts, 15, 78))
+>compareFn : Symbol(compareFn, Decl(-57087-toSorted-01.ts, 17, 11))
+>a : Symbol(a, Decl(-57087-toSorted-01.ts, 17, 25))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 17, 29))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 17, 41))
+>b : Symbol(b, Decl(-57087-toSorted-01.ts, 17, 72))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 17, 77))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 17, 89))
+
+            { id: number; }[]& { id: number; description: string | null; }[]
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 18, 13))
+>id : Symbol(id, Decl(-57087-toSorted-01.ts, 18, 32))
+>description : Symbol(description, Decl(-57087-toSorted-01.ts, 18, 44))
+
+type F = F1 & F2;
+>F : Symbol(F, Decl(-57087-toSorted-01.ts, 18, 76))
+>F1 : Symbol(F1, Decl(-57087-toSorted-01.ts, 11, 2))
+>F2 : Symbol(F2, Decl(-57087-toSorted-01.ts, 15, 78))
+
+f satisfies F;
+>f : Symbol(f, Decl(-57087-toSorted-01.ts, 7, 5))
+>F : Symbol(F, Decl(-57087-toSorted-01.ts, 18, 76))
+
