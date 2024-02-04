@@ -22031,7 +22031,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
 
         function checkFunctionRelatedToIntersectionHelper(
-            {source,target, functionCacheIn, refSourceParamsOut:_refSourceParamsOut,refTargetParamsOut}: CheckFunctionRelatedToIntersectionHelperArgs
+            {source,target, functionCacheIn, /*refSourceParamsOut:_refSourceParamsOut,*/refTargetParamsOut}: CheckFunctionRelatedToIntersectionHelperArgs
         ): boolean {
         const logLevel = 2;
         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersectionHelper[in]: source:${IDebug.dbgs.dbgSignatureToString(source)}, target:${IDebug.dbgs.dbgSignatureToString(target)}`,logLevel);
@@ -22047,24 +22047,25 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return !!Ternary.True;
             }
 
-            // if (!(checkMode & SignatureCheckMode.StrictTopSignature && isTopSignature(source)) && isTopSignature(target)) {
-            //     return Ternary.True;
-            // }
-            // if (checkMode & SignatureCheckMode.StrictTopSignature && isTopSignature(source) && !isTopSignature(target)) {
-            //     return Ternary.False;
-            // }
+            if (!(checkMode & SignatureCheckMode.StrictTopSignature && isTopSignature(source)) && isTopSignature(target)) {
+                return !!Ternary.True;
+            }
+            if (checkMode & SignatureCheckMode.StrictTopSignature && isTopSignature(source) && !isTopSignature(target)) {
+                return !!Ternary.False;
+            }
 
             const targetCount = getParameterCount(target);
-            //const sourceHasMoreParameters = !hasEffectiveRestParameter(target) &&
-            //    (checkMode & SignatureCheckMode.StrictArity ? hasEffectiveRestParameter(source) || getParameterCount(source) > targetCount : getMinArgumentCount(source) > targetCount);
-            // if (sourceHasMoreParameters) {
-            //     if (reportErrors && !(checkMode & SignatureCheckMode.StrictArity)) {
-            //         // the second condition should be redundant, because there is no error reporting when comparing signatures by strict arity
-            //         // since it is only done for subtype reduction
-            //         errorReporter!(Diagnostics.Target_signature_provides_too_few_arguments_Expected_0_or_more_but_got_1, getMinArgumentCount(source), targetCount);
-            //     }
-            //     return Ternary.False;
-            // }
+
+            const sourceHasMoreParameters = !hasEffectiveRestParameter(target) &&
+               (checkMode & SignatureCheckMode.StrictArity ? hasEffectiveRestParameter(source) || getParameterCount(source) > targetCount : getMinArgumentCount(source) > targetCount);
+            if (sourceHasMoreParameters) {
+                if (reportErrors && !(checkMode & SignatureCheckMode.StrictArity)) {
+                    // the second condition should be redundant, because there is no error reporting when comparing signatures by strict arity
+                    // since it is only done for subtype reduction
+                    errorReporter!(Diagnostics.Target_signature_provides_too_few_arguments_Expected_0_or_more_but_got_1, getMinArgumentCount(source), targetCount);
+                }
+                return !!Ternary.False;
+            }
 
             if (source.typeParameters && source.typeParameters !== target.typeParameters) {
                 const origTarget = target;
@@ -22082,30 +22083,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             //const sourceCount = getParameterCount(source);
             //const sourceRestType = getNonArrayRestType(source);
             const targetRestType = getNonArrayRestType(target);
-            // if (sourceRestType || targetRestType) {
-            //     void instantiateType(sourceRestType || targetRestType, reportUnreliableMarkers);
-            // }
-            // if (refSourceParamsOut) {
-            //     //Debug.assert(refSourceParamsOut);
-            //     refSourceParamsOut[0] = {
-            //         wasCreatedByTemplate: false,
-            //         restType: sourceRestType,
-            //         count: sourceCount,
-            //         params: [], //map(source.parameters, p => getTypeOfSymbol(p)),
-            //     };
-            //     const sp = refSourceParamsOut[0].params;
-            //     for (let i=0; i<sourceCount; i++) sp.push(tryGetTypeAtPosition(source, i)!);
-            // }
             if (refTargetParamsOut){
                 refTargetParamsOut[0] = getSignatureCacheData(target);
-                //Debug.assert(refTargetParamsOut);
-            //     refTargetParamsOut[0] = {
-            //         restType: targetRestType,
-            //         count: targetCount,
-            //         params: [], //map(source.parameters, p => getTypeOfSymbol(p)),
-            //     };
-            //     const tp = refTargetParamsOut[0].params;
-            //     for (let i=0; i<targetCount; i++) tp.push(tryGetTypeAtPosition(target, i)!);
             }
 
             const kind = target.declaration ? target.declaration.kind : SyntaxKind.Unknown;
@@ -22356,9 +22335,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                      * [cph] In the case of target intersections of functions, use the algorithm described in #57087
                      */
                     const target0 = (target as IntersectionType).types[0];
-                    if (source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 0
-                    && target0.flags & TypeFlags.Object && getSignaturesOfType(target0, SignatureKind.Call).length > 0) {
-                        return checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
+                    const sourceSignatures = getSignaturesOfType(source, SignatureKind.Call);
+                    if (sourceSignatures.every(sourceSig=>{
+                        return !sourceSig.typeParameters
+                    })){
+                        if (source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 0
+                        && target0.flags & TypeFlags.Object && getSignaturesOfType(target0, SignatureKind.Call).length > 0) {
+                            return checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
+                        }
                     }
                 }
                 return typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
