@@ -1510,7 +1510,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var lastGetCombinedModifierFlagsResult = ModifierFlags.None;
 
     var checkTypeRelatedToDepth = 0;
-    var checkTypeRelatedToCurrentlyVisitingSet: Set<string> | undefined;
+    var checkTypeRelatedToCurrentlyVisitingMap: Map<string,number> | undefined;
 
     // for public members that accept a Node or one of its subtypes, we must guard against
     // synthetic nodes created during transformations by calling `getParseTreeNode`.
@@ -3584,7 +3584,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // try to resolve name in /*1*/ which is used in variable position,
                 // we want to check for block-scoped
                 if (
-                    result && errorLocation &&
+                    errorLocation &&
                     (meaning & SymbolFlags.BlockScopedVariable ||
                         ((meaning & SymbolFlags.Class || meaning & SymbolFlags.Enum) && (meaning & SymbolFlags.Value) === SymbolFlags.Value))
                 ) {
@@ -21287,13 +21287,20 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             //const visitedKey = `s:${source.id},t:${target.id},r:${relationMap.get(relation)!}`;
             const visitingKey = getRelationKey(source, target, /*intersectionState*/ IntersectionState.None, relation, /*ignoreConstraints*/ false);
             if (checkTypeRelatedToDepth===0){
-                checkTypeRelatedToCurrentlyVisitingSet = new Set();
+            checkTypeRelatedToCurrentlyVisitingMap = new Map();
             }
-            if (checkTypeRelatedToCurrentlyVisitingSet!.has(visitingKey)){
+        if (!errorNode && !headMessage){
+            let got = checkTypeRelatedToCurrentlyVisitingMap!.get(visitingKey);
+            const maxSameKey = 1;
+            if (got && got>=maxSameKey){
                 relation.set(visitingKey, RelationComparisonResult.Succeeded);
                 return true;
             }
-            else checkTypeRelatedToCurrentlyVisitingSet!.add(visitingKey);
+            else {
+                if (!got) got = 1;
+                else got = got+1;
+                checkTypeRelatedToCurrentlyVisitingMap!.set(visitingKey,got);
+            }
         }
         checkTypeRelatedToDepth++;
 
@@ -21353,7 +21360,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         checkTypeRelatedToDepth--;
         if (checkTypeRelatedToDepth===0){
-            checkTypeRelatedToCurrentlyVisitingSet = undefined;
+            checkTypeRelatedToCurrentlyVisitingMap = undefined;
+        }
+        else {
+            const got = checkTypeRelatedToCurrentlyVisitingMap!.get(visitingKey);
+            if (got) {
+                if (got===1) checkTypeRelatedToCurrentlyVisitingMap!.delete(visitingKey);
+                else checkTypeRelatedToCurrentlyVisitingMap!.set(visitingKey,got-1);
+            }
         }
         return result !== Ternary.False;
     })();
