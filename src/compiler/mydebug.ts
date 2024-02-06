@@ -210,6 +210,9 @@ export class DbgsClass implements Dbgs{
         });
         let str = "(" + astr.join("; ") + ") => ";
         str += c.resolvedReturnType ? this.dbgTypeToString(c.resolvedReturnType) : "<no resolved type>";
+        if (c.compositeKind===TypeFlags.Union) str += ` /* composite union [${c.compositeSignatures?.length}] */`;
+        else if (c.compositeKind===TypeFlags.Intersection) str += ` /* composite intersection [${c.compositeSignatures?.length}] */`;
+        else if (c.compositeSignatures) str += ` /* composite ??? [${c.compositeSignatures?.length}] */`;
         return str;
     };
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string {

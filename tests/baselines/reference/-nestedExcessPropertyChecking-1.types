@@ -1,0 +1,127 @@
+//// [tests/cases/compiler/-test/-nestedExcessPropertyChecking-1.ts] ////
+
+=== -nestedExcessPropertyChecking-1.ts ===
+// type BaseItem = {
+//     id: number;
+// }
+// type ExtendedItem = BaseItem & {
+//     description: string | null
+// };
+
+// type BaseValue = {
+//     // there are other fields
+//     items: BaseItem[];
+// }
+// type ExtendedValue = BaseValue & {
+//     // there are other fields
+//     items: ExtendedItem[];
+// }
+
+type BaseValue = {
+>BaseValue : { items: {    id: number;}[]; }
+
+    // there are other fields
+    items: {id: number}[];
+>items : { id: number; }[]
+>id : number
+}
+type ExtendedValue = BaseValue & {
+>ExtendedValue : BaseValue & { items: {    id: number;    description: string | null;}[]; }
+
+    // there are other fields
+    items: {id: number, description: string | null }[];
+>items : { id: number; description: string | null; }[]
+>id : number
+>description : string | null
+}
+
+declare const x: ExtendedValue;
+>x : ExtendedValue
+
+x.items[0].description; // string | null
+>x.items[0].description : string | null
+>x.items[0] : { id: number; } & { id: number; description: string | null; }
+>x.items : { id: number; }[] & { id: number; description: string | null; }[]
+>x : ExtendedValue
+>items : { id: number; }[] & { id: number; description: string | null; }[]
+>0 : 0
+>description : string | null
+
+x.items[0].id; // number
+>x.items[0].id : number
+>x.items[0] : { id: number; } & { id: number; description: string | null; }
+>x.items : { id: number; }[] & { id: number; description: string | null; }[]
+>x : ExtendedValue
+>items : { id: number; }[] & { id: number; description: string | null; }[]
+>0 : 0
+>id : number
+
+type ExtendedItem = ExtendedValue['items'][number];
+>ExtendedItem : { id: number; } & { id: number; description: string | null; }
+
+type ExtendedValue2 = {
+>ExtendedValue2 : { items: ExtendedItem[]; }
+
+    items: ExtendedItem[];
+>items : ({ id: number; } & { id: number; description: string | null; })[]
+}
+
+
+
+const TEST_VALUE: ExtendedValue = {
+>TEST_VALUE : ExtendedValue
+>{    items: [        {id: 1, description: null},        {id: 2, description: 'wigglytubble'},    ]} : { items: ({ id: number; description: null; } | { id: number; description: string; })[]; }
+
+    items: [
+>items : ({ id: number; description: null; } | { id: number; description: string; })[]
+>[        {id: 1, description: null},        {id: 2, description: 'wigglytubble'},    ] : ({ id: number; description: null; } | { id: number; description: string; })[]
+
+        {id: 1, description: null},
+>{id: 1, description: null} : { id: number; description: null; }
+>id : number
+>1 : 1
+>description : null
+
+        {id: 2, description: 'wigglytubble'},
+>{id: 2, description: 'wigglytubble'} : { id: number; description: string; }
+>id : number
+>2 : 2
+>description : string
+>'wigglytubble' : "wigglytubble"
+
+    ]
+};
+
+const t2 = {
+>t2 : { items: ({ id: number; description: null; } | { id: number; description: string; })[]; }
+>{    items: [        {id: 1, description: null},        {id: 2, description: 'wigglytubble'},    ]} satisfies ExtendedValue2 : { items: ({ id: number; description: null; } | { id: number; description: string; })[]; }
+>{    items: [        {id: 1, description: null},        {id: 2, description: 'wigglytubble'},    ]} : { items: ({ id: number; description: null; } | { id: number; description: string; })[]; }
+
+    items: [
+>items : ({ id: number; description: null; } | { id: number; description: string; })[]
+>[        {id: 1, description: null},        {id: 2, description: 'wigglytubble'},    ] : ({ id: number; description: null; } | { id: number; description: string; })[]
+
+        {id: 1, description: null},
+>{id: 1, description: null} : { id: number; description: null; }
+>id : number
+>1 : 1
+>description : null
+
+        {id: 2, description: 'wigglytubble'},
+>{id: 2, description: 'wigglytubble'} : { id: number; description: string; }
+>id : number
+>2 : 2
+>description : string
+>'wigglytubble' : "wigglytubble"
+
+    ]
+} satisfies ExtendedValue2;
+
+const t3 = {id: 1, description: null} satisfies ExtendedItem;
+>t3 : { id: number; description: null; }
+>{id: 1, description: null} satisfies ExtendedItem : { id: number; description: null; }
+>{id: 1, description: null} : { id: number; description: null; }
+>id : number
+>1 : 1
+>description : null
+

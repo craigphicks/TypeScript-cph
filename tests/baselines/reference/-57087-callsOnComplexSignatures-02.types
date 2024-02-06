@@ -1,0 +1,37 @@
+//// [tests/cases/compiler/-test/-57087-callsOnComplexSignatures-02.ts] ////
+
+=== -57087-callsOnComplexSignatures-02.ts ===
+type MyArray<T> = {
+>MyArray : MyArray<T>
+
+    [n: number]: T;
+>n : number
+
+    forEach(callbackfn: (value: T, index: number, array: MyArray<T>) => unknown): void;
+>forEach : (callbackfn: (value: T, index: number, array: MyArray<T>) => unknown) => void
+>callbackfn : (value: T, index: number, array: MyArray<T>) => unknown
+>value : T
+>index : number
+>array : MyArray<T>
+
+};
+
+
+
+function test3(items: MyArray<string> | MyArray<number>) {
+>test3 : (items: MyArray<string> | MyArray<number>) => void
+>items : MyArray<string> | MyArray<number>
+
+    items.forEach(item => console.log(item));
+>items.forEach(item => console.log(item)) : void
+>items.forEach : ((callbackfn: (value: string, index: number, array: MyArray<string>) => unknown) => void) | ((callbackfn: (value: number, index: number, array: MyArray<number>) => unknown) => void)
+>items : MyArray<string> | MyArray<number>
+>forEach : ((callbackfn: (value: string, index: number, array: MyArray<string>) => unknown) => void) | ((callbackfn: (value: number, index: number, array: MyArray<number>) => unknown) => void)
+>item => console.log(item) : (item: string | number) => void
+>item : number
+>console.log(item) : void
+>console.log : (...data: any[]) => void
+>console : Console
+>log : (...data: any[]) => void
+>item : number
+}

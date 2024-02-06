@@ -1,0 +1,41 @@
+//// [tests/cases/compiler/-test/-57087-callsOnComplexSignatures-02.ts] ////
+
+=== -57087-callsOnComplexSignatures-02.ts ===
+type MyArray<T> = {
+>MyArray : Symbol(MyArray, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 13))
+
+    [n: number]: T;
+>n : Symbol(n, Decl(-57087-callsOnComplexSignatures-02.ts, 1, 5))
+>T : Symbol(T, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 13))
+
+    forEach(callbackfn: (value: T, index: number, array: MyArray<T>) => unknown): void;
+>forEach : Symbol(forEach, Decl(-57087-callsOnComplexSignatures-02.ts, 1, 19))
+>callbackfn : Symbol(callbackfn, Decl(-57087-callsOnComplexSignatures-02.ts, 2, 12))
+>value : Symbol(value, Decl(-57087-callsOnComplexSignatures-02.ts, 2, 25))
+>T : Symbol(T, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 13))
+>index : Symbol(index, Decl(-57087-callsOnComplexSignatures-02.ts, 2, 34))
+>array : Symbol(array, Decl(-57087-callsOnComplexSignatures-02.ts, 2, 49))
+>MyArray : Symbol(MyArray, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 13))
+
+};
+
+
+
+function test3(items: MyArray<string> | MyArray<number>) {
+>test3 : Symbol(test3, Decl(-57087-callsOnComplexSignatures-02.ts, 3, 2))
+>items : Symbol(items, Decl(-57087-callsOnComplexSignatures-02.ts, 7, 15))
+>MyArray : Symbol(MyArray, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 0))
+>MyArray : Symbol(MyArray, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 0))
+
+    items.forEach(item => console.log(item));
+>items.forEach : Symbol(forEach, Decl(-57087-callsOnComplexSignatures-02.ts, 1, 19), Decl(-57087-callsOnComplexSignatures-02.ts, 1, 19))
+>items : Symbol(items, Decl(-57087-callsOnComplexSignatures-02.ts, 7, 15))
+>forEach : Symbol(forEach, Decl(-57087-callsOnComplexSignatures-02.ts, 1, 19), Decl(-57087-callsOnComplexSignatures-02.ts, 1, 19))
+>item : Symbol(item, Decl(-57087-callsOnComplexSignatures-02.ts, 8, 18))
+>console.log : Symbol(Console.log, Decl(lib.dom.d.ts, --, --))
+>console : Symbol(console, Decl(lib.dom.d.ts, --, --))
+>log : Symbol(Console.log, Decl(lib.dom.d.ts, --, --))
+>item : Symbol(item, Decl(-57087-callsOnComplexSignatures-02.ts, 8, 18))
+}
