@@ -1098,6 +1098,7 @@ import * as performance from "./_namespaces/ts.performance";
 // @ts-ignore
 import { IDebug } from "./mydebug";
 const contextualLogLevel = 2;
+const enableFunctionRelatedToIntersection = (process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
 
 // cphdebug-end
 
@@ -15245,9 +15246,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getSignatureFromDeclaration(declaration: SignatureDeclaration | JSDocSignature): Signature {
-        // if (declaration.id===26){
-        //     debugger;
-        // }
         const links = getNodeLinks(declaration);
         if (!links.resolvedSignature) {
             const parameters: Symbol[] = [];
@@ -22441,7 +22439,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return typeRelatedToSomeType(getRegularTypeOfObjectLiteral(source), target as UnionType, reportErrors && !(source.flags & TypeFlags.Primitive) && !(target.flags & TypeFlags.Primitive), intersectionState);
             }
             if (target.flags & TypeFlags.Intersection) {
-                const enableFunctionRelatedToIntersection = true; //(process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
                 if (enableFunctionRelatedToIntersection){
                     /**
                      * [cph] In the case of target intersections of functions, use the algorithm described in #57087
@@ -23547,21 +23544,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             const sourceProperties = getPropertiesOfType(source);
             const sourcePropertiesFiltered = findDiscriminantProperties(sourceProperties, target);
-            // [cph] how about only use properties that are not optional in source
-            // const sourcePropertiesFiltered = (()=>{
-            //     function isOptionalParameterSymbol(symbol: Symbol) {
-            //         const declaration = symbol.valueDeclaration;
-            //         const isOptional = !!declaration && (/*hasInitializer(declaration) ||*/ isOptionalDeclaration(declaration));
-            //         return isOptional;
-            //     }
-            //     let tmp: Symbol[] | undefined = sourceProperties.filter(p=>!isOptionalParameterSymbol(p));
-            //     if (tmp.length !== sourceProperties.length) {
-            //         debugger;
-            //     }
-            //     tmp = findDiscriminantProperties(tmp, target);
-            //     return tmp?.length ? tmp : undefined;
-            // })();
-
             if (!sourcePropertiesFiltered) return Ternary.False;
 
             // Though we could compute the number of combinations as we generate
@@ -38095,7 +38077,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const links = getNodeLinks(node);
         // Check if function expression is contextually typed and assign parameter types if so.
         if (!(links.flags & NodeCheckFlags.ContextChecked)) {
-            if (node.id===26) debugger;
             const contextualSignature = getContextualSignature(node);
             // If a type check is started at a function expression that is an argument of a function call, obtaining the
             // contextual type may recursively get back to here during overload resolution of the call. If so, we will have
@@ -38116,34 +38097,78 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: contextualSignature:${
                             IDebug.dbgs.dbgSignatureToString(contextualSignature)}`,loggerLevel);
                         const inferenceContext = getInferenceContext(node);
-                        let instantiatedContextualSignature: Signature | undefined;
-                        if (checkMode && checkMode & CheckMode.Inferential) {
-                            inferFromAnnotatedParameters(signature, contextualSignature, inferenceContext!);
-                            const restType = getEffectiveRestType(contextualSignature);
-                            if (restType && restType.flags & TypeFlags.TypeParameter) {
-                                instantiatedContextualSignature = instantiateSignature(contextualSignature, inferenceContext!.nonFixingMapper);
+                        let enableCompositeSignaturesFromContext2 = true && !!enableFunctionRelatedToIntersection;
+                        if (enableCompositeSignaturesFromContext2){
+                            function cloneSignatureAndParameters(sig:Signature): Signature {
+                                const parameters = sig.parameters.map(cloneSymbol);
+                                return cloneSignature({...sig, parameters});
+                            }
+                            function assignContextualParameterTypesToOneSig(sig:Signature,contextSig:Signature){
+                                let instantiatedContextualSignature: Signature | undefined;
+                                if (checkMode && checkMode & CheckMode.Inferential) {
+                                    inferFromAnnotatedParameters(sig, contextSig, inferenceContext!);
+                                    const restType = getEffectiveRestType(contextSig);
+                                    if (restType && restType.flags & TypeFlags.TypeParameter) {
+                                        instantiatedContextualSignature = instantiateSignature(contextSig, inferenceContext!.nonFixingMapper);
+                                    }
+                                }
+                                instantiatedContextualSignature ||= inferenceContext ?
+                                    instantiateSignature(contextSig, inferenceContext.mapper) : contextualSignature!;
+                                assignContextualParameterTypes(sig, instantiatedContextualSignature);
+                                return sig;
+                            }
+
+                            let compositeIntersectionMembers: Signature[] | undefined;
+                            if (enableCompositeSignaturesFromContext2
+                            && contextualSignature.compositeSignatures && contextualSignature.compositeSignatures.length>1
+                            && contextualSignature.compositeKind === TypeFlags.Intersection) {
+                                compositeIntersectionMembers = [];
+                                contextualSignature.compositeSignatures.forEach((compositeSig, compositeSigIdx) => {
+                                    Debug.assert(!compositeSig.compositeSignatures,
+                                        "case composite signatures member itself has composite signatures: not yet implemented");
+                                    compositeIntersectionMembers!.push(
+                                        assignContextualParameterTypesToOneSig(cloneSignatureAndParameters(signature),compositeSig));
+                                });
+                            }
+                            assignContextualParameterTypesToOneSig(signature, contextualSignature); // signature is modifed in place
+                            if (compositeIntersectionMembers) {
+                                signature.compositeSignatures = compositeIntersectionMembers;
+                                signature.compositeKind = TypeFlags.Intersection;
+                                if (IDebug.logLevel >= loggerLevel) {
+                                    (signature as any).compositeSignaturesAddedIn = "contextuallyCheckFunctionExpressionOrObjectLiteralMethod";
+                                }
                             }
                         }
-                        instantiatedContextualSignature ||= inferenceContext ?
-                            instantiateSignature(contextualSignature, inferenceContext.mapper) : contextualSignature;
-                        let enableCompositeSignaturesFromContext = true;
-                        if (enableCompositeSignaturesFromContext
-                        && instantiatedContextualSignature.compositeSignatures && instantiatedContextualSignature.compositeSignatures.length>1
-                        && instantiatedContextualSignature.compositeKind === TypeFlags.Intersection) {
-                            let compositeIntersectionMembers: Signature[] = [];
-                            instantiatedContextualSignature.compositeSignatures.forEach((compositeSig, compositeSigIdx) => {
-                                Debug.assert(!compositeSig.compositeSignatures, "case composite signatures member itself has composite signatures");
-                                // parameters symbols are not cloned within `cloneSignature`, but must be cloned. (Should typeParameters also be cloned?)
-                                const parameters = signature.parameters.map(cloneSymbol);
-                                const csig = cloneSignature({...signature, parameters});
-                                assignContextualParameterTypes(csig, compositeSig);
-                                compositeIntersectionMembers!.push(csig);
-                            });
-                            signature.compositeSignatures = compositeIntersectionMembers;
-                            signature.compositeKind = TypeFlags.Intersection;
-                            (signature as any).compositeSignaturesAddedIn = "contextuallyCheckFunctionExpressionOrObjectLiteralMethod";
+                        else {
+                            let instantiatedContextualSignature: Signature | undefined;
+                            if (checkMode && checkMode & CheckMode.Inferential) {
+                                inferFromAnnotatedParameters(signature, contextualSignature, inferenceContext!);
+                                const restType = getEffectiveRestType(contextualSignature);
+                                if (restType && restType.flags & TypeFlags.TypeParameter) {
+                                    instantiatedContextualSignature = instantiateSignature(contextualSignature, inferenceContext!.nonFixingMapper);
+                                }
+                            }
+                            instantiatedContextualSignature ||= inferenceContext ?
+                                instantiateSignature(contextualSignature, inferenceContext.mapper) : contextualSignature;
+                            let enableCompositeSignaturesFromContext = false;
+                            if (enableCompositeSignaturesFromContext
+                            && instantiatedContextualSignature.compositeSignatures && instantiatedContextualSignature.compositeSignatures.length>1
+                            && instantiatedContextualSignature.compositeKind === TypeFlags.Intersection) {
+                                let compositeIntersectionMembers: Signature[] = [];
+                                instantiatedContextualSignature.compositeSignatures.forEach((compositeSig, compositeSigIdx) => {
+                                    Debug.assert(!compositeSig.compositeSignatures, "case composite signatures member itself has composite signatures");
+                                    // parameters symbols are not cloned within `cloneSignature`, but must be cloned. (Should typeParameters also be cloned?)
+                                    const parameters = signature.parameters.map(cloneSymbol);
+                                    const csig = cloneSignature({...signature, parameters});
+                                    assignContextualParameterTypes(csig, compositeSig);
+                                    compositeIntersectionMembers!.push(csig);
+                                });
+                                signature.compositeSignatures = compositeIntersectionMembers;
+                                signature.compositeKind = TypeFlags.Intersection;
+                                (signature as any).compositeSignaturesAddedIn = "contextuallyCheckFunctionExpressionOrObjectLiteralMethod";
+                            }
+                            assignContextualParameterTypes(signature, instantiatedContextualSignature);
                         }
-                        assignContextualParameterTypes(signature, instantiatedContextualSignature);
                     }
                     else {
                         // Force resolution of all parameter types such that the absence of a contextual type is consistently reflected.

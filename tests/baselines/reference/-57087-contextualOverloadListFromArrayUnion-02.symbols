@@ -1,0 +1,20 @@
+//// [tests/cases/compiler/-test/-57087-contextualOverloadListFromArrayUnion-02.ts] ////
+
+=== -57087-contextualOverloadListFromArrayUnion-02.ts ===
+declare const y2: number[][] | string[];
+>y2 : Symbol(y2, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 0, 13))
+
+declare function f2<T extends {length:number}>(): (x: T) => number;
+>f2 : Symbol(f2, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 0, 40))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 1, 20))
+>length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 1, 31))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 1, 51))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 1, 20))
+
+export const yThen2 = y2.map(f2);
+>yThen2 : Symbol(yThen2, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 2, 12))
+>y2.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>y2 : Symbol(y2, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>f2 : Symbol(f2, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 0, 40))
+

@@ -1,0 +1,85 @@
+//// [tests/cases/compiler/-test/-57087-contextualOverloadListFromArrayUnion-10.ts] ////
+
+=== -57087-contextualOverloadListFromArrayUnion-10.ts ===
+declare const y1: number[][] | string[];
+>y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 13))
+
+export const yThen1 = y1.map(item => item.length);
+>yThen1 : Symbol(yThen1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 1, 12))
+>y1.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>item : Symbol(item, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 1, 29))
+>item.length : Symbol(length, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>item : Symbol(item, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 1, 29))
+>length : Symbol(length, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+declare function f12<T extends {length:number}>(x: T): number;
+>f12 : Symbol(f12, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 1, 50))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 3, 21))
+>length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 3, 32))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 3, 48))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 3, 21))
+
+export const yThen2 = y1.map(f12);
+>yThen2 : Symbol(yThen2, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 4, 12))
+>y1.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>f12 : Symbol(f12, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 1, 50))
+
+export const yThen2a = y1.map(<T extends {length:number}>(x:T)=>x.length);
+>yThen2a : Symbol(yThen2a, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 12))
+>y1.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 31))
+>length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 42))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 58))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 31))
+>x.length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 42))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 58))
+>length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 42))
+
+declare function f14<T extends {length:number}>(): (x: T) => unknown;
+>f14 : Symbol(f14, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 74))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 8, 21))
+>length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 8, 32))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 8, 52))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 8, 21))
+
+export const yThen4 = y1.map(f14()); // should not be an error
+>yThen4 : Symbol(yThen4, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 9, 12))
+>y1.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>f14 : Symbol(f14, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 6, 74))
+
+export const yThen4a = y1.map(<T extends {length:number}>()=>(x: T) => x.length);
+>yThen4a : Symbol(yThen4a, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 11, 12))
+>y1.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 11, 31))
+>length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 11, 42))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 11, 62))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 11, 31))
+>x.length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 11, 42))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 11, 62))
+>length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 11, 42))
+
+declare const f15: { (x: number[]): number; (x: string): number;}
+>f15 : Symbol(f15, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 13, 13))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 13, 22))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 13, 45))
+
+export const yThen5 = y1.map(f15);
+>yThen5 : Symbol(yThen5, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 14, 12))
+>y1.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 13))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>f15 : Symbol(f15, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 13, 13))
+
+
+
+
