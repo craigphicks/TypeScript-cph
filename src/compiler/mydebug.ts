@@ -129,6 +129,8 @@ export interface Dbgs {
     // dbgTypeToStringDetail: (type: Type) => string[];
     dbgNodeToString: (node: Node | undefined) => string;
     dbgSignatureToString: (c: Signature | undefined) => string;
+    // Show composite signatures
+    dbgSignatureAndCompositesToStrings: (c: Signature | undefined) => string[];
     // dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string;
     dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[];
@@ -215,8 +217,23 @@ export class DbgsClass implements Dbgs{
         else if (c.compositeSignatures) str += ` /* composite ??? [${c.compositeSignatures?.length}] */`;
         return str;
     };
+    dbgSignatureAndCompositesToStrings(c: Signature | undefined): string[] {
+        if (!c) return ["<undef>"];
+        let astr: string[] = [];
+        astr.push(this.dbgSignatureToString(c));
+        if (c.compositeSignatures){
+            c.compositeSignatures.forEach((s,i)=>{
+                astr.push(`composite[${i}]: ${this.dbgSignatureToString(s)}`);
+            });
+        }
+        return astr;
+    }
+
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string {
-        return s ? `{ id:${this.getSymbolId(s)}, ename: ${s.escapedName} }` : "<undef>";
+        if (!s) return "<undef>";
+        const idStr = s.id ? `id:${s.id}, ` : "";
+        const transientIdStr = s.transientId ? `transientId:${s.transientId}, ` : "";
+        return `{ ${idStr}${transientIdStr}ename: ${s.escapedName} }`;
     }
     dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[] {
         if (!diagnostic) return ["<undef>"];

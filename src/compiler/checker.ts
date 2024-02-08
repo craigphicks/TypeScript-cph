@@ -1098,7 +1098,7 @@ import * as performance from "./_namespaces/ts.performance";
 // @ts-ignore
 import { IDebug } from "./mydebug";
 const contextualLogLevel = 2;
-const enableFunctionRelatedToIntersection = (process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
+const enableFunctionRelatedToIntersection = true; //(process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
 
 // cphdebug-end
 
@@ -1106,6 +1106,7 @@ const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
 
 let nextSymbolId = 1;
+let nextTransientSymbolId = 1;
 let nextNodeId = 1;
 let nextMergeId = 1;
 let nextFlowId = 1;
@@ -1412,6 +1413,17 @@ export function getSymbolId(symbol: Symbol): SymbolId {
 
     return symbol.id;
 }
+
+/** @internal */
+export function getTransientSymbolId(symbol: Symbol): SymbolId {
+    if (!symbol.transientId) {
+        symbol.transientId = nextTransientSymbolId;
+        nextTransientSymbolId++;
+    }
+
+    return symbol.transientId;
+}
+
 
 /** @internal */
 export function isInstantiatedModule(node: ModuleDeclaration, preserveConstEnums: boolean) {
@@ -2505,6 +2517,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function createSymbol(flags: SymbolFlags, name: __String, checkFlags?: CheckFlags) {
         symbolCount++;
         const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
+        if (IDebug.logLevel){
+            symbol.transientId = nextTransientSymbolId++;
+        }
         symbol.links = new SymbolLinks() as TransientSymbolLinks;
         symbol.links.checkFlags = checkFlags || CheckFlags.None;
         return symbol;
@@ -2551,7 +2566,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         mergedSymbols[source.mergeId] = target;
     }
 
-    function cloneSymbol(symbol: Symbol): TransientSymbol {
+    function cloneSymbol(symbol: Symbol, doNotRecordMergedSymbol = false): TransientSymbol {
         const result = createSymbol(symbol.flags, symbol.escapedName);
         result.declarations = symbol.declarations ? symbol.declarations.slice() : [];
         result.parent = symbol.parent;
@@ -2559,7 +2574,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (symbol.constEnumOnlyModule) result.constEnumOnlyModule = true;
         if (symbol.members) result.members = new Map(symbol.members);
         if (symbol.exports) result.exports = new Map(symbol.exports);
-        recordMergedSymbol(result, symbol);
+        if (!doNotRecordMergedSymbol) recordMergedSymbol(result, symbol);
         return result;
     }
 
@@ -38100,7 +38115,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         let enableCompositeSignaturesFromContext2 = true && !!enableFunctionRelatedToIntersection;
                         if (enableCompositeSignaturesFromContext2){
                             function cloneSignatureAndParameters(sig:Signature): Signature {
-                                const parameters = sig.parameters.map(cloneSymbol);
+                                const parameters = sig.parameters.map(p=>(cloneSymbol(p,/*doNotRecordMergedSymbol*/true)));
                                 return cloneSignature({...sig, parameters});
                             }
                             function assignContextualParameterTypesToOneSig(sig:Signature,contextSig:Signature){
@@ -38113,7 +38128,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                     }
                                 }
                                 instantiatedContextualSignature ||= inferenceContext ?
-                                    instantiateSignature(contextSig, inferenceContext.mapper) : contextualSignature!;
+                                    instantiateSignature(contextSig, inferenceContext.mapper) : contextSig!;
                                 assignContextualParameterTypes(sig, instantiatedContextualSignature);
                                 return sig;
                             }
@@ -38138,6 +38153,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                     (signature as any).compositeSignaturesAddedIn = "contextuallyCheckFunctionExpressionOrObjectLiteralMethod";
                                 }
                             }
+                            // if (IDebug.logLevel>=loggerLevel){
+                            //     IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(if contextualSignature):`,loggerLevel);
+                            //     IDebug.dbgs.dbgSignatureAndCompositesToStrings(signature).forEach(str=>{
+                            //         IDebug.ilog(()=>`  ${str}`);
+                            //     });
+                            // }
                         }
                         else {
                             let instantiatedContextualSignature: Signature | undefined;
@@ -38158,7 +38179,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                 instantiatedContextualSignature.compositeSignatures.forEach((compositeSig, compositeSigIdx) => {
                                     Debug.assert(!compositeSig.compositeSignatures, "case composite signatures member itself has composite signatures");
                                     // parameters symbols are not cloned within `cloneSignature`, but must be cloned. (Should typeParameters also be cloned?)
-                                    const parameters = signature.parameters.map(cloneSymbol);
+                                    //const parameters = signature.parameters.map(cloneSymbol);
+                                    const parameters = signature.parameters.map(p=>(cloneSymbol(p,/*doNotRecordMergedSymbol*/true)));
                                     const csig = cloneSignature({...signature, parameters});
                                     assignContextualParameterTypes(csig, compositeSig);
                                     compositeIntersectionMembers!.push(csig);
@@ -38187,9 +38209,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         signature.resolvedReturnType = returnType;
                     }
                 }
-                IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(final):${
-                    IDebug.dbgs.dbgSignatureToString(signature)}`,loggerLevel);
+                // IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(beforeCheckSignatureDeclaration):${
+                //     IDebug.dbgs.dbgSignatureToString(signature)}`,loggerLevel);
                 checkSignatureDeclaration(node);
+                if (IDebug.logLevel>=loggerLevel){
+                    IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(final):`,loggerLevel);
+                    IDebug.dbgs.dbgSignatureAndCompositesToStrings(signature).forEach(str=>{
+                        IDebug.ilog(()=>`  ${str}`,loggerLevel);
+                    });
+                }
             }
         }
     })();
@@ -39723,6 +39751,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function checkExpressionWithContextualType(node: Expression, contextualType: Type, inferenceContext: InferenceContext | undefined, checkMode: CheckMode): Type {
+        IDebug.ilogGroup(()=>`checkExpressionWithContextualType(node:${IDebug.dbgs.dbgNodeToString(node)}, contextualType:${IDebug.dbgs.dbgTypeToString(contextualType)}, checkMode:${checkMode})`,2);
         const contextNode = getContextNode(node);
         pushContextualType(contextNode, contextualType, /*isCache*/ false);
         pushInferenceContext(contextNode, inferenceContext);
@@ -39739,14 +39768,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             getRegularTypeOfLiteralType(type) : type;
         popInferenceContext();
         popContextualType();
+        IDebug.ilogGroupEnd(()=>`checkExpressionWithContextualType()=>${IDebug.dbgs.dbgTypeToString(result)}`,2);
         return result;
     }
 
     function checkExpressionCached(node: Expression | QualifiedName, checkMode?: CheckMode): Type {
+    const expectedIndent = IDebug.ilogGroup(()=>`checkExpressionCached[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode})`,2);
+    const result = (()=>{
         if (checkMode) {
             return checkExpression(node, checkMode);
         }
         const links = getNodeLinks(node);
+        if (links.resolvedType) IDebug.ilog(()=>`checkExpressionCached: cache hit: ${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`,2);
         if (!links.resolvedType) {
             // When computing a type that we're going to cache, we need to ignore any ongoing control flow
             // analysis because variables may have transient types in indeterminable states. Moving flowLoopStart
@@ -39760,6 +39793,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             flowLoopStart = saveFlowLoopStart;
         }
         return links.resolvedType;
+    })();
+    IDebug.ilogGroupEnd(()=>`checkExpressionCached[out]: ${IDebug.dbgs.dbgTypeToString(result)}`,2, expectedIndent);
+    return result;
     }
 
     function isTypeAssertion(node: Expression) {
@@ -40118,6 +40154,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function checkExpression(node: Expression | QualifiedName, checkMode?: CheckMode, forceTuple?: boolean): Type {
         tracing?.push(tracing.Phase.Check, "checkExpression", { kind: node.kind, pos: node.pos, end: node.end, path: (node as TracingNode).tracingPath });
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`checkExpression[in]: checkMode:${checkMode}, node:${IDebug.dbgs.dbgNodeToString(node)}, forceTuple:${forceTuple}`,loggerLevel);
         const saveCurrentNode = currentNode;
         currentNode = node;
         instantiationCount = 0;
@@ -40128,6 +40166,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         currentNode = saveCurrentNode;
         tracing?.pop();
+        IDebug.ilogGroupEnd(()=>`checkExpression[out]: return: ${IDebug.dbgs.dbgTypeToString(type)}`,loggerLevel);
         return type;
     }
 
