@@ -1098,7 +1098,7 @@ import * as performance from "./_namespaces/ts.performance";
 // @ts-ignore
 import { IDebug } from "./mydebug";
 const contextualLogLevel = 2;
-const enableFunctionRelatedToIntersection = true; //(process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
+const enableFunctionRelatedToIntersection = (process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
 
 // cphdebug-end
 
@@ -22034,6 +22034,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         interface CheckFunctionRelatedToIntersectionHelperArgs {
             source: Signature, target: Signature,
             functionCacheIn: CheckFunctionRelatedToIntersectionHelperArgsFunctionCache,
+            reverseSourceAndTargetInCompareTypes?: boolean,
             refSourceParamsOut: [
                 ({ wasCreatedByTemplate?: boolean } & CheckFunctionRelatedToIntersectionHelperArgsFunctionCache) | undefined
             ] | undefined,
@@ -22125,7 +22126,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
 
         function checkFunctionRelatedToIntersectionHelper(
-            {source,target, functionCacheIn, /*refSourceParamsOut:_refSourceParamsOut,*/refTargetParamsOut}: CheckFunctionRelatedToIntersectionHelperArgs
+            {source,target, functionCacheIn, reverseSourceAndTargetInCompareTypes, refTargetParamsOut}: CheckFunctionRelatedToIntersectionHelperArgs
         ): boolean {
         const logLevel = 2;
         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersectionHelper[in]: source:${IDebug.dbgs.dbgSignatureToString(source)}, target:${IDebug.dbgs.dbgSignatureToString(target)}`,logLevel);
@@ -22238,21 +22239,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         getTypeFacts(sourceType, TypeFacts.IsUndefinedOrNull) === getTypeFacts(targetType, TypeFacts.IsUndefinedOrNull);
                     let related;
                     if (callbacks){
+                        // TODO: test whether this branch is actually used
                         related = compareSignaturesRelated(targetSig, sourceSig,
                             (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback),
                             reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers);
                     }
                     else {
-                        related = //!(checkMode & SignatureCheckMode.Callback) && !strictVariance &&
-                            compareTypes(sourceType, targetType, /*reportErrors*/ false); // || compareTypes(targetType, sourceType, reportErrors);
+                        if (reverseSourceAndTargetInCompareTypes){
+                            related = compareTypes(targetType, sourceType, /*reportErrors*/ false);
+                        }
+                        else related = compareTypes(sourceType, targetType, /*reportErrors*/ false);
                     }
-                    // let related = callbacks ?
-                    //     compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers) :
-                    //     !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
-                    // With strict arity, (x: number | undefined) => void is a subtype of (x?: number | undefined) => void
-                    // if (related && checkMode & SignatureCheckMode.StrictArity && i >= getMinArgumentCount(source) && i < getMinArgumentCount(target) && compareTypes(sourceType, targetType, /*reportErrors*/ false)) {
-                    //     related = Ternary.False;
-                    // }
                     if (!related) {
                         if (reportErrors) {
                             errorReporter!(Diagnostics.Types_of_parameters_0_and_1_are_incompatible, unescapeLeadingUnderscores(getParameterNameAtPosition(source, i)), unescapeLeadingUnderscores(getParameterNameAtPosition(target, i)));
@@ -22321,10 +22318,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             type MapTTS = Map<number/*tti*/,Map<number/*ti*/,Set<number>/*si*/>>;
             const maptts: MapTTS | undefined = (IDebug.logLevel>=loggerLevel) ? new Map() : undefined;
 
+            const onlyOneSourceSig = sourceSignatures.length === 1;
 
             for (let si=0; si<sourceSignatures.length; ++si) {
                 let hadMatch = false;
                 let gReturn = neverType as Type;
+                let gReturnAllVoid = true;
                 const ssig = sourceSignatures[si];
                 for (let tti=0; tti<(target as IntersectionType).types.length; ++tti) {
                     const targetMember = (target as IntersectionType).types[tti];
@@ -22344,13 +22343,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         }
                         const targetReturnType = getReturnTypeOfSignature(tsig);
                         const sourceReturnType = sourceOverloadsCached.paramsAndReturn[si].returnType!;
-                        const someAssignable = (src:Type,tar:Type)=>{
-                        IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, tar:${IDebug.dbgs.dbgTypeToString(tar)}`,loggerLevel);
+                        const someAssignable = (src:Type,trg:Type)=>{
+                        IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, trg:${IDebug.dbgs.dbgTypeToString(trg)}`,loggerLevel);
                         const ret = (()=>{
+                            if (trg===voidType) return true; // because the source output can be ignored
                             if (src.flags & TypeFlags.Union){
-                                return (src as UnionType).types.some(srct=>isTypeAssignableTo(srct,tar));
+                                return (src as UnionType).types.some(srct=>isTypeAssignableTo(srct,trg));
                             }
-                            else return isTypeAssignableTo(src,tar);
+                            else return isTypeAssignableTo(src,trg);
                         })();
                         IDebug.ilogGroupEnd(()=>`someAssignable@checkFunctionRelatedToIntersection: returns ${ret}`,loggerLevel);
                         return ret;
@@ -22360,10 +22360,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             if (checkFunctionRelatedToIntersectionHelper({
                                 source:ssig, target:tsig,
                                 functionCacheIn: sourceOverloadsCached.paramsAndReturn[si],
+                                reverseSourceAndTargetInCompareTypes: onlyOneSourceSig,
                                 refSourceParamsOut: undefined, refTargetParamsOut
                             })) {
                                 hadMatch = true;
-                                gReturn = getUnionType([gReturn, getReturnTypeOfSignature(tsig)]);
+                                if (targetReturnType!==voidType){
+                                    gReturn = getUnionType([gReturn, targetReturnType]);
+                                    gReturnAllVoid = false;
+                                }
 
                                 if (IDebug.logLevel>=loggerLevel){
                                     Debug.assert(maptts);
@@ -22393,8 +22397,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     Debug.assert(returnType, "returnType is unexpectedly undefined");
                     const tmpReturnType = getReturnTypeOfSignature(ssig);
                     Debug.assert(returnType===tmpReturnType);
-                    if (!isTypeAssignableTo(returnType, gReturn)) {
-                        IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, FAIL @4 (sig return type not assignable to accum return type)`,loggerLevel);
+                    if (!gReturnAllVoid && !isTypeAssignableTo(returnType, gReturn)) {
+                        IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
+                            si}, FAIL @4 (source return type not assignable to accum target return type)`,loggerLevel);
                         return Ternary.False;
                     }
                 }
