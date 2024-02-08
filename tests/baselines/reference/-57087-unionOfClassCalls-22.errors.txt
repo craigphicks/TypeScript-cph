@@ -1,0 +1,11 @@
+-57087-unionOfClassCalls-22.ts(3,37): error TS2365: Operator '+' cannot be applied to types 'string | number' and 'string | number'.
+
+
+==== -57087-unionOfClassCalls-22.ts (1 errors) ====
+    {
+        const arr: number[] | string[] = [];  // Works with Array<number | string>
+        const t = arr.reduce((acc,a) => acc+a)
+                                        ~~~~~
+!!! error TS2365: Operator '+' cannot be applied to types 'string | number' and 'string | number'.
+    }
+    

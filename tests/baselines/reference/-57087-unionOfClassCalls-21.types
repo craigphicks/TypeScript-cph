@@ -1,0 +1,27 @@
+//// [tests/cases/compiler/-test/-57087-unionOfClassCalls-21.ts] ////
+
+=== -57087-unionOfClassCalls-21.ts ===
+{
+    const arr: number[] | string[] = [];  // Works with Array<number | string>
+>arr : number[] | string[]
+>[] : never[]
+
+    const arr1: number[]  = [];
+>arr1 : number[]
+>[] : never[]
+
+    const arr2:  string[] = [];
+>arr2 : string[]
+>[] : never[]
+
+    const t = arr.map(a=>a);
+>t : (string | number)[]
+>arr.map(a=>a) : (string | number)[]
+>arr.map : (<U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: string, index: number, array: string[]) => U_1, thisArg?: any) => U_1[])
+>arr : number[] | string[]
+>map : (<U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: string, index: number, array: string[]) => U_1, thisArg?: any) => U_1[])
+>a=>a : (a: string | number) => string | number
+>a : string | number
+>a : string | number
+}
+

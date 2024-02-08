@@ -1,0 +1,22 @@
+//// [tests/cases/compiler/-test/-57087-unionOfClassCalls-02.ts] ////
+
+=== -57087-unionOfClassCalls-02.ts ===
+{
+    const arr: number[] | string[] = [];  // Works with Array<number | string>
+>arr : Symbol(arr, Decl(-57087-unionOfClassCalls-02.ts, 1, 9))
+
+    const t = arr.reduce((acc: Array<string>, a: number | string, index: number) => {
+>t : Symbol(t, Decl(-57087-unionOfClassCalls-02.ts, 2, 9))
+>arr.reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --) ... and 1 more)
+>arr : Symbol(arr, Decl(-57087-unionOfClassCalls-02.ts, 1, 9))
+>reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --) ... and 1 more)
+>acc : Symbol(acc, Decl(-57087-unionOfClassCalls-02.ts, 2, 26))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(-57087-unionOfClassCalls-02.ts, 2, 45))
+>index : Symbol(index, Decl(-57087-unionOfClassCalls-02.ts, 2, 65))
+
+        return []
+    }, [])
+
+}
+

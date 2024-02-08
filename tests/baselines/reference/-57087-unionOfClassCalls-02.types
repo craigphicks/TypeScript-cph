@@ -1,0 +1,27 @@
+//// [tests/cases/compiler/-test/-57087-unionOfClassCalls-02.ts] ////
+
+=== -57087-unionOfClassCalls-02.ts ===
+{
+    const arr: number[] | string[] = [];  // Works with Array<number | string>
+>arr : number[] | string[]
+>[] : never[]
+
+    const t = arr.reduce((acc: Array<string>, a: number | string, index: number) => {
+>t : never[]
+>arr.reduce((acc: Array<string>, a: number | string, index: number) => {        return []    }, []) : never[]
+>arr.reduce : { (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: number[]) => number): number; (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: number[]) => number, initialValue: number): number; <U>(callbackfn: (previousValue: U, currentValue: number, currentIndex: number, array: number[]) => U, initialValue: U): U; } | { (callbackfn: (previousValue: string, currentValue: string, currentIndex: number, array: string[]) => string): string; (callbackfn: (previousValue: string, currentValue: string, currentIndex: number, array: string[]) => string, initialValue: string): string; <U_1>(callbackfn: (previousValue: U_1, currentValue: string, currentIndex: number, array: string[]) => U_1, initialValue: U_1): U_1; }
+>arr : number[] | string[]
+>reduce : { (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: number[]) => number): number; (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: number[]) => number, initialValue: number): number; <U>(callbackfn: (previousValue: U, currentValue: number, currentIndex: number, array: number[]) => U, initialValue: U): U; } | { (callbackfn: (previousValue: string, currentValue: string, currentIndex: number, array: string[]) => string): string; (callbackfn: (previousValue: string, currentValue: string, currentIndex: number, array: string[]) => string, initialValue: string): string; <U_1>(callbackfn: (previousValue: U_1, currentValue: string, currentIndex: number, array: string[]) => U_1, initialValue: U_1): U_1; }
+>(acc: Array<string>, a: number | string, index: number) => {        return []    } : (acc: Array<string>, a: number | string, index: number) => never[]
+>acc : string[]
+>a : string | number
+>index : number
+
+        return []
+>[] : never[]
+
+    }, [])
+>[] : never[]
+
+}
+
