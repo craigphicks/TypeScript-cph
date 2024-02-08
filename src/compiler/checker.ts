@@ -1098,7 +1098,7 @@ import * as performance from "./_namespaces/ts.performance";
 // @ts-ignore
 import { IDebug } from "./mydebug";
 const contextualLogLevel = 2;
-const enableFunctionRelatedToIntersection = (process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
+const enableFunctionRelatedToIntersection = true; //(process.env.enablefu===undefined || !Number(process.env.enablefu)) ? false : true;
 
 // cphdebug-end
 
@@ -22246,7 +22246,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                     else {
                         if (reverseSourceAndTargetInCompareTypes){
-                            related = compareTypes(targetType, sourceType, /*reportErrors*/ false);
+                            related = compareTypes(targetType, sourceType, /*reportErrors*/ false) || compareTypes(sourceType, targetType, /*reportErrors*/ false);
                         }
                         else related = compareTypes(sourceType, targetType, /*reportErrors*/ false);
                     }
