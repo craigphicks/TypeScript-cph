@@ -4,16 +4,16 @@
 declare const y2: number[][] | string[];
 >y2 : number[][] | string[]
 
-declare function f2<T extends {length:number}>(): (x: T) => number;
->f2 : <T extends { length: number; }>() => (x: T) => number
+declare function f2<T extends {length:number}>(x: T): number;
+>f2 : <T extends { length: number; }>(x: T) => number
 >length : number
 >x : T
 
 export const yThen2 = y2.map(f2);
->yThen2 : ((x: { length: number; }) => number)[]
->y2.map(f2) : ((x: { length: number; }) => number)[]
+>yThen2 : number[]
+>y2.map(f2) : number[]
 >y2.map : (<U>(callbackfn: (value: number[], index: number, array: number[][]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: string, index: number, array: string[]) => U_1, thisArg?: any) => U_1[])
 >y2 : number[][] | string[]
 >map : (<U>(callbackfn: (value: number[], index: number, array: number[][]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: string, index: number, array: string[]) => U_1, thisArg?: any) => U_1[])
->f2 : <T extends { length: number; }>() => (x: T) => number
+>f2 : <T extends { length: number; }>(x: T) => number
 

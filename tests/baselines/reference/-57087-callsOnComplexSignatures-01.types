@@ -11,12 +11,12 @@ function test3(items: string[] | number[]) {
 >items : string[] | number[]
 >forEach : ((callbackfn: (value: string, index: number, array: string[]) => void, thisArg?: any) => void) | ((callbackfn: (value: number, index: number, array: number[]) => void, thisArg?: any) => void)
 >item => console.log(item) : (item: string | number) => void
->item : number
+>item : string | number
 >console.log(item) : void
 >console.log : (...data: any[]) => void
 >console : Console
 >log : (...data: any[]) => void
->item : number
+>item : string | number
 
 //                   ~~~~~~~~~~~~~~~~~~~~~~~~~
 // !!! error TS2345: Argument of type '(item: string | number) => void' is not assignable to parameter of type '((value: string, index: number, array: string[]) => void) & ((value: number, index: number, array: number[]) => void)'.

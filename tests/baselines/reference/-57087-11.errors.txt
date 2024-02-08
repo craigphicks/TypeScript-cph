@@ -1,0 +1,19 @@
+-57087-11.ts(5,3): error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg'.
+  Type '{ (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }' is not assignable to type '(x: 2 | 3) => "2" | "3"'.
+    Types of parameters 'x' and 'x' are incompatible.
+      Type '2 | 3' is not assignable to type '1 | 2'.
+        Type '3' is not assignable to type '1 | 2'.
+
+
+==== -57087-11.ts (1 errors) ====
+    declare const f: { (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }
+    
+    type Garg = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
+    
+    f satisfies Garg;
+      ~~~~~~~~~
+!!! error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg'.
+!!! error TS1360:   Type '{ (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }' is not assignable to type '(x: 2 | 3) => "2" | "3"'.
+!!! error TS1360:     Types of parameters 'x' and 'x' are incompatible.
+!!! error TS1360:       Type '2 | 3' is not assignable to type '1 | 2'.
+!!! error TS1360:         Type '3' is not assignable to type '1 | 2'.

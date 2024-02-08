@@ -1,9 +1,18 @@
+-57087-31-eopt.ts(12,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
+    Type '"01"' is not assignable to type '"02"'.
 -57087-31-eopt.ts(15,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
+    Type '"01"' is not assignable to type '"02"'.
 -57087-31-eopt.ts(18,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' is not assignable to type 'Garg31B'.
+    Type '"01"' is not assignable to type '"02"'.
 -57087-31-eopt.ts(21,6): error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+  Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
+    Type '"01"' is not assignable to type '"02"'.
 
 
-==== -57087-31-eopt.ts (3 errors) ====
+==== -57087-31-eopt.ts (4 errors) ====
     interface Garg31A {
         (): "01";
         (x:1, y:1): "211"
@@ -16,19 +25,29 @@
     
     declare const f31a: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
     f31a satisfies Garg31A & Garg31B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
     
     declare const f31b: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221" /*should fail match*/; (x: 2, y: 1): "221"; }
     f31b satisfies Garg31A & Garg31B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
     
     declare const f31c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221" /*should fail match*/; }
     f31c satisfies Garg31A & Garg31B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' is not assignable to type 'Garg31B'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
     
     declare const f31d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
     f31d satisfies Garg31A & Garg31B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
+!!! error TS1360:   Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
     

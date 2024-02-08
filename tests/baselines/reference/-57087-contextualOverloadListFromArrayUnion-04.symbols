@@ -4,15 +4,17 @@
 declare const y4: number[][] | string[];
 >y4 : Symbol(y4, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 0, 13))
 
-declare const f4: { (x: number[]): number; (x: string): number;}
->f4 : Symbol(f4, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 13))
->x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 21))
->x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 44))
+declare function f4<T extends {length:number}>(): (x: T) => number;
+>f4 : Symbol(f4, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 0, 40))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 20))
+>length : Symbol(length, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 31))
+>x : Symbol(x, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 51))
+>T : Symbol(T, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 20))
 
-export const yThen4 = y4.map(f4);
+export const yThen4 = y4.map(f4()); // should not be an error, but is an error
 >yThen4 : Symbol(yThen4, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 2, 12))
 >y4.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
 >y4 : Symbol(y4, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 0, 13))
 >map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->f4 : Symbol(f4, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 13))
+>f4 : Symbol(f4, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 0, 40))
 

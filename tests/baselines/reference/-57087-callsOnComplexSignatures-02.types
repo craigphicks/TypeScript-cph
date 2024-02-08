@@ -28,10 +28,10 @@ function test3(items: MyArray<string> | MyArray<number>) {
 >items : MyArray<string> | MyArray<number>
 >forEach : ((callbackfn: (value: string, index: number, array: MyArray<string>) => unknown) => void) | ((callbackfn: (value: number, index: number, array: MyArray<number>) => unknown) => void)
 >item => console.log(item) : (item: string | number) => void
->item : number
+>item : string | number
 >console.log(item) : void
 >console.log : (...data: any[]) => void
 >console : Console
 >log : (...data: any[]) => void
->item : number
+>item : string | number
 }

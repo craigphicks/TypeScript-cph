@@ -1,4 +1,7 @@
 -57087-22.ts(7,4): error TS1360: Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg2'.
+  Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' is not assignable to type '(x: 1 | 2) => 1 | 2'.
+    Type '0 | 1 | 2' is not assignable to type '1 | 2'.
+      Type '0' is not assignable to type '1 | 2'.
 
 
 ==== -57087-22.ts (1 errors) ====
@@ -11,4 +14,7 @@
     f2 satisfies Garg2; // should not satisfy
        ~~~~~~~~~
 !!! error TS1360: Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg2'.
+!!! error TS1360:   Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' is not assignable to type '(x: 1 | 2) => 1 | 2'.
+!!! error TS1360:     Type '0 | 1 | 2' is not assignable to type '1 | 2'.
+!!! error TS1360:       Type '0' is not assignable to type '1 | 2'.
     

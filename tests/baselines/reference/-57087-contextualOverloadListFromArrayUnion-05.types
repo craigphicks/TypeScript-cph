@@ -1,0 +1,19 @@
+//// [tests/cases/compiler/-test/-57087-contextualOverloadListFromArrayUnion-05.ts] ////
+
+=== -57087-contextualOverloadListFromArrayUnion-05.ts ===
+declare const y5: number[][] | string[];
+>y5 : number[][] | string[]
+
+declare const f5: { (x: number[]): number; (x: string): number;}
+>f5 : { (x: number[]): number; (x: string): number; }
+>x : number[]
+>x : string
+
+export const yThen4 = y5.map(f5);
+>yThen4 : number[]
+>y5.map(f5) : number[]
+>y5.map : (<U>(callbackfn: (value: number[], index: number, array: number[][]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: string, index: number, array: string[]) => U_1, thisArg?: any) => U_1[])
+>y5 : number[][] | string[]
+>map : (<U>(callbackfn: (value: number[], index: number, array: number[][]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: string, index: number, array: string[]) => U_1, thisArg?: any) => U_1[])
+>f5 : { (x: number[]): number; (x: string): number; }
+

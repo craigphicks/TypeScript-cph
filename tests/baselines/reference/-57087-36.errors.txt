@@ -1,0 +1,30 @@
+-57087-36.ts(11,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg36A & Garg36B'.
+  Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg36B'.
+    Types of parameters '__0' and '__0' are incompatible.
+      Type '{ x?: 2 | undefined; y?: 1 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
+        Types of property 'x' are incompatible.
+          Type '2 | undefined' is not assignable to type '1'.
+            Type 'undefined' is not assignable to type '1'.
+
+
+==== -57087-36.ts (1 errors) ====
+    interface Garg36A {
+        ({x,y}:{x:1, y:1}): "111"
+    };
+    interface Garg36B {
+        ({x,y}:{x?:2, y?:1}): "221"
+        ({x,y}:{x:2, y?:2}): "222";
+    };
+    
+    
+    declare const f36d: { ({x,y}:{x:1, y:1}): "111"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
+    f36d satisfies Garg36A & Garg36B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg36A & Garg36B'.
+!!! error TS1360:   Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg36B'.
+!!! error TS1360:     Types of parameters '__0' and '__0' are incompatible.
+!!! error TS1360:       Type '{ x?: 2 | undefined; y?: 1 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
+!!! error TS1360:         Types of property 'x' are incompatible.
+!!! error TS1360:           Type '2 | undefined' is not assignable to type '1'.
+!!! error TS1360:             Type 'undefined' is not assignable to type '1'.
+    

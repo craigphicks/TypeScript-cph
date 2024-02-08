@@ -1,10 +1,16 @@
+-57087-37.ts(11,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg37A & Garg37B'.
+  Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg37B'.
+    Types of parameters '__0' and '__0' are incompatible.
+      Type '{ x: 2; y?: 2 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
+        Types of property 'x' are incompatible.
+          Type '2' is not assignable to type '1'.
 -57087-37.ts(13,6): error TS2769: No overload matches this call.
   The last overload gave the following error.
     Argument of type '{}' is not assignable to parameter of type '{ x: 2; y: 2; }'.
       Type '{}' is missing the following properties from type '{ x: 2; y: 2; }': x, y
 
 
-==== -57087-37.ts (1 errors) ====
+==== -57087-37.ts (2 errors) ====
     interface Garg37A {
         ({x,y}:{x:1, y:1}): "111"
     };
@@ -16,6 +22,13 @@
     
     declare const f37d: { ({x,y}:{x:1, y:1}): "111"; (): "221"; ({x}:{x:2}): "221"; ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f37d satisfies Garg37A & Garg37B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg37A & Garg37B'.
+!!! error TS1360:   Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg37B'.
+!!! error TS1360:     Types of parameters '__0' and '__0' are incompatible.
+!!! error TS1360:       Type '{ x: 2; y?: 2 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
+!!! error TS1360:         Types of property 'x' are incompatible.
+!!! error TS1360:           Type '2' is not assignable to type '1'.
     
     f37d({}); // error expected - no overload matches this call
          ~~

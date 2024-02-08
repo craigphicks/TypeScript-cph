@@ -9,7 +9,7 @@ declare function f3<T extends {length:number}>(): (x: T) => number;
 >length : number
 >x : T
 
-export const yThen3 = y3.map(f3);
+export const yThen3 = y3.map(f3); // should be an error, but is not
 >yThen3 : ((x: { length: number; }) => number)[]
 >y3.map(f3) : ((x: { length: number; }) => number)[]
 >y3.map : (<U>(callbackfn: (value: number[], index: number, array: number[][]) => U, thisArg?: any) => U[]) | (<U_1>(callbackfn: (value: string, index: number, array: string[]) => U_1, thisArg?: any) => U_1[])

@@ -1,8 +1,21 @@
 -57087-33.ts(13,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33A'.
+    Type '"01"' is not assignable to type '"211"'.
 -57087-33.ts(16,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' is not assignable to type 'Garg33A'.
+    Type '"01"' is not assignable to type '"211"'.
+-57087-33.ts(20,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33A'.
+    Type '"01"' is not assignable to type '"211"'.
+-57087-33.ts(23,6): error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+  Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33B'.
+    Type '"01"' is not assignable to type '"02"'.
+-57087-33.ts(26,6): error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x?: 2 | undefined, y?: 2 | undefined): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+  Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x?: 2 | undefined, y?: 2 | undefined): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33B'.
+    Type '"01"' is not assignable to type '"02"'.
 
 
-==== -57087-33.ts (2 errors) ====
+==== -57087-33.ts (5 errors) ====
     interface Garg33A {
         (): "01";
         (x?:1, y?:1): "211"
@@ -18,19 +31,35 @@
     f33b satisfies Garg33A & Garg33B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33A'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"211"'.
     
     declare const f33c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221" /*should fail match*/; }
     f33c satisfies Garg33A & Garg33B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' is not assignable to type 'Garg33A'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"211"'.
     
     
     declare const f33a: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
     f33a satisfies Garg33A & Garg33B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33A'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"211"'.
     
     declare const f33d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
     f33d satisfies Garg33A & Garg33B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+!!! error TS1360:   Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33B'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
     
     declare const f33e: { (): "01"; (x?: 1, y?: 1): "211"; (x?: 2, y?: 2): "222"; (x: 2, y: 1): "221"; }
     f33e satisfies Garg33A & Garg33B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x?: 2 | undefined, y?: 2 | undefined): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+!!! error TS1360:   Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x?: 2 | undefined, y?: 2 | undefined): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33B'.
+!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
     
