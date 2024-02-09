@@ -143,6 +143,7 @@ export interface Dbgs {
 }
 
 export class DbgsClass implements Dbgs{
+    nextSignatureId = 1;
     constructor(){}
     private getNodeId(node: Node){ return getNodeId(node); /*return node.id??"<undef>";*/ }
     private getSymbolId(symbol: Symbol){ return symbol.id??"<undef>"; }
@@ -157,6 +158,14 @@ export class DbgsClass implements Dbgs{
     private getSafeCheckerTypeOfSymbol(symbol: Symbol): Type {
         return IDebug.checker!.getTypeOfSymbol(symbol);
     }
+    private getSignatureId(signature: Signature & {id?: number}): number {
+        if (!signature.id) {
+            signature.id = this.nextSignatureId++;
+        }
+        return signature.id;
+    }
+
+
     dbgGetNodeText(node: Node){
         return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
     };
@@ -208,7 +217,8 @@ export class DbgsClass implements Dbgs{
     };
     dbgSignatureToString(c: Signature | undefined): string {
         if (!c) return "<undef>";
-        let astr: string[] = [];
+        let astr: string[] = [`[sg:${this.getSignatureId(c)}] `];
+
         c.parameters.forEach(symbol=> {
             const typeOfSymbol = this.getSafeCheckerTypeOfSymbol(symbol);
             astr.push(this.dbgTypeToString(typeOfSymbol));
