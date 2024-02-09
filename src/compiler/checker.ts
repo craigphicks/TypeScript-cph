@@ -35425,6 +35425,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function chooseOverload(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false) {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`chooseOverload()[in]:`,loggerLevel);
+        if (IDebug.logLevel>=loggerLevel){
+            //candidates.forEach((c,i)=>IDebug.ilog(()=>`candidate[${i}]:${IDebug.dbgs.dbgSignatureToString(c)}`,2));
+            candidates.forEach((cand,icand)=>{
+                IDebug.dbgs.dbgSignatureAndCompositesToStrings(cand).forEach(str=>{
+                    IDebug.ilog(()=>`candidate[${icand}]: ${str}`,loggerLevel);
+                });
+            });
+        }
+
+        const ret = (()=>{
             candidatesForArgumentError = undefined;
             candidateForArgumentArityError = undefined;
             candidateForTypeArgumentError = undefined;
@@ -35506,6 +35518,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
             return undefined;
+        })();
+        if (IDebug.logLevel>=loggerLevel){
+            IDebug.dbgs.dbgSignatureAndCompositesToStrings(ret).forEach(str=>{
+                IDebug.ilog(()=>`chooseOverload()[returns]: ${str}`,loggerLevel);
+            });
+            IDebug.ilogGroupEnd(()=>`chooseOverload()[out]: returns ${IDebug.dbgs.dbgSignatureToString(ret)}`, loggerLevel);
+        }
+        return ret;
         }
     }
 

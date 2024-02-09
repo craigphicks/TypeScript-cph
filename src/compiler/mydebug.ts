@@ -53,6 +53,7 @@ export class ILoggingClass implements ILoggingHost {
     log(level: LogLevel, messagef: (() => string)) {
         if (!this.logFileFd) return;
         if (level > IDebug.logLevel) return;
+        if (level<0) Debug.fail("ilog: Negative log level");
         if (this.numOutLines > this.maxNumOutLines) Debug.fail(`Too many lines (${this.maxNumOutLines}) log file ` + this.logFilename);
         let message = messagef();
         const indent = this.oneIndent.repeat(this.indent);
@@ -65,10 +66,12 @@ export class ILoggingClass implements ILoggingHost {
     }
     ilogGroup (message: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER) {
         this.log(level, message);
+        if (level > IDebug.logLevel) return this.indent;
         return this.indent++;
     }
     ilogGroupEnd (message?: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER, expectedIndent: number | undefined = undefined) {
-        this.indent--;
+        if (level <= IDebug.logLevel) this.indent--;
+        if (level<0) Debug.fail("ilogGroupEnd: Negative log level");
         if (expectedIndent!==undefined && expectedIndent!==this.indent) {
             Debug.fail('Expected indent ' + expectedIndent + ' but got ' + this.indent);
         }
