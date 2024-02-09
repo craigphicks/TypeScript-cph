@@ -14668,6 +14668,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function createUnionOrIntersectionProperty(containingType: UnionOrIntersectionType, name: __String, skipObjectFunctionPropertyAugment?: boolean): Symbol | undefined {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`createUnionOrIntersectionProperty[in]:${IDebug.dbgs.dbgTypeToString(containingType)}, ${name}, skipObjectFunctionPropertyAugment:${skipObjectFunctionPropertyAugment}`,loggerLevel);
+    const ret = (()=>{
         let singleProp: Symbol | undefined;
         let propSet: Map<SymbolId, Symbol> | undefined;
         let indexTypes: Type[] | undefined;
@@ -14825,6 +14828,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         result.declarations = declarations;
         result.links.nameType = nameType;
+        // IWOZERE TODO: case of multiple overloaded function types:
+        // Create a single single composite function for each overload.
+
         if (propTypes.length > 2) {
             // When `propTypes` has the potential to explode in size when normalized, defer normalization until absolutely needed
             result.links.checkFlags |= CheckFlags.DeferredType;
@@ -14839,6 +14845,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         return result;
+    })();
+    if (IDebug.logLevel>=loggerLevel && ret) {
+        const typeOfSymbol = getTypeOfSymbol(ret);
+        IDebug.ilog(()=>`createUnionOrIntersectionProperty: typeOfSymbol: ${IDebug.dbgs.dbgTypeToString(typeOfSymbol)}`, loggerLevel);
+    }
+    IDebug.ilogGroupEnd(()=>`createUnionOrIntersectionProperty[out]: returns ${IDebug.dbgs.dbgSymbolToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     // Return the symbol for a given property in a union or intersection type, or undefined if the property
@@ -14847,6 +14860,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // these partial properties when identifying discriminant properties, but otherwise they are filtered out
     // and do not appear to be present in the union type.
     function getUnionOrIntersectionProperty(type: UnionOrIntersectionType, name: __String, skipObjectFunctionPropertyAugment?: boolean): Symbol | undefined {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getUnionOrIntersectionProperty[in]:${IDebug.dbgs.dbgTypeToString(type)}, ${name})`,loggerLevel);
+    const ret = (()=>{
         let property = type.propertyCacheWithoutObjectFunctionPropertyAugment?.get(name) ||
                 !skipObjectFunctionPropertyAugment ? type.propertyCache?.get(name) : undefined;
         if (!property) {
@@ -14863,6 +14879,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         return property;
+    })();
+    IDebug.ilogGroupEnd(()=>`getUnionOrIntersectionProperty[out]:${IDebug.dbgs.dbgSymbolToString(ret)}`,loggerLevel);
+    return ret;
     }
 
     function getCommonDeclarationsOfSymbols(symbols: Iterable<Symbol>) {
@@ -35682,6 +35701,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`checkCallExpression[in]:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}`, loggerLevel);
+    const ret = (()=>{
         if (node.expression.kind === SyntaxKind.SuperKeyword) {
             const superType = checkSuperExpression(node.expression);
             if (isTypeAny(superType)) {
@@ -35791,6 +35813,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
+    })();
+    if (IDebug.logLevel>=loggerLevel){
+        IDebug.dbgs.dbgSignatureAndCompositesToStrings(ret).forEach(str=>{
+            IDebug.ilog(()=>`resolveCallExpression[ret]: returns ${str}`, loggerLevel);
+        });
+    }
+    IDebug.ilogGroupEnd(()=>`resolveCallExpression[out]: returns ${IDebug.dbgs.dbgSignatureToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function isGenericFunctionReturningFunctionOrConstructor(signature: Signature) {
@@ -36452,6 +36482,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * @returns On success, the expression's signature's return type. On failure, anyType.
      */
     function checkCallExpression(node: CallExpression | NewExpression, checkMode?: CheckMode): Type {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`checkCallExpression[in]:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${checkMode}`, loggerLevel);
+    const ret = (()=>{
         checkGrammarTypeArguments(node, node.typeArguments);
 
         const signature = getResolvedSignature(node, /*candidatesOutArray*/ undefined, checkMode);
@@ -36521,6 +36554,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return returnType;
+    })();
+    if (IDebug.logLevel>=loggerLevel){
+        const callsigs = getSignaturesOfType(ret, SignatureKind.Call);
+        callsigs.forEach((sig,isig)=>{
+            IDebug.ilog(()=>`checkCallExpression[ret.callSignatures[${isig}]]: ${IDebug.dbgs.dbgSignatureToString(sig)}`, loggerLevel);
+        });
+    }
+    IDebug.ilogGroupEnd(()=>`checkCallExpression[out]: returns :${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function checkDeprecatedSignature(signature: Signature, node: CallLikeExpression) {
