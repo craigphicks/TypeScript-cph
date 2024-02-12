@@ -6084,6 +6084,7 @@ export interface NodeLinks {
     parameterInitializerContainsUndefined?: boolean; // True if this is a parameter declaration whose type annotation contains "undefined".
     fakeScopeForSignatureDeclaration?: "params" | "typeParams"; // If present, this is a fake scope injected into an enclosing declaration chain.
     assertionExpressionType?: Type;     // Cached type of the expression of a type assertion
+    setOfCorrespondingParams?: Set<Symbol>; // When node is an argument, the parameter(s) to which it corresponds. (1-Currently only used for callback params. 2-Multiple params seems unlikely)
 }
 
 /** @internal */

@@ -1415,15 +1415,15 @@ export function getSymbolId(symbol: Symbol): SymbolId {
     return symbol.id;
 }
 
-/** @internal */
-export function getTransientSymbolId(symbol: Symbol): SymbolId {
-    if (!symbol.transientId) {
-        symbol.transientId = nextTransientSymbolId;
-        nextTransientSymbolId++;
-    }
+///** @internal */
+// export function getTransientSymbolId(symbol: Symbol): SymbolId {
+//     if (!symbol.transientId) {
+//         symbol.transientId = nextTransientSymbolId;
+//         nextTransientSymbolId++;
+//     }
 
-    return symbol.transientId;
-}
+//     return symbol.transientId;
+// }
 
 /** @internal */
 export function isInstantiatedModule(node: ModuleDeclaration, preserveConstEnums: boolean) {
@@ -1525,8 +1525,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var checkTypeRelatedToDepth = 0;
     var checkTypeRelatedToCurrentlyVisitingMap: Map<string,number> | undefined;
 
-    var contextualSignatureToContentualTypeWeakMap: WeakMap<Signature, Type> = new WeakMap();
-    var sourceSignatureToContextualSignatureWeakMap: WeakMap<Signature, Signature> = new WeakMap();
+    // var contextualSignatureToContentualTypeWeakMap: WeakMap<Signature, Type> = new WeakMap();
+    // var sourceSignatureToContextualSignatureWeakMap: WeakMap<Signature, Signature> = new WeakMap();
+    // var sourceSignatureToNodeWeakMap: WeakMap<Signature /* source signature*/, Node /* node with symbol s.t. symbolLinks.type is target */> = new WeakMap();
 
     // for public members that accept a Node or one of its subtypes, we must guard against
     // synthetic nodes created during transformations by calling `getParseTreeNode`.
@@ -22306,11 +22307,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          *          signature error
          *
          */
-        function checkFunctionRelatedToIntersection(source: Type, target: Type, _reportErrors: boolean): Ternary {
+        function checkFunctionRelatedToIntersection(source: Type, target: Type, _reportErrors: boolean): { computed: boolean, ternary:Ternary } {
         const loggerLevel = 2;
         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersection[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}`,loggerLevel);
 
-        const ret = (()=>{
+        const ret = ((): { computed: boolean, ternary:Ternary } => {
             //let refSourceParamsOut:CheckFunctionRelatedToIntersectionHelperArgs["refSourceParamsOut"]  = [undefined];
             type SourceOverloadsCached = {
                 paramsAndReturn: CheckFunctionRelatedToIntersectionHelperArgsFunctionCache[];
@@ -22326,21 +22327,35 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 });
             }
             let sourceSignatures: ReadonlyArray<Signature>;
-            if (origSourceSignatures.length===1 && origSourceSignatures[0].compositeSignatures?.length && origSourceSignatures[0].compositeKind===TypeFlags.Intersection) {
-                let enableCheckFunctionRelatedToIntersectionWeakMapsOptimization = true;
-                if (enableCheckFunctionRelatedToIntersectionWeakMapsOptimization){
-                    const contextualSignature = sourceSignatureToContextualSignatureWeakMap.get(origSourceSignatures[0]);
-                    const contextualType = contextualSignature && contextualSignatureToContentualTypeWeakMap.get(contextualSignature);
-                    if (contextualType === target) {
-                        IDebug.ilog(()=>`checkFunctionRelatedToIntersection: source relates to target via weak maps`,loggerLevel);
-                        return Ternary.True;
-                    }
+            if (origSourceSignatures[0].compositeSignatures?.length && origSourceSignatures[0].compositeKind===TypeFlags.Intersection) {
+                if (origSourceSignatures.length!==1){
+                    Debug.assert(false,`origSourceSignatures.length!==1`);
+                    return { computed:false, ternary: Ternary.Unknown };
                 }
                 sourceSignatures = origSourceSignatures[0].compositeSignatures;
-                for (let si=0; si<sourceSignatures.length; ++si) {
-                    const paramsAndReturn = getSignatureCacheData(sourceSignatures[si]);
-                    sourceOverloadsCached.paramsAndReturn.push(paramsAndReturn);
+                if ((target as IntersectionType).types.length!==sourceSignatures.length){
+                    Debug.assert(false,`(target as IntersectionType).types.length!==sourceSignatures.length`);
+                    return { computed:false, ternary: Ternary.Unknown };
                 }
+                for (let si=0; si<sourceSignatures.length; ++si) {
+                    const sourceSig = sourceSignatures[si];
+                    if (!!origSourceSignatures[0].resolvedReturnType && !sourceSig.resolvedReturnType){
+                        Debug.assert(false, `!!origSourceSignatures[0].resolvedReturnType && !sourceSig.resolvedReturnType`);
+                    }
+                    const targetType = (target as IntersectionType).types[si];
+                    const targetSigs = getSignaturesOfType(targetType, SignatureKind.Call);
+                    Debug.assert(targetSigs.length===1);
+
+                    const functionCacheIn = getSignatureCacheData(sourceSig);
+                    if (!checkFunctionRelatedToIntersectionHelper({source: sourceSig,target:targetSigs[0],functionCacheIn,refSourceParamsOut:undefined, refTargetParamsOut:undefined})){
+                        return { computed:true, ternary: Ternary.False };
+                    }
+                    const targetReturnType = getReturnTypeOfSignature(targetSigs[0]);
+                    if (targetReturnType!==voidType && !isTypeAssignableTo(functionCacheIn.returnType!, targetReturnType)){
+                        return { computed:true, ternary: Ternary.False };
+                    }
+                }
+                return { computed:true, ternary: Ternary.True };
             }
             else {
                 sourceSignatures = origSourceSignatures;
@@ -22365,7 +22380,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
                     if (targetSignatures.length===0) {
                         IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, FAIL @1`,loggerLevel);
-                        return Ternary.False;
+                        return { computed:true, ternary: Ternary.False };
                     }
                     for (let ti=0; ti<targetSignatures.length; ++ti) {
                         const tsig = targetSignatures[ti];
@@ -22425,7 +22440,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
                 if (!hadMatch) {
                     IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, FAIL @3 (no match)`,loggerLevel);
-                    return Ternary.False;
+                    return { computed:true, ternary: Ternary.False };
                 }
                 else {
                     const returnType = sourceOverloadsCached.paramsAndReturn[si].returnType;
@@ -22435,7 +22450,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     if (!gReturnAllVoid && !isTypeAssignableTo(returnType, gReturn)) {
                         IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
                             si}, FAIL @4 (source return type not assignable to accum target return type)`,loggerLevel);
-                        return Ternary.False;
+                        return { computed:true, ternary: Ternary.False };
                     }
                 }
             }
@@ -22456,9 +22471,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     });
                 });
             }
-            return Ternary.True;
+            return { computed:true, ternary: Ternary.True };
         })();
-        IDebug.ilogGroupEnd(()=>`checkFunctionRelatedToIntersection[out]: returns Ternary.${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        IDebug.ilogGroupEnd(()=>`checkFunctionRelatedToIntersection[out]: returns { computed:${ret.computed}, ternary:Ternary.${IDebug.dbgs.dbgTernaryToString(ret.ternary)}}`,loggerLevel);
         return ret;
         }
 
@@ -22505,7 +22520,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     })){
                         if (source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 0
                         && target0.flags & TypeFlags.Object && getSignaturesOfType(target0, SignatureKind.Call).length > 0) {
-                            return checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
+                            const { computed, ternary } = checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
+                            if (computed) return ternary;
+                            // falls through
                         }
                     }
                 }
@@ -31902,9 +31919,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     const ret = (()=>{
         const signatures = getSignaturesOfType(type, SignatureKind.Call);
         const applicableByArity = filter(signatures, s => !isAritySmaller(s, node));
-        const result = applicableByArity.length === 1 ? applicableByArity[0] : getIntersectedSignatures(applicableByArity);
-        if (result) contextualSignatureToContentualTypeWeakMap.set(result, type);
-        return result;
+        return applicableByArity.length === 1 ? applicableByArity[0] : getIntersectedSignatures(applicableByArity);
     })();
     IDebug.ilogGroupEnd(()=>`getContextualCallSignature[out]: ${IDebug.dbgs.dbgSignatureToString(ret)}`, loggerLevel);
     return ret;
@@ -34624,7 +34639,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         for (let i = 0; i < argCount; i++) {
             const arg = args[i];
             if (arg.kind !== SyntaxKind.OmittedExpression) {
-                const paramType = getTypeAtPosition(signature, i);
+                //const paramType = getTypeAtPosition(signature, i);
+                const [paramType, param] = getTypeAndParamAtPosition(signature, i);
+                const argLinks = getNodeLinks(arg);
+                if (param){
+                    (argLinks.setOfCorrespondingParams ??= new Set()).add(param);
+                }
                 if (couldContainTypeVariables(paramType)) {
                     const argType = checkExpressionWithContextualType(arg, paramType, context, checkMode);
                     inferTypes(context.inferences, argType, paramType);
@@ -37103,16 +37123,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getTypeAtPosition(signature: Signature, pos: number): Type {
         return tryGetTypeAtPosition(signature, pos) || anyType;
     }
+    function getTypeAndParamAtPosition(signature: Signature, pos: number): [Type,Symbol|undefined] {
+        const paramRef: [undefined|Symbol] = [undefined];
+        const type =  tryGetTypeAtPosition(signature, pos, paramRef) || anyType;
+        return [type,paramRef[0]];
+    }
 
-    function tryGetTypeAtPosition(signature: Signature, pos: number): Type | undefined {
+    function tryGetTypeAtPosition(signature: Signature, pos: number, paramRefOut?: [undefined|Symbol]): Type | undefined {
         const paramCount = signature.parameters.length - (signatureHasRestParameter(signature) ? 1 : 0);
         if (pos < paramCount) {
+            if (paramRefOut) paramRefOut[0] = signature.parameters[pos];
             return getTypeOfParameter(signature.parameters[pos]);
         }
         if (signatureHasRestParameter(signature)) {
             // We want to return the value undefined for an out of bounds parameter position,
             // so we need to check bounds here before calling getIndexedAccessType (which
             // otherwise would return the type 'undefined').
+            if (paramRefOut) paramRefOut[0] = signature.parameters[paramCount];
             const restType = getTypeOfSymbol(signature.parameters[paramCount]);
             const index = pos - paramCount;
             if (!isTupleType(restType) || restType.target.hasRestElement || index < restType.target.fixedLength) {
@@ -38243,22 +38270,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                 });
                             }
                             assignContextualParameterTypesToOneSig(signature, contextualSignature); // signature is modifed in place
+
                             if (compositeIntersectionMembers) {
+                                if (!getReturnTypeFromAnnotation(node) && !signature.resolvedReturnType) {
+                                    const returnType = getReturnTypeFromBody(node, checkMode);
+                                    if (!signature.resolvedReturnType) {
+                                        signature.resolvedReturnType = returnType;
+                                    }
+                                    compositeIntersectionMembers.forEach(sig=>sig.resolvedReturnType = returnType);
+                                }
                                 signature.compositeSignatures = compositeIntersectionMembers;
                                 signature.compositeKind = TypeFlags.Intersection;
                                 if (IDebug.logLevel >= loggerLevel) {
                                     (signature as any).compositeSignaturesAddedIn = "contextuallyCheckFunctionExpressionOrObjectLiteralMethod";
                                 }
                             }
-                            sourceSignatureToContextualSignatureWeakMap.set(signature,contextualSignature);
-                            // if (IDebug.logLevel>=loggerLevel){
-                            //     IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(if contextualSignature):`,loggerLevel);
-                            //     IDebug.dbgs.dbgSignatureAndCompositesToStrings(signature).forEach(str=>{
-                            //         IDebug.ilog(()=>`  ${str}`);
-                            //     });
-                            //     const dbgType = getTypeOfSymbol(getSymbolOfDeclaration(node));
-                            //     Debug.assert((dbgType as ObjectType).callSignatures?.length===1 && (dbgType as ObjectType).callSignatures?.[0]===signature);
-                            // }
                         }
                         else {
                             let instantiatedContextualSignature: Signature | undefined;
@@ -38271,24 +38297,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             }
                             instantiatedContextualSignature ||= inferenceContext ?
                                 instantiateSignature(contextualSignature, inferenceContext.mapper) : contextualSignature;
-                            let enableCompositeSignaturesFromContext = false;
-                            if (enableCompositeSignaturesFromContext
-                            && instantiatedContextualSignature.compositeSignatures && instantiatedContextualSignature.compositeSignatures.length>1
-                            && instantiatedContextualSignature.compositeKind === TypeFlags.Intersection) {
-                                let compositeIntersectionMembers: Signature[] = [];
-                                instantiatedContextualSignature.compositeSignatures.forEach((compositeSig, compositeSigIdx) => {
-                                    Debug.assert(!compositeSig.compositeSignatures, "case composite signatures member itself has composite signatures");
-                                    // parameters symbols are not cloned within `cloneSignature`, but must be cloned. (Should typeParameters also be cloned?)
-                                    //const parameters = signature.parameters.map(cloneSymbol);
-                                    const parameters = signature.parameters.map(p=>(cloneSymbol(p,/*doNotRecordMergedSymbol*/true)));
-                                    const csig = cloneSignature({...signature, parameters});
-                                    assignContextualParameterTypes(csig, compositeSig);
-                                    compositeIntersectionMembers!.push(csig);
-                                });
-                                signature.compositeSignatures = compositeIntersectionMembers;
-                                signature.compositeKind = TypeFlags.Intersection;
-                                (signature as any).compositeSignaturesAddedIn = "contextuallyCheckFunctionExpressionOrObjectLiteralMethod";
-                            }
                             assignContextualParameterTypes(signature, instantiatedContextualSignature);
                         }
                     }
@@ -38309,8 +38317,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         signature.resolvedReturnType = returnType;
                     }
                 }
-                // IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(beforeCheckSignatureDeclaration):${
-                //     IDebug.dbgs.dbgSignatureToString(signature)}`,loggerLevel);
                 checkSignatureDeclaration(node);
                 if (IDebug.logLevel>=loggerLevel){
                     IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(final):`,loggerLevel);

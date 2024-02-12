@@ -131,6 +131,7 @@ export interface Dbgs {
     dbgTypeToString: (type: Type | undefined) => string;
     // dbgTypeToStringDetail: (type: Type) => string[];
     dbgNodeToString: (node: Node | undefined) => string;
+    dbgSignatureId: (c: Signature | undefined) => number;
     dbgSignatureToString: (c: Signature | undefined) => string;
     // Show composite signatures
     dbgSignatureAndCompositesToStrings: (c: Signature | undefined) => string[];
@@ -214,6 +215,9 @@ export class DbgsClass implements Dbgs{
     dbgNodeToString(node: Node | undefined): string {
         if (!node) return "<undef>";
         return `[n${this.getNodeId(node)}] ${this.dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
+    };
+    dbgSignatureId(c: Signature | undefined): number {
+        return c ? this.getSignatureId(c) : -1;
     };
     dbgSignatureToString(c: Signature | undefined): string {
         if (!c) return "<undef>";
