@@ -22152,7 +22152,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const targetCount = getParameterCount(target);
 
             const sourceHasMoreParameters = !hasEffectiveRestParameter(target) &&
-               (checkMode & SignatureCheckMode.StrictArity ? hasEffectiveRestParameter(source) || getParameterCount(source) > targetCount : getMinArgumentCount(source) > targetCount);
+                (checkMode & SignatureCheckMode.StrictArity ? hasEffectiveRestParameter(source) || getParameterCount(source) > targetCount : getMinArgumentCount(source) > targetCount);
             if (sourceHasMoreParameters) {
                 if (reportErrors && !(checkMode & SignatureCheckMode.StrictArity)) {
                     // the second condition should be redundant, because there is no error reporting when comparing signatures by strict arity
@@ -22187,7 +22187,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
 
-           // const targetRestType = getNonArrayRestType(target);
+            // const targetRestType = getNonArrayRestType(target);
             if (refTargetParamsOut) {
                 refTargetParamsOut[0] = getSignatureCacheData(target);
             }
@@ -22286,7 +22286,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersection[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}`,loggerLevel);
 
         const ret = ((): { computed: boolean, ternary:Ternary } => {
-            //let refSourceParamsOut:CheckFunctionRelatedToIntersectionHelperArgs["refSourceParamsOut"]  = [undefined];
             interface SourceOverloadsCached {
                 paramsAndReturn: CheckFunctionRelatedToIntersectionHelperArgsFunctionCache[];
             }
@@ -22380,17 +22379,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         })();
                         IDebug.ilogGroupEnd(()=>`someAssignable@checkFunctionRelatedToIntersection: returns ${ret}`,loggerLevel);
                         return ret;
-                        }
+                        };
 
-                        if (someAssignable(sourceReturnType,targetReturnType)){
-                            if (checkFunctionRelatedToIntersectionHelper({
-                                source:ssig, target:tsig,
-                                functionCacheIn: sourceOverloadsCached.paramsAndReturn[si],
-                                reverseSourceAndTargetInCompareTypes: onlyOneSourceSig,
-                                refSourceParamsOut: undefined, refTargetParamsOut
-                            })) {
+                        if (someAssignable(sourceReturnType, targetReturnType)) {
+                            if (
+                                checkFunctionRelatedToIntersectionHelper({
+                                    source: ssig,
+                                    target: tsig,
+                                    functionCacheIn: sourceOverloadsCached.paramsAndReturn[si],
+                                    reverseSourceAndTargetInCompareTypes: onlyOneSourceSig,
+                                    refSourceParamsOut: undefined,
+                                    refTargetParamsOut,
+                                })
+                            ) {
                                 hadMatch = true;
-                                if (targetReturnType!==voidType){
+                                if (targetReturnType !== voidType) {
                                     gReturn = getUnionType([gReturn, targetReturnType]);
                                     gReturnAllVoid = false;
                                 }
@@ -22416,17 +22419,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
                 if (!hadMatch) {
                     IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, FAIL @3 (no match)`,loggerLevel);
-                    return { computed:true, ternary: Ternary.False };
+                    return { computed: true, ternary: Ternary.False };
                 }
                 else {
                     const returnType = sourceOverloadsCached.paramsAndReturn[si].returnType;
                     Debug.assert(returnType, "returnType is unexpectedly undefined");
                     const tmpReturnType = getReturnTypeOfSignature(ssig);
-                    Debug.assert(returnType===tmpReturnType);
+                    Debug.assert(returnType === tmpReturnType);
                     if (!gReturnAllVoid && !isTypeAssignableTo(returnType, gReturn)) {
                         IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
                             si}, FAIL @4 (source return type not assignable to accum target return type)`,loggerLevel);
-                        return { computed:true, ternary: Ternary.False };
+                        return { computed: true, ternary: Ternary.False };
                     }
                 }
             }
@@ -22447,7 +22450,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     });
                 });
             }
-            return { computed:true, ternary: Ternary.True };
+            return { computed: true, ternary: Ternary.True };
         })();
         IDebug.ilogGroupEnd(()=>`checkFunctionRelatedToIntersection[out]: returns { computed:${ret.computed}, ternary:Ternary.${IDebug.dbgs.dbgTernaryToString(ret.ternary)}}`,loggerLevel);
         return ret;
@@ -22487,18 +22490,24 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (target.flags & TypeFlags.Intersection) {
                 if (enableCheckFunctionRelatedToIntersection){
                     /**
-                     * [cph] In the case of some target intersections of functions, use the algorithm described in #57087
+                     * [cph] In the case of some target intersections of functions, follow #57087
                      */
                     const target0 = (target as IntersectionType).types[0];
                     const sourceSignatures = getSignaturesOfType(source, SignatureKind.Call);
-                    if (sourceSignatures.every(sourceSig=>{
-                        return !sourceSig.typeParameters
-                    })){
-                        if (source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 0
-                        && target0.flags & TypeFlags.Object && getSignaturesOfType(target0, SignatureKind.Call).length > 0) {
+                    if (
+                        sourceSignatures.every(sourceSig => {
+                            return !sourceSig.typeParameters;
+                        })
+                    ) {
+                        if (
+                            source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 0
+                            && target0.flags & TypeFlags.Object && getSignaturesOfType(target0, SignatureKind.Call).length > 0
+                        ) {
                             const { computed, ternary } = checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
-                            if (computed) return ternary;
-                            // falls through
+                            if (computed) {
+                                if (ternary === Ternary.True || !reportErrors) return ternary;
+                            }
+                            // falls through if not computed or (not Ternary.True && reportErrors)
                         }
                     }
                 }
