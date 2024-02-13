@@ -22301,80 +22301,82 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 });
             }
             let sourceSignatures: readonly Signature[];
-            if (origSourceSignatures[0].compositeSignatures?.length && origSourceSignatures[0].compositeKind===TypeFlags.Intersection) {
+            if (origSourceSignatures[0].compositeSignatures?.length && origSourceSignatures[0].compositeKind === TypeFlags.Intersection) {
                 if (origSourceSignatures.length !== 1) {
-                    Debug.assert(false,`origSourceSignatures.length!==1`);
-                    return { computed:false, ternary: Ternary.Unknown };
+                    Debug.assert(false, `origSourceSignatures.length!==1`);
+                    return { computed: false, ternary: Ternary.Unknown };
                 }
                 sourceSignatures = origSourceSignatures[0].compositeSignatures;
-                if ((target as IntersectionType).types.length!==sourceSignatures.length){
-                    Debug.assert(false,`(target as IntersectionType).types.length!==sourceSignatures.length`);
-                    return { computed:false, ternary: Ternary.Unknown };
+                if ((target as IntersectionType).types.length !== sourceSignatures.length) {
+                    Debug.assert(false, `(target as IntersectionType).types.length!==sourceSignatures.length`);
+                    return { computed: false, ternary: Ternary.Unknown };
                 }
-                for (let si=0; si<sourceSignatures.length; ++si) {
+                for (let si = 0; si < sourceSignatures.length; ++si) {
                     const sourceSig = sourceSignatures[si];
-                    if (!!origSourceSignatures[0].resolvedReturnType && !sourceSig.resolvedReturnType){
+                    if (!!origSourceSignatures[0].resolvedReturnType && !sourceSig.resolvedReturnType) {
                         Debug.assert(false, `!!origSourceSignatures[0].resolvedReturnType && !sourceSig.resolvedReturnType`);
                     }
                     const targetType = (target as IntersectionType).types[si];
                     const targetSigs = getSignaturesOfType(targetType, SignatureKind.Call);
-                    Debug.assert(targetSigs.length===1);
+                    Debug.assert(targetSigs.length === 1);
 
                     const functionCacheIn = getSignatureCacheData(sourceSig);
-                    if (!checkFunctionRelatedToIntersectionHelper({source: sourceSig,target:targetSigs[0],functionCacheIn,refSourceParamsOut:undefined, refTargetParamsOut:undefined})){
-                        return { computed:true, ternary: Ternary.False };
+                    if (!checkFunctionRelatedToIntersectionHelper({ source: sourceSig, target: targetSigs[0], functionCacheIn, refSourceParamsOut: undefined, refTargetParamsOut: undefined })) {
+                        return { computed: true, ternary: Ternary.False };
                     }
                     const targetReturnType = getReturnTypeOfSignature(targetSigs[0]);
-                    if (targetReturnType!==voidType && !isTypeAssignableTo(functionCacheIn.returnType!, targetReturnType)){
-                        return { computed:true, ternary: Ternary.False };
+                    if (targetReturnType !== voidType && !isTypeAssignableTo(functionCacheIn.returnType!, targetReturnType)) {
+                        return { computed: true, ternary: Ternary.False };
                     }
                 }
-                return { computed:true, ternary: Ternary.True };
+                return { computed: true, ternary: Ternary.True };
             }
             else {
                 sourceSignatures = origSourceSignatures;
-                for (let si=0; si<sourceSignatures.length; ++si) {
-                    Debug.assert(!(sourceSignatures[si].compositeSignatures?.length && sourceSignatures[0].compositeKind===TypeFlags.Intersection), "multiple composite intersection signatures not yet ijmplement");
-                    const paramsAndReturn = getSignatureCacheData(sourceSignatures[si]);
+                sourceSignatures.forEach(sourceSignature => {
+                    Debug.assert(!(sourceSignature.compositeSignatures?.length && sourceSignatures[0].compositeKind === TypeFlags.Intersection), "multiple composite intersection signatures not yet ijmplement");
+                    const paramsAndReturn = getSignatureCacheData(sourceSignature);
                     sourceOverloadsCached.paramsAndReturn.push(paramsAndReturn);
-                }
+                });
             }
             type MapTTS = Map<number/*tti*/,Map<number/*ti*/,Set<number>/*si*/>>;
             const maptts: MapTTS | undefined = (IDebug.logLevel>=loggerLevel) ? new Map() : undefined;
 
             const onlyOneSourceSig = sourceSignatures.length === 1;
-
-            for (let si=0; si<sourceSignatures.length; ++si) {
+            /* eslint-disable-next-line */
+            for (let si = 0; si < sourceSignatures.length; ++si) {
                 let hadMatch = false;
                 let gReturn = neverType as Type;
                 let gReturnAllVoid = true;
                 const ssig = sourceSignatures[si];
-                for (let tti=0; tti<(target as IntersectionType).types.length; ++tti) {
+                /* eslint-disable-next-line */
+                for (let tti = 0; tti < (target as IntersectionType).types.length; ++tti) {
                     const targetMember = (target as IntersectionType).types[tti];
                     const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
-                    if (targetSignatures.length===0) {
+                    if (targetSignatures.length === 0) {
                         IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, FAIL @1`,loggerLevel);
-                        return { computed:true, ternary: Ternary.False };
+                        return { computed: true, ternary: Ternary.False };
                     }
-                    for (let ti=0; ti<targetSignatures.length; ++ti) {
+                    /* eslint-disable-next-line */
+                    for (let ti = 0; ti < targetSignatures.length; ++ti) {
                         const tsig = targetSignatures[ti];
                         IDebug.ilog(()=>{
                             return `si:${si}, tti:${tti}, ti:${ti}, ssig:${IDebug.dbgs.dbgSignatureToString(ssig)}, tsig:${IDebug.dbgs.dbgSignatureToString(tsig)}`;
                         },loggerLevel);
-                        let refTargetParamsOut:CheckFunctionRelatedToIntersectionHelperArgs["refTargetParamsOut"];
-                        if (si===0){
+                        let refTargetParamsOut: CheckFunctionRelatedToIntersectionHelperArgs["refTargetParamsOut"];
+                        if (si === 0) {
                             refTargetParamsOut = [undefined];
                         }
                         const targetReturnType = getReturnTypeOfSignature(tsig);
                         const sourceReturnType = sourceOverloadsCached.paramsAndReturn[si].returnType!;
-                        const someAssignable = (src:Type,trg:Type)=>{
+                        const someAssignable = (src: Type, trg: Type) => {
                         IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, trg:${IDebug.dbgs.dbgTypeToString(trg)}`,loggerLevel);
-                        const ret = (()=>{
-                            if (trg===voidType) return true; // because the source output can be ignored
-                            if (src.flags & TypeFlags.Union){
-                                return (src as UnionType).types.some(srct=>isTypeAssignableTo(srct,trg));
+                        const ret = (() => {
+                            if (trg === voidType) return true; // because the source output can be ignored
+                            if (src.flags & TypeFlags.Union) {
+                                return (src as UnionType).types.some(srct => isTypeAssignableTo(srct, trg));
                             }
-                            else return isTypeAssignableTo(src,trg);
+                            else return isTypeAssignableTo(src, trg);
                         })();
                         IDebug.ilogGroupEnd(()=>`someAssignable@checkFunctionRelatedToIntersection: returns ${ret}`,loggerLevel);
                         return ret;
