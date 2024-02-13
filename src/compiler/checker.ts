@@ -22505,9 +22505,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         ) {
                             const { computed, ternary } = checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
                             if (computed) {
-                                if (ternary === Ternary.True || !reportErrors) return ternary;
+                                Debug.assert(ternary === Ternary.True || ternary === Ternary.False);
+                                if (ternary === Ternary.True) return ternary;
+                                if (reportErrors){
+                                    // let typeRelatedToEachType make detailed error reporting, but do not let it change the result.
+                                    typeRelatedToEachType(source, target as IntersectionType, reportErrors, intersectionState); // result ignored
+                                    return ternary; // Ternary.False
+                                }
                             }
-                            // falls through if not computed or (not Ternary.True && reportErrors)
+                            // if not computed falls through to the general case: typeRelatedToEachType
                         }
                     }
                 }

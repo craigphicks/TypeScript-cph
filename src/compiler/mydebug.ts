@@ -21,7 +21,6 @@ export namespace IDebug {
     export let dbgs: Dbgs = 0 as any as Dbgs;
     export let checker: TypeChecker | undefined;
     // temporary
-    export let nouseResolveCallExpressionV2: false;
     export function ilog(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
     }
@@ -116,7 +115,7 @@ export class ILoggingClass implements ILoggingHost {
         }
         const nameRet = this.nodePath.basename(node.path, ".ts");
         this.nodeFs.mkdirSync("tmp", {recursive: true});
-        const retfn = "tmp/" + nameRet +`.#${this.currentSourceFnCount}` +`.de${IDebug.logLevel}.rcev${IDebug.nouseResolveCallExpressionV2?1:2}.log`;
+        const retfn = "tmp/" + nameRet +`.#${this.currentSourceFnCount}` +`.de${IDebug.logLevel}.log`;
         return retfn;
     }
 }
@@ -336,7 +335,6 @@ export class DbgsClass implements Dbgs{
 function initialize(){
     IDebug.logLevel = (process.env.myLogLevel===undefined) ? 0 : Number(process.env.myLogLevel);
     IDebug.assertLevel = (process.env.myAssertLevel===undefined) ? 0 : Number(process.env.myAssertLevel);
-    IDebug.nouseResolveCallExpressionV2 = (process.env.nouseRcev2===undefined || !Number(process.env.nouseRcev2)) ? false : true
     if (IDebug.logLevel){
         Debug.isDebugging = true;
         IDebug.loggingHost = new ILoggingClass();
