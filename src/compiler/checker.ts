@@ -22511,7 +22511,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (target.flags & TypeFlags.Intersection) {
                 if (enableCheckFunctionRelatedToIntersection){
                     /**
-                     * [cph] In the case of target intersections of functions, use the algorithm described in #57087
+                     * [cph] In the case of some target intersections of functions, use the algorithm described in #57087
                      */
                     const target0 = (target as IntersectionType).types[0];
                     const sourceSignatures = getSignaturesOfType(source, SignatureKind.Call);
