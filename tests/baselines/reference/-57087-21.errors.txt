@@ -1,8 +1,3 @@
--57087-21.ts(7,4): error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 2): "2" | "3"; }' does not satisfy the expected type 'Garg1'.
-  Type '{ (x: 1 | 2): 1 | 2; (x: 2): "2" | "3"; }' is not assignable to type '(x: 2 | 3) => "2" | "3"'.
-    Types of parameters 'x' and 'x' are incompatible.
-      Type '2 | 3' is not assignable to type '1 | 2'.
-        Type '3' is not assignable to type '1 | 2'.
 -57087-21.ts(9,4): error TS2769: No overload matches this call.
   Overload 1 of 2, '(x: 2): "2" | "3"', gave the following error.
     Argument of type '3' is not assignable to parameter of type '2'.
@@ -10,7 +5,7 @@
     Argument of type '3' is not assignable to parameter of type '1 | 2'.
 
 
-==== -57087-21.ts (2 errors) ====
+==== -57087-21.ts (1 errors) ====
     // test f domain does not support Garg domain (3 omitted from f domain) - cannot detect during satisfies but can detect during call to f1
     
     declare const f1: { (x: 1 | 2): 1 | 2; (x: 2): "2" | "3";}
@@ -18,12 +13,6 @@
     type Garg1 = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
     
     f1 satisfies Garg1; // no error expected
-       ~~~~~~~~~
-!!! error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 2): "2" | "3"; }' does not satisfy the expected type 'Garg1'.
-!!! error TS1360:   Type '{ (x: 1 | 2): 1 | 2; (x: 2): "2" | "3"; }' is not assignable to type '(x: 2 | 3) => "2" | "3"'.
-!!! error TS1360:     Types of parameters 'x' and 'x' are incompatible.
-!!! error TS1360:       Type '2 | 3' is not assignable to type '1 | 2'.
-!!! error TS1360:         Type '3' is not assignable to type '1 | 2'.
     
     f1(3); // error exptected - No overload matches this call. (ts2769)
        ~

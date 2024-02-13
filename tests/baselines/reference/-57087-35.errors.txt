@@ -1,30 +1,10 @@
--57087-35.ts(13,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x?: 2 | undefined; y?: 1 | undefined; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
-  Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x?: 2 | undefined; y?: 1 | undefined; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg35B'.
-    Types of parameters '__0' and '__0' are incompatible.
-      Type '{ x: 2; y?: 2 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
-        Types of property 'x' are incompatible.
-          Type '2' is not assignable to type '1'.
--57087-35.ts(16,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
-  Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg35B'.
-    Types of parameters '__0' and '__0' are incompatible.
-      Type '{ x?: 2 | undefined; y?: 1 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
-        Types of property 'x' are incompatible.
-          Type '2 | undefined' is not assignable to type '1'.
-            Type 'undefined' is not assignable to type '1'.
--57087-35.ts(21,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
-  Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg35B'.
-    Types of parameters '__0' and '__0' are incompatible.
-      Type '{ x?: 2 | undefined; y?: 1 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
-        Types of property 'x' are incompatible.
-          Type '2 | undefined' is not assignable to type '1'.
-            Type 'undefined' is not assignable to type '1'.
 -57087-35.ts(23,17): error TS2769: No overload matches this call.
   The last overload gave the following error.
     Argument of type '{ x: 2; }' is not assignable to parameter of type '{ x: 2; y: 2; }'.
       Property 'y' is missing in type '{ x: 2; }' but required in type '{ x: 2; y: 2; }'.
 
 
-==== -57087-35.ts (4 errors) ====
+==== -57087-35.ts (1 errors) ====
     interface Garg35A {
         ({x,y}:{x:1, y:1}): "111"
     };
@@ -38,37 +18,14 @@
     
     declare const f35b: { ({x,y}:{x:1, y:1}): "111"; ({x,y}:{x?:2, y?:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f35b satisfies Garg35A & Garg35B; // should satisfy
-         ~~~~~~~~~
-!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x?: 2 | undefined; y?: 1 | undefined; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
-!!! error TS1360:   Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x?: 2 | undefined; y?: 1 | undefined; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg35B'.
-!!! error TS1360:     Types of parameters '__0' and '__0' are incompatible.
-!!! error TS1360:       Type '{ x: 2; y?: 2 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
-!!! error TS1360:         Types of property 'x' are incompatible.
-!!! error TS1360:           Type '2' is not assignable to type '1'.
     
     declare const f35c: { ({x,y}:{x:1, y:1}): "111"; (arg:Record<string,never>): "221"; ({x}:{x:2}): "221"; ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f35c satisfies Garg35A & Garg35B; // should satisfy
-         ~~~~~~~~~
-!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
-!!! error TS1360:   Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg35B'.
-!!! error TS1360:     Types of parameters '__0' and '__0' are incompatible.
-!!! error TS1360:       Type '{ x?: 2 | undefined; y?: 1 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
-!!! error TS1360:         Types of property 'x' are incompatible.
-!!! error TS1360:           Type '2 | undefined' is not assignable to type '1'.
-!!! error TS1360:             Type 'undefined' is not assignable to type '1'.
     
     const t1 = f35c({}); // no error, return 221
     
     declare const f35d: { ({x,y}:{x:1, y:1}): "111"; (arg:Record<string,never>): "221"; /*({x}:{x:2}): "221";*/ ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f35d satisfies Garg35A & Garg35B; // should satisfy
-         ~~~~~~~~~
-!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
-!!! error TS1360:   Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' is not assignable to type 'Garg35B'.
-!!! error TS1360:     Types of parameters '__0' and '__0' are incompatible.
-!!! error TS1360:       Type '{ x?: 2 | undefined; y?: 1 | undefined; }' is not assignable to type '{ x: 1; y: 1; }'.
-!!! error TS1360:         Types of property 'x' are incompatible.
-!!! error TS1360:           Type '2 | undefined' is not assignable to type '1'.
-!!! error TS1360:             Type 'undefined' is not assignable to type '1'.
     
     const t2 = f35d({x:2}); // error expected - no overload matches this call
                     ~~~~~
