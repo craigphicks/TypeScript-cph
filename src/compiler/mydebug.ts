@@ -17,11 +17,11 @@ export namespace IDebug {
     export let assertLevel = 0;
     //export let isDebugging = false;
     //export let loggingHost: LoggingHost | undefined;
-    export let loggingHost: ILoggingHost | undefined = undefined;
+    export let loggingHost: ILoggingHost | undefined;
     export let dbgs: Dbgs = 0 as any as Dbgs;
-    export let checker: TypeChecker | undefined = undefined;
+    export let checker: TypeChecker | undefined;
     // temporary
-    export let nouseResolveCallExpressionV2: boolean = false;
+    export let nouseResolveCallExpressionV2: false;
     export function ilog(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
     }
@@ -169,7 +169,7 @@ export class DbgsClass implements Dbgs{
 
     dbgGetNodeText(node: Node){
         return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
-    };
+    }
     dbgTernaryToString(x: Ternary): string {
         switch (x){
             case Ternary.True: return "True";
@@ -215,10 +215,10 @@ export class DbgsClass implements Dbgs{
     dbgNodeToString(node: Node | undefined): string {
         if (!node) return "<undef>";
         return `[n${this.getNodeId(node)}] ${this.dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
-    };
+    }
     dbgSignatureId(c: Signature | undefined): number {
         return c ? this.getSignatureId(c) : -1;
-    };
+    }
     dbgSignatureToString(c: Signature | undefined): string {
         if (!c) return "<undef>";
         let astr: string[] = [`[sg:${this.getSignatureId(c)}] `];
@@ -233,7 +233,7 @@ export class DbgsClass implements Dbgs{
         else if (c.compositeKind===TypeFlags.Intersection) str += ` /* composite intersection [${c.compositeSignatures?.length}] */`;
         else if (c.compositeSignatures) str += ` /* composite ??? [${c.compositeSignatures?.length}] */`;
         return str;
-    };
+    }
     dbgSignatureAndCompositesToStrings(c: Signature | undefined): string[] {
         if (!c) return ["<undef>"];
         let astr: string[] = [];

@@ -24480,9 +24480,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             tracing?.pop({ variances: variances.map(Debug.formatVariance) });
         }
         if (IDebug.logLevel>=loggerLevel){
-            let str = [`getVariancesWorker[out]: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}. links.variances:`];
+            const str = [`getVariancesWorker[out]: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}. links.variances:`];
             const astr: string[] = [];
-            links.variances.forEach((v,i)=>{
+            links.variances.forEach((v)=>{
                 astr.push(`${v}`);
             });
             IDebug.ilogGroupEnd(()=>`${str}[${astr.join(",")}]`,loggerLevel);
@@ -38222,10 +38222,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: contextualSignature:${
                             IDebug.dbgs.dbgSignatureToString(contextualSignature)}`,loggerLevel);
                         const inferenceContext = getInferenceContext(node);
-                        let enableCompositeSignaturesFromContext2 = true && !!enableCheckFunctionRelatedToIntersection;
+                        const enableCompositeSignaturesFromContext2 = true && !!enableCheckFunctionRelatedToIntersection;
                         if (enableCompositeSignaturesFromContext2){
                             function cloneSignatureAndParameters(sig:Signature): Signature {
-                                const parameters = sig.parameters.map(p=>(cloneSymbol(p,/*doNotRecordMergedSymbol*/true)));
+                                const parameters = sig.parameters.map(p=>(cloneSymbol(p,/*doNotRecordMergedSymbol*/ true)));
                                 return cloneSignature({...sig, parameters});
                             }
                             function assignContextualParameterTypesToOneSig(sig:Signature,contextSig:Signature){
@@ -38238,7 +38238,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                     }
                                 }
                                 instantiatedContextualSignature ||= inferenceContext ?
-                                    instantiateSignature(contextSig, inferenceContext.mapper) : contextSig!;
+                                    instantiateSignature(contextSig, inferenceContext.mapper) : contextSig;
                                 assignContextualParameterTypes(sig, instantiatedContextualSignature);
                                 return sig;
                             }
@@ -38247,7 +38247,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             if (contextualSignature.compositeSignatures && contextualSignature.compositeSignatures.length>1
                             && contextualSignature.compositeKind === TypeFlags.Intersection) {
                                 compositeIntersectionMembers = [];
-                                contextualSignature.compositeSignatures.forEach((compositeSig, compositeSigIdx) => {
+                                contextualSignature.compositeSignatures.forEach((compositeSig) => {
                                     Debug.assert(!compositeSig.compositeSignatures,
                                         "case composite signatures member itself has composite signatures: not yet implemented");
                                     compositeIntersectionMembers!.push(
