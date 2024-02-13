@@ -22046,28 +22046,29 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         interface CheckFunctionRelatedToIntersectionHelperArgsFunctionCache {
-            restType: Type | undefined,
-            count: number, // // includes rest type if present
-            params: Type[], // includes rest type if present
+            restType: Type | undefined;
+            count: number;
+            params: Type[];
             paramsAsTupleType: Type;
             requiredCount: number;
-            returnType?: Type
-        };
+            returnType?: Type;
+        }
 
         interface CheckFunctionRelatedToIntersectionHelperArgs {
-            source: Signature, target: Signature,
-            functionCacheIn: CheckFunctionRelatedToIntersectionHelperArgsFunctionCache,
-            reverseSourceAndTargetInCompareTypes?: boolean,
+            source: Signature;
+            target: Signature;
+            functionCacheIn: CheckFunctionRelatedToIntersectionHelperArgsFunctionCache;
+            reverseSourceAndTargetInCompareTypes?: boolean;
             refSourceParamsOut: [
-                ({ wasCreatedByTemplate?: boolean } & CheckFunctionRelatedToIntersectionHelperArgsFunctionCache) | undefined
-            ] | undefined,
+                ({ wasCreatedByTemplate?: boolean; } & CheckFunctionRelatedToIntersectionHelperArgsFunctionCache) | undefined,
+            ] | undefined;
             refTargetParamsOut: [
-                CheckFunctionRelatedToIntersectionHelperArgsFunctionCache | undefined
-            ] | undefined,
-        };
+                CheckFunctionRelatedToIntersectionHelperArgsFunctionCache | undefined,
+            ] | undefined;
+        }
         function getSignatureCacheData(sig: Signature): CheckFunctionRelatedToIntersectionHelperArgsFunctionCache {
             if (sig.typeParameters) {
-                Debug.assert(false, "ssig.typeParameters not yet handled in checkFunctionRelatedToIntersection")
+                Debug.assert(false, "ssig.typeParameters not yet handled in checkFunctionRelatedToIntersection");
             }
             function isOptionalParameterSymbol(symbol: Symbol) {
                 const declaration = symbol.valueDeclaration;
@@ -22077,86 +22078,62 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
 
             const count = getParameterCount(sig);
-            //const restType1 = getNonArrayRestType(sig);
             let restType: Type | undefined;
-            const params:Type[] = [];
+            const params: Type[] = [];
             let requiredCount = 0;
             const tupleElementFlags: ElementFlags[] = [];
             const tupleElementTypes: Type[] = [];
-            for (let i=0; i<count;i++) {
-                if (i===count-1){
+            for (let i = 0; i < count; i++) {
+                if (i === count - 1) {
                     if (signatureHasRestParameter(sig)) {
-                        const restParamType = getTypeOfSymbol(sig.parameters[count-1]);
+                        const restParamType = getTypeOfSymbol(sig.parameters[count - 1]);
                         Debug.assert(isArrayType(restParamType));
                         restType = getElementTypeOfArrayType(restParamType);
                         Debug.assert(restType);
-                        //Debug.assert(restType===restType1);
                         params.push(restType);
-                        //(restType as ArrayType).target.hasRestElement = true;
-                        // const index = pos - paramCount;
-                        // if (!isTupleType(restType) || restType.target.hasRestElement || index < restType.target.fixedLength) {
-                        //     return getIndexedAccessType(restType, getNumberLiteralType(index));
-                        // }
                         tupleElementTypes.push(restParamType);
                         tupleElementFlags.push(ElementFlags.Rest);
                         break;
                     }
                 }
-                // const declaration = sig.parameters[i].valueDeclaration;
                 const symbol = sig.parameters[i];
-                // getTypeOfSymbol returns optional types already unioned with plain "undefined" even when the exactOptionalPropertyTypes option is true/
-                const type = getTypeOfSymbol(symbol, /*checkMode*/ undefined, /*includeOptionality*/ false);
+                const type = getTypeOfSymbol(symbol, /*checkMode*/ undefined);
                 params.push(type);
                 tupleElementTypes.push(type);
                 if (isOptionalParameterSymbol(symbol)) {
                     tupleElementFlags.push(ElementFlags.Optional);
                 }
                 else {
-                    requiredCount = i+1;
+                    requiredCount = i + 1;
                     tupleElementFlags.push(ElementFlags.Required);
                 }
             }
-            // if (count){
-            //     // The count-1'th parameter
-            //     if (signatureHasRestParameter(sig)) {
-            //         const restParamType = getTypeOfSymbol(sig.parameters[count-1]);
-            //         Debug.assert(isArrayType(restParamType));
-            //         restType = getElementTypeOfArrayType(restParamType);
-            //         Debug.assert(restType);
-            //         Debug.assert(restType===restType1);
-            //         params.push(restType);
-            //         //(restType as ArrayType).target.hasRestElement = true;
-            //         // const index = pos - paramCount;
-            //         // if (!isTupleType(restType) || restType.target.hasRestElement || index < restType.target.fixedLength) {
-            //         //     return getIndexedAccessType(restType, getNumberLiteralType(index));
-            //         // }
-            //         tupleElementFlags.push(ElementFlags.Rest);
-            //     }
-            //     else {
-            //         params.push(getTypeOfSymbol(sig.parameters[count-1]));
-            //     }
-            // }
             sig.declaration?.parameters;
             sig.parameters;
             Debug.assert(sig.declaration?.parameters);
-            const paramsAsTupleType = createTupleType(tupleElementTypes, tupleElementFlags, false, /*(sig.declaration?.parameters)! as ParameterDeclaration[]*/);
-            //const paramsAsTuple = createTupleType()
+            const paramsAsTupleType = createTupleType(tupleElementTypes, tupleElementFlags, /*readonly*/ false);
+            // const paramsAsTuple = createTupleType()
             const returnType = getReturnTypeOfSignature(sig);
             return {
-                count, restType, params, paramsAsTupleType, requiredCount, returnType
+                count,
+                restType,
+                params,
+                paramsAsTupleType,
+                requiredCount,
+                returnType,
             };
         }
 
 
         function checkFunctionRelatedToIntersectionHelper(
-            {source,target, functionCacheIn, reverseSourceAndTargetInCompareTypes, refTargetParamsOut}: CheckFunctionRelatedToIntersectionHelperArgs
+            { source, target, functionCacheIn, reverseSourceAndTargetInCompareTypes, refTargetParamsOut }: CheckFunctionRelatedToIntersectionHelperArgs,
         ): boolean {
         const logLevel = 2;
         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersectionHelper[in]: source:${IDebug.dbgs.dbgSignatureToString(source)}, target:${IDebug.dbgs.dbgSignatureToString(target)}`,logLevel);
         const ret = (()=>{
             const compareTypes: TypeComparer = compareTypesAssignable;
             const checkMode = SignatureCheckMode.None;
-            const reportErrors: boolean = false;
+            const reportErrors = false;
             const errorReporter: ErrorReporter | undefined = undefined;
             const incompatibleErrorReporter: ((source: Type, target: Type) => void) | undefined = undefined;
             const reportUnreliableMarkers: TypeMapper | undefined = undefined;
@@ -22188,30 +22165,30 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (source.typeParameters && source.typeParameters !== target.typeParameters) {
                 const origTarget = target;
                 target = getCanonicalSignature(target);
-                if (target!==origTarget){
-                    Debug.assert(false,`target!==origTarget, not yet implemented`);
+                if (target !== origTarget) {
+                    Debug.assert(false, `target!==origTarget, not yet implemented`);
                 }
                 const origSource = source;
                 source = instantiateSignatureInContextOf(source, target, /*inferenceContext*/ undefined, compareTypes);
-                if (source!==origSource){
-                    Debug.assert(false,`source!==origSource, not yet implemented`);
+                if (source !== origSource) {
+                    Debug.assert(false, `source!==origSource, not yet implemented`);
                 }
             }
 
-            //const sourceCount = getParameterCount(source);
-            //const sourceRestType = getNonArrayRestType(source);
+            // const sourceCount = getParameterCount(source);
+            // const sourceRestType = getNonArrayRestType(source);
 
 
             const sourceRestType = getNonArrayRestType(source);
             const targetRestType = getNonArrayRestType(target);
             if (sourceRestType || targetRestType) {
-                Debug.assert(false,`case getNonArrayRestType(source) || getNonArrayRestType(target), not yet implemented`);
+                Debug.assert(false, `case getNonArrayRestType(source) || getNonArrayRestType(target), not yet implemented`);
                 void instantiateType(sourceRestType || targetRestType, reportUnreliableMarkers);
             }
 
 
            // const targetRestType = getNonArrayRestType(target);
-            if (refTargetParamsOut){
+            if (refTargetParamsOut) {
                 refTargetParamsOut[0] = getSignatureCacheData(target);
             }
 
@@ -22237,14 +22214,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
 
-            const {count:sourceCount,requiredCount:_sourceFixedLength,params:sourceParams,/*restType:sourceRestType,*/returnType:_sourceReturnType} = functionCacheIn;
+            const { count: sourceCount, requiredCount: _sourceFixedLength, params: sourceParams, /*restType:sourceRestType,*/ returnType: _sourceReturnType } = functionCacheIn;
 
             const paramCount = sourceRestType || targetRestType ? Math.min(sourceCount, targetCount) : Math.max(sourceCount, targetCount);
             const restIndex = sourceRestType || targetRestType ? paramCount - 1 : -1;
 
             for (let i = 0; i < paramCount; i++) {
-                const sourceType = i === restIndex ? sourceRestType : (i<sourceParams.length) ? sourceParams[i] : undefined;
-                //const sourceType = i === restIndex ? getRestTypeAtPosition(source, i) : tryGetTypeAtPosition(source, i);
+                const sourceType = i === restIndex ? sourceRestType : (i < sourceParams.length) ? sourceParams[i] : undefined;
+                // const sourceType = i === restIndex ? getRestTypeAtPosition(source, i) : tryGetTypeAtPosition(source, i);
                 const targetType = i === restIndex ? getRestTypeAtPosition(target, i) : tryGetTypeAtPosition(target, i);
                 // [cph] Note: case sourceType===undefined will possibly result in error when checking that target domain extends source domain.
                 if (sourceType && targetType) {
@@ -22261,14 +22238,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     const callbacks = sourceSig && targetSig && !getTypePredicateOfSignature(sourceSig) && !getTypePredicateOfSignature(targetSig) &&
                         getTypeFacts(sourceType, TypeFacts.IsUndefinedOrNull) === getTypeFacts(targetType, TypeFacts.IsUndefinedOrNull);
                     let related;
-                    if (callbacks){
-                        // TODO: test whether this branch is actually used
-                        related = compareSignaturesRelated(targetSig, sourceSig,
-                            (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback),
-                            reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers);
+                    if (callbacks) {
+                        related = compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers);
                     }
                     else {
-                        if (reverseSourceAndTargetInCompareTypes){
+                        if (reverseSourceAndTargetInCompareTypes) {
                             related = compareTypes(targetType, sourceType, /*reportErrors*/ false) || compareTypes(sourceType, targetType, /*reportErrors*/ false);
                         }
                         else related = compareTypes(sourceType, targetType, /*reportErrors*/ false);
@@ -22313,10 +22287,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         const ret = ((): { computed: boolean, ternary:Ternary } => {
             //let refSourceParamsOut:CheckFunctionRelatedToIntersectionHelperArgs["refSourceParamsOut"]  = [undefined];
-            type SourceOverloadsCached = {
+            interface SourceOverloadsCached {
                 paramsAndReturn: CheckFunctionRelatedToIntersectionHelperArgsFunctionCache[];
             }
-            let sourceOverloadsCached: SourceOverloadsCached = {
+            const sourceOverloadsCached: SourceOverloadsCached = {
                 paramsAndReturn: [],
             };
             const origSourceSignatures = getSignaturesOfType(source, SignatureKind.Call);
@@ -22326,9 +22300,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     IDebug.dbgs.dbgSignatureAndCompositesToStrings(sig).forEach((s)=>IDebug.ilog(()=>`origSourceSig[${si}]: ${s}`,loggerLevel));
                 });
             }
-            let sourceSignatures: ReadonlyArray<Signature>;
+            let sourceSignatures: readonly Signature[];
             if (origSourceSignatures[0].compositeSignatures?.length && origSourceSignatures[0].compositeKind===TypeFlags.Intersection) {
-                if (origSourceSignatures.length!==1){
+                if (origSourceSignatures.length !== 1) {
                     Debug.assert(false,`origSourceSignatures.length!==1`);
                     return { computed:false, ternary: Ternary.Unknown };
                 }
