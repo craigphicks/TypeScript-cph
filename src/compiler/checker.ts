@@ -22101,6 +22101,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const loggerLevel = 2;
         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersection[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}`,loggerLevel);
 
+
         const ret = ((): { computed: boolean, ternary:Ternary } => {
             const origSourceSignatures = getSignaturesOfType(source, SignatureKind.Call);
             Debug.assert(origSourceSignatures.length);
@@ -22153,128 +22154,79 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             type MapTTS = Map<number/*tti*/,Map<number/*ti*/,Set<number>/*si*/>>;
             const maptts: MapTTS | undefined = (IDebug.logLevel>=loggerLevel) ? new Map() : undefined;
 
-            function compareOneSourceSigToOneTargetSig(tsig: Signature, ssig: Signature, accum:{ hadMatch: boolean, gReturn: Type, gReturnAllVoid: boolean}, si: number, tti: number, ti:number): void {
-                IDebug.ilog(()=>{
-                    return `si:${si}, tti:${tti}, ti:${ti}, ssig:${IDebug.dbgs.dbgSignatureToString(ssig)}, tsig:${IDebug.dbgs.dbgSignatureToString(tsig)}`;
-                },loggerLevel);
-                const targetReturnType = getReturnTypeOfSignature(tsig);
-                const sourceReturnType = getReturnTypeOfSignature(ssig)
-                const someAssignable = (src: Type, trg: Type) => {
-                IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, trg:${IDebug.dbgs.dbgTypeToString(trg)}`,loggerLevel);
-                const ret = (() => {
-                    if (trg === voidType) return true; // because the source output can be ignored
-                    if (src.flags & TypeFlags.Union) {
-                        return (src as UnionType).types.some(srct => isTypeAssignableTo(srct, trg));
-                    }
-                    else return isTypeAssignableTo(src, trg);
-                })();
-                IDebug.ilogGroupEnd(()=>`someAssignable@checkFunctionRelatedToIntersection: returns ${ret}`,loggerLevel);
-                return ret;
-                };
-
-                if (someAssignable(sourceReturnType, targetReturnType)) {
-                    let compareTypes: TypeComparer = !onlyOneSourceSig
-                        ? compareTypesAssignable
-                        : (s:Type, t: Type, reportErrors: boolean | undefined) => {
-                            return compareTypesAssignable(s,t) || compareTypesAssignable(t,s);
-                        };
-                    if (compareSignaturesRelated(
-                        ssig, tsig, SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes,
-                        /*reportErrors*/ false, /*errorReporter*/ undefined, /*incompatibleErrorReporter*/ undefined,
-                        compareTypes, /*reportUnreliableMarkers*/ undefined, /*compareTypesOnceOnly*/ true) === Ternary.True)
-                    {
-                        accum.hadMatch = true;
-                        if (targetReturnType !== voidType) {
-                            accum.gReturn = getUnionType([accum.gReturn, targetReturnType]);
-                            accum.gReturnAllVoid = false;
-                        }
-
-                        if (IDebug.logLevel>=loggerLevel){
-                            Debug.assert(maptts);
-                            let mti = maptts.get(tti);
-                            if (!mti) {
-                                mti = new Map();
-                                maptts.set(tti, mti);
-                            }
-                            let setsi = mti.get(ti);
-                            if (!setsi) {
-                                setsi = new Set();
-                                mti.set(ti, setsi);
-                            }
-                            setsi.add(si);
-                            IDebug.ilog(()=>`checkFunctionRelatedToIntersection: match tti:${tti}, ti:${ti} <- si:${si}`,loggerLevel);
-                        }
-                    }
-                }
-            }
-
             const onlyOneSourceSig = sourceSignatures.length === 1;
-
-            const failed = sourceSignatures.some((ssig,si)=>{
-
+            /* eslint-disable-next-line */
+            for (let si = 0; si < sourceSignatures.length; ++si) {
                 let hadMatch = false;
                 let gReturn = neverType as Type;
                 let gReturnAllVoid = true;
-
-                (target as IntersectionType).types.forEach((targetMember,tti)=>{
+                const ssig = sourceSignatures[si];
+                /* eslint-disable-next-line */
+                for (let tti = 0; tti < (target as IntersectionType).types.length; ++tti) {
+                    const targetMember = (target as IntersectionType).types[tti];
                     const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
+                    if (targetSignatures.length === 0) {
+                        IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, FAIL @1`,loggerLevel);
+                        return { computed: true, ternary: Ternary.False };
+                    }
+                    /* eslint-disable-next-line */
+                    for (let ti = 0; ti < targetSignatures.length; ++ti) {
+                        const tsig = targetSignatures[ti];
+                        IDebug.ilog(()=>{
+                            return `si:${si}, tti:${tti}, ti:${ti}, ssig:${IDebug.dbgs.dbgSignatureToString(ssig)}, tsig:${IDebug.dbgs.dbgSignatureToString(tsig)}`;
+                        },loggerLevel);
+                        const targetReturnType = getReturnTypeOfSignature(tsig);
+                        const sourceReturnType = getReturnTypeOfSignature(ssig);
+                        const someAssignable = (src: Type, trg: Type) => {
+                        IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, trg:${IDebug.dbgs.dbgTypeToString(trg)}`,loggerLevel);
+                        const ret = (() => {
+                            if (trg === voidType) return true; // because the source output can be ignored
+                            if (src.flags & TypeFlags.Union) {
+                                return (src as UnionType).types.some(srct => isTypeAssignableTo(srct, trg));
+                            }
+                            else return isTypeAssignableTo(src, trg);
+                        })();
+                        IDebug.ilogGroupEnd(()=>`someAssignable@checkFunctionRelatedToIntersection: returns ${ret}`,loggerLevel);
+                        return ret;
+                        };
 
-                    targetSignatures.forEach((tsig,ti)=>{
-                        compareOneSourceSigToOneTargetSig(tsig, ssig, { hadMatch, gReturn, gReturnAllVoid }, si, tti, ti);
-                        // IDebug.ilog(()=>{
-                        //     return `si:${si}, tti:${tti}, ti:${ti}, ssig:${IDebug.dbgs.dbgSignatureToString(ssig)}, tsig:${IDebug.dbgs.dbgSignatureToString(tsig)}`;
-                        // },loggerLevel);
-                        // const targetReturnType = getReturnTypeOfSignature(tsig);
-                        // const sourceReturnType = getReturnTypeOfSignature(ssig)
-                        // const someAssignable = (src: Type, trg: Type) => {
-                        // IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, trg:${IDebug.dbgs.dbgTypeToString(trg)}`,loggerLevel);
-                        // const ret = (() => {
-                        //     if (trg === voidType) return true; // because the source output can be ignored
-                        //     if (src.flags & TypeFlags.Union) {
-                        //         return (src as UnionType).types.some(srct => isTypeAssignableTo(srct, trg));
-                        //     }
-                        //     else return isTypeAssignableTo(src, trg);
-                        // })();
-                        // IDebug.ilogGroupEnd(()=>`someAssignable@checkFunctionRelatedToIntersection: returns ${ret}`,loggerLevel);
-                        // return ret;
-                        // };
+                        if (someAssignable(sourceReturnType, targetReturnType)) {
+                            let oneMatch: boolean;
+                                let compareTypes: TypeComparer = !onlyOneSourceSig
+                                    ? compareTypesAssignable
+                                    : (s:Type, t: Type, reportErrors: boolean | undefined) => {
+                                        return compareTypesAssignable(s,t) || compareTypesAssignable(t,s);
+                                    };
+                                oneMatch = compareSignaturesRelated(
+                                    ssig, tsig, SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes,
+                                    /*reportErrors*/ false, /*errorReporter*/ undefined, /*incompatibleErrorReporter*/ undefined,
+                                    compareTypes, /*reportUnreliableMarkers*/ undefined, /*compareTypesOnceOnly*/ true) === Ternary.True;
+                            if (oneMatch) {
+                                hadMatch = true;
+                                if (targetReturnType !== voidType) {
+                                    gReturn = getUnionType([gReturn, targetReturnType]);
+                                    gReturnAllVoid = false;
+                                }
 
-                        // if (someAssignable(sourceReturnType, targetReturnType)) {
-                        //     let compareTypes: TypeComparer = !onlyOneSourceSig
-                        //         ? compareTypesAssignable
-                        //         : (s:Type, t: Type, reportErrors: boolean | undefined) => {
-                        //             return compareTypesAssignable(s,t) || compareTypesAssignable(t,s);
-                        //         };
-                        //     if (compareSignaturesRelated(
-                        //         ssig, tsig, SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes,
-                        //         /*reportErrors*/ false, /*errorReporter*/ undefined, /*incompatibleErrorReporter*/ undefined,
-                        //         compareTypes, /*reportUnreliableMarkers*/ undefined, /*compareTypesOnceOnly*/ true) === Ternary.True)
-                        //     {
-                        //         hadMatch = true;
-                        //         if (targetReturnType !== voidType) {
-                        //             gReturn = getUnionType([gReturn, targetReturnType]);
-                        //             gReturnAllVoid = false;
-                        //         }
-
-                        //         if (IDebug.logLevel>=loggerLevel){
-                        //             Debug.assert(maptts);
-                        //             let mti = maptts.get(tti);
-                        //             if (!mti) {
-                        //                 mti = new Map();
-                        //                 maptts.set(tti, mti);
-                        //             }
-                        //             let setsi = mti.get(ti);
-                        //             if (!setsi) {
-                        //                 setsi = new Set();
-                        //                 mti.set(ti, setsi);
-                        //             }
-                        //             setsi.add(si);
-                        //             IDebug.ilog(()=>`checkFunctionRelatedToIntersection: match tti:${tti}, ti:${ti} <- si:${si}`,loggerLevel);
-                        //         }
-                        //     }
-                        // }
-                    });
-                });
+                                if (IDebug.logLevel>=loggerLevel){
+                                    Debug.assert(maptts);
+                                    let mti = maptts.get(tti);
+                                    if (!mti) {
+                                        mti = new Map();
+                                        maptts.set(tti, mti);
+                                    }
+                                    let setsi = mti.get(ti);
+                                    if (!setsi) {
+                                        setsi = new Set();
+                                        mti.set(ti, setsi);
+                                    }
+                                    setsi.add(si);
+                                    IDebug.ilog(()=>`checkFunctionRelatedToIntersection: match tti:${tti}, ti:${ti} <- si:${si}`,loggerLevel);
+                                }
+                            }
+                        }
+                    }
+                }
                 if (!hadMatch) {
                     IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${si}, FAIL @3 (no match)`,loggerLevel);
                     return { computed: true, ternary: Ternary.False };
@@ -22287,8 +22239,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         return { computed: true, ternary: Ternary.False };
                     }
                 }
-            });
-            if (failed) return { computed: true, ternary: Ternary.False };
+            }
             if (IDebug.logLevel >= loggerLevel){
                 maptts!.forEach((mapti,tti)=>{
                     mapti.forEach((setsi,ti)=>{
