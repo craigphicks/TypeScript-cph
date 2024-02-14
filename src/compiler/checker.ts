@@ -22300,7 +22300,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return typeRelatedToSomeType(getRegularTypeOfObjectLiteral(source), target as UnionType, reportErrors && !(source.flags & TypeFlags.Primitive) && !(target.flags & TypeFlags.Primitive), intersectionState);
             }
             if (target.flags & TypeFlags.Intersection) {
-                if (enableCheckFunctionRelatedToIntersection){
+                if (enableCheckFunctionRelatedToIntersection && !reportErrors){
                     /**
                      * [cph] In the case of some target intersections of functions, follow #57087
                      */
@@ -22319,11 +22319,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             if (computed) {
                                 Debug.assert(ternary === Ternary.True || ternary === Ternary.False);
                                 if (ternary === Ternary.True) return ternary;
-                                if (reportErrors){
-                                    // let typeRelatedToEachType make detailed error reporting, but do not let it change the result.
-                                    typeRelatedToEachType(source, target as IntersectionType, reportErrors, intersectionState); // result ignored
-                                    return ternary; // Ternary.False
-                                }
+                                // if (reportErrors){
+                                //     // let typeRelatedToEachType make detailed error reporting, but do not let it change the result.
+                                //     typeRelatedToEachType(source, target as IntersectionType, reportErrors, intersectionState); // result ignored
+                                //     return ternary; // Ternary.False
+                                // }
                             }
                             // if not computed falls through to the general case: typeRelatedToEachType
                         }
