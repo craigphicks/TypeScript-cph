@@ -20863,7 +20863,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     /**
      * See signatureRelatedTo, compareSignaturesIdentical
      */
-    function compareSignaturesRelated(source: Signature, target: Signature, checkMode: SignatureCheckMode, reportErrors: boolean, errorReporter: ErrorReporter | undefined, incompatibleErrorReporter: ((source: Type, target: Type) => void) | undefined, compareTypes: TypeComparer, reportUnreliableMarkers: TypeMapper | undefined): Ternary {
+    function compareSignaturesRelated(source: Signature, target: Signature, checkMode: SignatureCheckMode, reportErrors: boolean, errorReporter: ErrorReporter | undefined, incompatibleErrorReporter: ((source: Type, target: Type) => void) | undefined, compareTypes: TypeComparer, reportUnreliableMarkers: TypeMapper | undefined, compareTypesUnilateral = false): Ternary {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`compareSignaturesRelated[in]: source: ${IDebug.dbgs.dbgSignatureToString(source)
+    }, target: ${IDebug.dbgs.dbgSignatureToString(target)
+    }, checkMode: ${checkMode
+    }, reportErrors: ${reportErrors
+    }, errorReporter: ${!!errorReporter
+    }, incompatibleErrorReporter: ${!!incompatibleErrorReporter
+    }, reportUnreliableMarkers: ${!!reportUnreliableMarkers
+    }, compareTypesUnilateral: ${compareTypesUnilateral
+    }`, loggerLevel);
+    const ret = (()=>{
         // TODO (drosen): De-duplicate code between related functions.
         if (source === target) {
             return Ternary.True;
@@ -20941,9 +20952,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const targetSig = checkMode & SignatureCheckMode.Callback || isInstantiatedGenericParameter(target, i) ? undefined : getSingleCallSignature(getNonNullableType(targetType));
                 const callbacks = sourceSig && targetSig && !getTypePredicateOfSignature(sourceSig) && !getTypePredicateOfSignature(targetSig) &&
                     getTypeFacts(sourceType, TypeFacts.IsUndefinedOrNull) === getTypeFacts(targetType, TypeFacts.IsUndefinedOrNull);
-                let related = callbacks ?
-                    compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers) :
-                    !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
+                let related = callbacks
+                    ? compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers)
+                    : !(checkMode & SignatureCheckMode.Callback) && !strictVariance &&
+                        (!compareTypesUnilateral && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors))
+                        || (compareTypesUnilateral && compareTypes(sourceType, targetType, reportErrors));
                 // With strict arity, (x: number | undefined) => void is a subtype of (x?: number | undefined) => void
                 if (related && checkMode & SignatureCheckMode.StrictArity && i >= getMinArgumentCount(source) && i < getMinArgumentCount(target) && compareTypes(sourceType, targetType, /*reportErrors*/ false)) {
                     related = Ternary.False;
@@ -20998,6 +21011,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return result;
+    })();
+    IDebug.ilogGroupEnd(()=>`compareSignaturesRelated[out]: returns: ${IDebug.dbgs.dbgTernaryToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function compareTypePredicateRelatedTo(
@@ -22382,16 +22398,30 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         };
 
                         if (someAssignable(sourceReturnType, targetReturnType)) {
-                            if (
-                                checkFunctionRelatedToIntersectionHelper({
+                            let oneMatch: boolean;
+                            let useCompareSignaturesRelated = false;
+                            if (!useCompareSignaturesRelated){
+                                oneMatch = checkFunctionRelatedToIntersectionHelper({
                                     source: ssig,
                                     target: tsig,
                                     functionCacheIn: sourceOverloadsCached.paramsAndReturn[si],
                                     reverseSourceAndTargetInCompareTypes: onlyOneSourceSig,
                                     refSourceParamsOut: undefined,
                                     refTargetParamsOut,
-                                })
-                            ) {
+                                });
+                            }
+                            else {
+                                let compareTypes: TypeComparer = !onlyOneSourceSig
+                                    ? compareTypesAssignable
+                                    : (s:Type, t: Type, reportErrors: boolean | undefined) => {
+                                        return compareTypesAssignable(s,t) || compareTypesAssignable(t,s);
+                                    };
+                                oneMatch = compareSignaturesRelated(
+                                    ssig, tsig, SignatureCheckMode.None,
+                                    /*reportErrors*/ false, /*errorReporter*/ undefined, /*incompatibleErrorReporter*/ undefined,
+                                    compareTypes, /*reportUnreliableMarkers*/ undefined, /*compareTypesOnceOnly*/ true) === Ternary.True;
+                            }
+                            if (oneMatch) {
                                 hadMatch = true;
                                 if (targetReturnType !== voidType) {
                                     gReturn = getUnionType([gReturn, targetReturnType]);
