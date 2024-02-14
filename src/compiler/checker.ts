@@ -20863,7 +20863,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     /**
      * See signatureRelatedTo, compareSignaturesIdentical
      */
-    function compareSignaturesRelated(source: Signature, target: Signature, checkMode: SignatureCheckMode, reportErrors: boolean, errorReporter: ErrorReporter | undefined, incompatibleErrorReporter: ((source: Type, target: Type) => void) | undefined, compareTypes: TypeComparer, reportUnreliableMarkers: TypeMapper | undefined, compareTypesUnilateral = false): Ternary {
+    function compareSignaturesRelated(source: Signature, target: Signature, checkMode: SignatureCheckMode, reportErrors: boolean, errorReporter: ErrorReporter | undefined, incompatibleErrorReporter: ((source: Type, target: Type) => void) | undefined, compareTypes: TypeComparer, reportUnreliableMarkers: TypeMapper | undefined, compareTypesUnilaterally = false): Ternary {
     const loggerLevel = 2;
     IDebug.ilogGroup(()=>`compareSignaturesRelated[in]: source: ${IDebug.dbgs.dbgSignatureToString(source)
     }, target: ${IDebug.dbgs.dbgSignatureToString(target)
@@ -20872,7 +20872,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }, errorReporter: ${!!errorReporter
     }, incompatibleErrorReporter: ${!!incompatibleErrorReporter
     }, reportUnreliableMarkers: ${!!reportUnreliableMarkers
-    }, compareTypesUnilateral: ${compareTypesUnilateral
+    }, compareTypesUnilaterally: ${compareTypesUnilaterally
     }`, loggerLevel);
     const ret = (()=>{
         // TODO (drosen): De-duplicate code between related functions.
@@ -20952,12 +20952,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const targetSig = checkMode & SignatureCheckMode.Callback || isInstantiatedGenericParameter(target, i) ? undefined : getSingleCallSignature(getNonNullableType(targetType));
                 const callbacks = sourceSig && targetSig && !getTypePredicateOfSignature(sourceSig) && !getTypePredicateOfSignature(targetSig) &&
                     getTypeFacts(sourceType, TypeFacts.IsUndefinedOrNull) === getTypeFacts(targetType, TypeFacts.IsUndefinedOrNull);
-                let related = callbacks
-                    ? compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers)
-                    : !(checkMode & SignatureCheckMode.Callback) && !strictVariance &&
-                        (!compareTypesUnilateral && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors))
-                        || (compareTypesUnilateral && compareTypes(sourceType, targetType, reportErrors));
-                // With strict arity, (x: number | undefined) => void is a subtype of (x?: number | undefined) => void
+                let related: Ternary;
+                if (callbacks) {
+                    related = compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers)
+                }
+                else {
+                    if (!compareTypesUnilaterally) {
+                        related = !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
+                    }
+                    else {
+                        related = compareTypes(sourceType, targetType, reportErrors);
+                    }
+                }
+                // let related = callbacks ?
+                //     compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers) :
+                //     !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
+
                 if (related && checkMode & SignatureCheckMode.StrictArity && i >= getMinArgumentCount(source) && i < getMinArgumentCount(target) && compareTypes(sourceType, targetType, /*reportErrors*/ false)) {
                     related = Ternary.False;
                 }
@@ -22301,6 +22311,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const loggerLevel = 2;
         IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersection[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}`,loggerLevel);
 
+        let useCompareSignaturesRelated = (process.env.usecsr===undefined ? true : Number(process.env.usecsr)) ? true : false;
+
         const ret = ((): { computed: boolean, ternary:Ternary } => {
             interface SourceOverloadsCached {
                 paramsAndReturn: CheckFunctionRelatedToIntersectionHelperArgsFunctionCache[];
@@ -22334,13 +22346,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     const targetType = (target as IntersectionType).types[si];
                     const targetSigs = getSignaturesOfType(targetType, SignatureKind.Call);
                     Debug.assert(targetSigs.length === 1);
-
-                    const functionCacheIn = getSignatureCacheData(sourceSig);
+                    const functionCacheIn = useCompareSignaturesRelated ? 0 as any as CheckFunctionRelatedToIntersectionHelperArgsFunctionCache
+                        : getSignatureCacheData(sourceSig);
                     if (!checkFunctionRelatedToIntersectionHelper({ source: sourceSig, target: targetSigs[0], functionCacheIn, refSourceParamsOut: undefined, refTargetParamsOut: undefined })) {
                         return { computed: true, ternary: Ternary.False };
                     }
                     const targetReturnType = getReturnTypeOfSignature(targetSigs[0]);
-                    if (targetReturnType !== voidType && !isTypeAssignableTo(functionCacheIn.returnType!, targetReturnType)) {
+                    const sourceReturnType = getReturnTypeOfSignature(sourceSig);
+                    if (targetReturnType !== voidType && !isTypeAssignableTo(sourceReturnType, targetReturnType)) {
                         return { computed: true, ternary: Ternary.False };
                     }
                 }
@@ -22350,7 +22363,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 sourceSignatures = origSourceSignatures;
                 sourceSignatures.forEach(sourceSignature => {
                     Debug.assert(!(sourceSignature.compositeSignatures?.length && sourceSignatures[0].compositeKind === TypeFlags.Intersection), "multiple composite intersection signatures not yet ijmplement");
-                    const paramsAndReturn = getSignatureCacheData(sourceSignature);
+                    const paramsAndReturn = useCompareSignaturesRelated ? 0 as any as CheckFunctionRelatedToIntersectionHelperArgsFunctionCache
+                        : getSignatureCacheData(sourceSignature);
                     sourceOverloadsCached.paramsAndReturn.push(paramsAndReturn);
                 });
             }
@@ -22383,7 +22397,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             refTargetParamsOut = [undefined];
                         }
                         const targetReturnType = getReturnTypeOfSignature(tsig);
-                        const sourceReturnType = sourceOverloadsCached.paramsAndReturn[si].returnType!;
+                        const sourceReturnType = useCompareSignaturesRelated ? getReturnTypeOfSignature(ssig)
+                            : sourceOverloadsCached.paramsAndReturn[si].returnType!;
                         const someAssignable = (src: Type, trg: Type) => {
                         IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${si}, tti:${tti}, ti:${ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, trg:${IDebug.dbgs.dbgTypeToString(trg)}`,loggerLevel);
                         const ret = (() => {
@@ -22399,7 +22414,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
                         if (someAssignable(sourceReturnType, targetReturnType)) {
                             let oneMatch: boolean;
-                            let useCompareSignaturesRelated = false;
                             if (!useCompareSignaturesRelated){
                                 oneMatch = checkFunctionRelatedToIntersectionHelper({
                                     source: ssig,
@@ -22417,7 +22431,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                         return compareTypesAssignable(s,t) || compareTypesAssignable(t,s);
                                     };
                                 oneMatch = compareSignaturesRelated(
-                                    ssig, tsig, SignatureCheckMode.None,
+                                    ssig, tsig, SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes,
                                     /*reportErrors*/ false, /*errorReporter*/ undefined, /*incompatibleErrorReporter*/ undefined,
                                     compareTypes, /*reportUnreliableMarkers*/ undefined, /*compareTypesOnceOnly*/ true) === Ternary.True;
                             }
@@ -22452,10 +22466,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     return { computed: true, ternary: Ternary.False };
                 }
                 else {
-                    const returnType = sourceOverloadsCached.paramsAndReturn[si].returnType;
-                    Debug.assert(returnType, "returnType is unexpectedly undefined");
-                    const tmpReturnType = getReturnTypeOfSignature(ssig);
-                    Debug.assert(returnType === tmpReturnType);
+                    const returnType = getReturnTypeOfSignature(ssig);
                     if (!gReturnAllVoid && !isTypeAssignableTo(returnType, gReturn)) {
                         IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
                             si}, FAIL @4 (source return type not assignable to accum target return type)`,loggerLevel);

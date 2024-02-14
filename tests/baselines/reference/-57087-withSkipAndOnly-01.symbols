@@ -1,0 +1,125 @@
+//// [tests/cases/compiler/-test/-57087-withSkipAndOnly-01.ts] ////
+
+=== -57087-withSkipAndOnly-01.ts ===
+interface Context {
+>Context : Symbol(Context, Decl(-57087-withSkipAndOnly-01.ts, 0, 0))
+
+    [key: string]: any;
+>key : Symbol(key, Decl(-57087-withSkipAndOnly-01.ts, 1, 5))
+}
+interface Test {
+>Test : Symbol(Test, Decl(-57087-withSkipAndOnly-01.ts, 2, 1))
+
+    [key: string]: any;
+>key : Symbol(key, Decl(-57087-withSkipAndOnly-01.ts, 4, 5))
+}
+type Done = (err?: any) => void;
+>Done : Symbol(Done, Decl(-57087-withSkipAndOnly-01.ts, 5, 1))
+>err : Symbol(err, Decl(-57087-withSkipAndOnly-01.ts, 6, 13))
+
+type Func = (this: Context, done: Done) => void;
+>Func : Symbol(Func, Decl(-57087-withSkipAndOnly-01.ts, 6, 32))
+>this : Symbol(this, Decl(-57087-withSkipAndOnly-01.ts, 7, 13))
+>Context : Symbol(Context, Decl(-57087-withSkipAndOnly-01.ts, 0, 0))
+>done : Symbol(done, Decl(-57087-withSkipAndOnly-01.ts, 7, 27))
+>Done : Symbol(Done, Decl(-57087-withSkipAndOnly-01.ts, 5, 1))
+
+type AsyncFunc = (this: Context) => PromiseLike<any>;
+>AsyncFunc : Symbol(AsyncFunc, Decl(-57087-withSkipAndOnly-01.ts, 7, 48))
+>this : Symbol(this, Decl(-57087-withSkipAndOnly-01.ts, 8, 18))
+>Context : Symbol(Context, Decl(-57087-withSkipAndOnly-01.ts, 0, 0))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+interface PendingTestFunction {
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 8, 53))
+
+    skip: PendingTestFunction;
+>skip : Symbol(PendingTestFunction.skip, Decl(-57087-withSkipAndOnly-01.ts, 9, 31))
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 8, 53))
+
+    only: PendingTestFunction;
+>only : Symbol(PendingTestFunction.only, Decl(-57087-withSkipAndOnly-01.ts, 10, 30))
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 8, 53))
+
+    (fn: Func): Test;
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 12, 5))
+>Func : Symbol(Func, Decl(-57087-withSkipAndOnly-01.ts, 6, 32))
+>Test : Symbol(Test, Decl(-57087-withSkipAndOnly-01.ts, 2, 1))
+
+    (fn: AsyncFunc): Test;
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 13, 5))
+>AsyncFunc : Symbol(AsyncFunc, Decl(-57087-withSkipAndOnly-01.ts, 7, 48))
+>Test : Symbol(Test, Decl(-57087-withSkipAndOnly-01.ts, 2, 1))
+}
+type WithSkipAndOnly<T extends any[]> = ((...args: T) => void) & {
+>WithSkipAndOnly : Symbol(WithSkipAndOnly, Decl(-57087-withSkipAndOnly-01.ts, 14, 1))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 15, 21))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 15, 42))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 15, 21))
+
+    skip: (...args: T) => void;
+>skip : Symbol(skip, Decl(-57087-withSkipAndOnly-01.ts, 15, 66))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 16, 11))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 15, 21))
+
+    only: (...args: T) => void;
+>only : Symbol(only, Decl(-57087-withSkipAndOnly-01.ts, 16, 31))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 17, 11))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 15, 21))
+
+};
+declare const it: PendingTestFunction;
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 19, 13))
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 8, 53))
+
+function createTestWrapper<T extends any[]>(fn: (it: PendingTestFunction, ...args: T) => void): WithSkipAndOnly<T> {
+>createTestWrapper : Symbol(createTestWrapper, Decl(-57087-withSkipAndOnly-01.ts, 19, 38))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 20, 27))
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 20, 44))
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 20, 49))
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 8, 53))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 20, 73))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 20, 27))
+>WithSkipAndOnly : Symbol(WithSkipAndOnly, Decl(-57087-withSkipAndOnly-01.ts, 14, 1))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 20, 27))
+
+    wrapped.skip = (...args: T) => fn(it.skip, ...args);
+>wrapped.skip : Symbol(wrapped.skip, Decl(-57087-withSkipAndOnly-01.ts, 20, 116))
+>wrapped : Symbol(wrapped, Decl(-57087-withSkipAndOnly-01.ts, 23, 19))
+>skip : Symbol(wrapped.skip, Decl(-57087-withSkipAndOnly-01.ts, 20, 116))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 21, 20))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 20, 27))
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 20, 44))
+>it.skip : Symbol(PendingTestFunction.skip, Decl(-57087-withSkipAndOnly-01.ts, 9, 31))
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 19, 13))
+>skip : Symbol(PendingTestFunction.skip, Decl(-57087-withSkipAndOnly-01.ts, 9, 31))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 21, 20))
+
+    wrapped.only = (...args: T) => fn(it.only, ...args);
+>wrapped.only : Symbol(wrapped.only, Decl(-57087-withSkipAndOnly-01.ts, 21, 56))
+>wrapped : Symbol(wrapped, Decl(-57087-withSkipAndOnly-01.ts, 23, 19))
+>only : Symbol(wrapped.only, Decl(-57087-withSkipAndOnly-01.ts, 21, 56))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 22, 20))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 20, 27))
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 20, 44))
+>it.only : Symbol(PendingTestFunction.only, Decl(-57087-withSkipAndOnly-01.ts, 10, 30))
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 19, 13))
+>only : Symbol(PendingTestFunction.only, Decl(-57087-withSkipAndOnly-01.ts, 10, 30))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 22, 20))
+
+    return wrapped;
+>wrapped : Symbol(wrapped, Decl(-57087-withSkipAndOnly-01.ts, 23, 19))
+
+    function wrapped(...args: T) {
+>wrapped : Symbol(wrapped, Decl(-57087-withSkipAndOnly-01.ts, 23, 19))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 24, 21))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 20, 27))
+
+        return fn(it, ...args);
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 20, 44))
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 19, 13))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 24, 21))
+    }
+}
+
+

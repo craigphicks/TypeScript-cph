@@ -1,0 +1,106 @@
+//// [tests/cases/compiler/-test/-57087-withSkipAndOnly-01.ts] ////
+
+=== -57087-withSkipAndOnly-01.ts ===
+interface Context {
+    [key: string]: any;
+>key : string
+}
+interface Test {
+    [key: string]: any;
+>key : string
+}
+type Done = (err?: any) => void;
+>Done : (err?: any) => void
+>err : any
+
+type Func = (this: Context, done: Done) => void;
+>Func : (this: Context, done: Done) => void
+>this : Context
+>done : Done
+
+type AsyncFunc = (this: Context) => PromiseLike<any>;
+>AsyncFunc : (this: Context) => PromiseLike<any>
+>this : Context
+
+interface PendingTestFunction {
+    skip: PendingTestFunction;
+>skip : PendingTestFunction
+
+    only: PendingTestFunction;
+>only : PendingTestFunction
+
+    (fn: Func): Test;
+>fn : Func
+
+    (fn: AsyncFunc): Test;
+>fn : AsyncFunc
+}
+type WithSkipAndOnly<T extends any[]> = ((...args: T) => void) & {
+>WithSkipAndOnly : WithSkipAndOnly<T>
+>args : T
+
+    skip: (...args: T) => void;
+>skip : (...args: T) => void
+>args : T
+
+    only: (...args: T) => void;
+>only : (...args: T) => void
+>args : T
+
+};
+declare const it: PendingTestFunction;
+>it : PendingTestFunction
+
+function createTestWrapper<T extends any[]>(fn: (it: PendingTestFunction, ...args: T) => void): WithSkipAndOnly<T> {
+>createTestWrapper : <T extends any[]>(fn: (it: PendingTestFunction, ...args: T) => void) => WithSkipAndOnly<T>
+>fn : (it: PendingTestFunction, ...args: T) => void
+>it : PendingTestFunction
+>args : T
+
+    wrapped.skip = (...args: T) => fn(it.skip, ...args);
+>wrapped.skip = (...args: T) => fn(it.skip, ...args) : (...args: T) => void
+>wrapped.skip : (...args: T) => void
+>wrapped : { (...args: T): void; skip(...args: T): void; only(...args: T): void; }
+>skip : (...args: T) => void
+>(...args: T) => fn(it.skip, ...args) : (...args: T) => void
+>args : T
+>fn(it.skip, ...args) : void
+>fn : (it: PendingTestFunction, ...args: T) => void
+>it.skip : PendingTestFunction
+>it : PendingTestFunction
+>skip : PendingTestFunction
+>...args : any
+>args : T
+
+    wrapped.only = (...args: T) => fn(it.only, ...args);
+>wrapped.only = (...args: T) => fn(it.only, ...args) : (...args: T) => void
+>wrapped.only : (...args: T) => void
+>wrapped : { (...args: T): void; skip(...args: T): void; only(...args: T): void; }
+>only : (...args: T) => void
+>(...args: T) => fn(it.only, ...args) : (...args: T) => void
+>args : T
+>fn(it.only, ...args) : void
+>fn : (it: PendingTestFunction, ...args: T) => void
+>it.only : PendingTestFunction
+>it : PendingTestFunction
+>only : PendingTestFunction
+>...args : any
+>args : T
+
+    return wrapped;
+>wrapped : { (...args: T): void; skip(...args: T): void; only(...args: T): void; }
+
+    function wrapped(...args: T) {
+>wrapped : { (...args: T): void; skip(...args: T): void; only(...args: T): void; }
+>args : T
+
+        return fn(it, ...args);
+>fn(it, ...args) : void
+>fn : (it: PendingTestFunction, ...args: T) => void
+>it : PendingTestFunction
+>...args : any
+>args : T
+    }
+}
+
+

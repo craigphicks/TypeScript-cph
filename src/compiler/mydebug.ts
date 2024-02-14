@@ -31,6 +31,7 @@ export namespace IDebug {
     export function ilogGroupEnd(message?: (()=>string), level?: LogLevel, expectedIndent?: number) {
         if (loggingHost) loggingHost.ilogGroupEnd(message, level, expectedIndent);
     }
+    export let suffix = "";
 }
 
 export class ILoggingClass implements ILoggingHost {
@@ -115,7 +116,7 @@ export class ILoggingClass implements ILoggingHost {
         }
         const nameRet = this.nodePath.basename(node.path, ".ts");
         this.nodeFs.mkdirSync("tmp", {recursive: true});
-        const retfn = "tmp/" + nameRet +`.#${this.currentSourceFnCount}` +`.de${IDebug.logLevel}.log`;
+        const retfn = "tmp/" + nameRet +`.#${this.currentSourceFnCount}` +`.de${IDebug.logLevel}.log${IDebug.suffix?`-${IDebug.suffix}`:""}`;
         return retfn;
     }
 }
@@ -335,6 +336,7 @@ export class DbgsClass implements Dbgs{
 function initialize(){
     IDebug.logLevel = (process.env.myLogLevel===undefined) ? 0 : Number(process.env.myLogLevel);
     IDebug.assertLevel = (process.env.myAssertLevel===undefined) ? 0 : Number(process.env.myAssertLevel);
+    IDebug.suffix = (process.env.suffix===undefined) ? "" : process.env.suffix;
     if (IDebug.logLevel){
         Debug.isDebugging = true;
         IDebug.loggingHost = new ILoggingClass();
