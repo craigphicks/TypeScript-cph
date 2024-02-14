@@ -22346,10 +22346,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     const targetType = (target as IntersectionType).types[si];
                     const targetSigs = getSignaturesOfType(targetType, SignatureKind.Call);
                     Debug.assert(targetSigs.length === 1);
-                    const functionCacheIn = useCompareSignaturesRelated ? 0 as any as CheckFunctionRelatedToIntersectionHelperArgsFunctionCache
-                        : getSignatureCacheData(sourceSig);
-                    if (!checkFunctionRelatedToIntersectionHelper({ source: sourceSig, target: targetSigs[0], functionCacheIn, refSourceParamsOut: undefined, refTargetParamsOut: undefined })) {
-                        return { computed: true, ternary: Ternary.False };
+                    if (!useCompareSignaturesRelated){
+                        const functionCacheIn =  getSignatureCacheData(sourceSig);
+                        if (!checkFunctionRelatedToIntersectionHelper({ source: sourceSig, target: targetSigs[0], functionCacheIn, refSourceParamsOut: undefined, refTargetParamsOut: undefined })) {
+                            return { computed: true, ternary: Ternary.False };
+                        }
+                    }
+                    else {
+                        const related = compareSignaturesRelated(sourceSig,targetSigs[0],SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes,
+                            /*reportErrors*/ false,/*errorReporter*/ undefined,/*incompatibleErrorReporter*/ undefined,
+                            compareTypesAssignable,
+                            /*reportUnreliableMarkers*/ undefined,/*compareTypesOnceOnly*/ true);
+                        if (related !== Ternary.True) {
+                            Debug.assert(related === Ternary.False, "related === Ternary.False")
+                            return { computed: true, ternary: Ternary.False };
+                        }
                     }
                     const targetReturnType = getReturnTypeOfSignature(targetSigs[0]);
                     const sourceReturnType = getReturnTypeOfSignature(sourceSig);
