@@ -22186,7 +22186,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             const onlyOneSourceSig = sourceSignatures.length === 1;
 
-            const enableOneToOneCheckFirst = true; // doesn't seem to affect the results - might affect performance.
+            const enableOneToOneCheckFirst = true; // doesn't seem to affect the runtestsparallel results - however time changed from 5m28s (false) to 5m21s (true) - maybe noise?
             if (enableOneToOneCheckFirst && !onlyOneSourceSig){
                 if ((target as IntersectionType).types.length===sourceSignatures.length && (target as IntersectionType).types.every((targetMember)=>{
                     getSignaturesOfType(targetMember, SignatureKind.Call).length===1;
@@ -22213,7 +22213,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             }
                         }
                     });
-                    if (!failed11) return { computed: true, ternary: Ternary.True };
+                    if (!failed11) {
+                        // Debug.assert(false,"findout out which, if any, tests hit this branch");
+                        return { computed: true, ternary: Ternary.True };
+                    }
                     // else fall through to sample x target comparison
                 }
             }
@@ -22300,7 +22303,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return typeRelatedToSomeType(getRegularTypeOfObjectLiteral(source), target as UnionType, reportErrors && !(source.flags & TypeFlags.Primitive) && !(target.flags & TypeFlags.Primitive), intersectionState);
             }
             if (target.flags & TypeFlags.Intersection) {
-                if (enableCheckFunctionRelatedToIntersection && !reportErrors){
+                const result1 = typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
+
+                if (enableCheckFunctionRelatedToIntersection && !reportErrors && result1 !== Ternary.True){
                     /**
                      * [cph] In the case of some target intersections of functions, follow #57087
                      */
@@ -22318,7 +22323,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             const { computed, ternary } = checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
                             if (computed) {
                                 Debug.assert(ternary === Ternary.True || ternary === Ternary.False);
-                                if (ternary === Ternary.True) return ternary;
+                                return ternary;
+                                //if (ternary === Ternary.True) return ternary;
                                 // if (reportErrors){
                                 //     // let typeRelatedToEachType make detailed error reporting, but do not let it change the result.
                                 //     typeRelatedToEachType(source, target as IntersectionType, reportErrors, intersectionState); // result ignored
@@ -22329,7 +22335,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         }
                     }
                 }
-                return typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
+                return result1;
+                //return typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
             }
             // Source is an intersection. For the comparable relation, if the target is a primitive type we hoist the
             // constraints of all non-primitive types in the source into a new intersection. We do this because the
