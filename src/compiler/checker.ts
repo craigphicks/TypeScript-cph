@@ -1107,7 +1107,6 @@ const anon = "(anonymous)" as __String & string;
 
 let nextSymbolId = 1;
 let nextTransientSymbolId = 1;
-let nextSignatureId = 1;
 let nextNodeId = 1;
 let nextMergeId = 1;
 let nextFlowId = 1;
@@ -1415,16 +1414,6 @@ export function getSymbolId(symbol: Symbol): SymbolId {
     return symbol.id;
 }
 
-///** @internal */
-// export function getTransientSymbolId(symbol: Symbol): SymbolId {
-//     if (!symbol.transientId) {
-//         symbol.transientId = nextTransientSymbolId;
-//         nextTransientSymbolId++;
-//     }
-
-//     return symbol.transientId;
-// }
-
 /** @internal */
 export function isInstantiatedModule(node: ModuleDeclaration, preserveConstEnums: boolean) {
     const moduleState = getModuleInstanceState(node);
@@ -1523,11 +1512,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var lastGetCombinedModifierFlagsResult = ModifierFlags.None;
 
     var checkTypeRelatedToDepth = 0;
-    var checkTypeRelatedToCurrentlyVisitingMap: Map<string,number> | undefined;
-
-    // var contextualSignatureToContentualTypeWeakMap: WeakMap<Signature, Type> = new WeakMap();
-    // var sourceSignatureToContextualSignatureWeakMap: WeakMap<Signature, Signature> = new WeakMap();
-    // var sourceSignatureToNodeWeakMap: WeakMap<Signature /* source signature*/, Node /* node with symbol s.t. symbolLinks.type is target */> = new WeakMap();
+    var checkTypeRelatedToCurrentlyVisitingMap: Map<string, number> | undefined;
 
     // for public members that accept a Node or one of its subtypes, we must guard against
     // synthetic nodes created during transformations by calling `getParseTreeNode`.
@@ -11627,8 +11612,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // Here, the array literal [1, "one"] is contextually typed by the type [any, string], which is the implied type of the
     // binding pattern [x, s = ""]. Because the contextual type is a tuple type, the resulting type of [1, "one"] is the
     // tuple type [number, string]. Thus, the type inferred for 'x' is number and the type inferred for 's' is string.
-    function getWidenedTypeForVariableLikeDeclaration(declaration: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement | JSDocPropertyLikeTag, reportErrors?: boolean, includeOptionality?:boolean | undefined): Type {
-        return widenTypeForVariableLikeDeclaration(getTypeForVariableLikeDeclaration(declaration, includeOptionality ?? true, CheckMode.Normal), declaration, reportErrors);
+    function getWidenedTypeForVariableLikeDeclaration(declaration: ParameterDeclaration | PropertyDeclaration | PropertySignature | VariableDeclaration | BindingElement | JSDocPropertyLikeTag, reportErrors?: boolean): Type {
+        return widenTypeForVariableLikeDeclaration(getTypeForVariableLikeDeclaration(declaration, /*includeOptionality*/ true, CheckMode.Normal), declaration, reportErrors);
     }
 
     function getTypeFromImportAttributes(node: ImportAttributes): Type {
@@ -11713,23 +11698,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return false;
     }
 
-    function getTypeOfVariableOrParameterOrProperty(symbol: Symbol, checkMode?: CheckMode, includeOptionality?: boolean): Type {
+    function getTypeOfVariableOrParameterOrProperty(symbol: Symbol, checkMode?: CheckMode): Type {
         const links = getSymbolLinks(symbol);
-        //let noCacheTmp = true; // IWOZERE
-        if (includeOptionality) {
-            let allow = false;
-            Debug.assert(allow);
-            if (!links.typeIncludingOptionality) {
-                const type = getTypeOfVariableOrParameterOrPropertyWorker(symbol, checkMode, includeOptionality);
-                if (!links.typeIncludingOptionality && !isParameterOfContextSensitiveSignature(symbol) && !checkMode) {
-                    links.typeIncludingOptionality = type;
-                }
-                return type;
-            }
-            return links.typeIncludingOptionality;
-        }
         if (!links.type) {
-            const type = getTypeOfVariableOrParameterOrPropertyWorker(symbol, checkMode, includeOptionality);
+            const type = getTypeOfVariableOrParameterOrPropertyWorker(symbol, checkMode);
             // For a contextually typed parameter it is possible that a type has already
             // been assigned (in assignTypeToParameterAndFixTypeParameters), and we want
             // to preserve this type. In fact, we need to _prefer_ that type, but it won't
@@ -11743,7 +11715,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return links.type;
     }
 
-    function getTypeOfVariableOrParameterOrPropertyWorker(symbol: Symbol, checkMode?: CheckMode, includeOptionality?:boolean): Type {
+    function getTypeOfVariableOrParameterOrPropertyWorker(symbol: Symbol, checkMode?: CheckMode): Type {
         // Handle prototype property
         if (symbol.flags & SymbolFlags.Prototype) {
             return getTypeOfPrototypeProperty(symbol);
@@ -11849,7 +11821,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             || isBindingElement(declaration)
             || isJSDocPropertyLikeTag(declaration)
         ) {
-            type = getWidenedTypeForVariableLikeDeclaration(declaration, /*reportErrors*/ true, includeOptionality);
+            type = getWidenedTypeForVariableLikeDeclaration(declaration, /*reportErrors*/ true);
         }
         // getTypeOfSymbol dispatches some JS merges incorrectly because their symbol flags are not mutually exclusive.
         // Re-dispatch based on valueDeclaration.kind instead.
@@ -12160,7 +12132,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return getTypeOfSymbol(symbol);
     }
 
-    function getTypeOfSymbol(symbol: Symbol, checkMode?: CheckMode, includeOptionality?: boolean): Type {
+    function getTypeOfSymbol(symbol: Symbol, checkMode?: CheckMode): Type {
         const checkFlags = getCheckFlags(symbol);
         if (checkFlags & CheckFlags.DeferredType) {
             return getTypeOfSymbolWithDeferredType(symbol);
@@ -12175,7 +12147,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return getTypeOfReverseMappedSymbol(symbol as ReverseMappedSymbol);
         }
         if (symbol.flags & (SymbolFlags.Variable | SymbolFlags.Property)) {
-            return getTypeOfVariableOrParameterOrProperty(symbol, checkMode, includeOptionality);
+            return getTypeOfVariableOrParameterOrProperty(symbol, checkMode);
         }
         if (symbol.flags & (SymbolFlags.Function | SymbolFlags.Method | SymbolFlags.Class | SymbolFlags.Enum | SymbolFlags.ValueModule)) {
             return getTypeOfFuncClassEnumModule(symbol);
@@ -13309,14 +13281,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         result.mapper = undefined;
         return result;
     }
-    // function createIntersectionSignature(signature: Signature, intersectionSignatures: Signature[]) {
-    //     const result = cloneSignature(signature);
-    //     result.compositeSignatures = intersectionSignatures;
-    //     result.compositeKind = TypeFlags.Intersection;
-    //     result.target = undefined;
-    //     result.mapper = undefined;
-    //     return result;
-    // }
 
     function getOptionalCallSignature(signature: Signature, callChainFlags: SignatureFlags): Signature {
         if ((signature.flags & SignatureFlags.CallChainFlags) === callChainFlags) {
@@ -15057,10 +15021,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * maps primitive types and type parameters are to their apparent types.
      */
     function getSignaturesOfType(type: Type, kind: SignatureKind): readonly Signature[] {
-        const t1 = getReducedType(type);
-        const t2 = getApparentType(t1);
-        const t3 = getReducedType(t2);
-        const sigs1 = getSignaturesOfStructuredType(t3, kind);
+        //const t1 = getReducedType(type);
+        //const t2 = getApparentType(t1);
+        //const t3 = getReducedType(t2);
+        //const sigs1 = getSignaturesOfStructuredType(t3, kind);
         const result = getSignaturesOfStructuredType(getReducedApparentType(type), kind);
         if (kind === SignatureKind.Call && !length(result) && type.flags & TypeFlags.Union) {
             if ((type as UnionType).arrayFallbackSignatures) {
@@ -21370,23 +21334,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         Debug.assert(relation !== identityRelation || !errorNode, "no error reporting in identity checking");
 
     const ret = (()=>{
-            // There might be other state to add such as constraints
-            //const visitedKey = `s:${source.id},t:${target.id},r:${relationMap.get(relation)!}`;
-            const visitingKey = getRelationKey(source, target, /*intersectionState*/ IntersectionState.None, relation, /*ignoreConstraints*/ false);
-        if (checkTypeRelatedToDepth===0){
+        const visitingKey = getRelationKey(source, target, /*intersectionState*/ IntersectionState.None, relation, /*ignoreConstraints*/ false);
+        if (checkTypeRelatedToDepth === 0) {
             checkTypeRelatedToCurrentlyVisitingMap = new Map();
         }
-        if (!errorNode && !headMessage){
+        if (!errorNode && !headMessage) {
             let got = checkTypeRelatedToCurrentlyVisitingMap!.get(visitingKey);
             const maxSameKey = 1;
-            if (got && got>=maxSameKey){
+            if (got && got >= maxSameKey) {
                 relation.set(visitingKey, RelationComparisonResult.Succeeded);
                 return true;
             }
             else {
                 if (!got) got = 1;
-                else got = got+1;
-                checkTypeRelatedToCurrentlyVisitingMap!.set(visitingKey,got);
+                else got = got + 1;
+                checkTypeRelatedToCurrentlyVisitingMap!.set(visitingKey, got);
             }
         }
         checkTypeRelatedToDepth++;
@@ -21446,14 +21408,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         checkTypeRelatedToDepth--;
-        if (checkTypeRelatedToDepth===0){
+        if (checkTypeRelatedToDepth === 0) {
             checkTypeRelatedToCurrentlyVisitingMap = undefined;
         }
         else {
             const got = checkTypeRelatedToCurrentlyVisitingMap!.get(visitingKey);
             if (got) {
-                if (got===1) checkTypeRelatedToCurrentlyVisitingMap!.delete(visitingKey);
-                else checkTypeRelatedToCurrentlyVisitingMap!.set(visitingKey,got-1);
+                if (got === 1) checkTypeRelatedToCurrentlyVisitingMap!.delete(visitingKey);
+                else checkTypeRelatedToCurrentlyVisitingMap!.set(visitingKey, got - 1);
             }
         }
         return result !== Ternary.False;
