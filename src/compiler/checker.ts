@@ -22186,40 +22186,41 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             const onlyOneSourceSig = sourceSignatures.length === 1;
 
-            const enableOneToOneCheckFirst = true; // doesn't seem to affect the runtestsparallel results - however time changed from 5m28s (false) to 5m21s (true) - maybe noise?
-            if (enableOneToOneCheckFirst && !onlyOneSourceSig){
-                if ((target as IntersectionType).types.length===sourceSignatures.length && (target as IntersectionType).types.every((targetMember)=>{
-                    getSignaturesOfType(targetMember, SignatureKind.Call).length===1;
-                })){
-                    const failed11 = sourceSignatures.some((ssig,_si)=>{
-                        const accum = {
-                            hadMatch: false,
-                            gReturn: neverType as Type,
-                            gReturnAllVoid: true
-                        };
-                        const tsig = getSignaturesOfType((target as IntersectionType).types[_si], SignatureKind.Call)[0];
-                        compareOneSourceSigToOneTargetSig(tsig, ssig, accum, _si, _si, 0);
+            // For the record, this branch is never hit in runtests-parallel.  However, ff `typeRelatedToEachType` is called before `checkFunctionRelatedToIntersection` then it is hit, and it was tested like that.
+            // const enableOneToOneCheckFirst = true;
+            // if (enableOneToOneCheckFirst && !onlyOneSourceSig){
+            //     if ((target as IntersectionType).types.length===sourceSignatures.length && (target as IntersectionType).types.every((targetMember)=>{
+            //         getSignaturesOfType(targetMember, SignatureKind.Call).length===1;
+            //     })){
+            //         const failed11 = sourceSignatures.some((ssig,_si)=>{
+            //             const accum = {
+            //                 hadMatch: false,
+            //                 gReturn: neverType as Type,
+            //                 gReturnAllVoid: true
+            //             };
+            //             const tsig = getSignaturesOfType((target as IntersectionType).types[_si], SignatureKind.Call)[0];
+            //             compareOneSourceSigToOneTargetSig(tsig, ssig, accum, _si, _si, 0);
 
-                        if (!accum.hadMatch) {
-                            IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${_si}, FAIL @11-3 (no match)`,loggerLevel);
-                            return true; // failed { computed: true, ternary: Ternary.False };
-                        }
-                        else {
-                            const returnType = getReturnTypeOfSignature(ssig);
-                            if (!accum.gReturnAllVoid && !isTypeAssignableTo(returnType, accum.gReturn)) {
-                                IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
-                                    _si}, FAIL @11-4 (source return type not assignable to accum target return type)`,loggerLevel);
-                                return true; // failed { computed: true, ternary: Ternary.False };
-                            }
-                        }
-                    });
-                    if (!failed11) {
-                        // Debug.assert(false,"findout out which, if any, tests hit this branch");
-                        return { computed: true, ternary: Ternary.True };
-                    }
-                    // else fall through to sample x target comparison
-                }
-            }
+            //             if (!accum.hadMatch) {
+            //                 IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${_si}, FAIL @11-3 (no match)`,loggerLevel);
+            //                 return true; // failed { computed: true, ternary: Ternary.False };
+            //             }
+            //             else {
+            //                 const returnType = getReturnTypeOfSignature(ssig);
+            //                 if (!accum.gReturnAllVoid && !isTypeAssignableTo(returnType, accum.gReturn)) {
+            //                     IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
+            //                         _si}, FAIL @11-4 (source return type not assignable to accum target return type)`,loggerLevel);
+            //                     return true; // failed { computed: true, ternary: Ternary.False };
+            //                 }
+            //             }
+            //         });
+            //         if (!failed11) {
+            //             Debug.assert(false,"findout out which, if any, tests hit this branch");
+            //             return { computed: true, ternary: Ternary.True };
+            //         }
+            //         // else fall through to sample x target comparison
+            //     }
+            // }
 
             if (IDebug.logLevel>=loggerLevel) mapttsOff = true;
 
