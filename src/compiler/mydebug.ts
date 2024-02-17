@@ -1,6 +1,7 @@
+import * as ts from "./_namespaces/ts";
 import { Debug, LogLevel } from "./debug";
-import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite, TypeFlags, UnionOrIntersectionType, Ternary } from "./types";
-import { getNodeId } from "./checker";
+import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite, TypeFlags, UnionOrIntersectionType, Ternary, ObjectType } from "./types";
+import { getNodeId, CheckMode, SignatureCheckMode } from "./checker";
 //import { castHereafter } from "./core";
 
 export interface ILoggingHost {
@@ -32,6 +33,21 @@ export namespace IDebug {
         if (loggingHost) loggingHost.ilogGroupEnd(message, level, expectedIndent);
     }
     export let suffix = "";
+    let specialSignatures: {anySignature: Signature,unknownSignature: Signature,resolvingSignature: Signature,silentNeverSignature: Signature};
+    export function setSpecialSignatures(arg:{anySignature: Signature, unknownSignature: Signature, resolvingSignature: Signature, silentNeverSignature: Signature}){
+        specialSignatures = arg;
+        // specialSignatures.anySignature = arg.anySignature;
+        // specialSignatures.unknownSignature = unknownSignature;
+        // specialSignatures.resolvingSignature = resolvingSignature;
+        // specialSignatures.silentNeverSignature = silentNeverSignature;
+    };
+    export function getSpecialSignatureString(signature: Signature): string | undefined {
+        if (signature===specialSignatures.anySignature) return "anySignature";
+        if (signature===specialSignatures.unknownSignature) return "unknownSignature";
+        if (signature===specialSignatures.resolvingSignature) return "resolvingSignature";
+        if (signature===specialSignatures.silentNeverSignature) return "silentNeverSignature";
+        return undefined;
+    }
 }
 
 export class ILoggingClass implements ILoggingHost {
@@ -121,6 +137,7 @@ export class ILoggingClass implements ILoggingHost {
     }
 }
 
+
 export interface Dbgs {
     dbgGetNodeText: (node: Node) => any;
     // dbgFlowToString: (flow: FlowNode | undefined, withAntecedants?: boolean) => string;
@@ -141,6 +158,9 @@ export interface Dbgs {
     dbgMapperToString(mapper: TypeMapper | undefined): string;
     dbgInferenceInfoToStrings(info: InferenceInfo): string[];
     dbgInferenceContextToStrings(ic: InferenceContext): string[];
+
+    dbgCheckModeToString(mode: CheckMode | undefined): string;
+    dbgSignatureCheckModeToString(mode: SignatureCheckMode | undefined): string;
 }
 
 export class DbgsClass implements Dbgs{
@@ -154,7 +174,14 @@ export class DbgsClass implements Dbgs{
             (type as UnionOrIntersectionType).types.forEach(t=>astr.push(this.getSafeCheckerTypeToString(t)));
             return astr.join(" & ");
         }
-        return IDebug.checker!.typeToString(type);
+        let str = IDebug.checker!.typeToString(type);
+        if (type.flags & TypeFlags.Object && (type as ObjectType).callSignatures?.length) {
+            const c = (type as ObjectType).callSignatures![0];
+            if (c.compositeKind===TypeFlags.Union) str += ` /* composite union [${c.compositeSignatures?.length}] */`;
+            else if (c.compositeKind===TypeFlags.Intersection) str += ` /* composite intersection [${c.compositeSignatures?.length}] */`;
+            else if (c.compositeSignatures) str += ` /* composite ??? [${c.compositeSignatures?.length}] */`;
+        }
+        return str;
     }
     private getSafeCheckerTypeOfSymbol(symbol: Symbol): Type {
         return IDebug.checker!.getTypeOfSymbol(symbol);
@@ -221,8 +248,10 @@ export class DbgsClass implements Dbgs{
     }
     dbgSignatureToString(c: Signature | undefined): string {
         if (!c) return "<undef>";
-        let astr: string[] = [`[sg:${this.getSignatureId(c)}] `];
+        const specialStr = IDebug.getSpecialSignatureString(c);
+        if (specialStr) return specialStr;
 
+        let astr: string[] = [`[sg:${this.getSignatureId(c)}] `];
         c.parameters.forEach(symbol=> {
             const typeOfSymbol = this.getSafeCheckerTypeOfSymbol(symbol);
             astr.push(this.dbgTypeToString(typeOfSymbol));
@@ -316,6 +345,14 @@ export class DbgsClass implements Dbgs{
         return ret;
     }
 
+    dbgCheckModeToString(mode: CheckMode | undefined): string {
+        const str = Debug.formatEnum(mode, (ts as any).CheckMode, /*isFlags*/ true);
+        return `CheckMode: ${str}`;
+    }
+    dbgSignatureCheckModeToString(mode: SignatureCheckMode | undefined): string {
+        const str = Debug.formatEnum(mode, (ts as any).SignatureCheckMode, /*isFlags*/ true);
+        return `SignatureCheckMode: ${str}`;
+    }
 
 }
 
