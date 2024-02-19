@@ -12,7 +12,7 @@ function gt<T>(c: Callback<T>) {
   return c(0 as any as T[]);
 }
 
-const callbackInstance0 = (x:any)=>x; // this should work but doesn;t
+const callbackInstance0 = (x:any)=>x;
 
 callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}>;
 
@@ -38,11 +38,15 @@ const rg0 = g(callbackInstance0)[0];
 
 if ("a" in rg0) { rg0.a satisfies string; }
 
-if ("b" in rg0) { rg0.b satisfies number; }
+if ("b" in rg0) {
+  rg0.b satisfies number; // this should pass but does not.
+}
 
 const rg1 = g(callbackInstance1)[0];
 
 if ("a" in rg1) { rg1.a satisfies string; }
 
-if ("b" in rg1) { rg1.b satisfies number; }
+if ("b" in rg1) {
+  rg1.b satisfies number; // this should pass but does not.
+}
 

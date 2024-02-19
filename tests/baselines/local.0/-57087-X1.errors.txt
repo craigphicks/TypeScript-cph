@@ -1,0 +1,94 @@
+-57087-X1.ts(12,26): error TS2345: Argument of type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to parameter of type 'Callback<{ a: string; }> | Callback<{ b: number; }>'.
+  Type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to type 'Callback<{ a: string; }>'.
+    Types of parameters 'x' and 'x' are incompatible.
+      Type '{ a: string; }[]' is not assignable to type '{ a: string; }[] & { b: number; }[]'.
+        Type '{ a: string; }[]' is not assignable to type '{ b: number; }[]'.
+          Property 'b' is missing in type '{ a: string; }' but required in type '{ b: number; }'.
+-57087-X1.ts(24,19): error TS1360: Type 'Callback<{ a: string; b: number; }>' does not satisfy the expected type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+  Type 'Callback<{ a: string; b: number; }>' is not assignable to type 'Callback<{ a: string; }>'.
+    Types of parameters 'x' and 'x' are incompatible.
+      Type '{ a: string; }[]' is not assignable to type '{ a: string; b: number; }[]'.
+        Type '{ a: string; }' is not assignable to type '{ a: string; b: number; }'.
+-57087-X1.ts(32,15): error TS2345: Argument of type 'Callback<{ a: string; }> | Callback<{ b: number; }>' is not assignable to parameter of type 'Callback<{ a: string; }>'.
+  Type 'Callback<{ b: number; }>' is not assignable to type 'Callback<{ a: string; }>'.
+    Types of parameters 'x' and 'x' are incompatible.
+      Type '{ a: string; }[]' is not assignable to type '{ b: number; }[]'.
+        Property 'b' is missing in type '{ a: string; }' but required in type '{ b: number; }'.
+-57087-X1.ts(33,15): error TS2345: Argument of type 'Callback<{ a: string; }> | Callback<{ b: number; }>' is not assignable to parameter of type 'Callback<{ a: string; }>'.
+  Type 'Callback<{ b: number; }>' is not assignable to type 'Callback<{ a: string; }>'.
+-57087-X1.ts(36,5): error TS2345: Argument of type 'Callback<{ a: string; b: number; }>' is not assignable to parameter of type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+  Type 'Callback<{ a: string; b: number; }>' is not assignable to type 'Callback<{ a: string; }>'.
+    Types of parameters 'x' and 'x' are incompatible.
+      Type '{ a: string; }[]' is not assignable to type '{ a: string; b: number; }[]'.
+        Type '{ a: string; }' is not assignable to type '{ a: string; b: number; }'.
+
+
+==== -57087-X1.ts (5 errors) ====
+    type Callback<T> = (x:T[])=>T[];
+    
+    declare function g<T1,T2>(x: Callback<T1> | Callback<T2> ): ReturnType<Callback<T1> | Callback<T2>>;
+    declare function h<T>(x: Callback<T>):ReturnType<Callback<T>>;
+    
+    interface K<T> {
+      f(x: Callback<T>):ReturnType<Callback<T>>
+    }
+    
+    declare const id: <T>()=>(x:T)=>unknown;
+    
+    g<{a:string},{b:number}>(id());
+                             ~~~~
+!!! error TS2345: Argument of type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to parameter of type 'Callback<{ a: string; }> | Callback<{ b: number; }>'.
+!!! error TS2345:   Type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to type 'Callback<{ a: string; }>'.
+!!! error TS2345:     Types of parameters 'x' and 'x' are incompatible.
+!!! error TS2345:       Type '{ a: string; }[]' is not assignable to type '{ a: string; }[] & { b: number; }[]'.
+!!! error TS2345:         Type '{ a: string; }[]' is not assignable to type '{ b: number; }[]'.
+!!! error TS2345:           Property 'b' is missing in type '{ a: string; }' but required in type '{ b: number; }'.
+!!! related TS2728 -57087-X1.ts:12:15: 'b' is declared here.
+    //                       ~~~~
+    // Argument of type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to parameter of type 'Callback<{ a: string; }> | Callback<{ b: number; }>'.
+    //   Type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to type 'Callback<{ a: string; }>'.
+    //     Types of parameters 'x' and 'x' are incompatible.
+    //       Type '{ a: string; }[]' is not assignable to type '{ a: string; }[] & { b: number; }[]'.
+    //         Type '{ a: string; }[]' is not assignable to type '{ b: number; }[]'.
+    
+    declare const callbackInstance0: Callback<{a:string,b:number}>;
+    declare const callbackInstance1: Callback<{a:string}> & Callback<{b:number}>;
+    declare const callbackInstance2: Callback<{a:string}> | Callback<{b:number}>;
+    
+    callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}>;
+                      ~~~~~~~~~
+!!! error TS1360: Type 'Callback<{ a: string; b: number; }>' does not satisfy the expected type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+!!! error TS1360:   Type 'Callback<{ a: string; b: number; }>' is not assignable to type 'Callback<{ a: string; }>'.
+!!! error TS1360:     Types of parameters 'x' and 'x' are incompatible.
+!!! error TS1360:       Type '{ a: string; }[]' is not assignable to type '{ a: string; b: number; }[]'.
+!!! error TS1360:         Type '{ a: string; }' is not assignable to type '{ a: string; b: number; }'.
+    
+    const rg0 = g(callbackInstance0);
+    const rh0 = h(callbackInstance0);
+    
+    const rg1 = g(callbackInstance1);
+    const rh1 = h(callbackInstance1);
+    
+    const rg2 = g(callbackInstance2);
+                  ~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'Callback<{ a: string; }> | Callback<{ b: number; }>' is not assignable to parameter of type 'Callback<{ a: string; }>'.
+!!! error TS2345:   Type 'Callback<{ b: number; }>' is not assignable to type 'Callback<{ a: string; }>'.
+!!! error TS2345:     Types of parameters 'x' and 'x' are incompatible.
+!!! error TS2345:       Type '{ a: string; }[]' is not assignable to type '{ b: number; }[]'.
+!!! error TS2345:         Property 'b' is missing in type '{ a: string; }' but required in type '{ b: number; }'.
+!!! related TS2728 -57087-X1.ts:22:67: 'b' is declared here.
+    const rh2 = h(callbackInstance2);
+                  ~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'Callback<{ a: string; }> | Callback<{ b: number; }>' is not assignable to parameter of type 'Callback<{ a: string; }>'.
+!!! error TS2345:   Type 'Callback<{ b: number; }>' is not assignable to type 'Callback<{ a: string; }>'.
+    
+    declare const k: K<{a:string}>|K<{b:number}>;
+    k.f(callbackInstance0);
+        ~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'Callback<{ a: string; b: number; }>' is not assignable to parameter of type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+!!! error TS2345:   Type 'Callback<{ a: string; b: number; }>' is not assignable to type 'Callback<{ a: string; }>'.
+!!! error TS2345:     Types of parameters 'x' and 'x' are incompatible.
+!!! error TS2345:       Type '{ a: string; }[]' is not assignable to type '{ a: string; b: number; }[]'.
+!!! error TS2345:         Type '{ a: string; }' is not assignable to type '{ a: string; b: number; }'.
+    const rk1 = k.f(callbackInstance1);
+    

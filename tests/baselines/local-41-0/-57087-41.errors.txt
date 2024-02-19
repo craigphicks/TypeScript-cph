@@ -1,0 +1,90 @@
+-57087-41.ts(13,19): error TS1360: Type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' does not satisfy the expected type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+  Type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' is not assignable to type 'Callback<{ a: string; }>'.
+    Type '{ a: string; }[] | { b: number; }[]' is not assignable to type '{ a: string; }[]'.
+      Type '{ b: number; }[]' is not assignable to type '{ a: string; }[]'.
+        Property 'a' is missing in type '{ b: number; }' but required in type '{ a: string; }'.
+-57087-41.ts(22,17): error TS2345: Argument of type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' is not assignable to parameter of type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+  Type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' is not assignable to type 'Callback<{ a: string; }>'.
+    Type '{ a: string; }[] | { b: number; }[]' is not assignable to type '{ a: string; }[]'.
+      Type '{ b: number; }[]' is not assignable to type '{ a: string; }[]'.
+        Property 'a' is missing in type '{ b: number; }' but required in type '{ a: string; }'.
+-57087-41.ts(36,15): error TS2345: Argument of type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' is not assignable to parameter of type 'Callback<{ a: string; }>'.
+  Type '{ a: string; }[] | { b: number; }[]' is not assignable to type '{ a: string; }[]'.
+    Type '{ b: number; }[]' is not assignable to type '{ a: string; }[]'.
+      Property 'a' is missing in type '{ b: number; }' but required in type '{ a: string; }'.
+-57087-41.ts(40,25): error TS1360: Type 'unknown' does not satisfy the expected type 'number'.
+-57087-41.ts(46,25): error TS1360: Type 'unknown' does not satisfy the expected type 'number'.
+
+
+==== -57087-41.ts (5 errors) ====
+    type Callback<T> = (x:T[])=>T[];
+    interface K<T> {
+      f(x: Callback<T>):T[]
+    }
+    function gt<T>(c: Callback<T>) {
+      return c(0 as any as T[]);
+    }
+    
+    // need to make this work for g, and gather return values.
+    
+    const callbackInstance0 = (x:{a:string}[]|{b:number}[])=>x;
+    
+    callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}>;
+                      ~~~~~~~~~
+!!! error TS1360: Type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' does not satisfy the expected type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+!!! error TS1360:   Type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' is not assignable to type 'Callback<{ a: string; }>'.
+!!! error TS1360:     Type '{ a: string; }[] | { b: number; }[]' is not assignable to type '{ a: string; }[]'.
+!!! error TS1360:       Type '{ b: number; }[]' is not assignable to type '{ a: string; }[]'.
+!!! error TS1360:         Property 'a' is missing in type '{ b: number; }' but required in type '{ a: string; }'.
+!!! related TS2728 -57087-41.ts:13:39: 'a' is declared here.
+    // v5.4.0-dev.20240215
+    // Type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]'
+    //  does not satisfy the expected type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+    
+    declare const callbackInstance1: Callback<{a:string}> & Callback<{b:number}>;
+    
+    declare const k: K<{a:string}>|K<{b:number}>;
+    
+    const rk0 = k.f(callbackInstance0)[0];
+                    ~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' is not assignable to parameter of type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
+!!! error TS2345:   Type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' is not assignable to type 'Callback<{ a: string; }>'.
+!!! error TS2345:     Type '{ a: string; }[] | { b: number; }[]' is not assignable to type '{ a: string; }[]'.
+!!! error TS2345:       Type '{ b: number; }[]' is not assignable to type '{ a: string; }[]'.
+!!! error TS2345:         Property 'a' is missing in type '{ b: number; }' but required in type '{ a: string; }'.
+!!! related TS2728 -57087-41.ts:20:21: 'a' is declared here.
+    
+    if ("a" in rk0) { rk0.a satisfies string; }
+    
+    if ("b" in rk0) { rk0.b satisfies number; }
+    
+    const rk1 = k.f(callbackInstance1)[0];
+    
+    if ("a" in rk1) { rk1.a satisfies string; }
+    
+    if ("b" in rk1) { rk1.b satisfies number; }
+    
+    declare const g: typeof gt<{a:string}> | typeof gt<{a:string}>
+    
+    const rg0 = g(callbackInstance0)[0];
+                  ~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]' is not assignable to parameter of type 'Callback<{ a: string; }>'.
+!!! error TS2345:   Type '{ a: string; }[] | { b: number; }[]' is not assignable to type '{ a: string; }[]'.
+!!! error TS2345:     Type '{ b: number; }[]' is not assignable to type '{ a: string; }[]'.
+!!! error TS2345:       Property 'a' is missing in type '{ b: number; }' but required in type '{ a: string; }'.
+!!! related TS2728 -57087-41.ts:34:29: 'a' is declared here.
+    
+    if ("a" in rg0) { rg0.a satisfies string; }
+    
+    if ("b" in rg0) { rg0.b satisfies number; }
+                            ~~~~~~~~~
+!!! error TS1360: Type 'unknown' does not satisfy the expected type 'number'.
+    
+    const rg1 = g(callbackInstance1)[0];
+    
+    if ("a" in rg1) { rg1.a satisfies string; }
+    
+    if ("b" in rg1) { rg1.b satisfies number; }
+                            ~~~~~~~~~
+!!! error TS1360: Type 'unknown' does not satisfy the expected type 'number'.
+    
