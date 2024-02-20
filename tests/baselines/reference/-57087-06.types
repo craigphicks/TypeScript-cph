@@ -1,0 +1,62 @@
+//// [tests/cases/compiler/-test/-57087-06.ts] ////
+
+=== -57087-06.ts ===
+type A = { a: string };
+>A : { a: string; }
+>a : string
+
+type B = { b: 1 | "1" };
+>B : { b: 1 | "1"; }
+>b : 1 | "1"
+
+type C = { c: number };
+>C : { c: number; }
+>c : number
+
+type D = { a?: string, b: 1 | "1", c?: number };
+>D : { a?: string; b: 1 | "1"; c?: number; }
+>a : string | undefined
+>b : 1 | "1"
+>c : number | undefined
+
+
+function ft2(x:A):string;
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : A
+
+function ft2(x:C):number;
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : C
+
+function ft2(x:B):"1"|1;
+>ft2 : { (x: A): string; (x: C): number; (x: B): "1" | 1; }
+>x : B
+
+function ft2(x: A|B|C):1|"1"|string|number {
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : A | B | C
+
+    if ("a" in x) return x.a;
+>"a" in x : boolean
+>"a" : "a"
+>x : A | B | C
+>x.a : string
+>x : A
+>a : string
+
+    if ("c" in x) return x.c;
+>"c" in x : boolean
+>"c" : "c"
+>x : B | C
+>x.c : number
+>x : C
+>c : number
+
+    return x.b;
+>x.b : 1 | "1"
+>x : B
+>b : 1 | "1"
+}
+
+
+

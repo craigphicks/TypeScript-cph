@@ -1,0 +1,27 @@
+-57087-52.ts(10,19): error TS1360: Type 'GOR' does not satisfy the expected type 'GAND'.
+  Type '(x: { a: string; }) => void' is not assignable to type 'GAND'.
+    Type '(x: { a: string; }) => void' is not assignable to type '(x: { b: number; }) => void'.
+      Types of parameters 'x' and 'x' are incompatible.
+        Property 'a' is missing in type '{ b: number; }' but required in type '{ a: string; }'.
+
+
+==== -57087-52.ts (1 errors) ====
+    declare function f1(x:{ a: string } | { b: number }):void;
+    declare function f2(x:{ a?: string, b?: number }):void;
+    declare function f3(x:{ a: string, b: number }):void;
+    
+    type GOR = ((x:{ a: string })=>void) | ((x:{ b: number }) => void);
+    
+    type GAND = ((x:{ a: string })=>void) & ((x:{ b: number }) => void);
+    
+    
+    (0 as any as GOR) satisfies GAND; // should be false
+                      ~~~~~~~~~
+!!! error TS1360: Type 'GOR' does not satisfy the expected type 'GAND'.
+!!! error TS1360:   Type '(x: { a: string; }) => void' is not assignable to type 'GAND'.
+!!! error TS1360:     Type '(x: { a: string; }) => void' is not assignable to type '(x: { b: number; }) => void'.
+!!! error TS1360:       Types of parameters 'x' and 'x' are incompatible.
+!!! error TS1360:         Property 'a' is missing in type '{ b: number; }' but required in type '{ a: string; }'.
+!!! related TS2728 -57087-52.ts:5:18: 'a' is declared here.
+    
+    

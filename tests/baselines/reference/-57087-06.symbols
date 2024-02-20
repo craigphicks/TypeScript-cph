@@ -1,0 +1,64 @@
+//// [tests/cases/compiler/-test/-57087-06.ts] ////
+
+=== -57087-06.ts ===
+type A = { a: string };
+>A : Symbol(A, Decl(-57087-06.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-06.ts, 0, 10))
+
+type B = { b: 1 | "1" };
+>B : Symbol(B, Decl(-57087-06.ts, 0, 23))
+>b : Symbol(b, Decl(-57087-06.ts, 1, 10))
+
+type C = { c: number };
+>C : Symbol(C, Decl(-57087-06.ts, 1, 24))
+>c : Symbol(c, Decl(-57087-06.ts, 2, 10))
+
+type D = { a?: string, b: 1 | "1", c?: number };
+>D : Symbol(D, Decl(-57087-06.ts, 2, 23))
+>a : Symbol(a, Decl(-57087-06.ts, 3, 10))
+>b : Symbol(b, Decl(-57087-06.ts, 3, 22))
+>c : Symbol(c, Decl(-57087-06.ts, 3, 34))
+
+
+function ft2(x:A):string;
+>ft2 : Symbol(ft2, Decl(-57087-06.ts, 3, 48), Decl(-57087-06.ts, 6, 25), Decl(-57087-06.ts, 7, 25), Decl(-57087-06.ts, 8, 24))
+>x : Symbol(x, Decl(-57087-06.ts, 6, 13))
+>A : Symbol(A, Decl(-57087-06.ts, 0, 0))
+
+function ft2(x:C):number;
+>ft2 : Symbol(ft2, Decl(-57087-06.ts, 3, 48), Decl(-57087-06.ts, 6, 25), Decl(-57087-06.ts, 7, 25), Decl(-57087-06.ts, 8, 24))
+>x : Symbol(x, Decl(-57087-06.ts, 7, 13))
+>C : Symbol(C, Decl(-57087-06.ts, 1, 24))
+
+function ft2(x:B):"1"|1;
+>ft2 : Symbol(ft2, Decl(-57087-06.ts, 3, 48), Decl(-57087-06.ts, 6, 25), Decl(-57087-06.ts, 7, 25), Decl(-57087-06.ts, 8, 24))
+>x : Symbol(x, Decl(-57087-06.ts, 8, 13))
+>B : Symbol(B, Decl(-57087-06.ts, 0, 23))
+
+function ft2(x: A|B|C):1|"1"|string|number {
+>ft2 : Symbol(ft2, Decl(-57087-06.ts, 3, 48), Decl(-57087-06.ts, 6, 25), Decl(-57087-06.ts, 7, 25), Decl(-57087-06.ts, 8, 24))
+>x : Symbol(x, Decl(-57087-06.ts, 9, 13))
+>A : Symbol(A, Decl(-57087-06.ts, 0, 0))
+>B : Symbol(B, Decl(-57087-06.ts, 0, 23))
+>C : Symbol(C, Decl(-57087-06.ts, 1, 24))
+
+    if ("a" in x) return x.a;
+>x : Symbol(x, Decl(-57087-06.ts, 9, 13))
+>x.a : Symbol(a, Decl(-57087-06.ts, 0, 10))
+>x : Symbol(x, Decl(-57087-06.ts, 9, 13))
+>a : Symbol(a, Decl(-57087-06.ts, 0, 10))
+
+    if ("c" in x) return x.c;
+>x : Symbol(x, Decl(-57087-06.ts, 9, 13))
+>x.c : Symbol(c, Decl(-57087-06.ts, 2, 10))
+>x : Symbol(x, Decl(-57087-06.ts, 9, 13))
+>c : Symbol(c, Decl(-57087-06.ts, 2, 10))
+
+    return x.b;
+>x.b : Symbol(b, Decl(-57087-06.ts, 1, 10))
+>x : Symbol(x, Decl(-57087-06.ts, 9, 13))
+>b : Symbol(b, Decl(-57087-06.ts, 1, 10))
+}
+
+
+

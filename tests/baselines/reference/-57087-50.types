@@ -1,0 +1,75 @@
+//// [tests/cases/compiler/-test2/-57087-50.ts] ////
+
+=== -57087-50.ts ===
+declare function f1(x:{ a: string } | { b: number }):void;
+>f1 : (x: {    a: string;} | {    b: number;}) => void
+>x : { a: string; } | { b: number; }
+>a : string
+>b : number
+
+declare function f2(x:{ a?: string, b?: number }):void;
+>f2 : (x: {    a?: string;    b?: number;}) => void
+>x : { a?: string; b?: number; }
+>a : string | undefined
+>b : number | undefined
+
+declare function f3(x:{ a: string, b: number }):void;
+>f3 : (x: {    a: string;    b: number;}) => void
+>x : { a: string; b: number; }
+>a : string
+>b : number
+
+type GOR = ((x:{ a: string })=>void) | ((x:{ b: number }) => void);
+>GOR : ((x: {    a: string;}) => void) | ((x: {    b: number;}) => void)
+>x : { a: string; }
+>a : string
+>x : { b: number; }
+>b : number
+
+type GAND = ((x:{ a: string })=>void) & ((x:{ b: number }) => void);
+>GAND : ((x: {    a: string;}) => void) & ((x: {    b: number;}) => void)
+>x : { a: string; }
+>a : string
+>x : { b: number; }
+>b : number
+
+
+f1 satisfies GOR; // should be true
+>f1 satisfies GOR : (x: { a: string; } | { b: number; }) => void
+>f1 : (x: { a: string; } | { b: number; }) => void
+
+f2 satisfies GOR; // should be true
+>f2 satisfies GOR : (x: { a?: string; b?: number; }) => void
+>f2 : (x: { a?: string; b?: number; }) => void
+
+f3 satisfies GOR; // should be false
+>f3 satisfies GOR : (x: { a: string; b: number; }) => void
+>f3 : (x: { a: string; b: number; }) => void
+
+
+f1 satisfies GAND; // should be true
+>f1 satisfies GAND : (x: { a: string; } | { b: number; }) => void
+>f1 : (x: { a: string; } | { b: number; }) => void
+
+f2 satisfies GAND; // should be true
+>f2 satisfies GAND : (x: { a?: string; b?: number; }) => void
+>f2 : (x: { a?: string; b?: number; }) => void
+
+f3 satisfies GAND; // should be false
+>f3 satisfies GAND : (x: { a: string; b: number; }) => void
+>f3 : (x: { a: string; b: number; }) => void
+
+(0 as any as GOR) satisfies GAND; // should be false
+>(0 as any as GOR) satisfies GAND : GOR
+>(0 as any as GOR) : GOR
+>0 as any as GOR : GOR
+>0 as any : any
+>0 : 0
+
+(0 as any as GAND) satisfies GOR; // should be true
+>(0 as any as GAND) satisfies GOR : GAND
+>(0 as any as GAND) : GAND
+>0 as any as GAND : GAND
+>0 as any : any
+>0 : 0
+

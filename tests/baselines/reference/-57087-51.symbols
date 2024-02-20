@@ -1,0 +1,41 @@
+//// [tests/cases/compiler/-test2/-57087-51.ts] ////
+
+=== -57087-51.ts ===
+declare function f1(x:{ a: string } | { b: number }):void;
+>f1 : Symbol(f1, Decl(-57087-51.ts, 0, 0))
+>x : Symbol(x, Decl(-57087-51.ts, 0, 20))
+>a : Symbol(a, Decl(-57087-51.ts, 0, 23))
+>b : Symbol(b, Decl(-57087-51.ts, 0, 39))
+
+declare function f2(x:{ a?: string, b?: number }):void;
+>f2 : Symbol(f2, Decl(-57087-51.ts, 0, 58))
+>x : Symbol(x, Decl(-57087-51.ts, 1, 20))
+>a : Symbol(a, Decl(-57087-51.ts, 1, 23))
+>b : Symbol(b, Decl(-57087-51.ts, 1, 35))
+
+declare function f3(x:{ a: string, b: number }):void;
+>f3 : Symbol(f3, Decl(-57087-51.ts, 1, 55))
+>x : Symbol(x, Decl(-57087-51.ts, 2, 20))
+>a : Symbol(a, Decl(-57087-51.ts, 2, 23))
+>b : Symbol(b, Decl(-57087-51.ts, 2, 34))
+
+type GOR = ((x:{ a: string })=>void) | ((x:{ b: number }) => void);
+>GOR : Symbol(GOR, Decl(-57087-51.ts, 2, 53))
+>x : Symbol(x, Decl(-57087-51.ts, 4, 13))
+>a : Symbol(a, Decl(-57087-51.ts, 4, 16))
+>x : Symbol(x, Decl(-57087-51.ts, 4, 41))
+>b : Symbol(b, Decl(-57087-51.ts, 4, 44))
+
+type GAND = ((x:{ a: string })=>void) & ((x:{ b: number }) => void);
+>GAND : Symbol(GAND, Decl(-57087-51.ts, 4, 67))
+>x : Symbol(x, Decl(-57087-51.ts, 6, 14))
+>a : Symbol(a, Decl(-57087-51.ts, 6, 17))
+>x : Symbol(x, Decl(-57087-51.ts, 6, 42))
+>b : Symbol(b, Decl(-57087-51.ts, 6, 45))
+
+
+f3 satisfies GAND; // should be false
+>f3 : Symbol(f3, Decl(-57087-51.ts, 1, 55))
+>GAND : Symbol(GAND, Decl(-57087-51.ts, 4, 67))
+
+

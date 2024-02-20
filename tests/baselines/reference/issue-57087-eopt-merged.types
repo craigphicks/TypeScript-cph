@@ -423,9 +423,190 @@ interface A {
 
 
 /**********************/
-=== -57087-11.ts ===
+=== -57087-05.ts ===
 namespace ns4 {
 >ns4 : typeof ns4
+
+type A = { a: string };
+>A : { a: string; }
+>a : string
+
+type B = { b: 1 | "1" };
+>B : { b: 1 | "1"; }
+>b : 1 | "1"
+
+type C = { c: number };
+>C : { c: number; }
+>c : number
+
+interface FMap<T,R> {
+    f:(x:T)=>R
+>f : (x: T) => R
+>x : T
+
+    g(f:(x:T)=>R):R;
+>g : (f: (x: T) => R) => R
+>f : (x: T) => R
+>x : T
+}
+declare const x1: FMap<A|B,string|1>;
+>x1 : FMap<A | B, string | 1>
+
+x1.g(x1.f); // no error
+>x1.g(x1.f) : string | 1
+>x1.g : (f: (x: A | B) => string | 1) => string | 1
+>x1 : FMap<A | B, string | 1>
+>g : (f: (x: A | B) => string | 1) => string | 1
+>x1.f : (x: A | B) => string | 1
+>x1 : FMap<A | B, string | 1>
+>f : (x: A | B) => string | 1
+
+declare const x2: FMap<B|C,number|"1">;
+>x2 : FMap<B | C, number | "1">
+
+x2.g(x2.f); // no error
+>x2.g(x2.f) : number | "1"
+>x2.g : (f: (x: B | C) => number | "1") => number | "1"
+>x2 : FMap<B | C, number | "1">
+>g : (f: (x: B | C) => number | "1") => number | "1"
+>x2.f : (x: B | C) => number | "1"
+>x2 : FMap<B | C, number | "1">
+>f : (x: B | C) => number | "1"
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : FMap<A | B, string | 1> | FMap<B | C, number | "1">
+>Math.random() < 0.5 ? x1 : x2 : FMap<A | B, string | 1> | FMap<B | C, number | "1">
+>Math.random() < 0.5 : boolean
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>0.5 : 0.5
+>x1 : FMap<A | B, string | 1>
+>x2 : FMap<B | C, number | "1">
+
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+>x.g : ((f: (x: A | B) => string | 1) => string | 1) | ((f: (x: B | C) => number | "1") => number | "1")
+>x : FMap<A | B, string | 1> | FMap<B | C, number | "1">
+>g : ((f: (x: A | B) => string | 1) => string | 1) | ((f: (x: B | C) => number | "1") => number | "1")
+
+
+
+function ft2(x:A):string;
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : A
+
+function ft2(x:C):number;
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : C
+
+function ft2(x:B):"1"|1;
+>ft2 : { (x: A): string; (x: C): number; (x: B): "1" | 1; }
+>x : B
+
+function ft2(x: A|B|C):1|"1"|string|number {
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : A | B | C
+
+    if ("a" in x) return x.a;
+>"a" in x : boolean
+>"a" : "a"
+>x : A | B | C
+>x.a : string
+>x : A
+>a : string
+
+    if ("c" in x) return x.c;
+>"c" in x : boolean
+>"c" : "c"
+>x : B | C
+>x.c : number
+>x : C
+>c : number
+
+    return x.b;
+>x.b : 1 | "1"
+>x : B
+>b : 1 | "1"
+}
+
+x.g(ft2); // error
+>x.g(ft2) : string | number
+>x.g : ((f: (x: A | B) => string | 1) => string | 1) | ((f: (x: B | C) => number | "1") => number | "1")
+>x : FMap<A | B, string | 1> | FMap<B | C, number | "1">
+>g : ((f: (x: A | B) => string | 1) => string | 1) | ((f: (x: B | C) => number | "1") => number | "1")
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+}
+
+
+/**********************/
+=== -57087-06.ts ===
+namespace ns5 {
+>ns5 : typeof ns5
+
+type A = { a: string };
+>A : { a: string; }
+>a : string
+
+type B = { b: 1 | "1" };
+>B : { b: 1 | "1"; }
+>b : 1 | "1"
+
+type C = { c: number };
+>C : { c: number; }
+>c : number
+
+type D = { a?: string, b: 1 | "1", c?: number };
+>D : { a?: string; b: 1 | "1"; c?: number; }
+>a : string | undefined
+>b : 1 | "1"
+>c : number | undefined
+
+
+function ft2(x:A):string;
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : A
+
+function ft2(x:C):number;
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : C
+
+function ft2(x:B):"1"|1;
+>ft2 : { (x: A): string; (x: C): number; (x: B): "1" | 1; }
+>x : B
+
+function ft2(x: A|B|C):1|"1"|string|number {
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : A | B | C
+
+    if ("a" in x) return x.a;
+>"a" in x : boolean
+>"a" : "a"
+>x : A | B | C
+>x.a : string
+>x : A
+>a : string
+
+    if ("c" in x) return x.c;
+>"c" in x : boolean
+>"c" : "c"
+>x : B | C
+>x.c : number
+>x : C
+>c : number
+
+    return x.b;
+>x.b : 1 | "1"
+>x : B
+>b : 1 | "1"
+}
+}
+
+
+/**********************/
+=== -57087-11.ts ===
+namespace ns6 {
+>ns6 : typeof ns6
 
 declare const f: { (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }
 >f : { (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }
@@ -445,8 +626,8 @@ f satisfies Garg;
 
 /**********************/
 === -57087-12.ts ===
-namespace ns5 {
->ns5 : typeof ns5
+namespace ns7 {
+>ns7 : typeof ns7
 
 declare const f: { (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }
 >f : { (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }
@@ -467,8 +648,8 @@ f satisfies Garg;
 
 /**********************/
 === -57087-13.ts ===
-namespace ns6 {
->ns6 : typeof ns6
+namespace ns8 {
+>ns8 : typeof ns8
 
 declare const f42: () => string | number;
 >f42 : () => string | number
@@ -482,8 +663,8 @@ f42 satisfies (() => string) & (() => number);
 
 /**********************/
 === -57087-14.ts ===
-namespace ns7 {
->ns7 : typeof ns7
+namespace ns9 {
+>ns9 : typeof ns9
 
 declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number | "1" | "2" | "3"; }
 >foo : { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number | "1" | "2" | "3"; }
@@ -562,8 +743,8 @@ foo satisfies W;
 
 /**********************/
 === -57087-15.ts ===
-namespace ns8 {
->ns8 : typeof ns8
+namespace ns10 {
+>ns10 : typeof ns10
 
 declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number; }
 >foo : { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number; }
@@ -645,8 +826,8 @@ foo satisfies W;
 
 /**********************/
 === -57087-21.ts ===
-namespace ns9 {
->ns9 : typeof ns9
+namespace ns11 {
+>ns11 : typeof ns11
 
 // test f domain does not support Garg domain (3 omitted from f domain) - cannot detect during satisfies but can detect during call to f1
 
@@ -676,8 +857,8 @@ f1(3); // error exptected - No overload matches this call. (ts2769)
 
 /**********************/
 === -57087-22.ts ===
-namespace ns10 {
->ns10 : typeof ns10
+namespace ns12 {
+>ns12 : typeof ns12
 
 // test f range exceeds Garg range - should not satisfy
 
@@ -700,8 +881,8 @@ f2 satisfies Garg2; // should not satisfy
 
 /**********************/
 === -57087-31.ts ===
-namespace ns11 {
->ns11 : typeof ns11
+namespace ns13 {
+>ns13 : typeof ns13
 
 interface Garg31A {
     (): "01";
@@ -781,8 +962,8 @@ f31d satisfies Garg31A & Garg31B; // should not satisfy
 
 /**********************/
 === -57087-33.ts ===
-namespace ns12 {
->ns12 : typeof ns12
+namespace ns14 {
+>ns14 : typeof ns14
 
 interface Garg33A {
     (): "01";
@@ -877,8 +1058,8 @@ f33e satisfies Garg33A & Garg33B; // should satisfy
 
 /**********************/
 === -57087-35.ts ===
-namespace ns13 {
->ns13 : typeof ns13
+namespace ns15 {
+>ns15 : typeof ns15
 
 interface Garg35A {
     ({x,y}:{x:1, y:1}): "111"
@@ -1008,8 +1189,8 @@ const t2 = f35d({x:2}); // error expected - no overload matches this call
 
 /**********************/
 === -57087-36.ts ===
-namespace ns14 {
->ns14 : typeof ns14
+namespace ns16 {
+>ns16 : typeof ns16
 
 interface Garg36A {
     ({x,y}:{x:1, y:1}): "111"
@@ -1059,8 +1240,8 @@ f36d satisfies Garg36A & Garg36B; // should satisfy
 
 /**********************/
 === -57087-37.ts ===
-namespace ns15 {
->ns15 : typeof ns15
+namespace ns17 {
+>ns17 : typeof ns17
 
 interface Garg37A {
     ({x,y}:{x:1, y:1}): "111"
@@ -1119,8 +1300,8 @@ f37d({}); // error expected - no overload matches this call
 
 /**********************/
 === -57087-callsOnComplexSignatures-01.ts ===
-namespace ns16 {
->ns16 : typeof ns16
+namespace ns18 {
+>ns18 : typeof ns18
 
 function test3(items: string[] | number[]) {
 >test3 : (items: string[] | number[]) => void
@@ -1147,8 +1328,8 @@ function test3(items: string[] | number[]) {
 
 /**********************/
 === -57087-callsOnComplexSignatures-02.ts ===
-namespace ns17 {
->ns17 : typeof ns17
+namespace ns19 {
+>ns19 : typeof ns19
 
 type MyArray<T> = {
 >MyArray : MyArray<T>
@@ -1189,8 +1370,8 @@ function test3(items: MyArray<string> | MyArray<number>) {
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-01.ts ===
-namespace ns18 {
->ns18 : typeof ns18
+namespace ns20 {
+>ns20 : typeof ns20
 
 declare const y1: number[][] | string[];
 >y1 : string[] | number[][]
@@ -1212,8 +1393,8 @@ export const yThen1 = y1.map(item => item.length);
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-02.ts ===
-namespace ns19 {
->ns19 : typeof ns19
+namespace ns21 {
+>ns21 : typeof ns21
 
 declare const y2: number[][] | string[];
 >y2 : string[] | number[][]
@@ -1236,8 +1417,8 @@ export const yThen2 = y2.map(f2);
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-03.ts ===
-namespace ns20 {
->ns20 : typeof ns20
+namespace ns22 {
+>ns22 : typeof ns22
 
 declare const y3: number[][] | string[];
 >y3 : string[] | number[][]
@@ -1260,8 +1441,8 @@ export const yThen3 = y3.map(f3); // should be an error, but is not
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-04.ts ===
-namespace ns21 {
->ns21 : typeof ns21
+namespace ns23 {
+>ns23 : typeof ns23
 
 declare const y4: number[][] | string[];
 >y4 : string[] | number[][]
@@ -1285,8 +1466,8 @@ export const yThen4 = y4.map(f4()); // should not be an error, but is an error
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-05.ts ===
-namespace ns22 {
->ns22 : typeof ns22
+namespace ns24 {
+>ns24 : typeof ns24
 
 declare const y5: number[][] | string[];
 >y5 : string[] | number[][]
@@ -1309,8 +1490,8 @@ export const yThen4 = y5.map(f5);
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-10.ts ===
-namespace ns23 {
->ns23 : typeof ns23
+namespace ns25 {
+>ns25 : typeof ns25
 
 declare const y1: number[][] | string[];
 >y1 : string[] | number[][]
@@ -1402,8 +1583,8 @@ export const yThen5 = y1.map(f15);
 
 /**********************/
 === -57087-toSorted-01.ts ===
-namespace ns24 {
->ns24 : typeof ns24
+namespace ns26 {
+>ns26 : typeof ns26
 
 // interface Arr<T> {
 //     toSorted(compareFn?: (a: T, b: T) => number): T[];
@@ -1482,8 +1663,8 @@ f satisfies F;
 
 /**********************/
 === -57087-toSorted-02.ts ===
-namespace ns25 {
->ns25 : typeof ns25
+namespace ns27 {
+>ns27 : typeof ns27
 
 const a = 0 as any as ({ id: number; description: null; } | { id: number; description: string; })[];
 >a : ({ id: number; description: null; } | { id: number; description: string; })[]
@@ -1511,8 +1692,8 @@ a satisfies A;
 
 /**********************/
 === -57087-unionOfClassCalls-01.ts ===
-namespace ns26 {
->ns26 : typeof ns26
+namespace ns28 {
+>ns28 : typeof ns28
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1547,8 +1728,8 @@ namespace ns26 {
 
 /**********************/
 === -57087-unionOfClassCalls-02.ts ===
-namespace ns27 {
->ns27 : typeof ns27
+namespace ns29 {
+>ns29 : typeof ns29
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1578,8 +1759,8 @@ namespace ns27 {
 
 /**********************/
 === -57087-unionOfClassCalls-03.ts ===
-namespace ns28 {
->ns28 : typeof ns28
+namespace ns30 {
+>ns30 : typeof ns30
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1614,8 +1795,8 @@ namespace ns28 {
 
 /**********************/
 === -57087-unionOfClassCalls-11.ts ===
-namespace ns29 {
->ns29 : typeof ns29
+namespace ns31 {
+>ns31 : typeof ns31
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1650,8 +1831,8 @@ namespace ns29 {
 
 /**********************/
 === -57087-unionOfClassCalls-12.ts ===
-namespace ns30 {
->ns30 : typeof ns30
+namespace ns32 {
+>ns32 : typeof ns32
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1681,8 +1862,8 @@ namespace ns30 {
 
 /**********************/
 === -57087-unionOfClassCalls-13.ts ===
-namespace ns31 {
->ns31 : typeof ns31
+namespace ns33 {
+>ns33 : typeof ns33
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1717,8 +1898,8 @@ namespace ns31 {
 
 /**********************/
 === -57087-unionOfClassCalls-21.ts ===
-namespace ns32 {
->ns32 : typeof ns32
+namespace ns34 {
+>ns34 : typeof ns34
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1748,8 +1929,8 @@ namespace ns32 {
 
 /**********************/
 === -57087-unionOfClassCalls-22.ts ===
-namespace ns33 {
->ns33 : typeof ns33
+namespace ns35 {
+>ns35 : typeof ns35
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1774,8 +1955,8 @@ namespace ns33 {
 
 /**********************/
 === -57087-unionOfClassCalls-23.ts ===
-namespace ns34 {
->ns34 : typeof ns34
+namespace ns36 {
+>ns36 : typeof ns36
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : string[] | number[]
@@ -1801,5 +1982,115 @@ namespace ns34 {
         // do something
     });
 }
+}
+
+
+/**********************/
+=== -57087-withSkipAndOnly-01.ts ===
+namespace ns37 {
+>ns37 : typeof ns37
+
+interface Context {
+    [key: string]: any;
+>key : string
+}
+interface Test {
+    [key: string]: any;
+>key : string
+}
+type Done = (err?: any) => void;
+>Done : (err?: any) => void
+>err : any
+
+type Func = (this: Context, done: Done) => void;
+>Func : (this: Context, done: Done) => void
+>this : Context
+>done : Done
+
+type AsyncFunc = (this: Context) => PromiseLike<any>;
+>AsyncFunc : (this: Context) => PromiseLike<any>
+>this : Context
+
+interface PendingTestFunction {
+    skip: PendingTestFunction;
+>skip : PendingTestFunction
+
+    only: PendingTestFunction;
+>only : PendingTestFunction
+
+    (fn: Func): Test;
+>fn : Func
+
+    (fn: AsyncFunc): Test;
+>fn : AsyncFunc
+}
+type WithSkipAndOnly<T extends any[]> = ((...args: T) => void) & {
+>WithSkipAndOnly : WithSkipAndOnly<T>
+>args : T
+
+    skip: (...args: T) => void;
+>skip : (...args: T) => void
+>args : T
+
+    only: (...args: T) => void;
+>only : (...args: T) => void
+>args : T
+
+};
+declare const it: PendingTestFunction;
+>it : PendingTestFunction
+
+function createTestWrapper<T extends any[]>(fn: (it: PendingTestFunction, ...args: T) => void): WithSkipAndOnly<T> {
+>createTestWrapper : <T extends any[]>(fn: (it: PendingTestFunction, ...args: T) => void) => WithSkipAndOnly<T>
+>fn : (it: PendingTestFunction, ...args: T) => void
+>it : PendingTestFunction
+>args : T
+
+    wrapped.skip = (...args: T) => fn(it.skip, ...args);
+>wrapped.skip = (...args: T) => fn(it.skip, ...args) : (...args: T) => void
+>wrapped.skip : (...args: T) => void
+>wrapped : { (...args: T): void; skip(...args: T): void; only(...args: T): void; }
+>skip : (...args: T) => void
+>(...args: T) => fn(it.skip, ...args) : (...args: T) => void
+>args : T
+>fn(it.skip, ...args) : void
+>fn : (it: PendingTestFunction, ...args: T) => void
+>it.skip : PendingTestFunction
+>it : PendingTestFunction
+>skip : PendingTestFunction
+>...args : any
+>args : T
+
+    wrapped.only = (...args: T) => fn(it.only, ...args);
+>wrapped.only = (...args: T) => fn(it.only, ...args) : (...args: T) => void
+>wrapped.only : (...args: T) => void
+>wrapped : { (...args: T): void; skip(...args: T): void; only(...args: T): void; }
+>only : (...args: T) => void
+>(...args: T) => fn(it.only, ...args) : (...args: T) => void
+>args : T
+>fn(it.only, ...args) : void
+>fn : (it: PendingTestFunction, ...args: T) => void
+>it.only : PendingTestFunction
+>it : PendingTestFunction
+>only : PendingTestFunction
+>...args : any
+>args : T
+
+    return wrapped;
+>wrapped : { (...args: T): void; skip(...args: T): void; only(...args: T): void; }
+
+    function wrapped(...args: T) {
+>wrapped : { (...args: T): void; skip(...args: T): void; only(...args: T): void; }
+>args : T
+
+        return fn(it, ...args);
+>fn(it, ...args) : void
+>fn : (it: PendingTestFunction, ...args: T) => void
+>it : PendingTestFunction
+>...args : any
+>args : T
+    }
+}
 
 }
+

@@ -131,9 +131,64 @@ interface A {
 
 
 /**********************/
-// @filename:-57087-11.ts
+// @filename:-57087-05.ts
 
 namespace ns4 {
+type A = { a: string };
+type B = { b: 1 | "1" };
+type C = { c: number };
+
+interface FMap<T,R> {
+    f:(x:T)=>R
+    g(f:(x:T)=>R):R;
+}
+declare const x1: FMap<A|B,string|1>;
+x1.g(x1.f); // no error
+declare const x2: FMap<B|C,number|"1">;
+x2.g(x2.f); // no error
+const x = Math.random() < 0.5 ? x1 : x2;
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+
+
+
+function ft2(x:A):string;
+function ft2(x:C):number;
+function ft2(x:B):"1"|1;
+function ft2(x: A|B|C):1|"1"|string|number {
+    if ("a" in x) return x.a;
+    if ("c" in x) return x.c;
+    return x.b;
+}
+
+x.g(ft2); // error
+}
+
+
+/**********************/
+// @filename:-57087-06.ts
+
+namespace ns5 {
+type A = { a: string };
+type B = { b: 1 | "1" };
+type C = { c: number };
+type D = { a?: string, b: 1 | "1", c?: number };
+
+
+function ft2(x:A):string;
+function ft2(x:C):number;
+function ft2(x:B):"1"|1;
+function ft2(x: A|B|C):1|"1"|string|number {
+    if ("a" in x) return x.a;
+    if ("c" in x) return x.c;
+    return x.b;
+}
+}
+
+
+/**********************/
+// @filename:-57087-11.ts
+
+namespace ns6 {
 declare const f: { (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }
 
 type Garg = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
@@ -145,7 +200,7 @@ f satisfies Garg;
 /**********************/
 // @filename:-57087-12.ts
 
-namespace ns5 {
+namespace ns7 {
 declare const f: { (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }
 
 type Garg = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
@@ -157,7 +212,7 @@ f satisfies Garg;
 /**********************/
 // @filename:-57087-13.ts
 
-namespace ns6 {
+namespace ns8 {
 declare const f42: () => string | number;
 f42 satisfies (() => string) & (() => number);
 
@@ -167,7 +222,7 @@ f42 satisfies (() => string) & (() => number);
 /**********************/
 // @filename:-57087-14.ts
 
-namespace ns7 {
+namespace ns9 {
 declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number | "1" | "2" | "3"; }
 
 interface C {
@@ -203,7 +258,7 @@ foo satisfies W;
 /**********************/
 // @filename:-57087-15.ts
 
-namespace ns8 {
+namespace ns10 {
 declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number; }
 
 interface C {
@@ -242,7 +297,7 @@ foo satisfies W;
 /**********************/
 // @filename:-57087-21.ts
 
-namespace ns9 {
+namespace ns11 {
 // test f domain does not support Garg domain (3 omitted from f domain) - cannot detect during satisfies but can detect during call to f1
 
 declare const f1: { (x: 1 | 2): 1 | 2; (x: 2): "2" | "3";}
@@ -260,7 +315,7 @@ f1(3); // error exptected - No overload matches this call. (ts2769)
 /**********************/
 // @filename:-57087-22.ts
 
-namespace ns10 {
+namespace ns12 {
 // test f range exceeds Garg range - should not satisfy
 
 declare const f2: { (x: 1 | 2): 0 |1 | 2; (x: 3): "2" | "3"; }
@@ -275,7 +330,7 @@ f2 satisfies Garg2; // should not satisfy
 /**********************/
 // @filename:-57087-31.ts
 
-namespace ns11 {
+namespace ns13 {
 interface Garg31A {
     (): "01";
     (x:1, y:1): "211"
@@ -304,7 +359,7 @@ f31d satisfies Garg31A & Garg31B; // should not satisfy
 /**********************/
 // @filename:-57087-33.ts
 
-namespace ns12 {
+namespace ns14 {
 interface Garg33A {
     (): "01";
     (x?:1, y?:1): "211"
@@ -338,7 +393,7 @@ f33e satisfies Garg33A & Garg33B; // should satisfy
 /**********************/
 // @filename:-57087-35.ts
 
-namespace ns13 {
+namespace ns15 {
 interface Garg35A {
     ({x,y}:{x:1, y:1}): "111"
 };
@@ -370,7 +425,7 @@ const t2 = f35d({x:2}); // error expected - no overload matches this call
 /**********************/
 // @filename:-57087-36.ts
 
-namespace ns14 {
+namespace ns16 {
 interface Garg36A {
     ({x,y}:{x:1, y:1}): "111"
 };
@@ -389,7 +444,7 @@ f36d satisfies Garg36A & Garg36B; // should satisfy
 /**********************/
 // @filename:-57087-37.ts
 
-namespace ns15 {
+namespace ns17 {
 interface Garg37A {
     ({x,y}:{x:1, y:1}): "111"
 };
@@ -410,7 +465,7 @@ f37d({}); // error expected - no overload matches this call
 /**********************/
 // @filename:-57087-callsOnComplexSignatures-01.ts
 
-namespace ns16 {
+namespace ns18 {
 function test3(items: string[] | number[]) {
     items.forEach(item => console.log(item)); // must not be error
 //                   ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -422,7 +477,7 @@ function test3(items: string[] | number[]) {
 /**********************/
 // @filename:-57087-callsOnComplexSignatures-02.ts
 
-namespace ns17 {
+namespace ns19 {
 type MyArray<T> = {
     [n: number]: T;
     forEach(callbackfn: (value: T, index: number, array: MyArray<T>) => unknown): void;
@@ -439,7 +494,7 @@ function test3(items: MyArray<string> | MyArray<number>) {
 /**********************/
 // @filename:-57087-contextualOverloadListFromArrayUnion-01.ts
 
-namespace ns18 {
+namespace ns20 {
 declare const y1: number[][] | string[];
 export const yThen1 = y1.map(item => item.length);
 
@@ -449,7 +504,7 @@ export const yThen1 = y1.map(item => item.length);
 /**********************/
 // @filename:-57087-contextualOverloadListFromArrayUnion-02.ts
 
-namespace ns19 {
+namespace ns21 {
 declare const y2: number[][] | string[];
 declare function f2<T extends {length:number}>(x: T): number;
 export const yThen2 = y2.map(f2);
@@ -460,7 +515,7 @@ export const yThen2 = y2.map(f2);
 /**********************/
 // @filename:-57087-contextualOverloadListFromArrayUnion-03.ts
 
-namespace ns20 {
+namespace ns22 {
 declare const y3: number[][] | string[];
 declare function f3<T extends {length:number}>(): (x: T) => number;
 export const yThen3 = y3.map(f3); // should be an error, but is not
@@ -471,7 +526,7 @@ export const yThen3 = y3.map(f3); // should be an error, but is not
 /**********************/
 // @filename:-57087-contextualOverloadListFromArrayUnion-04.ts
 
-namespace ns21 {
+namespace ns23 {
 declare const y4: number[][] | string[];
 declare function f4<T extends {length:number}>(): (x: T) => number;
 export const yThen4 = y4.map(f4()); // should not be an error, but is an error
@@ -482,7 +537,7 @@ export const yThen4 = y4.map(f4()); // should not be an error, but is an error
 /**********************/
 // @filename:-57087-contextualOverloadListFromArrayUnion-05.ts
 
-namespace ns22 {
+namespace ns24 {
 declare const y5: number[][] | string[];
 declare const f5: { (x: number[]): number; (x: string): number;}
 export const yThen4 = y5.map(f5);
@@ -493,7 +548,7 @@ export const yThen4 = y5.map(f5);
 /**********************/
 // @filename:-57087-contextualOverloadListFromArrayUnion-10.ts
 
-namespace ns23 {
+namespace ns25 {
 declare const y1: number[][] | string[];
 export const yThen1 = y1.map(item => item.length);
 
@@ -519,7 +574,7 @@ export const yThen5 = y1.map(f15);
 /**********************/
 // @filename:-57087-toSorted-01.ts
 
-namespace ns24 {
+namespace ns26 {
 // interface Arr<T> {
 //     toSorted(compareFn?: (a: T, b: T) => number): T[];
 // }
@@ -548,7 +603,7 @@ f satisfies F;
 /**********************/
 // @filename:-57087-toSorted-02.ts
 
-namespace ns25 {
+namespace ns27 {
 const a = 0 as any as ({ id: number; description: null; } | { id: number; description: string; })[];
 type A = { id: number; }[] & { id: number; description: string | null; }[];
 a satisfies A;
@@ -560,7 +615,7 @@ a satisfies A;
 /**********************/
 // @filename:-57087-unionOfClassCalls-01.ts
 
-namespace ns26 {
+namespace ns28 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -576,7 +631,7 @@ namespace ns26 {
 /**********************/
 // @filename:-57087-unionOfClassCalls-02.ts
 
-namespace ns27 {
+namespace ns29 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const t = arr.reduce((acc: Array<string>, a: number | string, index: number) => {
@@ -591,7 +646,7 @@ namespace ns27 {
 /**********************/
 // @filename:-57087-unionOfClassCalls-03.ts
 
-namespace ns28 {
+namespace ns30 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -607,7 +662,7 @@ namespace ns28 {
 /**********************/
 // @filename:-57087-unionOfClassCalls-11.ts
 
-namespace ns29 {
+namespace ns31 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -623,7 +678,7 @@ namespace ns29 {
 /**********************/
 // @filename:-57087-unionOfClassCalls-12.ts
 
-namespace ns30 {
+namespace ns32 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const t = arr.reduce((acc, a, index) => {
@@ -638,7 +693,7 @@ namespace ns30 {
 /**********************/
 // @filename:-57087-unionOfClassCalls-13.ts
 
-namespace ns31 {
+namespace ns33 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -654,7 +709,7 @@ namespace ns31 {
 /**********************/
 // @filename:-57087-unionOfClassCalls-21.ts
 
-namespace ns32 {
+namespace ns34 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -668,7 +723,7 @@ namespace ns32 {
 /**********************/
 // @filename:-57087-unionOfClassCalls-22.ts
 
-namespace ns33 {
+namespace ns35 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const t = arr.reduce((acc,a) => acc+a)
@@ -680,7 +735,7 @@ namespace ns33 {
 /**********************/
 // @filename:-57087-unionOfClassCalls-23.ts
 
-namespace ns34 {
+namespace ns36 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -688,6 +743,41 @@ namespace ns34 {
     const t = arr.forEach(a => {
         // do something
     });
+}
+}
+
+
+/**********************/
+// @filename:-57087-withSkipAndOnly-01.ts
+
+namespace ns37 {
+interface Context {
+    [key: string]: any;
+}
+interface Test {
+    [key: string]: any;
+}
+type Done = (err?: any) => void;
+type Func = (this: Context, done: Done) => void;
+type AsyncFunc = (this: Context) => PromiseLike<any>;
+interface PendingTestFunction {
+    skip: PendingTestFunction;
+    only: PendingTestFunction;
+    (fn: Func): Test;
+    (fn: AsyncFunc): Test;
+}
+type WithSkipAndOnly<T extends any[]> = ((...args: T) => void) & {
+    skip: (...args: T) => void;
+    only: (...args: T) => void;
+};
+declare const it: PendingTestFunction;
+function createTestWrapper<T extends any[]>(fn: (it: PendingTestFunction, ...args: T) => void): WithSkipAndOnly<T> {
+    wrapped.skip = (...args: T) => fn(it.skip, ...args);
+    wrapped.only = (...args: T) => fn(it.only, ...args);
+    return wrapped;
+    function wrapped(...args: T) {
+        return fn(it, ...args);
+    }
 }
 
 }

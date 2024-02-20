@@ -1,0 +1,123 @@
+//// [tests/cases/compiler/-test/-57087-05.ts] ////
+
+=== -57087-05.ts ===
+type A = { a: string };
+>A : Symbol(A, Decl(-57087-05.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-05.ts, 0, 10))
+
+type B = { b: 1 | "1" };
+>B : Symbol(B, Decl(-57087-05.ts, 0, 23))
+>b : Symbol(b, Decl(-57087-05.ts, 1, 10))
+
+type C = { c: number };
+>C : Symbol(C, Decl(-57087-05.ts, 1, 24))
+>c : Symbol(c, Decl(-57087-05.ts, 2, 10))
+
+interface FMap<T,R> {
+>FMap : Symbol(FMap, Decl(-57087-05.ts, 2, 23))
+>T : Symbol(T, Decl(-57087-05.ts, 4, 15))
+>R : Symbol(R, Decl(-57087-05.ts, 4, 17))
+
+    f:(x:T)=>R
+>f : Symbol(FMap.f, Decl(-57087-05.ts, 4, 21))
+>x : Symbol(x, Decl(-57087-05.ts, 5, 7))
+>T : Symbol(T, Decl(-57087-05.ts, 4, 15))
+>R : Symbol(R, Decl(-57087-05.ts, 4, 17))
+
+    g(f:(x:T)=>R):R;
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14))
+>f : Symbol(f, Decl(-57087-05.ts, 6, 6))
+>x : Symbol(x, Decl(-57087-05.ts, 6, 9))
+>T : Symbol(T, Decl(-57087-05.ts, 4, 15))
+>R : Symbol(R, Decl(-57087-05.ts, 4, 17))
+>R : Symbol(R, Decl(-57087-05.ts, 4, 17))
+}
+declare const x1: FMap<A|B,string|1>;
+>x1 : Symbol(x1, Decl(-57087-05.ts, 8, 13))
+>FMap : Symbol(FMap, Decl(-57087-05.ts, 2, 23))
+>A : Symbol(A, Decl(-57087-05.ts, 0, 0))
+>B : Symbol(B, Decl(-57087-05.ts, 0, 23))
+
+x1.g(x1.f); // no error
+>x1.g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14))
+>x1 : Symbol(x1, Decl(-57087-05.ts, 8, 13))
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14))
+>x1.f : Symbol(FMap.f, Decl(-57087-05.ts, 4, 21))
+>x1 : Symbol(x1, Decl(-57087-05.ts, 8, 13))
+>f : Symbol(FMap.f, Decl(-57087-05.ts, 4, 21))
+
+declare const x2: FMap<B|C,number|"1">;
+>x2 : Symbol(x2, Decl(-57087-05.ts, 10, 13))
+>FMap : Symbol(FMap, Decl(-57087-05.ts, 2, 23))
+>B : Symbol(B, Decl(-57087-05.ts, 0, 23))
+>C : Symbol(C, Decl(-57087-05.ts, 1, 24))
+
+x2.g(x2.f); // no error
+>x2.g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14))
+>x2 : Symbol(x2, Decl(-57087-05.ts, 10, 13))
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14))
+>x2.f : Symbol(FMap.f, Decl(-57087-05.ts, 4, 21))
+>x2 : Symbol(x2, Decl(-57087-05.ts, 10, 13))
+>f : Symbol(FMap.f, Decl(-57087-05.ts, 4, 21))
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : Symbol(x, Decl(-57087-05.ts, 12, 5))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>x1 : Symbol(x1, Decl(-57087-05.ts, 8, 13))
+>x2 : Symbol(x2, Decl(-57087-05.ts, 10, 13))
+
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+>x.g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14), Decl(-57087-05.ts, 5, 14))
+>x : Symbol(x, Decl(-57087-05.ts, 12, 5))
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14), Decl(-57087-05.ts, 5, 14))
+
+
+
+function ft2(x:A):string;
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 13, 4), Decl(-57087-05.ts, 17, 25), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 24))
+>x : Symbol(x, Decl(-57087-05.ts, 17, 13))
+>A : Symbol(A, Decl(-57087-05.ts, 0, 0))
+
+function ft2(x:C):number;
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 13, 4), Decl(-57087-05.ts, 17, 25), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 24))
+>x : Symbol(x, Decl(-57087-05.ts, 18, 13))
+>C : Symbol(C, Decl(-57087-05.ts, 1, 24))
+
+function ft2(x:B):"1"|1;
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 13, 4), Decl(-57087-05.ts, 17, 25), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 24))
+>x : Symbol(x, Decl(-57087-05.ts, 19, 13))
+>B : Symbol(B, Decl(-57087-05.ts, 0, 23))
+
+function ft2(x: A|B|C):1|"1"|string|number {
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 13, 4), Decl(-57087-05.ts, 17, 25), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 24))
+>x : Symbol(x, Decl(-57087-05.ts, 20, 13))
+>A : Symbol(A, Decl(-57087-05.ts, 0, 0))
+>B : Symbol(B, Decl(-57087-05.ts, 0, 23))
+>C : Symbol(C, Decl(-57087-05.ts, 1, 24))
+
+    if ("a" in x) return x.a;
+>x : Symbol(x, Decl(-57087-05.ts, 20, 13))
+>x.a : Symbol(a, Decl(-57087-05.ts, 0, 10))
+>x : Symbol(x, Decl(-57087-05.ts, 20, 13))
+>a : Symbol(a, Decl(-57087-05.ts, 0, 10))
+
+    if ("c" in x) return x.c;
+>x : Symbol(x, Decl(-57087-05.ts, 20, 13))
+>x.c : Symbol(c, Decl(-57087-05.ts, 2, 10))
+>x : Symbol(x, Decl(-57087-05.ts, 20, 13))
+>c : Symbol(c, Decl(-57087-05.ts, 2, 10))
+
+    return x.b;
+>x.b : Symbol(b, Decl(-57087-05.ts, 1, 10))
+>x : Symbol(x, Decl(-57087-05.ts, 20, 13))
+>b : Symbol(b, Decl(-57087-05.ts, 1, 10))
+}
+
+x.g(ft2); // error
+>x.g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14), Decl(-57087-05.ts, 5, 14))
+>x : Symbol(x, Decl(-57087-05.ts, 12, 5))
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 5, 14), Decl(-57087-05.ts, 5, 14))
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 13, 4), Decl(-57087-05.ts, 17, 25), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 24))
+

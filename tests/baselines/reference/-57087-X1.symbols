@@ -1,0 +1,145 @@
+//// [tests/cases/compiler/-test2/-57087-X1.ts] ////
+
+=== -57087-X1.ts ===
+type Callback<T> = (x:T[])=>T[];
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-X1.ts, 0, 14))
+>x : Symbol(x, Decl(-57087-X1.ts, 0, 20))
+>T : Symbol(T, Decl(-57087-X1.ts, 0, 14))
+>T : Symbol(T, Decl(-57087-X1.ts, 0, 14))
+
+declare function g<T1,T2>(x: Callback<T1> | Callback<T2> ): ReturnType<Callback<T1> | Callback<T2>>;
+>g : Symbol(g, Decl(-57087-X1.ts, 0, 32))
+>T1 : Symbol(T1, Decl(-57087-X1.ts, 2, 19))
+>T2 : Symbol(T2, Decl(-57087-X1.ts, 2, 22))
+>x : Symbol(x, Decl(-57087-X1.ts, 2, 26))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T1 : Symbol(T1, Decl(-57087-X1.ts, 2, 19))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T2 : Symbol(T2, Decl(-57087-X1.ts, 2, 22))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T1 : Symbol(T1, Decl(-57087-X1.ts, 2, 19))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T2 : Symbol(T2, Decl(-57087-X1.ts, 2, 22))
+
+declare function h<T>(x: Callback<T>):ReturnType<Callback<T>>;
+>h : Symbol(h, Decl(-57087-X1.ts, 2, 100))
+>T : Symbol(T, Decl(-57087-X1.ts, 3, 19))
+>x : Symbol(x, Decl(-57087-X1.ts, 3, 22))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-X1.ts, 3, 19))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-X1.ts, 3, 19))
+
+interface K<T> {
+>K : Symbol(K, Decl(-57087-X1.ts, 3, 62))
+>T : Symbol(T, Decl(-57087-X1.ts, 5, 12))
+
+  f(x: Callback<T>):ReturnType<Callback<T>>
+>f : Symbol(K.f, Decl(-57087-X1.ts, 5, 16))
+>x : Symbol(x, Decl(-57087-X1.ts, 6, 4))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-X1.ts, 5, 12))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-X1.ts, 5, 12))
+}
+
+declare const id: <T>()=>(x:T)=>unknown;
+>id : Symbol(id, Decl(-57087-X1.ts, 9, 13))
+>T : Symbol(T, Decl(-57087-X1.ts, 9, 19))
+>x : Symbol(x, Decl(-57087-X1.ts, 9, 26))
+>T : Symbol(T, Decl(-57087-X1.ts, 9, 19))
+
+g<{a:string},{b:number}>(id());
+>g : Symbol(g, Decl(-57087-X1.ts, 0, 32))
+>a : Symbol(a, Decl(-57087-X1.ts, 11, 3))
+>b : Symbol(b, Decl(-57087-X1.ts, 11, 14))
+>id : Symbol(id, Decl(-57087-X1.ts, 9, 13))
+
+//                       ~~~~
+// Argument of type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to parameter of type 'Callback<{ a: string; }> | Callback<{ b: number; }>'.
+//   Type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to type 'Callback<{ a: string; }>'.
+//     Types of parameters 'x' and 'x' are incompatible.
+//       Type '{ a: string; }[]' is not assignable to type '{ a: string; }[] & { b: number; }[]'.
+//         Type '{ a: string; }[]' is not assignable to type '{ b: number; }[]'.
+
+declare const callbackInstance0: Callback<{a:string,b:number}>;
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-X1.ts, 19, 13))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-X1.ts, 19, 43))
+>b : Symbol(b, Decl(-57087-X1.ts, 19, 52))
+
+declare const callbackInstance1: Callback<{a:string}> & Callback<{b:number}>;
+>callbackInstance1 : Symbol(callbackInstance1, Decl(-57087-X1.ts, 20, 13))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-X1.ts, 20, 43))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>b : Symbol(b, Decl(-57087-X1.ts, 20, 66))
+
+declare const callbackInstance2: Callback<{a:string}> | Callback<{b:number}>;
+>callbackInstance2 : Symbol(callbackInstance2, Decl(-57087-X1.ts, 21, 13))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-X1.ts, 21, 43))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>b : Symbol(b, Decl(-57087-X1.ts, 21, 66))
+
+callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}>;
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-X1.ts, 19, 13))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-X1.ts, 23, 38))
+>Callback : Symbol(Callback, Decl(-57087-X1.ts, 0, 0))
+>b : Symbol(b, Decl(-57087-X1.ts, 23, 61))
+
+const rg0 = g(callbackInstance0);
+>rg0 : Symbol(rg0, Decl(-57087-X1.ts, 25, 5))
+>g : Symbol(g, Decl(-57087-X1.ts, 0, 32))
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-X1.ts, 19, 13))
+
+const rh0 = h(callbackInstance0);
+>rh0 : Symbol(rh0, Decl(-57087-X1.ts, 26, 5))
+>h : Symbol(h, Decl(-57087-X1.ts, 2, 100))
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-X1.ts, 19, 13))
+
+const rg1 = g(callbackInstance1);
+>rg1 : Symbol(rg1, Decl(-57087-X1.ts, 28, 5))
+>g : Symbol(g, Decl(-57087-X1.ts, 0, 32))
+>callbackInstance1 : Symbol(callbackInstance1, Decl(-57087-X1.ts, 20, 13))
+
+const rh1 = h(callbackInstance1);
+>rh1 : Symbol(rh1, Decl(-57087-X1.ts, 29, 5))
+>h : Symbol(h, Decl(-57087-X1.ts, 2, 100))
+>callbackInstance1 : Symbol(callbackInstance1, Decl(-57087-X1.ts, 20, 13))
+
+const rg2 = g(callbackInstance2);
+>rg2 : Symbol(rg2, Decl(-57087-X1.ts, 31, 5))
+>g : Symbol(g, Decl(-57087-X1.ts, 0, 32))
+>callbackInstance2 : Symbol(callbackInstance2, Decl(-57087-X1.ts, 21, 13))
+
+const rh2 = h(callbackInstance2);
+>rh2 : Symbol(rh2, Decl(-57087-X1.ts, 32, 5))
+>h : Symbol(h, Decl(-57087-X1.ts, 2, 100))
+>callbackInstance2 : Symbol(callbackInstance2, Decl(-57087-X1.ts, 21, 13))
+
+declare const k: K<{a:string}>|K<{b:number}>;
+>k : Symbol(k, Decl(-57087-X1.ts, 34, 13))
+>K : Symbol(K, Decl(-57087-X1.ts, 3, 62))
+>a : Symbol(a, Decl(-57087-X1.ts, 34, 20))
+>K : Symbol(K, Decl(-57087-X1.ts, 3, 62))
+>b : Symbol(b, Decl(-57087-X1.ts, 34, 34))
+
+k.f(callbackInstance0);
+>k.f : Symbol(K.f, Decl(-57087-X1.ts, 5, 16), Decl(-57087-X1.ts, 5, 16))
+>k : Symbol(k, Decl(-57087-X1.ts, 34, 13))
+>f : Symbol(K.f, Decl(-57087-X1.ts, 5, 16), Decl(-57087-X1.ts, 5, 16))
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-X1.ts, 19, 13))
+
+const rk1 = k.f(callbackInstance1);
+>rk1 : Symbol(rk1, Decl(-57087-X1.ts, 36, 5))
+>k.f : Symbol(K.f, Decl(-57087-X1.ts, 5, 16), Decl(-57087-X1.ts, 5, 16))
+>k : Symbol(k, Decl(-57087-X1.ts, 34, 13))
+>f : Symbol(K.f, Decl(-57087-X1.ts, 5, 16), Decl(-57087-X1.ts, 5, 16))
+>callbackInstance1 : Symbol(callbackInstance1, Decl(-57087-X1.ts, 20, 13))
+

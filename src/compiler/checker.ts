@@ -22162,7 +22162,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
 
-            if (enableInferSignatureMulti) {
+            /*
+             * In the case of one source with zero or one parameters
+             */
+            if (true) {
                 if (sourceSignatures.length === 1){
                     const ssig = sourceSignatures[0];
                     if (ssig.parameters.length>1) return {computed:false, ternary:Ternary.Unknown};
@@ -22182,9 +22185,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             gReturn: neverType as Type,
                             gReturnAllVoid: true
                         };
-                        tsigs.some(tsig=>{
+                        accum.allMatch = !tsigs.some(tsig=>{
                             const targetReturnType = getReturnTypeOfSignature(tsig);
-                            if (someAssignable(sourceReturnType,targetReturnType)) {
+                            if (targetReturnType===voidType || compareTypesAssignable(targetReturnType,sourceReturnType)) {
                                 if (tsig.parameters.length) {
                                     const tpt = getTypeOfSymbol(tsig.parameters[0]);
                                     /*
@@ -22198,11 +22201,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                                         }
                                     }
                                     else {
-                                        accum.allMatch = false;
-                                        true;
+                                        return true;
                                     }
                                 }
                             }
+                            else return true;
                         });
                         if (!accum.allMatch) {
                             IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${_si}, FAIL singleSource@-3 (no match)`,loggerLevel);

@@ -1,0 +1,146 @@
+//// [tests/cases/compiler/-test2/-57087-42.ts] ////
+
+=== -57087-42.ts ===
+type Callback<T> = (x:T[])=>T[];
+>Callback : Symbol(Callback, Decl(-57087-42.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-42.ts, 0, 14))
+>x : Symbol(x, Decl(-57087-42.ts, 0, 20))
+>T : Symbol(T, Decl(-57087-42.ts, 0, 14))
+>T : Symbol(T, Decl(-57087-42.ts, 0, 14))
+
+interface K<T> {
+>K : Symbol(K, Decl(-57087-42.ts, 0, 32))
+>T : Symbol(T, Decl(-57087-42.ts, 2, 12))
+
+  f(x: Callback<T>):T[]
+>f : Symbol(K.f, Decl(-57087-42.ts, 2, 16))
+>x : Symbol(x, Decl(-57087-42.ts, 3, 4))
+>Callback : Symbol(Callback, Decl(-57087-42.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-42.ts, 2, 12))
+>T : Symbol(T, Decl(-57087-42.ts, 2, 12))
+}
+
+function gt<T>(c: Callback<T>) {
+>gt : Symbol(gt, Decl(-57087-42.ts, 4, 1))
+>T : Symbol(T, Decl(-57087-42.ts, 6, 12))
+>c : Symbol(c, Decl(-57087-42.ts, 6, 15))
+>Callback : Symbol(Callback, Decl(-57087-42.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-42.ts, 6, 12))
+
+  return c(0 as any as T[]);
+>c : Symbol(c, Decl(-57087-42.ts, 6, 15))
+>T : Symbol(T, Decl(-57087-42.ts, 6, 12))
+}
+
+const callbackInstance0 = (x:any)=>x;
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-42.ts, 10, 5))
+>x : Symbol(x, Decl(-57087-42.ts, 10, 27))
+>x : Symbol(x, Decl(-57087-42.ts, 10, 27))
+
+callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}>;
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-42.ts, 10, 5))
+>Callback : Symbol(Callback, Decl(-57087-42.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-42.ts, 12, 38))
+>Callback : Symbol(Callback, Decl(-57087-42.ts, 0, 0))
+>b : Symbol(b, Decl(-57087-42.ts, 12, 61))
+
+declare const callbackInstance1: Callback<{a:string}> & Callback<{b:number}>;
+>callbackInstance1 : Symbol(callbackInstance1, Decl(-57087-42.ts, 14, 13))
+>Callback : Symbol(Callback, Decl(-57087-42.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-42.ts, 14, 43))
+>Callback : Symbol(Callback, Decl(-57087-42.ts, 0, 0))
+>b : Symbol(b, Decl(-57087-42.ts, 14, 66))
+
+declare const k: K<{a:string}>|K<{b:number}>;
+>k : Symbol(k, Decl(-57087-42.ts, 16, 13))
+>K : Symbol(K, Decl(-57087-42.ts, 0, 32))
+>a : Symbol(a, Decl(-57087-42.ts, 16, 20))
+>K : Symbol(K, Decl(-57087-42.ts, 0, 32))
+>b : Symbol(b, Decl(-57087-42.ts, 16, 34))
+
+const rk0 = k.f(callbackInstance0)[0];
+>rk0 : Symbol(rk0, Decl(-57087-42.ts, 18, 5))
+>k.f : Symbol(K.f, Decl(-57087-42.ts, 2, 16), Decl(-57087-42.ts, 2, 16))
+>k : Symbol(k, Decl(-57087-42.ts, 16, 13))
+>f : Symbol(K.f, Decl(-57087-42.ts, 2, 16), Decl(-57087-42.ts, 2, 16))
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-42.ts, 10, 5))
+
+if ("a" in rk0) { rk0.a satisfies string; }
+>rk0 : Symbol(rk0, Decl(-57087-42.ts, 18, 5))
+>rk0.a : Symbol(a, Decl(-57087-42.ts, 16, 20))
+>rk0 : Symbol(rk0, Decl(-57087-42.ts, 18, 5))
+>a : Symbol(a, Decl(-57087-42.ts, 16, 20))
+
+if ("b" in rk0) { rk0.b satisfies number; }
+>rk0 : Symbol(rk0, Decl(-57087-42.ts, 18, 5))
+>rk0.b : Symbol(b, Decl(-57087-42.ts, 16, 34))
+>rk0 : Symbol(rk0, Decl(-57087-42.ts, 18, 5))
+>b : Symbol(b, Decl(-57087-42.ts, 16, 34))
+
+const rk1 = k.f(callbackInstance1)[0];
+>rk1 : Symbol(rk1, Decl(-57087-42.ts, 24, 5))
+>k.f : Symbol(K.f, Decl(-57087-42.ts, 2, 16), Decl(-57087-42.ts, 2, 16))
+>k : Symbol(k, Decl(-57087-42.ts, 16, 13))
+>f : Symbol(K.f, Decl(-57087-42.ts, 2, 16), Decl(-57087-42.ts, 2, 16))
+>callbackInstance1 : Symbol(callbackInstance1, Decl(-57087-42.ts, 14, 13))
+
+if ("a" in rk1) { rk1.a satisfies string; }
+>rk1 : Symbol(rk1, Decl(-57087-42.ts, 24, 5))
+>rk1.a : Symbol(a, Decl(-57087-42.ts, 16, 20))
+>rk1 : Symbol(rk1, Decl(-57087-42.ts, 24, 5))
+>a : Symbol(a, Decl(-57087-42.ts, 16, 20))
+
+if ("b" in rk1) { rk1.b satisfies number; }
+>rk1 : Symbol(rk1, Decl(-57087-42.ts, 24, 5))
+>rk1.b : Symbol(b, Decl(-57087-42.ts, 16, 34))
+>rk1 : Symbol(rk1, Decl(-57087-42.ts, 24, 5))
+>b : Symbol(b, Decl(-57087-42.ts, 16, 34))
+
+declare const g: typeof gt<{a:string}> | typeof gt<{a:string}>
+>g : Symbol(g, Decl(-57087-42.ts, 30, 13))
+>gt : Symbol(gt, Decl(-57087-42.ts, 4, 1))
+>a : Symbol(a, Decl(-57087-42.ts, 30, 28))
+>gt : Symbol(gt, Decl(-57087-42.ts, 4, 1))
+>a : Symbol(a, Decl(-57087-42.ts, 30, 52))
+
+const rg0 = g(callbackInstance0)[0];
+>rg0 : Symbol(rg0, Decl(-57087-42.ts, 32, 5))
+>g : Symbol(g, Decl(-57087-42.ts, 30, 13))
+>callbackInstance0 : Symbol(callbackInstance0, Decl(-57087-42.ts, 10, 5))
+
+if ("a" in rg0) { rg0.a satisfies string; }
+>rg0 : Symbol(rg0, Decl(-57087-42.ts, 32, 5))
+>rg0.a : Symbol(a, Decl(-57087-42.ts, 30, 28))
+>rg0 : Symbol(rg0, Decl(-57087-42.ts, 32, 5))
+>a : Symbol(a, Decl(-57087-42.ts, 30, 28))
+
+if ("b" in rg0) {
+>rg0 : Symbol(rg0, Decl(-57087-42.ts, 32, 5))
+
+  rg0.b satisfies number; // this should pass but does not.
+>rg0.b : Symbol(b)
+>rg0 : Symbol(rg0, Decl(-57087-42.ts, 32, 5))
+>b : Symbol(b)
+}
+
+const rg1 = g(callbackInstance1)[0];
+>rg1 : Symbol(rg1, Decl(-57087-42.ts, 40, 5))
+>g : Symbol(g, Decl(-57087-42.ts, 30, 13))
+>callbackInstance1 : Symbol(callbackInstance1, Decl(-57087-42.ts, 14, 13))
+
+if ("a" in rg1) { rg1.a satisfies string; }
+>rg1 : Symbol(rg1, Decl(-57087-42.ts, 40, 5))
+>rg1.a : Symbol(a, Decl(-57087-42.ts, 30, 28))
+>rg1 : Symbol(rg1, Decl(-57087-42.ts, 40, 5))
+>a : Symbol(a, Decl(-57087-42.ts, 30, 28))
+
+if ("b" in rg1) {
+>rg1 : Symbol(rg1, Decl(-57087-42.ts, 40, 5))
+
+  rg1.b satisfies number; // this should pass but does not.
+>rg1.b : Symbol(b)
+>rg1 : Symbol(rg1, Decl(-57087-42.ts, 40, 5))
+>b : Symbol(b)
+}
+
+

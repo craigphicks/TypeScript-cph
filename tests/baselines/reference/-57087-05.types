@@ -1,0 +1,113 @@
+//// [tests/cases/compiler/-test/-57087-05.ts] ////
+
+=== -57087-05.ts ===
+type A = { a: string };
+>A : { a: string; }
+>a : string
+
+type B = { b: 1 | "1" };
+>B : { b: 1 | "1"; }
+>b : 1 | "1"
+
+type C = { c: number };
+>C : { c: number; }
+>c : number
+
+interface FMap<T,R> {
+    f:(x:T)=>R
+>f : (x: T) => R
+>x : T
+
+    g(f:(x:T)=>R):R;
+>g : (f: (x: T) => R) => R
+>f : (x: T) => R
+>x : T
+}
+declare const x1: FMap<A|B,string|1>;
+>x1 : FMap<A | B, string | 1>
+
+x1.g(x1.f); // no error
+>x1.g(x1.f) : string | 1
+>x1.g : (f: (x: A | B) => string | 1) => string | 1
+>x1 : FMap<A | B, string | 1>
+>g : (f: (x: A | B) => string | 1) => string | 1
+>x1.f : (x: A | B) => string | 1
+>x1 : FMap<A | B, string | 1>
+>f : (x: A | B) => string | 1
+
+declare const x2: FMap<B|C,number|"1">;
+>x2 : FMap<B | C, number | "1">
+
+x2.g(x2.f); // no error
+>x2.g(x2.f) : number | "1"
+>x2.g : (f: (x: B | C) => number | "1") => number | "1"
+>x2 : FMap<B | C, number | "1">
+>g : (f: (x: B | C) => number | "1") => number | "1"
+>x2.f : (x: B | C) => number | "1"
+>x2 : FMap<B | C, number | "1">
+>f : (x: B | C) => number | "1"
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : FMap<A | B, string | 1> | FMap<B | C, number | "1">
+>Math.random() < 0.5 ? x1 : x2 : FMap<A | B, string | 1> | FMap<B | C, number | "1">
+>Math.random() < 0.5 : boolean
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>0.5 : 0.5
+>x1 : FMap<A | B, string | 1>
+>x2 : FMap<B | C, number | "1">
+
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+>x.g : ((f: (x: A | B) => string | 1) => string | 1) | ((f: (x: B | C) => number | "1") => number | "1")
+>x : FMap<A | B, string | 1> | FMap<B | C, number | "1">
+>g : ((f: (x: A | B) => string | 1) => string | 1) | ((f: (x: B | C) => number | "1") => number | "1")
+
+
+
+function ft2(x:A):string;
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : A
+
+function ft2(x:C):number;
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : C
+
+function ft2(x:B):"1"|1;
+>ft2 : { (x: A): string; (x: C): number; (x: B): "1" | 1; }
+>x : B
+
+function ft2(x: A|B|C):1|"1"|string|number {
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+>x : A | B | C
+
+    if ("a" in x) return x.a;
+>"a" in x : boolean
+>"a" : "a"
+>x : A | B | C
+>x.a : string
+>x : A
+>a : string
+
+    if ("c" in x) return x.c;
+>"c" in x : boolean
+>"c" : "c"
+>x : B | C
+>x.c : number
+>x : C
+>c : number
+
+    return x.b;
+>x.b : 1 | "1"
+>x : B
+>b : 1 | "1"
+}
+
+x.g(ft2); // error
+>x.g(ft2) : string | number
+>x.g : ((f: (x: A | B) => string | 1) => string | 1) | ((f: (x: B | C) => number | "1") => number | "1")
+>x : FMap<A | B, string | 1> | FMap<B | C, number | "1">
+>g : ((f: (x: A | B) => string | 1) => string | 1) | ((f: (x: B | C) => number | "1") => number | "1")
+>ft2 : { (x: A): string; (x: C): number; (x: B): 1 | "1"; }
+

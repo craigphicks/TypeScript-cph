@@ -1,0 +1,117 @@
+//// [tests/cases/compiler/-test2/-57087-X1.ts] ////
+
+=== -57087-X1.ts ===
+type Callback<T> = (x:T[])=>T[];
+>Callback : Callback<T>
+>x : T[]
+
+declare function g<T1,T2>(x: Callback<T1> | Callback<T2> ): ReturnType<Callback<T1> | Callback<T2>>;
+>g : <T1, T2>(x: Callback<T1> | Callback<T2>) => ReturnType<Callback<T1> | Callback<T2>>
+>x : Callback<T1> | Callback<T2>
+
+declare function h<T>(x: Callback<T>):ReturnType<Callback<T>>;
+>h : <T>(x: Callback<T>) => ReturnType<Callback<T>>
+>x : Callback<T>
+
+interface K<T> {
+  f(x: Callback<T>):ReturnType<Callback<T>>
+>f : (x: Callback<T>) => ReturnType<Callback<T>>
+>x : Callback<T>
+}
+
+declare const id: <T>()=>(x:T)=>unknown;
+>id : <T>() => (x: T) => unknown
+>x : T
+
+g<{a:string},{b:number}>(id());
+>g<{a:string},{b:number}>(id()) : { a: string; }[] | { b: number; }[]
+>g : <T1, T2>(x: Callback<T1> | Callback<T2>) => T1[] | T2[]
+>a : string
+>b : number
+>id() : (x: { a: string; }[] & { b: number; }[]) => unknown
+>id : <T>() => (x: T) => unknown
+
+//                       ~~~~
+// Argument of type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to parameter of type 'Callback<{ a: string; }> | Callback<{ b: number; }>'.
+//   Type '(x: { a: string; }[] & { b: number; }[]) => unknown' is not assignable to type 'Callback<{ a: string; }>'.
+//     Types of parameters 'x' and 'x' are incompatible.
+//       Type '{ a: string; }[]' is not assignable to type '{ a: string; }[] & { b: number; }[]'.
+//         Type '{ a: string; }[]' is not assignable to type '{ b: number; }[]'.
+
+declare const callbackInstance0: Callback<{a:string,b:number}>;
+>callbackInstance0 : Callback<{ a: string; b: number; }>
+>a : string
+>b : number
+
+declare const callbackInstance1: Callback<{a:string}> & Callback<{b:number}>;
+>callbackInstance1 : Callback<{ a: string; }> & Callback<{ b: number; }>
+>a : string
+>b : number
+
+declare const callbackInstance2: Callback<{a:string}> | Callback<{b:number}>;
+>callbackInstance2 : Callback<{ a: string; }> | Callback<{ b: number; }>
+>a : string
+>b : number
+
+callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}>;
+>callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}> : Callback<{ a: string; b: number; }>
+>callbackInstance0 : Callback<{ a: string; b: number; }>
+>a : string
+>b : number
+
+const rg0 = g(callbackInstance0);
+>rg0 : { a: string; b: number; }[]
+>g(callbackInstance0) : { a: string; b: number; }[]
+>g : <T1, T2>(x: Callback<T1> | Callback<T2>) => T1[] | T2[]
+>callbackInstance0 : Callback<{ a: string; b: number; }>
+
+const rh0 = h(callbackInstance0);
+>rh0 : { a: string; b: number; }[]
+>h(callbackInstance0) : { a: string; b: number; }[]
+>h : <T>(x: Callback<T>) => T[]
+>callbackInstance0 : Callback<{ a: string; b: number; }>
+
+const rg1 = g(callbackInstance1);
+>rg1 : { b: number; }[]
+>g(callbackInstance1) : { b: number; }[]
+>g : <T1, T2>(x: Callback<T1> | Callback<T2>) => T1[] | T2[]
+>callbackInstance1 : Callback<{ a: string; }> & Callback<{ b: number; }>
+
+const rh1 = h(callbackInstance1);
+>rh1 : { b: number; }[]
+>h(callbackInstance1) : { b: number; }[]
+>h : <T>(x: Callback<T>) => T[]
+>callbackInstance1 : Callback<{ a: string; }> & Callback<{ b: number; }>
+
+const rg2 = g(callbackInstance2);
+>rg2 : { a: string; }[]
+>g(callbackInstance2) : { a: string; }[]
+>g : <T1, T2>(x: Callback<T1> | Callback<T2>) => T1[] | T2[]
+>callbackInstance2 : Callback<{ a: string; }> | Callback<{ b: number; }>
+
+const rh2 = h(callbackInstance2);
+>rh2 : { a: string; }[]
+>h(callbackInstance2) : { a: string; }[]
+>h : <T>(x: Callback<T>) => T[]
+>callbackInstance2 : Callback<{ a: string; }> | Callback<{ b: number; }>
+
+declare const k: K<{a:string}>|K<{b:number}>;
+>k : K<{ a: string; }> | K<{ b: number; }>
+>a : string
+>b : number
+
+k.f(callbackInstance0);
+>k.f(callbackInstance0) : { a: string; }[] | { b: number; }[]
+>k.f : ((x: Callback<{ a: string; }>) => { a: string; }[]) | ((x: Callback<{ b: number; }>) => { b: number; }[])
+>k : K<{ a: string; }> | K<{ b: number; }>
+>f : ((x: Callback<{ a: string; }>) => { a: string; }[]) | ((x: Callback<{ b: number; }>) => { b: number; }[])
+>callbackInstance0 : Callback<{ a: string; b: number; }>
+
+const rk1 = k.f(callbackInstance1);
+>rk1 : { a: string; }[] | { b: number; }[]
+>k.f(callbackInstance1) : { a: string; }[] | { b: number; }[]
+>k.f : ((x: Callback<{ a: string; }>) => { a: string; }[]) | ((x: Callback<{ b: number; }>) => { b: number; }[])
+>k : K<{ a: string; }> | K<{ b: number; }>
+>f : ((x: Callback<{ a: string; }>) => { a: string; }[]) | ((x: Callback<{ b: number; }>) => { b: number; }[])
+>callbackInstance1 : Callback<{ a: string; }> & Callback<{ b: number; }>
+

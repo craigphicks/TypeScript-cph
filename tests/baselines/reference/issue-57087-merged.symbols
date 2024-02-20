@@ -430,9 +430,205 @@ interface A {
 
 
 /**********************/
-=== -57087-11.ts ===
+=== -57087-05.ts ===
 namespace ns4 {
->ns4 : Symbol(ns4, Decl(-57087-11.ts, 0, 0))
+>ns4 : Symbol(ns4, Decl(-57087-05.ts, 0, 0))
+
+type A = { a: string };
+>A : Symbol(A, Decl(-57087-05.ts, 0, 15))
+>a : Symbol(a, Decl(-57087-05.ts, 1, 10))
+
+type B = { b: 1 | "1" };
+>B : Symbol(B, Decl(-57087-05.ts, 1, 23))
+>b : Symbol(b, Decl(-57087-05.ts, 2, 10))
+
+type C = { c: number };
+>C : Symbol(C, Decl(-57087-05.ts, 2, 24))
+>c : Symbol(c, Decl(-57087-05.ts, 3, 10))
+
+interface FMap<T,R> {
+>FMap : Symbol(FMap, Decl(-57087-05.ts, 3, 23))
+>T : Symbol(T, Decl(-57087-05.ts, 5, 15))
+>R : Symbol(R, Decl(-57087-05.ts, 5, 17))
+
+    f:(x:T)=>R
+>f : Symbol(FMap.f, Decl(-57087-05.ts, 5, 21))
+>x : Symbol(x, Decl(-57087-05.ts, 6, 7))
+>T : Symbol(T, Decl(-57087-05.ts, 5, 15))
+>R : Symbol(R, Decl(-57087-05.ts, 5, 17))
+
+    g(f:(x:T)=>R):R;
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14))
+>f : Symbol(f, Decl(-57087-05.ts, 7, 6))
+>x : Symbol(x, Decl(-57087-05.ts, 7, 9))
+>T : Symbol(T, Decl(-57087-05.ts, 5, 15))
+>R : Symbol(R, Decl(-57087-05.ts, 5, 17))
+>R : Symbol(R, Decl(-57087-05.ts, 5, 17))
+}
+declare const x1: FMap<A|B,string|1>;
+>x1 : Symbol(x1, Decl(-57087-05.ts, 9, 13))
+>FMap : Symbol(FMap, Decl(-57087-05.ts, 3, 23))
+>A : Symbol(A, Decl(-57087-05.ts, 0, 15))
+>B : Symbol(B, Decl(-57087-05.ts, 1, 23))
+
+x1.g(x1.f); // no error
+>x1.g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14))
+>x1 : Symbol(x1, Decl(-57087-05.ts, 9, 13))
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14))
+>x1.f : Symbol(FMap.f, Decl(-57087-05.ts, 5, 21))
+>x1 : Symbol(x1, Decl(-57087-05.ts, 9, 13))
+>f : Symbol(FMap.f, Decl(-57087-05.ts, 5, 21))
+
+declare const x2: FMap<B|C,number|"1">;
+>x2 : Symbol(x2, Decl(-57087-05.ts, 11, 13))
+>FMap : Symbol(FMap, Decl(-57087-05.ts, 3, 23))
+>B : Symbol(B, Decl(-57087-05.ts, 1, 23))
+>C : Symbol(C, Decl(-57087-05.ts, 2, 24))
+
+x2.g(x2.f); // no error
+>x2.g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14))
+>x2 : Symbol(x2, Decl(-57087-05.ts, 11, 13))
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14))
+>x2.f : Symbol(FMap.f, Decl(-57087-05.ts, 5, 21))
+>x2 : Symbol(x2, Decl(-57087-05.ts, 11, 13))
+>f : Symbol(FMap.f, Decl(-57087-05.ts, 5, 21))
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : Symbol(x, Decl(-57087-05.ts, 13, 5))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>x1 : Symbol(x1, Decl(-57087-05.ts, 9, 13))
+>x2 : Symbol(x2, Decl(-57087-05.ts, 11, 13))
+
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+>x.g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14), Decl(-57087-05.ts, 6, 14))
+>x : Symbol(x, Decl(-57087-05.ts, 13, 5))
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14), Decl(-57087-05.ts, 6, 14))
+
+
+
+function ft2(x:A):string;
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 14, 4), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 25), Decl(-57087-05.ts, 20, 24))
+>x : Symbol(x, Decl(-57087-05.ts, 18, 13))
+>A : Symbol(A, Decl(-57087-05.ts, 0, 15))
+
+function ft2(x:C):number;
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 14, 4), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 25), Decl(-57087-05.ts, 20, 24))
+>x : Symbol(x, Decl(-57087-05.ts, 19, 13))
+>C : Symbol(C, Decl(-57087-05.ts, 2, 24))
+
+function ft2(x:B):"1"|1;
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 14, 4), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 25), Decl(-57087-05.ts, 20, 24))
+>x : Symbol(x, Decl(-57087-05.ts, 20, 13))
+>B : Symbol(B, Decl(-57087-05.ts, 1, 23))
+
+function ft2(x: A|B|C):1|"1"|string|number {
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 14, 4), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 25), Decl(-57087-05.ts, 20, 24))
+>x : Symbol(x, Decl(-57087-05.ts, 21, 13))
+>A : Symbol(A, Decl(-57087-05.ts, 0, 15))
+>B : Symbol(B, Decl(-57087-05.ts, 1, 23))
+>C : Symbol(C, Decl(-57087-05.ts, 2, 24))
+
+    if ("a" in x) return x.a;
+>x : Symbol(x, Decl(-57087-05.ts, 21, 13))
+>x.a : Symbol(a, Decl(-57087-05.ts, 1, 10))
+>x : Symbol(x, Decl(-57087-05.ts, 21, 13))
+>a : Symbol(a, Decl(-57087-05.ts, 1, 10))
+
+    if ("c" in x) return x.c;
+>x : Symbol(x, Decl(-57087-05.ts, 21, 13))
+>x.c : Symbol(c, Decl(-57087-05.ts, 3, 10))
+>x : Symbol(x, Decl(-57087-05.ts, 21, 13))
+>c : Symbol(c, Decl(-57087-05.ts, 3, 10))
+
+    return x.b;
+>x.b : Symbol(b, Decl(-57087-05.ts, 2, 10))
+>x : Symbol(x, Decl(-57087-05.ts, 21, 13))
+>b : Symbol(b, Decl(-57087-05.ts, 2, 10))
+}
+
+x.g(ft2); // error
+>x.g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14), Decl(-57087-05.ts, 6, 14))
+>x : Symbol(x, Decl(-57087-05.ts, 13, 5))
+>g : Symbol(FMap.g, Decl(-57087-05.ts, 6, 14), Decl(-57087-05.ts, 6, 14))
+>ft2 : Symbol(ft2, Decl(-57087-05.ts, 14, 4), Decl(-57087-05.ts, 18, 25), Decl(-57087-05.ts, 19, 25), Decl(-57087-05.ts, 20, 24))
+}
+
+
+/**********************/
+=== -57087-06.ts ===
+namespace ns5 {
+>ns5 : Symbol(ns5, Decl(-57087-06.ts, 0, 0))
+
+type A = { a: string };
+>A : Symbol(A, Decl(-57087-06.ts, 0, 15))
+>a : Symbol(a, Decl(-57087-06.ts, 1, 10))
+
+type B = { b: 1 | "1" };
+>B : Symbol(B, Decl(-57087-06.ts, 1, 23))
+>b : Symbol(b, Decl(-57087-06.ts, 2, 10))
+
+type C = { c: number };
+>C : Symbol(C, Decl(-57087-06.ts, 2, 24))
+>c : Symbol(c, Decl(-57087-06.ts, 3, 10))
+
+type D = { a?: string, b: 1 | "1", c?: number };
+>D : Symbol(D, Decl(-57087-06.ts, 3, 23))
+>a : Symbol(a, Decl(-57087-06.ts, 4, 10))
+>b : Symbol(b, Decl(-57087-06.ts, 4, 22))
+>c : Symbol(c, Decl(-57087-06.ts, 4, 34))
+
+
+function ft2(x:A):string;
+>ft2 : Symbol(ft2, Decl(-57087-06.ts, 4, 48), Decl(-57087-06.ts, 7, 25), Decl(-57087-06.ts, 8, 25), Decl(-57087-06.ts, 9, 24))
+>x : Symbol(x, Decl(-57087-06.ts, 7, 13))
+>A : Symbol(A, Decl(-57087-06.ts, 0, 15))
+
+function ft2(x:C):number;
+>ft2 : Symbol(ft2, Decl(-57087-06.ts, 4, 48), Decl(-57087-06.ts, 7, 25), Decl(-57087-06.ts, 8, 25), Decl(-57087-06.ts, 9, 24))
+>x : Symbol(x, Decl(-57087-06.ts, 8, 13))
+>C : Symbol(C, Decl(-57087-06.ts, 2, 24))
+
+function ft2(x:B):"1"|1;
+>ft2 : Symbol(ft2, Decl(-57087-06.ts, 4, 48), Decl(-57087-06.ts, 7, 25), Decl(-57087-06.ts, 8, 25), Decl(-57087-06.ts, 9, 24))
+>x : Symbol(x, Decl(-57087-06.ts, 9, 13))
+>B : Symbol(B, Decl(-57087-06.ts, 1, 23))
+
+function ft2(x: A|B|C):1|"1"|string|number {
+>ft2 : Symbol(ft2, Decl(-57087-06.ts, 4, 48), Decl(-57087-06.ts, 7, 25), Decl(-57087-06.ts, 8, 25), Decl(-57087-06.ts, 9, 24))
+>x : Symbol(x, Decl(-57087-06.ts, 10, 13))
+>A : Symbol(A, Decl(-57087-06.ts, 0, 15))
+>B : Symbol(B, Decl(-57087-06.ts, 1, 23))
+>C : Symbol(C, Decl(-57087-06.ts, 2, 24))
+
+    if ("a" in x) return x.a;
+>x : Symbol(x, Decl(-57087-06.ts, 10, 13))
+>x.a : Symbol(a, Decl(-57087-06.ts, 1, 10))
+>x : Symbol(x, Decl(-57087-06.ts, 10, 13))
+>a : Symbol(a, Decl(-57087-06.ts, 1, 10))
+
+    if ("c" in x) return x.c;
+>x : Symbol(x, Decl(-57087-06.ts, 10, 13))
+>x.c : Symbol(c, Decl(-57087-06.ts, 3, 10))
+>x : Symbol(x, Decl(-57087-06.ts, 10, 13))
+>c : Symbol(c, Decl(-57087-06.ts, 3, 10))
+
+    return x.b;
+>x.b : Symbol(b, Decl(-57087-06.ts, 2, 10))
+>x : Symbol(x, Decl(-57087-06.ts, 10, 13))
+>b : Symbol(b, Decl(-57087-06.ts, 2, 10))
+}
+
+
+
+}
+
+
+/**********************/
+=== -57087-11.ts ===
+namespace ns6 {
+>ns6 : Symbol(ns6, Decl(-57087-11.ts, 0, 0))
 
 declare const f: { (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }
 >f : Symbol(f, Decl(-57087-11.ts, 1, 13))
@@ -452,8 +648,8 @@ f satisfies Garg;
 
 /**********************/
 === -57087-12.ts ===
-namespace ns5 {
->ns5 : Symbol(ns5, Decl(-57087-12.ts, 0, 0))
+namespace ns7 {
+>ns7 : Symbol(ns7, Decl(-57087-12.ts, 0, 0))
 
 declare const f: { (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }
 >f : Symbol(f, Decl(-57087-12.ts, 1, 13))
@@ -474,8 +670,8 @@ f satisfies Garg;
 
 /**********************/
 === -57087-13.ts ===
-namespace ns6 {
->ns6 : Symbol(ns6, Decl(-57087-13.ts, 0, 0))
+namespace ns8 {
+>ns8 : Symbol(ns8, Decl(-57087-13.ts, 0, 0))
 
 declare const f42: () => string | number;
 >f42 : Symbol(f42, Decl(-57087-13.ts, 1, 13))
@@ -488,8 +684,8 @@ f42 satisfies (() => string) & (() => number);
 
 /**********************/
 === -57087-14.ts ===
-namespace ns7 {
->ns7 : Symbol(ns7, Decl(-57087-14.ts, 0, 0))
+namespace ns9 {
+>ns9 : Symbol(ns9, Decl(-57087-14.ts, 0, 0))
 
 declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number | "1" | "2" | "3"; }
 >foo : Symbol(foo, Decl(-57087-14.ts, 1, 13))
@@ -604,8 +800,8 @@ foo satisfies W;
 
 /**********************/
 === -57087-15.ts ===
-namespace ns8 {
->ns8 : Symbol(ns8, Decl(-57087-15.ts, 0, 0))
+namespace ns10 {
+>ns10 : Symbol(ns10, Decl(-57087-15.ts, 0, 0))
 
 declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number; }
 >foo : Symbol(foo, Decl(-57087-15.ts, 1, 13))
@@ -723,8 +919,8 @@ foo satisfies W;
 
 /**********************/
 === -57087-21.ts ===
-namespace ns9 {
->ns9 : Symbol(ns9, Decl(-57087-21.ts, 0, 0))
+namespace ns11 {
+>ns11 : Symbol(ns11, Decl(-57087-21.ts, 0, 0))
 
 // test f domain does not support Garg domain (3 omitted from f domain) - cannot detect during satisfies but can detect during call to f1
 
@@ -752,8 +948,8 @@ f1(3); // error exptected - No overload matches this call. (ts2769)
 
 /**********************/
 === -57087-22.ts ===
-namespace ns10 {
->ns10 : Symbol(ns10, Decl(-57087-22.ts, 0, 0))
+namespace ns12 {
+>ns12 : Symbol(ns12, Decl(-57087-22.ts, 0, 0))
 
 // test f range exceeds Garg range - should not satisfy
 
@@ -776,8 +972,8 @@ f2 satisfies Garg2; // should not satisfy
 
 /**********************/
 === -57087-31.ts ===
-namespace ns11 {
->ns11 : Symbol(ns11, Decl(-57087-31.ts, 0, 0))
+namespace ns13 {
+>ns13 : Symbol(ns13, Decl(-57087-31.ts, 0, 0))
 
 interface Garg31A {
 >Garg31A : Symbol(Garg31A, Decl(-57087-31.ts, 0, 16))
@@ -865,8 +1061,8 @@ f31d satisfies Garg31A & Garg31B; // should not satisfy
 
 /**********************/
 === -57087-33.ts ===
-namespace ns12 {
->ns12 : Symbol(ns12, Decl(-57087-33.ts, 0, 0))
+namespace ns14 {
+>ns14 : Symbol(ns14, Decl(-57087-33.ts, 0, 0))
 
 interface Garg33A {
 >Garg33A : Symbol(Garg33A, Decl(-57087-33.ts, 0, 16))
@@ -970,8 +1166,8 @@ f33e satisfies Garg33A & Garg33B; // should satisfy
 
 /**********************/
 === -57087-35.ts ===
-namespace ns13 {
->ns13 : Symbol(ns13, Decl(-57087-35.ts, 0, 0))
+namespace ns15 {
+>ns15 : Symbol(ns15, Decl(-57087-35.ts, 0, 0))
 
 interface Garg35A {
 >Garg35A : Symbol(Garg35A, Decl(-57087-35.ts, 0, 16))
@@ -1106,8 +1302,8 @@ const t2 = f35d({x:2}); // error expected - no overload matches this call
 
 /**********************/
 === -57087-36.ts ===
-namespace ns14 {
->ns14 : Symbol(ns14, Decl(-57087-36.ts, 0, 0))
+namespace ns16 {
+>ns16 : Symbol(ns16, Decl(-57087-36.ts, 0, 0))
 
 interface Garg36A {
 >Garg36A : Symbol(Garg36A, Decl(-57087-36.ts, 0, 16))
@@ -1162,8 +1358,8 @@ f36d satisfies Garg36A & Garg36B; // should satisfy
 
 /**********************/
 === -57087-37.ts ===
-namespace ns15 {
->ns15 : Symbol(ns15, Decl(-57087-37.ts, 0, 0))
+namespace ns17 {
+>ns17 : Symbol(ns17, Decl(-57087-37.ts, 0, 0))
 
 interface Garg37A {
 >Garg37A : Symbol(Garg37A, Decl(-57087-37.ts, 0, 16))
@@ -1225,8 +1421,8 @@ f37d({}); // error expected - no overload matches this call
 
 /**********************/
 === -57087-callsOnComplexSignatures-01.ts ===
-namespace ns16 {
->ns16 : Symbol(ns16, Decl(-57087-callsOnComplexSignatures-01.ts, 0, 0))
+namespace ns18 {
+>ns18 : Symbol(ns18, Decl(-57087-callsOnComplexSignatures-01.ts, 0, 0))
 
 function test3(items: string[] | number[]) {
 >test3 : Symbol(test3, Decl(-57087-callsOnComplexSignatures-01.ts, 0, 16))
@@ -1250,8 +1446,8 @@ function test3(items: string[] | number[]) {
 
 /**********************/
 === -57087-callsOnComplexSignatures-02.ts ===
-namespace ns17 {
->ns17 : Symbol(ns17, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 0))
+namespace ns19 {
+>ns19 : Symbol(ns19, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 0))
 
 type MyArray<T> = {
 >MyArray : Symbol(MyArray, Decl(-57087-callsOnComplexSignatures-02.ts, 0, 16))
@@ -1296,8 +1492,8 @@ function test3(items: MyArray<string> | MyArray<number>) {
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-01.ts ===
-namespace ns18 {
->ns18 : Symbol(ns18, Decl(-57087-contextualOverloadListFromArrayUnion-01.ts, 0, 0))
+namespace ns20 {
+>ns20 : Symbol(ns20, Decl(-57087-contextualOverloadListFromArrayUnion-01.ts, 0, 0))
 
 declare const y1: number[][] | string[];
 >y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-01.ts, 1, 13))
@@ -1317,8 +1513,8 @@ export const yThen1 = y1.map(item => item.length);
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-02.ts ===
-namespace ns19 {
->ns19 : Symbol(ns19, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 0, 0))
+namespace ns21 {
+>ns21 : Symbol(ns21, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 0, 0))
 
 declare const y2: number[][] | string[];
 >y2 : Symbol(y2, Decl(-57087-contextualOverloadListFromArrayUnion-02.ts, 1, 13))
@@ -1342,8 +1538,8 @@ export const yThen2 = y2.map(f2);
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-03.ts ===
-namespace ns20 {
->ns20 : Symbol(ns20, Decl(-57087-contextualOverloadListFromArrayUnion-03.ts, 0, 0))
+namespace ns22 {
+>ns22 : Symbol(ns22, Decl(-57087-contextualOverloadListFromArrayUnion-03.ts, 0, 0))
 
 declare const y3: number[][] | string[];
 >y3 : Symbol(y3, Decl(-57087-contextualOverloadListFromArrayUnion-03.ts, 1, 13))
@@ -1367,8 +1563,8 @@ export const yThen3 = y3.map(f3); // should be an error, but is not
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-04.ts ===
-namespace ns21 {
->ns21 : Symbol(ns21, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 0, 0))
+namespace ns23 {
+>ns23 : Symbol(ns23, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 0, 0))
 
 declare const y4: number[][] | string[];
 >y4 : Symbol(y4, Decl(-57087-contextualOverloadListFromArrayUnion-04.ts, 1, 13))
@@ -1392,8 +1588,8 @@ export const yThen4 = y4.map(f4()); // should not be an error, but is an error
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-05.ts ===
-namespace ns22 {
->ns22 : Symbol(ns22, Decl(-57087-contextualOverloadListFromArrayUnion-05.ts, 0, 0))
+namespace ns24 {
+>ns24 : Symbol(ns24, Decl(-57087-contextualOverloadListFromArrayUnion-05.ts, 0, 0))
 
 declare const y5: number[][] | string[];
 >y5 : Symbol(y5, Decl(-57087-contextualOverloadListFromArrayUnion-05.ts, 1, 13))
@@ -1415,8 +1611,8 @@ export const yThen4 = y5.map(f5);
 
 /**********************/
 === -57087-contextualOverloadListFromArrayUnion-10.ts ===
-namespace ns23 {
->ns23 : Symbol(ns23, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 0))
+namespace ns25 {
+>ns25 : Symbol(ns25, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 0, 0))
 
 declare const y1: number[][] | string[];
 >y1 : Symbol(y1, Decl(-57087-contextualOverloadListFromArrayUnion-10.ts, 1, 13))
@@ -1505,8 +1701,8 @@ export const yThen5 = y1.map(f15);
 
 /**********************/
 === -57087-toSorted-01.ts ===
-namespace ns24 {
->ns24 : Symbol(ns24, Decl(-57087-toSorted-01.ts, 0, 0))
+namespace ns26 {
+>ns26 : Symbol(ns26, Decl(-57087-toSorted-01.ts, 0, 0))
 
 // interface Arr<T> {
 //     toSorted(compareFn?: (a: T, b: T) => number): T[];
@@ -1583,8 +1779,8 @@ f satisfies F;
 
 /**********************/
 === -57087-toSorted-02.ts ===
-namespace ns25 {
->ns25 : Symbol(ns25, Decl(-57087-toSorted-02.ts, 0, 0))
+namespace ns27 {
+>ns27 : Symbol(ns27, Decl(-57087-toSorted-02.ts, 0, 0))
 
 const a = 0 as any as ({ id: number; description: null; } | { id: number; description: string; })[];
 >a : Symbol(a, Decl(-57087-toSorted-02.ts, 1, 5))
@@ -1609,8 +1805,8 @@ a satisfies A;
 
 /**********************/
 === -57087-unionOfClassCalls-01.ts ===
-namespace ns26 {
->ns26 : Symbol(ns26, Decl(-57087-unionOfClassCalls-01.ts, 0, 0))
+namespace ns28 {
+>ns28 : Symbol(ns28, Decl(-57087-unionOfClassCalls-01.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-01.ts, 2, 9))
@@ -1640,8 +1836,8 @@ namespace ns26 {
 
 /**********************/
 === -57087-unionOfClassCalls-02.ts ===
-namespace ns27 {
->ns27 : Symbol(ns27, Decl(-57087-unionOfClassCalls-02.ts, 0, 0))
+namespace ns29 {
+>ns29 : Symbol(ns29, Decl(-57087-unionOfClassCalls-02.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-02.ts, 2, 9))
@@ -1666,8 +1862,8 @@ namespace ns27 {
 
 /**********************/
 === -57087-unionOfClassCalls-03.ts ===
-namespace ns28 {
->ns28 : Symbol(ns28, Decl(-57087-unionOfClassCalls-03.ts, 0, 0))
+namespace ns30 {
+>ns30 : Symbol(ns30, Decl(-57087-unionOfClassCalls-03.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-03.ts, 2, 9))
@@ -1697,8 +1893,8 @@ namespace ns28 {
 
 /**********************/
 === -57087-unionOfClassCalls-11.ts ===
-namespace ns29 {
->ns29 : Symbol(ns29, Decl(-57087-unionOfClassCalls-11.ts, 0, 0))
+namespace ns31 {
+>ns31 : Symbol(ns31, Decl(-57087-unionOfClassCalls-11.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-11.ts, 2, 9))
@@ -1728,8 +1924,8 @@ namespace ns29 {
 
 /**********************/
 === -57087-unionOfClassCalls-12.ts ===
-namespace ns30 {
->ns30 : Symbol(ns30, Decl(-57087-unionOfClassCalls-12.ts, 0, 0))
+namespace ns32 {
+>ns32 : Symbol(ns32, Decl(-57087-unionOfClassCalls-12.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-12.ts, 2, 9))
@@ -1753,8 +1949,8 @@ namespace ns30 {
 
 /**********************/
 === -57087-unionOfClassCalls-13.ts ===
-namespace ns31 {
->ns31 : Symbol(ns31, Decl(-57087-unionOfClassCalls-13.ts, 0, 0))
+namespace ns33 {
+>ns33 : Symbol(ns33, Decl(-57087-unionOfClassCalls-13.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-13.ts, 2, 9))
@@ -1784,8 +1980,8 @@ namespace ns31 {
 
 /**********************/
 === -57087-unionOfClassCalls-21.ts ===
-namespace ns32 {
->ns32 : Symbol(ns32, Decl(-57087-unionOfClassCalls-21.ts, 0, 0))
+namespace ns34 {
+>ns34 : Symbol(ns34, Decl(-57087-unionOfClassCalls-21.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-21.ts, 2, 9))
@@ -1810,8 +2006,8 @@ namespace ns32 {
 
 /**********************/
 === -57087-unionOfClassCalls-22.ts ===
-namespace ns33 {
->ns33 : Symbol(ns33, Decl(-57087-unionOfClassCalls-22.ts, 0, 0))
+namespace ns35 {
+>ns35 : Symbol(ns35, Decl(-57087-unionOfClassCalls-22.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-22.ts, 2, 9))
@@ -1832,8 +2028,8 @@ namespace ns33 {
 
 /**********************/
 === -57087-unionOfClassCalls-23.ts ===
-namespace ns34 {
->ns34 : Symbol(ns34, Decl(-57087-unionOfClassCalls-23.ts, 0, 0))
+namespace ns36 {
+>ns36 : Symbol(ns36, Decl(-57087-unionOfClassCalls-23.ts, 0, 0))
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
 >arr : Symbol(arr, Decl(-57087-unionOfClassCalls-23.ts, 2, 9))
@@ -1854,5 +2050,134 @@ namespace ns34 {
         // do something
     });
 }
+}
+
+
+/**********************/
+=== -57087-withSkipAndOnly-01.ts ===
+namespace ns37 {
+>ns37 : Symbol(ns37, Decl(-57087-withSkipAndOnly-01.ts, 0, 0))
+
+interface Context {
+>Context : Symbol(Context, Decl(-57087-withSkipAndOnly-01.ts, 0, 16))
+
+    [key: string]: any;
+>key : Symbol(key, Decl(-57087-withSkipAndOnly-01.ts, 2, 5))
+}
+interface Test {
+>Test : Symbol(Test, Decl(-57087-withSkipAndOnly-01.ts, 3, 1))
+
+    [key: string]: any;
+>key : Symbol(key, Decl(-57087-withSkipAndOnly-01.ts, 5, 5))
+}
+type Done = (err?: any) => void;
+>Done : Symbol(Done, Decl(-57087-withSkipAndOnly-01.ts, 6, 1))
+>err : Symbol(err, Decl(-57087-withSkipAndOnly-01.ts, 7, 13))
+
+type Func = (this: Context, done: Done) => void;
+>Func : Symbol(Func, Decl(-57087-withSkipAndOnly-01.ts, 7, 32))
+>this : Symbol(this, Decl(-57087-withSkipAndOnly-01.ts, 8, 13))
+>Context : Symbol(Context, Decl(-57087-withSkipAndOnly-01.ts, 0, 16))
+>done : Symbol(done, Decl(-57087-withSkipAndOnly-01.ts, 8, 27))
+>Done : Symbol(Done, Decl(-57087-withSkipAndOnly-01.ts, 6, 1))
+
+type AsyncFunc = (this: Context) => PromiseLike<any>;
+>AsyncFunc : Symbol(AsyncFunc, Decl(-57087-withSkipAndOnly-01.ts, 8, 48))
+>this : Symbol(this, Decl(-57087-withSkipAndOnly-01.ts, 9, 18))
+>Context : Symbol(Context, Decl(-57087-withSkipAndOnly-01.ts, 0, 16))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+interface PendingTestFunction {
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 9, 53))
+
+    skip: PendingTestFunction;
+>skip : Symbol(PendingTestFunction.skip, Decl(-57087-withSkipAndOnly-01.ts, 10, 31))
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 9, 53))
+
+    only: PendingTestFunction;
+>only : Symbol(PendingTestFunction.only, Decl(-57087-withSkipAndOnly-01.ts, 11, 30))
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 9, 53))
+
+    (fn: Func): Test;
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 13, 5))
+>Func : Symbol(Func, Decl(-57087-withSkipAndOnly-01.ts, 7, 32))
+>Test : Symbol(Test, Decl(-57087-withSkipAndOnly-01.ts, 3, 1))
+
+    (fn: AsyncFunc): Test;
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 14, 5))
+>AsyncFunc : Symbol(AsyncFunc, Decl(-57087-withSkipAndOnly-01.ts, 8, 48))
+>Test : Symbol(Test, Decl(-57087-withSkipAndOnly-01.ts, 3, 1))
+}
+type WithSkipAndOnly<T extends any[]> = ((...args: T) => void) & {
+>WithSkipAndOnly : Symbol(WithSkipAndOnly, Decl(-57087-withSkipAndOnly-01.ts, 15, 1))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 16, 21))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 16, 42))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 16, 21))
+
+    skip: (...args: T) => void;
+>skip : Symbol(skip, Decl(-57087-withSkipAndOnly-01.ts, 16, 66))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 17, 11))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 16, 21))
+
+    only: (...args: T) => void;
+>only : Symbol(only, Decl(-57087-withSkipAndOnly-01.ts, 17, 31))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 18, 11))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 16, 21))
+
+};
+declare const it: PendingTestFunction;
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 20, 13))
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 9, 53))
+
+function createTestWrapper<T extends any[]>(fn: (it: PendingTestFunction, ...args: T) => void): WithSkipAndOnly<T> {
+>createTestWrapper : Symbol(createTestWrapper, Decl(-57087-withSkipAndOnly-01.ts, 20, 38))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 21, 27))
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 21, 44))
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 21, 49))
+>PendingTestFunction : Symbol(PendingTestFunction, Decl(-57087-withSkipAndOnly-01.ts, 9, 53))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 21, 73))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 21, 27))
+>WithSkipAndOnly : Symbol(WithSkipAndOnly, Decl(-57087-withSkipAndOnly-01.ts, 15, 1))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 21, 27))
+
+    wrapped.skip = (...args: T) => fn(it.skip, ...args);
+>wrapped.skip : Symbol(wrapped.skip, Decl(-57087-withSkipAndOnly-01.ts, 21, 116))
+>wrapped : Symbol(wrapped, Decl(-57087-withSkipAndOnly-01.ts, 24, 19))
+>skip : Symbol(wrapped.skip, Decl(-57087-withSkipAndOnly-01.ts, 21, 116))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 22, 20))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 21, 27))
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 21, 44))
+>it.skip : Symbol(PendingTestFunction.skip, Decl(-57087-withSkipAndOnly-01.ts, 10, 31))
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 20, 13))
+>skip : Symbol(PendingTestFunction.skip, Decl(-57087-withSkipAndOnly-01.ts, 10, 31))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 22, 20))
+
+    wrapped.only = (...args: T) => fn(it.only, ...args);
+>wrapped.only : Symbol(wrapped.only, Decl(-57087-withSkipAndOnly-01.ts, 22, 56))
+>wrapped : Symbol(wrapped, Decl(-57087-withSkipAndOnly-01.ts, 24, 19))
+>only : Symbol(wrapped.only, Decl(-57087-withSkipAndOnly-01.ts, 22, 56))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 23, 20))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 21, 27))
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 21, 44))
+>it.only : Symbol(PendingTestFunction.only, Decl(-57087-withSkipAndOnly-01.ts, 11, 30))
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 20, 13))
+>only : Symbol(PendingTestFunction.only, Decl(-57087-withSkipAndOnly-01.ts, 11, 30))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 23, 20))
+
+    return wrapped;
+>wrapped : Symbol(wrapped, Decl(-57087-withSkipAndOnly-01.ts, 24, 19))
+
+    function wrapped(...args: T) {
+>wrapped : Symbol(wrapped, Decl(-57087-withSkipAndOnly-01.ts, 24, 19))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 25, 21))
+>T : Symbol(T, Decl(-57087-withSkipAndOnly-01.ts, 21, 27))
+
+        return fn(it, ...args);
+>fn : Symbol(fn, Decl(-57087-withSkipAndOnly-01.ts, 21, 44))
+>it : Symbol(it, Decl(-57087-withSkipAndOnly-01.ts, 20, 13))
+>args : Symbol(args, Decl(-57087-withSkipAndOnly-01.ts, 25, 21))
+    }
+}
 
 }
+

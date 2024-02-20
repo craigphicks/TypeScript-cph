@@ -126,8 +126,64 @@ interface A {
 
 
 /**********************/
-//// [-57087-11.ts]
+//// [-57087-05.ts]
 namespace ns4 {
+type A = { a: string };
+type B = { b: 1 | "1" };
+type C = { c: number };
+
+interface FMap<T,R> {
+    f:(x:T)=>R
+    g(f:(x:T)=>R):R;
+}
+declare const x1: FMap<A|B,string|1>;
+x1.g(x1.f); // no error
+declare const x2: FMap<B|C,number|"1">;
+x2.g(x2.f); // no error
+const x = Math.random() < 0.5 ? x1 : x2;
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+
+
+
+function ft2(x:A):string;
+function ft2(x:C):number;
+function ft2(x:B):"1"|1;
+function ft2(x: A|B|C):1|"1"|string|number {
+    if ("a" in x) return x.a;
+    if ("c" in x) return x.c;
+    return x.b;
+}
+
+x.g(ft2); // error
+}
+
+
+/**********************/
+//// [-57087-06.ts]
+namespace ns5 {
+type A = { a: string };
+type B = { b: 1 | "1" };
+type C = { c: number };
+type D = { a?: string, b: 1 | "1", c?: number };
+
+
+function ft2(x:A):string;
+function ft2(x:C):number;
+function ft2(x:B):"1"|1;
+function ft2(x: A|B|C):1|"1"|string|number {
+    if ("a" in x) return x.a;
+    if ("c" in x) return x.c;
+    return x.b;
+}
+
+
+
+}
+
+
+/**********************/
+//// [-57087-11.ts]
+namespace ns6 {
 declare const f: { (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }
 
 type Garg = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
@@ -138,7 +194,7 @@ f satisfies Garg;
 
 /**********************/
 //// [-57087-12.ts]
-namespace ns5 {
+namespace ns7 {
 declare const f: { (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }
 
 type Garg = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
@@ -149,7 +205,7 @@ f satisfies Garg;
 
 /**********************/
 //// [-57087-13.ts]
-namespace ns6 {
+namespace ns8 {
 declare const f42: () => string | number;
 f42 satisfies (() => string) & (() => number);
 
@@ -158,7 +214,7 @@ f42 satisfies (() => string) & (() => number);
 
 /**********************/
 //// [-57087-14.ts]
-namespace ns7 {
+namespace ns9 {
 declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number | "1" | "2" | "3"; }
 
 interface C {
@@ -193,7 +249,7 @@ foo satisfies W;
 
 /**********************/
 //// [-57087-15.ts]
-namespace ns8 {
+namespace ns10 {
 declare const foo: { (x: 1): "1"; (x: 2): "2"; (x: 3): "3"; (x: number): number; }
 
 interface C {
@@ -231,7 +287,7 @@ foo satisfies W;
 
 /**********************/
 //// [-57087-21.ts]
-namespace ns9 {
+namespace ns11 {
 // test f domain does not support Garg domain (3 omitted from f domain) - cannot detect during satisfies but can detect during call to f1
 
 declare const f1: { (x: 1 | 2): 1 | 2; (x: 2): "2" | "3";}
@@ -248,7 +304,7 @@ f1(3); // error exptected - No overload matches this call. (ts2769)
 
 /**********************/
 //// [-57087-22.ts]
-namespace ns10 {
+namespace ns12 {
 // test f range exceeds Garg range - should not satisfy
 
 declare const f2: { (x: 1 | 2): 0 |1 | 2; (x: 3): "2" | "3"; }
@@ -262,7 +318,7 @@ f2 satisfies Garg2; // should not satisfy
 
 /**********************/
 //// [-57087-31.ts]
-namespace ns11 {
+namespace ns13 {
 interface Garg31A {
     (): "01";
     (x:1, y:1): "211"
@@ -290,7 +346,7 @@ f31d satisfies Garg31A & Garg31B; // should not satisfy
 
 /**********************/
 //// [-57087-33.ts]
-namespace ns12 {
+namespace ns14 {
 interface Garg33A {
     (): "01";
     (x?:1, y?:1): "211"
@@ -323,7 +379,7 @@ f33e satisfies Garg33A & Garg33B; // should satisfy
 
 /**********************/
 //// [-57087-35.ts]
-namespace ns13 {
+namespace ns15 {
 interface Garg35A {
     ({x,y}:{x:1, y:1}): "111"
 };
@@ -354,7 +410,7 @@ const t2 = f35d({x:2}); // error expected - no overload matches this call
 
 /**********************/
 //// [-57087-36.ts]
-namespace ns14 {
+namespace ns16 {
 interface Garg36A {
     ({x,y}:{x:1, y:1}): "111"
 };
@@ -372,7 +428,7 @@ f36d satisfies Garg36A & Garg36B; // should satisfy
 
 /**********************/
 //// [-57087-37.ts]
-namespace ns15 {
+namespace ns17 {
 interface Garg37A {
     ({x,y}:{x:1, y:1}): "111"
 };
@@ -392,7 +448,7 @@ f37d({}); // error expected - no overload matches this call
 
 /**********************/
 //// [-57087-callsOnComplexSignatures-01.ts]
-namespace ns16 {
+namespace ns18 {
 function test3(items: string[] | number[]) {
     items.forEach(item => console.log(item)); // must not be error
 //                   ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -403,7 +459,7 @@ function test3(items: string[] | number[]) {
 
 /**********************/
 //// [-57087-callsOnComplexSignatures-02.ts]
-namespace ns17 {
+namespace ns19 {
 type MyArray<T> = {
     [n: number]: T;
     forEach(callbackfn: (value: T, index: number, array: MyArray<T>) => unknown): void;
@@ -419,7 +475,7 @@ function test3(items: MyArray<string> | MyArray<number>) {
 
 /**********************/
 //// [-57087-contextualOverloadListFromArrayUnion-01.ts]
-namespace ns18 {
+namespace ns20 {
 declare const y1: number[][] | string[];
 export const yThen1 = y1.map(item => item.length);
 
@@ -428,7 +484,7 @@ export const yThen1 = y1.map(item => item.length);
 
 /**********************/
 //// [-57087-contextualOverloadListFromArrayUnion-02.ts]
-namespace ns19 {
+namespace ns21 {
 declare const y2: number[][] | string[];
 declare function f2<T extends {length:number}>(x: T): number;
 export const yThen2 = y2.map(f2);
@@ -438,7 +494,7 @@ export const yThen2 = y2.map(f2);
 
 /**********************/
 //// [-57087-contextualOverloadListFromArrayUnion-03.ts]
-namespace ns20 {
+namespace ns22 {
 declare const y3: number[][] | string[];
 declare function f3<T extends {length:number}>(): (x: T) => number;
 export const yThen3 = y3.map(f3); // should be an error, but is not
@@ -448,7 +504,7 @@ export const yThen3 = y3.map(f3); // should be an error, but is not
 
 /**********************/
 //// [-57087-contextualOverloadListFromArrayUnion-04.ts]
-namespace ns21 {
+namespace ns23 {
 declare const y4: number[][] | string[];
 declare function f4<T extends {length:number}>(): (x: T) => number;
 export const yThen4 = y4.map(f4()); // should not be an error, but is an error
@@ -458,7 +514,7 @@ export const yThen4 = y4.map(f4()); // should not be an error, but is an error
 
 /**********************/
 //// [-57087-contextualOverloadListFromArrayUnion-05.ts]
-namespace ns22 {
+namespace ns24 {
 declare const y5: number[][] | string[];
 declare const f5: { (x: number[]): number; (x: string): number;}
 export const yThen4 = y5.map(f5);
@@ -468,7 +524,7 @@ export const yThen4 = y5.map(f5);
 
 /**********************/
 //// [-57087-contextualOverloadListFromArrayUnion-10.ts]
-namespace ns23 {
+namespace ns25 {
 declare const y1: number[][] | string[];
 export const yThen1 = y1.map(item => item.length);
 
@@ -493,7 +549,7 @@ export const yThen5 = y1.map(f15);
 
 /**********************/
 //// [-57087-toSorted-01.ts]
-namespace ns24 {
+namespace ns26 {
 // interface Arr<T> {
 //     toSorted(compareFn?: (a: T, b: T) => number): T[];
 // }
@@ -521,7 +577,7 @@ f satisfies F;
 
 /**********************/
 //// [-57087-toSorted-02.ts]
-namespace ns25 {
+namespace ns27 {
 const a = 0 as any as ({ id: number; description: null; } | { id: number; description: string; })[];
 type A = { id: number; }[] & { id: number; description: string | null; }[];
 a satisfies A;
@@ -532,7 +588,7 @@ a satisfies A;
 
 /**********************/
 //// [-57087-unionOfClassCalls-01.ts]
-namespace ns26 {
+namespace ns28 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -547,7 +603,7 @@ namespace ns26 {
 
 /**********************/
 //// [-57087-unionOfClassCalls-02.ts]
-namespace ns27 {
+namespace ns29 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const t = arr.reduce((acc: Array<string>, a: number | string, index: number) => {
@@ -561,7 +617,7 @@ namespace ns27 {
 
 /**********************/
 //// [-57087-unionOfClassCalls-03.ts]
-namespace ns28 {
+namespace ns30 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -576,7 +632,7 @@ namespace ns28 {
 
 /**********************/
 //// [-57087-unionOfClassCalls-11.ts]
-namespace ns29 {
+namespace ns31 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -591,7 +647,7 @@ namespace ns29 {
 
 /**********************/
 //// [-57087-unionOfClassCalls-12.ts]
-namespace ns30 {
+namespace ns32 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const t = arr.reduce((acc, a, index) => {
@@ -605,7 +661,7 @@ namespace ns30 {
 
 /**********************/
 //// [-57087-unionOfClassCalls-13.ts]
-namespace ns31 {
+namespace ns33 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -620,7 +676,7 @@ namespace ns31 {
 
 /**********************/
 //// [-57087-unionOfClassCalls-21.ts]
-namespace ns32 {
+namespace ns34 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -633,7 +689,7 @@ namespace ns32 {
 
 /**********************/
 //// [-57087-unionOfClassCalls-22.ts]
-namespace ns33 {
+namespace ns35 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const t = arr.reduce((acc,a) => acc+a)
@@ -644,7 +700,7 @@ namespace ns33 {
 
 /**********************/
 //// [-57087-unionOfClassCalls-23.ts]
-namespace ns34 {
+namespace ns36 {
 {
     const arr: number[] | string[] = [];  // Works with Array<number | string>
     const arr1: number[]  = [];
@@ -653,8 +709,43 @@ namespace ns34 {
         // do something
     });
 }
+}
+
+
+/**********************/
+//// [-57087-withSkipAndOnly-01.ts]
+namespace ns37 {
+interface Context {
+    [key: string]: any;
+}
+interface Test {
+    [key: string]: any;
+}
+type Done = (err?: any) => void;
+type Func = (this: Context, done: Done) => void;
+type AsyncFunc = (this: Context) => PromiseLike<any>;
+interface PendingTestFunction {
+    skip: PendingTestFunction;
+    only: PendingTestFunction;
+    (fn: Func): Test;
+    (fn: AsyncFunc): Test;
+}
+type WithSkipAndOnly<T extends any[]> = ((...args: T) => void) & {
+    skip: (...args: T) => void;
+    only: (...args: T) => void;
+};
+declare const it: PendingTestFunction;
+function createTestWrapper<T extends any[]>(fn: (it: PendingTestFunction, ...args: T) => void): WithSkipAndOnly<T> {
+    wrapped.skip = (...args: T) => fn(it.skip, ...args);
+    wrapped.only = (...args: T) => fn(it.only, ...args);
+    return wrapped;
+    function wrapped(...args: T) {
+        return fn(it, ...args);
+    }
+}
 
 }
+
 
 //// [-57087-01.js]
 "use strict";
@@ -734,93 +825,124 @@ var ns3;
     foo;
 })(ns3 || (ns3 = {}));
 /**********************/ 
-//// [-57087-11.js]
+//// [-57087-05.js]
 "use strict";
 var ns4;
 (function (ns4) {
-    f;
+    x1.g(x1.f); // no error
+    x2.g(x2.f); // no error
+    var x = Math.random() < 0.5 ? x1 : x2;
+    x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+    function ft2(x) {
+        if ("a" in x)
+            return x.a;
+        if ("c" in x)
+            return x.c;
+        return x.b;
+    }
+    x.g(ft2); // error
 })(ns4 || (ns4 = {}));
 /**********************/ 
-//// [-57087-12.js]
+//// [-57087-06.js]
 "use strict";
 var ns5;
 (function (ns5) {
-    f;
+    function ft2(x) {
+        if ("a" in x)
+            return x.a;
+        if ("c" in x)
+            return x.c;
+        return x.b;
+    }
 })(ns5 || (ns5 = {}));
 /**********************/ 
-//// [-57087-13.js]
+//// [-57087-11.js]
 "use strict";
 var ns6;
 (function (ns6) {
-    f42;
+    f;
 })(ns6 || (ns6 = {}));
 /**********************/ 
-//// [-57087-14.js]
+//// [-57087-12.js]
 "use strict";
 var ns7;
 (function (ns7) {
-    ;
-    ;
-    ;
-    foo;
-    foo;
-    foo;
-    foo;
-    foo;
-    foo;
-    foo;
+    f;
 })(ns7 || (ns7 = {}));
 /**********************/ 
-//// [-57087-15.js]
+//// [-57087-13.js]
 "use strict";
 var ns8;
 (function (ns8) {
-    ;
-    ;
-    ;
-    foo;
-    foo;
-    foo;
-    foo;
-    foo;
-    foo;
-    foo;
+    f42;
 })(ns8 || (ns8 = {}));
 /**********************/ 
-//// [-57087-21.js]
+//// [-57087-14.js]
 "use strict";
 var ns9;
 (function (ns9) {
+    ;
+    ;
+    ;
+    foo;
+    foo;
+    foo;
+    foo;
+    foo;
+    foo;
+    foo;
+})(ns9 || (ns9 = {}));
+/**********************/ 
+//// [-57087-15.js]
+"use strict";
+var ns10;
+(function (ns10) {
+    ;
+    ;
+    ;
+    foo;
+    foo;
+    foo;
+    foo;
+    foo;
+    foo;
+    foo;
+})(ns10 || (ns10 = {}));
+/**********************/ 
+//// [-57087-21.js]
+"use strict";
+var ns11;
+(function (ns11) {
     // test f domain does not support Garg domain (3 omitted from f domain) - cannot detect during satisfies but can detect during call to f1
     f1; // no error expected
     f1(3); // error exptected - No overload matches this call. (ts2769)
     // ~
-})(ns9 || (ns9 = {}));
+})(ns11 || (ns11 = {}));
 /**********************/ 
 //// [-57087-22.js]
 "use strict";
-var ns10;
-(function (ns10) {
+var ns12;
+(function (ns12) {
     // test f range exceeds Garg range - should not satisfy
     f2; // should not satisfy
-})(ns10 || (ns10 = {}));
+})(ns12 || (ns12 = {}));
 /**********************/ 
 //// [-57087-31.js]
 "use strict";
-var ns11;
-(function (ns11) {
+var ns13;
+(function (ns13) {
     ;
     ;
     f31a; // should satisfy
     f31b; // should not satisfy
     f31c; // should not satisfy
     f31d; // should not satisfy
-})(ns11 || (ns11 = {}));
+})(ns13 || (ns13 = {}));
 /**********************/ 
 //// [-57087-33.js]
 "use strict";
-var ns12;
-(function (ns12) {
+var ns14;
+(function (ns14) {
     ;
     ;
     f33b; // should not satisfy
@@ -828,12 +950,12 @@ var ns12;
     f33a; // should satisfy
     f33d; // should satisfy
     f33e; // should satisfy
-})(ns12 || (ns12 = {}));
+})(ns14 || (ns14 = {}));
 /**********************/ 
 //// [-57087-35.js]
 "use strict";
-var ns13;
-(function (ns13) {
+var ns15;
+(function (ns15) {
     ;
     ;
     f35a; // should satisfy
@@ -843,98 +965,98 @@ var ns13;
     f35d; // should satisfy
     var t2 = f35d({ x: 2 }); // error expected - no overload matches this call
     //              ~~~~~
-})(ns13 || (ns13 = {}));
+})(ns15 || (ns15 = {}));
 /**********************/ 
 //// [-57087-36.js]
 "use strict";
-var ns14;
-(function (ns14) {
+var ns16;
+(function (ns16) {
     ;
     ;
     f36d; // should satisfy
-})(ns14 || (ns14 = {}));
+})(ns16 || (ns16 = {}));
 /**********************/ 
 //// [-57087-37.js]
 "use strict";
-var ns15;
-(function (ns15) {
+var ns17;
+(function (ns17) {
     ;
     ;
     f37d; // should satisfy
     f37d({}); // error expected - no overload matches this call
-})(ns15 || (ns15 = {}));
+})(ns17 || (ns17 = {}));
 /**********************/ 
 //// [-57087-callsOnComplexSignatures-01.js]
 "use strict";
-var ns16;
-(function (ns16) {
+var ns18;
+(function (ns18) {
     function test3(items) {
         items.forEach(function (item) { return console.log(item); }); // must not be error
         //                   ~~~~~~~~~~~~~~~~~~~~~~~~~
         // !!! error TS2345: Argument of type '(item: string | number) => void' is not assignable to parameter of type '((value: string, index: number, array: string[]) => void) & ((value: number, index: number, array: number[]) => void)'.
     }
-})(ns16 || (ns16 = {}));
+})(ns18 || (ns18 = {}));
 /**********************/ 
 //// [-57087-callsOnComplexSignatures-02.js]
 "use strict";
-var ns17;
-(function (ns17) {
+var ns19;
+(function (ns19) {
     function test3(items) {
         items.forEach(function (item) { return console.log(item); });
     }
-})(ns17 || (ns17 = {}));
+})(ns19 || (ns19 = {}));
 /**********************/ 
 //// [-57087-contextualOverloadListFromArrayUnion-01.js]
 "use strict";
-var ns18;
-(function (ns18) {
-    ns18.yThen1 = y1.map(function (item) { return item.length; });
-})(ns18 || (ns18 = {}));
+var ns20;
+(function (ns20) {
+    ns20.yThen1 = y1.map(function (item) { return item.length; });
+})(ns20 || (ns20 = {}));
 /**********************/ 
 //// [-57087-contextualOverloadListFromArrayUnion-02.js]
 "use strict";
-var ns19;
-(function (ns19) {
-    ns19.yThen2 = y2.map(f2);
-})(ns19 || (ns19 = {}));
+var ns21;
+(function (ns21) {
+    ns21.yThen2 = y2.map(f2);
+})(ns21 || (ns21 = {}));
 /**********************/ 
 //// [-57087-contextualOverloadListFromArrayUnion-03.js]
 "use strict";
-var ns20;
-(function (ns20) {
-    ns20.yThen3 = y3.map(f3); // should be an error, but is not
-})(ns20 || (ns20 = {}));
+var ns22;
+(function (ns22) {
+    ns22.yThen3 = y3.map(f3); // should be an error, but is not
+})(ns22 || (ns22 = {}));
 /**********************/ 
 //// [-57087-contextualOverloadListFromArrayUnion-04.js]
 "use strict";
-var ns21;
-(function (ns21) {
-    ns21.yThen4 = y4.map(f4()); // should not be an error, but is an error
-})(ns21 || (ns21 = {}));
+var ns23;
+(function (ns23) {
+    ns23.yThen4 = y4.map(f4()); // should not be an error, but is an error
+})(ns23 || (ns23 = {}));
 /**********************/ 
 //// [-57087-contextualOverloadListFromArrayUnion-05.js]
 "use strict";
-var ns22;
-(function (ns22) {
-    ns22.yThen4 = y5.map(f5);
-})(ns22 || (ns22 = {}));
+var ns24;
+(function (ns24) {
+    ns24.yThen4 = y5.map(f5);
+})(ns24 || (ns24 = {}));
 /**********************/ 
 //// [-57087-contextualOverloadListFromArrayUnion-10.js]
 "use strict";
-var ns23;
-(function (ns23) {
-    ns23.yThen1 = y1.map(function (item) { return item.length; });
-    ns23.yThen2 = y1.map(f12);
-    ns23.yThen2a = y1.map(function (x) { return x.length; });
-    ns23.yThen4 = y1.map(f14()); // should not be an error
-    ns23.yThen4a = y1.map(function () { return function (x) { return x.length; }; });
-    ns23.yThen5 = y1.map(f15);
-})(ns23 || (ns23 = {}));
+var ns25;
+(function (ns25) {
+    ns25.yThen1 = y1.map(function (item) { return item.length; });
+    ns25.yThen2 = y1.map(f12);
+    ns25.yThen2a = y1.map(function (x) { return x.length; });
+    ns25.yThen4 = y1.map(f14()); // should not be an error
+    ns25.yThen4a = y1.map(function () { return function (x) { return x.length; }; });
+    ns25.yThen5 = y1.map(f15);
+})(ns25 || (ns25 = {}));
 /**********************/ 
 //// [-57087-toSorted-01.js]
 "use strict";
-var ns24;
-(function (ns24) {
+var ns26;
+(function (ns26) {
     // interface Arr<T> {
     //     toSorted(compareFn?: (a: T, b: T) => number): T[];
     // }
@@ -943,43 +1065,17 @@ var ns24;
         return 0;
     };
     f;
-})(ns24 || (ns24 = {}));
+})(ns26 || (ns26 = {}));
 /**********************/ 
 //// [-57087-toSorted-02.js]
 "use strict";
-var ns25;
-(function (ns25) {
-    var a = 0;
-    a;
-})(ns25 || (ns25 = {}));
-/**********************/ 
-//// [-57087-unionOfClassCalls-01.js]
-"use strict";
-var ns26;
-(function (ns26) {
-    {
-        var arr = []; // Works with Array<number | string>
-        var arr1 = [];
-        var arr2 = [];
-        var t = arr.map(function (a, index) {
-            return index;
-        });
-    }
-})(ns26 || (ns26 = {}));
-/**********************/ 
-//// [-57087-unionOfClassCalls-02.js]
-"use strict";
 var ns27;
 (function (ns27) {
-    {
-        var arr = []; // Works with Array<number | string>
-        var t = arr.reduce(function (acc, a, index) {
-            return [];
-        }, []);
-    }
+    var a = 0;
+    a;
 })(ns27 || (ns27 = {}));
 /**********************/ 
-//// [-57087-unionOfClassCalls-03.js]
+//// [-57087-unionOfClassCalls-01.js]
 "use strict";
 var ns28;
 (function (ns28) {
@@ -987,16 +1083,42 @@ var ns28;
         var arr = []; // Works with Array<number | string>
         var arr1 = [];
         var arr2 = [];
-        var t = arr.forEach(function (a, index) {
+        var t = arr.map(function (a, index) {
             return index;
         });
     }
 })(ns28 || (ns28 = {}));
 /**********************/ 
-//// [-57087-unionOfClassCalls-11.js]
+//// [-57087-unionOfClassCalls-02.js]
 "use strict";
 var ns29;
 (function (ns29) {
+    {
+        var arr = []; // Works with Array<number | string>
+        var t = arr.reduce(function (acc, a, index) {
+            return [];
+        }, []);
+    }
+})(ns29 || (ns29 = {}));
+/**********************/ 
+//// [-57087-unionOfClassCalls-03.js]
+"use strict";
+var ns30;
+(function (ns30) {
+    {
+        var arr = []; // Works with Array<number | string>
+        var arr1 = [];
+        var arr2 = [];
+        var t = arr.forEach(function (a, index) {
+            return index;
+        });
+    }
+})(ns30 || (ns30 = {}));
+/**********************/ 
+//// [-57087-unionOfClassCalls-11.js]
+"use strict";
+var ns31;
+(function (ns31) {
     {
         var arr = []; // Works with Array<number | string>
         var arr1 = [];
@@ -1005,24 +1127,24 @@ var ns29;
             return index;
         });
     }
-})(ns29 || (ns29 = {}));
+})(ns31 || (ns31 = {}));
 /**********************/ 
 //// [-57087-unionOfClassCalls-12.js]
 "use strict";
-var ns30;
-(function (ns30) {
+var ns32;
+(function (ns32) {
     {
         var arr = []; // Works with Array<number | string>
         var t = arr.reduce(function (acc, a, index) {
             return [];
         }, []);
     }
-})(ns30 || (ns30 = {}));
+})(ns32 || (ns32 = {}));
 /**********************/ 
 //// [-57087-unionOfClassCalls-13.js]
 "use strict";
-var ns31;
-(function (ns31) {
+var ns33;
+(function (ns33) {
     {
         var arr = []; // Works with Array<number | string>
         var arr1 = [];
@@ -1031,34 +1153,34 @@ var ns31;
             return index;
         });
     }
-})(ns31 || (ns31 = {}));
+})(ns33 || (ns33 = {}));
 /**********************/ 
 //// [-57087-unionOfClassCalls-21.js]
 "use strict";
-var ns32;
-(function (ns32) {
+var ns34;
+(function (ns34) {
     {
         var arr = []; // Works with Array<number | string>
         var arr1 = [];
         var arr2 = [];
         var t = arr.map(function (a) { return a; });
     }
-})(ns32 || (ns32 = {}));
+})(ns34 || (ns34 = {}));
 /**********************/ 
 //// [-57087-unionOfClassCalls-22.js]
 "use strict";
-var ns33;
-(function (ns33) {
+var ns35;
+(function (ns35) {
     {
         var arr = []; // Works with Array<number | string>
         var t = arr.reduce(function (acc, a) { return acc + a; });
     }
-})(ns33 || (ns33 = {}));
+})(ns35 || (ns35 = {}));
 /**********************/ 
 //// [-57087-unionOfClassCalls-23.js]
 "use strict";
-var ns34;
-(function (ns34) {
+var ns36;
+(function (ns36) {
     {
         var arr = []; // Works with Array<number | string>
         var arr1 = [];
@@ -1067,4 +1189,43 @@ var ns34;
             // do something
         });
     }
-})(ns34 || (ns34 = {}));
+})(ns36 || (ns36 = {}));
+/**********************/ 
+//// [-57087-withSkipAndOnly-01.js]
+"use strict";
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
+var ns37;
+(function (ns37) {
+    function createTestWrapper(fn) {
+        wrapped.skip = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return fn.apply(void 0, __spreadArray([it.skip], args, false));
+        };
+        wrapped.only = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return fn.apply(void 0, __spreadArray([it.only], args, false));
+        };
+        return wrapped;
+        function wrapped() {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return fn.apply(void 0, __spreadArray([it], args, false));
+        }
+    }
+})(ns37 || (ns37 = {}));

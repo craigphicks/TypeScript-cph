@@ -1,6 +1,6 @@
-//// [tests/cases/compiler/-test2/-57087-41.ts] ////
+//// [tests/cases/compiler/-test2/-57087-42.ts] ////
 
-=== -57087-41.ts ===
+=== -57087-42.ts ===
 type Callback<T> = (x:T[])=>T[];
 >Callback : Callback<T>
 >x : T[]
@@ -10,6 +10,7 @@ interface K<T> {
 >f : (x: Callback<T>) => T[]
 >x : Callback<T>
 }
+
 function gt<T>(c: Callback<T>) {
 >gt : <T>(c: Callback<T>) => T[]
 >c : Callback<T>
@@ -22,25 +23,17 @@ function gt<T>(c: Callback<T>) {
 >0 : 0
 }
 
-// need to make this work for g, and gather return values.
-
-const callbackInstance0 = (x:{a:string}[]|{b:number}[])=>x;
->callbackInstance0 : (x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]
->(x:{a:string}[]|{b:number}[])=>x : (x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]
->x : { a: string; }[] | { b: number; }[]
->a : string
->b : number
->x : { a: string; }[] | { b: number; }[]
+const callbackInstance0 = (x:any)=>x;
+>callbackInstance0 : (x: any) => any
+>(x:any)=>x : (x: any) => any
+>x : any
+>x : any
 
 callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}>;
->callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}> : (x: { a: string; }[] | { b: number; }[]) => { a: string; }[] | { b: number; }[]
->callbackInstance0 : (x: { a: string; }[] | { b: number; }[]) => { a: string; }[] | { b: number; }[]
+>callbackInstance0 satisfies Callback<{a:string}> & Callback<{b:number}> : (x: any) => any
+>callbackInstance0 : (x: any) => any
 >a : string
 >b : number
-
-// v5.4.0-dev.20240215
-// Type '(x: {    a: string;}[] | {    b: number;}[]) => { a: string; }[] | { b: number; }[]'
-//  does not satisfy the expected type 'Callback<{ a: string; }> & Callback<{ b: number; }>'.
 
 declare const callbackInstance1: Callback<{a:string}> & Callback<{b:number}>;
 >callbackInstance1 : Callback<{ a: string; }> & Callback<{ b: number; }>
@@ -59,7 +52,7 @@ const rk0 = k.f(callbackInstance0)[0];
 >k.f : ((x: Callback<{ a: string; }>) => { a: string; }[]) | ((x: Callback<{ b: number; }>) => { b: number; }[])
 >k : K<{ a: string; }> | K<{ b: number; }>
 >f : ((x: Callback<{ a: string; }>) => { a: string; }[]) | ((x: Callback<{ b: number; }>) => { b: number; }[])
->callbackInstance0 : (x: { a: string; }[] | { b: number; }[]) => { a: string; }[] | { b: number; }[]
+>callbackInstance0 : (x: any) => any
 >0 : 0
 
 if ("a" in rk0) { rk0.a satisfies string; }
@@ -120,7 +113,7 @@ const rg0 = g(callbackInstance0)[0];
 >g(callbackInstance0)[0] : { a: string; }
 >g(callbackInstance0) : { a: string; }[]
 >g : typeof gt<{    a: string;}> | typeof gt<{    a: string;}>
->callbackInstance0 : (x: { a: string; }[] | { b: number; }[]) => { a: string; }[] | { b: number; }[]
+>callbackInstance0 : (x: any) => any
 >0 : 0
 
 if ("a" in rg0) { rg0.a satisfies string; }
@@ -132,14 +125,17 @@ if ("a" in rg0) { rg0.a satisfies string; }
 >rg0 : { a: string; }
 >a : string
 
-if ("b" in rg0) { rg0.b satisfies number; }
+if ("b" in rg0) {
 >"b" in rg0 : boolean
 >"b" : "b"
 >rg0 : { a: string; }
+
+  rg0.b satisfies number; // this should pass but does not.
 >rg0.b satisfies number : unknown
 >rg0.b : unknown
 >rg0 : { a: string; } & Record<"b", unknown>
 >b : unknown
+}
 
 const rg1 = g(callbackInstance1)[0];
 >rg1 : { a: string; }
@@ -158,12 +154,16 @@ if ("a" in rg1) { rg1.a satisfies string; }
 >rg1 : { a: string; }
 >a : string
 
-if ("b" in rg1) { rg1.b satisfies number; }
+if ("b" in rg1) {
 >"b" in rg1 : boolean
 >"b" : "b"
 >rg1 : { a: string; }
+
+  rg1.b satisfies number; // this should pass but does not.
 >rg1.b satisfies number : unknown
 >rg1.b : unknown
 >rg1 : { a: string; } & Record<"b", unknown>
 >b : unknown
+}
+
 
