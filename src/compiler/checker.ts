@@ -22059,6 +22059,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             let sourceSignatures: readonly Signature[];
             if (origSourceSignatures[0].compositeSignatures?.length && origSourceSignatures[0].compositeKind === TypeFlags.Intersection) {
+                let f = false;
+                Debug.assert(f,"TODO"); // todo
                 if (origSourceSignatures.length !== 1) {
                     Debug.assert(false, `origSourceSignatures.length!==1`);
                     return { computed: false, ternary: Ternary.Unknown };
@@ -22165,7 +22167,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             /*
              * In the case of one source with zero or one parameters
              */
-            if (true) {
+            let doSingleSig = false
+            if (doSingleSig) {
                 if (sourceSignatures.length === 1){
                     const ssig = sourceSignatures[0];
                     if (ssig.parameters.length>1) return {computed:false, ternary:Ternary.Unknown};
@@ -22229,7 +22232,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
              * For the record, this branch is never hit in runtests-parallel.
              * However, ff `typeRelatedToEachType` is called before `checkFunctionRelatedToIntersection` then it is hit, and it was tested like that.
              */
-            const enableOneToOneCheckFirst = true;
+            const enableOneToOneCheckFirst = false;
             if (enableOneToOneCheckFirst){
                 if ((target as IntersectionType).types.length===sourceSignatures.length && (target as IntersectionType).types.every((targetMember)=>{
                     getSignaturesOfType(targetMember, SignatureKind.Call).length===1;
@@ -22274,8 +22277,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
                     targetSignatures.forEach((tsig, _ti) => compareOneSourceSigToOneTargetSig(tsig, ssig, accum, _si, _tti, _ti));
                 });
+                const constructSignatureToString = (signature: Signature) => {
+                    return signatureToString(signature, /*enclosingDeclaration*/ undefined /*, TypeFormatFlags.WriteArrowStyleSignature, SignatureKind.Call*/);
+                }
                 if (!accum.hadMatch) {
                     IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${_si}, FAIL @3 (no match)`,loggerLevel);
+                    if (_reportErrors){
+                        reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, constructSignatureToString(ssig), typeToString(target));
+                    }
                     return true; // failed { computed: true, ternary: Ternary.False };
                 }
                 else {
@@ -22283,6 +22292,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     if (!accum.gReturnAllVoid && !isTypeAssignableTo(returnType, accum.gReturn)) {
                         IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
                             _si}, FAIL @4 (source return type not assignable to accum target return type)`,loggerLevel);
+                        if (_reportErrors){
+                            reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, constructSignatureToString(ssig), typeToString(target));
+                            reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(returnType), typeToString(accum.gReturn));
+                        }
                         return true; // failed { computed: true, ternary: Ternary.False };
                     }
                 }
@@ -22346,11 +22359,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (target.flags & TypeFlags.Intersection) {
                 const result1 = typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
 
-                if (enableCheckFunctionRelatedToIntersection && !reportErrors && result1 !== Ternary.True) {
+                if (enableCheckFunctionRelatedToIntersection && result1 === Ternary.True) {
                     /**
-                     * [cph] In the case of some target intersections of functions, follow #57087
+                     * [cph] Existing code checks that source supports target, but not that source fits within target.
                      */
-                    const target0 = (target as IntersectionType).types[0];
+                    //const target0 = (target as IntersectionType).types[0];
                     const sourceSignatures = getSignaturesOfType(source, SignatureKind.Call);
                     if (
                         sourceSignatures.every(sourceSig => {
@@ -22358,19 +22371,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         })
                     ) {
                         if (
-                            source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 0 // some cases of length 1 source can be computed, some not.
+                            source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 1
                             //&& target.flags & TypeFlags.Object && getSignaturesOfType(target0, SignatureKind.Call).length > 1 // already known to be intersection type
                         ) {
                             const { computed, ternary } = checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
                             if (computed) {
                                 Debug.assert(ternary === Ternary.True || ternary === Ternary.False);
                                 return ternary;
-                                //if (ternary === Ternary.True) return ternary;
-                                // if (reportErrors){
-                                //     // let typeRelatedToEachType make detailed error reporting, but do not let it change the result.
-                                //     typeRelatedToEachType(source, target as IntersectionType, reportErrors, intersectionState); // result ignored
-                                //     return ternary; // Ternary.False
-                                // }
                             }
                             // if not computed falls through to the reult of the general case: typeRelatedToEachType
                         }
@@ -35333,6 +35340,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         }
                     }
                     else {
+                        // #57087
                         Debug.fail("No error for last overload signature");
                     }
                 }
