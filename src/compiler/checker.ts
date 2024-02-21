@@ -2019,6 +2019,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var silentNeverType = createIntrinsicType(TypeFlags.Never, "never", ObjectFlags.NonInferrableType, "silent");
     var implicitNeverType = createIntrinsicType(TypeFlags.Never, "never", /*objectFlags*/ undefined, "implicit");
     var unreachableNeverType = createIntrinsicType(TypeFlags.Never, "never", /*objectFlags*/ undefined, "unreachable");
+    if (IDebug.logLevel){
+        IDebug.setSpecialNeverTypes({neverType,silentNeverType,implicitNeverType,unreachableNeverType});
+    }
     var nonPrimitiveType = createIntrinsicType(TypeFlags.NonPrimitive, "object");
     var stringOrNumberType = getUnionType([stringType, numberType]);
     var stringNumberSymbolType = getUnionType([stringType, numberType, esSymbolType]);
@@ -22113,7 +22116,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             };
 
 
-            function compareOneSourceSigToOneTargetSig(tsig: Signature, ssig: Signature, accum:{ hadMatch: boolean, gReturn: Type, gReturnAllVoid: boolean}, _si: number, _tti: number, _ti:number): void {
+            function compareOneSourceSigToOneTargetSig(tsig: Signature, ssig: Signature, accum:{ hadMatch: boolean, gReturn: Type, gReturnAllVoid: boolean}, _si: number, _tti: number, _ti:number): boolean {
                 IDebug.ilog(()=>{
                     return `si:${_si}, tti:${_tti}, ti:${_ti}, ssig:${IDebug.dbgs.dbgSignatureToString(ssig)}, tsig:${IDebug.dbgs.dbgSignatureToString(tsig)}`;
                 },loggerLevel);
@@ -22160,9 +22163,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             setsi.add(_si);
                             IDebug.ilog(()=>`checkFunctionRelatedToIntersection: match tti:${_tti}, ti:${_ti} <- si:${_si}`,loggerLevel);
                         }
+                        return true;
                     }
                 }
-            }
+                return false;
+            } // compareOneSourceSigToOneTargetSig
 
             /*
              * In the case of one source with zero or one parameters
@@ -22266,8 +22271,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     // else fall through to sample x target comparison
                 }
             }
+            const constructSignatureToString = (signature: Signature) => {
+                return signatureToString(signature, /*enclosingDeclaration*/ undefined /*, TypeFormatFlags.WriteArrowStyleSignature, SignatureKind.Call*/);
+            }
+
+            const mapAssignedToBy: Map</*tti*/number,Map</*ti*/number, /*some si*/true>> = new Map();
 
             const failed = sourceSignatures.some((ssig, _si) => {
+                if (getReturnTypeOfSignature(ssig)===neverType) return false;
                 const accum = {
                     hadMatch: false,
                     gReturn: neverType as Type,
@@ -22275,11 +22286,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 };
                 (target as IntersectionType).types.forEach((targetMember, _tti) => {
                     const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
-                    targetSignatures.forEach((tsig, _ti) => compareOneSourceSigToOneTargetSig(tsig, ssig, accum, _si, _tti, _ti));
+                    targetSignatures.forEach((tsig, _ti) => {
+                        if (compareOneSourceSigToOneTargetSig(tsig, ssig, accum, _si, _tti, _ti)){
+                            // Debug.assert(maptts);
+                            let mtti = mapAssignedToBy.get(_tti);
+                            if (!mtti) {
+                                mtti = new Map();
+                                mapAssignedToBy.set(_tti, mtti);
+                            }
+                            let setsi = mtti.get(_ti);
+                            if (!setsi) {
+                                mtti.set(_ti, true);
+                            }
+                        }
+                    });
                 });
-                const constructSignatureToString = (signature: Signature) => {
-                    return signatureToString(signature, /*enclosingDeclaration*/ undefined /*, TypeFormatFlags.WriteArrowStyleSignature, SignatureKind.Call*/);
-                }
                 if (!accum.hadMatch) {
                     IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${_si}, FAIL @3 (no match)`,loggerLevel);
                     if (_reportErrors){
@@ -22301,6 +22322,28 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             });
             if (failed) return { computed: true, ternary: Ternary.False };
+
+            const failed2 = (target as IntersectionType).types.some((targetMember, _tti) => {
+                const mtti = mapAssignedToBy.get(_tti);
+                if (!mtti){
+                    IDebug.ilog(()=>``)
+                }
+                const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
+                return targetSignatures.some((tsig, _ti) => {
+                    if (!mtti || !mtti.get(_ti)){
+                        IDebug.ilog(()=>`[${_tti},${_ti}]signature ${IDebug.dbgs.dbgSignatureToString(tsig)
+                        } is not assignable from any signature of ${IDebug.dbgs.dbgTypeToString(source)},`);
+                        if (_reportErrors){
+                            // The more detailed error message goes first
+                            reportError(Diagnostics.signature_0_is_not_assignable_from_any_signature_of_type_1, constructSignatureToString(tsig), typeToString(source));
+                            reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(source), typeToString(targetMember));
+                        }
+                        return true;
+                    }
+                });
+            });
+            if (failed2) return { computed: true, ternary: Ternary.False };
+
 
             if (IDebug.logLevel >= loggerLevel){
                 maptts!.forEach((mapti,tti)=>{

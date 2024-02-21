@@ -33,13 +33,10 @@ export namespace IDebug {
         if (loggingHost) loggingHost.ilogGroupEnd(message, level, expectedIndent);
     }
     export let suffix = "";
+
     let specialSignatures: {anySignature: Signature,unknownSignature: Signature,resolvingSignature: Signature,silentNeverSignature: Signature};
     export function setSpecialSignatures(arg:{anySignature: Signature, unknownSignature: Signature, resolvingSignature: Signature, silentNeverSignature: Signature}){
         specialSignatures = arg;
-        // specialSignatures.anySignature = arg.anySignature;
-        // specialSignatures.unknownSignature = unknownSignature;
-        // specialSignatures.resolvingSignature = resolvingSignature;
-        // specialSignatures.silentNeverSignature = silentNeverSignature;
     };
     export function getSpecialSignatureString(signature: Signature): string | undefined {
         if (signature===specialSignatures.anySignature) return "anySignature";
@@ -48,6 +45,19 @@ export namespace IDebug {
         if (signature===specialSignatures.silentNeverSignature) return "silentNeverSignature";
         return undefined;
     }
+
+    let specialNeverTypes: {neverType: Type,silentNeverType: Type,implicitNeverType: Type,unreachableNeverType: Type};
+    export function setSpecialNeverTypes(arg:{neverType: Type,silentNeverType: Type,implicitNeverType: Type,unreachableNeverType: Type}){
+        specialNeverTypes = arg;
+    }
+    export function getSpecialNeverString(type: Type): string | undefined {
+        if (type===specialNeverTypes.neverType) return "neverType";
+        if (type===specialNeverTypes.silentNeverType) return "silentNeverType";
+        if (type===specialNeverTypes.implicitNeverType) return "implicitNeverType";
+        if (type===specialNeverTypes.unreachableNeverType) return "unreachableNeverType";
+        return undefined;
+    }
+
 }
 
 export class ILoggingClass implements ILoggingHost {
@@ -169,6 +179,8 @@ export class DbgsClass implements Dbgs{
     private getNodeId(node: Node){ return getNodeId(node); /*return node.id??"<undef>";*/ }
     private getSymbolId(symbol: Symbol){ return symbol.id??"<undef>"; }
     private getSafeCheckerTypeToString(type: Type): string{
+        const neverStr = IDebug.getSpecialNeverString(type);
+        if (neverStr) return neverStr;
         if (type.flags & TypeFlags.Intersection) {
             const astr: string[] = [];
             (type as UnionOrIntersectionType).types.forEach(t=>astr.push(this.getSafeCheckerTypeToString(t)));
