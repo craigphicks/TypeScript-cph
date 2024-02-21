@@ -7989,9 +7989,13 @@
         "category": "Error",
         "code": 18054
     },
-    "signature {0} is not assignable from any signature of type {1}": {
+    "There is no signature in type {0} such that its parameters are assignable to the parameters of signature {1}": {
         "category": "Error",
         "code": 18055
+    },
+    "Parameters of signature {0} are not assignable to the parameters of any signature in type {1}": {
+        "category": "Error",
+        "code": 18056
     }
 
 }

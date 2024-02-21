@@ -263,12 +263,12 @@ export class DbgsClass implements Dbgs{
         const specialStr = IDebug.getSpecialSignatureString(c);
         if (specialStr) return specialStr;
 
-        let astr: string[] = [`[sg:${this.getSignatureId(c)}] `];
+        let astr: string[] = [];
         c.parameters.forEach(symbol=> {
             const typeOfSymbol = this.getSafeCheckerTypeOfSymbol(symbol);
             astr.push(this.dbgTypeToString(typeOfSymbol));
         });
-        let str = "(" + astr.join("; ") + ") => ";
+        let str = `[sg:${this.getSignatureId(c)}] (` +astr.join("; ") + ") => ";
         str += c.resolvedReturnType ? this.dbgTypeToString(c.resolvedReturnType) : "<no resolved type>";
         if (c.compositeKind===TypeFlags.Union) str += ` /* composite union [${c.compositeSignatures?.length}] */`;
         else if (c.compositeKind===TypeFlags.Intersection) str += ` /* composite intersection [${c.compositeSignatures?.length}] */`;
