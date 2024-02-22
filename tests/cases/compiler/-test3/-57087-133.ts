@@ -5,27 +5,42 @@
 
 interface Garg33A {
     (): "01";
-    (x?:1, y?:1): "211"
+    (x:1, y?:1): "111";
+    (...args: [...1[]]): "101";
 };
 interface Garg33B {
     (): "02";
-    (x?:2, y?:2): "222";
-    (x?:2, y?:1): "221"
+    (x:1, y?:1): "211";
+    (...args:1[]): "201";
+    (x:2, y?:any): "221"
 };
 
+declare const f33a: {
+    (): "02";
+    (x:1, y?:1): "211";
+    (...args:1[]): "201";
+    (x:2, y?:any): "221"
+}
+f33b satisfies Garg33A & Garg33B; // should  satisfy
+// because (...args: [...1[]]):=>"101"  === (...args:1[]) => "201";
 
-declare const f33b: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221" /*should fail match*/; (x: 2, y: 1): "221"; }
-f33b satisfies Garg33A & Garg33B; // should not satisfy
 
-declare const f33c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221" /*should fail match*/; }
-f33c satisfies Garg33A & Garg33B; // should not satisfy
+declare const f33b: {
+    (): "02";
+    (x:1, y?:1): "211";
+    (...args: [...1[]]): "101";
+    (...args:1[]): "201";
+    (x:2, y?:any): "221"
+}
+f33b satisfies Garg33A & Garg33B; // should satisfy
+
+declare const f33c: {
+    (x:2, y?:any): "221"
+    (...args:1[]): "201";
+    (...args: [...1[]]): "101";
+    (x:1, y?:1): "211";
+    (): "02";
+}
+f33c satisfies Garg33A & Garg33B; // should satisfy (even though reversed order of overloads)
 
 
-declare const f33a: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
-f33a satisfies Garg33A & Garg33B; // should satisfy
-
-declare const f33d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
-f33d satisfies Garg33A & Garg33B; // should satisfy
-
-declare const f33e: { (): "01"; (x?: 1, y?: 1): "211"; (x?: 2, y?: 2): "222"; (x: 2, y: 1): "221"; }
-f33e satisfies Garg33A & Garg33B; // should satisfy
