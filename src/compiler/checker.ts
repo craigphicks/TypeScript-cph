@@ -1098,7 +1098,7 @@ import * as performance from "./_namespaces/ts.performance";
 // @ts-ignore
 import { IDebug } from "./mydebug";
 const contextualLogLevel = 2;
-const enableCheckFunctionRelatedToIntersection = (process.env.enablefu===undefined ? true : Number(process.env.enablefu)) ? true : false;
+const enablecheckOverloadsRelatedToIntersection = (process.env.enablefu===undefined ? true : Number(process.env.enablefu)) ? true : false;
 const enableInferSignatureMulti = (process.env.enableism===undefined ? false : Number(process.env.enableism)) ? true : false;
 
 // cphdebug-end
@@ -22046,11 +22046,35 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         /**
-         * #57087
+         * Check that an overload instance is assignable to an intersection target.
+         * Algorithm
+         *
+         * Let s[i], i in 0...Ns-1 be the source overloads.
+         *
+         * Let t[j], j in 0...Nt-1 be the target intersection member types.
+         *
+         * Let t[j][k], k in 0...Ntj-1 be the target overloads in type t[j].
+         *
+         * Check that the source has an into mapping to the target:
+         *
+         * SourceDomainMatch(i):==
+         *     For some j,k exists IdentitiyRelation(Parameters<s[i]>,Parameters<t[j][k]>)===true
+         *
+         * SourceRangeMatch(i):==
+         *     Let rt be the union of ReturnTypes<t[j][k]> for all j,k s.t. Parameters<s[i]> assignable to Parameters<t[j][k]>
+         *     ReturnTypes<s[i]> assignable to rt
+         *
+         * TargetDomainMatch(t[j,k]):==
+         *     For some i exists IdentitiyRelation(Parameters<s[i]>,Parameters<t[j][k]>)===true
+         *
+         * Passing conditions:
+         * - For all i, SourceDomainMatch(i)===true
+         * - For all i, SourceRangeMatch(i)===true
+         * - For all j,k, TargetDomainMatch(t[j][k])===true
          */
-        function checkFunctionRelatedToIntersection(source: Type, target: Type, _reportErrors: boolean): { computed: boolean, ternary:Ternary } {
+        function checkOverloadsRelatedToIntersection(source: Type, target: Type, _reportErrors: boolean): { computed: boolean; ternary: Ternary; } {
         const loggerLevel = 2;
-        IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersection[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}`,loggerLevel);
+        IDebug.ilogGroup(()=>`checkOverloadsRelatedToIntersection[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}`,loggerLevel);
 
 
         const ret = ((): { computed: boolean, ternary:Ternary } => {
@@ -22061,229 +22085,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     IDebug.dbgs.dbgSignatureAndCompositesToStrings(sig).forEach((s)=>IDebug.ilog(()=>`origSourceSig[${si}]: ${s}`,loggerLevel));
                 });
             }
-            // let sourceSignatures: readonly Signature[];
-            // if (origSourceSignatures[0].compositeSignatures?.length && origSourceSignatures[0].compositeKind === TypeFlags.Intersection) {
-            //     let f = false;
-            //     Debug.assert(f,"TODO"); // todo
-            //     if (origSourceSignatures.length !== 1) {
-            //         Debug.assert(false, `origSourceSignatures.length!==1`);
-            //         return { computed: false, ternary: Ternary.Unknown };
-            //     }
-            //     sourceSignatures = origSourceSignatures[0].compositeSignatures;
-            //     if ((target as IntersectionType).types.length !== sourceSignatures.length) {
-            //         Debug.assert(false, `(target as IntersectionType).types.length!==sourceSignatures.length`);
-            //         return { computed: false, ternary: Ternary.Unknown };
-            //     }
-            //     for (let si = 0; si < sourceSignatures.length; ++si) {
-            //         const sourceSig = sourceSignatures[si];
-            //         if (!!origSourceSignatures[0].resolvedReturnType && !sourceSig.resolvedReturnType) {
-            //             Debug.assert(false, `!!origSourceSignatures[0].resolvedReturnType && !sourceSig.resolvedReturnType`);
-            //         }
-            //         const targetType = (target as IntersectionType).types[si];
-            //         const targetSigs = getSignaturesOfType(targetType, SignatureKind.Call);
-            //         Debug.assert(targetSigs.length === 1);
-            //         const related = compareSignaturesRelated(sourceSig, targetSigs[0], SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes, /*reportErrors*/ false, /*errorReporter*/ undefined, /*incompatibleErrorReporter*/ undefined, compareTypesAssignable, /*reportUnreliableMarkers*/ undefined, /*compareTypesUnilaterally*/ true);
-            //         if (related !== Ternary.True) {
-            //             Debug.assert(related === Ternary.False, "related === Ternary.False")
-            //             return { computed: true, ternary: Ternary.False };
-            //         }
-            //         const targetReturnType = getReturnTypeOfSignature(targetSigs[0]);
-            //         const sourceReturnType = getReturnTypeOfSignature(sourceSig);
-            //         if (targetReturnType !== voidType && !isTypeAssignableTo(sourceReturnType, targetReturnType)) {
-            //             return { computed: true, ternary: Ternary.False };
-            //         }
-            //     }
-            //     return { computed: true, ternary: Ternary.True };
-            // }
-            // else {
-            //     sourceSignatures = origSourceSignatures;
-            // }
 
             type MapTTS = Map<number/*tti*/,Map<number/*ti*/,Set<number>/*si*/>>;
             let maptts: MapTTS | undefined = (IDebug.logLevel>=loggerLevel) ? new Map() : undefined;
             let mapttsOff = false;
 
-            // const someAssignable = (src: Type, trg: Type, _si?: number, _tti?: number, _ti?: number) => {
-            //     IDebug.ilogGroup(()=>`someAssignable@checkFunctionRelatedToIntersection: si:${_si}, tti:${_tti}, ti:${_ti},  src:${IDebug.dbgs.dbgTypeToString(src)}, trg:${IDebug.dbgs.dbgTypeToString(trg)}`,loggerLevel);
-            //     const ret = (() => {
-            //         if (trg === voidType) return true; // because the source output can be ignored
-            //         if (src.flags & TypeFlags.Union) {
-            //             return (src as UnionType).types.some(srct => isTypeAssignableTo(srct, trg));
-            //         }
-            //         else return isTypeAssignableTo(src, trg);
-            //     })();
-            //     IDebug.ilogGroupEnd(()=>`someAssignable@checkFunctionRelatedToIntersection: returns ${ret}`,loggerLevel);
-            //     return ret;
-            // };
-
-
-            function compareOneSourceSigToOneTargetSig(tsig: Signature, ssig: Signature, accum:{ hadMatch: boolean, gReturn: Type, gReturnAllVoid: boolean}, _si: number, _tti: number, _ti:number): boolean {
-                IDebug.ilog(()=>{
-                    return `si:${_si}, tti:${_tti}, ti:${_ti}, ssig:${IDebug.dbgs.dbgSignatureToString(ssig)}, tsig:${IDebug.dbgs.dbgSignatureToString(tsig)}`;
-                },loggerLevel);
-                const targetReturnType = getReturnTypeOfSignature(tsig);
-                //const sourceReturnType = getReturnTypeOfSignature(ssig);
-
-                //if (someAssignable(sourceReturnType, targetReturnType)) {
-                    // const compareTypes: TypeComparer = !onlyOneSourceSig
-                    //     ? compareTypesAssignable
-                    //     : (s: Type, t: Type, _reportErrors: boolean | undefined) => {
-                    //         return compareTypesAssignable(s, t) || compareTypesAssignable(t, s);
-                    //     };
-                if (
-                    compareSignaturesRelated(
-                        ssig,
-                        tsig,
-                        SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes,
-                        /*reportErrors*/ false,
-                        /*errorReporter*/ undefined,
-                        /*incompatibleErrorReporter*/ undefined,
-                        compareTypesIdentical, //compareTypesAssignable,
-                        /*reportUnreliableMarkers*/ undefined,
-                        /*compareTypesUnilaterally*/ true,
-                    ) === Ternary.True
-                ) {
-                    accum.hadMatch = true;
-                    if (targetReturnType !== voidType) {
-                        accum.gReturn = getUnionType([accum.gReturn, targetReturnType]);
-                        accum.gReturnAllVoid = false;
-                    }
-
-                    if (!mapttsOff && IDebug.logLevel>=loggerLevel){
-                        Debug.assert(maptts);
-                        let mti = maptts.get(_tti);
-                        if (!mti) {
-                            mti = new Map();
-                            maptts.set(_tti, mti);
-                        }
-                        let setsi = mti.get(_ti);
-                        if (!setsi) {
-                            setsi = new Set();
-                            mti.set(_ti, setsi);
-                        }
-                        setsi.add(_si);
-                        IDebug.ilog(()=>`checkFunctionRelatedToIntersection: match tti:${_tti}, ti:${_ti} <- si:${_si}`,loggerLevel);
-                    }
-                    return true;
-                }
-                //}
-                return false;
-            } // compareOneSourceSigToOneTargetSig
-
-            /*
-             * In the case of one source with zero or one parameters
-             */
-            // let doSingleSig = false
-            // if (doSingleSig) {
-            //     if (sourceSignatures.length === 1){
-            //         const ssig = sourceSignatures[0];
-            //         if (ssig.parameters.length>1) return {computed:false, ternary:Ternary.Unknown};
-            //         let sourceParameterTypes: Readonly<Type[]>;
-            //         if (ssig.parameters.length==0) sourceParameterTypes = [];
-            //         else {
-            //             const ptype = getTypeOfSymbol(ssig.parameters[0]);
-            //             if (!(ptype.flags & TypeFlags.Union)) sourceParameterTypes = [ptype];
-            //             else sourceParameterTypes = (ptype as UnionType).types;
-            //         }
-            //         const sourceReturnType = getReturnTypeOfSignature(ssig);
-            //         // General case:
-            //         const tsigs = getSignaturesOfType(target, SignatureKind.Call);
-            //         const failed0 = sourceParameterTypes.some((spt,_si)=>{
-            //             const accum = {
-            //                 allMatch: true,
-            //                 gReturn: neverType as Type,
-            //                 gReturnAllVoid: true
-            //             };
-            //             accum.allMatch = !tsigs.some(tsig=>{
-            //                 const targetReturnType = getReturnTypeOfSignature(tsig);
-            //                 if (targetReturnType===voidType || compareTypesAssignable(targetReturnType,sourceReturnType)) {
-            //                     if (tsig.parameters.length) {
-            //                         const tpt = getTypeOfSymbol(tsig.parameters[0]);
-            //                         /*
-            //                         * In the one-source to many-target scenario, each target parameter type must be assignable to the source parameter type.
-            //                         * The range of the source parameter type is allowed to be a superset of the range of the union of target parameter types.
-            //                         */
-            //                         if (compareTypesAssignable(tpt,spt)){
-            //                             if (targetReturnType !== voidType) {
-            //                                 accum.gReturn = getUnionType([accum.gReturn, targetReturnType]);
-            //                                 accum.gReturnAllVoid = false;
-            //                             }
-            //                         }
-            //                         else {
-            //                             return true;
-            //                         }
-            //                     }
-            //                 }
-            //                 else return true;
-            //             });
-            //             if (!accum.allMatch) {
-            //                 IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${_si}, FAIL singleSource@-3 (no match)`,loggerLevel);
-            //                 return true; // failed { computed: true, ternary: Ternary.False };
-            //             }
-            //             else {
-            //                 //const returnType = getReturnTypeOfSignature(ssig);
-            //                 if (!accum.gReturnAllVoid && !isTypeAssignableTo(sourceReturnType, accum.gReturn)) {
-            //                     IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
-            //                         _si}, FAIL singleSource@-4 (source return type not assignable to accum target return type)`,loggerLevel);
-            //                     return true; // failed { computed: true, ternary: Ternary.False };
-            //                 }
-            //             }
-            //         });
-            //         if (failed0) return { computed: true, ternary: Ternary.False };
-            //         return { computed: true, ternary: Ternary.True };
-
-            //     }
-            // }
-            /*
-             * For the record, this branch is never hit in runtests-parallel.
-             * However, ff `typeRelatedToEachType` is called before `checkFunctionRelatedToIntersection` then it is hit, and it was tested like that.
-             */
-            // const enableOneToOneCheckFirst = false;
-            // if (enableOneToOneCheckFirst){
-            //     if ((target as IntersectionType).types.length===sourceSignatures.length && (target as IntersectionType).types.every((targetMember)=>{
-            //         getSignaturesOfType(targetMember, SignatureKind.Call).length===1;
-            //     })){
-            //         const failed11 = sourceSignatures.some((ssig,_si)=>{
-            //             const accum = {
-            //                 hadMatch: false,
-            //                 gReturn: neverType as Type,
-            //                 gReturnAllVoid: true
-            //             };
-            //             const tsig = getSignaturesOfType((target as IntersectionType).types[_si], SignatureKind.Call)[0];
-            //             compareOneSourceSigToOneTargetSig(tsig, ssig, accum, _si, _si, 0);
-
-            //             if (!accum.hadMatch) {
-            //                 IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${_si}, FAIL @11-3 (no match)`,loggerLevel);
-            //                 return true; // failed { computed: true, ternary: Ternary.False };
-            //             }
-            //             else {
-            //                 const returnType = getReturnTypeOfSignature(ssig);
-            //                 if (!accum.gReturnAllVoid && !isTypeAssignableTo(returnType, accum.gReturn)) {
-            //                     IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
-            //                         _si}, FAIL @11-4 (source return type not assignable to accum target return type)`,loggerLevel);
-            //                     return true; // failed { computed: true, ternary: Ternary.False };
-            //                 }
-            //             }
-            //         });
-            //         if (!failed11) {
-            //             Debug.assert(false,"findout out which, if any, tests hit this branch");
-            //             return { computed: true, ternary: Ternary.True };
-            //         }
-            //         // else fall through to sample x target comparison
-            //     }
-            // }
             const constructSignatureToString = (signature: Signature, forceReturnType?: Type) => {
                 const origReturnType = signature.resolvedReturnType;
                 signature.resolvedReturnType = forceReturnType;
-                let str = signatureToString(signature, /*enclosingDeclaration*/ undefined, TypeFormatFlags.WriteArrowStyleSignature, SignatureKind.Call);
+                const str = signatureToString(signature, /*enclosingDeclaration*/ undefined, TypeFormatFlags.WriteArrowStyleSignature, SignatureKind.Call);
                 signature.resolvedReturnType = origReturnType;
                 return str;
-            }
-
-            const mapAssignedToBy: Map</*tti*/number,Map</*ti*/number, /*some si*/true>> = new Map();
+            };
+            const mapAssignedToBy: Map</*tti*/ number, Map</*ti*/ number, /*some si*/ true>> = new Map<number, Map<number, true>>();
 
             const failed = sourceSignatures.some((ssig, _si) => {
-                if (getReturnTypeOfSignature(ssig)===neverType) return false;
+                if (getReturnTypeOfSignature(ssig) === neverType) return false;
                 const accum = {
                     hadMatch: false,
                     gReturn: neverType as Type,
@@ -22293,15 +22110,32 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 (target as IntersectionType).types.forEach((targetMember, _tti) => {
                     const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
                     targetSignatures.forEach((tsig, _ti) => {
-                        if (compareOneSourceSigToOneTargetSig(tsig, ssig, accum, _si, _tti, _ti)){
-                            // Debug.assert(maptts);
+                        const targetReturnType = getReturnTypeOfSignature(tsig);
+                        if (
+                            compareSignaturesRelated(
+                                ssig,
+                                tsig,
+                                SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes,
+                                /*reportErrors*/ false,
+                                /*errorReporter*/ undefined,
+                                /*incompatibleErrorReporter*/ undefined,
+                                compareTypesIdentical, // compareTypesAssignable,
+                                /*reportUnreliableMarkers*/ undefined,
+                                /*compareTypesUnilaterally*/ true,
+                            ) === Ternary.True
+                        ) {
+                            accum.hadMatch = true;
+                            if (targetReturnType !== voidType) {
+                                accum.gReturn = getUnionType([accum.gReturn, targetReturnType]);
+                                accum.gReturnAllVoid = false;
+                            }
                             matchedTargetSigs.push(tsig);
                             let mtti = mapAssignedToBy.get(_tti);
                             if (!mtti) {
                                 mtti = new Map();
                                 mapAssignedToBy.set(_tti, mtti);
                             }
-                            let setsi = mtti.get(_ti);
+                            const setsi = mtti.get(_ti);
                             if (!setsi) {
                                 mtti.set(_ti, true);
                             }
@@ -22309,37 +22143,32 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     });
                 });
                 if (!accum.hadMatch) {
-                    IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${_si}, FAIL @3 (no match)`,loggerLevel);
+                    IDebug.ilog(()=>`checkOverloadsRelatedToIntersection: si:${_si}, FAIL @3 (no match)`,loggerLevel);
                     if (_reportErrors){
-                        //errorInfo = undefined; // clear it.
-                        resetErrorInfo({skipParentCounter:0} as ReturnType<typeof captureErrorCalculationState>);
-                        reportError(Diagnostics.Parameters_of_signature_0_are_not_assignable_to_the_parameters_of_any_signature_in_type_1,
-                            constructSignatureToString(ssig), typeToString(target));
-                        //reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(source), typeToString(target));
+                        resetErrorInfo({ skipParentCounter: 0 } as ReturnType<typeof captureErrorCalculationState>);
+                        reportError(Diagnostics.Parameters_of_signature_0_are_not_assignable_to_the_parameters_of_any_signature_in_type_1, constructSignatureToString(ssig), typeToString(target));
                     }
                     return true; // failed { computed: true, ternary: Ternary.False };
                 }
                 else {
                     const returnType = getReturnTypeOfSignature(ssig);
                     if (!accum.gReturnAllVoid && !isTypeAssignableTo(returnType, accum.gReturn)) {
-                        IDebug.ilog(()=>`checkFunctionRelatedToIntersection: si:${
+                        IDebug.ilog(()=>`checkOverloadsRelatedToIntersection: si:${
                             _si}, FAIL @4 (source return type ${
                                 IDebug.dbgs.dbgTypeToString(returnType)
                             } not assignable to accum target return type ${
                                 IDebug.dbgs.dbgTypeToString(accum.gReturn)
                             })`,loggerLevel);
                         if (_reportErrors){
-                            // The more detailed error message goes first
-                            resetErrorInfo({skipParentCounter:0} as ReturnType<typeof captureErrorCalculationState>);
+                            resetErrorInfo({ skipParentCounter: 0 } as ReturnType<typeof captureErrorCalculationState>);
                             reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(returnType), typeToString(accum.gReturn));
                             const strset = new Set<string>();
-                            matchedTargetSigs.forEach((tsig)=>strset.add(constructSignatureToString(tsig)));
+                            matchedTargetSigs.forEach(tsig => strset.add(constructSignatureToString(tsig)));
                             const strarr: string[] = [];
-                            strset.forEach((tstr)=>strarr.push(tstr));
+                            strset.forEach(tstr => strarr.push(tstr));
                             reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, constructSignatureToString(ssig), strarr.join(" | "));
-                            //reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(source), typeToString(target));
                         }
-                        return true; // failed { computed: true, ternary: Ternary.False };
+                        return true; // failed
                     }
                 }
             });
@@ -22347,21 +22176,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             const failed2 = (target as IntersectionType).types.some((targetMember, _tti) => {
                 const mtti = mapAssignedToBy.get(_tti);
-                if (!mtti){
-                    IDebug.ilog(()=>``)
-                }
                 const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
                 return targetSignatures.some((tsig, _ti) => {
-                    if (!mtti || !mtti.get(_ti)){
+                    if (!mtti || !mtti.get(_ti)) {
                         IDebug.ilog(()=>`[${_tti},${_ti}]signature ${IDebug.dbgs.dbgSignatureToString(tsig)
                         } is not assignable from any signature of ${IDebug.dbgs.dbgTypeToString(source)},`);
-                        if (_reportErrors){
-                            // The more detailed error message goes first
-                            resetErrorInfo({skipParentCounter:0} as ReturnType<typeof captureErrorCalculationState>);
-                            reportError(Diagnostics.There_is_no_signature_in_type_0_such_that_its_parameters_are_assignable_to_the_parameters_of_signature_1,
-                                typeToString(source), constructSignatureToString(tsig, anyType));
+                        if (_reportErrors) {
+                            resetErrorInfo({ skipParentCounter: 0 } as ReturnType<typeof captureErrorCalculationState>);
+                            reportError(Diagnostics.There_is_no_signature_in_type_0_such_that_its_parameters_are_assignable_to_the_parameters_of_signature_1, typeToString(source), constructSignatureToString(tsig, anyType));
                             reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(source), typeToString(targetMember));
-                            //reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(source), typeToString(target));
                         }
                         return true;
                     }
@@ -22378,7 +22201,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
                         if (IDebug.logLevel>=loggerLevel){
                             let str = `target[${ti},${tti}]:${IDebug.dbgs.dbgSignatureToString(targetSig)} matched by (count:${setsi.size}): `;
-                            IDebug.ilogGroup(()=>`checkFunctionRelatedToIntersection: ${str}`, loggerLevel);
+                            IDebug.ilogGroup(()=>`checkOverloadsRelatedToIntersection: ${str}`, loggerLevel);
                             setsi.forEach((si)=>{
                                 IDebug.ilog(()=>`[[${si}] ${IDebug.dbgs.dbgSignatureToString(sourceSignatures[si])}]`,loggerLevel);
                             });
@@ -22389,7 +22212,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             return { computed: true, ternary: Ternary.True };
         })();
-        IDebug.ilogGroupEnd(()=>`checkFunctionRelatedToIntersection[out]: returns { computed:${ret.computed}, ternary:Ternary.${IDebug.dbgs.dbgTernaryToString(ret.ternary)}}`,loggerLevel);
+        IDebug.ilogGroupEnd(()=>`checkOverloadsRelatedToIntersection[out]: returns { computed:${ret.computed}, ternary:Ternary.${IDebug.dbgs.dbgTernaryToString(ret.ternary)}}`,loggerLevel);
         return ret;
         }
 
@@ -22427,7 +22250,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (target.flags & TypeFlags.Intersection) {
                 const result1 = typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
 
-                if (enableCheckFunctionRelatedToIntersection && result1 === Ternary.False) {
+                if (enablecheckOverloadsRelatedToIntersection && result1 === Ternary.False) {
                     /**
                      * [cph] Existing code checks that source supports target, but not that source fits within target.
                      */
@@ -22442,7 +22265,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 1
                             //&& target.flags & TypeFlags.Object && getSignaturesOfType(target0, SignatureKind.Call).length > 1 // already known to be intersection type
                         ) {
-                            const { computed, ternary } = checkFunctionRelatedToIntersection(source, target as IntersectionType, reportErrors);
+                            const { computed, ternary } = checkOverloadsRelatedToIntersection(source, target as IntersectionType, reportErrors);
                             if (computed) {
                                 Debug.assert(ternary === Ternary.True || ternary === Ternary.False);
                                 //finishedStructuredTypeRelatedTo = true;
@@ -38275,7 +38098,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: contextualSignature:${
                             IDebug.dbgs.dbgSignatureToString(contextualSignature)}`,loggerLevel);
                         const inferenceContext = getInferenceContext(node);
-                        const enableCompositeSignaturesFromContext2 = false && !!enableCheckFunctionRelatedToIntersection;
+                        const enableCompositeSignaturesFromContext2 = false && !!enablecheckOverloadsRelatedToIntersection;
                         if (enableCompositeSignaturesFromContext2){
                             function cloneSignatureAndParameters(sig: Signature): Signature {
                                 const parameters = sig.parameters.map(p => (cloneSymbol(p, /*doNotRecordMergedSymbol*/ true)));
