@@ -1,0 +1,98 @@
+//// [tests/cases/compiler/-test3/-57087-135.ts] ////
+
+=== -57087-135.ts ===
+interface Garg35A {
+    ({x,y}:{x?:1, y?:Garg35B}): "A1"
+>x : 1 | undefined
+>y : Garg35B | undefined
+>x : 1 | undefined
+>y : Garg35B | undefined
+
+    ({x,y}:{x?:2, y?:Garg35C}): "A2"
+>x : 2 | undefined
+>y : Garg35C | undefined
+>x : 2 | undefined
+>y : Garg35C | undefined
+
+};
+interface Garg35B {
+    ({x,y}:{x?:2, y?:Garg35C}): "B1"
+>x : 2 | undefined
+>y : Garg35C | undefined
+>x : 2 | undefined
+>y : Garg35C | undefined
+
+    ({x,y}:{x:2, y?:Garg35A}): "B2";
+>x : 2
+>y : Garg35A | undefined
+>x : 2
+>y : Garg35A | undefined
+
+};
+interface Garg35C {
+    ({x,y}:{x:2, y?:Garg35A}): "C1";
+>x : 2
+>y : Garg35A | undefined
+>x : 2
+>y : Garg35A | undefined
+
+    ({x,y}:{x?:1, y?:Garg35B}): "C2"
+>x : 1 | undefined
+>y : Garg35B | undefined
+>x : 1 | undefined
+>y : Garg35B | undefined
+
+};
+
+declare const f35a: {
+>f35a : { ({ x, y }: { x?: 1 | undefined; y?: Garg35B | undefined; }): "A1"; ({ x, y }: { x: 2; y?: Garg35A | undefined; }): "B2"; ({ x, y }: { x?: 2 | undefined; y?: Garg35C | undefined; }): "A2"; }
+
+    ({x,y}:{x?:1, y?:Garg35B}): "A1"
+>x : 1 | undefined
+>y : Garg35B | undefined
+>x : 1 | undefined
+>y : Garg35B | undefined
+
+    ({x,y}:{x:2, y?:Garg35A}): "B2";
+>x : 2
+>y : Garg35A | undefined
+>x : 2
+>y : Garg35A | undefined
+
+    ({x,y}:{x?:2, y?:Garg35C}): "A2"
+>x : 2 | undefined
+>y : Garg35C | undefined
+>x : 2 | undefined
+>y : Garg35C | undefined
+}
+f35a satisfies Garg35A & Garg35B & Garg35C; // should satisfy
+>f35a satisfies Garg35A & Garg35B & Garg35C : { ({ x, y }: { x?: 1 | undefined; y?: Garg35B | undefined; }): "A1"; ({ x, y }: { x: 2; y?: Garg35A | undefined; }): "B2"; ({ x, y }: { x?: 2 | undefined; y?: Garg35C | undefined; }): "A2"; }
+>f35a : { ({ x, y }: { x?: 1 | undefined; y?: Garg35B | undefined; }): "A1"; ({ x, y }: { x: 2; y?: Garg35A | undefined; }): "B2"; ({ x, y }: { x?: 2 | undefined; y?: Garg35C | undefined; }): "A2"; }
+
+declare const f35b: {
+>f35b : { ({ x, y }: { x: 2; y?: Garg35A | undefined; }): "C1"; ({ x, y }: { x?: 1 | undefined; y?: Garg35B | undefined; }): "C2"; ({ x, y }: { x?: 2 | undefined; y?: Garg35C | undefined; }): "B1"; }
+
+    ({x,y}:{x:2, y?:Garg35A}): "C1";
+>x : 2
+>y : Garg35A | undefined
+>x : 2
+>y : Garg35A | undefined
+
+    ({x,y}:{x?:1, y?:Garg35B}): "C2"
+>x : 1 | undefined
+>y : Garg35B | undefined
+>x : 1 | undefined
+>y : Garg35B | undefined
+
+    ({x,y}:{x?:2, y?:Garg35C}): "B1"
+>x : 2 | undefined
+>y : Garg35C | undefined
+>x : 2 | undefined
+>y : Garg35C | undefined
+}
+f35b satisfies typeof f35a & Garg35A & Garg35B & Garg35C; // should satisfy
+>f35b satisfies typeof f35a & Garg35A & Garg35B & Garg35C : { ({ x, y }: { x: 2; y?: Garg35A | undefined; }): "C1"; ({ x, y }: { x?: 1 | undefined; y?: Garg35B | undefined; }): "C2"; ({ x, y }: { x?: 2 | undefined; y?: Garg35C | undefined; }): "B1"; }
+>f35b : { ({ x, y }: { x: 2; y?: Garg35A | undefined; }): "C1"; ({ x, y }: { x?: 1 | undefined; y?: Garg35B | undefined; }): "C2"; ({ x, y }: { x?: 2 | undefined; y?: Garg35C | undefined; }): "B1"; }
+>f35a : { ({ x, y }: { x?: 1 | undefined; y?: Garg35B | undefined; }): "A1"; ({ x, y }: { x: 2; y?: Garg35A | undefined; }): "B2"; ({ x, y }: { x?: 2 | undefined; y?: Garg35C | undefined; }): "A2"; }
+
+

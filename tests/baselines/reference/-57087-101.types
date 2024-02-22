@@ -1,0 +1,146 @@
+//// [tests/cases/compiler/-test3/-57087-101.ts] ////
+
+=== -57087-101.ts ===
+interface FMap<T,R> {
+    f:(x:T)=>R
+>f : (x: T) => R
+>x : T
+
+    g(f:(x:T)=>R):R;
+>g : (f: (x: T) => R) => R
+>f : (x: T) => R
+>x : T
+}
+declare const x1: FMap<1|2,1|2>;
+>x1 : FMap<1 | 2, 1 | 2>
+
+x1.g(x1.f); // no error
+>x1.g(x1.f) : 1 | 2
+>x1.g : (f: (x: 1 | 2) => 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>g : (f: (x: 1 | 2) => 1 | 2) => 1 | 2
+>x1.f : (x: 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>f : (x: 1 | 2) => 1 | 2
+
+declare const x2: FMap<2|3,"2"|"3">;
+>x2 : FMap<2 | 3, "2" | "3">
+
+x2.g(x2.f); // no error
+>x2.g(x2.f) : "2" | "3"
+>x2.g : (f: (x: 2 | 3) => "2" | "3") => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>g : (f: (x: 2 | 3) => "2" | "3") => "2" | "3"
+>x2.f : (x: 2 | 3) => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>f : (x: 2 | 3) => "2" | "3"
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>Math.random() < 0.5 ? x1 : x2 : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>Math.random() < 0.5 : boolean
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>0.5 : 0.5
+>x1 : FMap<1 | 2, 1 | 2>
+>x2 : FMap<2 | 3, "2" | "3">
+
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+>x.g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>x : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+
+/*
+ * Exact expansion of x.g, with the intersection of the two function types expanded.
+ * Catch-all with "never" return is not required to pass the test.
+ */
+function ft0(x:1|2):1|2;
+>ft0 : { (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 1 | 2
+
+function ft0(x:2|3):"2"|"3";
+>ft0 : { (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 2 | 3
+
+function ft0(x:1|2|3){
+>ft0 : { (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 1 | 2 | 3
+
+    if (x!==3) return x1.f(x);
+>x!==3 : boolean
+>x : 1 | 2 | 3
+>3 : 3
+>x1.f(x) : 1 | 2
+>x1.f : (x: 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>f : (x: 1 | 2) => 1 | 2
+>x : 1 | 2
+
+    else return x2.f(x);
+>x2.f(x) : "2" | "3"
+>x2.f : (x: 2 | 3) => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>f : (x: 2 | 3) => "2" | "3"
+>x : 3
+}
+x.g(ft0); // should not be error
+>x.g(ft0) : 1 | 2 | "2" | "3"
+>x.g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>x : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>ft0 : { (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+
+/*
+ * Condtion for passing are:
+ * (a1) Every source overload is matches at least one target overload
+ * (a2) Every target overload is matched by at least one souce overload
+ * where "matching" is defined as
+ * (b1) the target result is void OR the target result and source result overlap // should be source result subset of target result ?
+ * (b2) the target and source parameters match identically up to the number of required source parameters.
+ * This test case fails because: source (x:1) is not identical to target (x:1|2) or (x:2|3)
+ */
+
+function ft1(x:1):1;
+>ft1 : { (x: 1): 1; (x: 2): 2; (x: 3): "3"; }
+>x : 1
+
+function ft1(x:2):2;
+>ft1 : { (x: 1): 1; (x: 2): 2; (x: 3): "3"; }
+>x : 2
+
+function ft1(x:3):"3";
+>ft1 : { (x: 1): 1; (x: 2): 2; (x: 3): "3"; }
+>x : 3
+
+function ft1(x:1|2|3) {
+>ft1 : { (x: 1): 1; (x: 2): 2; (x: 3): "3"; }
+>x : 1 | 2 | 3
+
+    switch (x) {
+>x : 1 | 2 | 3
+
+        case 1: return 1;
+>1 : 1
+>1 : 1
+
+        case 2: return 2;
+>2 : 2
+>2 : 2
+
+        case 3: return "3";
+>3 : 3
+>"3" : "3"
+    }
+    throw "unexpected error"
+>"unexpected error" : "unexpected error"
+}
+x.g(ft1); // should be error
+>x.g(ft1) : 1 | 2 | "2" | "3"
+>x.g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>x : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>ft1 : { (x: 1): 1; (x: 2): 2; (x: 3): "3"; }
+
+

@@ -1,0 +1,187 @@
+//// [tests/cases/compiler/-test3/-57087-102.ts] ////
+
+=== -57087-102.ts ===
+interface FMap<T,R> {
+>FMap : Symbol(FMap, Decl(-57087-102.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-102.ts, 0, 15))
+>R : Symbol(R, Decl(-57087-102.ts, 0, 17))
+
+    f:(x:T)=>R
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 1, 7))
+>T : Symbol(T, Decl(-57087-102.ts, 0, 15))
+>R : Symbol(R, Decl(-57087-102.ts, 0, 17))
+
+    g(f:(x:T)=>R):R;
+>g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14))
+>f : Symbol(f, Decl(-57087-102.ts, 2, 6))
+>x : Symbol(x, Decl(-57087-102.ts, 2, 9))
+>T : Symbol(T, Decl(-57087-102.ts, 0, 15))
+>R : Symbol(R, Decl(-57087-102.ts, 0, 17))
+>R : Symbol(R, Decl(-57087-102.ts, 0, 17))
+}
+declare const x1: FMap<1|2,1|2>;
+>x1 : Symbol(x1, Decl(-57087-102.ts, 4, 13))
+>FMap : Symbol(FMap, Decl(-57087-102.ts, 0, 0))
+
+x1.g(x1.f); // no error
+>x1.g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14))
+>x1 : Symbol(x1, Decl(-57087-102.ts, 4, 13))
+>g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14))
+>x1.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x1 : Symbol(x1, Decl(-57087-102.ts, 4, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+
+declare const x2: FMap<2|3,"2"|"3">;
+>x2 : Symbol(x2, Decl(-57087-102.ts, 6, 13))
+>FMap : Symbol(FMap, Decl(-57087-102.ts, 0, 0))
+
+x2.g(x2.f); // no error
+>x2.g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14))
+>x2 : Symbol(x2, Decl(-57087-102.ts, 6, 13))
+>g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14))
+>x2.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x2 : Symbol(x2, Decl(-57087-102.ts, 6, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : Symbol(x, Decl(-57087-102.ts, 8, 5))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>x1 : Symbol(x1, Decl(-57087-102.ts, 4, 13))
+>x2 : Symbol(x2, Decl(-57087-102.ts, 6, 13))
+
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+>x.g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14), Decl(-57087-102.ts, 1, 14))
+>x : Symbol(x, Decl(-57087-102.ts, 8, 5))
+>g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14), Decl(-57087-102.ts, 1, 14))
+
+
+/**
+ * The following function ft3 should fail.  However, it currently does not
+ * The new code only handles cases that fail the in the original code.
+ * However, using such long overload chains is not desireable anyway - so we don't need to fix this?
+ * Maybe fail on when the number of source overloads is greater than the total number of target overloads?
+ */
+
+function ft3(x:1):"3"; // should cause x.g(ft3) to error
+>ft3 : Symbol(ft3, Decl(-57087-102.ts, 9, 4), Decl(-57087-102.ts, 19, 22), Decl(-57087-102.ts, 20, 22), Decl(-57087-102.ts, 21, 24), Decl(-57087-102.ts, 22, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 19, 13))
+
+function ft3(x:3):"3";
+>ft3 : Symbol(ft3, Decl(-57087-102.ts, 9, 4), Decl(-57087-102.ts, 19, 22), Decl(-57087-102.ts, 20, 22), Decl(-57087-102.ts, 21, 24), Decl(-57087-102.ts, 22, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 20, 13))
+
+function ft3(x:2):2|"2";
+>ft3 : Symbol(ft3, Decl(-57087-102.ts, 9, 4), Decl(-57087-102.ts, 19, 22), Decl(-57087-102.ts, 20, 22), Decl(-57087-102.ts, 21, 24), Decl(-57087-102.ts, 22, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 21, 13))
+
+function ft3(x:1|2):1|2; // (4) identical to x1.f
+>ft3 : Symbol(ft3, Decl(-57087-102.ts, 9, 4), Decl(-57087-102.ts, 19, 22), Decl(-57087-102.ts, 20, 22), Decl(-57087-102.ts, 21, 24), Decl(-57087-102.ts, 22, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 22, 13))
+
+function ft3(x:2|3):"2"|"3"; // (5) identical to x2.f
+>ft3 : Symbol(ft3, Decl(-57087-102.ts, 9, 4), Decl(-57087-102.ts, 19, 22), Decl(-57087-102.ts, 20, 22), Decl(-57087-102.ts, 21, 24), Decl(-57087-102.ts, 22, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 23, 13))
+
+function ft3(x:1|2|3){
+>ft3 : Symbol(ft3, Decl(-57087-102.ts, 9, 4), Decl(-57087-102.ts, 19, 22), Decl(-57087-102.ts, 20, 22), Decl(-57087-102.ts, 21, 24), Decl(-57087-102.ts, 22, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 24, 13))
+
+    if (x===1) return x1.f(x);
+>x : Symbol(x, Decl(-57087-102.ts, 24, 13))
+>x1.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x1 : Symbol(x1, Decl(-57087-102.ts, 4, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 24, 13))
+
+    if (x===3) return x2.f(x);
+>x : Symbol(x, Decl(-57087-102.ts, 24, 13))
+>x2.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x2 : Symbol(x2, Decl(-57087-102.ts, 6, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 24, 13))
+
+    return Math.random() < 0.5 ? x1.f(x) : x2.f(x);
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>x1.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x1 : Symbol(x1, Decl(-57087-102.ts, 4, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 24, 13))
+>x2.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x2 : Symbol(x2, Decl(-57087-102.ts, 6, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 24, 13))
+}
+x.g(ft3); // should error (but currently doesn't)
+>x.g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14), Decl(-57087-102.ts, 1, 14))
+>x : Symbol(x, Decl(-57087-102.ts, 8, 5))
+>g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14), Decl(-57087-102.ts, 1, 14))
+>ft3 : Symbol(ft3, Decl(-57087-102.ts, 9, 4), Decl(-57087-102.ts, 19, 22), Decl(-57087-102.ts, 20, 22), Decl(-57087-102.ts, 21, 24), Decl(-57087-102.ts, 22, 24) ... and 1 more)
+
+/**
+ * The following function ft4 should not fail, and it currently does not.
+ * However, using such long overload chains is not friendly anyway, so it is irrelevant.
+ */
+
+function ft4(x:1):1;
+>ft4 : Symbol(ft4, Decl(-57087-102.ts, 29, 9), Decl(-57087-102.ts, 36, 20), Decl(-57087-102.ts, 37, 22), Decl(-57087-102.ts, 38, 24), Decl(-57087-102.ts, 39, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 36, 13))
+
+function ft4(x:3):"3";
+>ft4 : Symbol(ft4, Decl(-57087-102.ts, 29, 9), Decl(-57087-102.ts, 36, 20), Decl(-57087-102.ts, 37, 22), Decl(-57087-102.ts, 38, 24), Decl(-57087-102.ts, 39, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 37, 13))
+
+function ft4(x:2):2|"2";
+>ft4 : Symbol(ft4, Decl(-57087-102.ts, 29, 9), Decl(-57087-102.ts, 36, 20), Decl(-57087-102.ts, 37, 22), Decl(-57087-102.ts, 38, 24), Decl(-57087-102.ts, 39, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 38, 13))
+
+function ft4(x:1|2):1|2; // (4) identical to x1.f
+>ft4 : Symbol(ft4, Decl(-57087-102.ts, 29, 9), Decl(-57087-102.ts, 36, 20), Decl(-57087-102.ts, 37, 22), Decl(-57087-102.ts, 38, 24), Decl(-57087-102.ts, 39, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 39, 13))
+
+function ft4(x:2|3):"2"|"3"; // (5) identical to x2.f
+>ft4 : Symbol(ft4, Decl(-57087-102.ts, 29, 9), Decl(-57087-102.ts, 36, 20), Decl(-57087-102.ts, 37, 22), Decl(-57087-102.ts, 38, 24), Decl(-57087-102.ts, 39, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 40, 13))
+
+function ft4(x:1|2|3){
+>ft4 : Symbol(ft4, Decl(-57087-102.ts, 29, 9), Decl(-57087-102.ts, 36, 20), Decl(-57087-102.ts, 37, 22), Decl(-57087-102.ts, 38, 24), Decl(-57087-102.ts, 39, 24) ... and 1 more)
+>x : Symbol(x, Decl(-57087-102.ts, 41, 13))
+
+    if (x===1) return x1.f(x);
+>x : Symbol(x, Decl(-57087-102.ts, 41, 13))
+>x1.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x1 : Symbol(x1, Decl(-57087-102.ts, 4, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 41, 13))
+
+    if (x===3) return x2.f(x);
+>x : Symbol(x, Decl(-57087-102.ts, 41, 13))
+>x2.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x2 : Symbol(x2, Decl(-57087-102.ts, 6, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 41, 13))
+
+    return Math.random() < 0.5 ? x1.f(x) : x2.f(x);
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>x1.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x1 : Symbol(x1, Decl(-57087-102.ts, 4, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 41, 13))
+>x2.f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x2 : Symbol(x2, Decl(-57087-102.ts, 6, 13))
+>f : Symbol(FMap.f, Decl(-57087-102.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-102.ts, 41, 13))
+}
+x.g(ft4); // should not error
+>x.g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14), Decl(-57087-102.ts, 1, 14))
+>x : Symbol(x, Decl(-57087-102.ts, 8, 5))
+>g : Symbol(FMap.g, Decl(-57087-102.ts, 1, 14), Decl(-57087-102.ts, 1, 14))
+>ft4 : Symbol(ft4, Decl(-57087-102.ts, 29, 9), Decl(-57087-102.ts, 36, 20), Decl(-57087-102.ts, 37, 22), Decl(-57087-102.ts, 38, 24), Decl(-57087-102.ts, 39, 24) ... and 1 more)
+
+

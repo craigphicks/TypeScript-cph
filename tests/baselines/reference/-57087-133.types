@@ -1,0 +1,97 @@
+//// [tests/cases/compiler/-test3/-57087-133.ts] ////
+
+=== -57087-133.ts ===
+interface Garg33A {
+    (): "01";
+    (x:1, y?:1): "111";
+>x : 1
+>y : 1 | undefined
+
+    (...args: [...1[]]): "101";
+>args : 1[]
+
+};
+interface Garg33B {
+    (): "02";
+    (x:1, y?:1): "211";
+>x : 1
+>y : 1 | undefined
+
+    (...args:1[]): "201";
+>args : 1[]
+
+    (x:2, y?:any): "221"
+>x : 2
+>y : any
+
+};
+
+declare const f33a: {
+>f33a : { (): "02"; (x: 1, y?: 1): "211"; (...args: 1[]): "201"; (x: 2, y?: any): "221"; }
+
+    (): "02";
+    (x:1, y?:1): "211";
+>x : 1
+>y : 1 | undefined
+
+    (...args:1[]): "201";
+>args : 1[]
+
+    (x:2, y?:any): "221"
+>x : 2
+>y : any
+}
+f33b satisfies Garg33A & Garg33B; // should  satisfy
+>f33b satisfies Garg33A & Garg33B : { (): "02"; (x: 1, y?: 1 | undefined): "211"; (...args: 1[]): "101"; (...args: 1[]): "201"; (x: 2, y?: any): "221"; }
+>f33b : { (): "02"; (x: 1, y?: 1 | undefined): "211"; (...args: 1[]): "101"; (...args: 1[]): "201"; (x: 2, y?: any): "221"; }
+
+// because (...args: [...1[]]):=>"101"  === (...args:1[]) => "201";
+
+
+declare const f33b: {
+>f33b : { (): "02"; (x: 1, y?: 1): "211"; (...args: [...1[]]): "101"; (...args: 1[]): "201"; (x: 2, y?: any): "221"; }
+
+    (): "02";
+    (x:1, y?:1): "211";
+>x : 1
+>y : 1 | undefined
+
+    (...args: [...1[]]): "101";
+>args : 1[]
+
+    (...args:1[]): "201";
+>args : 1[]
+
+    (x:2, y?:any): "221"
+>x : 2
+>y : any
+}
+f33b satisfies Garg33A & Garg33B; // should satisfy
+>f33b satisfies Garg33A & Garg33B : { (): "02"; (x: 1, y?: 1 | undefined): "211"; (...args: 1[]): "101"; (...args: 1[]): "201"; (x: 2, y?: any): "221"; }
+>f33b : { (): "02"; (x: 1, y?: 1 | undefined): "211"; (...args: 1[]): "101"; (...args: 1[]): "201"; (x: 2, y?: any): "221"; }
+
+declare const f33c: {
+>f33c : { (x: 2, y?: any): "221"; (...args: 1[]): "201"; (...args: [...1[]]): "101"; (x: 1, y?: 1): "211"; (): "02"; }
+
+    (x:2, y?:any): "221"
+>x : 2
+>y : any
+
+    (...args:1[]): "201";
+>args : 1[]
+
+    (...args: [...1[]]): "101";
+>args : 1[]
+
+    (x:1, y?:1): "211";
+>x : 1
+>y : 1 | undefined
+
+    (): "02";
+}
+f33c satisfies Garg33A & Garg33B; // should satisfy (even though reversed order of overloads)
+>f33c satisfies Garg33A & Garg33B : { (x: 2, y?: any): "221"; (...args: 1[]): "201"; (...args: 1[]): "101"; (x: 1, y?: 1 | undefined): "211"; (): "02"; }
+>f33c : { (x: 2, y?: any): "221"; (...args: 1[]): "201"; (...args: 1[]): "101"; (x: 1, y?: 1 | undefined): "211"; (): "02"; }
+
+
+

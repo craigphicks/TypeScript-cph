@@ -1,0 +1,103 @@
+-57087-105.ts(54,5): error TS2345: Argument of type '{ (x: A): string; (x: C): number; (x: B): string; }' is not assignable to parameter of type '{ (x: A): string; (x: B): 1; } & { (x: C): number; (x: B): "1"; }'.
+  Type '(x: B) => string' is not assignable to type '(x: B) => 1 | (x: B) => "1"'.
+    Type 'string' is not assignable to type '1 | "1"'.
+-57087-105.ts(67,5): error TS2345: Argument of type '{ (x: C): number; (x: B): 1; }' is not assignable to parameter of type '{ (x: A): string; (x: B): 1; } & { (x: C): number; (x: B): "1"; }'.
+  Type '{ (x: C): number; (x: B): 1; }' is not assignable to type '{ (x: A): string; (x: B): 1; }'.
+    There is no signature in type { (x: C): number; (x: B): 1; } such that its parameters are assignable to the parameters of signature (x: A) => any
+-57087-105.ts(80,5): error TS2345: Argument of type '{ (x: { a?: string | undefined; }): string; (x: C): number; (x: B): 1; }' is not assignable to parameter of type '{ (x: A): string; (x: B): 1; } & { (x: C): number; (x: B): "1"; }'.
+  Parameters of signature (x: { a?: string | undefined; }) => string are not assignable to the parameters of any signature in type { (x: A): string; (x: B): 1; } & { (x: C): number; (x: B): "1"; }
+
+
+==== -57087-105.ts (3 errors) ====
+    type A = { a: string };
+    type B = { b: 1 };
+    type C = { c: number };
+    
+    
+    interface X1 {
+        f(x:A):string
+        f(x:B):1
+        g(f: X1["f"],arg:A|B):()=>ReturnType<X1["f"]>
+    }
+    interface X2 {
+        f(x:C):number
+        f(x:B):"1";
+        g(f: X2["f"],arg:C|B):()=>ReturnType<X2["f"]>
+    }
+    
+    declare const x1: X1;
+    declare const arg1: A|B;
+    x1.g(x1.f,arg1); // should be no error
+    declare const x2: X2;
+    declare const arg2: C|B;
+    x2.g(x2.f,arg2); // should be no error
+    const x = Math.random() < 0.5 ? x1 : x2;
+    x.g;
+    const arg = Math.random() < 0.5 ? arg1 : arg2;
+    
+    
+    
+    type ArgCastType = (A & C) | (A & B) | (B & C);
+    
+    
+    function ftw(x:A):string;
+    function ftw(x:C):number;
+    function ftw(x:B):1;
+    function ftw(x: A|B|C) {
+        if ("a" in x) return x.a;
+        if ("c" in x) return x.c;
+        return 1;
+    }
+    
+    // The necessity of the argument cast is a separate issue!
+    x.g(ftw,arg as any as any as ArgCastType); // should not be error
+    
+    function ftx(x:A):string;
+    function ftx(x:C):number;
+    function ftx(x:B):string; // should cause x.g(ft2) to error
+    function ftx(x: A|B|C) {
+        if ("a" in x) return x.a;
+        if ("c" in x) return x.c;
+        return x.b;
+    }
+    
+    // The necessity of the argument cast is a separate issue!
+    x.g(ftx,arg as any as any as ArgCastType); // should be error
+        ~~~
+!!! error TS2345: Argument of type '{ (x: A): string; (x: C): number; (x: B): string; }' is not assignable to parameter of type '{ (x: A): string; (x: B): 1; } & { (x: C): number; (x: B): "1"; }'.
+!!! error TS2345:   Type '(x: B) => string' is not assignable to type '(x: B) => 1 | (x: B) => "1"'.
+!!! error TS2345:     Type 'string' is not assignable to type '1 | "1"'.
+    
+    //function fty(x:A):string;  // should cause x.g(ft2) to error
+    function fty(x:C):number;
+    function fty(x:B):1;
+    function fty(x: {a?: string, c?: number, b?: 1|"1"}) {
+        if (x.a) return x.a;
+        if (x.c) return x.c;
+        if (x.b) return x.b;
+        throw "unexpected error"
+    }
+    
+    // The necessity of the argument cast is a separate issue!
+    x.g(fty,arg as any as any as ArgCastType); // should be error
+        ~~~
+!!! error TS2345: Argument of type '{ (x: C): number; (x: B): 1; }' is not assignable to parameter of type '{ (x: A): string; (x: B): 1; } & { (x: C): number; (x: B): "1"; }'.
+!!! error TS2345:   Type '{ (x: C): number; (x: B): 1; }' is not assignable to type '{ (x: A): string; (x: B): 1; }'.
+!!! error TS2345:     There is no signature in type { (x: C): number; (x: B): 1; } such that its parameters are assignable to the parameters of signature (x: A) => any
+    
+    function ftz(x:{a?:string}):string;  // should cause x.g(ft2) to error
+    function ftz(x:C):number;
+    function ftz(x:B):1;
+    function ftz(x: {a?: string, c?: number, b?: 1|"1"}) {
+        if (x.a) return x.a;
+        if (x.c) return x.c;
+        if (x.b) return x.b;
+        throw "unexpected error"
+    }
+    
+    // The necessity of the argument cast is a separate issue!
+    x.g(ftz,arg as any as any as ArgCastType); // should be error
+        ~~~
+!!! error TS2345: Argument of type '{ (x: { a?: string | undefined; }): string; (x: C): number; (x: B): 1; }' is not assignable to parameter of type '{ (x: A): string; (x: B): 1; } & { (x: C): number; (x: B): "1"; }'.
+!!! error TS2345:   Parameters of signature (x: { a?: string | undefined; }) => string are not assignable to the parameters of any signature in type { (x: A): string; (x: B): 1; } & { (x: C): number; (x: B): "1"; }
+    

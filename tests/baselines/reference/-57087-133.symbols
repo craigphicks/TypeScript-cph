@@ -1,0 +1,104 @@
+//// [tests/cases/compiler/-test3/-57087-133.ts] ////
+
+=== -57087-133.ts ===
+interface Garg33A {
+>Garg33A : Symbol(Garg33A, Decl(-57087-133.ts, 0, 0))
+
+    (): "01";
+    (x:1, y?:1): "111";
+>x : Symbol(x, Decl(-57087-133.ts, 2, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 2, 9))
+
+    (...args: [...1[]]): "101";
+>args : Symbol(args, Decl(-57087-133.ts, 3, 5))
+
+};
+interface Garg33B {
+>Garg33B : Symbol(Garg33B, Decl(-57087-133.ts, 4, 2))
+
+    (): "02";
+    (x:1, y?:1): "211";
+>x : Symbol(x, Decl(-57087-133.ts, 7, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 7, 9))
+
+    (...args:1[]): "201";
+>args : Symbol(args, Decl(-57087-133.ts, 8, 5))
+
+    (x:2, y?:any): "221"
+>x : Symbol(x, Decl(-57087-133.ts, 9, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 9, 9))
+
+};
+
+declare const f33a: {
+>f33a : Symbol(f33a, Decl(-57087-133.ts, 12, 13))
+
+    (): "02";
+    (x:1, y?:1): "211";
+>x : Symbol(x, Decl(-57087-133.ts, 14, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 14, 9))
+
+    (...args:1[]): "201";
+>args : Symbol(args, Decl(-57087-133.ts, 15, 5))
+
+    (x:2, y?:any): "221"
+>x : Symbol(x, Decl(-57087-133.ts, 16, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 16, 9))
+}
+f33b satisfies Garg33A & Garg33B; // should  satisfy
+>f33b : Symbol(f33b, Decl(-57087-133.ts, 22, 13))
+>Garg33A : Symbol(Garg33A, Decl(-57087-133.ts, 0, 0))
+>Garg33B : Symbol(Garg33B, Decl(-57087-133.ts, 4, 2))
+
+// because (...args: [...1[]]):=>"101"  === (...args:1[]) => "201";
+
+
+declare const f33b: {
+>f33b : Symbol(f33b, Decl(-57087-133.ts, 22, 13))
+
+    (): "02";
+    (x:1, y?:1): "211";
+>x : Symbol(x, Decl(-57087-133.ts, 24, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 24, 9))
+
+    (...args: [...1[]]): "101";
+>args : Symbol(args, Decl(-57087-133.ts, 25, 5))
+
+    (...args:1[]): "201";
+>args : Symbol(args, Decl(-57087-133.ts, 26, 5))
+
+    (x:2, y?:any): "221"
+>x : Symbol(x, Decl(-57087-133.ts, 27, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 27, 9))
+}
+f33b satisfies Garg33A & Garg33B; // should satisfy
+>f33b : Symbol(f33b, Decl(-57087-133.ts, 22, 13))
+>Garg33A : Symbol(Garg33A, Decl(-57087-133.ts, 0, 0))
+>Garg33B : Symbol(Garg33B, Decl(-57087-133.ts, 4, 2))
+
+declare const f33c: {
+>f33c : Symbol(f33c, Decl(-57087-133.ts, 31, 13))
+
+    (x:2, y?:any): "221"
+>x : Symbol(x, Decl(-57087-133.ts, 32, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 32, 9))
+
+    (...args:1[]): "201";
+>args : Symbol(args, Decl(-57087-133.ts, 33, 5))
+
+    (...args: [...1[]]): "101";
+>args : Symbol(args, Decl(-57087-133.ts, 34, 5))
+
+    (x:1, y?:1): "211";
+>x : Symbol(x, Decl(-57087-133.ts, 35, 5))
+>y : Symbol(y, Decl(-57087-133.ts, 35, 9))
+
+    (): "02";
+}
+f33c satisfies Garg33A & Garg33B; // should satisfy (even though reversed order of overloads)
+>f33c : Symbol(f33c, Decl(-57087-133.ts, 31, 13))
+>Garg33A : Symbol(Garg33A, Decl(-57087-133.ts, 0, 0))
+>Garg33B : Symbol(Garg33B, Decl(-57087-133.ts, 4, 2))
+
+
+

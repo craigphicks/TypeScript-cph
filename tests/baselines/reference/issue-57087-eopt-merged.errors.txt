@@ -1,31 +1,63 @@
+-57087-01.ts(22,5): error TS2345: Argument of type '{ (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }' is not assignable to parameter of type '((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")'.
+  Parameters of signature (x: 3) => "2" | "3" are not assignable to the parameters of any signature in type ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")
+-57087-02.ts(22,5): error TS2345: Argument of type '{ (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }' is not assignable to parameter of type '((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")'.
+  Parameters of signature (x: 1) => 1 | 2 are not assignable to the parameters of any signature in type ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")
+-57087-03.ts(16,6): error TS2345: Argument of type '() => string | number' is not assignable to parameter of type '(() => string) & (() => number)'.
+  Type '() => string | number' is not assignable to type '() => string'.
+    Type 'string | number' is not assignable to type 'string'.
+      Type 'number' is not assignable to type 'string'.
+-57087-05.ts(28,5): error TS2345: Argument of type '{ (x: A): string; (x: C): number; (x: B): 1 | "1"; }' is not assignable to parameter of type '((x: A | B) => string | 1) & ((x: B | C) => number | "1")'.
+  Parameters of signature (x: A) => string are not assignable to the parameters of any signature in type ((x: A | B) => string | 1) & ((x: B | C) => number | "1")
+-57087-11.ts(6,3): error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg'.
+  Parameters of signature (x: 3) => "2" | "3" are not assignable to the parameters of any signature in type Garg
+-57087-12.ts(6,3): error TS1360: Type '{ (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }' does not satisfy the expected type 'Garg'.
+  Parameters of signature (x: 1) => 1 | 2 are not assignable to the parameters of any signature in type Garg
+-57087-13.ts(3,5): error TS1360: Type '() => string | number' does not satisfy the expected type '(() => string) & (() => number)'.
+  Type '() => string | number' is not assignable to type '() => string'.
+    Type 'string | number' is not assignable to type 'string'.
+      Type 'number' is not assignable to type 'string'.
+-57087-21.ts(8,4): error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 2): "2" | "3"; }' does not satisfy the expected type 'Garg1'.
+  Parameters of signature (x: 2) => "2" | "3" are not assignable to the parameters of any signature in type Garg1
 -57087-21.ts(10,4): error TS2769: No overload matches this call.
   Overload 1 of 2, '(x: 2): "2" | "3"', gave the following error.
     Argument of type '3' is not assignable to parameter of type '2'.
   Overload 2 of 2, '(x: 1 | 2): 1 | 2', gave the following error.
     Argument of type '3' is not assignable to parameter of type '1 | 2'.
 -57087-22.ts(8,4): error TS1360: Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg2'.
-  Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' is not assignable to type '(x: 1 | 2) => 1 | 2'.
+  Type '(x: 1 | 2) => 0 | 1 | 2' is not assignable to type '(x: 1 | 2) => 1 | 2'.
     Type '0 | 1 | 2' is not assignable to type '1 | 2'.
-      Type '0' is not assignable to type '1 | 2'.
 -57087-31.ts(16,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
-  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
-    Type '"01"' is not assignable to type '"02"'.
+  Type '(x: 2, y: 2) => "221"' is not assignable to type '(x: 2, y: 2) => "222"'.
+    Type '"221"' is not assignable to type '"222"'.
 -57087-31.ts(19,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
-  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' is not assignable to type 'Garg31B'.
-    Type '"01"' is not assignable to type '"02"'.
+  Parameters of signature (x: 1, y: 2) => "221" are not assignable to the parameters of any signature in type Garg31A & Garg31B
 -57087-31.ts(22,6): error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
-  Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
-    Type '"01"' is not assignable to type '"02"'.
+  Type '(x?: 1 | undefined, y?: 1 | undefined) => "211"' is not assignable to type '() => "01" | () => "02"'.
+    Type '"211"' is not assignable to type '"01" | "02"'.
 -57087-33.ts(14,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
-  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33A'.
-    Type '"01"' is not assignable to type '"211"'.
+  Parameters of signature (x: 1, y: 1) => "211" are not assignable to the parameters of any signature in type Garg33A & Garg33B
 -57087-33.ts(17,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
-  Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' is not assignable to type 'Garg33A'.
-    Type '"01"' is not assignable to type '"211"'.
+  Parameters of signature (x: 1, y: 1) => "211" are not assignable to the parameters of any signature in type Garg33A & Garg33B
+-57087-33.ts(21,6): error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+  Parameters of signature (x: 1, y: 1) => "211" are not assignable to the parameters of any signature in type Garg33A & Garg33B
+-57087-33.ts(24,6): error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+  Parameters of signature (x: 2, y: 2) => "222" are not assignable to the parameters of any signature in type Garg33A & Garg33B
+-57087-33.ts(27,6): error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x?: 2 | undefined, y?: 2 | undefined): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+  Parameters of signature (x: 2, y: 1) => "221" are not assignable to the parameters of any signature in type Garg33A & Garg33B
+-57087-35.ts(14,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x?: 2; y?: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
+  Parameters of signature ({ x, y }: { x: 2; y: 2; }) => "222" are not assignable to the parameters of any signature in type Garg35A & Garg35B
+-57087-35.ts(17,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
+  Parameters of signature (arg: Record<string, never>) => "221" are not assignable to the parameters of any signature in type Garg35A & Garg35B
+-57087-35.ts(22,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
+  Parameters of signature (arg: Record<string, never>) => "221" are not assignable to the parameters of any signature in type Garg35A & Garg35B
 -57087-35.ts(24,17): error TS2769: No overload matches this call.
   The last overload gave the following error.
     Argument of type '{ x: 2; }' is not assignable to parameter of type '{ x: 2; y: 2; }'.
       Property 'y' is missing in type '{ x: 2; }' but required in type '{ x: 2; y: 2; }'.
+-57087-36.ts(12,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg36A & Garg36B'.
+  Parameters of signature ({ x, y }: { x: 2; y: 1; }) => "221" are not assignable to the parameters of any signature in type Garg36A & Garg36B
+-57087-37.ts(12,6): error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg37A & Garg37B'.
+  Parameters of signature ({ x }: { x: 2; }) => "221" are not assignable to the parameters of any signature in type Garg37A & Garg37B
 -57087-37.ts(14,6): error TS2769: No overload matches this call.
   The last overload gave the following error.
     Argument of type '{}' is not assignable to parameter of type '{ x: 2; y: 2; }'.
@@ -41,7 +73,7 @@
 -57087-unionOfClassCalls-22.ts(4,37): error TS2365: Operator '+' cannot be applied to types 'string | number' and 'string | number'.
 
 
-==== -57087-01.ts (0 errors) ====
+==== -57087-01.ts (1 errors) ====
     /**********************/
     
     namespace ns0 {
@@ -64,11 +96,14 @@
         else return x2.f(x);
     }
     x.g(ft2); // error
+        ~~~
+!!! error TS2345: Argument of type '{ (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }' is not assignable to parameter of type '((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")'.
+!!! error TS2345:   Parameters of signature (x: 3) => "2" | "3" are not assignable to the parameters of any signature in type ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")
     }
     
     
     /**********************/
-==== -57087-02.ts (0 errors) ====
+==== -57087-02.ts (1 errors) ====
     namespace ns1 {
     interface FMap<T,R> {
         f:(x:T)=>R
@@ -91,11 +126,14 @@
         return Math.random() < 0.5 ? x1.f(x) : x2.f(x);
     }
     x.g(ft3); // error
+        ~~~
+!!! error TS2345: Argument of type '{ (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }' is not assignable to parameter of type '((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")'.
+!!! error TS2345:   Parameters of signature (x: 1) => 1 | 2 are not assignable to the parameters of any signature in type ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")
     }
     
     
     /**********************/
-==== -57087-03.ts (0 errors) ====
+==== -57087-03.ts (1 errors) ====
     namespace ns2 {
     interface A9<T> {
         t: T;
@@ -112,6 +150,11 @@
     //f91 satisfies A9<string>["f"] & A9<number>["f"] // but is not a valid implementation of either.
     
     a9.g(f91); // INCORRECT ERROR;  argument is as an actual valid implementation, should not be error.
+         ~~~
+!!! error TS2345: Argument of type '() => string | number' is not assignable to parameter of type '(() => string) & (() => number)'.
+!!! error TS2345:   Type '() => string | number' is not assignable to type '() => string'.
+!!! error TS2345:     Type 'string | number' is not assignable to type 'string'.
+!!! error TS2345:       Type 'number' is not assignable to type 'string'.
     
     }
     
@@ -167,7 +210,7 @@
     
     
     /**********************/
-==== -57087-05.ts (0 errors) ====
+==== -57087-05.ts (1 errors) ====
     namespace ns4 {
     type A = { a: string };
     type B = { b: 1 | "1" };
@@ -196,6 +239,9 @@
     }
     
     x.g(ft2); // error
+        ~~~
+!!! error TS2345: Argument of type '{ (x: A): string; (x: C): number; (x: B): 1 | "1"; }' is not assignable to parameter of type '((x: A | B) => string | 1) & ((x: B | C) => number | "1")'.
+!!! error TS2345:   Parameters of signature (x: A) => string are not assignable to the parameters of any signature in type ((x: A | B) => string | 1) & ((x: B | C) => number | "1")
     }
     
     
@@ -220,32 +266,43 @@
     
     
     /**********************/
-==== -57087-11.ts (0 errors) ====
+==== -57087-11.ts (1 errors) ====
     namespace ns6 {
     declare const f: { (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }
     
     type Garg = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
     
     f satisfies Garg;
+      ~~~~~~~~~
+!!! error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg'.
+!!! error TS1360:   Parameters of signature (x: 3) => "2" | "3" are not assignable to the parameters of any signature in type Garg
     }
     
     
     /**********************/
-==== -57087-12.ts (0 errors) ====
+==== -57087-12.ts (1 errors) ====
     namespace ns7 {
     declare const f: { (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }
     
     type Garg = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
     
     f satisfies Garg;
+      ~~~~~~~~~
+!!! error TS1360: Type '{ (x: 1): 1 | 2; (x: 3): "2" | "3"; (x: 2): 1 | 2 | "2" | "3"; }' does not satisfy the expected type 'Garg'.
+!!! error TS1360:   Parameters of signature (x: 1) => 1 | 2 are not assignable to the parameters of any signature in type Garg
     }
     
     
     /**********************/
-==== -57087-13.ts (0 errors) ====
+==== -57087-13.ts (1 errors) ====
     namespace ns8 {
     declare const f42: () => string | number;
     f42 satisfies (() => string) & (() => number);
+        ~~~~~~~~~
+!!! error TS1360: Type '() => string | number' does not satisfy the expected type '(() => string) & (() => number)'.
+!!! error TS1360:   Type '() => string | number' is not assignable to type '() => string'.
+!!! error TS1360:     Type 'string | number' is not assignable to type 'string'.
+!!! error TS1360:       Type 'number' is not assignable to type 'string'.
     
     }
     
@@ -324,7 +381,7 @@
     
     
     /**********************/
-==== -57087-21.ts (1 errors) ====
+==== -57087-21.ts (2 errors) ====
     namespace ns11 {
     // test f domain does not support Garg domain (3 omitted from f domain) - cannot detect during satisfies but can detect during call to f1
     
@@ -333,6 +390,9 @@
     type Garg1 = ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3");
     
     f1 satisfies Garg1; // no error expected
+       ~~~~~~~~~
+!!! error TS1360: Type '{ (x: 1 | 2): 1 | 2; (x: 2): "2" | "3"; }' does not satisfy the expected type 'Garg1'.
+!!! error TS1360:   Parameters of signature (x: 2) => "2" | "3" are not assignable to the parameters of any signature in type Garg1
     
     f1(3); // error exptected - No overload matches this call. (ts2769)
        ~
@@ -358,9 +418,8 @@
     f2 satisfies Garg2; // should not satisfy
        ~~~~~~~~~
 !!! error TS1360: Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' does not satisfy the expected type 'Garg2'.
-!!! error TS1360:   Type '{ (x: 1 | 2): 0 | 1 | 2; (x: 3): "2" | "3"; }' is not assignable to type '(x: 1 | 2) => 1 | 2'.
+!!! error TS1360:   Type '(x: 1 | 2) => 0 | 1 | 2' is not assignable to type '(x: 1 | 2) => 1 | 2'.
 !!! error TS1360:     Type '0 | 1 | 2' is not assignable to type '1 | 2'.
-!!! error TS1360:       Type '0' is not assignable to type '1 | 2'.
     
     }
     
@@ -385,28 +444,27 @@
     f31b satisfies Garg31A & Garg31B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
-!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
-!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
+!!! error TS1360:   Type '(x: 2, y: 2) => "221"' is not assignable to type '(x: 2, y: 2) => "222"'.
+!!! error TS1360:     Type '"221"' is not assignable to type '"222"'.
     
     declare const f31c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221" /*should fail match*/; }
     f31c satisfies Garg31A & Garg31B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
-!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' is not assignable to type 'Garg31B'.
-!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
+!!! error TS1360:   Parameters of signature (x: 1, y: 2) => "221" are not assignable to the parameters of any signature in type Garg31A & Garg31B
     
     declare const f31d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
     f31d satisfies Garg31A & Garg31B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg31A & Garg31B'.
-!!! error TS1360:   Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg31B'.
-!!! error TS1360:     Type '"01"' is not assignable to type '"02"'.
+!!! error TS1360:   Type '(x?: 1 | undefined, y?: 1 | undefined) => "211"' is not assignable to type '() => "01" | () => "02"'.
+!!! error TS1360:     Type '"211"' is not assignable to type '"01" | "02"'.
     
     }
     
     
     /**********************/
-==== -57087-33.ts (2 errors) ====
+==== -57087-33.ts (5 errors) ====
     namespace ns14 {
     interface Garg33A {
         (): "01";
@@ -423,31 +481,38 @@
     f33b satisfies Garg33A & Garg33B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
-!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }' is not assignable to type 'Garg33A'.
-!!! error TS1360:     Type '"01"' is not assignable to type '"211"'.
+!!! error TS1360:   Parameters of signature (x: 1, y: 1) => "211" are not assignable to the parameters of any signature in type Garg33A & Garg33B
     
     declare const f33c: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221" /*should fail match*/; }
     f33c satisfies Garg33A & Garg33B; // should not satisfy
          ~~~~~~~~~
 !!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
-!!! error TS1360:   Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }' is not assignable to type 'Garg33A'.
-!!! error TS1360:     Type '"01"' is not assignable to type '"211"'.
+!!! error TS1360:   Parameters of signature (x: 1, y: 1) => "211" are not assignable to the parameters of any signature in type Garg33A & Garg33B
     
     
     declare const f33a: { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
     f33a satisfies Garg33A & Garg33B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+!!! error TS1360:   Parameters of signature (x: 1, y: 1) => "211" are not assignable to the parameters of any signature in type Garg33A & Garg33B
     
     declare const f33d: { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
     f33d satisfies Garg33A & Garg33B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+!!! error TS1360:   Parameters of signature (x: 2, y: 2) => "222" are not assignable to the parameters of any signature in type Garg33A & Garg33B
     
     declare const f33e: { (): "01"; (x?: 1, y?: 1): "211"; (x?: 2, y?: 2): "222"; (x: 2, y: 1): "221"; }
     f33e satisfies Garg33A & Garg33B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x?: 2 | undefined, y?: 2 | undefined): "222"; (x: 2, y: 1): "221"; }' does not satisfy the expected type 'Garg33A & Garg33B'.
+!!! error TS1360:   Parameters of signature (x: 2, y: 1) => "221" are not assignable to the parameters of any signature in type Garg33A & Garg33B
     
     }
     
     
     /**********************/
-==== -57087-35.ts (1 errors) ====
+==== -57087-35.ts (4 errors) ====
     namespace ns15 {
     interface Garg35A {
         ({x,y}:{x:1, y:1}): "111"
@@ -462,14 +527,23 @@
     
     declare const f35b: { ({x,y}:{x:1, y:1}): "111"; ({x,y}:{x?:2, y?:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f35b satisfies Garg35A & Garg35B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x?: 2; y?: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
+!!! error TS1360:   Parameters of signature ({ x, y }: { x: 2; y: 2; }) => "222" are not assignable to the parameters of any signature in type Garg35A & Garg35B
     
     declare const f35c: { ({x,y}:{x:1, y:1}): "111"; (arg:Record<string,never>): "221"; ({x}:{x:2}): "221"; ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f35c satisfies Garg35A & Garg35B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
+!!! error TS1360:   Parameters of signature (arg: Record<string, never>) => "221" are not assignable to the parameters of any signature in type Garg35A & Garg35B
     
     const t1 = f35c({}); // no error, return 221
     
     declare const f35d: { ({x,y}:{x:1, y:1}): "111"; (arg:Record<string,never>): "221"; /*({x}:{x:2}): "221";*/ ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f35d satisfies Garg35A & Garg35B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (arg: Record<string, never>): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg35A & Garg35B'.
+!!! error TS1360:   Parameters of signature (arg: Record<string, never>) => "221" are not assignable to the parameters of any signature in type Garg35A & Garg35B
     
     const t2 = f35d({x:2}); // error expected - no overload matches this call
                     ~~~~~
@@ -485,7 +559,7 @@
     
     
     /**********************/
-==== -57087-36.ts (0 errors) ====
+==== -57087-36.ts (1 errors) ====
     namespace ns16 {
     interface Garg36A {
         ({x,y}:{x:1, y:1}): "111"
@@ -498,12 +572,15 @@
     
     declare const f36d: { ({x,y}:{x:1, y:1}): "111"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f36d satisfies Garg36A & Garg36B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg36A & Garg36B'.
+!!! error TS1360:   Parameters of signature ({ x, y }: { x: 2; y: 1; }) => "221" are not assignable to the parameters of any signature in type Garg36A & Garg36B
     
     }
     
     
     /**********************/
-==== -57087-37.ts (1 errors) ====
+==== -57087-37.ts (2 errors) ====
     namespace ns17 {
     interface Garg37A {
         ({x,y}:{x:1, y:1}): "111"
@@ -516,6 +593,9 @@
     
     declare const f37d: { ({x,y}:{x:1, y:1}): "111"; (): "221"; ({x}:{x:2}): "221"; ({y}:{y:1}): "221"; ({x,y}:{x:2, y:1}): "221"; ({x,y}:{x:2, y:2}): "222"; }
     f37d satisfies Garg37A & Garg37B; // should satisfy
+         ~~~~~~~~~
+!!! error TS1360: Type '{ ({ x, y }: { x: 1; y: 1; }): "111"; (): "221"; ({ x }: { x: 2; }): "221"; ({ y }: { y: 1; }): "221"; ({ x, y }: { x: 2; y: 1; }): "221"; ({ x, y }: { x: 2; y: 2; }): "222"; }' does not satisfy the expected type 'Garg37A & Garg37B'.
+!!! error TS1360:   Parameters of signature ({ x }: { x: 2; }) => "221" are not assignable to the parameters of any signature in type Garg37A & Garg37B
     
     f37d({}); // error expected - no overload matches this call
          ~~

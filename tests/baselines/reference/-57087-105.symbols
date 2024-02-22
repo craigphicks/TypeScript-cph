@@ -1,0 +1,339 @@
+//// [tests/cases/compiler/-test3/-57087-105.ts] ////
+
+=== -57087-105.ts ===
+type A = { a: string };
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+>a : Symbol(a, Decl(-57087-105.ts, 0, 10))
+
+type B = { b: 1 };
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+>b : Symbol(b, Decl(-57087-105.ts, 1, 10))
+
+type C = { c: number };
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+>c : Symbol(c, Decl(-57087-105.ts, 2, 10))
+
+
+interface X1 {
+>X1 : Symbol(X1, Decl(-57087-105.ts, 2, 23))
+
+    f(x:A):string
+>f : Symbol(X1.f, Decl(-57087-105.ts, 5, 14), Decl(-57087-105.ts, 6, 17))
+>x : Symbol(x, Decl(-57087-105.ts, 6, 6))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+
+    f(x:B):1
+>f : Symbol(X1.f, Decl(-57087-105.ts, 5, 14), Decl(-57087-105.ts, 6, 17))
+>x : Symbol(x, Decl(-57087-105.ts, 7, 6))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+
+    g(f: X1["f"],arg:A|B):()=>ReturnType<X1["f"]>
+>g : Symbol(X1.g, Decl(-57087-105.ts, 7, 12))
+>f : Symbol(f, Decl(-57087-105.ts, 8, 6))
+>X1 : Symbol(X1, Decl(-57087-105.ts, 2, 23))
+>arg : Symbol(arg, Decl(-57087-105.ts, 8, 17))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>X1 : Symbol(X1, Decl(-57087-105.ts, 2, 23))
+}
+interface X2 {
+>X2 : Symbol(X2, Decl(-57087-105.ts, 9, 1))
+
+    f(x:C):number
+>f : Symbol(X2.f, Decl(-57087-105.ts, 10, 14), Decl(-57087-105.ts, 11, 17))
+>x : Symbol(x, Decl(-57087-105.ts, 11, 6))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+
+    f(x:B):"1";
+>f : Symbol(X2.f, Decl(-57087-105.ts, 10, 14), Decl(-57087-105.ts, 11, 17))
+>x : Symbol(x, Decl(-57087-105.ts, 12, 6))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+
+    g(f: X2["f"],arg:C|B):()=>ReturnType<X2["f"]>
+>g : Symbol(X2.g, Decl(-57087-105.ts, 12, 15))
+>f : Symbol(f, Decl(-57087-105.ts, 13, 6))
+>X2 : Symbol(X2, Decl(-57087-105.ts, 9, 1))
+>arg : Symbol(arg, Decl(-57087-105.ts, 13, 17))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>X2 : Symbol(X2, Decl(-57087-105.ts, 9, 1))
+}
+
+declare const x1: X1;
+>x1 : Symbol(x1, Decl(-57087-105.ts, 16, 13))
+>X1 : Symbol(X1, Decl(-57087-105.ts, 2, 23))
+
+declare const arg1: A|B;
+>arg1 : Symbol(arg1, Decl(-57087-105.ts, 17, 13))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+
+x1.g(x1.f,arg1); // should be no error
+>x1.g : Symbol(X1.g, Decl(-57087-105.ts, 7, 12))
+>x1 : Symbol(x1, Decl(-57087-105.ts, 16, 13))
+>g : Symbol(X1.g, Decl(-57087-105.ts, 7, 12))
+>x1.f : Symbol(X1.f, Decl(-57087-105.ts, 5, 14), Decl(-57087-105.ts, 6, 17))
+>x1 : Symbol(x1, Decl(-57087-105.ts, 16, 13))
+>f : Symbol(X1.f, Decl(-57087-105.ts, 5, 14), Decl(-57087-105.ts, 6, 17))
+>arg1 : Symbol(arg1, Decl(-57087-105.ts, 17, 13))
+
+declare const x2: X2;
+>x2 : Symbol(x2, Decl(-57087-105.ts, 19, 13))
+>X2 : Symbol(X2, Decl(-57087-105.ts, 9, 1))
+
+declare const arg2: C|B;
+>arg2 : Symbol(arg2, Decl(-57087-105.ts, 20, 13))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+
+x2.g(x2.f,arg2); // should be no error
+>x2.g : Symbol(X2.g, Decl(-57087-105.ts, 12, 15))
+>x2 : Symbol(x2, Decl(-57087-105.ts, 19, 13))
+>g : Symbol(X2.g, Decl(-57087-105.ts, 12, 15))
+>x2.f : Symbol(X2.f, Decl(-57087-105.ts, 10, 14), Decl(-57087-105.ts, 11, 17))
+>x2 : Symbol(x2, Decl(-57087-105.ts, 19, 13))
+>f : Symbol(X2.f, Decl(-57087-105.ts, 10, 14), Decl(-57087-105.ts, 11, 17))
+>arg2 : Symbol(arg2, Decl(-57087-105.ts, 20, 13))
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : Symbol(x, Decl(-57087-105.ts, 22, 5))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>x1 : Symbol(x1, Decl(-57087-105.ts, 16, 13))
+>x2 : Symbol(x2, Decl(-57087-105.ts, 19, 13))
+
+x.g;
+>x.g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>x : Symbol(x, Decl(-57087-105.ts, 22, 5))
+>g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+
+const arg = Math.random() < 0.5 ? arg1 : arg2;
+>arg : Symbol(arg, Decl(-57087-105.ts, 24, 5))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>arg1 : Symbol(arg1, Decl(-57087-105.ts, 17, 13))
+>arg2 : Symbol(arg2, Decl(-57087-105.ts, 20, 13))
+
+
+
+type ArgCastType = (A & C) | (A & B) | (B & C);
+>ArgCastType : Symbol(ArgCastType, Decl(-57087-105.ts, 24, 46))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+
+
+function ftw(x:A):string;
+>ftw : Symbol(ftw, Decl(-57087-105.ts, 28, 47), Decl(-57087-105.ts, 31, 25), Decl(-57087-105.ts, 32, 25), Decl(-57087-105.ts, 33, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 31, 13))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+
+function ftw(x:C):number;
+>ftw : Symbol(ftw, Decl(-57087-105.ts, 28, 47), Decl(-57087-105.ts, 31, 25), Decl(-57087-105.ts, 32, 25), Decl(-57087-105.ts, 33, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 32, 13))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+
+function ftw(x:B):1;
+>ftw : Symbol(ftw, Decl(-57087-105.ts, 28, 47), Decl(-57087-105.ts, 31, 25), Decl(-57087-105.ts, 32, 25), Decl(-57087-105.ts, 33, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 33, 13))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+
+function ftw(x: A|B|C) {
+>ftw : Symbol(ftw, Decl(-57087-105.ts, 28, 47), Decl(-57087-105.ts, 31, 25), Decl(-57087-105.ts, 32, 25), Decl(-57087-105.ts, 33, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 34, 13))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+
+    if ("a" in x) return x.a;
+>x : Symbol(x, Decl(-57087-105.ts, 34, 13))
+>x.a : Symbol(a, Decl(-57087-105.ts, 0, 10))
+>x : Symbol(x, Decl(-57087-105.ts, 34, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 0, 10))
+
+    if ("c" in x) return x.c;
+>x : Symbol(x, Decl(-57087-105.ts, 34, 13))
+>x.c : Symbol(c, Decl(-57087-105.ts, 2, 10))
+>x : Symbol(x, Decl(-57087-105.ts, 34, 13))
+>c : Symbol(c, Decl(-57087-105.ts, 2, 10))
+
+    return 1;
+}
+
+// The necessity of the argument cast is a separate issue!
+x.g(ftw,arg as any as any as ArgCastType); // should not be error
+>x.g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>x : Symbol(x, Decl(-57087-105.ts, 22, 5))
+>g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>ftw : Symbol(ftw, Decl(-57087-105.ts, 28, 47), Decl(-57087-105.ts, 31, 25), Decl(-57087-105.ts, 32, 25), Decl(-57087-105.ts, 33, 20))
+>arg : Symbol(arg, Decl(-57087-105.ts, 24, 5))
+>ArgCastType : Symbol(ArgCastType, Decl(-57087-105.ts, 24, 46))
+
+function ftx(x:A):string;
+>ftx : Symbol(ftx, Decl(-57087-105.ts, 41, 42), Decl(-57087-105.ts, 43, 25), Decl(-57087-105.ts, 44, 25), Decl(-57087-105.ts, 45, 25))
+>x : Symbol(x, Decl(-57087-105.ts, 43, 13))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+
+function ftx(x:C):number;
+>ftx : Symbol(ftx, Decl(-57087-105.ts, 41, 42), Decl(-57087-105.ts, 43, 25), Decl(-57087-105.ts, 44, 25), Decl(-57087-105.ts, 45, 25))
+>x : Symbol(x, Decl(-57087-105.ts, 44, 13))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+
+function ftx(x:B):string; // should cause x.g(ft2) to error
+>ftx : Symbol(ftx, Decl(-57087-105.ts, 41, 42), Decl(-57087-105.ts, 43, 25), Decl(-57087-105.ts, 44, 25), Decl(-57087-105.ts, 45, 25))
+>x : Symbol(x, Decl(-57087-105.ts, 45, 13))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+
+function ftx(x: A|B|C) {
+>ftx : Symbol(ftx, Decl(-57087-105.ts, 41, 42), Decl(-57087-105.ts, 43, 25), Decl(-57087-105.ts, 44, 25), Decl(-57087-105.ts, 45, 25))
+>x : Symbol(x, Decl(-57087-105.ts, 46, 13))
+>A : Symbol(A, Decl(-57087-105.ts, 0, 0))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+
+    if ("a" in x) return x.a;
+>x : Symbol(x, Decl(-57087-105.ts, 46, 13))
+>x.a : Symbol(a, Decl(-57087-105.ts, 0, 10))
+>x : Symbol(x, Decl(-57087-105.ts, 46, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 0, 10))
+
+    if ("c" in x) return x.c;
+>x : Symbol(x, Decl(-57087-105.ts, 46, 13))
+>x.c : Symbol(c, Decl(-57087-105.ts, 2, 10))
+>x : Symbol(x, Decl(-57087-105.ts, 46, 13))
+>c : Symbol(c, Decl(-57087-105.ts, 2, 10))
+
+    return x.b;
+>x.b : Symbol(b, Decl(-57087-105.ts, 1, 10))
+>x : Symbol(x, Decl(-57087-105.ts, 46, 13))
+>b : Symbol(b, Decl(-57087-105.ts, 1, 10))
+}
+
+// The necessity of the argument cast is a separate issue!
+x.g(ftx,arg as any as any as ArgCastType); // should be error
+>x.g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>x : Symbol(x, Decl(-57087-105.ts, 22, 5))
+>g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>ftx : Symbol(ftx, Decl(-57087-105.ts, 41, 42), Decl(-57087-105.ts, 43, 25), Decl(-57087-105.ts, 44, 25), Decl(-57087-105.ts, 45, 25))
+>arg : Symbol(arg, Decl(-57087-105.ts, 24, 5))
+>ArgCastType : Symbol(ArgCastType, Decl(-57087-105.ts, 24, 46))
+
+//function fty(x:A):string;  // should cause x.g(ft2) to error
+function fty(x:C):number;
+>fty : Symbol(fty, Decl(-57087-105.ts, 53, 42), Decl(-57087-105.ts, 56, 25), Decl(-57087-105.ts, 57, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 56, 13))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+
+function fty(x:B):1;
+>fty : Symbol(fty, Decl(-57087-105.ts, 53, 42), Decl(-57087-105.ts, 56, 25), Decl(-57087-105.ts, 57, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 57, 13))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+
+function fty(x: {a?: string, c?: number, b?: 1|"1"}) {
+>fty : Symbol(fty, Decl(-57087-105.ts, 53, 42), Decl(-57087-105.ts, 56, 25), Decl(-57087-105.ts, 57, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 58, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 58, 17))
+>c : Symbol(c, Decl(-57087-105.ts, 58, 28))
+>b : Symbol(b, Decl(-57087-105.ts, 58, 40))
+
+    if (x.a) return x.a;
+>x.a : Symbol(a, Decl(-57087-105.ts, 58, 17))
+>x : Symbol(x, Decl(-57087-105.ts, 58, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 58, 17))
+>x.a : Symbol(a, Decl(-57087-105.ts, 58, 17))
+>x : Symbol(x, Decl(-57087-105.ts, 58, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 58, 17))
+
+    if (x.c) return x.c;
+>x.c : Symbol(c, Decl(-57087-105.ts, 58, 28))
+>x : Symbol(x, Decl(-57087-105.ts, 58, 13))
+>c : Symbol(c, Decl(-57087-105.ts, 58, 28))
+>x.c : Symbol(c, Decl(-57087-105.ts, 58, 28))
+>x : Symbol(x, Decl(-57087-105.ts, 58, 13))
+>c : Symbol(c, Decl(-57087-105.ts, 58, 28))
+
+    if (x.b) return x.b;
+>x.b : Symbol(b, Decl(-57087-105.ts, 58, 40))
+>x : Symbol(x, Decl(-57087-105.ts, 58, 13))
+>b : Symbol(b, Decl(-57087-105.ts, 58, 40))
+>x.b : Symbol(b, Decl(-57087-105.ts, 58, 40))
+>x : Symbol(x, Decl(-57087-105.ts, 58, 13))
+>b : Symbol(b, Decl(-57087-105.ts, 58, 40))
+
+    throw "unexpected error"
+}
+
+// The necessity of the argument cast is a separate issue!
+x.g(fty,arg as any as any as ArgCastType); // should be error
+>x.g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>x : Symbol(x, Decl(-57087-105.ts, 22, 5))
+>g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>fty : Symbol(fty, Decl(-57087-105.ts, 53, 42), Decl(-57087-105.ts, 56, 25), Decl(-57087-105.ts, 57, 20))
+>arg : Symbol(arg, Decl(-57087-105.ts, 24, 5))
+>ArgCastType : Symbol(ArgCastType, Decl(-57087-105.ts, 24, 46))
+
+function ftz(x:{a?:string}):string;  // should cause x.g(ft2) to error
+>ftz : Symbol(ftz, Decl(-57087-105.ts, 66, 42), Decl(-57087-105.ts, 68, 35), Decl(-57087-105.ts, 69, 25), Decl(-57087-105.ts, 70, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 68, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 68, 16))
+
+function ftz(x:C):number;
+>ftz : Symbol(ftz, Decl(-57087-105.ts, 66, 42), Decl(-57087-105.ts, 68, 35), Decl(-57087-105.ts, 69, 25), Decl(-57087-105.ts, 70, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 69, 13))
+>C : Symbol(C, Decl(-57087-105.ts, 1, 18))
+
+function ftz(x:B):1;
+>ftz : Symbol(ftz, Decl(-57087-105.ts, 66, 42), Decl(-57087-105.ts, 68, 35), Decl(-57087-105.ts, 69, 25), Decl(-57087-105.ts, 70, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 70, 13))
+>B : Symbol(B, Decl(-57087-105.ts, 0, 23))
+
+function ftz(x: {a?: string, c?: number, b?: 1|"1"}) {
+>ftz : Symbol(ftz, Decl(-57087-105.ts, 66, 42), Decl(-57087-105.ts, 68, 35), Decl(-57087-105.ts, 69, 25), Decl(-57087-105.ts, 70, 20))
+>x : Symbol(x, Decl(-57087-105.ts, 71, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 71, 17))
+>c : Symbol(c, Decl(-57087-105.ts, 71, 28))
+>b : Symbol(b, Decl(-57087-105.ts, 71, 40))
+
+    if (x.a) return x.a;
+>x.a : Symbol(a, Decl(-57087-105.ts, 71, 17))
+>x : Symbol(x, Decl(-57087-105.ts, 71, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 71, 17))
+>x.a : Symbol(a, Decl(-57087-105.ts, 71, 17))
+>x : Symbol(x, Decl(-57087-105.ts, 71, 13))
+>a : Symbol(a, Decl(-57087-105.ts, 71, 17))
+
+    if (x.c) return x.c;
+>x.c : Symbol(c, Decl(-57087-105.ts, 71, 28))
+>x : Symbol(x, Decl(-57087-105.ts, 71, 13))
+>c : Symbol(c, Decl(-57087-105.ts, 71, 28))
+>x.c : Symbol(c, Decl(-57087-105.ts, 71, 28))
+>x : Symbol(x, Decl(-57087-105.ts, 71, 13))
+>c : Symbol(c, Decl(-57087-105.ts, 71, 28))
+
+    if (x.b) return x.b;
+>x.b : Symbol(b, Decl(-57087-105.ts, 71, 40))
+>x : Symbol(x, Decl(-57087-105.ts, 71, 13))
+>b : Symbol(b, Decl(-57087-105.ts, 71, 40))
+>x.b : Symbol(b, Decl(-57087-105.ts, 71, 40))
+>x : Symbol(x, Decl(-57087-105.ts, 71, 13))
+>b : Symbol(b, Decl(-57087-105.ts, 71, 40))
+
+    throw "unexpected error"
+}
+
+// The necessity of the argument cast is a separate issue!
+x.g(ftz,arg as any as any as ArgCastType); // should be error
+>x.g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>x : Symbol(x, Decl(-57087-105.ts, 22, 5))
+>g : Symbol(g, Decl(-57087-105.ts, 7, 12), Decl(-57087-105.ts, 12, 15))
+>ftz : Symbol(ftz, Decl(-57087-105.ts, 66, 42), Decl(-57087-105.ts, 68, 35), Decl(-57087-105.ts, 69, 25), Decl(-57087-105.ts, 70, 20))
+>arg : Symbol(arg, Decl(-57087-105.ts, 24, 5))
+>ArgCastType : Symbol(ArgCastType, Decl(-57087-105.ts, 24, 46))
+

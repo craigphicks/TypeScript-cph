@@ -1,0 +1,136 @@
+//// [tests/cases/compiler/-test3/-57087-131.ts] ////
+
+=== -57087-131.ts ===
+interface Garg31A {
+    (): "01";
+    (x:1, y:1): "211"
+>x : 1
+>y : 1
+
+};
+declare const g31A: Garg31A;
+>g31A : Garg31A
+
+interface Garg31B {
+    (): "02";
+    (x:2, y:2): "222";
+>x : 2
+>y : 2
+
+    (x:2, y:1): "221"
+>x : 2
+>y : 1
+
+};
+declare const g31B: Garg31B;
+>g31B : Garg31B
+
+declare const f31a: {
+>f31a : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+
+    (): "01";
+    (x: 1, y: 1): "211";
+>x : 1
+>y : 1
+
+    (x: 2, y: 2): "222";
+>x : 2
+>y : 2
+
+    (x: 2, y: 1): "221";
+>x : 2
+>y : 1
+
+};
+f31a satisfies Garg31A & Garg31B; // should satisfy
+>f31a satisfies Garg31A & Garg31B : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>f31a : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+
+declare const f31b: {
+>f31b : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }
+
+    (): "01";
+    (x: 1, y: 1): "211";
+>x : 1
+>y : 1
+
+    (x: 2, y: 2): "221" /*should cause "f31b satisfies" to error */;
+>x : 2
+>y : 2
+
+    (x: 2, y: 1): "221";
+>x : 2
+>y : 1
+
+};
+f31b satisfies Garg31A & Garg31B; // should not satisfy
+>f31b satisfies Garg31A & Garg31B : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }
+>f31b : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "221"; (x: 2, y: 1): "221"; }
+
+declare const f31c: {
+>f31c : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }
+
+    (): "01"; (x: 1, y: 1): "211";
+>x : 1
+>y : 1
+
+    (x: 2, y: 2): "222";
+>x : 2
+>y : 2
+
+    (x: 2, y: 1): "221";
+>x : 2
+>y : 1
+
+    (x: 1, y: 2): "221" /*should cause "f31c satisfies" to error */;
+>x : 1
+>y : 2
+
+};
+f31c satisfies Garg31A & Garg31B; // should not satisfy
+>f31c satisfies Garg31A & Garg31B : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }
+>f31c : { (): "01"; (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; (x: 1, y: 2): "221"; }
+
+declare const f31d:{
+>f31d : { (): "01"; (x?: 1, y?: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+
+    (): "01";
+    (x?: 1, y?: 1): "211"; /*should cause "f31d satisfies" to error */
+>x : 1 | undefined
+>y : 1 | undefined
+
+    (x: 2, y: 2): "222";
+>x : 2
+>y : 2
+
+    (x: 2, y: 1): "221";
+>x : 2
+>y : 1
+
+};
+f31d satisfies Garg31A & Garg31B; // should not satisfy
+>f31d satisfies Garg31A & Garg31B : { (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>f31d : { (): "01"; (x?: 1 | undefined, y?: 1 | undefined): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+
+declare const f31f: {
+>f31f : { (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+
+    //(): "01"; // missing domain support cannot be detected at compiler time with final never
+    (x: 1, y: 1): "211";
+>x : 1
+>y : 1
+
+    (x: 2, y: 2): "222";
+>x : 2
+>y : 2
+
+    (x: 2, y: 1): "221";
+>x : 2
+>y : 1
+}
+f31f satisfies Garg31A & Garg31B; // should not satisfy
+>f31f satisfies Garg31A & Garg31B : { (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+>f31f : { (x: 1, y: 1): "211"; (x: 2, y: 2): "222"; (x: 2, y: 1): "221"; }
+
+
+

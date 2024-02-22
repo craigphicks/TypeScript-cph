@@ -1,0 +1,136 @@
+//// [tests/cases/compiler/-test3/-57087-101.ts] ////
+
+=== -57087-101.ts ===
+interface FMap<T,R> {
+>FMap : Symbol(FMap, Decl(-57087-101.ts, 0, 0))
+>T : Symbol(T, Decl(-57087-101.ts, 0, 15))
+>R : Symbol(R, Decl(-57087-101.ts, 0, 17))
+
+    f:(x:T)=>R
+>f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-101.ts, 1, 7))
+>T : Symbol(T, Decl(-57087-101.ts, 0, 15))
+>R : Symbol(R, Decl(-57087-101.ts, 0, 17))
+
+    g(f:(x:T)=>R):R;
+>g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14))
+>f : Symbol(f, Decl(-57087-101.ts, 2, 6))
+>x : Symbol(x, Decl(-57087-101.ts, 2, 9))
+>T : Symbol(T, Decl(-57087-101.ts, 0, 15))
+>R : Symbol(R, Decl(-57087-101.ts, 0, 17))
+>R : Symbol(R, Decl(-57087-101.ts, 0, 17))
+}
+declare const x1: FMap<1|2,1|2>;
+>x1 : Symbol(x1, Decl(-57087-101.ts, 4, 13))
+>FMap : Symbol(FMap, Decl(-57087-101.ts, 0, 0))
+
+x1.g(x1.f); // no error
+>x1.g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14))
+>x1 : Symbol(x1, Decl(-57087-101.ts, 4, 13))
+>g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14))
+>x1.f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+>x1 : Symbol(x1, Decl(-57087-101.ts, 4, 13))
+>f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+
+declare const x2: FMap<2|3,"2"|"3">;
+>x2 : Symbol(x2, Decl(-57087-101.ts, 6, 13))
+>FMap : Symbol(FMap, Decl(-57087-101.ts, 0, 0))
+
+x2.g(x2.f); // no error
+>x2.g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14))
+>x2 : Symbol(x2, Decl(-57087-101.ts, 6, 13))
+>g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14))
+>x2.f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+>x2 : Symbol(x2, Decl(-57087-101.ts, 6, 13))
+>f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : Symbol(x, Decl(-57087-101.ts, 8, 5))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>x1 : Symbol(x1, Decl(-57087-101.ts, 4, 13))
+>x2 : Symbol(x2, Decl(-57087-101.ts, 6, 13))
+
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+>x.g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14), Decl(-57087-101.ts, 1, 14))
+>x : Symbol(x, Decl(-57087-101.ts, 8, 5))
+>g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14), Decl(-57087-101.ts, 1, 14))
+
+/*
+ * Exact expansion of x.g, with the intersection of the two function types expanded.
+ * Catch-all with "never" return is not required to pass the test.
+ */
+function ft0(x:1|2):1|2;
+>ft0 : Symbol(ft0, Decl(-57087-101.ts, 9, 4), Decl(-57087-101.ts, 15, 24), Decl(-57087-101.ts, 16, 28))
+>x : Symbol(x, Decl(-57087-101.ts, 15, 13))
+
+function ft0(x:2|3):"2"|"3";
+>ft0 : Symbol(ft0, Decl(-57087-101.ts, 9, 4), Decl(-57087-101.ts, 15, 24), Decl(-57087-101.ts, 16, 28))
+>x : Symbol(x, Decl(-57087-101.ts, 16, 13))
+
+function ft0(x:1|2|3){
+>ft0 : Symbol(ft0, Decl(-57087-101.ts, 9, 4), Decl(-57087-101.ts, 15, 24), Decl(-57087-101.ts, 16, 28))
+>x : Symbol(x, Decl(-57087-101.ts, 17, 13))
+
+    if (x!==3) return x1.f(x);
+>x : Symbol(x, Decl(-57087-101.ts, 17, 13))
+>x1.f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+>x1 : Symbol(x1, Decl(-57087-101.ts, 4, 13))
+>f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-101.ts, 17, 13))
+
+    else return x2.f(x);
+>x2.f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+>x2 : Symbol(x2, Decl(-57087-101.ts, 6, 13))
+>f : Symbol(FMap.f, Decl(-57087-101.ts, 0, 21))
+>x : Symbol(x, Decl(-57087-101.ts, 17, 13))
+}
+x.g(ft0); // should not be error
+>x.g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14), Decl(-57087-101.ts, 1, 14))
+>x : Symbol(x, Decl(-57087-101.ts, 8, 5))
+>g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14), Decl(-57087-101.ts, 1, 14))
+>ft0 : Symbol(ft0, Decl(-57087-101.ts, 9, 4), Decl(-57087-101.ts, 15, 24), Decl(-57087-101.ts, 16, 28))
+
+/*
+ * Condtion for passing are:
+ * (a1) Every source overload is matches at least one target overload
+ * (a2) Every target overload is matched by at least one souce overload
+ * where "matching" is defined as
+ * (b1) the target result is void OR the target result and source result overlap // should be source result subset of target result ?
+ * (b2) the target and source parameters match identically up to the number of required source parameters.
+ * This test case fails because: source (x:1) is not identical to target (x:1|2) or (x:2|3)
+ */
+
+function ft1(x:1):1;
+>ft1 : Symbol(ft1, Decl(-57087-101.ts, 21, 9), Decl(-57087-101.ts, 33, 20), Decl(-57087-101.ts, 34, 20), Decl(-57087-101.ts, 35, 22))
+>x : Symbol(x, Decl(-57087-101.ts, 33, 13))
+
+function ft1(x:2):2;
+>ft1 : Symbol(ft1, Decl(-57087-101.ts, 21, 9), Decl(-57087-101.ts, 33, 20), Decl(-57087-101.ts, 34, 20), Decl(-57087-101.ts, 35, 22))
+>x : Symbol(x, Decl(-57087-101.ts, 34, 13))
+
+function ft1(x:3):"3";
+>ft1 : Symbol(ft1, Decl(-57087-101.ts, 21, 9), Decl(-57087-101.ts, 33, 20), Decl(-57087-101.ts, 34, 20), Decl(-57087-101.ts, 35, 22))
+>x : Symbol(x, Decl(-57087-101.ts, 35, 13))
+
+function ft1(x:1|2|3) {
+>ft1 : Symbol(ft1, Decl(-57087-101.ts, 21, 9), Decl(-57087-101.ts, 33, 20), Decl(-57087-101.ts, 34, 20), Decl(-57087-101.ts, 35, 22))
+>x : Symbol(x, Decl(-57087-101.ts, 36, 13))
+
+    switch (x) {
+>x : Symbol(x, Decl(-57087-101.ts, 36, 13))
+
+        case 1: return 1;
+        case 2: return 2;
+        case 3: return "3";
+    }
+    throw "unexpected error"
+}
+x.g(ft1); // should be error
+>x.g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14), Decl(-57087-101.ts, 1, 14))
+>x : Symbol(x, Decl(-57087-101.ts, 8, 5))
+>g : Symbol(FMap.g, Decl(-57087-101.ts, 1, 14), Decl(-57087-101.ts, 1, 14))
+>ft1 : Symbol(ft1, Decl(-57087-101.ts, 21, 9), Decl(-57087-101.ts, 33, 20), Decl(-57087-101.ts, 34, 20), Decl(-57087-101.ts, 35, 22))
+
+

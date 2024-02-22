@@ -1,0 +1,208 @@
+//// [tests/cases/compiler/-test3/-57087-102.ts] ////
+
+=== -57087-102.ts ===
+interface FMap<T,R> {
+    f:(x:T)=>R
+>f : (x: T) => R
+>x : T
+
+    g(f:(x:T)=>R):R;
+>g : (f: (x: T) => R) => R
+>f : (x: T) => R
+>x : T
+}
+declare const x1: FMap<1|2,1|2>;
+>x1 : FMap<1 | 2, 1 | 2>
+
+x1.g(x1.f); // no error
+>x1.g(x1.f) : 1 | 2
+>x1.g : (f: (x: 1 | 2) => 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>g : (f: (x: 1 | 2) => 1 | 2) => 1 | 2
+>x1.f : (x: 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>f : (x: 1 | 2) => 1 | 2
+
+declare const x2: FMap<2|3,"2"|"3">;
+>x2 : FMap<2 | 3, "2" | "3">
+
+x2.g(x2.f); // no error
+>x2.g(x2.f) : "2" | "3"
+>x2.g : (f: (x: 2 | 3) => "2" | "3") => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>g : (f: (x: 2 | 3) => "2" | "3") => "2" | "3"
+>x2.f : (x: 2 | 3) => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>f : (x: 2 | 3) => "2" | "3"
+
+const x = Math.random() < 0.5 ? x1 : x2;
+>x : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>Math.random() < 0.5 ? x1 : x2 : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>Math.random() < 0.5 : boolean
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>0.5 : 0.5
+>x1 : FMap<1 | 2, 1 | 2>
+>x2 : FMap<2 | 3, "2" | "3">
+
+x.g; // (method) FMap<T, R>.g(f: ((x: 1 | 2) => 1 | 2) & ((x: 2 | 3) => "2" | "3")): 1 | 2 | "2" | "3"
+>x.g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>x : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+
+
+/**
+ * The following function ft3 should fail.  However, it currently does not
+ * The new code only handles cases that fail the in the original code.
+ * However, using such long overload chains is not desireable anyway - so we don't need to fix this?
+ * Maybe fail on when the number of source overloads is greater than the total number of target overloads?
+ */
+
+function ft3(x:1):"3"; // should cause x.g(ft3) to error
+>ft3 : { (x: 1): "3"; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 1
+
+function ft3(x:3):"3";
+>ft3 : { (x: 1): "3"; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 3
+
+function ft3(x:2):2|"2";
+>ft3 : { (x: 1): "3"; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 2
+
+function ft3(x:1|2):1|2; // (4) identical to x1.f
+>ft3 : { (x: 1): "3"; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 1 | 2
+
+function ft3(x:2|3):"2"|"3"; // (5) identical to x2.f
+>ft3 : { (x: 1): "3"; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 2 | 3
+
+function ft3(x:1|2|3){
+>ft3 : { (x: 1): "3"; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 1 | 2 | 3
+
+    if (x===1) return x1.f(x);
+>x===1 : boolean
+>x : 1 | 2 | 3
+>1 : 1
+>x1.f(x) : 1 | 2
+>x1.f : (x: 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>f : (x: 1 | 2) => 1 | 2
+>x : 1
+
+    if (x===3) return x2.f(x);
+>x===3 : boolean
+>x : 2 | 3
+>3 : 3
+>x2.f(x) : "2" | "3"
+>x2.f : (x: 2 | 3) => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>f : (x: 2 | 3) => "2" | "3"
+>x : 3
+
+    return Math.random() < 0.5 ? x1.f(x) : x2.f(x);
+>Math.random() < 0.5 ? x1.f(x) : x2.f(x) : 1 | 2 | "2" | "3"
+>Math.random() < 0.5 : boolean
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>0.5 : 0.5
+>x1.f(x) : 1 | 2
+>x1.f : (x: 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>f : (x: 1 | 2) => 1 | 2
+>x : 2
+>x2.f(x) : "2" | "3"
+>x2.f : (x: 2 | 3) => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>f : (x: 2 | 3) => "2" | "3"
+>x : 2
+}
+x.g(ft3); // should error (but currently doesn't)
+>x.g(ft3) : 1 | 2 | "2" | "3"
+>x.g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>x : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>ft3 : { (x: 1): "3"; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+
+/**
+ * The following function ft4 should not fail, and it currently does not.
+ * However, using such long overload chains is not friendly anyway, so it is irrelevant.
+ */
+
+function ft4(x:1):1;
+>ft4 : { (x: 1): 1; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 1
+
+function ft4(x:3):"3";
+>ft4 : { (x: 1): 1; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 3
+
+function ft4(x:2):2|"2";
+>ft4 : { (x: 1): 1; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 2
+
+function ft4(x:1|2):1|2; // (4) identical to x1.f
+>ft4 : { (x: 1): 1; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 1 | 2
+
+function ft4(x:2|3):"2"|"3"; // (5) identical to x2.f
+>ft4 : { (x: 1): 1; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 2 | 3
+
+function ft4(x:1|2|3){
+>ft4 : { (x: 1): 1; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+>x : 1 | 2 | 3
+
+    if (x===1) return x1.f(x);
+>x===1 : boolean
+>x : 1 | 2 | 3
+>1 : 1
+>x1.f(x) : 1 | 2
+>x1.f : (x: 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>f : (x: 1 | 2) => 1 | 2
+>x : 1
+
+    if (x===3) return x2.f(x);
+>x===3 : boolean
+>x : 2 | 3
+>3 : 3
+>x2.f(x) : "2" | "3"
+>x2.f : (x: 2 | 3) => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>f : (x: 2 | 3) => "2" | "3"
+>x : 3
+
+    return Math.random() < 0.5 ? x1.f(x) : x2.f(x);
+>Math.random() < 0.5 ? x1.f(x) : x2.f(x) : 1 | 2 | "2" | "3"
+>Math.random() < 0.5 : boolean
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>0.5 : 0.5
+>x1.f(x) : 1 | 2
+>x1.f : (x: 1 | 2) => 1 | 2
+>x1 : FMap<1 | 2, 1 | 2>
+>f : (x: 1 | 2) => 1 | 2
+>x : 2
+>x2.f(x) : "2" | "3"
+>x2.f : (x: 2 | 3) => "2" | "3"
+>x2 : FMap<2 | 3, "2" | "3">
+>f : (x: 2 | 3) => "2" | "3"
+>x : 2
+}
+x.g(ft4); // should not error
+>x.g(ft4) : 1 | 2 | "2" | "3"
+>x.g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>x : FMap<1 | 2, 1 | 2> | FMap<2 | 3, "2" | "3">
+>g : ((f: (x: 1 | 2) => 1 | 2) => 1 | 2) | ((f: (x: 2 | 3) => "2" | "3") => "2" | "3")
+>ft4 : { (x: 1): 1; (x: 3): "3"; (x: 2): 2 | "2"; (x: 1 | 2): 1 | 2; (x: 2 | 3): "2" | "3"; }
+
+

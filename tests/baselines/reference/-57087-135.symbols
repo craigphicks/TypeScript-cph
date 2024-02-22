@@ -1,0 +1,120 @@
+//// [tests/cases/compiler/-test3/-57087-135.ts] ////
+
+=== -57087-135.ts ===
+interface Garg35A {
+>Garg35A : Symbol(Garg35A, Decl(-57087-135.ts, 0, 0))
+
+    ({x,y}:{x?:1, y?:Garg35B}): "A1"
+>x : Symbol(x, Decl(-57087-135.ts, 1, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 1, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 1, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 1, 17))
+>Garg35B : Symbol(Garg35B, Decl(-57087-135.ts, 3, 2))
+
+    ({x,y}:{x?:2, y?:Garg35C}): "A2"
+>x : Symbol(x, Decl(-57087-135.ts, 2, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 2, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 2, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 2, 17))
+>Garg35C : Symbol(Garg35C, Decl(-57087-135.ts, 7, 2))
+
+};
+interface Garg35B {
+>Garg35B : Symbol(Garg35B, Decl(-57087-135.ts, 3, 2))
+
+    ({x,y}:{x?:2, y?:Garg35C}): "B1"
+>x : Symbol(x, Decl(-57087-135.ts, 5, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 5, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 5, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 5, 17))
+>Garg35C : Symbol(Garg35C, Decl(-57087-135.ts, 7, 2))
+
+    ({x,y}:{x:2, y?:Garg35A}): "B2";
+>x : Symbol(x, Decl(-57087-135.ts, 6, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 6, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 6, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 6, 16))
+>Garg35A : Symbol(Garg35A, Decl(-57087-135.ts, 0, 0))
+
+};
+interface Garg35C {
+>Garg35C : Symbol(Garg35C, Decl(-57087-135.ts, 7, 2))
+
+    ({x,y}:{x:2, y?:Garg35A}): "C1";
+>x : Symbol(x, Decl(-57087-135.ts, 9, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 9, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 9, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 9, 16))
+>Garg35A : Symbol(Garg35A, Decl(-57087-135.ts, 0, 0))
+
+    ({x,y}:{x?:1, y?:Garg35B}): "C2"
+>x : Symbol(x, Decl(-57087-135.ts, 10, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 10, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 10, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 10, 17))
+>Garg35B : Symbol(Garg35B, Decl(-57087-135.ts, 3, 2))
+
+};
+
+declare const f35a: {
+>f35a : Symbol(f35a, Decl(-57087-135.ts, 13, 13))
+
+    ({x,y}:{x?:1, y?:Garg35B}): "A1"
+>x : Symbol(x, Decl(-57087-135.ts, 14, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 14, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 14, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 14, 17))
+>Garg35B : Symbol(Garg35B, Decl(-57087-135.ts, 3, 2))
+
+    ({x,y}:{x:2, y?:Garg35A}): "B2";
+>x : Symbol(x, Decl(-57087-135.ts, 15, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 15, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 15, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 15, 16))
+>Garg35A : Symbol(Garg35A, Decl(-57087-135.ts, 0, 0))
+
+    ({x,y}:{x?:2, y?:Garg35C}): "A2"
+>x : Symbol(x, Decl(-57087-135.ts, 16, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 16, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 16, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 16, 17))
+>Garg35C : Symbol(Garg35C, Decl(-57087-135.ts, 7, 2))
+}
+f35a satisfies Garg35A & Garg35B & Garg35C; // should satisfy
+>f35a : Symbol(f35a, Decl(-57087-135.ts, 13, 13))
+>Garg35A : Symbol(Garg35A, Decl(-57087-135.ts, 0, 0))
+>Garg35B : Symbol(Garg35B, Decl(-57087-135.ts, 3, 2))
+>Garg35C : Symbol(Garg35C, Decl(-57087-135.ts, 7, 2))
+
+declare const f35b: {
+>f35b : Symbol(f35b, Decl(-57087-135.ts, 20, 13))
+
+    ({x,y}:{x:2, y?:Garg35A}): "C1";
+>x : Symbol(x, Decl(-57087-135.ts, 21, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 21, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 21, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 21, 16))
+>Garg35A : Symbol(Garg35A, Decl(-57087-135.ts, 0, 0))
+
+    ({x,y}:{x?:1, y?:Garg35B}): "C2"
+>x : Symbol(x, Decl(-57087-135.ts, 22, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 22, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 22, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 22, 17))
+>Garg35B : Symbol(Garg35B, Decl(-57087-135.ts, 3, 2))
+
+    ({x,y}:{x?:2, y?:Garg35C}): "B1"
+>x : Symbol(x, Decl(-57087-135.ts, 23, 6))
+>y : Symbol(y, Decl(-57087-135.ts, 23, 8))
+>x : Symbol(x, Decl(-57087-135.ts, 23, 12))
+>y : Symbol(y, Decl(-57087-135.ts, 23, 17))
+>Garg35C : Symbol(Garg35C, Decl(-57087-135.ts, 7, 2))
+}
+f35b satisfies typeof f35a & Garg35A & Garg35B & Garg35C; // should satisfy
+>f35b : Symbol(f35b, Decl(-57087-135.ts, 20, 13))
+>f35a : Symbol(f35a, Decl(-57087-135.ts, 13, 13))
+>Garg35A : Symbol(Garg35A, Decl(-57087-135.ts, 0, 0))
+>Garg35B : Symbol(Garg35B, Decl(-57087-135.ts, 3, 2))
+>Garg35C : Symbol(Garg35C, Decl(-57087-135.ts, 7, 2))
+
+

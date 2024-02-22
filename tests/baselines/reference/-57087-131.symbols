@@ -1,0 +1,147 @@
+//// [tests/cases/compiler/-test3/-57087-131.ts] ////
+
+=== -57087-131.ts ===
+interface Garg31A {
+>Garg31A : Symbol(Garg31A, Decl(-57087-131.ts, 0, 0))
+
+    (): "01";
+    (x:1, y:1): "211"
+>x : Symbol(x, Decl(-57087-131.ts, 2, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 2, 9))
+
+};
+declare const g31A: Garg31A;
+>g31A : Symbol(g31A, Decl(-57087-131.ts, 4, 13))
+>Garg31A : Symbol(Garg31A, Decl(-57087-131.ts, 0, 0))
+
+interface Garg31B {
+>Garg31B : Symbol(Garg31B, Decl(-57087-131.ts, 4, 28))
+
+    (): "02";
+    (x:2, y:2): "222";
+>x : Symbol(x, Decl(-57087-131.ts, 8, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 8, 9))
+
+    (x:2, y:1): "221"
+>x : Symbol(x, Decl(-57087-131.ts, 9, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 9, 9))
+
+};
+declare const g31B: Garg31B;
+>g31B : Symbol(g31B, Decl(-57087-131.ts, 11, 13))
+>Garg31B : Symbol(Garg31B, Decl(-57087-131.ts, 4, 28))
+
+declare const f31a: {
+>f31a : Symbol(f31a, Decl(-57087-131.ts, 13, 13))
+
+    (): "01";
+    (x: 1, y: 1): "211";
+>x : Symbol(x, Decl(-57087-131.ts, 15, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 15, 10))
+
+    (x: 2, y: 2): "222";
+>x : Symbol(x, Decl(-57087-131.ts, 16, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 16, 10))
+
+    (x: 2, y: 1): "221";
+>x : Symbol(x, Decl(-57087-131.ts, 17, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 17, 10))
+
+};
+f31a satisfies Garg31A & Garg31B; // should satisfy
+>f31a : Symbol(f31a, Decl(-57087-131.ts, 13, 13))
+>Garg31A : Symbol(Garg31A, Decl(-57087-131.ts, 0, 0))
+>Garg31B : Symbol(Garg31B, Decl(-57087-131.ts, 4, 28))
+
+declare const f31b: {
+>f31b : Symbol(f31b, Decl(-57087-131.ts, 21, 13))
+
+    (): "01";
+    (x: 1, y: 1): "211";
+>x : Symbol(x, Decl(-57087-131.ts, 23, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 23, 10))
+
+    (x: 2, y: 2): "221" /*should cause "f31b satisfies" to error */;
+>x : Symbol(x, Decl(-57087-131.ts, 24, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 24, 10))
+
+    (x: 2, y: 1): "221";
+>x : Symbol(x, Decl(-57087-131.ts, 25, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 25, 10))
+
+};
+f31b satisfies Garg31A & Garg31B; // should not satisfy
+>f31b : Symbol(f31b, Decl(-57087-131.ts, 21, 13))
+>Garg31A : Symbol(Garg31A, Decl(-57087-131.ts, 0, 0))
+>Garg31B : Symbol(Garg31B, Decl(-57087-131.ts, 4, 28))
+
+declare const f31c: {
+>f31c : Symbol(f31c, Decl(-57087-131.ts, 29, 13))
+
+    (): "01"; (x: 1, y: 1): "211";
+>x : Symbol(x, Decl(-57087-131.ts, 30, 15))
+>y : Symbol(y, Decl(-57087-131.ts, 30, 20))
+
+    (x: 2, y: 2): "222";
+>x : Symbol(x, Decl(-57087-131.ts, 31, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 31, 10))
+
+    (x: 2, y: 1): "221";
+>x : Symbol(x, Decl(-57087-131.ts, 32, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 32, 10))
+
+    (x: 1, y: 2): "221" /*should cause "f31c satisfies" to error */;
+>x : Symbol(x, Decl(-57087-131.ts, 33, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 33, 10))
+
+};
+f31c satisfies Garg31A & Garg31B; // should not satisfy
+>f31c : Symbol(f31c, Decl(-57087-131.ts, 29, 13))
+>Garg31A : Symbol(Garg31A, Decl(-57087-131.ts, 0, 0))
+>Garg31B : Symbol(Garg31B, Decl(-57087-131.ts, 4, 28))
+
+declare const f31d:{
+>f31d : Symbol(f31d, Decl(-57087-131.ts, 37, 13))
+
+    (): "01";
+    (x?: 1, y?: 1): "211"; /*should cause "f31d satisfies" to error */
+>x : Symbol(x, Decl(-57087-131.ts, 39, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 39, 11))
+
+    (x: 2, y: 2): "222";
+>x : Symbol(x, Decl(-57087-131.ts, 40, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 40, 10))
+
+    (x: 2, y: 1): "221";
+>x : Symbol(x, Decl(-57087-131.ts, 41, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 41, 10))
+
+};
+f31d satisfies Garg31A & Garg31B; // should not satisfy
+>f31d : Symbol(f31d, Decl(-57087-131.ts, 37, 13))
+>Garg31A : Symbol(Garg31A, Decl(-57087-131.ts, 0, 0))
+>Garg31B : Symbol(Garg31B, Decl(-57087-131.ts, 4, 28))
+
+declare const f31f: {
+>f31f : Symbol(f31f, Decl(-57087-131.ts, 45, 13))
+
+    //(): "01"; // missing domain support cannot be detected at compiler time with final never
+    (x: 1, y: 1): "211";
+>x : Symbol(x, Decl(-57087-131.ts, 47, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 47, 10))
+
+    (x: 2, y: 2): "222";
+>x : Symbol(x, Decl(-57087-131.ts, 48, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 48, 10))
+
+    (x: 2, y: 1): "221";
+>x : Symbol(x, Decl(-57087-131.ts, 49, 5))
+>y : Symbol(y, Decl(-57087-131.ts, 49, 10))
+}
+f31f satisfies Garg31A & Garg31B; // should not satisfy
+>f31f : Symbol(f31f, Decl(-57087-131.ts, 45, 13))
+>Garg31A : Symbol(Garg31A, Decl(-57087-131.ts, 0, 0))
+>Garg31B : Symbol(Garg31B, Decl(-57087-131.ts, 4, 28))
+
+
+
