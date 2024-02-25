@@ -20890,8 +20890,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const restIndex = sourceRestType || targetRestType ? paramCount - 1 : -1;
 
         for (let i = 0; i < paramCount; i++) {
-            const sourceType = i === restIndex ? getRestTypeAtPosition(source, i) : tryGetTypeAtPosition(source, i);
-            const targetType = i === restIndex ? getRestTypeAtPosition(target, i) : tryGetTypeAtPosition(target, i);
+            const sourceType = i === restIndex ? getRestOrAnyTypeAtPosition(source, i) : tryGetTypeAtPosition(source, i);
+            const targetType = i === restIndex ? getRestOrAnyTypeAtPosition(target, i) : tryGetTypeAtPosition(target, i);
             if (sourceType && targetType) {
                 // In order to ensure that any generic type Foo<T> is at least co-variant with respect to T no matter
                 // how Foo uses T, we need to relate parameters bi-variantly (given that parameters are input positions,
@@ -20905,21 +20905,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const targetSig = checkMode & SignatureCheckMode.Callback || isInstantiatedGenericParameter(target, i) ? undefined : getSingleCallSignature(getNonNullableType(targetType));
                 const callbacks = sourceSig && targetSig && !getTypePredicateOfSignature(sourceSig) && !getTypePredicateOfSignature(targetSig) &&
                     getTypeFacts(sourceType, TypeFacts.IsUndefinedOrNull) === getTypeFacts(targetType, TypeFacts.IsUndefinedOrNull);
-                let related: Ternary;
-                if (callbacks) {
-                    related = compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers)
-                }
-                else {
-                    if (!compareTypesUnilaterally) {
-                        related = !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
-                    }
-                    else {
-                        related = compareTypes(sourceType, targetType, reportErrors);
-                    }
-                }
-                // let related = callbacks ?
-                //     compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers) :
-                //     !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
+                let related = callbacks ?
+                    compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers) :
+                    !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
+                // With strict arity, (x: number | undefined) => void is a subtype of (x?: number | undefined) => void
                 if (related && checkMode & SignatureCheckMode.StrictArity && i >= getMinArgumentCount(source) && i < getMinArgumentCount(target) && compareTypes(sourceType, targetType, /*reportErrors*/ false)) {
                     related = Ternary.False;
                 }
@@ -34133,14 +34122,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             thisArgumentType;
     }
 
-    function inferTypeArguments(node: CallLikeExpression, signature: Signature, args: readonly Expression[], checkMode: CheckMode, context: InferenceContext,
-        intersectionContextArrRef?: [{context: InferenceContext, inferredTypes:Type[]}[] | undefined], intersectionMemberContexualSignatureType?: Type): Type[] {
+    function inferTypeArguments(node: CallLikeExpression, signature: Signature, args: readonly Expression[], checkMode: CheckMode, context: InferenceContext): Type[] {
     const loggerLevel = 2;
     IDebug.ilogGroup(()=>`inferTypeArguments[in]: node: ${IDebug.dbgs.dbgNodeToString(node)
         }, signature: ${IDebug.dbgs.dbgSignatureToString(signature)
         }, checkMode: ${IDebug.dbgs.dbgCheckModeToString(checkMode)
-        }, !!typeArgumentTypesArrRef: ${!!intersectionContextArrRef
-        }, intersectionMemberContexualSignatureType: ${IDebug.dbgs.dbgTypeToString(intersectionMemberContexualSignatureType)
         }`,loggerLevel);
     if (IDebug.logLevel>=loggerLevel) {
         args.forEach((arg, i) => IDebug.ilog(()=>`inferTypeArguments:in: args[${i}]: ${IDebug.dbgs.dbgNodeToString(arg)}`,loggerLevel));
