@@ -67,6 +67,8 @@ import {
     CaseClause,
     CaseOrDefaultClause,
     cast,
+    // @ts-ignore (not used yet)
+    castHereafter,
     chainDiagnosticMessages,
     CharacterCodes,
     CheckFlags,
@@ -1092,10 +1094,17 @@ import {
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
 
+// cphdebug-start
+// @ts-ignore
+import { IDebug } from "./mydebug";
+//const contextualLogLevel = 2;
+
+// cphdebug-end
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
 
 let nextSymbolId = 1;
+let nextTransientSymbolId = 1;
 let nextNodeId = 1;
 let nextMergeId = 1;
 let nextFlowId = 1;
@@ -1500,6 +1509,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var lastGetCombinedModifierFlagsNode: Declaration | undefined;
     var lastGetCombinedModifierFlagsResult = ModifierFlags.None;
 
+    var checkTypeRelatedToDepth = 0;
+    var checkTypeRelatedToCurrentlyVisitingMap: Map<string, number> | undefined;
     // for public members that accept a Node or one of its subtypes, we must guard against
     // synthetic nodes created during transformations by calling `getParseTreeNode`.
     // for most of these, we perform the guard only on `checker` to avoid any possible
@@ -2004,6 +2015,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var silentNeverType = createIntrinsicType(TypeFlags.Never, "never", ObjectFlags.NonInferrableType, "silent");
     var implicitNeverType = createIntrinsicType(TypeFlags.Never, "never", /*objectFlags*/ undefined, "implicit");
     var unreachableNeverType = createIntrinsicType(TypeFlags.Never, "never", /*objectFlags*/ undefined, "unreachable");
+    if (IDebug.logLevel){
+        IDebug.setSpecialNeverTypes({neverType,silentNeverType,implicitNeverType,unreachableNeverType});
+    }
     var nonPrimitiveType = createIntrinsicType(TypeFlags.NonPrimitive, "object");
     var stringOrNumberType = getUnionType([stringType, numberType]);
     var stringNumberSymbolType = getUnionType([stringType, numberType, esSymbolType]);
@@ -2069,6 +2083,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var resolvingSignature = createSignature(/*declaration*/ undefined, /*typeParameters*/ undefined, /*thisParameter*/ undefined, emptyArray, anyType, /*resolvedTypePredicate*/ undefined, 0, SignatureFlags.None);
     var silentNeverSignature = createSignature(/*declaration*/ undefined, /*typeParameters*/ undefined, /*thisParameter*/ undefined, emptyArray, silentNeverType, /*resolvedTypePredicate*/ undefined, 0, SignatureFlags.None);
 
+    if (IDebug.logLevel){
+        IDebug.setSpecialSignatures({anySignature,unknownSignature,resolvingSignature,silentNeverSignature});
+    }
     var enumNumberIndexInfo = createIndexInfo(numberType, stringType, /*isReadonly*/ true);
 
     var iterationTypesCache = new Map<string, IterationTypes>(); // cache for common IterationTypes instances
@@ -2263,6 +2280,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     var comparableRelation = new Map<string, RelationComparisonResult>();
     var identityRelation = new Map<string, RelationComparisonResult>();
     var enumRelation = new Map<string, RelationComparisonResult>();
+    var relationMap = new Map<Map<string, RelationComparisonResult>, string>([
+        [subtypeRelation, "subtypeRelation"],
+        [strictSubtypeRelation, "strictSubtypeRelation"],
+        [assignableRelation, "assignableRelation"],
+        [comparableRelation, "comparableRelation"],
+        [identityRelation, "identityRelation"],
+        [enumRelation, "enumRelation"],
+    ]);
 
     var builtinGlobals = createSymbolTable();
     builtinGlobals.set(undefinedSymbol.escapedName, undefinedSymbol);
@@ -2483,6 +2508,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function createSymbol(flags: SymbolFlags, name: __String, checkFlags?: CheckFlags) {
         symbolCount++;
         const symbol = new Symbol(flags | SymbolFlags.Transient, name) as TransientSymbol;
+        if (IDebug.logLevel){
+            symbol.transientId = nextTransientSymbolId++;
+        }
         symbol.links = new SymbolLinks() as TransientSymbolLinks;
         symbol.links.checkFlags = checkFlags || CheckFlags.None;
         return symbol;
@@ -3563,7 +3591,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // try to resolve name in /*1*/ which is used in variable position,
                 // we want to check for block-scoped
                 if (
-                    errorLocation &&
+                    result && errorLocation &&
                     (meaning & SymbolFlags.BlockScopedVariable ||
                         ((meaning & SymbolFlags.Class || meaning & SymbolFlags.Enum) && (meaning & SymbolFlags.Value) === SymbolFlags.Value))
                 ) {
@@ -6386,6 +6414,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function signatureToString(signature: Signature, enclosingDeclaration?: Node, flags = TypeFormatFlags.None, kind?: SignatureKind, writer?: EmitTextWriter): string {
+        if (IDebug.logLevel) {
+            let ret = writer ? signatureToStringWorker(writer).getText() : usingSingleLineStringWriter(signatureToStringWorker);
+            let compositeNote = "";
+            if (signature.compositeSignatures?.length && signature.compositeKind){
+                compositeNote = `/* composite ${signature.compositeKind===TypeFlags.Union
+                    ? "union" : signature.compositeKind===TypeFlags.Intersection
+                    ? "intersection" : "???"} */`;
+                ret += compositeNote
+            }
+            return ret;
+        }
         return writer ? signatureToStringWorker(writer).getText() : usingSingleLineStringWriter(signatureToStringWorker);
 
         function signatureToStringWorker(writer: EmitTextWriter) {
@@ -14603,6 +14642,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function createUnionOrIntersectionProperty(containingType: UnionOrIntersectionType, name: __String, skipObjectFunctionPropertyAugment?: boolean): Symbol | undefined {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`createUnionOrIntersectionProperty[in]:${IDebug.dbgs.dbgTypeToString(containingType)}, ${name}, skipObjectFunctionPropertyAugment:${skipObjectFunctionPropertyAugment}`,loggerLevel);
+    const ret = (()=>{
         let singleProp: Symbol | undefined;
         let propSet: Map<SymbolId, Symbol> | undefined;
         let indexTypes: Type[] | undefined;
@@ -14774,6 +14816,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         return result;
+    })();
+    if (IDebug.logLevel>=loggerLevel && ret) {
+        const typeOfSymbol = getTypeOfSymbol(ret);
+        IDebug.ilog(()=>`createUnionOrIntersectionProperty: typeOfSymbol: ${IDebug.dbgs.dbgTypeToString(typeOfSymbol)}`, loggerLevel);
+    }
+    IDebug.ilogGroupEnd(()=>`createUnionOrIntersectionProperty[out]: returns ${IDebug.dbgs.dbgSymbolToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     // Return the symbol for a given property in a union or intersection type, or undefined if the property
@@ -14782,6 +14831,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // these partial properties when identifying discriminant properties, but otherwise they are filtered out
     // and do not appear to be present in the union type.
     function getUnionOrIntersectionProperty(type: UnionOrIntersectionType, name: __String, skipObjectFunctionPropertyAugment?: boolean): Symbol | undefined {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getUnionOrIntersectionProperty[in]:${IDebug.dbgs.dbgTypeToString(type)}, ${name})`,loggerLevel);
+    const ret = (()=>{
         let property = type.propertyCacheWithoutObjectFunctionPropertyAugment?.get(name) ||
                 !skipObjectFunctionPropertyAugment ? type.propertyCache?.get(name) : undefined;
         if (!property) {
@@ -14798,6 +14850,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         return property;
+    })();
+    IDebug.ilogGroupEnd(()=>`getUnionOrIntersectionProperty[out]:${IDebug.dbgs.dbgSymbolToString(ret)}`,loggerLevel);
+    return ret;
     }
 
     function getCommonDeclarationsOfSymbols(symbols: Iterable<Symbol>) {
@@ -20761,7 +20816,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     /**
      * See signatureRelatedTo, compareSignaturesIdentical
      */
-    function compareSignaturesRelated(source: Signature, target: Signature, checkMode: SignatureCheckMode, reportErrors: boolean, errorReporter: ErrorReporter | undefined, incompatibleErrorReporter: ((source: Type, target: Type) => void) | undefined, compareTypes: TypeComparer, reportUnreliableMarkers: TypeMapper | undefined): Ternary {
+    function compareSignaturesRelated(source: Signature, target: Signature, checkMode: SignatureCheckMode, reportErrors: boolean, errorReporter: ErrorReporter | undefined, incompatibleErrorReporter: ((source: Type, target: Type) => void) | undefined, compareTypes: TypeComparer, reportUnreliableMarkers: TypeMapper | undefined, compareTypesUnilaterally = false): Ternary {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`compareSignaturesRelated[in]: source: ${IDebug.dbgs.dbgSignatureToString(source)
+    }, target: ${IDebug.dbgs.dbgSignatureToString(target)
+    }, checkMode: ${checkMode
+    }, reportErrors: ${reportErrors
+    }, errorReporter: ${!!errorReporter
+    }, incompatibleErrorReporter: ${!!incompatibleErrorReporter
+    }, reportUnreliableMarkers: ${!!reportUnreliableMarkers
+    }, compareTypesUnilaterally: ${compareTypesUnilaterally
+    }`, loggerLevel);
+    const ret = (()=>{
         // TODO (drosen): De-duplicate code between related functions.
         if (source === target) {
             return Ternary.True;
@@ -20824,8 +20890,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const restIndex = sourceRestType || targetRestType ? paramCount - 1 : -1;
 
         for (let i = 0; i < paramCount; i++) {
-            const sourceType = i === restIndex ? getRestOrAnyTypeAtPosition(source, i) : tryGetTypeAtPosition(source, i);
-            const targetType = i === restIndex ? getRestOrAnyTypeAtPosition(target, i) : tryGetTypeAtPosition(target, i);
+            const sourceType = i === restIndex ? getRestTypeAtPosition(source, i) : tryGetTypeAtPosition(source, i);
+            const targetType = i === restIndex ? getRestTypeAtPosition(target, i) : tryGetTypeAtPosition(target, i);
             if (sourceType && targetType) {
                 // In order to ensure that any generic type Foo<T> is at least co-variant with respect to T no matter
                 // how Foo uses T, we need to relate parameters bi-variantly (given that parameters are input positions,
@@ -20839,10 +20905,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const targetSig = checkMode & SignatureCheckMode.Callback || isInstantiatedGenericParameter(target, i) ? undefined : getSingleCallSignature(getNonNullableType(targetType));
                 const callbacks = sourceSig && targetSig && !getTypePredicateOfSignature(sourceSig) && !getTypePredicateOfSignature(targetSig) &&
                     getTypeFacts(sourceType, TypeFacts.IsUndefinedOrNull) === getTypeFacts(targetType, TypeFacts.IsUndefinedOrNull);
-                let related = callbacks ?
-                    compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers) :
-                    !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
-                // With strict arity, (x: number | undefined) => void is a subtype of (x?: number | undefined) => void
+                let related: Ternary;
+                if (callbacks) {
+                    related = compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers)
+                }
+                else {
+                    if (!compareTypesUnilaterally) {
+                        related = !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
+                    }
+                    else {
+                        related = compareTypes(sourceType, targetType, reportErrors);
+                    }
+                }
+                // let related = callbacks ?
+                //     compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers) :
+                //     !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
                 if (related && checkMode & SignatureCheckMode.StrictArity && i >= getMinArgumentCount(source) && i < getMinArgumentCount(target) && compareTypes(sourceType, targetType, /*reportErrors*/ false)) {
                     related = Ternary.False;
                 }
@@ -20896,6 +20973,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return result;
+    })();
+    IDebug.ilogGroupEnd(()=>`compareSignaturesRelated[out]: returns: ${IDebug.dbgs.dbgTernaryToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function compareTypePredicateRelatedTo(
@@ -21213,6 +21293,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         containingMessageChain?: () => DiagnosticMessageChain | undefined,
         errorOutputContainer?: { errors?: Diagnostic[]; skipLogging?: boolean; },
     ): boolean {
+    const loggerLevel = 2;
+    if (IDebug.logLevel>=loggerLevel){
+        IDebug.ilogGroup(()=>`checkTypeRelatedTo[in]: source: ${
+            IDebug.dbgs.dbgTypeToString(source)}, target: ${
+                IDebug.dbgs.dbgTypeToString(target)} relation:${
+                    relationMap.get(relation)!}, !!errorNode:${!!errorNode}, headMessage: ${!!headMessage}`,loggerLevel);
+        if (source.id===15 && target.id===90){
+            //debugger;
+        }
+    }
         let errorInfo: DiagnosticMessageChain | undefined;
         let relatedInfo: [DiagnosticRelatedInformation, ...DiagnosticRelatedInformation[]] | undefined;
         let maybeKeys: string[];
@@ -21234,6 +21324,25 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         Debug.assert(relation !== identityRelation || !errorNode, "no error reporting in identity checking");
 
+    const ret = (()=>{
+        const visitingKey = getRelationKey(source, target, /*intersectionState*/ IntersectionState.None, relation, /*ignoreConstraints*/ false);
+        if (checkTypeRelatedToDepth === 0) {
+            checkTypeRelatedToCurrentlyVisitingMap = new Map();
+        }
+        if (!errorNode && !headMessage) {
+            let got = checkTypeRelatedToCurrentlyVisitingMap!.get(visitingKey);
+            const maxSameKey = 1;
+            if (got && got >= maxSameKey) {
+                relation.set(visitingKey, RelationComparisonResult.Succeeded);
+                return true;
+            }
+            else {
+                if (!got) got = 1;
+                else got = got + 1;
+                checkTypeRelatedToCurrentlyVisitingMap!.set(visitingKey, got);
+            }
+        }
+        checkTypeRelatedToDepth++;
         const result = isRelatedTo(source, target, RecursionFlags.Both, /*reportErrors*/ !!errorNode, headMessage);
         if (incompatibleStack) {
             reportIncompatibleStack();
@@ -21288,7 +21397,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             Debug.assert(!!errorOutputContainer.errors, "missed opportunity to interact with error.");
         }
 
+        checkTypeRelatedToDepth--;
+        if (checkTypeRelatedToDepth === 0) {
+            checkTypeRelatedToCurrentlyVisitingMap = undefined;
+        }
+        else {
+            const got = checkTypeRelatedToCurrentlyVisitingMap!.get(visitingKey);
+            if (got) {
+                if (got === 1) checkTypeRelatedToCurrentlyVisitingMap!.delete(visitingKey);
+                else checkTypeRelatedToCurrentlyVisitingMap!.set(visitingKey, got - 1);
+            }
+        }
         return result !== Ternary.False;
+    })();
+    IDebug.ilogGroupEnd(()=>`checkTypeRelatedTo[out]: returns ${ret}`,loggerLevel);
+    return ret;
 
         function resetErrorInfo(saved: ReturnType<typeof captureErrorCalculationState>) {
             errorInfo = saved.errorInfo;
@@ -21582,6 +21705,27 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          * * Ternary.False if they are not related.
          */
         function isRelatedTo(originalSource: Type, originalTarget: Type, recursionFlags: RecursionFlags = RecursionFlags.Both, reportErrors = false, headMessage?: DiagnosticMessage, intersectionState = IntersectionState.None): Ternary {
+        const logLevel = 2;
+        IDebug.ilogGroup(()=>{
+            let str = "recursionFlags:";
+            switch (recursionFlags){
+                case RecursionFlags.None: str+="None"; break;
+                case RecursionFlags.Source: str+="Source"; break;
+                case RecursionFlags.Target: str+="Target"; break;
+                case RecursionFlags.Both: str+="Both"; break;
+                default: Debug.assertNever(recursionFlags);
+            }
+            str+=", intersectionState:";
+            switch (intersectionState){
+                case IntersectionState.None: str+=", None"; break;
+                case IntersectionState.Source: str+=", Source"; break;
+                case IntersectionState.Target: str+=", Target"; break;
+                // case IntersectionState.Both: str+=", Both"; break;
+                default: Debug.assertNever(intersectionState);
+            }
+            return `isRelatedTo[in]: originalSource:${IDebug.dbgs.dbgTypeToString(originalSource)}, originalTarget:${IDebug.dbgs.dbgTypeToString(originalTarget)}, ${str}`;
+        },logLevel);
+        const ret = (()=>{
             if (originalSource === originalTarget) return Ternary.True;
 
             // Before normalization: if `source` is type an object type, and `target` is primitive,
@@ -21694,6 +21838,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 reportErrorResults(originalSource, originalTarget, source, target, headMessage);
             }
             return Ternary.False;
+        })();
+        IDebug.ilogGroupEnd(()=>{
+            return `isRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`;
+        },logLevel);
+        return ret;
         }
 
         function reportErrorResults(originalSource: Type, originalTarget: Type, source: Type, target: Type, headMessage: DiagnosticMessage | undefined) {
@@ -21875,6 +22024,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function unionOrIntersectionRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState): Ternary {
+        const logLevel = 2;
+        IDebug.ilogGroup(()=>`unionOrIntersectionRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}, intersectionState:${IDebug.dbgs.dbgIntersectionState(intersectionState)}`, logLevel);
+        const ret = (()=>{
             // Note that these checks are specifically ordered to produce correct results. In particular,
             // we need to deconstruct unions before intersections (because unions are always at the top),
             // and we need to handle "each" relations before "some" relations for the same kind of type.
@@ -21928,6 +22080,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             // not actually useful and leads to some confusing error messages. Instead, we rely on the caller
             // checking whether the full intersection viewed as an object is related to the target.
             return someTypeRelatedToType(source as IntersectionType, target, /*reportErrors*/ false, IntersectionState.Source);
+        })();
+        IDebug.ilogGroupEnd(()=>`unionOrIntersectionRelatedTo[out]: ${ret}`,logLevel);
+        return ret;
         }
 
         function eachTypeRelatedToSomeType(source: UnionOrIntersectionType, target: UnionOrIntersectionType): Ternary {
@@ -22122,6 +22277,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // equal and infinitely expanding. Fourth, if we have reached a depth of 100 nested comparisons, assume we have runaway recursion
         // and issue an error. Otherwise, actually compare the structure of the two types.
         function recursiveTypeRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState, recursionFlags: RecursionFlags): Ternary {
+        const logLevel = 2;
+        IDebug.ilogGroup(()=>{
+            return `recursiveTypeRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}, intersectionState:${IDebug.dbgs.dbgIntersectionState(intersectionState)}, recursionFlags:${IDebug.dbgs.dbgRecursionFlags(recursionFlags)}`
+        }, logLevel);
+        const ret = (()=>{
             if (overflow) {
                 return Ternary.False;
             }
@@ -22262,6 +22422,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
                 maybeCount = maybeStart;
             }
+        })();
+        IDebug.ilogGroupEnd(()=>{
+            return `recursiveTypeRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`
+        }, logLevel);
+        return ret;
         }
 
         function structuredTypeRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState): Ternary {
@@ -22965,6 +23130,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function typeRelatedToDiscriminatedType(source: Type, target: UnionType) {
+        const logLevel = 2;
+        IDebug.ilogGroup(()=>`typeRelatedToDiscriminatedType[in]: ${IDebug.dbgs.dbgTypeToString(source)}, ${IDebug.dbgs.dbgTypeToString(target)}`,logLevel);
+        const ret = (()=>{
             // 1. Generate the combinations of discriminant properties & types 'source' can satisfy.
             //    a. If the number of combinations is above a set limit, the comparison is too complex.
             // 2. Filter 'target' to the subset of types whose discriminants exist in the matrix.
@@ -23058,6 +23226,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
             return result;
+        })();
+        IDebug.ilogGroupEnd(()=>`typeRelatedToDiscriminatedType[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`, logLevel);
+        return ret;
         }
 
         function excludeProperties(properties: Symbol[], excludedProperties: Set<__String> | undefined) {
@@ -23791,6 +23962,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // instantiations of the generic type for type arguments with known relations. The function
     // returns the emptyArray singleton when invoked recursively for the given generic type.
     function getVariancesWorker(symbol: Symbol, typeParameters: readonly TypeParameter[] = emptyArray): VarianceFlags[] {
+        const loggerLevel = 2;
+        if (IDebug.logLevel>=loggerLevel){
+            const astr = [`getVariancesWorker[in]: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}`];
+            typeParameters.forEach((t,i)=>{
+                astr.push(`typeParameter[${[i]}]:${IDebug.dbgs.dbgTypeToString(t)}`);
+            });
+            IDebug.ilogGroup(()=>astr.join(", "),loggerLevel);
+        }
         const links = getSymbolLinks(symbol);
         if (!links.variances) {
             tracing?.push(tracing.Phase.CheckTypes, "getVariancesWorker", { arity: typeParameters.length, id: getTypeId(getDeclaredTypeOfSymbol(symbol)) });
@@ -23843,6 +24022,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             links.variances = variances;
             tracing?.pop({ variances: variances.map(Debug.formatVariance) });
+        }
+        if (IDebug.logLevel>=loggerLevel){
+            const str = [`getVariancesWorker[out]: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}. links.variances:`];
+            const astr: string[] = [];
+            links.variances.forEach((v)=>{
+                astr.push(`${v}`);
+            });
+            IDebug.ilogGroupEnd(()=>`${str}[${astr.join(",")}]`,loggerLevel);
         }
         return links.variances;
     }
@@ -25482,9 +25669,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         let sourceStack: Type[];
         let targetStack: Type[];
         let expandingFlags = ExpandingFlags.None;
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`inferTypes[in]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)
+        }, contravariant: ${contravariant}, inferencePriority: ${inferencePriority}`, loggerLevel);
+        if (IDebug.logLevel>=loggerLevel) {
+            inferences.forEach((inf,iinf)=>IDebug.dbgs.dbgInferenceInfoToStrings(inf).forEach(s=>IDebug.ilog(()=>`inferTypes: in: inferences[${iinf}]: ${s}`, loggerLevel)));
+        }
         inferFromTypes(originalSource, originalTarget);
+        if (IDebug.logLevel>=loggerLevel) {
+            inferences.forEach((inf,iinf)=>IDebug.dbgs.dbgInferenceInfoToStrings(inf).forEach(s=>IDebug.ilog(()=>`inferTypes: out: inferences[${iinf}]: ${s}`, loggerLevel)));
+        }
+        IDebug.ilogGroupEnd(()=>`inferTypes[out]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)
+        }, contravariant: ${contravariant}, inferencePriority: ${inferencePriority}`, loggerLevel);
 
         function inferFromTypes(source: Type, target: Type): void {
+        IDebug.ilogGroup(()=>`inferFromTypes[in]: ${IDebug.dbgs.dbgTypeToString(source)} ${IDebug.dbgs.dbgTypeToString(target)
+        }, contravariant: ${contravariant}, inferencePriority: ${inferencePriority}`, loggerLevel);
+        (()=>{
             if (!couldContainTypeVariables(target) || isNoInferType(target)) {
                 return;
             }
@@ -25704,6 +25905,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     invokeOnce(source, target, inferFromObjectTypes);
                 }
             }
+        })();
+        IDebug.ilogGroupEnd(()=>`inferFromTypes[out]:`, loggerLevel);
         }
 
         function inferWithPriority(source: Type, target: Type, newPriority: InferencePriority) {
@@ -26188,6 +26391,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function inferFromSignatures(source: Type, target: Type, kind: SignatureKind) {
+            IDebug.ilogGroup(()=>`inferFromSignatures[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,loggerLevel)
             const sourceSignatures = getSignaturesOfType(source, kind);
             const sourceLen = sourceSignatures.length;
             if (sourceLen > 0) {
@@ -26200,9 +26404,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     inferFromSignature(getBaseSignature(sourceSignatures[sourceIndex]), getErasedSignature(targetSignatures[i]));
                 }
             }
+            IDebug.ilogGroupEnd(()=>`inferFromSignatures[out]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)})`,loggerLevel)
         }
 
         function inferFromSignature(source: Signature, target: Signature) {
+            IDebug.ilogGroup(()=>`inferFromSignature[in]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,loggerLevel)
             if (!(source.flags & SignatureFlags.IsNonInferrable)) {
                 const saveBivariant = bivariant;
                 const kind = target.declaration ? target.declaration.kind : SyntaxKind.Unknown;
@@ -26212,6 +26418,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 bivariant = saveBivariant;
             }
             applyToReturnTypes(source, target, inferFromTypes);
+            IDebug.ilogGroupEnd(()=>`inferFromSignature[out]: source: ${IDebug.dbgs.dbgSignatureToString(source)}, target: ${IDebug.dbgs.dbgSignatureToString(target)})`,loggerLevel)
         }
 
         function inferFromIndexTypes(source: Type, target: Type) {
@@ -26369,10 +26576,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getInferredTypes(context: InferenceContext): Type[] {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`getInferredTypes[in]:`,loggerLevel);
+        if (IDebug.logLevel>=loggerLevel){
+            IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>{
+                IDebug.ilog(()=>`getInferredTypes:in: context: ${s}`,loggerLevel);
+            });
+        }
         const result: Type[] = [];
         for (let i = 0; i < context.inferences.length; i++) {
             result.push(getInferredType(context, i));
         }
+        if (IDebug.logLevel>=loggerLevel){
+            result.forEach((t,i)=>IDebug.ilog(()=>`getInferredTypes returns type[${i}]: ${IDebug.dbgs.dbgTypeToString(t)}`,loggerLevel));
+        }
+        IDebug.ilogGroupEnd(()=>`getInferredTypes[out]:`,loggerLevel);
         return result;
     }
 
@@ -31259,9 +31477,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // If the given type is an object or union type with a single signature, and if that signature has at
     // least as many parameters as the given function, return the signature. Otherwise return undefined.
     function getContextualCallSignature(type: Type, node: SignatureDeclaration): Signature | undefined {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getContextualCallSignature[in]: type: ${IDebug.dbgs.dbgTypeToString(type)}, node: ${IDebug.dbgs.dbgNodeToString(node)}`, loggerLevel);
+    const ret = (()=>{
         const signatures = getSignaturesOfType(type, SignatureKind.Call);
         const applicableByArity = filter(signatures, s => !isAritySmaller(s, node));
         return applicableByArity.length === 1 ? applicableByArity[0] : getIntersectedSignatures(applicableByArity);
+    })();
+    IDebug.ilogGroupEnd(()=>`getContextualCallSignature[out]: ${IDebug.dbgs.dbgSignatureToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     /** If the contextual signature has fewer parameters than the function expression, do not use it */
@@ -33864,6 +34088,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     // Instantiate a generic signature in the context of a non-generic signature (section 3.8.5 in TypeScript spec)
     function instantiateSignatureInContextOf(signature: Signature, contextualSignature: Signature, inferenceContext?: InferenceContext, compareTypes?: TypeComparer): Signature {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`instantiateSignatureInContextOf[in]: signature: ${IDebug.dbgs.dbgSignatureToString(signature)
+            }, contextualSignature: ${IDebug.dbgs.dbgSignatureToString(contextualSignature)
+            }`,loggerLevel);
+    const ret = (()=>{
         const context = createInferenceContext(signature.typeParameters!, signature, InferenceFlags.None, compareTypes);
         // We clone the inferenceContext to avoid fixing. For example, when the source signature is <T>(x: T) => T[] and
         // the contextual signature is (...args: A) => B, we want to infer the element type of A's constraint (say 'any')
@@ -33881,6 +34110,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             });
         }
         return getSignatureInstantiation(signature, getInferredTypes(context), isInJSFile(contextualSignature.declaration));
+    })();
+    IDebug.ilogGroupEnd(()=>`instantiateSignatureInContextOf[out]: returns ${IDebug.dbgs.dbgSignatureToString(ret)}`,loggerLevel);
+    return ret;
     }
 
     function inferJsxTypeArguments(node: JsxOpeningLikeElement, signature: Signature, checkMode: CheckMode, context: InferenceContext): Type[] {
@@ -33901,7 +34133,24 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             thisArgumentType;
     }
 
-    function inferTypeArguments(node: CallLikeExpression, signature: Signature, args: readonly Expression[], checkMode: CheckMode, context: InferenceContext): Type[] {
+    function inferTypeArguments(node: CallLikeExpression, signature: Signature, args: readonly Expression[], checkMode: CheckMode, context: InferenceContext,
+        intersectionContextArrRef?: [{context: InferenceContext, inferredTypes:Type[]}[] | undefined], intersectionMemberContexualSignatureType?: Type): Type[] {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`inferTypeArguments[in]: node: ${IDebug.dbgs.dbgNodeToString(node)
+        }, signature: ${IDebug.dbgs.dbgSignatureToString(signature)
+        }, checkMode: ${IDebug.dbgs.dbgCheckModeToString(checkMode)
+        }, !!typeArgumentTypesArrRef: ${!!intersectionContextArrRef
+        }, intersectionMemberContexualSignatureType: ${IDebug.dbgs.dbgTypeToString(intersectionMemberContexualSignatureType)
+        }`,loggerLevel);
+    if (IDebug.logLevel>=loggerLevel) {
+        args.forEach((arg, i) => IDebug.ilog(()=>`inferTypeArguments:in: args[${i}]: ${IDebug.dbgs.dbgNodeToString(arg)}`,loggerLevel));
+
+        IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>{
+            IDebug.ilog(()=>`inferTypeArguments:in: context: ${s}`,loggerLevel);
+        });
+    }
+
+    const ret = (()=>{
         if (isJsxOpeningLikeElement(node)) {
             return inferJsxTypeArguments(node, signature, checkMode, context);
         }
@@ -33992,6 +34241,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return getInferredTypes(context);
+    })();
+    if (IDebug.logLevel>=loggerLevel){
+        ret.forEach((t,i)=>IDebug.ilog(()=>`inferTypeArguments: returns type[${i}] ${IDebug.dbgs.dbgTypeToString(t)}`,loggerLevel));
+    }
+    IDebug.ilogGroupEnd(()=>`inferTypeArguments[out]`,loggerLevel);
+    return ret;
     }
 
     function getMutableArrayOrTupleType(type: Type) {
@@ -34822,6 +35077,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function chooseOverload(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false) {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`chooseOverload()[in]:`,loggerLevel);
+        if (IDebug.logLevel>=loggerLevel){
+            //candidates.forEach((c,i)=>IDebug.ilog(()=>`candidate[${i}]:${IDebug.dbgs.dbgSignatureToString(c)}`,2));
+            candidates.forEach((cand,icand)=>{
+                IDebug.dbgs.dbgSignatureAndCompositesToStrings(cand).forEach(str=>{
+                    IDebug.ilog(()=>`candidate[${icand}]: ${str}`,loggerLevel);
+                });
+            });
+        }
+
+        const ret = (()=>{
             candidatesForArgumentError = undefined;
             candidateForArgumentArityError = undefined;
             candidateForTypeArgumentError = undefined;
@@ -34903,6 +35170,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
             return undefined;
+        })();
+        if (IDebug.logLevel>=loggerLevel){
+            IDebug.dbgs.dbgSignatureAndCompositesToStrings(ret).forEach(str=>{
+                IDebug.ilog(()=>`chooseOverload()[returns]: ${str}`,loggerLevel);
+            });
+            IDebug.ilogGroupEnd(()=>`chooseOverload()[out]: returns ${IDebug.dbgs.dbgSignatureToString(ret)}`, loggerLevel);
+        }
+        return ret;
         }
     }
 
@@ -35035,6 +35310,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[] | undefined, checkMode: CheckMode): Signature {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`resolveCallExpression[in]:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${IDebug.dbgs.dbgCheckModeToString(checkMode)}`, loggerLevel);
+    const ret = (()=>{
         if (node.expression.kind === SyntaxKind.SuperKeyword) {
             const superType = checkSuperExpression(node.expression);
             if (isTypeAny(superType)) {
@@ -35144,6 +35422,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
+    })();
+    if (IDebug.logLevel>=loggerLevel){
+        if (candidatesOutArray){
+            IDebug.ilog(()=>`resolveCallExpression[ret]: candidatesOutArray.length = ${candidatesOutArray.length}`,loggerLevel);
+            candidatesOutArray.forEach((sig,isig)=>{
+                IDebug.dbgs.dbgSignatureAndCompositesToStrings(sig).forEach(str=>{
+                    IDebug.ilog(()=>`resolveCallExpression[ret]: candidatesOutArray[${isig}] ${str}`, loggerLevel);
+                });
+            });
+        }
+        IDebug.dbgs.dbgSignatureAndCompositesToStrings(ret).forEach(str=>{
+            IDebug.ilog(()=>`resolveCallExpression[ret]: returns ${str}`, loggerLevel);
+        });
+    }
+    IDebug.ilogGroupEnd(()=>`resolveCallExpression[out]: returns ${IDebug.dbgs.dbgSignatureToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function isGenericFunctionReturningFunctionOrConstructor(signature: Signature) {
@@ -35805,6 +36099,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * @returns On success, the expression's signature's return type. On failure, anyType.
      */
     function checkCallExpression(node: CallExpression | NewExpression, checkMode?: CheckMode): Type {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`checkCallExpression[in]:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${IDebug.dbgs.dbgCheckModeToString(checkMode)}`, loggerLevel);
+    const ret = (()=>{
         checkGrammarTypeArguments(node, node.typeArguments);
 
         const signature = getResolvedSignature(node, /*candidatesOutArray*/ undefined, checkMode);
@@ -35874,6 +36171,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         return returnType;
+    })();
+    if (IDebug.logLevel>=loggerLevel){
+        const callsigs = getSignaturesOfType(ret, SignatureKind.Call);
+        callsigs.forEach((sig,isig)=>{
+            IDebug.ilog(()=>`checkCallExpression[ret.callSignatures[${isig}]]: ${IDebug.dbgs.dbgSignatureToString(sig)}`, loggerLevel);
+        });
+    }
+    IDebug.ilogGroupEnd(()=>`checkCallExpression[out]: returns :${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function checkDeprecatedSignature(signature: Signature, node: CallLikeExpression) {
@@ -36239,7 +36545,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return checkSatisfiesExpressionWorker(node.expression, node.type);
     }
 
-    function checkSatisfiesExpressionWorker(expression: Expression, target: TypeNode, checkMode?: CheckMode) {
+    function checkSatisfiesExpressionWorker(expression: Expression, target: TypeNode, checkMode?: CheckMode): Type {
+        const logLevel = 2;
+        IDebug.ilogGroup(()=>`checkSatisfiesExpressionWorker[in]: expr:${IDebug.dbgs.dbgNodeToString(expression)}, target:${IDebug.dbgs.dbgNodeToString(target)}`, logLevel);
+        const ret = (()=>{
         const exprType = checkExpression(expression, checkMode);
         const targetType = getTypeFromTypeNode(target);
         if (isErrorType(targetType)) {
@@ -36248,6 +36557,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const errorNode = findAncestor(target.parent, n => n.kind === SyntaxKind.SatisfiesExpression || n.kind === SyntaxKind.JSDocSatisfiesTag);
         checkTypeAssignableToAndOptionallyElaborate(exprType, targetType, errorNode, expression, Diagnostics.Type_0_does_not_satisfy_the_expected_type_1);
         return exprType;
+        })();
+        IDebug.ilogGroupEnd(()=>`checkSatisfiesExpressionWorker[out]: return: ${IDebug.dbgs.dbgTypeToString(ret)}`, logLevel);
+        return ret;
     }
 
     function checkMetaProperty(node: MetaProperty): Type {
@@ -37491,6 +37803,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function contextuallyCheckFunctionExpressionOrObjectLiteralMethod(node: FunctionExpression | ArrowFunction | MethodDeclaration, checkMode?: CheckMode) {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[in]:${IDebug.dbgs.dbgNodeToString(node)})`,loggerLevel);
+    (()=>{
         const links = getNodeLinks(node);
         // Check if function expression is contextually typed and assign parameter types if so.
         if (!(links.flags & NodeCheckFlags.ContextChecked)) {
@@ -37502,10 +37817,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 links.flags |= NodeCheckFlags.ContextChecked;
                 const signature = firstOrUndefined(getSignaturesOfType(getTypeOfSymbol(getSymbolOfDeclaration(node)), SignatureKind.Call));
                 if (!signature) {
+                    IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: no signature`,loggerLevel);
                     return;
                 }
                 if (isContextSensitive(node)) {
                     if (contextualSignature) {
+                        IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: contextualSignature:${
+                            IDebug.dbgs.dbgSignatureToString(contextualSignature)}`,loggerLevel);
                         const inferenceContext = getInferenceContext(node);
                         let instantiatedContextualSignature: Signature | undefined;
                         if (checkMode && checkMode & CheckMode.Inferential) {
@@ -37537,8 +37855,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                 }
                 checkSignatureDeclaration(node);
+                if (IDebug.logLevel>=loggerLevel){
+                    IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(final):`,loggerLevel);
+                    IDebug.dbgs.dbgSignatureAndCompositesToStrings(signature).forEach(str=>{
+                        IDebug.ilog(()=>`  ${str}`,loggerLevel);
+                    });
+                }
             }
         }
+    })();
+    IDebug.ilogGroupEnd(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod[out]: ${node.id}`,loggerLevel);
     }
 
     function checkFunctionExpressionOrObjectLiteralMethodDeferred(node: ArrowFunction | FunctionExpression | MethodDeclaration) {
@@ -39068,6 +39394,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function checkExpressionWithContextualType(node: Expression, contextualType: Type, inferenceContext: InferenceContext | undefined, checkMode: CheckMode): Type {
+        IDebug.ilogGroup(()=>`checkExpressionWithContextualType[in]: (node:${IDebug.dbgs.dbgNodeToString(node)}, contextualType:${IDebug.dbgs.dbgTypeToString(contextualType)}, checkMode:${IDebug.dbgs.dbgCheckModeToString(checkMode)})`,2);
         const contextNode = getContextNode(node);
         pushContextualType(contextNode, contextualType, /*isCache*/ false);
         pushInferenceContext(contextNode, inferenceContext);
@@ -39084,14 +39411,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             getRegularTypeOfLiteralType(type) : type;
         popInferenceContext();
         popContextualType();
+        IDebug.ilogGroupEnd(()=>`checkExpressionWithContextualType[out]: returns ${IDebug.dbgs.dbgTypeToString(result)}`,2);
         return result;
     }
 
     function checkExpressionCached(node: Expression | QualifiedName, checkMode?: CheckMode): Type {
+    const expectedIndent = IDebug.ilogGroup(()=>`checkExpressionCached[in]: node:${IDebug.dbgs.dbgNodeToString(node)}, checkMode:${IDebug.dbgs.dbgCheckModeToString(checkMode)})`,2);
+    const result = (()=>{
         if (checkMode) {
             return checkExpression(node, checkMode);
         }
         const links = getNodeLinks(node);
+        if (links.resolvedType) IDebug.ilog(()=>`checkExpressionCached: cache hit: ${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`,2);
         if (!links.resolvedType) {
             // When computing a type that we're going to cache, we need to ignore any ongoing control flow
             // analysis because variables may have transient types in indeterminable states. Moving flowLoopStart
@@ -39105,6 +39436,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             flowLoopStart = saveFlowLoopStart;
         }
         return links.resolvedType;
+    })();
+    IDebug.ilogGroupEnd(()=>`checkExpressionCached[out]: ${IDebug.dbgs.dbgTypeToString(result)}`,2, expectedIndent);
+    return result;
     }
 
     function isTypeAssertion(node: Expression) {
@@ -39463,16 +39797,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function checkExpression(node: Expression | QualifiedName, checkMode?: CheckMode, forceTuple?: boolean): Type {
         tracing?.push(tracing.Phase.Check, "checkExpression", { kind: node.kind, pos: node.pos, end: node.end, path: (node as TracingNode).tracingPath });
+        const loggerLevel = 2;
+        const expectedIndent = IDebug.ilogGroup(()=>`checkExpression[in]: checkMode:${IDebug.dbgs.dbgCheckModeToString(checkMode)}, node:${IDebug.dbgs.dbgNodeToString(node)}, forceTuple:${forceTuple}`,loggerLevel);
         const saveCurrentNode = currentNode;
         currentNode = node;
         instantiationCount = 0;
         const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
+        IDebug.ilog(()=>`checkExpression: uninstantiatedType: ${IDebug.dbgs.dbgTypeToString(uninstantiatedType)}`,loggerLevel);
         const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
+        IDebug.ilog(()=>`checkExpression: type: ${IDebug.dbgs.dbgTypeToString(type)}`,loggerLevel);
         if (isConstEnumObjectType(type)) {
             checkConstEnumAccess(node, type);
         }
         currentNode = saveCurrentNode;
         tracing?.pop();
+        IDebug.ilogGroupEnd(()=>`checkExpression[out]: return: ${IDebug.dbgs.dbgTypeToString(type)}`,loggerLevel, expectedIndent);
         return type;
     }
 
@@ -46939,6 +47278,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function checkSourceFile(node: SourceFile) {
         tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
         performance.mark("beforeCheck");
+        // cphdebug-start
+        if (IDebug.loggingHost){
+            IDebug.loggingHost.notifySourceFile(node, checker);
+        }
+        // cphdebug-end
         checkSourceFileWorker(node);
         performance.mark("afterCheck");
         performance.measure("Check", "beforeCheck", "afterCheck");

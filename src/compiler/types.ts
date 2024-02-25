@@ -5836,6 +5836,7 @@ export interface Symbol {
     exports?: SymbolTable;                  // Module exports
     globalExports?: SymbolTable;            // Conditional global UMD exports
     /** @internal */ id: SymbolId;          // Unique id (used to look up SymbolLinks)
+    /** @internal */ transientId?: SymbolId;// Unique id (used to debug transient symbols)
     /** @internal */ mergeId: number;       // Merge id (used to look up merged symbol)
     /** @internal */ parent?: Symbol;       // Parent symbol
     /** @internal */ exportSymbol?: Symbol; // Exported symbol associated with this symbol
