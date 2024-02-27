@@ -1,0 +1,6 @@
+{
+  "scenario": "cal.com/.../snippets.js memory error SIGABRT",
+  "projectRoot": "tests/cases/projects/-calcom-snippets",
+  "baselineCheck": true,
+  "declaration": true
+}
