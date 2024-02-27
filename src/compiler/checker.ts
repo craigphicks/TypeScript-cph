@@ -14817,7 +14817,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         return result;
     })();
-    if (IDebug.logLevel>=loggerLevel && ret) {
+    if (IDebug.isActive(loggerLevel) && ret) {
         const typeOfSymbol = getTypeOfSymbol(ret);
         IDebug.ilog(()=>`createUnionOrIntersectionProperty: typeOfSymbol: ${IDebug.dbgs.dbgTypeToString(typeOfSymbol)}`, loggerLevel);
     }
@@ -21283,14 +21283,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         errorOutputContainer?: { errors?: Diagnostic[]; skipLogging?: boolean; },
     ): boolean {
     const loggerLevel = 2;
-    if (IDebug.logLevel>=loggerLevel){
+    if (IDebug.isActive(loggerLevel)){
         IDebug.ilogGroup(()=>`checkTypeRelatedTo[in]: source: ${
             IDebug.dbgs.dbgTypeToString(source)}, target: ${
                 IDebug.dbgs.dbgTypeToString(target)} relation:${
                     relationMap.get(relation)!}, !!errorNode:${!!errorNode}, headMessage: ${!!headMessage}`,loggerLevel);
-        if (source.id===15 && target.id===90){
-            //debugger;
-        }
     }
         let errorInfo: DiagnosticMessageChain | undefined;
         let relatedInfo: [DiagnosticRelatedInformation, ...DiagnosticRelatedInformation[]] | undefined;
@@ -23952,7 +23949,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // returns the emptyArray singleton when invoked recursively for the given generic type.
     function getVariancesWorker(symbol: Symbol, typeParameters: readonly TypeParameter[] = emptyArray): VarianceFlags[] {
         const loggerLevel = 2;
-        if (IDebug.logLevel>=loggerLevel){
+        if (IDebug.isActive(loggerLevel)){
             const astr = [`getVariancesWorker[in]: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}`];
             typeParameters.forEach((t,i)=>{
                 astr.push(`typeParameter[${[i]}]:${IDebug.dbgs.dbgTypeToString(t)}`);
@@ -24012,7 +24009,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             links.variances = variances;
             tracing?.pop({ variances: variances.map(Debug.formatVariance) });
         }
-        if (IDebug.logLevel>=loggerLevel){
+        if (IDebug.isActive(loggerLevel)){
             const str = [`getVariancesWorker[out]: symbol:${IDebug.dbgs.dbgSymbolToString(symbol)}. links.variances:`];
             const astr: string[] = [];
             links.variances.forEach((v)=>{
@@ -25661,11 +25658,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const loggerLevel = 2;
         IDebug.ilogGroup(()=>`inferTypes[in]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)
         }, contravariant: ${contravariant}, inferencePriority: ${inferencePriority}`, loggerLevel);
-        if (IDebug.logLevel>=loggerLevel) {
+        if (IDebug.isActive(loggerLevel)) {
             inferences.forEach((inf,iinf)=>IDebug.dbgs.dbgInferenceInfoToStrings(inf).forEach(s=>IDebug.ilog(()=>`inferTypes: in: inferences[${iinf}]: ${s}`, loggerLevel)));
         }
         inferFromTypes(originalSource, originalTarget);
-        if (IDebug.logLevel>=loggerLevel) {
+        if (IDebug.isActive(loggerLevel)) {
             inferences.forEach((inf,iinf)=>IDebug.dbgs.dbgInferenceInfoToStrings(inf).forEach(s=>IDebug.ilog(()=>`inferTypes: out: inferences[${iinf}]: ${s}`, loggerLevel)));
         }
         IDebug.ilogGroupEnd(()=>`inferTypes[out]: ${IDebug.dbgs.dbgTypeToString(originalSource)} ${IDebug.dbgs.dbgTypeToString(originalTarget)
@@ -26567,7 +26564,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getInferredTypes(context: InferenceContext): Type[] {
         const loggerLevel = 2;
         IDebug.ilogGroup(()=>`getInferredTypes[in]:`,loggerLevel);
-        if (IDebug.logLevel>=loggerLevel){
+        if (IDebug.isActive(loggerLevel)){
             IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>{
                 IDebug.ilog(()=>`getInferredTypes:in: context: ${s}`,loggerLevel);
             });
@@ -26576,7 +26573,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         for (let i = 0; i < context.inferences.length; i++) {
             result.push(getInferredType(context, i));
         }
-        if (IDebug.logLevel>=loggerLevel){
+        if (IDebug.isActive(loggerLevel)){
             result.forEach((t,i)=>IDebug.ilog(()=>`getInferredTypes returns type[${i}]: ${IDebug.dbgs.dbgTypeToString(t)}`,loggerLevel));
         }
         IDebug.ilogGroupEnd(()=>`getInferredTypes[out]:`,loggerLevel);
@@ -34128,7 +34125,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }, signature: ${IDebug.dbgs.dbgSignatureToString(signature)
         }, checkMode: ${IDebug.dbgs.dbgCheckModeToString(checkMode)
         }`,loggerLevel);
-    if (IDebug.logLevel>=loggerLevel) {
+    if (IDebug.isActive(loggerLevel)) {
         args.forEach((arg, i) => IDebug.ilog(()=>`inferTypeArguments:in: args[${i}]: ${IDebug.dbgs.dbgNodeToString(arg)}`,loggerLevel));
 
         IDebug.dbgs.dbgInferenceContextToStrings(context).forEach(s=>{
@@ -34228,7 +34225,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         return getInferredTypes(context);
     })();
-    if (IDebug.logLevel>=loggerLevel){
+    if (IDebug.isActive(loggerLevel)){
         ret.forEach((t,i)=>IDebug.ilog(()=>`inferTypeArguments: returns type[${i}] ${IDebug.dbgs.dbgTypeToString(t)}`,loggerLevel));
     }
     IDebug.ilogGroupEnd(()=>`inferTypeArguments[out]`,loggerLevel);
@@ -35065,7 +35062,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         function chooseOverload(candidates: Signature[], relation: Map<string, RelationComparisonResult>, isSingleNonGenericCandidate: boolean, signatureHelpTrailingComma = false) {
         const loggerLevel = 2;
         IDebug.ilogGroup(()=>`chooseOverload()[in]:`,loggerLevel);
-        if (IDebug.logLevel>=loggerLevel){
+        if (IDebug.isActive(loggerLevel)){
             //candidates.forEach((c,i)=>IDebug.ilog(()=>`candidate[${i}]:${IDebug.dbgs.dbgSignatureToString(c)}`,2));
             candidates.forEach((cand,icand)=>{
                 IDebug.dbgs.dbgSignatureAndCompositesToStrings(cand).forEach(str=>{
@@ -35157,7 +35154,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             return undefined;
         })();
-        if (IDebug.logLevel>=loggerLevel){
+        if (IDebug.isActive(loggerLevel)){
             IDebug.dbgs.dbgSignatureAndCompositesToStrings(ret).forEach(str=>{
                 IDebug.ilog(()=>`chooseOverload()[returns]: ${str}`,loggerLevel);
             });
@@ -35409,7 +35406,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         return resolveCall(node, callSignatures, candidatesOutArray, checkMode, callChainFlags);
     })();
-    if (IDebug.logLevel>=loggerLevel){
+    if (IDebug.isActive(loggerLevel)){
         if (candidatesOutArray){
             IDebug.ilog(()=>`resolveCallExpression[ret]: candidatesOutArray.length = ${candidatesOutArray.length}`,loggerLevel);
             candidatesOutArray.forEach((sig,isig)=>{
@@ -36158,7 +36155,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         return returnType;
     })();
-    if (IDebug.logLevel>=loggerLevel){
+    if (IDebug.isActive(loggerLevel)){
         const callsigs = getSignaturesOfType(ret, SignatureKind.Call);
         callsigs.forEach((sig,isig)=>{
             IDebug.ilog(()=>`checkCallExpression[ret.callSignatures[${isig}]]: ${IDebug.dbgs.dbgSignatureToString(sig)}`, loggerLevel);
@@ -37841,7 +37838,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                 }
                 checkSignatureDeclaration(node);
-                if (IDebug.logLevel>=loggerLevel){
+                if (IDebug.isActive(loggerLevel)){
                     IDebug.ilog(()=>`contextuallyCheckFunctionExpressionOrObjectLiteralMethod: signature(final):`,loggerLevel);
                     IDebug.dbgs.dbgSignatureAndCompositesToStrings(signature).forEach(str=>{
                         IDebug.ilog(()=>`  ${str}`,loggerLevel);

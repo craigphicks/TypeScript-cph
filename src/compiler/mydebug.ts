@@ -10,6 +10,7 @@ export interface ILoggingHost {
     ilogGroup (message: (()=>string), level?: LogLevel): number;
     ilogGroupEnd (message?: (()=>string), level?: LogLevel, expectedIndent?: number): void;
     notifySourceFile(sourceFile: SourceFile, typeChecker: TypeChecker): void;
+    isActiveFile(): boolean;
 }
 
 export namespace IDebug {
@@ -21,7 +22,7 @@ export namespace IDebug {
     export let loggingHost: ILoggingHost | undefined;
     export let dbgs: Dbgs = 0 as any as Dbgs;
     export let checker: TypeChecker | undefined;
-    // temporary
+    export function isActive(loggerLevel: number) { return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile(); }
     export function ilog(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
     }
@@ -76,6 +77,7 @@ export class ILoggingClass implements ILoggingHost {
         this.nodeFs = require("fs");
         this.nodePath = require("path");
     }
+    isActiveFile() { return !!this.logFileFd; }
     log(level: LogLevel, messagef: (() => string)) {
         if (!this.logFileFd) return;
         if (level > IDebug.logLevel) return;
@@ -91,11 +93,13 @@ export class ILoggingClass implements ILoggingHost {
         this.log(level, message);
     }
     ilogGroup (message: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER) {
+        if (!this.logFileFd) return 0;
         this.log(level, message);
         if (level > IDebug.logLevel) return this.indent;
         return this.indent++;
     }
     ilogGroupEnd (message?: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER, expectedIndent: number | undefined = undefined) {
+        if (!this.logFileFd) return;
         if (level <= IDebug.logLevel) this.indent--;
         if (level<0) Debug.fail("ilogGroupEnd: Negative log level");
         if (expectedIndent!==undefined && expectedIndent!==this.indent) {
@@ -106,25 +110,15 @@ export class ILoggingClass implements ILoggingHost {
         }
     }
     notifySourceFile(sourceFile: SourceFile, typeChecker: TypeChecker) {
-        //if (sourceFile.originalFileName!==this.currentSourceFn){
-            this.currentSourceFn = sourceFile.originalFileName;
-            this.currentSourceFnCount = 0;
-            //this.logFilename = this.dbgTestFilenameMatched(sourceFile);
-            if (this.dbgTestFilenameMatches(sourceFile)){
-                this.sourceToFilenameCount.set(this.currentSourceFn, 0);
-                this.logFilename = this.dbgTestFilename(sourceFile);
-                this.logFileFd = this.nodeFs.openSync(this.logFilename, 'w');
-                this.numOutLines = 0;
-                IDebug.checker = typeChecker;
-            }
-        //}
-        // else {
-        //     this.currentSourceFnCount++;
-        //     this.logFilename = this.dbgTestFilename(sourceFile);
-        //     this.logFileFd = this.nodeFs.openSync(this.logFilename, 'w');
-        //     this.numOutLines = 0;
-        //     //IDebug.checker = typeChecker;
-        // }
+        this.currentSourceFn = sourceFile.originalFileName;
+        this.currentSourceFnCount = 0;
+        if (this.dbgTestFilenameMatches(sourceFile)){
+            this.sourceToFilenameCount.set(this.currentSourceFn, 0);
+            this.logFilename = this.dbgTestFilename(sourceFile);
+            this.logFileFd = this.nodeFs.openSync(this.logFilename, 'w');
+            this.numOutLines = 0;
+            IDebug.checker = typeChecker;
+        }
     }
     private dbgTestFilenameMatches(node: SourceFile): boolean {
         const re = /^\/.src\//;
@@ -253,7 +247,13 @@ export class DbgsClass implements Dbgs{
     };
     dbgNodeToString(node: Node | undefined): string {
         if (!node) return "<undef>";
-        return `[n${this.getNodeId(node)}] ${this.dbgGetNodeText(node)}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
+        const getOneLineNodeTxt = (()=>{
+            let str = this.dbgGetNodeText(node);
+            str = str.replace(/\n/g, " ");
+            if (str.length>120) str = str.slice(0,50) + "..." + str.slice(-50);
+            return str;
+        });
+        return `[n${this.getNodeId(node)}] ${getOneLineNodeTxt()}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
     }
     dbgSignatureId(c: Signature | undefined): number {
         return c ? this.getSignatureId(c) : -1;
