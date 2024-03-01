@@ -13469,6 +13469,138 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             result = results;
         }
+    //     if (!result) {
+	//    // IWOZERE - moved the action to createUnionOrIntersectionProperty
+    //         let list0: readonly Signature[] | undefined = undefined;
+    //         let sig00: Readonly<Signature> | undefined = undefined;
+    //         if (signatureLists.every(((list,listIndex)=>{
+    //             if (listIndex === 0) {
+    //                 list0 = list;
+    //                 sig00 = list[0];
+    //                 if (!list.every(sig => sig.target && sig.mapper && [TypeMapKind.Simple,TypeMapKind.Array,TypeMapKind.Merged, TypeMapKind.Composite].includes(sig.mapper.kind))) return false;
+    //             };
+    //             return list.length === list0!.length
+    //                 && list.every((sig,j) => {
+    //                     return sig.target && sig.target === list0![j].target && sig.mapper && sig.mapper.kind === list0![j].mapper?.kind;
+    //                 });
+    //         }))) {
+    //             // function getMapperTargets(mapper: TypeMapper): readonly Type[] {
+    //             //     if (mapper.kind===TypeMapKind.Simple) return [mapper.target!];
+    //             //     else if (mapper.kind===TypeMapKind.Array) return mapper.targets!;
+    //             //     else Debug.assert(false);
+    //             // }
+    //             // function getMapperSources(mapper: TypeMapper): readonly Type[] {
+    //             //     if (mapper.kind===TypeMapKind.Simple) return [mapper.source!];
+    //             //     else if (mapper.kind===TypeMapKind.Array) return mapper.sources!;
+    //             //     else Debug.assert(false);
+    //             // }
+    //             function isUnresolved(target: Type): boolean { return !!(target.flags & TypeFlags.TypeParameter); }
+    //             type TypeMapperSimple = { kind: TypeMapKind.Simple; source: Type; target: Type; };
+    //             type TypeMapperArray = { kind: TypeMapKind.Array; sources: readonly Type[]; targets: readonly Type[] | undefined; };
+    //             type TypeMapperDouble = { kind: TypeMapKind.Composite | TypeMapKind.Merged; mapper1: TypeMapper; mapper2: TypeMapper; };
+
+    //             /**
+    //              * mappers should all be of the same kind referencing the same target.
+    //              */
+    //             function getUnionMapper(mappers: readonly TypeMapper[]): TypeMapper {
+    //                 const mapper0 = mappers[0];
+
+    //                 Debug.assert([TypeMapKind.Simple,TypeMapKind.Array,TypeMapKind.Merged,TypeMapKind.Composite].includes(mapper0.kind));
+    //                 //if (![TypeMapKind.Simple,TypeMapKind.Array,TypeMapKind.Merged,TypeMapKind.Composite].includes(mapper0.kind)) return undefined;
+
+    //                 Debug.assert(mappers.every(m=>m.kind===mapper0.kind));
+    //                 //if (!(mappers.every(m=>m.kind===mapper0.kind))) return undefined;
+
+    //                 if (mapper0.kind===TypeMapKind.Simple) {
+    //                     let unresolved = isUnresolved(mapper0.target);
+    //                     Debug.assert(mappers.every(m=>isUnresolved((m as TypeMapperSimple).target)===unresolved));
+    //                     if (unresolved) return mapper0; //createTypeMapper([mapper0.source], [mapper0.target]);
+    //                     return createTypeMapper([mapper0.source], [getUnionType(mappers.map(m=>(m as TypeMapperSimple).target!))]);
+    //                 }
+    //                 else if (mapper0.kind===TypeMapKind.Array) {
+    //                     let unresolved = !mapper0.targets;
+    //                     Debug.assert(mappers.every(m=> (m as TypeMapperArray).targets===undefined)===unresolved);
+    //                     if (unresolved) return mapper0;
+    //                     unresolved = isUnresolved(mapper0.targets![0]);
+    //                     Debug.assert(mappers.every(m=> {
+    //                         return isUnresolved((m as TypeMapperArray).targets![0])===unresolved
+    //                         && (m as TypeMapperArray).targets!.every(t=>isUnresolved(t)===unresolved);
+    //                     }));
+    //                     if (unresolved) return mapper0;
+
+    //                     const length = mapper0.sources.length;
+    //                     const unionTargets: Type[] = [];
+    //                     for (let sourceIndex = 0; sourceIndex < length; sourceIndex++) {
+    //                         const source = mapper0.sources[sourceIndex];
+    //                         unionTargets.push(getUnionType(mappers.map(m=>(m as TypeMapperArray).targets![sourceIndex])));
+    //                     }
+    //                     return createTypeMapper(mapper0.sources, unionTargets);
+    //                 }
+    //                 else if (mapper0.kind===TypeMapKind.Composite){
+    //                     /**
+    //                      * Assume that mapper1 is strictly unresolved and mapper2 is strictly resolved.
+    //                      */
+    //                     Debug.assert(getUnionMapper([mapper0.mapper1 as TypeMapperSimple | TypeMapperArray])===mapper0.mapper1); // means it is unresolved.
+    //                     const unionOfMapper2 = getUnionMapper(mappers.map(mapper=>(mapper as TypeMapperDouble).mapper2));
+    //                     const unresolved  = unionOfMapper2 === mapper0.mapper2;
+    //                     Debug.assert(!unresolved);
+    //                     if (unresolved) return mapper0;
+    //                     return {
+    //                         kind: TypeMapKind.Composite,
+    //                         mapper1: mapper0.mapper1,
+    //                         mapper2: unionOfMapper2!
+    //                     }
+
+    //                 }
+    //                 else if (mapper0.kind===TypeMapKind.Merged){
+    //                     Debug.assert(false, "not yet implemented, mapper0.kind===TypeMapKind.Merged");
+    //                 }
+    //                 else Debug.assert(false, "cannot handle kind");
+    //             }
+    //             function cloneSymbolNoMerged(symbol:Symbol): TransientSymbol {
+    //                 return createSymbol(symbol.flags, symbol.escapedName);
+    //             }
+    //             const sigsOut: Signature[] = [];
+
+    //             if (list0!.every((_,i) => {
+
+    //                 /**
+    //                  * The combined signature is hte target with the union of typeParamters over same-target signatures.
+    //                  */
+    //                 const target = list0![i].target!;
+    //                 const sameTargetSigs = signatureLists.map(list => list[i]);
+
+    //                 const coverMapper = getUnionMapper(sameTargetSigs.map(sig=>sig.mapper!));
+    //                 if (!coverMapper) {
+    //                     return false;
+    //                 }
+    //                 const coverSignature = instantiateSignature(target, coverMapper);
+    //                 /**
+    //                  * The individual return types are not guaranteed to be there.
+    //                  * So we could leave it until later - but for the time being do this
+    //                  */
+    //                 const unionOfReturnTypes: Type[] = [];
+    //                 if (every(sameTargetSigs, sig=>{
+    //                     unionOfReturnTypes.push(sig.resolvedReturnType!);
+    //                     return !!sig.resolvedReturnType
+    //                 })){
+    //                     coverSignature.resolvedReturnType = getUnionType(unionOfReturnTypes);
+    //                 }
+    //                 /* end */
+    //                 coverSignature.compositeSignatures = sameTargetSigs;
+    //                 coverSignature.compositeKind = TypeFlags.Union; // indicates that the cover is a union.
+    //                 sigsOut.push(coverSignature);
+    //                 return true;
+
+
+    //             })) {
+    //                 return sigsOut;
+    //             }
+    //             return emptyArray
+    //         }
+    //    }
+
+
         return result || emptyArray;
     }
 
@@ -14641,7 +14773,71 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return getReducedType(getApparentType(getReducedType(type)));
     }
 
-    function createUnionOrIntersectionProperty(containingType: UnionOrIntersectionType, name: __String, skipObjectFunctionPropertyAugment?: boolean): Symbol | undefined {
+    function createCoverOfMappersMapper(mappers: readonly TypeMapper[]): TypeMapper | undefined {
+
+        function isUnresolved(target: Type): boolean { return !!(target.flags & TypeFlags.TypeParameter); }
+        type TypeMapperSimple = { kind: TypeMapKind.Simple; source: Type; target: Type; };
+        type TypeMapperArray = { kind: TypeMapKind.Array; sources: readonly Type[]; targets: readonly Type[] | undefined; };
+        type TypeMapperDouble = { kind: TypeMapKind.Composite | TypeMapKind.Merged; mapper1: TypeMapper; mapper2: TypeMapper; };
+
+
+        const mapper0 = mappers[0];
+
+        Debug.assert([TypeMapKind.Simple,TypeMapKind.Array,TypeMapKind.Merged,TypeMapKind.Composite].includes(mapper0.kind));
+        //if (![TypeMapKind.Simple,TypeMapKind.Array,TypeMapKind.Merged,TypeMapKind.Composite].includes(mapper0.kind)) return undefined;
+
+        Debug.assert(mappers.every(m=>m.kind===mapper0.kind));
+        //if (!(mappers.every(m=>m.kind===mapper0.kind))) return undefined;
+
+        if (mapper0.kind===TypeMapKind.Simple) {
+            let unresolved = isUnresolved(mapper0.target);
+            Debug.assert(mappers.every(m=>isUnresolved((m as TypeMapperSimple).target)===unresolved));
+            if (unresolved) return mapper0; //createTypeMapper([mapper0.source], [mapper0.target]);
+            return createTypeMapper([mapper0.source], [getUnionType(mappers.map(m=>(m as TypeMapperSimple).target!))]);
+        }
+        else if (mapper0.kind===TypeMapKind.Array) {
+            let unresolved = !mapper0.targets;
+            Debug.assert(mappers.every(m=> (m as TypeMapperArray).targets===undefined)===unresolved);
+            if (unresolved) return mapper0;
+            unresolved = isUnresolved(mapper0.targets![0]);
+            Debug.assert(mappers.every(m=> {
+                return isUnresolved((m as TypeMapperArray).targets![0])===unresolved
+                && (m as TypeMapperArray).targets!.every(t=>isUnresolved(t)===unresolved);
+            }));
+            if (unresolved) return mapper0;
+
+            const length = mapper0.sources.length;
+            const unionTargets: Type[] = [];
+            for (let sourceIndex = 0; sourceIndex < length; sourceIndex++) {
+                const source = mapper0.sources[sourceIndex];
+                unionTargets.push(getUnionType(mappers.map(m=>(m as TypeMapperArray).targets![sourceIndex])));
+            }
+            return createTypeMapper(mapper0.sources, unionTargets);
+        }
+        else if (mapper0.kind===TypeMapKind.Composite){
+            /**
+             * Assume that mapper1 is strictly unresolved and mapper2 is strictly resolved.
+             */
+            Debug.assert(createCoverOfMappersMapper([mapper0.mapper1 as TypeMapperSimple | TypeMapperArray])===mapper0.mapper1); // means it is unresolved.
+            const unionOfMapper2 = createCoverOfMappersMapper(mappers.map(mapper=>(mapper as TypeMapperDouble).mapper2));
+            const unresolved  = unionOfMapper2 === mapper0.mapper2;
+            Debug.assert(!unresolved);
+            if (unresolved) return mapper0;
+            return {
+                kind: TypeMapKind.Composite,
+                mapper1: mapper0.mapper1,
+                mapper2: unionOfMapper2!
+            }
+
+        }
+        else if (mapper0.kind===TypeMapKind.Merged){
+            Debug.assert(false, "not yet implemented, mapper0.kind===TypeMapKind.Merged");
+        }
+        else Debug.assert(false, "cannot handle kind");
+        return undefined;
+    }
+
+    function  createUnionOrIntersectionProperty(containingType: UnionOrIntersectionType, name: __String, skipObjectFunctionPropertyAugment?: boolean): Symbol | undefined {
     const loggerLevel = 2;
     IDebug.ilogGroup(()=>`createUnionOrIntersectionProperty[in]:${IDebug.dbgs.dbgTypeToString(containingType)}, ${name}, skipObjectFunctionPropertyAugment:${skipObjectFunctionPropertyAugment}`,loggerLevel);
     const ret = (()=>{
@@ -14788,6 +14984,58 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             propTypes.push(type);
         }
+        /**
+         * IWOZERE -
+         * This is a good place to handle union of shared-generic-parent methods with differing parameters.
+         * Adding the processing in `getUnionType` would be a special case that should only be exercised when called from here
+         * anyway.  We can also take advantage of the shared declarations using a declaration-to-property map.
+         *
+         */
+        var enableMergedGenericMethodProcessing = true;
+        const mergedMethodResult = (() => {
+            if (!enableMergedGenericMethodProcessing) return undefined;
+            const links0 = getSymbolLinks(props[0]);
+            const commonTargetSymbol = links0.mapper && links0.target!;
+            const mappers: TypeMapper[] = [];
+            if (!commonTargetSymbol || !props.every((prop,propIndex)=> {
+                if (!(prop.flags & SymbolFlags.Method)) return false;
+                if (propIndex===0) {
+                    mappers.push(links0.mapper!);
+                    return true;
+                }
+                const links = getSymbolLinks(prop);
+                if (links.mapper && links.target === commonTargetSymbol){
+                    mappers.push(links.mapper);
+                    return true;
+                }
+                return false;
+            })) return undefined;
+
+            const unionMapper = createCoverOfMappersMapper(mappers);
+            if (!unionMapper) return undefined;
+            const symbol = createSymbol(SymbolFlags.Property | props[0].flags, name, syntheticFlag | checkFlags);
+            const typeOfSymbol = {
+                ...propTypes[0] // yikes!
+            };
+            //symbol.links.containingType = containingType // if it is referenced, it cannot be garbage collected
+            //symbol.links.type = createObjectType((propTypes[0] as ObjectType).objectFlags, symbol); doesn't work
+            symbol.links.type = typeOfSymbol;
+            symbol.links.target = commonTargetSymbol;
+            symbol.links.mapper = unionMapper
+            symbol.links.composite = {
+                mappers,
+                kind: TypeFlags.Union,
+            }
+            if (IDebug.isActive(loggerLevel)){
+                IDebug.ilog(()=>`createUnionOrIntersectionProperty: mergedMethodResult: ${IDebug.dbgs.dbgSymbolToString(symbol)}`, loggerLevel);
+                const type = getTypeOfSymbol(symbol);
+                IDebug.ilog(()=>`createUnionOrIntersectionProperty: mergedMethodResult: ${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+                getTypeOfSymbol(symbol);
+            }
+            return symbol;
+        })();
+        if (mergedMethodResult) return mergedMethodResult;
+
         addRange(propTypes, indexTypes);
         const result = createSymbol(SymbolFlags.Property | (optionalFlag ?? 0), name, syntheticFlag | checkFlags);
         result.links.containingType = containingType;
@@ -20905,9 +21153,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const targetSig = checkMode & SignatureCheckMode.Callback || isInstantiatedGenericParameter(target, i) ? undefined : getSingleCallSignature(getNonNullableType(targetType));
                 const callbacks = sourceSig && targetSig && !getTypePredicateOfSignature(sourceSig) && !getTypePredicateOfSignature(targetSig) &&
                     getTypeFacts(sourceType, TypeFacts.IsUndefinedOrNull) === getTypeFacts(targetType, TypeFacts.IsUndefinedOrNull);
-                let related = callbacks ?
-                    compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers) :
-                    !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
+                let related: Ternary;
+                if (callbacks) {
+                    related = compareSignaturesRelated(targetSig, sourceSig, (checkMode & SignatureCheckMode.StrictArity) | (strictVariance ? SignatureCheckMode.StrictCallback : SignatureCheckMode.BivariantCallback), reportErrors, errorReporter, incompatibleErrorReporter, compareTypes, reportUnreliableMarkers);
+                }
+                else {
+                    if (!compareTypesUnilaterally) {
+                        related = !(checkMode & SignatureCheckMode.Callback) && !strictVariance && compareTypes(sourceType, targetType, /*reportErrors*/ false) || compareTypes(targetType, sourceType, reportErrors);
+                    }
+                    else {
+                        related = compareTypes(sourceType, targetType, reportErrors);
+                    }
+                }
                 // With strict arity, (x: number | undefined) => void is a subtype of (x?: number | undefined) => void
                 if (related && checkMode & SignatureCheckMode.StrictArity && i >= getMinArgumentCount(source) && i < getMinArgumentCount(target) && compareTypes(sourceType, targetType, /*reportErrors*/ false)) {
                     related = Ternary.False;
@@ -21289,6 +21546,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 IDebug.dbgs.dbgTypeToString(target)} relation:${
                     relationMap.get(relation)!}, !!errorNode:${!!errorNode}, headMessage: ${!!headMessage}`,loggerLevel);
     }
+        // if (source.id===103){
+        //     debugger;
+        // }
         let errorInfo: DiagnosticMessageChain | undefined;
         let relatedInfo: [DiagnosticRelatedInformation, ...DiagnosticRelatedInformation[]] | undefined;
         let maybeKeys: string[];
@@ -21691,7 +21951,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          * * Ternary.False if they are not related.
          */
         function isRelatedTo(originalSource: Type, originalTarget: Type, recursionFlags: RecursionFlags = RecursionFlags.Both, reportErrors = false, headMessage?: DiagnosticMessage, intersectionState = IntersectionState.None): Ternary {
-        const logLevel = 2;
         IDebug.ilogGroup(()=>{
             let str = "recursionFlags:";
             switch (recursionFlags){
@@ -21710,7 +21969,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 default: Debug.assertNever(intersectionState);
             }
             return `isRelatedTo[in]: originalSource:${IDebug.dbgs.dbgTypeToString(originalSource)}, originalTarget:${IDebug.dbgs.dbgTypeToString(originalTarget)}, ${str}`;
-        },logLevel);
+        },loggerLevel);
         const ret = (()=>{
             if (originalSource === originalTarget) return Ternary.True;
 
@@ -21827,7 +22086,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         })();
         IDebug.ilogGroupEnd(()=>{
             return `isRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`;
-        },logLevel);
+        },loggerLevel);
         return ret;
         }
 
@@ -22009,6 +22268,170 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return prop.valueDeclaration && container.valueDeclaration && prop.valueDeclaration.parent === container.valueDeclaration;
         }
 
+        /**
+         * Check that an overload instance is assignable to an intersection target.
+         * Algorithm
+         *
+         * Let s[i], i in 0...Ns-1 be the source overloads.
+         *
+         * Let t[j], j in 0...Nt-1 be the target intersection member types.
+         *
+         * Let t[j][k], k in 0...Ntj-1 be the target overloads in type t[j].
+         *
+         * Check that the source has an into mapping to the target:
+         *
+         * SourceDomainMatch(i):==
+         *     For some j,k exists IdentitiyRelation(Parameters<s[i]>,Parameters<t[j][k]>)===true
+         *
+         * SourceRangeMatch(i):==
+         *     Let rt be the union of ReturnTypes<t[j][k]> for all j,k s.t. Parameters<s[i]> assignable to Parameters<t[j][k]>
+         *     ReturnTypes<s[i]> assignable to rt
+         *
+         * TargetDomainMatch(t[j,k]):==
+         *     For some i exists IdentitiyRelation(Parameters<s[i]>,Parameters<t[j][k]>)===true
+         *
+         * Passing conditions:
+         * - For all i, SourceDomainMatch(i)===true
+         * - For all i, SourceRangeMatch(i)===true
+         * - For all j,k, TargetDomainMatch(t[j][k])===true
+         */
+        function checkOverloadsRelatedToIntersection(source: Type, target: Type, _reportErrors: boolean): { computed: boolean; ternary: Ternary; } {
+        IDebug.ilogGroup(()=>`checkOverloadsRelatedToIntersection[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}`,loggerLevel);
+
+
+        const ret = ((): { computed: boolean, ternary:Ternary } => {
+            const sourceSignatures = getSignaturesOfType(source, SignatureKind.Call);
+            Debug.assert(sourceSignatures.length);
+            if (IDebug.logLevel>=loggerLevel){
+                sourceSignatures.forEach((sig,si)=>{
+                    IDebug.dbgs.dbgSignatureAndCompositesToStrings(sig).forEach((s)=>IDebug.ilog(()=>`origSourceSig[${si}]: ${s}`,loggerLevel));
+                });
+            }
+
+            type MapTTS = Map<number/*tti*/,Map<number/*ti*/,Set<number>/*si*/>>;
+            let maptts: MapTTS | undefined = (IDebug.logLevel>=loggerLevel) ? new Map() : undefined;
+            let mapttsOff = false;
+            const constructSignatureToString = (signature: Signature, forceReturnType?: Type) => {
+                const origReturnType = signature.resolvedReturnType;
+                signature.resolvedReturnType = forceReturnType;
+                const str = signatureToString(signature, /*enclosingDeclaration*/ undefined, TypeFormatFlags.WriteArrowStyleSignature, SignatureKind.Call);
+                signature.resolvedReturnType = origReturnType;
+                return str;
+            };
+            const mapAssignedToBy: Map</*tti*/ number, Map</*ti*/ number, /*some si*/ true>> = new Map<number, Map<number, true>>();
+            const failed = sourceSignatures.some((ssig, _si) => {
+                if (getReturnTypeOfSignature(ssig) === neverType) return false;
+                const accum = {
+                    hadMatch: false,
+                    gReturn: neverType as Type,
+                    gReturnAllVoid: true,
+                };
+                const matchedTargetSigs: Signature[] = [];
+                (target as IntersectionType).types.forEach((targetMember, _tti) => {
+                    const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
+                    targetSignatures.forEach((tsig, _ti) => {
+                        const targetReturnType = getReturnTypeOfSignature(tsig);
+                        if (
+                            compareSignaturesRelated(
+                                ssig,
+                                tsig,
+                                SignatureCheckMode.None | SignatureCheckMode.IgnoreReturnTypes,
+                                /*reportErrors*/ false,
+                                /*errorReporter*/ undefined,
+                                /*incompatibleErrorReporter*/ undefined,
+                                compareTypesIdentical, // compareTypesAssignable,
+                                /*reportUnreliableMarkers*/ undefined,
+                                /*compareTypesUnilaterally*/ true,
+                            ) === Ternary.True
+                        ) {
+                            accum.hadMatch = true;
+                            if (targetReturnType !== voidType) {
+                                accum.gReturn = getUnionType([accum.gReturn, targetReturnType]);
+                                accum.gReturnAllVoid = false;
+                            }
+                            matchedTargetSigs.push(tsig);
+                            let mtti = mapAssignedToBy.get(_tti);
+                            if (!mtti) {
+                                mtti = new Map();
+                                mapAssignedToBy.set(_tti, mtti);
+                            }
+                            const setsi = mtti.get(_ti);
+                            if (!setsi) {
+                                mtti.set(_ti, true);
+                            }
+                        }
+                    });
+                });
+                if (!accum.hadMatch) {
+                    IDebug.ilog(()=>`checkOverloadsRelatedToIntersection: si:${_si}, FAIL @3 (no match)`,loggerLevel);
+                    if (_reportErrors){
+                        resetErrorInfo({ skipParentCounter: 0 } as ReturnType<typeof captureErrorCalculationState>);
+                        reportError(Diagnostics.Parameters_of_signature_0_are_not_assignable_to_the_parameters_of_any_signature_in_type_1, constructSignatureToString(ssig), typeToString(target));
+                    }
+                    return true; // failed
+                }
+                else {
+                    const returnType = getReturnTypeOfSignature(ssig);
+                    if (!accum.gReturnAllVoid && !isTypeAssignableTo(returnType, accum.gReturn)) {
+                        IDebug.ilog(()=>`checkOverloadsRelatedToIntersection: si:${
+                            _si}, FAIL @4 (source return type ${
+                                IDebug.dbgs.dbgTypeToString(returnType)
+                            } not assignable to accum target return type ${
+                                IDebug.dbgs.dbgTypeToString(accum.gReturn)
+                            })`,loggerLevel);
+                        if (_reportErrors){
+                            resetErrorInfo({ skipParentCounter: 0 } as ReturnType<typeof captureErrorCalculationState>);
+                            reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(returnType), typeToString(accum.gReturn));
+                            const strset = new Set<string>();
+                            matchedTargetSigs.forEach(tsig => strset.add(constructSignatureToString(tsig)));
+                            const strarr: string[] = [];
+                            strset.forEach(tstr => strarr.push(tstr));
+                            reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, constructSignatureToString(ssig), strarr.join(" | "));
+                        }
+                        return true; // failed
+                    }
+                }
+            });
+            if (failed) return { computed: true, ternary: Ternary.False };
+            const failed2 = (target as IntersectionType).types.some((targetMember, _tti) => {
+                const mtti = mapAssignedToBy.get(_tti);
+                const targetSignatures = getSignaturesOfType(targetMember, SignatureKind.Call);
+                return targetSignatures.some((tsig, _ti) => {
+                    if (!mtti || !mtti.get(_ti)) {
+                        IDebug.ilog(()=>`[${_tti},${_ti}]signature ${IDebug.dbgs.dbgSignatureToString(tsig)
+                        } is not assignable from any signature of ${IDebug.dbgs.dbgTypeToString(source)},`);
+                        if (_reportErrors) {
+                            resetErrorInfo({ skipParentCounter: 0 } as ReturnType<typeof captureErrorCalculationState>);
+                            reportError(Diagnostics.There_is_no_signature_in_type_0_such_that_its_parameters_are_assignable_to_the_parameters_of_signature_1, typeToString(source), constructSignatureToString(tsig, anyType));
+                            reportError(Diagnostics.Type_0_is_not_assignable_to_type_1, typeToString(source), typeToString(targetMember));
+                        }
+                        return true;
+                    }
+                });
+            });
+            if (failed2) return { computed: true, ternary: Ternary.False };
+            if (IDebug.logLevel >= loggerLevel){
+                maptts!.forEach((mapti,tti)=>{
+                    mapti.forEach((setsi,ti)=>{
+                        const targetSig = getSignaturesOfType((target as IntersectionType).types[tti], SignatureKind.Call)[ti];
+                        const targetReturnType = getReturnTypeOfSignature(targetSig);
+
+                        if (IDebug.logLevel>=loggerLevel){
+                            let str = `target[${ti},${tti}]:${IDebug.dbgs.dbgSignatureToString(targetSig)} matched by (count:${setsi.size}): `;
+                            IDebug.ilogGroup(()=>`checkOverloadsRelatedToIntersection: ${str}`, loggerLevel);
+                            setsi.forEach((si)=>{
+                                IDebug.ilog(()=>`[[${si}] ${IDebug.dbgs.dbgSignatureToString(sourceSignatures[si])}]`,loggerLevel);
+                            });
+                            IDebug.ilogGroupEnd(()=>``, loggerLevel);
+                        }
+                    });
+                });
+            }
+            return { computed: true, ternary: Ternary.True };
+        })();
+        IDebug.ilogGroupEnd(()=>`checkOverloadsRelatedToIntersection[out]: returns { computed:${ret.computed}, ternary:Ternary.${IDebug.dbgs.dbgTernaryToString(ret.ternary)}}`,loggerLevel);
+        return ret;
+        }
         function unionOrIntersectionRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState): Ternary {
         const logLevel = 2;
         IDebug.ilogGroup(()=>`unionOrIntersectionRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}, intersectionState:${IDebug.dbgs.dbgIntersectionState(intersectionState)}`, logLevel);
@@ -22040,8 +22463,81 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (target.flags & TypeFlags.Union) {
                 return typeRelatedToSomeType(getRegularTypeOfObjectLiteral(source), target as UnionType, reportErrors && !(source.flags & TypeFlags.Primitive) && !(target.flags & TypeFlags.Primitive), intersectionState);
             }
+            // This has to be moved up to be seen by other related-to functions.
+            // interface SkipMethods {
+            //     addSourceProp(type: Type, prop: Symbol): void;
+            //     hasSourceProp(type: Type, prop: Symbol): void;
+            //     deleteSourceProp(type: Type, prop: Symbol): void;
+            //     addTargetProp(type: Type, prop: Symbol): void;
+            //     hasTargetProp(type: Type, prop: Symbol): void;
+            //     deleteTargetProp(type: Type, prop: Symbol): void;
+            //     // addSourceToProps(source: Type, {sourceProp,targetProps}:{sourceProp: Symbol, targetProps: Symbol[]} ): void;
+            //     // getSourceToProps(source: Type, {sourceProp,targetProps}:{sourceProp: Symbol, targetProps: Symbol[]} ): void;
+            // };
+            // const skipMethods: SkipMethods = (0 as any as SkipMethods);
             if (target.flags & TypeFlags.Intersection) {
-                return typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
+                /*
+                 * 57087: For properties which are (possibly overloaded) functions in all of the targets, it is necessary to
+                 * treat the target as a single overload function in order to calculate matching, and do it here.
+                 * That result can be anded with the rest of the properties.
+                 */
+                // Note: add another deferredX for propertyless methods.
+                // const hasDeferredSourceCallSignature = false;
+                // const hasDeferredTypeCallSignatures: Type[] = [];
+                // const deferredSourceMethodProps: Symbol[] = [];
+                // const deferredTargetMethodProps: {target:Type,prop:Symbol}[] = [];
+                // let hasDeferredMethodProps = false;
+                // if (source.flags & TypeFlags.Object){
+                //     getPropertiesOfType(source).forEach(sourceProp => {
+                //         if (!(sourceProp.flags & SymbolFlags.Method)) return;
+                //         const tmpDeferredTargetMethodProps: {target:Type,prop:Symbol}[] = [];
+                //         const allTargetMethodsPresent = (target as IntersectionType).types.every(targetMember => {
+                //             const targetProp = getPropertyOfType(targetMember, sourceProp.escapedName);
+                //             if (targetProp && targetProp.flags & SymbolFlags.Method) {
+                //                 tmpDeferredTargetMethodProps.push({target:targetMember,prop:targetProp});
+                //                 return true;
+                //             }
+                //             else return false;
+                //         });
+                //         if (allTargetMethodsPresent) {
+                //             deferredSourceMethodProps.push(sourceProp);
+                //             deferredTargetMethodProps.push(...tmpDeferredTargetMethodProps);
+                //         }
+                //     });
+                // }
+                // Call with methods deferred
+                const result1 = typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
+
+                // For each propreties method group, call unionOrIntersectionRelatedTo directly with the property types
+                //  Alternatively, could we just do the properties before diving up the unions/intersections?  That would be cleaner?
+
+                /**
+                 * 57087: If the result is true, and some method properties were deferred, then calculate those properties now, using the methods
+                 */
+
+                if (result1 === Ternary.False) {
+                    /**
+                     * [cph] Existing code checks that source supports target, but not that source fits within target.
+                     */
+                    const sourceSignatures = getSignaturesOfType(source, SignatureKind.Call);
+                    if (
+                        sourceSignatures.every(sourceSig => {
+                            return !sourceSig.typeParameters;
+                        })
+                    ) {
+                        if (
+                            source.flags & TypeFlags.Object && getSignaturesOfType(source, SignatureKind.Call).length > 1
+                        ) {
+                            const { computed, ternary } = checkOverloadsRelatedToIntersection(source, target as IntersectionType, reportErrors);
+                            if (computed) {
+                                Debug.assert(ternary === Ternary.True || ternary === Ternary.False);
+                                return ternary;
+                            }
+                            // if not computed falls through to the reult of the general case: typeRelatedToEachType
+                        }
+                    }
+                }
+                return result1;
             }
             // Source is an intersection. For the comparable relation, if the target is a primitive type we hoist the
             // constraints of all non-primitive types in the source into a new intersection. We do this because the
@@ -22067,7 +22563,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             // checking whether the full intersection viewed as an object is related to the target.
             return someTypeRelatedToType(source as IntersectionType, target, /*reportErrors*/ false, IntersectionState.Source);
         })();
-        IDebug.ilogGroupEnd(()=>`unionOrIntersectionRelatedTo[out]: ${ret}`,logLevel);
+        IDebug.ilogGroupEnd(()=>`unionOrIntersectionRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`,logLevel);
         return ret;
         }
 
@@ -22263,14 +22759,16 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // equal and infinitely expanding. Fourth, if we have reached a depth of 100 nested comparisons, assume we have runaway recursion
         // and issue an error. Otherwise, actually compare the structure of the two types.
         function recursiveTypeRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState, recursionFlags: RecursionFlags): Ternary {
-        const logLevel = 2;
         IDebug.ilogGroup(()=>{
             return `recursiveTypeRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}, intersectionState:${IDebug.dbgs.dbgIntersectionState(intersectionState)}, recursionFlags:${IDebug.dbgs.dbgRecursionFlags(recursionFlags)}`
-        }, logLevel);
+        }, loggerLevel);
         const ret = (()=>{
             if (overflow) {
                 return Ternary.False;
             }
+            // if (source.id===105){
+            //     debugger;
+            // }
             const id = getRelationKey(source, target, intersectionState, relation, /*ignoreConstraints*/ false);
             const entry = relation.get(id);
             if (entry !== undefined) {
@@ -22411,11 +22909,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         })();
         IDebug.ilogGroupEnd(()=>{
             return `recursiveTypeRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`
-        }, logLevel);
+        }, loggerLevel);
         return ret;
         }
 
         function structuredTypeRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState): Ternary {
+        IDebug.ilogGroup(()=>`structuredTypeRelatedTo[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)}, reportErrors: ${reportErrors}, intersectionState: ${intersectionState}`,loggerLevel);
+        const ret = (()=>{
             const saveErrorInfo = captureErrorCalculationState();
             let result = structuredTypeRelatedToWorker(source, target, reportErrors, intersectionState, saveErrorInfo);
             if (relation !== identityRelation) {
@@ -22476,6 +22976,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 resetErrorInfo(saveErrorInfo);
             }
             return result;
+        })();
+        IDebug.ilogGroupEnd(()=>`structuredTypeRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        return ret;
         }
 
         function getApparentMappedTypeKeys(nameType: Type, targetType: MappedType) {
@@ -22491,6 +22994,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function structuredTypeRelatedToWorker(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState, saveErrorInfo: ReturnType<typeof captureErrorCalculationState>): Ternary {
+        IDebug.ilogGroup(()=>`structuredTypeRelatedToWorker[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)}, reportErrors: ${reportErrors}, intersectionState: ${intersectionState}`,loggerLevel);
+        const ret = (()=>{
             let result: Ternary;
             let originalErrorInfo: DiagnosticMessageChain | undefined;
             let varianceCheckFailed = false;
@@ -23047,6 +23552,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             return Ternary.False;
 
+
+
             function countMessageChainBreadth(info: DiagnosticMessageChain[] | undefined): number {
                 if (!info) return 0;
                 return reduceLeft(info, (value, chain) => value + 1 + countMessageChainBreadth(chain.next), 0);
@@ -23093,8 +23600,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     resetErrorInfo(saveErrorInfo);
                 }
             }
+        })();
+        IDebug.ilogGroupEnd(()=>`structuredTypeRelatedToWorker[out]: return ${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        return ret;
         }
-
         // A type [P in S]: X is related to a type [Q in T]: Y if T is related to S and X' is
         // related to Y, where X' is an instantiation of X in which P is replaced with Q. Notice
         // that S and T are contra-variant whereas X and Y are co-variant.
@@ -23241,6 +23750,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function propertyRelatedTo(source: Type, target: Type, sourceProp: Symbol, targetProp: Symbol, getTypeOfSourceProperty: (sym: Symbol) => Type, reportErrors: boolean, intersectionState: IntersectionState, skipOptional: boolean): Ternary {
+        IDebug.ilogGroup(()=>`propertyRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)
+        }, sourceProp:${IDebug.dbgs.dbgSymbolToString(sourceProp)}, targetProp:${IDebug.dbgs.dbgSymbolToString(targetProp)}`,loggerLevel);
+        const ret = (()=>{
             const sourcePropFlags = getDeclarationModifierFlagsFromSymbol(sourceProp);
             const targetPropFlags = getDeclarationModifierFlagsFromSymbol(targetProp);
             if (sourcePropFlags & ModifierFlags.Private || targetPropFlags & ModifierFlags.Private) {
@@ -23306,6 +23818,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return Ternary.False;
             }
             return related;
+        })();
+        IDebug.ilogGroupEnd(()=>`propertyRelatedTo[out]: return ${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        return ret;
         }
 
         function reportUnmatchedProperty(source: Type, target: Type, unmatchedProperty: Symbol, requireOptionalProperties: boolean) {
@@ -23364,6 +23879,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function propertiesRelatedTo(source: Type, target: Type, reportErrors: boolean, excludedProperties: Set<__String> | undefined, optionalsOnly: boolean, intersectionState: IntersectionState): Ternary {
+        IDebug.ilogGroup(()=>`propertiesRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)
+        }, excludedProperties: ${excludedProperties? (()=>{
+            let a: __String[] = [];
+            excludedProperties.forEach((v)=>{a.push(v)});
+            return a.join(",");
+        })() : ""}, optionalsOnly: ${optionalsOnly}, intersectionState: ${intersectionState}, reportErrors: ${reportErrors}`,loggerLevel);
+        const ret = (()=>{
             if (relation === identityRelation) {
                 return propertiesIdenticalTo(source, target, excludedProperties);
             }
@@ -23510,6 +24032,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
             return result;
+        })();
+        IDebug.ilogGroupEnd(()=>`propertiesRelatedTo[out]: return ${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        return ret;
         }
 
         function propertiesIdenticalTo(source: Type, target: Type, excludedProperties: Set<__String> | undefined): Ternary {
