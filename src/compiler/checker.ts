@@ -14993,7 +14993,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          */
         var enableMergedGenericMethodProcessing = true;
         const mergedMethodResult = (() => {
-            if (!enableMergedGenericMethodProcessing) return undefined;
+            if (!enableMergedGenericMethodProcessing || !isUnion || skipObjectFunctionPropertyAugment) return undefined;
             const links0 = getSymbolLinks(props[0]);
             const commonTargetSymbol = links0.mapper && links0.target!;
             const mappers: TypeMapper[] = [];
@@ -15015,7 +15015,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (!unionMapper) return undefined;
             const symbol = createSymbol(SymbolFlags.Property | props[0].flags, name, syntheticFlag | checkFlags);
             const typeOfSymbol = {
-                ...propTypes[0] // yikes!
+                ...propTypes[0], // yikes!
+                mapper: unionMapper,
             };
             //symbol.links.containingType = containingType // if it is referenced, it cannot be garbage collected
             //symbol.links.type = createObjectType((propTypes[0] as ObjectType).objectFlags, symbol); doesn't work

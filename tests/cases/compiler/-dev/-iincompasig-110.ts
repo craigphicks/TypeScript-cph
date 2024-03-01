@@ -6,6 +6,6 @@ interface Test110<T> {
 }
 
 declare const arr: Test110<number> | Test110<string>;
-arr.f(x => x);
+const result = arr.f(x => x);
 
 
