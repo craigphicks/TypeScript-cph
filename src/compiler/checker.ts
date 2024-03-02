@@ -17545,6 +17545,59 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (types.length === 1) {
             return types[0];
         }
+        // IWOZERE: Check for union of generic functions.
+        var enableMergedGenericMethodProcessing_union = true;
+        mergeFuncs: if (enableMergedGenericMethodProcessing_union) {
+            let mapOfTargetToType: Map</*first*/AnonymousType, Type[]> | undefined;
+            const otherTypes: Type[] = [];
+            for (const type of types) {
+                if (type.flags & TypeFlags.Object && (type as AnonymousType).target) {
+                    const target = (type as AnonymousType).target!;
+                    if (mapOfTargetToType?.has(target)) {
+                        mapOfTargetToType?.get(target)!.push(type);
+                        continue;
+                    }
+                    if (!(target as InterfaceType).typeParameters || (target as InterfaceType).typeParameters?.length !== getTypeArguments(type as TypeReference).length) {
+                        otherTypes.push(type);
+                        continue;
+                    }
+                    // Can only do "call expression only interface" merges.
+                    if (getSignaturesOfType(target, SignatureKind.Call).length
+                    && getSignaturesOfType(target, SignatureKind.Construct).length === 0
+                    && getPropertiesOfObjectType(type).length === 0
+                    && getIndexInfosOfType(type).length === 0) {
+                        (mapOfTargetToType ??= new Map()).set(target,[type]);
+                        continue;
+                    }
+                }
+                otherTypes.push(type);
+            }
+            if (!mapOfTargetToType) break mergeFuncs;
+
+            const arrTargetToType = arrayFrom(mapOfTargetToType);
+            const mergedTypes: Type[] = [];
+            for (const [target, types] of arrTargetToType) {
+                if (types.length === 1) {
+                    otherTypes.push(types[0]);
+                };
+                const mappers: TypeMapper[] = [];
+                for (const type of types) {
+                    mappers.push(createTypeMapper((target as InterfaceType).typeParameters!, getTypeArguments(type as TypeReference)));
+                }
+                const unionMapper = createCoverOfMappersMapper(mappers);
+                const mergedType = instantiateType(target, unionMapper);
+                mergedTypes.push(mergedType);
+            }
+            if (mergedTypes.length) {
+                if (mergedTypes.length === 1 && otherTypes.length===0) {
+                    return mergedTypes[0];
+                }
+                // reset types to mergedTypes etc and fall through
+                types = [...mergedTypes, ...otherTypes];
+            }
+        }
+
+
         // We optimize for the common case of unioning a union type with some other type (such as `undefined`).
         if (types.length === 2 && !origin && (types[0].flags & TypeFlags.Union || types[1].flags & TypeFlags.Union)) {
             const infix = unionReduction === UnionReduction.None ? "N" : unionReduction === UnionReduction.Subtype ? "S" : "L";
