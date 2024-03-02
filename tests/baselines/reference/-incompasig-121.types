@@ -1,0 +1,35 @@
+//// [tests/cases/compiler/-dev/-incompasig-121.ts] ////
+
+=== -incompasig-121.ts ===
+interface Test121<T> {
+    (cb:(a:T, x:T)=>T):T[];
+>cb : (a: T, x: T) => T
+>a : T
+>x : T
+
+    <U>(cb:(a:U, x:T)=>U,init:U):U[];
+>cb : (a: U, x: T) => U
+>a : U
+>x : T
+>init : U
+}
+
+declare const f: Test121<number> | Test121<bigint>;
+>f : Test121<number> | Test121<bigint>
+
+const result = f((a:bigint, x) => a * BigInt(x), 1n);
+>result : any
+>f((a:bigint, x) => a * BigInt(x), 1n) : any
+>f : Test121<number> | Test121<bigint>
+>(a:bigint, x) => a * BigInt(x) : (a: bigint, x: any) => bigint
+>a : bigint
+>x : any
+>a * BigInt(x) : bigint
+>a : bigint
+>BigInt(x) : bigint
+>BigInt : BigIntConstructor
+>x : any
+>1n : 1n
+
+
+

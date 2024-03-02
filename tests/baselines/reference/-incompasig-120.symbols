@@ -1,0 +1,37 @@
+//// [tests/cases/compiler/-dev/-incompasig-120.ts] ////
+
+=== -incompasig-120.ts ===
+interface Test120<T> {
+>Test120 : Symbol(Test120, Decl(-incompasig-120.ts, 0, 0))
+>T : Symbol(T, Decl(-incompasig-120.ts, 0, 18))
+
+    (cb:(x:T)=>T):T[];
+>cb : Symbol(cb, Decl(-incompasig-120.ts, 1, 5))
+>x : Symbol(x, Decl(-incompasig-120.ts, 1, 9))
+>T : Symbol(T, Decl(-incompasig-120.ts, 0, 18))
+>T : Symbol(T, Decl(-incompasig-120.ts, 0, 18))
+>T : Symbol(T, Decl(-incompasig-120.ts, 0, 18))
+
+    <U>(cb:(x:T)=>U):U[];
+>U : Symbol(U, Decl(-incompasig-120.ts, 2, 5))
+>cb : Symbol(cb, Decl(-incompasig-120.ts, 2, 8))
+>x : Symbol(x, Decl(-incompasig-120.ts, 2, 12))
+>T : Symbol(T, Decl(-incompasig-120.ts, 0, 18))
+>U : Symbol(U, Decl(-incompasig-120.ts, 2, 5))
+>U : Symbol(U, Decl(-incompasig-120.ts, 2, 5))
+}
+
+
+declare const f: Test120<number> | Test120<string>;
+>f : Symbol(f, Decl(-incompasig-120.ts, 6, 13))
+>Test120 : Symbol(Test120, Decl(-incompasig-120.ts, 0, 0))
+>Test120 : Symbol(Test120, Decl(-incompasig-120.ts, 0, 0))
+
+const result = f(x => x);
+>result : Symbol(result, Decl(-incompasig-120.ts, 7, 5))
+>f : Symbol(f, Decl(-incompasig-120.ts, 6, 13))
+>x : Symbol(x, Decl(-incompasig-120.ts, 7, 17))
+>x : Symbol(x, Decl(-incompasig-120.ts, 7, 17))
+
+
+

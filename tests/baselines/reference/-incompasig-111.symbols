@@ -1,0 +1,49 @@
+//// [tests/cases/compiler/-dev/-incompasig-111.ts] ////
+
+=== -incompasig-111.ts ===
+interface Test111<T> {
+>Test111 : Symbol(Test111, Decl(-incompasig-111.ts, 0, 0))
+>T : Symbol(T, Decl(-incompasig-111.ts, 0, 18))
+
+    f(cb:(a:T, x:T)=>T):T[];
+>f : Symbol(Test111.f, Decl(-incompasig-111.ts, 0, 22), Decl(-incompasig-111.ts, 1, 28))
+>cb : Symbol(cb, Decl(-incompasig-111.ts, 1, 6))
+>a : Symbol(a, Decl(-incompasig-111.ts, 1, 10))
+>T : Symbol(T, Decl(-incompasig-111.ts, 0, 18))
+>x : Symbol(x, Decl(-incompasig-111.ts, 1, 14))
+>T : Symbol(T, Decl(-incompasig-111.ts, 0, 18))
+>T : Symbol(T, Decl(-incompasig-111.ts, 0, 18))
+>T : Symbol(T, Decl(-incompasig-111.ts, 0, 18))
+
+    f<U>(cb:(a:U, x:T)=>U,init:U):U[];
+>f : Symbol(Test111.f, Decl(-incompasig-111.ts, 0, 22), Decl(-incompasig-111.ts, 1, 28))
+>U : Symbol(U, Decl(-incompasig-111.ts, 2, 6))
+>cb : Symbol(cb, Decl(-incompasig-111.ts, 2, 9))
+>a : Symbol(a, Decl(-incompasig-111.ts, 2, 13))
+>U : Symbol(U, Decl(-incompasig-111.ts, 2, 6))
+>x : Symbol(x, Decl(-incompasig-111.ts, 2, 17))
+>T : Symbol(T, Decl(-incompasig-111.ts, 0, 18))
+>U : Symbol(U, Decl(-incompasig-111.ts, 2, 6))
+>init : Symbol(init, Decl(-incompasig-111.ts, 2, 26))
+>U : Symbol(U, Decl(-incompasig-111.ts, 2, 6))
+>U : Symbol(U, Decl(-incompasig-111.ts, 2, 6))
+}
+
+declare const arr: Test111<number> | Test111<bigint>;
+>arr : Symbol(arr, Decl(-incompasig-111.ts, 5, 13))
+>Test111 : Symbol(Test111, Decl(-incompasig-111.ts, 0, 0))
+>Test111 : Symbol(Test111, Decl(-incompasig-111.ts, 0, 0))
+
+const result = arr.f((a:bigint, x) => a * BigInt(x), 1n);
+>result : Symbol(result, Decl(-incompasig-111.ts, 6, 5))
+>arr.f : Symbol(f)
+>arr : Symbol(arr, Decl(-incompasig-111.ts, 5, 13))
+>f : Symbol(f)
+>a : Symbol(a, Decl(-incompasig-111.ts, 6, 22))
+>x : Symbol(x, Decl(-incompasig-111.ts, 6, 31))
+>a : Symbol(a, Decl(-incompasig-111.ts, 6, 22))
+>BigInt : Symbol(BigInt, Decl(lib.es2020.bigint.d.ts, --, --), Decl(lib.es2020.bigint.d.ts, --, --))
+>x : Symbol(x, Decl(-incompasig-111.ts, 6, 31))
+
+
+

@@ -1,0 +1,30 @@
+//// [tests/cases/compiler/-dev/-incompasig-110.ts] ////
+
+=== -incompasig-110.ts ===
+interface Test110<T> {
+    f(cb:(x:T)=>T):T[];
+>f : { (cb: (x: T) => T): T[]; <U>(cb: (x: T) => U): U[]; }
+>cb : (x: T) => T
+>x : T
+
+    f<U>(cb:(x:T)=>U):U[];
+>f : { (cb: (x: T) => T): T[]; <U>(cb: (x: T) => U): U[]; }
+>cb : (x: T) => U
+>x : T
+}
+
+declare const arr: Test110<number> | Test110<string>;
+>arr : Test110<number> | Test110<string>
+
+const result = arr.f(x => x);
+>result : (string | number)[]
+>arr.f(x => x) : (string | number)[]
+>arr.f : { (cb: (x: string | number) => string | number): (string | number)[]; <U>(cb: (x: string | number) => U): U[]; }
+>arr : Test110<number> | Test110<string>
+>f : { (cb: (x: string | number) => string | number): (string | number)[]; <U>(cb: (x: string | number) => U): U[]; }
+>x => x : (x: string | number) => string | number
+>x : string | number
+>x : string | number
+
+
+

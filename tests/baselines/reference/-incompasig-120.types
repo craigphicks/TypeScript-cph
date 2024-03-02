@@ -1,0 +1,27 @@
+//// [tests/cases/compiler/-dev/-incompasig-120.ts] ////
+
+=== -incompasig-120.ts ===
+interface Test120<T> {
+    (cb:(x:T)=>T):T[];
+>cb : (x: T) => T
+>x : T
+
+    <U>(cb:(x:T)=>U):U[];
+>cb : (x: T) => U
+>x : T
+}
+
+
+declare const f: Test120<number> | Test120<string>;
+>f : Test120<number> | Test120<string>
+
+const result = f(x => x);
+>result : any
+>f(x => x) : any
+>f : Test120<number> | Test120<string>
+>x => x : (x: any) => any
+>x : any
+>x : any
+
+
+

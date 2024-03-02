@@ -1,0 +1,39 @@
+//// [tests/cases/compiler/-dev/-incompasig-111.ts] ////
+
+=== -incompasig-111.ts ===
+interface Test111<T> {
+    f(cb:(a:T, x:T)=>T):T[];
+>f : { (cb: (a: T, x: T) => T): T[]; <U>(cb: (a: U, x: T) => U, init: U): U[]; }
+>cb : (a: T, x: T) => T
+>a : T
+>x : T
+
+    f<U>(cb:(a:U, x:T)=>U,init:U):U[];
+>f : { (cb: (a: T, x: T) => T): T[]; <U>(cb: (a: U, x: T) => U, init: U): U[]; }
+>cb : (a: U, x: T) => U
+>a : U
+>x : T
+>init : U
+}
+
+declare const arr: Test111<number> | Test111<bigint>;
+>arr : Test111<number> | Test111<bigint>
+
+const result = arr.f((a:bigint, x) => a * BigInt(x), 1n);
+>result : bigint[]
+>arr.f((a:bigint, x) => a * BigInt(x), 1n) : bigint[]
+>arr.f : { (cb: (a: number | bigint, x: number | bigint) => number | bigint): (number | bigint)[]; <U>(cb: (a: U, x: number | bigint) => U, init: U): U[]; }
+>arr : Test111<number> | Test111<bigint>
+>f : { (cb: (a: number | bigint, x: number | bigint) => number | bigint): (number | bigint)[]; <U>(cb: (a: U, x: number | bigint) => U, init: U): U[]; }
+>(a:bigint, x) => a * BigInt(x) : (a: bigint, x: number | bigint) => bigint
+>a : bigint
+>x : number | bigint
+>a * BigInt(x) : bigint
+>a : bigint
+>BigInt(x) : bigint
+>BigInt : BigIntConstructor
+>x : number | bigint
+>1n : 1n
+
+
+

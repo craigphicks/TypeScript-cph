@@ -1,0 +1,22 @@
+-incompasig-120.ts(8,16): error TS2349: This expression is not callable.
+  Each member of the union type 'Test120<number> | Test120<string>' has signatures, but none of those signatures are compatible with each other.
+-incompasig-120.ts(8,18): error TS7006: Parameter 'x' implicitly has an 'any' type.
+
+
+==== -incompasig-120.ts (2 errors) ====
+    interface Test120<T> {
+        (cb:(x:T)=>T):T[];
+        <U>(cb:(x:T)=>U):U[];
+    }
+    
+    
+    declare const f: Test120<number> | Test120<string>;
+    const result = f(x => x);
+                   ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Each member of the union type 'Test120<number> | Test120<string>' has signatures, but none of those signatures are compatible with each other.
+                     ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    
+    
+    

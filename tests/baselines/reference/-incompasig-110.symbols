@@ -1,0 +1,40 @@
+//// [tests/cases/compiler/-dev/-incompasig-110.ts] ////
+
+=== -incompasig-110.ts ===
+interface Test110<T> {
+>Test110 : Symbol(Test110, Decl(-incompasig-110.ts, 0, 0))
+>T : Symbol(T, Decl(-incompasig-110.ts, 0, 18))
+
+    f(cb:(x:T)=>T):T[];
+>f : Symbol(Test110.f, Decl(-incompasig-110.ts, 0, 22), Decl(-incompasig-110.ts, 1, 23))
+>cb : Symbol(cb, Decl(-incompasig-110.ts, 1, 6))
+>x : Symbol(x, Decl(-incompasig-110.ts, 1, 10))
+>T : Symbol(T, Decl(-incompasig-110.ts, 0, 18))
+>T : Symbol(T, Decl(-incompasig-110.ts, 0, 18))
+>T : Symbol(T, Decl(-incompasig-110.ts, 0, 18))
+
+    f<U>(cb:(x:T)=>U):U[];
+>f : Symbol(Test110.f, Decl(-incompasig-110.ts, 0, 22), Decl(-incompasig-110.ts, 1, 23))
+>U : Symbol(U, Decl(-incompasig-110.ts, 2, 6))
+>cb : Symbol(cb, Decl(-incompasig-110.ts, 2, 9))
+>x : Symbol(x, Decl(-incompasig-110.ts, 2, 13))
+>T : Symbol(T, Decl(-incompasig-110.ts, 0, 18))
+>U : Symbol(U, Decl(-incompasig-110.ts, 2, 6))
+>U : Symbol(U, Decl(-incompasig-110.ts, 2, 6))
+}
+
+declare const arr: Test110<number> | Test110<string>;
+>arr : Symbol(arr, Decl(-incompasig-110.ts, 5, 13))
+>Test110 : Symbol(Test110, Decl(-incompasig-110.ts, 0, 0))
+>Test110 : Symbol(Test110, Decl(-incompasig-110.ts, 0, 0))
+
+const result = arr.f(x => x);
+>result : Symbol(result, Decl(-incompasig-110.ts, 6, 5))
+>arr.f : Symbol(f)
+>arr : Symbol(arr, Decl(-incompasig-110.ts, 5, 13))
+>f : Symbol(f)
+>x : Symbol(x, Decl(-incompasig-110.ts, 6, 21))
+>x : Symbol(x, Decl(-incompasig-110.ts, 6, 21))
+
+
+

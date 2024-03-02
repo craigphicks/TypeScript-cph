@@ -1097,7 +1097,9 @@ import * as performance from "./_namespaces/ts.performance";
 // cphdebug-start
 // @ts-ignore
 import { IDebug } from "./mydebug";
-//const contextualLogLevel = 2;
+
+var enableMergedGenericMethodProcessingProp = !!Number(process.env.enablep?? 1);
+var enableMergedGenericMethodProcessingUnion = !!Number(process.env.enableu?? 0);
 
 // cphdebug-end
 const ambientModuleSymbolRegex = /^".+"$/;
@@ -14991,9 +14993,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          * anyway.  We can also take advantage of the shared declarations using a declaration-to-property map.
          *
          */
-        var enableMergedGenericMethodProcessing = true;
         const mergedMethodResult = (() => {
-            if (!enableMergedGenericMethodProcessing || !isUnion || skipObjectFunctionPropertyAugment) return undefined;
+            if (!enableMergedGenericMethodProcessingProp || !isUnion || skipObjectFunctionPropertyAugment) return undefined;
             const links0 = getSymbolLinks(props[0]);
             const commonTargetSymbol = links0.mapper && links0.target!;
             const mappers: TypeMapper[] = [];
@@ -17546,22 +17547,36 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return types[0];
         }
         // IWOZERE: Check for union of generic functions.
-        var enableMergedGenericMethodProcessing_union = true;
-        mergeFuncs: if (enableMergedGenericMethodProcessing_union) {
+        /**
+         * This is not working, because we ned the typeArguments in order to re-create the individual typeMappers to pass to
+         * createCoverOfMappersMapper.  However, those type arguments may be lost by the time they get here.
+         * Using (type as any).typeArguments is actually calling a services getter: TypeObject { get typeArguments(); } in services.ts !!!! aaarg.
+         * That is not a passive read, and it trigger "recursive type not allowed" errors.
+         * What we have to do instead is ensure the mappers are left on the type, instead of being thrown away as they currently seem to be.
+         * Then we won't need to re-create individual type mappers.
+         */
+        mergeGenericFuncs: if (enableMergedGenericMethodProcessingUnion) {
             let mapOfTargetToType: Map</*first*/AnonymousType, Type[]> | undefined;
             const otherTypes: Type[] = [];
             for (const type of types) {
+                //continue;
                 if (type.flags & TypeFlags.Object && (type as AnonymousType).target) {
                     const target = (type as AnonymousType).target!;
                     if (mapOfTargetToType?.has(target)) {
                         mapOfTargetToType?.get(target)!.push(type);
                         continue;
                     }
-                    if (!(target as InterfaceType).typeParameters || (target as InterfaceType).typeParameters?.length !== getTypeArguments(type as TypeReference).length) {
+                    (type as any).typeArguments; // this is actually a modifying getter, on TypeObject { get typeArguments(); } in services.ts !!!! aaarg.
+                    if (!(target as InterfaceType).typeParameters || !(target as InterfaceType).typeParameters!.length
+                    // calling getTypeArguments is dangerous here, as it can trigger deep processing a result in "recursive type not allowed" error
+                    //|| (target as InterfaceType).typeParameters?.length !== getTypeArguments(type as TypeReference).length
+                    || (target as InterfaceType).typeParameters?.length !== ((type as any).typeArguments as Type[])?.length
+                    ) {
                         otherTypes.push(type);
                         continue;
                     }
-                    // Can only do "call expression only interface" merges.
+
+                    //Can only do "call expression only interface" merges.
                     if (getSignaturesOfType(target, SignatureKind.Call).length
                     && getSignaturesOfType(target, SignatureKind.Construct).length === 0
                     && getPropertiesOfObjectType(type).length === 0
@@ -17572,7 +17587,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
                 otherTypes.push(type);
             }
-            if (!mapOfTargetToType) break mergeFuncs;
+            if (!mapOfTargetToType) break mergeGenericFuncs;
 
             const arrTargetToType = arrayFrom(mapOfTargetToType);
             const mergedTypes: Type[] = [];
@@ -17587,6 +17602,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const unionMapper = createCoverOfMappersMapper(mappers);
                 const mergedType = instantiateType(target, unionMapper);
                 mergedTypes.push(mergedType);
+
+                // mergedType.composite = {
+                //     mappers,
+                //     kind: TypeFlags.Union,
+                // }
+
+                if (IDebug.isActive(2)){
+                    IDebug.ilog(()=>`getUnionType: mergedMethodResult: ${IDebug.dbgs.dbgTypeToString(mergedType)}`, 2);
+                }
+
+
             }
             if (mergedTypes.length) {
                 if (mergedTypes.length === 1 && otherTypes.length===0) {
