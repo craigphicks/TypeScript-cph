@@ -14787,7 +14787,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         function isUnresolved(source: Type, target: Type): boolean {
             Debug.assert(source.flags & TypeFlags.TypeParameter);
             return source===target;
-            //return !!(target.flags & TypeFlags.TypeParameter);
         }
         type TypeMapperSimple = { kind: TypeMapKind.Simple; source: Type; target: Type; };
         type TypeMapperArray = { kind: TypeMapKind.Array; sources: readonly Type[]; targets: readonly Type[] | undefined; };
@@ -14804,13 +14803,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (mapper0.kind===TypeMapKind.Simple) {
             let unresolved = isUnresolved(mapper0.source, mapper0.target);
             if (testAssumptions){
+                Debug.assert(mappers.every(m=>(m as TypeMapperSimple).source===mapper0.source));
                 Debug.assert(mappers.every(m=>isUnresolved((m as TypeMapperSimple).source, (m as TypeMapperSimple).target)===unresolved));
             }
             if (unresolved) return mapper0; //createTypeMapper([mapper0.source], [mapper0.target]);
             return createTypeMapper([mapper0.source], [getUnionType(mappers.map(m=>(m as TypeMapperSimple).target!))]);
         }
         else if (mapper0.kind===TypeMapKind.Array) {
-            const allowKindArrayMixedResolvedUnresolved = false;
+            const allowKindArrayMixedResolvedUnresolved = true;
 
             let noTargets = !mapper0.targets;
             if (testAssumptions){
@@ -14833,6 +14833,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const length = mapper0.sources.length;
             const unionTargets: Type[] = [];
             for (let sourceIndex = 0; sourceIndex < length; sourceIndex++) {
+                if (testAssumptions){
+                    Debug.assert(mappers.every(m=>(m as TypeMapperArray).sources[sourceIndex]===mapper0.sources[sourceIndex]));
+                }
                 if (allowKindArrayMixedResolvedUnresolved) {
                     const target0Unresolved = isUnresolved(mapper0.sources[sourceIndex], mapper0.targets![sourceIndex]);
                     if (testAssumptions){
