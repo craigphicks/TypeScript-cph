@@ -15032,28 +15032,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (!unionMapper) return undefined;
             const symbol = cloneSymbol(props[0], /* doNotRecordMergedSymbol */ true);
             symbol.links.checkFlags |= syntheticFlag | checkFlags;
-            //const symbol = createSymbol(SymbolFlags.Property | props[0].flags, name, syntheticFlag | checkFlags);
-            // function createObjectType(objectFlags: ObjectFlags, symbol?: Symbol): ObjectType {
-            //     const type = createTypeWithSymbol(TypeFlags.Object, symbol!) as ObjectType;
-            //     type.objectFlags = objectFlags;
-            //     type.members = undefined;
-            //     type.properties = undefined;
-            //     type.callSignatures = undefined;
-            //     type.constructSignatures = undefined;
-            //     type.indexInfos = undefined;
-            //     return type;
-            // }
             const typeOfSymbol = createObjectType((propTypes[0] as ObjectType).objectFlags,symbol);
             typeOfSymbol.flags = (propTypes[0] as ObjectType).flags;
             (typeOfSymbol as MappedType).mapper = unionMapper;
             (typeOfSymbol as MappedType).target = (propTypes[0] as MappedType).target;
-            // typeOfSymbol.target = (propTypes[0] as ObjectType).target; is this necessary ??
-            // const typeOfSymbol = {
-            //     ...propTypes[0], // yikes!
-            //     mapper: unionMapper,
-            // };
-            symbol.links.containingType = containingType // if it is referenced, it cannot be garbage collected, but it's used by
-            //symbol.links.type = createObjectType((propTypes[0] as ObjectType).objectFlags, symbol); doesn't work
+            // containingType is required for services endpoints `getRootSymbols`
+            symbol.links.containingType = containingType;
             symbol.links.type = typeOfSymbol;
             symbol.links.target = commonTargetSymbol;
             symbol.links.mapper = unionMapper
