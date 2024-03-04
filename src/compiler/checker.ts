@@ -14782,7 +14782,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      *    The union over the targets of the mappers is union'ed to create a single mapper.
      * @returns
      */
-    function createCoverOfMappersMapper(mappers: readonly TypeMapper[], testAssumptions = true): TypeMapper | undefined {
+    function createCoverOfMappersMapper(mappers: readonly TypeMapper[]): TypeMapper | undefined {
+
+        const testAssumptions = true;
 
         function isUnresolved(source: Type, target: Type): boolean {
             Debug.assert(source.flags & TypeFlags.TypeParameter);
@@ -14810,7 +14812,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return createTypeMapper([mapper0.source], [getUnionType(mappers.map(m=>(m as TypeMapperSimple).target!))]);
         }
         else if (mapper0.kind===TypeMapKind.Array) {
-            const allowKindArrayMixedResolvedUnresolved = true;
+            const allowKindArrayMixedResolvedUnresolved = false;
 
             let noTargets = !mapper0.targets;
             if (testAssumptions){
@@ -14820,13 +14822,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             if (!allowKindArrayMixedResolvedUnresolved) {
                 let unresolved = isUnresolved(mapper0.sources[0], mapper0.targets![0]);
-                // Note: The following assumption test would fail.
-                // if (testAssumptions){
-                //     Debug.assert(mappers.every(m=> {
-                //         return isUnresolved((m as TypeMapperArray).targets![0])===unresolved
-                //         && (m as TypeMapperArray).targets!.every(t=>isUnresolved(t)===unresolved);
-                //     }));
-                // }
+                if (testAssumptions){
+                    Debug.assert(mappers.every(m=> {
+                        return (m as TypeMapperArray).sources!.every((_,i)=>isUnresolved((m as TypeMapperArray).sources[i],(m as TypeMapperArray).targets![i])===unresolved);
+                    }));
+                }
                 if (unresolved) return mapper0;
             }
 
@@ -14854,12 +14854,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         else if (mapper0.kind===TypeMapKind.Composite){
             /**
              * We are assuming that mapper1 is strictly unresolved and mapper2 is strictly resolved.
+             * If `allowKindArrayMixedResolvedUnresolved` were true, and it made a difference, we would need to handle that here.
+             * `testAssumptions===true` so far (under runtests) shows that `allowKindArrayMixedResolvedUnresolved===true` does not make a difference.
              */
 
             const unionOfMapper2 = createCoverOfMappersMapper(mappers.map(mapper=>(mapper as TypeMapperDouble).mapper2));
             if (!unionOfMapper2) return undefined;
             if (testAssumptions) {
-                const mapper1 = createCoverOfMappersMapper([mapper0.mapper1 as TypeMapperSimple | TypeMapperArray], /*testAssumptions*/false);
+                const mapper1 = createCoverOfMappersMapper([mapper0.mapper1 as TypeMapperSimple | TypeMapperArray]);
                 Debug.assert(mapper1 === mapper0.mapper1); // means it is unresolved.
                 Debug.assert(unionOfMapper2 !== mapper0.mapper2) // means it is resolved.
             }
