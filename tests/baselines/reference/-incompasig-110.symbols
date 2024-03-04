@@ -30,9 +30,9 @@ declare const arr: Test110<number> | Test110<string>;
 
 const result = arr.f(x => x);
 >result : Symbol(result, Decl(-incompasig-110.ts, 6, 5))
->arr.f : Symbol(f)
+>arr.f : Symbol(Test110.f, Decl(-incompasig-110.ts, 0, 22), Decl(-incompasig-110.ts, 1, 23))
 >arr : Symbol(arr, Decl(-incompasig-110.ts, 5, 13))
->f : Symbol(f)
+>f : Symbol(Test110.f, Decl(-incompasig-110.ts, 0, 22), Decl(-incompasig-110.ts, 1, 23))
 >x : Symbol(x, Decl(-incompasig-110.ts, 6, 21))
 >x : Symbol(x, Decl(-incompasig-110.ts, 6, 21))
 

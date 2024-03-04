@@ -2559,7 +2559,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         mergedSymbols[source.mergeId] = target;
     }
 
-    function cloneSymbol(symbol: Symbol): TransientSymbol {
+    function cloneSymbol(symbol: Symbol, doNotRecordMergedSymbol = false): TransientSymbol {
         const result = createSymbol(symbol.flags, symbol.escapedName);
         result.declarations = symbol.declarations ? symbol.declarations.slice() : [];
         result.parent = symbol.parent;
@@ -2567,7 +2567,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (symbol.constEnumOnlyModule) result.constEnumOnlyModule = true;
         if (symbol.members) result.members = new Map(symbol.members);
         if (symbol.exports) result.exports = new Map(symbol.exports);
-        recordMergedSymbol(result, symbol);
+        if (!doNotRecordMergedSymbol) recordMergedSymbol(result, symbol);
         return result;
     }
 
@@ -14782,7 +14782,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      *    The union over the targets of the mappers is union'ed to create a single mapper.
      * @returns
      */
-    function createCoverOfMappersMapper(mappers: readonly TypeMapper[]): TypeMapper | undefined {
+    function createCoverOfMappersMapper(mappers: readonly TypeMapper[], testAssumptions = true): TypeMapper | undefined {
 
         function isUnresolved(target: Type): boolean { return !!(target.flags & TypeFlags.TypeParameter); }
         type TypeMapperSimple = { kind: TypeMapKind.Simple; source: Type; target: Type; };
@@ -14836,7 +14836,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const unionOfMapper2 = createCoverOfMappersMapper(mappers.map(mapper=>(mapper as TypeMapperDouble).mapper2));
             if (!unionOfMapper2) return undefined;
             if (testAssumptions) {
-                const mapper1 = createCoverOfMappersMapper([mapper0.mapper1 as TypeMapperSimple | TypeMapperArray]);
+                const mapper1 = createCoverOfMappersMapper([mapper0.mapper1 as TypeMapperSimple | TypeMapperArray], /*testAssumptions*/false);
                 Debug.assert(mapper1 === mapper0.mapper1); // means it is unresolved.
                 Debug.assert(unionOfMapper2 !== mapper0.mapper2) // means it is resolved.
             }
@@ -15030,7 +15030,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             const unionMapper = createCoverOfMappersMapper(mappers);
             if (!unionMapper) return undefined;
-            const symbol = createSymbol(SymbolFlags.Property | props[0].flags, name, syntheticFlag | checkFlags);
+            const symbol = cloneSymbol(props[0], /* doNotRecordMergedSymbol */ true);
+            symbol.links.checkFlags |= syntheticFlag | checkFlags;
+            //const symbol = createSymbol(SymbolFlags.Property | props[0].flags, name, syntheticFlag | checkFlags);
             // function createObjectType(objectFlags: ObjectFlags, symbol?: Symbol): ObjectType {
             //     const type = createTypeWithSymbol(TypeFlags.Object, symbol!) as ObjectType;
             //     type.objectFlags = objectFlags;
