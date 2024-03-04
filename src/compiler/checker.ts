@@ -14784,7 +14784,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      */
     function createCoverOfMappersMapper(mappers: readonly TypeMapper[], testAssumptions = true): TypeMapper | undefined {
 
-        function isUnresolved(target: Type): boolean { return !!(target.flags & TypeFlags.TypeParameter); }
+        function isUnresolved(source: Type, target: Type): boolean {
+            Debug.assert(source.flags & TypeFlags.TypeParameter);
+            return source===target;
+            //return !!(target.flags & TypeFlags.TypeParameter);
+        }
         type TypeMapperSimple = { kind: TypeMapKind.Simple; source: Type; target: Type; };
         type TypeMapperArray = { kind: TypeMapKind.Array; sources: readonly Type[]; targets: readonly Type[] | undefined; };
         type TypeMapperDouble = { kind: TypeMapKind.Composite | TypeMapKind.Merged; mapper1: TypeMapper; mapper2: TypeMapper; };
@@ -14798,32 +14802,48 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         if (mapper0.kind===TypeMapKind.Simple) {
-            let unresolved = isUnresolved(mapper0.target);
+            let unresolved = isUnresolved(mapper0.source, mapper0.target);
             if (testAssumptions){
-                Debug.assert(mappers.every(m=>isUnresolved((m as TypeMapperSimple).target)===unresolved));
+                Debug.assert(mappers.every(m=>isUnresolved((m as TypeMapperSimple).source, (m as TypeMapperSimple).target)===unresolved));
             }
             if (unresolved) return mapper0; //createTypeMapper([mapper0.source], [mapper0.target]);
             return createTypeMapper([mapper0.source], [getUnionType(mappers.map(m=>(m as TypeMapperSimple).target!))]);
         }
         else if (mapper0.kind===TypeMapKind.Array) {
-            let unresolved = !mapper0.targets;
+            const allowKindArrayMixedResolvedUnresolved = false;
+
+            let noTargets = !mapper0.targets;
             if (testAssumptions){
-                Debug.assert(mappers.every(m=> (m as TypeMapperArray).targets===undefined)===unresolved);
+                Debug.assert(mappers.every(m=> (m as TypeMapperArray).targets===undefined)===noTargets);
             }
-            if (unresolved) return mapper0;
-            unresolved = isUnresolved(mapper0.targets![0]);
-            // if (testAssumptions){
-            //     Debug.assert(mappers.every(m=> {
-            //         return isUnresolved((m as TypeMapperArray).targets![0])===unresolved
-            //         && (m as TypeMapperArray).targets!.every(t=>isUnresolved(t)===unresolved);
-            //     }));
-            // }
-            if (unresolved) return mapper0;
+            if (noTargets) return mapper0;
+
+            if (!allowKindArrayMixedResolvedUnresolved) {
+                let unresolved = isUnresolved(mapper0.sources[0], mapper0.targets![0]);
+                // Note: The following assumption test would fail.
+                // if (testAssumptions){
+                //     Debug.assert(mappers.every(m=> {
+                //         return isUnresolved((m as TypeMapperArray).targets![0])===unresolved
+                //         && (m as TypeMapperArray).targets!.every(t=>isUnresolved(t)===unresolved);
+                //     }));
+                // }
+                if (unresolved) return mapper0;
+            }
 
             const length = mapper0.sources.length;
             const unionTargets: Type[] = [];
             for (let sourceIndex = 0; sourceIndex < length; sourceIndex++) {
-                const source = mapper0.sources[sourceIndex];
+                if (allowKindArrayMixedResolvedUnresolved) {
+                    const target0Unresolved = isUnresolved(mapper0.sources[sourceIndex], mapper0.targets![sourceIndex]);
+                    if (testAssumptions){
+                        Debug.assert(mappers.every(m=>isUnresolved((m as TypeMapperArray).sources[sourceIndex],(m as TypeMapperArray).targets![sourceIndex])===target0Unresolved));
+                    }
+                    if (target0Unresolved) {
+                        unionTargets.push(mapper0.targets![sourceIndex]);
+                        continue
+                    }
+                    // fall through to getUnionType
+                }
                 unionTargets.push(getUnionType(mappers.map(m=>(m as TypeMapperArray).targets![sourceIndex])));
             }
             return createTypeMapper(mapper0.sources, unionTargets);
