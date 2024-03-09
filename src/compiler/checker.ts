@@ -21691,7 +21691,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
          * * Ternary.False if they are not related.
          */
         function isRelatedTo(originalSource: Type, originalTarget: Type, recursionFlags: RecursionFlags = RecursionFlags.Both, reportErrors = false, headMessage?: DiagnosticMessage, intersectionState = IntersectionState.None): Ternary {
-        const logLevel = 2;
         IDebug.ilogGroup(()=>{
             let str = "recursionFlags:";
             switch (recursionFlags){
@@ -21710,7 +21709,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 default: Debug.assertNever(intersectionState);
             }
             return `isRelatedTo[in]: originalSource:${IDebug.dbgs.dbgTypeToString(originalSource)}, originalTarget:${IDebug.dbgs.dbgTypeToString(originalTarget)}, ${str}`;
-        },logLevel);
+        },loggerLevel);
         const ret = (()=>{
             if (originalSource === originalTarget) return Ternary.True;
 
@@ -21827,7 +21826,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         })();
         IDebug.ilogGroupEnd(()=>{
             return `isRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`;
-        },logLevel);
+        },loggerLevel);
         return ret;
         }
 
@@ -22067,7 +22066,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             // checking whether the full intersection viewed as an object is related to the target.
             return someTypeRelatedToType(source as IntersectionType, target, /*reportErrors*/ false, IntersectionState.Source);
         })();
-        IDebug.ilogGroupEnd(()=>`unionOrIntersectionRelatedTo[out]: ${ret}`,logLevel);
+        IDebug.ilogGroupEnd(()=>`unionOrIntersectionRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`,logLevel);
         return ret;
         }
 
@@ -22263,10 +22262,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // equal and infinitely expanding. Fourth, if we have reached a depth of 100 nested comparisons, assume we have runaway recursion
         // and issue an error. Otherwise, actually compare the structure of the two types.
         function recursiveTypeRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState, recursionFlags: RecursionFlags): Ternary {
-        const logLevel = 2;
         IDebug.ilogGroup(()=>{
             return `recursiveTypeRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}, intersectionState:${IDebug.dbgs.dbgIntersectionState(intersectionState)}, recursionFlags:${IDebug.dbgs.dbgRecursionFlags(recursionFlags)}`
-        }, logLevel);
+        }, loggerLevel);
         const ret = (()=>{
             if (overflow) {
                 return Ternary.False;
@@ -22411,11 +22409,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         })();
         IDebug.ilogGroupEnd(()=>{
             return `recursiveTypeRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`
-        }, logLevel);
+        }, loggerLevel);
         return ret;
         }
 
         function structuredTypeRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState): Ternary {
+        IDebug.ilogGroup(()=>`structuredTypeRelatedTo[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)}, reportErrors: ${reportErrors}, intersectionState: ${intersectionState}`,loggerLevel);
+        const ret = (()=>{
             const saveErrorInfo = captureErrorCalculationState();
             let result = structuredTypeRelatedToWorker(source, target, reportErrors, intersectionState, saveErrorInfo);
             if (relation !== identityRelation) {
@@ -22476,6 +22476,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 resetErrorInfo(saveErrorInfo);
             }
             return result;
+        })();
+        IDebug.ilogGroupEnd(()=>`structuredTypeRelatedTo[out]: ${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        return ret;
         }
 
         function getApparentMappedTypeKeys(nameType: Type, targetType: MappedType) {
@@ -22491,6 +22494,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function structuredTypeRelatedToWorker(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState, saveErrorInfo: ReturnType<typeof captureErrorCalculationState>): Ternary {
+        IDebug.ilogGroup(()=>`structuredTypeRelatedToWorker[in]: source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)}, reportErrors: ${reportErrors}, intersectionState: ${intersectionState}`,loggerLevel);
+        const ret = (()=>{
             let result: Ternary;
             let originalErrorInfo: DiagnosticMessageChain | undefined;
             let varianceCheckFailed = false;
@@ -23093,6 +23098,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     resetErrorInfo(saveErrorInfo);
                 }
             }
+        })();
+        IDebug.ilogGroupEnd(()=>`structuredTypeRelatedToWorker[out]: return ${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        return ret;
         }
 
         // A type [P in S]: X is related to a type [Q in T]: Y if T is related to S and X' is
@@ -23241,6 +23249,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function propertyRelatedTo(source: Type, target: Type, sourceProp: Symbol, targetProp: Symbol, getTypeOfSourceProperty: (sym: Symbol) => Type, reportErrors: boolean, intersectionState: IntersectionState, skipOptional: boolean): Ternary {
+        IDebug.ilogGroup(()=>`propertyRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)
+        }, sourceProp:${IDebug.dbgs.dbgSymbolToString(sourceProp)}, targetProp:${IDebug.dbgs.dbgSymbolToString(targetProp)}`,loggerLevel);
+        const ret = (()=>{
             const sourcePropFlags = getDeclarationModifierFlagsFromSymbol(sourceProp);
             const targetPropFlags = getDeclarationModifierFlagsFromSymbol(targetProp);
             if (sourcePropFlags & ModifierFlags.Private || targetPropFlags & ModifierFlags.Private) {
@@ -23306,6 +23317,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return Ternary.False;
             }
             return related;
+        })();
+        IDebug.ilogGroupEnd(()=>`propertyRelatedTo[out]: return ${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        return ret;
         }
 
         function reportUnmatchedProperty(source: Type, target: Type, unmatchedProperty: Symbol, requireOptionalProperties: boolean) {
@@ -23364,6 +23378,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function propertiesRelatedTo(source: Type, target: Type, reportErrors: boolean, excludedProperties: Set<__String> | undefined, optionalsOnly: boolean, intersectionState: IntersectionState): Ternary {
+        IDebug.ilogGroup(()=>`propertiesRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)
+        }, excludedProperties: ${excludedProperties? (()=>{
+            let a: __String[] = [];
+            excludedProperties.forEach((v)=>{a.push(v)});
+            return a.join(",");
+        })() : ""}, optionalsOnly: ${optionalsOnly}, intersectionState: ${intersectionState}, reportErrors: ${reportErrors}`,loggerLevel);
+        const ret = (()=>{
             if (relation === identityRelation) {
                 return propertiesIdenticalTo(source, target, excludedProperties);
             }
@@ -23510,6 +23531,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
             }
             return result;
+        })();
+        IDebug.ilogGroupEnd(()=>`propertiesRelatedTo[out]: return ${IDebug.dbgs.dbgTernaryToString(ret)}`,loggerLevel);
+        return ret;
         }
 
         function propertiesIdenticalTo(source: Type, target: Type, excludedProperties: Set<__String> | undefined): Ternary {
