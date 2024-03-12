@@ -3,10 +3,30 @@ import {
     Expression,
     IntersectionType,
     ObjectType,
+    Symbol,
     Type,
     TypeChecker,
     UnionType,
 } from "./_namespaces/ts";
+import {
+    FloughLogicalObjectInnerIF,
+    LogicalObjectAccessReturn,
+    ResolveInKeywordReturnType,
+    floughLogicalObjectInnerModule,
+} from "./floughLogicalObjectInner";
+import {
+    FloughType,
+    ObjectUsableAccessKeys,
+    floughTypeModule,
+} from "./floughType";
+import {
+    RefTypesTableReturn,
+    RefTypesSymtabConstraintItem,
+    assertCastType,
+} from "./floughTypedefs";
+import {
+    dbgsModule,
+} from "./myConsole";
 
 const checker = undefined as any as TypeChecker; // TODO: intialize;
 export function initFloughLogicalObjectOuter(checkerIn: TypeChecker) {
@@ -37,15 +57,6 @@ export interface FloughLogicalObjectModule {
     createFloughLogicalObjectWithVariations(origTsType: Readonly<ObjectType>, newTsType: Readonly<ObjectType>): FloughLogicalObjectIF | undefined;
     unionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
     unionOfFloughLogicalObjects(arr: Readonly<FloughLogicalObjectIF[]>): FloughLogicalObjectIF;
-    // intersectionOfFloughLogicalObject(a: Readonly<FloughLogicalObjectIF>, b: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
-
-    // differenceOfFloughLogicalObject(minuend: Readonly<FloughLogicalObjectIF>, subtrahend: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF;
-    // intersectionAndSimplifyLogicalObjects(logicalObject: Readonly<FloughLogicalObjectIF>, logicalObjectConstraint: Readonly<FloughLogicalObjectIF>): FloughLogicalObjectIF | undefined;
-    // logicalObjectForEachTypeOfPropertyLookup(
-    //     logicalObject: Readonly<FloughLogicalObjectIF>,
-    //     lookupkey: Readonly<FloughType>,
-    //     lookupItemsIn?: LogicalObjectForEachTypeOfPropertyLookupItem[],
-    // ): void;
     getEffectiveDeclaredTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>, forNodeToTypeMap?: boolean): Type;
     getTsTypeFromLogicalObject(logicalObjectTop: Readonly<FloughLogicalObjectIF>, forNodeToTypeMap?: boolean): Type;
     // setEffectiveDeclaredTsType(logicalObjectTop: Readonly<FloughLogicalObjectIF>, edType: Readonly<Type>): void;

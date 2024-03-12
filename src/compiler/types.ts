@@ -942,6 +942,7 @@ export interface Node extends ReadonlyTextRange {
     //       `locals` and `nextContainer` have been moved to `LocalsContainer`
     //       `flowNode` has been moved to `FlowContainer`
     //       see: https://github.com/microsoft/TypeScript/pull/51682
+    flowNode?: FlowNode
 }
 
 export interface JSDocContainer extends Node {
@@ -4081,7 +4082,7 @@ export const enum FlowFlags {
     ReduceLabel    = 1 << 10, // Temporarily reduce antecedents of label
     Referenced     = 1 << 11, // Referenced as antecedent once
     Shared         = 1 << 12, // Referenced as antecedent more than once
-
+    ExpressionStatement = 1<<13, // Plain expression statement
     Label = BranchLabel | LoopLabel,
     Condition = TrueCondition | FalseCondition,
 }
@@ -4094,7 +4095,9 @@ export type FlowNode =
     | FlowSwitchClause
     | FlowArrayMutation
     | FlowCall
-    | FlowReduceLabel;
+    | FlowReduceLabel
+    | FlowExpressionStatement;
+
 
 export interface FlowNodeBase {
     flags: FlowFlags;
@@ -4109,8 +4112,28 @@ export interface FlowStart extends FlowNodeBase {
 }
 
 // FlowLabel represents a junction with multiple possible preceding control flows.
+    export const enum BranchKind {
+        none = "none",
+        then = "then",
+        else = "else",
+        postIf = "postIf",
+        // while loop labels - these may change
+        preWhileLoop = "preWhileLoop",
+        preWhileBody = "preWhileBody",
+        postWhileLoop = "postWhileLoop",
+        // loop= "loop",
+        // loopConitinue= "loopContinue",
+        // postLoop= "postLoop",
+        block = "block",
+        postBlock = "postBlock",
+    }
 export interface FlowLabel extends FlowNodeBase {
     antecedents: FlowNode[] | undefined;
+        branchKind?: BranchKind;
+        // In case of branchKind===BranchKind.postIf originatingExpression refers to the condtion of the corresponding if statement.
+        // In case of branchKind===BranchKind.postBlock originatingExpression refers to the ???
+        originatingExpression?: Node; // currently only present when branchKind===BranchKind.postIf
+        controlExits?: FlowNode[];
 }
 
 // FlowAssignment represents a node that assigns a value to a narrowable reference,
@@ -4119,6 +4142,12 @@ export interface FlowAssignment extends FlowNodeBase {
     node: Expression | VariableDeclaration | BindingElement;
     antecedent: FlowNode;
 }
+
+    export interface FlowExpressionStatement extends FlowNodeBase {
+        node: ExpressionStatement;
+        antecedent: FlowNode;
+    }
+
 
 export interface FlowCall extends FlowNodeBase {
     node: CallExpression;
@@ -4198,6 +4227,9 @@ export interface SourceFile extends Declaration, LocalsContainer {
     readonly kind: SyntaxKind.SourceFile;
     readonly statements: NodeArray<Statement>;
     readonly endOfFileToken: Token<SyntaxKind.EndOfFileToken>;
+
+    allFlowNodes?: FlowNode[];
+    allNodesWithFlowOneSourceFile?: Node[];
 
     fileName: string;
     /** @internal */ path: Path;
