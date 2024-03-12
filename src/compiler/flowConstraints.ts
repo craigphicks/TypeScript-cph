@@ -24,10 +24,10 @@ import {
 } from "./floughTypedefs";
 import {
     extraAsserts,
-} from "./flowGroupInfer";
+} from "./floughGroup";
 import {
     MrNarrow,
-} from "./flowGroupInfer2";
+} from "./floughGroup2";
 import {
     createRefTypesSymtabConstraintItemNever,
     unionArrRefTypesSymtab,
@@ -490,7 +490,7 @@ function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[] /*,
     // constraintItem.symbolsInvolved = symbolsInvolved;
     return { symtab: unionSymtab, constraintItem: oredConstraint };
 }
-// called from flowGroupInfer.ts when merging branches post-if
+// called from floughGroup.ts when merging branches post-if
 // export function orSymtabs(asc: Readonly<RefTypesSymtab[]>,mrNarrow: MrNarrow): RefTypesSymtab {
 //     return unionArrRefTypesSymtab(asc);
 // }

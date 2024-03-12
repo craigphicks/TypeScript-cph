@@ -32,10 +32,10 @@ import {
     ProcessLoopState,
     GroupForFlow,
     extraAsserts,
-} from "./flowGroupInfer";
+} from "./floughGroup";
 import {
     MrNarrow,
-} from "./flowGroupInfer2";
+} from "./floughGroup2";
 import { getMyDebug, consoleGroup, consoleLog, consoleGroupEnd } from "./myConsole";
 
 const mrNarrow: MrNarrow = undefined as any as MrNarrow;

@@ -1094,11 +1094,14 @@ import {
 import * as moduleSpecifiers from "./_namespaces/ts.moduleSpecifiers";
 import * as performance from "./_namespaces/ts.performance";
 
+import { createSourceFileFloughState, getTypeByFlough, SourceFileFloughState } from "./floughGroup"
+import { FloughTypeChecker } from "./floughTypedefs";
+
 // cphdebug-start
 // @ts-ignore
 import { IDebug } from "./mydebug";
 //const contextualLogLevel = 2;
-
+const enableFlough = !!Number(process.env.enableFlough ?? 0);
 // cphdebug-end
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
@@ -1517,6 +1520,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // extra cost of calling `getParseTreeNode` when calling these functions from inside the
     // checker.
     const checker: TypeChecker = {
+
         getNodeCount: () => reduceLeft(host.getSourceFiles(), (n, s) => n + s.nodeCount, 0),
         getIdentifierCount: () => reduceLeft(host.getSourceFiles(), (n, s) => n + s.identifierCount, 0),
         getSymbolCount: () => reduceLeft(host.getSourceFiles(), (n, s) => n + s.symbolCount, symbolCount),
@@ -2288,6 +2292,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         [identityRelation, "identityRelation"],
         [enumRelation, "enumRelation"],
     ]);
+    var sourceFileFloughState: SourceFileFloughState | undefined;
+    var flowTypeQueryState = {
+        disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
+        //aliasableAssignments: new Map<Symbol, AliasAssignableState>(),
+        getFlowTypeOfReferenceStack: [] as Node[],
+    }
 
     var builtinGlobals = createSymbolTable();
     builtinGlobals.set(undefinedSymbol.escapedName, undefinedSymbol);
@@ -2312,6 +2322,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     initializeTypeChecker();
 
     return checker;
+
+    function getSourceFileFloughState() {
+        return sourceFileFloughState;
+    }
 
     function getCachedType(key: string | undefined) {
         return key ? cachedTypes.get(key) : undefined;
@@ -27914,7 +27928,80 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return false;
     }
 
-    function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = tryCast(reference, canHaveFlowNode)?.flowNode) {
+    function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = tryCast(reference, canHaveFlowNode)?.flowNode): Type {
+
+
+        flowTypeQueryState.disable = !enableFlough;
+
+        /**
+         * isOriginalCall: indicates result is cachable as a "true result", and that if a cached result exists it can be returned as the correct result.
+         * Conditions
+         *   flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 &&
+         *   initialType === declaredType &&
+         *   reference.flowNode === flowNode &&
+         *   isFlowWithNode(flowNode) && reference === flowNode.node // externally, a reference's flow node may be adjusted to match flowNode, relying on side effects, so this cond also necessary
+         * are required because
+         * (1) getFlowTypeOfReference may be called recursively
+         * (2) some flow control now takes place above getFlowTypeOfReference, where it passes different initialType or flowNode
+         * and in these situations the result type may be narrower than when called at the top level, and therefore should not be cached
+         * as a top level result.
+         */
+        // const isOriginalCall = flowTypeQueryState.getFlowTypeOfReferenceStack.length===0 && initialType === declaredType
+        // && reference.flowNode === flowNode && isFlowWithNode(flowNode) && reference === flowNode.node;
+
+        // let dbgstr="";
+        // if (myDebug) {
+        //     dbgstr = `reference ${dbgNodeToString(reference)}, declaredType: ${typeToString(declaredType)}`
+        //     + `, initialType: ${typeToString(initialType)}, flowContainer: ${flowContainer?getNodeId(flowContainer):-1}, flowNode: ${dbgFlowToString(flowNode)}`
+        //     + (joinMap?`, joinMap={ joinNode: ${dbgNodeToString(joinMap.joinNode)}, mapTo: ${dbgFlowToString(joinMap.mapTo)}}, aliasFlow: ${dbgFlowToString(joinMap.aliasFlow)}, conditionAssumeTrue: ${joinMap.conditionAssumeTrue}`:"")
+        //     + `[gftor call depth:${flowTypeQueryState.getFlowTypeOfReferenceStack.length}`;
+        // }
+        // if (myDebug) {
+        //     consoleGroup(`getFlowTypeOfReference[in]: ` + dbgstr);
+        // }
+        if (enableFlough && getSourceFileFloughState()){
+            const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
+            //let inFlowGroup = false;
+            if (!insideGetFlowTypeOfReference){
+                    /**
+                     * All flow enters through getFlowTypeOfReference.
+                     * Only here because a FlowNode was present, so this is a logical place to set up currentFlowNodeGroup
+                     * and call infer once for the group.
+                     */
+                //if (!narrowTypeExports.narrowTypeByEquality) narrowTypeExports.narrowTypeByEquality = narrowTypeByEquality;
+
+                const sourceFileInferState = getSourceFileFloughState();
+                Debug.assert(sourceFileInferState);
+                const typeByMrNarrow = getTypeByFlough(reference, sourceFileInferState);
+                if (typeByMrNarrow && (typeByMrNarrow!==errorType || sourceFileInferState.mrState.dataForGetTypeOfExpressionShallowRecursive?.returnErrorTypeOnFail)){
+                    // if (myDebug) {
+                    //     consoleLog(`getFlowTypeOfReference[out]: ${dbgstr}, return: ${typeToString(typeByMrNarrow)}`);
+                    //     consoleGroupEnd();
+                    // }
+                    return typeByMrNarrow;
+                }
+                if (!typeByMrNarrow){
+                    Debug.fail("typeByMrNarrow is undefined");
+                }
+                else if (typeByMrNarrow===errorType){
+                    Debug.fail("typeByMrNarrow is errorType");
+                }
+                // else drop through to getFlowTypeOfReference_aux
+            }
+        }
+
+        flowTypeQueryState.getFlowTypeOfReferenceStack.push(reference);
+        const type = getFlowTypeOfReference_aux(reference,declaredType, initialType, flowContainer, flowNode!);
+        flowTypeQueryState.getFlowTypeOfReferenceStack.pop();
+        // if (myDebug) {
+        //     consoleLog(`getFlowTypeOfReference[out]: ${dbgstr}, return: ${typeToString(type)}`);
+        // }
+        // if (myDebug) consoleGroupEnd();
+        return type;
+    }
+
+
+    function getFlowTypeOfReference_aux(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = tryCast(reference, canHaveFlowNode)?.flowNode) {
         let key: string | undefined;
         let isKeySet = false;
         let flowDepth = 0;
@@ -47282,6 +47369,57 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         tracing?.pop();
     }
 
+    function createFloughTypeChecker(typeChecker: TypeChecker): FloughTypeChecker {
+        const floughTypeChecker: FloughTypeChecker = {
+            ...checker,
+            getIntersectionType,
+            getUnionType,
+            forEachType,
+            isArrayOrTupleType,
+            isTupleType,
+            isReadonlyArrayType,
+            createReaonlyTupleTypeFromTupleType(type: TupleTypeReference): Type { // change name to createReadonly...
+                const target = type.target;
+                const index = 0;
+                const endIndex = getTypeReferenceArity(type);
+                const readonly = true;
+                return index > target.fixedLength ? getRestArrayTypeOfTupleType(type) || createTupleType(emptyArray) :
+                    createTupleType(getTypeArguments(type).slice(index, endIndex), target.elementFlags.slice(index, endIndex),
+                        readonly, target.labeledElementDeclarations && target.labeledElementDeclarations.slice(index, endIndex));
+
+            },
+            createArrayType,
+            getUnknownType(){ return unknownType },
+            getErrorType(){ return errorType },
+            everyContainedType,
+            getAssignableRelation(){ return assignableRelation },
+            isConstVariable(symbol: Symbol): boolean { return isReadonlySymbol(symbol) },
+            getResolvedSymbol,
+            getSymbolOfNode,
+            getFlowNodeId,
+            getTypeOfExpression,
+            createLiteralType,
+            getTypeFacts,
+            isTypeRelatedTo,
+            isConstantReference,
+            getRelations() {
+                return {
+                    subtypeRelation,
+                    strictSubtypeRelation,
+                    assignableRelation,
+                    comparableRelation,
+                    identityRelation,
+                    enumRelation,
+                };
+            },
+            widenTypeInferredFromInitializer,
+            getFreshTypeOfLiteralType,
+            createTupleType,
+        }
+
+        return typeChecker as any as FloughTypeChecker;
+    }
+
     function checkSourceFile(node: SourceFile) {
         tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
         performance.mark("beforeCheck");
@@ -47290,7 +47428,20 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             IDebug.loggingHost.notifySourceFile(node, checker);
         }
         // cphdebug-end
+
+
+        if (enableFlough){
+            sourceFileFloughState = createSourceFileFloughState(node, createFloughTypeChecker(checker), compilerOptions);
+        }
+
         checkSourceFileWorker(node);
+
+        if (enableFlough){
+            if (sourceFileFloughState) {
+                sourceFileFloughState = undefined;
+            }
+        }
+
         performance.mark("afterCheck");
         performance.measure("Check", "beforeCheck", "afterCheck");
         tracing?.pop();

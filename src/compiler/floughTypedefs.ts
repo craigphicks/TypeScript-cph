@@ -25,24 +25,39 @@ import {
     RelationComparisonResult,
     PseudoBigInt,
     TypeFlags,
+    VariableDeclaration,
+    ElementFlags,
+    GenericType,
+    NamedTupleMember,
+    ParameterDeclaration,
 } from "./types";
 
 import {
     TypeChecker as TSTypeChecker,
 } from "./types";
 
+
+
+export interface Relations {
+    subtypeRelation: RelationMap;
+    strictSubtypeRelation: RelationMap;
+    assignableRelation: RelationMap;
+    comparableRelation: RelationMap;
+    identityRelation: RelationMap;
+    enumRelation: RelationMap;
+}
+
+
 export type FloughTypeChecker = TSTypeChecker & {
-    getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression, returnErrorTypeOnFail?: boolean): Type;
-    callCheckerFunctionWithShallowRecursion<FN extends TypeCheckerFn>(expr: Expression, sc: RefTypesSymtabConstraintItem, returnErrorTypeOnFail: boolean, checkerFn: FN, ...args: Parameters<FN>): ReturnType<FN>;
     getFlowNodeId(node: FlowNode): number;
     getIntersectionType(types: Type[]): Type;
     getUnionType(types: Type[]): Type;
-    forEachType<T>(type: Type, cb: (t: Type) => T): T; // would prefer a different name from "forEach"
+    forEachType<T>(type: Type, f: (t: Type) => T | undefined): T | undefined,
     isArrayOrTupleType(type: Type): boolean;
     isTupleType(type: Type): type is TupleTypeReference;
     isArrayOrTupleType(type: Type): type is TypeReference;
     isReadonlyArrayType(type: Type): boolean;
-    createReaonlyTupleTypeFromTupleType(type: TupleTypeReference): TupleTypeReference;
+    createReaonlyTupleTypeFromTupleType(type: TupleTypeReference): Type;
     createArrayType(elementType: Type, readonly?: boolean): ObjectType;
     getUnknownType(): Type;
     getErrorType(): Type;
@@ -56,7 +71,12 @@ export type FloughTypeChecker = TSTypeChecker & {
     createLiteralType(flags: TypeFlags, value: string | number | PseudoBigInt, symbol?: Symbol, regularType?: LiteralType): LiteralType;
     getTypeFacts(type: Type, callerOnlyNeeds?: TypeFacts): TypeFacts;
     isTypeRelatedTo(source: Type, target: Type, relation: Map<string, RelationComparisonResult>): boolean;
-    isConstantReference(node: Node): boolean; 
+    isConstantReference(node: Node): boolean;
+    getRelations(): Relations;
+    widenTypeInferredFromInitializer(node: VariableDeclaration, type: Type): Type;
+    getFreshTypeOfLiteralType(type: Type): Type;
+    createTupleType(elementTypes: readonly Type[], elementFlags?: readonly ElementFlags[],
+        readonly?: boolean, namedMemberDeclarations?: readonly (NamedTupleMember | ParameterDeclaration | undefined)[]): Type;
 };
 
 type RelationMap = Map<string, RelationComparisonResult>;

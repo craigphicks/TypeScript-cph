@@ -38,10 +38,10 @@ import {
 } from "./flowConstraints";
 import {
     extraAsserts,
-} from "./flowGroupInfer";
+} from "./floughGroup";
 import {
     MrNarrow,
-} from "./flowGroupInfer2";
+} from "./floughGroup2";
 import {
     createRefTypesSymtabConstraintItemNever,
     dbgRefTypesSymtabConstrinatItemToStrings,

@@ -8,7 +8,7 @@ import {
 import {
     enableBypassEffectiveDeclaredType,
     extraAsserts,
-} from "./flowGroupInfer";
+} from "./floughGroup";
 import {
     Type,
     LiteralType,

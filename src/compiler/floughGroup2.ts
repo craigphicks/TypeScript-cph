@@ -64,7 +64,7 @@ import {
     getDevExpectStrings,
     extraAsserts,
     refactorConnectedGroupsGraphsNoShallowRecursion,
-} from "./flowGroupInfer";
+} from "./floughGroup";
 import {
     applyCritNoneUnion,
     applyCritNoneToOne,
@@ -74,7 +74,7 @@ import {
     getSymbolIfUnique,
     resolveLogicalObjectAccessData,
     orIntoNodeToTypeMap,
-} from "./flowGroupInferApplyCrit";
+} from "./floughGroupApplyCrit";
 import {
     RefTypesSymtab,
     createRefTypesSymtab,
@@ -1605,7 +1605,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 }
                                 else {
                                     const tsType = floughTypeModule.getTsTypeFromFloughType(rhs.type);
-                                    effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr, checker.getFreshTypeOfLiteralType(tsType));
+                                    // TODO: checker.getFreshTypeOfLiteralType will fail when tsType is not a literal type.
+                                    effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr, checker.getFreshTypeOfLiteralType(tsType as LiteralType));
                                     // widenedTsTypeInferredFromInitializer = effectiveDeclaredTsType;
                                     if (getMyDebug()) {
                                         consoleLog(`floughInnerVariableDeclaration[dbg] effectiveDeclaredTsType= from rhs ${dbgTypeToString(tsType)} widened-> ${dbgTypeToString(effectiveDeclaredTsType)}`);
@@ -1639,7 +1640,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             if (!expr.type) {
                                 const tsType = floughTypeModule.getTsTypeFromFloughType(symbolFlowInfo.initializerType);
                                 // TODO: checker.getFreshTypeOfLiteralType will/might fail when tsType is not a literal type.
-                                symbolFlowInfo.effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr, checker.getFreshTypeOfLiteralType(tsType));
+                                symbolFlowInfo.effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr, checker.getFreshTypeOfLiteralType(tsType as LiteralType));
                                 // widenedTsTypeInferredFromInitializer = symbolFlowInfo.effectiveDeclaredTsType;
                                 delete symbolFlowInfo.effectiveDeclaredType; // will be created on demand if necessary
                             }
@@ -1758,6 +1759,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 if (checker.isArrayOrTupleType(tstype)) {
                                     if (checker.isTupleType(tstype)) {
                                         // Debug.assert(tstype.objectFlags & ObjectFlags.Reference);
+                                        assertCastType<TupleTypeReference>(tstype);
                                         Debug.assert(tstype.resolvedTypeArguments);
                                         tstype.resolvedTypeArguments?.forEach((tstype, _indexInTuple) => {
                                             elemTsTypes.push(tstype);

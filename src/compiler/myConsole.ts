@@ -5,7 +5,7 @@ import { isFlowLabel, isFlowWithNode, getFlowAntecedents } from "./flowNodesGrou
 import { System, sys } from "./sys";
 import { Node, FlowNode, Type, Signature, Identifier, TypeFlags, Symbol } from "./types";
 
-import { FloughTypeChecker as TypeChecker } from "./floughTypedefs";
+import { FloughTypeChecker, FloughTypeChecker as TypeChecker } from "./floughTypedefs";
 
 export function consoleLog(s: string): void {}
 export function consoleGroup(s: string): void { }
@@ -116,7 +116,7 @@ export interface DbgsX {
 }
 export const dbgsModule: DbgsX = 0 as any as DbgsX;
 
-export function createDbgs(checker: TypeChecker): DbgsX{
+export function createDbgs(checker: FloughTypeChecker): DbgsX{
     const dbgGetNodeText = (node: Node)=>{
         return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
         //return ((node as any).getText && node.pos>=0) ? (node as any).getText() : (node as Identifier).escapedText??"";

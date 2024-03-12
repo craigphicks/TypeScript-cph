@@ -1,7 +1,8 @@
 import {
+    Node,
+    Symbol,
     TypeChecker,
     Type,
-    Node,
     UnionReduction,
 } from "./types";
 import {
@@ -20,16 +21,17 @@ import {
 } from "./floughType";
 import {
     extraAsserts,
-} from "./flowGroupInfer";
+} from "./floughGroup";
 import {
     MrNarrow,
-} from "./flowGroupInfer2";
+} from "./floughGroup2";
 import { RefTypesTableReturnNoSymbol, InferCrit, InferCritKind, RefTypesTableReturn, NodeToTypeMap, FloughReturn, RefTypesSymtabConstraintItem, LogicalObjecAccessData, RefTypesSymtabConstraintItemNotNever, assertCastType } from "./floughTypedefs";
 import { GetDeclaredTypeFn, andSymbolTypeIntoSymtabConstraint, orSymtabConstraints } from "./flowConstraints";
 import { createRefTypesSymtabConstraintItemNever, isRefTypesSymtabConstraintItemNever, copyRefTypesSymtabConstraintItem } from "./flowGroupRefTypesSymtab";
 import { getMyDebug, consoleLog, dbgsModule, consoleGroup, consoleGroupEnd } from "./myConsole";
+import { FloughTypeChecker } from "./floughTypedefs"
 
-const checker: TypeChecker = undefined as any as TypeChecker;
+const checker: FloughTypeChecker = undefined as any as FloughTypeChecker;
 const getDeclaredType: GetDeclaredTypeFn = undefined as any as GetDeclaredTypeFn;
 const mrNarrow: MrNarrow = undefined as any as MrNarrow;
 

@@ -17,6 +17,7 @@ import {
     Identifier,
     Symbol,
     LocalsContainer,
+    TypeChecker as TSTypeChecker
 } from "./types";
 import {
     getLeadingCommentRangesOfNode,
@@ -53,12 +54,12 @@ import {
 import {
     MrNarrow,
     createMrNarrow,
-} from "./flowGroupInfer2";
+} from "./floughGroup2";
 import {
     initFlowGroupInferApplyCrit,
     applyCritNoneUnion,
     applyCrit,
-} from "./flowGroupInferApplyCrit";
+} from "./floughGroupApplyCrit";
 import {
     initializeFlowGroupRefTypesSymtabModule,
     createSubLoopRefTypesSymtabConstraint,
@@ -218,7 +219,7 @@ export interface GroupsForFlow {
     dbgCreationTimeMs?: bigint;
 }
 
-export interface SourceFileMrState {
+export interface SourceFileFloughState {
     sourceFile: SourceFile;
     groupsForFlow: GroupsForFlow;
     mrState: MrState;
@@ -459,7 +460,8 @@ function createForFlow(groupsForFlow: GroupsForFlow) {
 function breakpoint() {
     debugger;
 }
-export function createSourceFileMrState(sourceFile: SourceFile, checker: FloughTypeChecker, compilerOptions: CompilerOptions): SourceFileMrState {
+export function createSourceFileFloughState(sourceFile: SourceFile, checker: FloughTypeChecker, compilerOptions: CompilerOptions): SourceFileFloughState {
+    const t0 = process.hrtime.bigint();
     // if (getMyDebug()) breakpoint();;
     if (compilerOptions.floughConstraintsEnable === undefined) compilerOptions.floughConstraintsEnable = false;
     if (compilerOptions.enableTSDevExpectString === undefined) compilerOptions.enableTSDevExpectString = false;
@@ -467,7 +469,8 @@ export function createSourceFileMrState(sourceFile: SourceFile, checker: FloughT
     if (hardCodeEnableTSDevExpectStringFalse) {
         compilerOptions.enableTSDevExpectString = false;
     }
-    const t0 = process.hrtime.bigint();
+
+
     const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
     if (getMyDebug()) {
         // just to set up the ids for debugging
@@ -503,7 +506,7 @@ export function createSourceFileMrState(sourceFile: SourceFile, checker: FloughT
         // refTypesTypeModule
     };
 }
-function getGroupDependencies(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileMrState, forFlow: Readonly<ForFlow> | undefined, options?: { minGroupIdxToAdd: number; }): Set<GroupForFlow> {
+function getGroupDependencies(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileFloughState, forFlow: Readonly<ForFlow> | undefined, options?: { minGroupIdxToAdd: number; }): Set<GroupForFlow> {
     const minGroupIdxToAdd = options?.minGroupIdxToAdd;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const acc = new Set<GroupForFlow>();
@@ -560,7 +563,7 @@ function getGroupDependencies(group: Readonly<GroupForFlow>, sourceFileMrState: 
  * @param returnSortedGroupIdxs
  * @returns
  */
-function updateHeapWithGroupForFlowLoop(groups: Readonly<Set<GroupForFlow>>, heap: Heap, sourceFileMrState: SourceFileMrState, returnSortedGroupIdxs?: boolean): number[] | undefined {
+function updateHeapWithGroupForFlowLoop(groups: Readonly<Set<GroupForFlow>>, heap: Heap, sourceFileMrState: SourceFileFloughState, returnSortedGroupIdxs?: boolean): number[] | undefined {
     if (getMyDebug()) {
         const gidx: number[] = [];
         groups.forEach(g => gidx.push(g.groupIdx));
@@ -601,7 +604,7 @@ function updateHeapWithGroupForFlowLoop(groups: Readonly<Set<GroupForFlow>>, hea
  * @param forFlow
  * @param options This is unused - kill?
  */
-export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileMrState, forFlow: ForFlow, options?: { minGroupIdxToAdd: number; }): void {
+export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, options?: { minGroupIdxToAdd: number; }): void {
     const minGroupIdxToAdd = options?.minGroupIdxToAdd;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     if (getMyDebug()) {
@@ -671,7 +674,7 @@ export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, source
     }
 }
 
-export function updateHeapWithConnectedGroupsGraph(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileMrState, forFlow: ForFlow): void {
+export function updateHeapWithConnectedGroupsGraph(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow): void {
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const graphIndex = groupsForFlow.connectedGroupsGraphs.arrGroupIndexToConnectGraph[group.groupIdx];
     if (extraAsserts) {
@@ -712,7 +715,7 @@ export function updateHeapWithConnectedGroupsGraph(group: Readonly<GroupForFlow>
     }
 }
 
-function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileMrState, accumBranches: false): InferStatus {
+function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileFloughState, accumBranches: false): InferStatus {
     const mrState = sourceFileMrState.mrState;
     Debug.assert(sourceFileMrState.mrState.forFlowTop.groupToNodeToType);
     let groupNodeToTypeMap = mrState.forFlowTop.groupToNodeToType!.get(groupForFlow);
@@ -817,7 +820,7 @@ export function getDevExpectStrings(node: Node, sourceFile: SourceFile): string[
     return arrstr.length ? arrstr : undefined;
 }
 
-function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow): void {
+function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloughState, forFlowParent: ForFlow): void {
     sourceFileMrState.mrState.currentLoopsInLoopScope.add(loopGroup);
     sourceFileMrState.mrState.currentLoopDepth++;
     let maxGroupIdxProcessed: number;
@@ -849,7 +852,7 @@ function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFile
     if (sourceFileMrState.mrState.currentLoopDepth === 0) sourceFileMrState.mrState.currentLoopsInLoopScope.clear();
 }
 
-function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrState, forFlowParent: ForFlow, setOfLoopDeps: Readonly<Set<GroupForFlow>>, maxGroupIdxProcessed: number): void {
+function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloughState, forFlowParent: ForFlow, setOfLoopDeps: Readonly<Set<GroupForFlow>>, maxGroupIdxProcessed: number): void {
     const dbgLevel = 1;
     if (getMyDebug(dbgLevel)) {
         consoleGroup(`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}`);
@@ -1054,7 +1057,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileMrSta
  * Resolve the groups in the heap, which are in order of increasing dependence.
  * @param sourceFileMrState
  */
-function resolveHeap(sourceFileMrState: SourceFileMrState, forFlow: ForFlow, withinLoop: false, maxGroupIdxToResolve?: number): void {
+function resolveHeap(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, withinLoop: false, maxGroupIdxToResolve?: number): void {
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const heap = forFlow.heap;
     while (!heap.isEmpty()) {
@@ -1070,7 +1073,7 @@ function resolveHeap(sourceFileMrState: SourceFileMrState, forFlow: ForFlow, wit
     } // while (!heap.isEmpty())
 }
 
-function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap: Map<GroupForFlow, Set<"then" | "else"> | undefined>, sourceFileMrState: SourceFileMrState, forFlow: ForFlow): RefTypesSymtabConstraintItem {
+function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap: Map<GroupForFlow, Set<"then" | "else"> | undefined>, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow): RefTypesSymtabConstraintItem {
     const { groupsForFlow, mrNarrow } = sourceFileMrState;
     return doFlowGroupLabelAux(fglabIn);
 
@@ -1232,7 +1235,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
     }
 }
 
-function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: InferStatus, sourceFileMrState: SourceFileMrState, forFlow: ForFlow, options?: { cachedSCForLoop: RefTypesSymtabConstraintItem; loopGroupIdx: number; }): void {
+function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: InferStatus, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, options?: { cachedSCForLoop: RefTypesSymtabConstraintItem; loopGroupIdx: number; }): void {
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const mrNarrow = sourceFileMrState.mrNarrow;
     const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
@@ -1374,7 +1377,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
         consoleGroupEnd();
     }
 }
-export function getTypeByMrNarrow(reference: Node, sourceFileMrState: SourceFileMrState): Type {
+export function getTypeByFlough(reference: Node, sourceFileMrState: SourceFileFloughState): Type {
     if (getMyDebug()) consoleGroup(`getTypeByMrNarrow[in] expr: ${dbgs?.dbgNodeToString(reference)}`);
     const type = getTypeByMrNarrowAux(reference, sourceFileMrState);
     if (getMyDebug()) {
@@ -1383,7 +1386,7 @@ export function getTypeByMrNarrow(reference: Node, sourceFileMrState: SourceFile
     }
     return type;
 }
-export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileMrState): Type {
+export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileFloughState): Type {
     const { mrState /* refTypesTypeModule */ } = sourceFileMrState;
 
     // upto commit 4690571dd432 was (mrState.dataForGetTypeOfExpressionShallowRecursive?.expr) {}
@@ -1497,7 +1500,7 @@ function dbgCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): s
     astr.push(...mrNarrow.dbgConstraintItem(cbi.sc.constraintItem).map(s => `constraintItem: ${s}`));
     return astr;
 }
-function dbgCurrentBranchElement(cbe: CurrentBranchElement, sourceFileMrState: SourceFileMrState): string[] {
+function dbgCurrentBranchElement(cbe: CurrentBranchElement, sourceFileMrState: SourceFileFloughState): string[] {
     const g = cbe.gff;
     const astr: string[] = [];
     const maximalNode = sourceFileMrState.groupsForFlow.posOrderedNodes[g.maximalIdx];
@@ -1518,7 +1521,7 @@ function dbgCurrentBranchElement(cbe: CurrentBranchElement, sourceFileMrState: S
     return astr;
 }
 
-function dbgCurrentBranchesMap(currentBranchesMap: CurrentBranchesMap, sourceFileMrState: SourceFileMrState): string[] {
+function dbgCurrentBranchesMap(currentBranchesMap: CurrentBranchesMap, sourceFileMrState: SourceFileFloughState): string[] {
     const astr: string[] = [];
     currentBranchesMap.forEach((cbe, g) => {
         const maximalNode = sourceFileMrState.groupsForFlow.posOrderedNodes[g.maximalIdx];
@@ -1546,7 +1549,7 @@ function dbgCurrentBranchesMap(currentBranchesMap: CurrentBranchesMap, sourceFil
 }
 
 /* @ ts-ignore */
-function dbgForFlow(sourceFileMrState: SourceFileMrState, forFlow: ForFlow): string[] {
+function dbgForFlow(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow): string[] {
     const astr: string[] = [];
     astr.push(`forFlow.currentBranchesMap.size:${forFlow.currentBranchesMap.size}`);
     dbgCurrentBranchesMap(forFlow.currentBranchesMap, sourceFileMrState).forEach(s => astr.push(`forFlow.currentBranchesMap: ${s}`));

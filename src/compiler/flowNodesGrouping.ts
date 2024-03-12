@@ -23,10 +23,7 @@ import {
     FlowGroupLabelLoopElse,
     FlowGroupLabelBlock,
     FlowGroupLabelPostBlock,
-} from "./flowGroupInfer";
-import {
-    Dbgs,
-} from "./mydebug";
+} from "./floughGroup";
 import {
     Node,
     SyntaxKind,
@@ -49,6 +46,10 @@ import {
 import {
     isStatement,
 } from "./utilitiesPublic";
+import {
+    FloughTypeChecker
+} from "./floughTypedefs";
+import { getMyDebug, createDbgs, DbgsX } from "./myConsole";
 
 function nodeIsExpressionForGrouping(node: Node) {
     const yes = [
@@ -141,7 +142,7 @@ function makeConnectedGroupsGraphs(orderedGroups: Readonly<GroupForFlow[]>, grou
     return { arrConnectedGraphs, arrGroupIndexToDependantCount, arrGroupIndexToConnectGraph };
 }
 
-export function makeGroupsForFlow(sourceFile: SourceFile, checker: TypeChecker): GroupsForFlow {
+export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChecker): GroupsForFlow {
     const flowNodes: FlowNode[] = sourceFile.allFlowNodes ?? [];
     const nodesWithFlow: Node[] = sourceFile.allNodesWithFlowOneSourceFile ?? [];
 
@@ -696,7 +697,7 @@ export function getFlowAntecedents(fn: FlowNodeBase): FlowNode[] {
     else return [];
 }
 
-function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, dbgs: Dbgs, checker: TypeChecker): string[] {
+function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, dbgs: DbgsX, checker: TypeChecker): string[] {
     const as: string[] = [`kind:${fglab.kind}`];
     switch (fglab.kind) {
         case FlowGroupLabelKind.ref:
@@ -758,7 +759,7 @@ function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, dbgs: Dbgs, checker: 
 
 export function dbgGroupsForFlowToStrings(
     gff: GroupsForFlow,
-    checker: TypeChecker,
+    checker: FloughTypeChecker,
 ): string[] {
     const dbgs = createDbgs(checker);
     const dbgNodeToString = dbgs.dbgNodeToString;
