@@ -24,6 +24,8 @@ import {
     SourceFile,
 } from "./types";
 
+import { IDebug } from "./mydebug";
+
 function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<FlowNode[]>, mapPeType: Map<string, Type> | undefined, checker: TypeChecker): void {
     const map_peID = new Map<string, number>(); // TID, text ID
     const map_nID = new Map<Node, number>(); // NID, node ID
@@ -222,3 +224,16 @@ export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: 
     // sys.writeFile(`${ofilenameRoot}.before.txt`, contents);
     return contents;
 }
+
+
+export function dbgFlowToString(flow: FlowNode | undefined): string {
+    if (!flow) return "<undef>";
+    const getFlowNodeId = (flow: FlowNode) => {
+        return flow.id;
+    };
+    let str = "";
+    str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
+    if ((flow as FlowLabel).branchKind) str += `branchKind:${((flow as FlowLabel).branchKind)}, `;
+    if ((flow as any).node) str += IDebug.dbgs.dbgNodeToString((flow as any).node as any as Node);
+    return str;
+};

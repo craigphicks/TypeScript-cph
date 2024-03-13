@@ -72,6 +72,7 @@ import {
     createRefTypesSymtab,
 } from "./flowGroupRefTypesSymtab";
 import {
+    dbgGroupsForFlowToStrings,
     makeGroupsForFlow,
 } from "./flowNodesGrouping";
 import {
@@ -88,6 +89,9 @@ import {
 import {
     FloughTypeChecker,
 } from "./floughTypedefs";
+import { IDebug } from "./mydebug";
+import { dbgFlowToString, flowNodesToString } from "./flowNodesDebugWrite";
+import { sys } from "./sys";
 
 export const extraAsserts = true; // not suitable for release or timing tests.
 const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
@@ -469,6 +473,13 @@ export function createSourceFileFloughState(sourceFile: SourceFile, checker: Flo
     if (hardCodeEnableTSDevExpectStringFalse) {
         compilerOptions.enableTSDevExpectString = false;
     }
+    // Only on first pass
+    if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && process.env.enableDbgFlowNodes) {
+        const ofilenameRoot = IDebug.loggingHost.getBaseTestFilepath(sourceFile) + `.flowNodes.txt`;
+        //`tmp.${getBaseFileName(node.originalFileName)}.di${myDisableInfer?1:0}.${dbgFlowFileCnt}.flow`;
+        //export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: FlowNode) => number, checker: TypeChecker): string {
+        sys.writeFile(ofilenameRoot, flowNodesToString(sourceFile, checker.getFlowNodeId, checker));
+    }
 
 
     const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
@@ -476,6 +487,39 @@ export function createSourceFileFloughState(sourceFile: SourceFile, checker: Flo
         // just to set up the ids for debugging
         sourceFile.allFlowNodes?.forEach(fn => checker.getFlowNodeId(fn));
     }
+
+    if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && process.env.enableDbgFlowNodes) {
+        const astr3 = dbgGroupsForFlowToStrings(groupsForFlow,checker);
+        const ofilename3 = IDebug.loggingHost.getBaseTestFilepath(sourceFile)+`.gff.txt`;
+        sys.writeFile(ofilename3, astr3.join(sys.newLine));
+
+        if (sourceFile.allFlowNodes) {
+            const astr4: string[] = [];
+            sourceFile.allFlowNodes.forEach(fn => {
+                let str = dbgFlowToString(fn);
+                if (groupsForFlow.dbgFlowToOriginatingGroupIdx) {
+                    const originatingGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(fn) ?? -1;
+                    str += `, originatingGroupIdx: ${originatingGroupIdx}`;
+                    str += `, anteFlow:[`;
+                    const tmpas: string[] = [];
+                    getFlowAntecedents(fn).forEach(antefn => {
+                        str += `${dbgFlowToString(antefn)}; `;
+                        const anteGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx!.get(antefn) ?? -1;
+                        tmpas.push(anteGroupIdx.toString());
+                    });
+                    str += "]";
+                    if (tmpas.length) {
+                        str += `, anteGroups:[${tmpas.join(",")}]`;
+                    }
+                    astr4.push(str);
+                }
+            });
+            const ofilename4 = IDebug.loggingHost.getBaseTestFilepath(sourceFile)+`.afn.txt`;
+            sys.writeFile(ofilename4, astr4.join(sys.newLine));
+        }
+
+    }
+
     const t1 = process.hrtime.bigint() - t0;
     groupsForFlow.dbgCreationTimeMs = t1 / BigInt(1000000);
     dbgs = createDbgs(checker);
@@ -1558,3 +1602,7 @@ function dbgForFlow(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow):
     });
     return astr;
 }
+function getFlowAntecedents(fn: FlowNode) {
+    throw new Error("Function not implemented.");
+}
+

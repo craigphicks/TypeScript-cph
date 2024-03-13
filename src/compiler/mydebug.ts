@@ -11,6 +11,8 @@ export interface ILoggingHost {
     ilogGroupEnd (message?: (()=>string), level?: LogLevel, expectedIndent?: number): void;
     notifySourceFile(sourceFile: SourceFile, typeChecker: TypeChecker): void;
     isActiveFile(): boolean;
+    getCurrentSourceFnCount(): number;
+    getBaseTestFilepath(node: SourceFile): string; // including tmp/ directory
 }
 
 export namespace IDebug {
@@ -120,6 +122,7 @@ export class ILoggingClass implements ILoggingHost {
             IDebug.checker = typeChecker;
         }
     }
+    getCurrentSourceFnCount() { return this.currentSourceFnCount; }
     private dbgTestFilenameMatches(node: SourceFile): boolean {
         const re = /^\/.src\//;
         const nameMatched = (node.path.match(re) && node.path.slice(-5)!==".d.ts");
@@ -137,6 +140,12 @@ export class ILoggingClass implements ILoggingHost {
         const nameRet = this.nodePath.basename(node.path, ".ts");
         this.nodeFs.mkdirSync("tmp", {recursive: true});
         const retfn = "tmp/" + nameRet +`.#${this.currentSourceFnCount}` +`.de${IDebug.logLevel}.log${IDebug.suffix?`-${IDebug.suffix}`:""}`;
+        return retfn;
+    }
+    getBaseTestFilepath(node: SourceFile) {
+        const nameRet = this.nodePath.basename(node.path, ".ts");
+        this.nodeFs.mkdirSync("tmp", {recursive: true});
+        const retfn = "tmp/" + nameRet;
         return retfn;
     }
 }
