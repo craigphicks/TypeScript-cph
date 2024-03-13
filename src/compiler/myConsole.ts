@@ -1,7 +1,7 @@
 import { getNodeId, getSymbolId } from "./checker";
 import { Debug } from "./debug";
 import { FloughType, floughTypeModule } from "./floughType";
-import { isFlowLabel, isFlowWithNode, getFlowAntecedents } from "./flowNodesGrouping";
+import { isFlowLabel, isFlowWithNode, getFlowAntecedents } from "./floughNodesGrouping";
 import { System, sys } from "./sys";
 import { Node, FlowNode, Type, Signature, Identifier, TypeFlags, Symbol } from "./types";
 

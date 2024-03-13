@@ -8,7 +8,7 @@ import {
     isFlowSwitchClause,
     isFlowReduceLabel,
     isFlowStart,
-} from "./flowNodesGrouping";
+} from "./floughNodesGrouping";
 import {
     forEachChild,
 } from "./parser";

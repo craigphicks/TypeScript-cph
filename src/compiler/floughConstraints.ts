@@ -34,7 +34,7 @@ import {
     dbgRefTypesSymtabConstrinatItemToStrings,
     isRefTypesSymtabConstraintItemNever,
     dbgRefTypesSymtabToStrings,
-} from "./flowGroupRefTypesSymtab";
+} from "./floughGroupRefTypesSymtab";
 import {
     getMyDebug,
     consoleGroup,

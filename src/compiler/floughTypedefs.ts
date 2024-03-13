@@ -8,7 +8,7 @@ import {
 } from "./floughType";
 import {
     RefTypesSymtab,
-} from "./flowGroupRefTypesSymtab";
+} from "./floughGroupRefTypesSymtab";
 import {
     Type,
     Node,

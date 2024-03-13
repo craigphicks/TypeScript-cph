@@ -26,7 +26,7 @@ import {
     isNeverConstraint,
     createFlowConstraintNever,
     createFlowConstraintAlways,
-} from "./flowConstraints";
+} from "./floughConstraints";
 import {
     SymbolFlowInfoMap,
     ProcessLoopState,

@@ -26,8 +26,8 @@ import {
     MrNarrow,
 } from "./floughGroup2";
 import { RefTypesTableReturnNoSymbol, InferCrit, InferCritKind, RefTypesTableReturn, NodeToTypeMap, FloughReturn, RefTypesSymtabConstraintItem, LogicalObjecAccessData, RefTypesSymtabConstraintItemNotNever, assertCastType } from "./floughTypedefs";
-import { GetDeclaredTypeFn, andSymbolTypeIntoSymtabConstraint, orSymtabConstraints } from "./flowConstraints";
-import { createRefTypesSymtabConstraintItemNever, isRefTypesSymtabConstraintItemNever, copyRefTypesSymtabConstraintItem } from "./flowGroupRefTypesSymtab";
+import { GetDeclaredTypeFn, andSymbolTypeIntoSymtabConstraint, orSymtabConstraints } from "./floughConstraints";
+import { createRefTypesSymtabConstraintItemNever, isRefTypesSymtabConstraintItemNever, copyRefTypesSymtabConstraintItem } from "./floughGroupRefTypesSymtab";
 import { getMyDebug, consoleLog, dbgsModule, consoleGroup, consoleGroupEnd } from "./myConsole";
 import { FloughTypeChecker } from "./floughTypedefs"
 

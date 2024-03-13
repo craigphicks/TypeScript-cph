@@ -57,7 +57,7 @@ import {
     andSymbolTypeIntoSymtabConstraint,
     isNeverConstraint,
     orSymtabConstraints,
-} from "./flowConstraints";
+} from "./floughConstraints";
 import {
     SymbolFlowInfo,
     MrState,
@@ -84,7 +84,7 @@ import {
     createRefTypesSymtabConstraintItemNever,
     copyRefTypesSymtabConstraintItem,
     dbgRefTypesSymtabConstrinatItemToStrings,
-} from "./flowGroupRefTypesSymtab";
+} from "./floughGroupRefTypesSymtab";
 import {
     createDbgs,
     getMyDebug,

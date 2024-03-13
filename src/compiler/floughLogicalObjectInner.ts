@@ -35,7 +35,7 @@ import {
 } from "./floughTypedefs";
 import {
     orSymtabConstraints,
-} from "./flowConstraints";
+} from "./floughConstraints";
 import {
     extraAsserts,
 } from "./floughGroup";
@@ -45,7 +45,7 @@ import {
 import {
     createRefTypesSymtabConstraintItemNever,
     dbgRefTypesSymtabConstrinatItemToStrings,
-} from "./flowGroupRefTypesSymtab";
+} from "./floughGroupRefTypesSymtab";
 import {
     getMyDebug,
     consoleLog,
@@ -781,7 +781,7 @@ function inheritReadonlyFromEffectiveDeclaredTsTypeModify(
                         if (roTuple) {
                             const roTsType = checker.createReaonlyTupleTypeFromTupleType(obj.tsType as TupleTypeReference);
                             // TODO: overwrite the old or create a new inner with new tsType
-                            obj.tsType = roTsType;
+                            obj.tsType = roTsType as ObjectType;
                         }
                     }
                     else { // ArrayType

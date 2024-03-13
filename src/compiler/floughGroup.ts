@@ -50,7 +50,7 @@ import {
     orSymtabConstraints,
     createFlowConstraintNever,
     createFlowConstraintAlways,
-} from "./flowConstraints";
+} from "./floughConstraints";
 import {
     MrNarrow,
     createMrNarrow,
@@ -70,11 +70,12 @@ import {
     copyRefTypesSymtab,
     createSuperloopRefTypesSymtabConstraintItem,
     createRefTypesSymtab,
-} from "./flowGroupRefTypesSymtab";
+} from "./floughGroupRefTypesSymtab";
 import {
     dbgGroupsForFlowToStrings,
+    getFlowAntecedents,
     makeGroupsForFlow,
-} from "./flowNodesGrouping";
+} from "./floughNodesGrouping";
 import {
     defineOneIndexingHeaper,
 } from "./heaper";
@@ -90,7 +91,7 @@ import {
     FloughTypeChecker,
 } from "./floughTypedefs";
 import { IDebug } from "./mydebug";
-import { dbgFlowToString, flowNodesToString } from "./flowNodesDebugWrite";
+import { dbgFlowToString, flowNodesToString } from "./floughNodesDebugWrite";
 import { sys } from "./sys";
 
 export const extraAsserts = true; // not suitable for release or timing tests.
@@ -1601,8 +1602,5 @@ function dbgForFlow(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow):
         astr.push(...dbgNodeToTypeMap(map).map(s => `groupIdx:${g.groupIdx}: ${s}`));
     });
     return astr;
-}
-function getFlowAntecedents(fn: FlowNode) {
-    throw new Error("Function not implemented.");
 }
 
