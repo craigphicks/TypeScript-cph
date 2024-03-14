@@ -86,14 +86,6 @@ import {
     dbgRefTypesSymtabConstrinatItemToStrings,
 } from "./floughGroupRefTypesSymtab";
 import {
-    createDbgs,
-    getMyDebug,
-    consoleLog,
-    consoleGroup,
-    consoleGroupEnd,
-    dbgsModule,
-} from "./myConsole";
-import {
     Node,
     TypeChecker,
     CompilerOptions,
@@ -139,6 +131,7 @@ import {
     getCheckFlags,
     getSourceTextOfNodeFromSourceFile,
 } from "./utilities";
+import { IDebug } from "./mydebug";
 
 /* eslint-disable no-double-space */
 
@@ -151,8 +144,8 @@ export interface MrNarrow {
     dbgRefTypesTableToStrings(t: RefTypesTable): string[];
     dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[];
     dbgConstraintItem(ci: Readonly<ConstraintItem>): string[];
-    dbgSymbolToStringSimple(symbol: Readonly<Symbol> | undefined): string;
-    dbgNodeToString(node: Node): string;
+//    IDebug.dbgs.symbolToStringSimple(symbol: Readonly<Symbol> | undefined): string;
+//    IDebug.dbgs.nodeToString(node: Node): string;
     createNodeToTypeMap(): NodeToTypeMap;
     mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void;
     getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo): RefTypesType;
@@ -190,11 +183,6 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     const getResolvedSymbol = checker.getResolvedSymbol;
     const getSymbolOfNode = checker.getSymbolOfNode;
 
-    const {
-        dbgNodeToString,
-        dbgSymbolToStringSimple,
-        dbgTypeToString,
-    } = createDbgs(checker);
 
     const mrNarrow: MrNarrow = {
         flough,
@@ -203,8 +191,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         dbgRefTypesTableToStrings,
         dbgRefTypesSymtabToStrings,
         dbgConstraintItem,
-        dbgSymbolToStringSimple,
-        dbgNodeToString,
+        // IDebug.dbgs.symbolToStringSimple: IDebug.dbgs.symbolToString,
+        // IDebug.dbgs.nodeToString,
         createNodeToTypeMap,
         mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
         getEffectiveDeclaredType,
@@ -287,7 +275,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
         floughTypeModule.forEachRefTypesTypeType(rt, t => {
             // Previously returned the the result of push by mistake (no brackets), that was 1 (length of the array), and then forEach terminates.
-            astr.push(`${dbgTypeToString(t)}`);
+            astr.push(`${IDebug.dbgs.typeToString(t)}`);
         });
         return astr.join(" | ");
     }
@@ -308,7 +296,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             /**/
         }
         else if (ci.kind === ConstraintItemKind.leaf) {
-            as.push(`  symbol: ${dbgSymbolToStringSimple(ci.symbol)},`);
+            as.push(`  symbol: ${IDebug.dbgs.symbolToString(ci.symbol)},`);
             as.push(`  type: ${dbgRefTypesTypeToString(ci.type)},`);
         }
         else {
@@ -333,7 +321,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     function dbgRefTypesTableToStrings(rtt: RefTypesTable | undefined): string[] {
         if (!rtt) return ["undefined"];
         const as: string[] = ["{"];
-        if ((rtt as any).symbol) as.push(`  symbol: ${dbgSymbolToStringSimple((rtt as any).symbol)},`);
+        if ((rtt as any).symbol) as.push(`  symbol: ${IDebug.dbgs.symbolToString((rtt as any).symbol)},`);
         if ((rtt as any).isconst) as.push(`  isconst: ${(rtt as any).isconst},`);
         if ((rtt as RefTypesTableReturn).isAssign) as.push(`  isAssign: ${(rtt as any).isAssign},`);
         if (!rtt.type) as.push(`  type: <undef>, // during recursive calls of floughAccessExpressionCritNone`);
@@ -428,12 +416,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         return new Map<Node, Type>();
     }
     function mergeIntoMapIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void {
-        // if (getMyDebug()){
-        //     consoleGroup(`mergeIntoMapIntoNodeToTypeMaps[in]`);
+        // if (IDebug.isActive()){
+        //     IDebug.ilogGroup(`mergeIntoMapIntoNodeToTypeMaps[in]`);
         // }
         source.forEach((t, n) => {
-            // if (getMyDebug()){
-            //     consoleLog(`mergeIntoNodeToTypeMaps[dbg] node:${dbgNodeToString(n)}, type:${typeToString(t)}`);
+            // if (IDebug.isActive()){
+            //     IDebug.ilog(()=>`mergeIntoNodeToTypeMaps[dbg] node:${IDebug.dbgs.nodeToString(n)}, type:${typeToString(t)}`);
             // }
             const gott = target.get(n);
             if (!gott) target.set(n, t);
@@ -442,19 +430,19 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 target.set(n, tt);
             }
         });
-        // if (getMyDebug()){
+        // if (IDebug.isActive()){
         //     let str = `mergeIntoNodeToTypeMaps[dbg] cum node ids:`;
         //     target.forEach((_type,node)=>{
         //         str += ` node.id:${node.id},`;
         //     });
-        //     consoleLog(str);
-        //     consoleGroupEnd();
+        //     IDebug.ilog(str);
+        //     IDebug.ilogGroupEnd();
         // }
     }
     // function mergeOneIntoNodeToTypeMaps(node: Readonly<Node>, type: Type, target: NodeToTypeMap, dontSkip?: boolean): void {
     //     if (!dontSkip) return;
-    //     // if (getMyDebug()){
-    //     //     consoleGroup(`mergeOneIntoNodeToTypeMaps[in] node:${dbgNodeToString(node)}, type:${typeToString(type)}, dontSkip:${dontSkip}`);
+    //     // if (IDebug.isActive()){
+    //     //     IDebug.ilogGroup(`mergeOneIntoNodeToTypeMaps[in] node:${IDebug.dbgs.nodeToString(node)}, type:${typeToString(type)}, dontSkip:${dontSkip}`);
     //     // }
     //     const gott = target.get(node);
     //     if (!gott) target.set(node,type);
@@ -462,13 +450,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     //         const tt = getUnionType([gott,type], UnionReduction.Literal);
     //         target.set(node,tt);
     //     }
-    //     // if (getMyDebug()){
+    //     // if (IDebug.isActive()){
     //     //     let str = `mergeOneIntoNodeToTypeMaps[dbg] cum node ids:`;
     //     //     target.forEach((_type,node)=>{
     //     //         str += ` node.id:${node.id},`;
     //     //     });
-    //     //     consoleLog(str);
-    //     //     consoleGroupEnd();
+    //     //     IDebug.ilog(str);
+    //     //     IDebug.ilogGroupEnd();
     //     // }
     // }
 
@@ -612,7 +600,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     // type TransientExpressionSymbol = Symbol & { expr: Expression, typeofArgSymbol: Symbol, map: WeakMap<Type, RefTypesType> };
     // function createTransientExpressionSymbol(expr: Expression, effectiveDeclaredTsType: Type, typeofArgSymbol: Symbol): TransientExpressionSymbol {
     //     const name = `transientExpressionSymbol`;//(${argSymbol.escapedName})`;
-    //     if (getMyDebug()) (name as any) += `, node: ${dbgNodeToString(expr)}`;
+    //     if (IDebug.isActive()) (name as any) += `, node: ${IDebug.dbgs.nodeToString(expr)}`;
     //     const symbol: TransientExpressionSymbol = {
     //         ... checker.createSymbol(0, name as __String),
     //         expr,
@@ -631,21 +619,22 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     // function floughByBinaryExpressionEqualsEquals({
     //     sci, expr,inferStatus,
     // }: InferRefInnerArgs & {expr: BinaryExpression}): floughInnerReturn {
-    //     if (getMyDebug()){
-    //         consoleGroup(`floughByBinaryExpressionEqualsEquals[in] ${dbgNodeToString(expr)}`);
+    //     if (IDebug.isActive()){
+    //         IDebug.ilogGroup(`floughByBinaryExpressionEqualsEquals[in] ${IDebug.dbgs.nodeToString(expr)}`);
     //     }
     //     const ret: floughInnerReturn = floughByBinaryExpressionEqualCompare({
     //         sci, expr, inferStatus
     //     });
-    //     if (getMyDebug()){
-    //         consoleLog(`floughByBinaryExpressionEqualsEquals[out] ${dbgNodeToString(expr)}`);
-    //         consoleGroupEnd();
+    //     if (IDebug.isActive()){
+    //         IDebug.ilog(()=>`floughByBinaryExpressionEqualsEquals[out] ${IDebug.dbgs.nodeToString(expr)}`);
+    //         IDebug.ilogGroupEnd();
     //     }
     //     return ret;
 
     // }
 
     function debugDevExpectEffectiveDeclaredType(node: Node, symbolFlowInfo: Readonly<SymbolFlowInfo>): void {
+        const loggerLevel = 2;
         const arrexpected = getDevExpectStrings(node, sourceFile);
         if (arrexpected) {
             // const actual = `count: ${symbolFlowInfo.passCount}, actualDeclaredTsType: ${typeToString(symbolFlowInfo.effectiveDeclaredTsType)}`;
@@ -656,8 +645,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             if (!pass) {
                 Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}"`);
             }
-            if (getMyDebug()) {
-                consoleLog(`debugDevExpectEffectiveDeclaredType, passed ts-dev-expect-string "${actual}"`);
+            if (IDebug.isActive()) {
+                IDebug.ilog(()=>`debugDevExpectEffectiveDeclaredType, passed ts-dev-expect-string "${actual}"`, loggerLevel);
             }
         }
     }
@@ -729,8 +718,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         sc: RefTypesSymtabConstraintItem;
         resolvedCallArguments: CallExpressionResolvedArg[];
     } {
-        if (getMyDebug()) {
-            consoleGroup(`floughByCallExpressionProcessCallArguments[in] ${dbgNodeToString(args.callExpr)} `);
+        const loggerLevel = 2;
+        if (IDebug.isActive()) {
+            IDebug.ilogGroup(()=>`floughByCallExpressionProcessCallArguments[in] ${IDebug.dbgs.nodeToString(args.callExpr)} `, loggerLevel);
         }
         const { callExpr, sc: scIn, inferStatus } = args;
         // function createTransientCallArgumentSymbol_(idx: number, cargidx: number,tupleMember: TransientCallArgumentSymbol["tupleMember"] | undefined, type: RefTypesType): TransientCallArgumentSymbol {
@@ -851,15 +841,15 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 resolvedCallArguments.push({ type, tstype, symbol, isconst });
             }
         });
-        if (getMyDebug()) {
-            const hdr0 = "floughByCallExpressionProcessCallArguments[out] ";
-            consoleLog(hdr0 + `resolvedCallArguments.length: ${resolvedCallArguments.length}`);
+        if (IDebug.isActive()) {
+            const hdr0 = "floughByCallExpressionProcessCallArguments ";
+            IDebug.ilog(()=>hdr0 + `resolvedCallArguments.length: ${resolvedCallArguments.length}`, loggerLevel);
             resolvedCallArguments.forEach((ca, idx) => {
-                let str = hdr0 + `arg[${idx}] tstype: ${typeToString(ca.tstype)}, symbol${dbgSymbolToStringSimple(ca.symbol)}, isconst:${ca.isconst}`;
+                let str = hdr0 + `arg[${idx}] tstype: ${typeToString(ca.tstype)}, symbol${IDebug.dbgs.symbolToString(ca.symbol)}, isconst:${ca.isconst}`;
                 if (ca.hasSpread) str += "hasSpread:true, ";
-                consoleLog(str);
+                IDebug.ilog(()=>str, loggerLevel);
             });
-            consoleGroupEnd();
+            IDebug.ilogGroupEnd(()=>"floughByCallExpressionProcessCallArguments", loggerLevel);
         }
         return { sc: sctmp, resolvedCallArguments };
     }
@@ -920,18 +910,18 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
      * @returns
      */
     function flough({ sci, expr: expr, inferStatus, qdotfallout, crit, accessDepth, refAccessArgs }: FloughArgs): FloughReturn {
-        if (getMyDebug()) {
-            consoleGroup(
-                `flough[in] expr:${dbgNodeToString(expr)}},`
-                    + `crit:{kind:${crit.kind},alsoFailing:${crit.alsoFailing},negate:${crit.negate}, ${(crit as any).target ? dbgTypeToString((crit as any).target as Type) : ""}},`
-                    + `inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem ? `{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}` : undefined}}, `
+        const loggerLevel = 2;
+        if (IDebug.isActive(loggerLevel)) {
+            IDebug.ilogGroup(()=>
+                `flough[in] expr:${IDebug.dbgs.nodeToString(expr)}},`
+                    + `crit:{kind:${crit.kind},alsoFailing:${crit.alsoFailing},negate:${crit.negate}, ${(crit as any).target ? IDebug.dbgs.typeToString((crit as any).target as Type) : ""}},`
+                    + `inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(inferStatus.currentReplayableItem.symbol)}}` : undefined}}, `
                     + `qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}, `
-                    + `accessDepth:${accessDepth}`,
-            );
-            consoleLog(`flough[in] refTypesSymtab:`);
-            if (sci.symtab) dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => consoleLog(`  ${str}`));
-            consoleLog(`flough[in] constraintItemIn:`);
-            dbgConstraintItem(sci.constraintItem).forEach(str => consoleLog(`  ${str}`));
+                    + `accessDepth:${accessDepth}`, loggerLevel);
+            IDebug.ilog(()=>`flough[in] refTypesSymtab:`, loggerLevel);
+            if (sci.symtab) dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
+            IDebug.ilog(()=>`flough[in] constraintItemIn:`, loggerLevel);
+            dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
         }
         const floughReturn: FloughReturn = (() => {
             if (!sci.symtab) {
@@ -962,27 +952,26 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             return floughAux();
         })();
 
-        if (getMyDebug()) {
+        if (IDebug.isActive()) {
             floughReturn.unmerged.forEach((rttr, i) => {
-                dbgRefTypesTableToStrings(rttr).forEach(s => consoleLog(`  flough[dbg]: unmerged[${i}]: ${s}`));
+                dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`  flough[dbg]: unmerged[${i}]: ${s}`, loggerLevel));
             });
-            consoleLog(`flough[out] floughReturn.typeof: ${floughReturn.typeof ? "present" : "<undef>"}`);
-            consoleLog(`flough[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
+            IDebug.ilog(()=>`flough[out] floughReturn.typeof: ${floughReturn.typeof ? "present" : "<undef>"}`, loggerLevel);
+            IDebug.ilog(()=>`flough[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`, loggerLevel);
             inferStatus.groupNodeToTypeMap.forEach((t, n) => {
                 for (let ntmp = n; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                     if (ntmp === expr) {
-                        consoleLog(`flough[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
+                        IDebug.ilog(()=>`flough[out] groupNodeToTypeMap: node: ${IDebug.dbgs.nodeToString(n)}, type: ${typeToString(t)}`, loggerLevel);
                         break;
                     }
                 }
             });
-            consoleLog(`flough[out] ${dbgNodeToString(expr)}`);
-            consoleGroupEnd();
+            IDebug.ilogGroupEnd(()=>`flough: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
         }
         return floughReturn;
 
         function floughIdentifier(): FloughReturn {
-            if (getMyDebug()) consoleGroup(`floughIdentifier[in] ${dbgNodeToString(expr)}`);
+            IDebug.ilogGroup(()=>`floughIdentifier[in] ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
             function floughIdentifierAux(): FloughReturn {
                 Debug.assert(isIdentifier(expr));
 
@@ -1006,9 +995,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 }
 
                 if (isReplayable) {
-                    if (getMyDebug()) {
-                        consoleLog(`floughIdentifier[dbg]: start replay for ${dbgSymbolToStringSimple(symbol)}, ${dbgNodeToString(expr)}`);
-                    }
+                    IDebug.ilog(()=>`floughIdentifier[dbg]: start replay for ${IDebug.dbgs.symbolToString(symbol)}, ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
                     const replayable = inferStatus.replayables.get(symbol)!;
                     /**
                      * Replay with new constraints
@@ -1025,9 +1012,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         qdotfallout: undefined,
                         inferStatus: { ...inferStatus, inCondition: true, currentReplayableItem: replayable, groupNodeToTypeMap: dummyNodeToTypeMap },
                     });
-                    if (getMyDebug()) {
-                        consoleLog(`floughIdentifier[dbg]: end replay for ${dbgSymbolToStringSimple(symbol)}, ${dbgNodeToString(expr)}`);
-                    }
+                    IDebug.ilog(()=>`floughIdentifier[dbg]: end replay for ${IDebug.dbgs.symbolToString(symbol)}, ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
 
                     /**
                      * When the replay rhs is an identifier, e.g. _caxnc-rp-001, we need to expand the type before so the lhs and rhs symbols
@@ -1060,12 +1045,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 const rhsType = rttr.type;
                                 const xxx = setEffectiveDeclaredTsTypeOfLogicalObjectOfType(rttr.type, symbolFlowInfo!);
                                 rttr.type = floughTypeModule.unionWithFloughTypeMutate(xxx.logicalObjectRhsType, xxx.nobjRhsType);
-                                if (getMyDebug()) {
-                                    consoleLog(`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
-                                    floughTypeModule.dbgFloughTypeToStrings(rhsType).forEach(s => consoleLog(`floughIdentifier[dbg]: orig: ${s}`));
-                                    consoleLog(`floughIdentifier[dbg]: effectiveDeclaredTsType: ${dbgTypeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`);
-                                    // floughTypeModule.dbgFloughTypeToStrings(symbolFlowInfo!.effectiveDeclaredType).forEach(s=>consoleLog(`floughIdentifier[dbg]: effectiveDeclaredTsType: ${s}`));
-                                    floughTypeModule.dbgFloughTypeToStrings(rttr.type).forEach(s => consoleLog(`floughIdentifier[dbg]: final: ${s}`));
+                                if (IDebug.isActive(loggerLevel)) {
+                                    IDebug.ilog(()=>`floughIdentifier[dbg]: mofified ${dbgRefTypesTypeToString(rhsType)} to ${dbgRefTypesTypeToString(rttr.type)} with ${IDebug.dbgs.typeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`, loggerLevel);
+                                    floughTypeModule.dbgFloughTypeToStrings(rhsType).forEach(s => IDebug.ilog(()=>`floughIdentifier[dbg]: orig: ${s}`, loggerLevel));
+                                    IDebug.ilog(()=>`floughIdentifier[dbg]: effectiveDeclaredTsType: ${IDebug.dbgs.typeToString(symbolFlowInfo!.effectiveDeclaredTsType)}`, loggerLevel);
+                                    // floughTypeModule.dbgFloughTypeToStrings(symbolFlowInfo!.effectiveDeclaredType).forEach(s=>IDebug.ilog(()=>`floughIdentifier[dbg]: effectiveDeclaredTsType: ${s}`));
+                                    floughTypeModule.dbgFloughTypeToStrings(rttr.type).forEach(s => IDebug.ilog(()=>`floughIdentifier[dbg]: final: ${s}`, loggerLevel));
                                 }
                             }
                             // const rhsType = rttr.type;
@@ -1079,8 +1064,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             //         }
                             //     });
                             //     floughLogicalObjectModule.setEffectiveDeclaredTsType(logicalObjectRhs, checker.getUnionType(effectDeclaredObjectTypes));
-                            //     // if (getMyDebug()){
-                            //     //     floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObjectRhs).forEach(s=>consoleLog(`floughIdentifierAux[dbg]: logicalObjectRhs: ${s}`));
+                            //     // if (IDebug.isActive()){
+                            //     //     floughLogicalObjectModule.dbgLogicalObjectToStrings(logicalObjectRhs).forEach(s=>IDebug.ilog(()=>`floughIdentifierAux[dbg]: logicalObjectRhs: ${s}`));
                             //     // }
                             // }
                             let narrowerTypeOut: FloughType | undefined;
@@ -1144,47 +1129,46 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             } // end of floughIdentifierAux()
             const ret = floughIdentifierAux();
 
-            if (getMyDebug()) {
+            if (IDebug.isActive(loggerLevel)) {
                 ret.unmerged.forEach((rttr, i) => {
-                    dbgRefTypesTableToStrings(rttr).forEach(s => consoleLog(`floughIdentifier[out]: unmerged[${i}]: ${s}`));
+                    dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`floughIdentifier[out]: unmerged[${i}]: ${s}`, loggerLevel));
                 });
-                consoleLog(`floughIdentifier[out] floughReturn.typeof: ${ret.typeof}`);
+                IDebug.ilog(()=>`floughIdentifier[out] floughReturn.typeof: ${ret.typeof}`, loggerLevel);
 
-                consoleLog(`floughIdentifier[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`);
+                IDebug.ilog(()=>`floughIdentifier[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`, loggerLevel);
                 inferStatus.groupNodeToTypeMap.forEach((t, n) => {
                     for (let ntmp = n; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                         if (ntmp === expr) {
-                            consoleLog(`floughIdentifier[out] groupNodeToTypeMap: node: ${dbgNodeToString(n)}, type: ${typeToString(t)}`);
+                            IDebug.ilog(()=>`floughIdentifier[out] groupNodeToTypeMap: node: ${IDebug.dbgs.nodeToString(n)}, type: ${typeToString(t)}`, loggerLevel);
                             break;
                         }
                     }
                 });
-                consoleLog(`floughIdentifier[out] ${dbgNodeToString(expr)}`);
-                consoleGroupEnd();
+                IDebug.ilogGroupEnd(()=>`floughIdentifier[out] ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
             }
             return ret;
         } // endof mrNarrowIdentifier()
 
         function floughAux(/* { sci, expr, inferStatus, qdotfallout: qdotfallout }: floughArgs */): FloughReturn {
             assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-            // if (getMyDebug()) {
-            //     consoleGroup(`flough[in] expr:${dbgNodeToString(expr)}},`
-            //     +`crit:{kind:${crit.kind},alsoFailing:${crit.alsoFailing},negate:${crit.negate}, ${(crit as any).target ? dbgTypeToString((crit as any).target as Type): ""}},`
-            //     +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
+            // if (IDebug.isActive()) {
+            //     IDebug.ilogGroup(`flough[in] expr:${IDebug.dbgs.nodeToString(expr)}},`
+            //     +`crit:{kind:${crit.kind},alsoFailing:${crit.alsoFailing},negate:${crit.negate}, ${(crit as any).target ? IDebug.dbgs.typeToString((crit as any).target as Type): ""}},`
+            //     +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${IDebug.dbgs.symbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
             //     +`qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}`);
-            //     consoleLog(`flough[in] refTypesSymtab:`);
-            //     dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> consoleLog(`  ${str}`));
-            //     consoleLog(`flough[in] constraintItemIn:`);
-            //     dbgConstraintItem(sci.constraintItem).forEach(str=> consoleLog(`  ${str}`));
+            //     IDebug.ilog(()=>`flough[in] refTypesSymtab:`);
+            //     dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> IDebug.ilog(()=>`  ${str}`));
+            //     IDebug.ilog(()=>`flough[in] constraintItemIn:`);
+            //     dbgConstraintItem(sci.constraintItem).forEach(str=> IDebug.ilog(()=>`  ${str}`));
             // }
             const qdotfallout1 = qdotfallout ?? ([] as RefTypesTableReturn[]);
             const innerret = floughInner(qdotfallout1);
             let finalArrRefTypesTableReturn = innerret.unmerged;
-            if (getMyDebug()) {
-                consoleLog(`floughAux[dbg]: qdotfallout.length: ${qdotfallout1.length}`);
+            if (IDebug.isActive()) {
+                IDebug.ilog(()=>`floughAux[dbg]: qdotfallout.length: ${qdotfallout1.length}`, loggerLevel);
                 qdotfallout1.forEach((rttr, i) => {
                     dbgRefTypesTableToStrings(rttr).forEach(str => {
-                        consoleLog(`floughAux[dbg]:  qdotfallout[${i}]: ${str}`);
+                        IDebug.ilog(()=>`floughAux[dbg]:  qdotfallout[${i}]: ${str}`, loggerLevel);
                     });
                 });
             }
@@ -1192,11 +1176,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 /**
                  * !qdotfallout so merge the temporary qdotfallout into the array for RefTypesTableReturn before applying crit
                  */
-                if (getMyDebug()) {
-                    consoleLog(`floughAux[dbg]: ${dbgNodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)`);
+                if (IDebug.isActive()) {
+                    IDebug.ilog(()=>`floughAux[dbg]: ${IDebug.dbgs.nodeToString(expr)}: Merge the temporary qdotfallout into the array for RefTypesTableReturn (the buck stops here)`, loggerLevel);
                     qdotfallout1.forEach((rttr, i) => {
                         dbgRefTypesTableToStrings(rttr).forEach(str => {
-                            consoleLog(`floughAux[dbg]:  qdotfallout[${i}]: ${str}`);
+                            IDebug.ilog(()=>`floughAux[dbg]:  qdotfallout[${i}]: ${str}`, loggerLevel);
                         });
                     });
                 }
@@ -1212,32 +1196,30 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
         function floughInner(qdotfalloutInner: RefTypesTableReturn[]): FloughInnerReturn {
             assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-            if (getMyDebug()) {
-                consoleGroup(`floughInner[in] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem ? `{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}` : undefined}`);
-                consoleLog(`floughInner[in] refTypesSymtab:`);
-                dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => consoleLog(`floughInner[in] refTypesSymtab:  ${str}`));
-                consoleLog(`floughInner[in] constraintItemIn:`);
-                if (sci.constraintItem) dbgConstraintItem(sci.constraintItem).forEach(str => consoleLog(`floughInner[in] constraintItemIn:  ${str}`));
+            if (IDebug.isActive(loggerLevel)) {
+                IDebug.ilogGroup(()=>`floughInner[in] expr:${IDebug.dbgs.nodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(inferStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
+                IDebug.ilog(()=>`floughInner[in] refTypesSymtab:`, loggerLevel);
+                dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`floughInner[in] refTypesSymtab:  ${str}`, loggerLevel));
+                IDebug.ilog(()=>`floughInner[in] constraintItemIn:`, loggerLevel);
+                if (sci.constraintItem) dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`floughInner[in] constraintItemIn:  ${str}`, loggerLevel));
             }
             const innerret = floughInnerAux(qdotfalloutInner);
-            if (getMyDebug()) {
+            if (IDebug.isActive()) {
                 innerret.unmerged.forEach((rttr, i) => {
                     dbgRefTypesTableToStrings(rttr).forEach(str => {
-                        consoleLog(`floughInner[out]:  innerret.unmerged[${i}]: ${str}`);
+                        IDebug.ilog(()=>`floughInner[out]:  innerret.unmerged[${i}]: ${str}`, loggerLevel);
                     });
                 });
                 inferStatus.groupNodeToTypeMap.forEach((type, node) => {
                     for (let ntmp = node; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                         if (ntmp === expr) {
-                            consoleLog(`floughInner[out]:  innerret.byNode: { node: ${dbgNodeToString(node)}, type: ${typeToString(type)}`);
+                            IDebug.ilog(()=>`floughInner[out]:  innerret.byNode: { node: ${IDebug.dbgs.nodeToString(node)}, type: ${typeToString(type)}`, loggerLevel);
                             break;
                         }
                     }
                 });
-                consoleLog(`floughInner[out] expr:${dbgNodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem ? `{symbol:${dbgSymbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}` : undefined}`);
-                consoleLog(`floughInner[out] innret.typeof: ${innerret.typeof ? "present" : "<undef>"}`);
-
-                consoleGroupEnd();
+                IDebug.ilog(()=>`floughInner[out] expr:${IDebug.dbgs.nodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(inferStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
+                IDebug.ilogGroupEnd(()=>`floughInner[out] innret.typeof: ${innerret.typeof ? "present" : "<undef>"}`, loggerLevel);
             }
             return innerret;
 
@@ -1254,11 +1236,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     const got = nodeToTypeMap.get(node);
                     if (!got) nodeToTypeMap.set(node, checker.getUnionType(tstypes as Type[], UnionReduction.Literal));
                     else nodeToTypeMap.set(node, checker.getUnionType([got, ...tstypes as Type[]], UnionReduction.Literal));
-                    if (getMyDebug()) {
+                    if (IDebug.isActive()) {
                         const dbgTstype = checker.getUnionType(tstypes as Type[], UnionReduction.Literal);
-                        consoleLog(
-                            `orTsTypesIntoNodeToTypeMap(types:${dbgsModule.dbgTypeToString(dbgTstype)},node:${dbgsModule.dbgNodeToString(node)})::`
-                                + `${got ? dbgsModule.dbgTypeToString(got) : "*"}->${dbgsModule.dbgTypeToString(nodeToTypeMap.get(node))}`,
+                        IDebug.ilog(()=>
+                            `orTsTypesIntoNodeToTypeMap(types:${IDebug.dbgs.typeToString(dbgTstype)},node:${IDebug.dbgs.nodeToString(node)})::`
+                                + `${got ? IDebug.dbgs.typeToString(got) : "*"}->${IDebug.dbgs.typeToString(nodeToTypeMap.get(node))}`, loggerLevel
                         );
                     }
                 }
@@ -1271,10 +1253,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         // const type1enum = checker.getTypeOfSymbol(sym1);
                         const type1lit = enumMemberSymbolToLiteralTsType(sym1!);
                         orTsTypesIntoNodeToTypeMap([type0], expr.expression, inferStatus.groupNodeToTypeMap);
-                        if (getMyDebug()) {
+                        if (IDebug.isActive()) {
                             const sym0f = Debug.formatSymbolFlags(sym0.flags);
                             const sym1f = Debug.formatSymbolFlags(sym1!.flags);
-                            consoleLog(`floughInnerAttemptPropertyAccessExpressionEnum: Enum ${sym0.escapedName}.flags:${sym0f}, ${sym1!.escapedName}.flags:${sym1f}`);
+                            IDebug.ilog(()=>`floughInnerAttemptPropertyAccessExpressionEnum: Enum ${sym0.escapedName}.flags:${sym0f}, ${sym1!.escapedName}.flags:${sym1f}`, loggerLevel);
                         }
                         return floughTypeModule.createFromTsType(type1lit);
                     }
@@ -1332,10 +1314,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         //                 sci,
                         //             }]
                         //         };
-                        //         if (getMyDebug()){
+                        //         if (IDebug.isActive()){
                         //             const sym0f = Debug.formatSymbolFlags(sym0.flags);
                         //             const sym1f = Debug.formatSymbolFlags(sym1!.flags);
-                        //             consoleLog(`PropertyAccessExpression: Enum ${sym0.escapedName}.flags:${sym0f}, ${sym1!.escapedName}.flags:${sym1f}`);
+                        //             IDebug.ilog(()=>`PropertyAccessExpression: Enum ${sym0.escapedName}.flags:${sym0f}, ${sym1!.escapedName}.flags:${sym1f}`);
                         //         }
                         //         return ret;
                         //     }
@@ -1470,9 +1452,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 } // floughInnerNonNullExpression
 
                 function floughInnerConditionalExpression(): FloughInnerReturn {
-                    if (getMyDebug()) consoleLog(`floughInner[dbg] case SyntaxKind.ConditionalExpression`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`floughInner[dbg] case SyntaxKind.ConditionalExpression`, loggerLevel);
                     const { condition, whenTrue, whenFalse } = expr as ConditionalExpression;
-                    if (getMyDebug()) consoleLog(`floughInner[dbg] case SyntaxKind.ConditionalExpression ; condition:${dbgNodeToString(condition)}`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`floughInner[dbg] case SyntaxKind.ConditionalExpression ; condition:${IDebug.dbgs.nodeToString(condition)}`, loggerLevel);
                     const rcond = applyCrit(
                         flough({
                             sci,
@@ -1484,7 +1466,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         inferStatus.groupNodeToTypeMap,
                     );
 
-                    if (getMyDebug()) consoleLog(`floughInner[dbg] case SyntaxKind.ConditionalExpression ; whenTrue`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`floughInner[dbg] case SyntaxKind.ConditionalExpression ; whenTrue`, loggerLevel);
                     const trueRes = flough({
                         sci: rcond.passing.sci,
                         expr: whenTrue,
@@ -1499,7 +1481,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     //     inferStatus, //: { ...inferStatus, inCondition: true }
                     // }),inferStatus.groupNodeToTypeMap);
 
-                    if (getMyDebug()) consoleLog(`floughInner[dbg] case SyntaxKind.ConditionalExpression ; whenFalse`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`floughInner[dbg] case SyntaxKind.ConditionalExpression ; whenFalse`, loggerLevel);
                     const retFalse = applyCritNoneUnion(
                         flough({
                             sci: rcond.failing!.sci,
@@ -1599,8 +1581,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                     }
                                     effectiveDeclaredTsType = typeNodeTsType;
                                     effectiveDeclaredType = undefined;
-                                    if (getMyDebug()) {
-                                        consoleLog(`floughInnerVariableDeclaration[dbg] effectiveDeclaredTsType= from expr.type-> ${dbgTypeToString(effectiveDeclaredTsType)}`);
+                                    if (IDebug.isActive()) {
+                                        IDebug.ilog(()=>`floughInnerVariableDeclaration[dbg] effectiveDeclaredTsType= from expr.type-> ${IDebug.dbgs.typeToString(effectiveDeclaredTsType)}`, loggerLevel);
                                     }
                                 }
                                 else {
@@ -1608,8 +1590,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                     // TODO: checker.getFreshTypeOfLiteralType will fail when tsType is not a literal type.
                                     effectiveDeclaredTsType = checker.widenTypeInferredFromInitializer(expr, checker.getFreshTypeOfLiteralType(tsType as LiteralType));
                                     // widenedTsTypeInferredFromInitializer = effectiveDeclaredTsType;
-                                    if (getMyDebug()) {
-                                        consoleLog(`floughInnerVariableDeclaration[dbg] effectiveDeclaredTsType= from rhs ${dbgTypeToString(tsType)} widened-> ${dbgTypeToString(effectiveDeclaredTsType)}`);
+                                    if (IDebug.isActive()) {
+                                        IDebug.ilog(()=>`floughInnerVariableDeclaration[dbg] effectiveDeclaredTsType= from rhs ${IDebug.dbgs.typeToString(tsType)} widened-> ${IDebug.dbgs.typeToString(effectiveDeclaredTsType)}`, loggerLevel);
                                     }
                                     effectiveDeclaredType = undefined;
                                 }
@@ -1664,13 +1646,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             };
                             symbolFlowInfo.replayableItem = replayableItem;
                             inferStatus.replayables.set(symbol, replayableItem);
-                            if (getMyDebug()) {
+                            if (IDebug.isActive()) {
                                 const shdr = `floughInner[dbg] case SyntaxKind.VariableDeclaration +replayable `;
-                                consoleLog(shdr);
+                                IDebug.ilog(()=>shdr, loggerLevel);
                                 const as: string[] = [];
-                                as.push(`symbol: ${dbgSymbolToStringSimple(replayableItem.symbol)}, isconst: ${replayableItem.isconst}`);
-                                as.push(`expr: ${dbgNodeToString(replayableItem.expr)}`);
-                                as.forEach(s => consoleLog(`${shdr}: ${s}`));
+                                as.push(`symbol: ${IDebug.dbgs.symbolToString(replayableItem.symbol)}, isconst: ${replayableItem.isconst}`);
+                                as.push(`expr: ${IDebug.dbgs.nodeToString(replayableItem.expr)}`);
+                                as.forEach(s => IDebug.ilog(()=>`${shdr}: ${s}`, loggerLevel));
                             }
                             return {
                                 unmerged: [{
@@ -1789,7 +1771,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     else {
                         arrayType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
                     }
-                    if (getMyDebug()) consoleLog(`floughInner[dbg]: case SyntaxKind.ArrayLiteralExpression: arrayType: ${dbgTypeToString(arrayType)}`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`floughInner[dbg]: case SyntaxKind.ArrayLiteralExpression: arrayType: ${IDebug.dbgs.typeToString(arrayType)}`, loggerLevel);
                     return {
                         unmerged: [{
                             type: floughTypeModule.createRefTypesType(arrayType),
@@ -1846,7 +1828,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     // const identityRelation = checker.getRelations().identityRelation;
                     // checker.isTypeRelatedTo(objectType0, objectType1, identityRelation);
                     // const objectType = (objectType0 as FreshableType).regularType;
-                    if (getMyDebug()) consoleLog(`floughObjectLiteralExpression[dbg]: objectType: ${dbgTypeToString(newObjectTsType)}`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`floughObjectLiteralExpression[dbg]: objectType: ${IDebug.dbgs.typeToString(newObjectTsType)}`, loggerLevel);
                     return {
                         unmerged: [{
                             type,
@@ -1946,8 +1928,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 // @ ts-expect-error
                 // function floughByCallExpression(): FloughInnerReturn {
                 //         assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-                //         if (getMyDebug()){
-                //             consoleGroup(`floughByCallExpression[in]`);
+                //         if (IDebug.isActive()){
+                //             IDebug.ilogGroup(`floughByCallExpression[in]`);
                 //         }
                 //         Debug.assert(qdotfalloutInner);
                 //         // First duty is to call the pre-chain, if any.
@@ -1968,8 +1950,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 //                 if (!umrttr1.symbol || umrttr1.symbol===umrttr.symbol) return;
                 //                 if (scIsolated.symtab) (scIsolated.symtab =  copyRefTypesSymtab(scIsolated.symtab)).delete(umrttr1.symbol);
                 //             });
-                //             if (getMyDebug()){
-                //                 dbgRefTypesSymtabConstrinatItemToStrings(scIsolated).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx}, scIsolated: ${s}`));
+                //             if (IDebug.isActive()){
+                //                 dbgRefTypesSymtabConstrinatItemToStrings(scIsolated).forEach(s=>IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx}, scIsolated: ${s}`));
                 //             }
 
                 //             const {sc: scResolvedArgs, resolvedCallArguments} = floughByCallExpressionProcessCallArguments({
@@ -1978,8 +1960,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 //             const tstype = floughTypeModule.getTypeFromRefTypesType(umrttr.type);
                 //             const arrsig = checker.getSignaturesOfType(tstype, SignatureKind.Call);
                 //             const arrsigrettype = arrsig.map((sig)=>checker.getReturnTypeOfSignature(sig));
-                //             if (getMyDebug()){
-                //                 arrsig.forEach((sig,sigidx)=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx} ${checker.signatureToString(sig)}`));
+                //             if (IDebug.isActive()){
+                //                 arrsig.forEach((sig,sigidx)=>IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx} ${checker.signatureToString(sig)}`));
                 //             }
 
                 //             const allMappings: RefTypesType[][]=[];
@@ -1995,9 +1977,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 //                     const oneLeftoverMapping: (RefTypesType)[]=[];
                 //                     //let tmpArgsConstr = nextConstraint;
                 //                     let tmpSC = nextSC;
-                //                     if (getMyDebug()){
-                //                         dbgRefTypesSymtabConstrinatItemToStrings(tmpSC).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx},tmpSC: ${s}`));
-                //                         dbgConstraintItem(cumLeftoverConstraintItem).forEach(s=>consoleLog(`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx},cumLeftoverConstraintItem: ${s}`));
+                //                     if (IDebug.isActive()){
+                //                         dbgRefTypesSymtabConstrinatItemToStrings(tmpSC).forEach(s=>IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx},tmpSC: ${s}`));
+                //                         dbgConstraintItem(cumLeftoverConstraintItem).forEach(s=>IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx} sigidx:${sigidx},cumLeftoverConstraintItem: ${s}`));
                 //                     }
                 //                     let pass1 = resolvedCallArguments.every((carg,cargidx)=>{
                 //                         if (!isValidSigParamIndex(sig,cargidx)){
@@ -2008,8 +1990,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 //                             return false;
                 //                         }
                 //                         let assignableType = floughTypeModule.intersectionOfRefTypesType(carg.type, floughTypeModule.createRefTypesType(sparam.type));
-                //                         if (getMyDebug()){
-                //                             consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (1) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
+                //                         if (IDebug.isActive()){
+                //                             IDebug.ilog(()=>`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (1) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
                 //                         }
 
                 //                         if (floughTypeModule.isNeverType(assignableType)){
@@ -2023,8 +2005,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 //                         //     }
                 //                         // }
                 //                         //const evaledAssignableType = evalSymbol(carg.symbol,tmpSC, getDeclaredType, mrNarrow);
-                //                         if (getMyDebug()){
-                //                             consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (2) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
+                //                         if (IDebug.isActive()){
+                //                             IDebug.ilog(()=>`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (2) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
                 //                         }
                 //                         // is this necessary? evalCover is expensive
                 //                         //const evaledAssignableType = evalCoverForOneSymbol(carg.symbol,tmpArgsConstr, getDeclaredType, mrNarrow);
@@ -2033,34 +2015,34 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 //                         }
                 //                         // if (!floughTypeModule.isASubsetOfB(assignableType,evaledAssignableType)){
                 //                         //     assignableType = evaledAssignableType;
-                //                         //     if (getMyDebug()){
-                //                         //         consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
+                //                         //     if (IDebug.isActive()){
+                //                         //         IDebug.ilog(()=>`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
                 //                         //     }
                 //                         // }
                 //                         oneMapping.push(assignableType);
 
                 //                         const notAssignableType =floughTypeModule.subtractFromType(assignableType, carg.type);
-                //                         if (getMyDebug()){
-                //                             consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, notAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(notAssignableType)}`);
+                //                         if (IDebug.isActive()){
+                //                             IDebug.ilog(()=>`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, notAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(notAssignableType)}`);
                 //                         }
                 //                         // check if the non assignable type is allowed.
                 //                         {
                 //                             const {sc:checkSC} = andSymbolTypeIntoSymtabConstraint({ symbol:carg.symbol, isconst:carg.isconst, type:notAssignableType, sc: nextSC, getDeclaredType: getEffectiveDeclaredTypeFromSymbol, mrNarrow });
                 //                             const evaledNotAssignableType = evalSymbol(carg.symbol,checkSC,getEffectiveDeclaredTypeFromSymbol,mrNarrow);
-                //                             if (getMyDebug()){
-                //                                 consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) evaledNotAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(evaledNotAssignableType)}`);
+                //                             if (IDebug.isActive()){
+                //                                 IDebug.ilog(()=>`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (final) evaledNotAssignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(evaledNotAssignableType)}`);
                 //                             }
                 //                             oneLeftoverMapping.push(evaledNotAssignableType);
                 //                         }
                 //                         return true;
                 //                     });
-                //                     if (getMyDebug()){
+                //                     if (IDebug.isActive()){
                 //                         let str = "";
                 //                         oneMapping.forEach((t,_i)=>str+=`${dbgRefTypesTypeToString(t)}, `);
-                //                         consoleLog(`floughByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneMapping:[${str}]`);
+                //                         IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneMapping:[${str}]`);
                 //                         str = "";
                 //                         oneLeftoverMapping.forEach((t,_i)=>str+=`${dbgRefTypesTypeToString(t)}, `);
-                //                         consoleLog(`floughByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneLeftoverMapping:[${str}]`);
+                //                         IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx}, sigidx:${sigidx} oneLeftoverMapping:[${str}]`);
                 //                     }
                 //                     if (pass1 && isValidSigParamIndex(sig, resolvedCallArguments.length)){
                 //                         // if there are leftover sig params the first one must be optional or final spread
@@ -2131,13 +2113,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 //                     }
                 //                     // eslint-disable-next-line prefer-const
                 //                     //if (pass1) arrAssigned.push(tmpAssigned);
-                //                     if (getMyDebug()){
+                //                     if (IDebug.isActive()){
                 //                         if (!finished1) {
                 //                             dbgRefTypesSymtabConstrinatItemToStrings(nextSC).forEach(s=>{
-                //                                 consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, nextSC: ${s}`);
+                //                                 IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, nextSC: ${s}`);
                 //                             });
                 //                         }
-                //                         consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, pass1:${pass1}, finshed1:${finished1}`);
+                //                         IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, sigidx:${sigidx}/${arrsig.length}, pass1:${pass1}, finshed1:${finished1}`);
                 //                     }
                 //                     return finished1;
                 //                 });
@@ -2157,14 +2139,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 //                     sci:scResolvedArgs
                 //                 });
                 //             }
-                //             if (getMyDebug()){
-                //                 consoleLog(`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, finished:${finished}`);
+                //             if (IDebug.isActive()){
+                //                 IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx}/${pre.unmergedPassing.length}, finished:${finished}`);
                 //             }
                 //         });
                 //         setOfTransientCallArgumentSymbol.forEach(symbol=>_mrState.symbolFlowInfoMap.delete(symbol));
-                //         if (getMyDebug()){
-                //             consoleLog(`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${pre.unmergedPassing.length}`);
-                //             consoleGroupEnd();
+                //         if (IDebug.isActive()){
+                //             IDebug.ilog(()=>`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}/${pre.unmergedPassing.length}`);
+                //             IDebug.ilogGroupEnd();
                 //         }
                 //         return { unmerged: arrRefTypesTableReturn };
                 //     } // floughByCallExpression
@@ -2176,8 +2158,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 // @ ts-expect-error
                 function floughByCallExpressionV3(): FloughInnerReturn {
                     assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-                    if (getMyDebug()) {
-                        consoleGroup(`floughByCallExpression[in]`);
+                    if (IDebug.isActive()) {
+                        IDebug.ilogGroup(()=>`floughByCallExpression[in]`, loggerLevel);
                     }
                     Debug.assert(qdotfalloutInner);
                     // const { name, expression } = expr as CallExpression;
@@ -2189,9 +2171,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                     const arrRefTypesTableReturn: RefTypesTableReturnNoSymbol[] = [];
                     leftUnmerged.forEach((rttr, rttridx) => {
-                        if (getMyDebug()) {
+                        if (IDebug.isActive()) {
                             const str = `floughByCallExpression[dbg, rttridx:${rttridx}, haveLoad:${!!rttr.logicalObjectAccessData}]`;
-                            consoleLog(str);
+                            IDebug.ilog(()=>str, loggerLevel);
                         }
                         // const { type /*, logicalObjectAccessData*/ } = rttr;
                         let { type, sci: scIsolated } = rttr;
@@ -2206,9 +2188,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                          */
                         if (rttr.logicalObjectAccessData) {
                             if (logicalObjectAccessModule.getFinalCarriedQdotUndefined(rttr.logicalObjectAccessData.logicalObjectAccessReturn, rttr.logicalObjectAccessData.finalTypeIdx)) {
-                                if (getMyDebug()) {
+                                if (IDebug.isActive()) {
                                     const str = `floughByCallExpression[dbg, rttridx:${rttridx}, start carriedQdotUndefined]`;
-                                    consoleLog(str);
+                                    IDebug.ilog(()=>str, loggerLevel);
                                 }
                                 const rttrObjQdot = logicalObjectAccessModule.modifyOne(
                                     rttr.logicalObjectAccessData.logicalObjectAccessReturn,
@@ -2233,9 +2215,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 //     }
                                 // });
                                 // don't return here, must go on to to process the function call(s) assuming no carried undefined is involved.
-                                if (getMyDebug()) {
+                                if (IDebug.isActive()) {
                                     const str = `floughByCallExpression[dbg, rttridx:${rttridx}, end carriedQdotUndefined]`;
-                                    consoleLog(str);
+                                    IDebug.ilog(()=>str, loggerLevel);
                                 }
                             }
                             type = logicalObjectAccessModule.getFinalType(
@@ -2268,10 +2250,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             tstypes.push(tstype);
                         });
 
-                        if (getMyDebug()) {
-                            consoleLog(`floughByCallExpression rttridx:${rttridx}/${leftUnmerged.length}, tstypes.length:${tstypes.length}`);
+                        if (IDebug.isActive()) {
+                            IDebug.ilog(()=>`floughByCallExpression rttridx:${rttridx}/${leftUnmerged.length}, tstypes.length:${tstypes.length}`, loggerLevel);
                             tstypes.forEach((tstype, tstypeidx) => {
-                                consoleLog(`tstypes[${tstypeidx}]: ${checker.typeToString(tstype)}`);
+                                IDebug.ilog(()=>`tstypes[${tstypeidx}]: ${checker.typeToString(tstype)}`, loggerLevel);
                             });
                         }
                         if (tstypes.length === 0) return;
@@ -2284,21 +2266,21 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         });
 
                         tstypes.forEach((tstype, tstypeidx) => {
-                            if (getMyDebug()) {
+                            if (IDebug.isActive()) {
                                 const str = `floughByCallExpression[dbg, rttridx:${rttridx}, tstypeidx:${tstypeidx}]` +
                                     `tstype:${checker.typeToString(tstype)}`;
-                                consoleLog(str);
+                                IDebug.ilog(()=>str, loggerLevel);
                             }
 
                             const arrsig = checker.getSignaturesOfType(tstype, SignatureKind.Call);
                             if (arrsig.length === 0) return;
 
                             const arrsigrettype = arrsig.map(sig => checker.getReturnTypeOfSignature(sig));
-                            if (getMyDebug()) {
+                            if (IDebug.isActive()) {
                                 arrsig.forEach((sig, sigidx) => {
                                     const str = `floughByCallExpression[dbg, rttridx:${rttridx}, tstypeidx:${tstypeidx}, sigidx:${sigidx}] ` +
                                         `tstype:${checker.typeToString(tstype)}, sig:${checker.signatureToString(sig)} `;
-                                    consoleLog(str);
+                                    IDebug.ilog(()=>str, loggerLevel);
                                 });
                             }
                             const allMappings: RefTypesType[][] = [];
@@ -2309,11 +2291,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 arrsig.forEach((sig, sigidx) => {
                                     let tmpSC = scResolvedArgs;
                                     const oneMapping: RefTypesType[] = [];
-                                    if (getMyDebug()) {
-                                        dbgRefTypesSymtabConstrinatItemToStrings(tmpSC).forEach(s => consoleLog(`floughByCallExpression[start one sig], rttridx:${rttridx} sigidx:${sigidx},tmpSC: ${s}`));
+                                    if (IDebug.isActive()) {
+                                        dbgRefTypesSymtabConstrinatItemToStrings(tmpSC).forEach(s => IDebug.ilog(()=>`floughByCallExpression[start one sig], rttridx:${rttridx} sigidx:${sigidx},tmpSC: ${s}`, loggerLevel));
                                     }
                                     let pass1 = resolvedCallArguments.every((carg, cargidx) => {
-                                        consoleLog(`floughByCallExpression[start one arg], rttridx:${rttridx} sigidx:${sigidx}, cargidx:${cargidx}, carg:${floughTypeModule.dbgFloughTypeToString(carg.type)}`);
+                                        IDebug.ilog(()=>`floughByCallExpression[start one arg], rttridx:${rttridx} sigidx:${sigidx}, cargidx:${cargidx}, carg:${floughTypeModule.dbgFloughTypeToString(carg.type)}`, loggerLevel);
                                         /**
                                          * TODO: needs example, check coverage.  Could extra parameter just return true and not be used?
                                          */
@@ -2350,8 +2332,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                             }));
                                         }
                                         if (extraAsserts) Debug.assert(!floughTypeModule.isNeverType(assignableType));
-                                        if (getMyDebug()) {
-                                            consoleLog(`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (1) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`);
+                                        if (IDebug.isActive()) {
+                                            IDebug.ilog(()=>`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (1) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`, loggerLevel);
                                         }
                                         oneMapping.push(assignableType);
                                         return true;
@@ -2363,10 +2345,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                             pass1 = false;
                                         }
                                     }
-                                    if (getMyDebug()) {
+                                    if (IDebug.isActive()) {
                                         let str = "";
                                         oneMapping.forEach((t, _i) => str += `${dbgRefTypesTypeToString(t)}, `);
-                                        consoleLog(`floughByCallExpression[one sig done] rttridx:${rttridx}, sigidx:${sigidx} pass1:${pass1}, oneMapping:[${str}]`);
+                                        IDebug.ilog(()=>`floughByCallExpression[one sig done] rttridx:${rttridx}, sigidx:${sigidx} pass1:${pass1}, oneMapping:[${str}]`);
                                     }
                                     if (pass1) {
                                         allMappings.push(oneMapping);
@@ -2377,16 +2359,16 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                                 type: functionSigRtnType,
                                                 sci: tmpSC,
                                             };
-                                            if (getMyDebug()) {
+                                            if (IDebug.isActive()) {
                                                 dbgRefTypesTableToStrings(rttr).forEach(s => {
-                                                    consoleLog(`floughByCallExpression[adding return rttr out] rttridx(in):${rttridx}/${leftUnmerged.length}, tstypeidx:${tstypes.length}, sigidx:${sigidx}/${arrsig.length}, rttr: ${s}`);
+                                                    IDebug.ilog(()=>`floughByCallExpression[adding return rttr out] rttridx(in):${rttridx}/${leftUnmerged.length}, tstypeidx:${tstypes.length}, sigidx:${sigidx}/${arrsig.length}, rttr: ${s}`);
                                                 });
                                             }
                                             arrRefTypesTableReturn.push(rttr);
                                         }
                                         else {
-                                            if (getMyDebug()) {
-                                                consoleLog(`floughByCallExpression[skipping because never function return type] rttridx(in):${rttridx}/${leftUnmerged.length}, tstypeidx:${tstypes.length}, sigidx:${sigidx}/${arrsig.length}`);
+                                            if (IDebug.isActive()) {
+                                                IDebug.ilog(()=>`floughByCallExpression[skipping because never function return type] rttridx(in):${rttridx}/${leftUnmerged.length}, tstypeidx:${tstypes.length}, sigidx:${sigidx}/${arrsig.length}`);
                                             }
                                         }
                                     }
@@ -2406,19 +2388,19 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                     sci: scResolvedArgs,
                                 });
                             }
-                            if (getMyDebug()) {
-                                consoleLog(`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}`);
+                            if (IDebug.isActive()) {
+                                IDebug.ilog(()=>`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}`);
                             }
-                            if (getMyDebug()) {
-                                consoleLog(`floughByCallExpression[dbg rttridx:${rttridx}/${leftUnmerged.length}, tstypeidx: ${tstypeidx}/${tstypes.length}, finished:${finished}`);
+                            if (IDebug.isActive()) {
+                                IDebug.ilog(()=>`floughByCallExpression[dbg rttridx:${rttridx}/${leftUnmerged.length}, tstypeidx: ${tstypeidx}/${tstypes.length}, finished:${finished}`);
                             }
                         }); // tstypes.forEach
                     }); // pre.unmergedPassing.forEach
                     // Note: transient symbols no longer being produced.
                     // setOfTransientCallArgumentSymbol.forEach(symbol=>_mrState.symbolFlowInfoMap.delete(symbol));
                     const floughInnerReturn: FloughInnerReturn = { unmerged: arrRefTypesTableReturn };
-                    if (getMyDebug()) {
-                        consoleGroupEnd();
+                    if (IDebug.isActive()) {
+                        IDebug.ilogGroupEnd();
                     }
                     return floughInnerReturn;
                 } // floughByCallExpressionV3
@@ -2428,8 +2410,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                  */
                 function floughByBinaryExpresionAssign(): FloughInnerReturn {
                     assertCastType<BinaryExpression>(expr);
-                    if (getMyDebug()) {
-                        consoleGroup(`floughByBinaryExpresionAssign[in] ${Debug.formatSyntaxKind(expr.left.kind)}`);
+                    if (IDebug.isActive()) {
+                        IDebug.ilogGroup(`floughByBinaryExpresionAssign[in] ${Debug.formatSyntaxKind(expr.left.kind)}`);
                     }
                     const { left: leftExpr, right: rightExpr } = expr;
                     if (leftExpr.kind === SyntaxKind.Identifier) {
@@ -2477,8 +2459,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             debugDevExpectEffectiveDeclaredType(leftExpr.parent, symbolFlowInfo);
                         }
                         // const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
-                        if (getMyDebug()) {
-                            consoleGroupEnd();
+                        if (IDebug.isActive()) {
+                            IDebug.ilogGroupEnd();
                         }
                         return {
                             unmerged: [{
@@ -2534,22 +2516,22 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 });
                             }); // just to make sure that rhs is evaluated
                         });
-                        if (getMyDebug()) {
-                            consoleLog(`floughByBinaryExpresionAssign[out] ${Debug.formatSyntaxKind(expr.left.kind)}`);
-                            consoleGroupEnd();
+                        if (IDebug.isActive()) {
+                            IDebug.ilog(()=>`floughByBinaryExpresionAssign[out] ${Debug.formatSyntaxKind(expr.left.kind)}`);
+                            IDebug.ilogGroupEnd();
                         }
                         return { unmerged };
                     }
                     else Debug.fail("not yet implemented");
-                    if (getMyDebug()) {
-                        consoleGroupEnd();
+                    if (IDebug.isActive()) {
+                        IDebug.ilogGroupEnd();
                     }
                 }
 
                 function floughByBinaryExpressionAmpersandAmpersandToken(): FloughInnerReturn {
-                    if (getMyDebug()) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token START`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.(AmpersandAmpersand|BarBar)Token START`);
                     const { left: leftExpr, operatorToken, right: rightExpr } = expr as BinaryExpression;
-                    if (getMyDebug()) consoleLog(`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`);
                     const leftRet0 = flough({
                         sci,
                         crit: { kind: InferCritKind.truthy, alsoFailing: true },
@@ -2563,7 +2545,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (operatorToken.kind === SyntaxKind.AmpersandAmpersandToken) {
                         arrRefTypesTableReturn.push(leftRet.failing!);
 
-                        if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
+                        if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
                         const leftTrueRightRet0 = flough({
                             sci: leftRet.passing.sci, // leftRet.inferRefRtnType.passing.sci,
                             crit: { kind: InferCritKind.truthy, alsoFailing: true },
@@ -2587,7 +2569,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (operatorToken.kind === SyntaxKind.BarBarToken) {
                         arrRefTypesTableReturn.push(leftRet.passing);
 
-                        if (getMyDebug()) consoleLog(`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
+                        if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
                         const leftFalseRightRet0 = flough({
                             sci: leftRet.failing!.sci,
                             // refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
@@ -2681,8 +2663,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 function floughByBinaryExpressionEqualsCompareV3(): FloughInnerReturn {
                     assertCastType<BinaryExpression>(expr);
                     const { left: leftExpr, operatorToken, right: rightExpr } = expr;
-                    if (getMyDebug()) {
-                        consoleGroup(`floughByBinaryExpressionEqualCompare[in] expr:${dbgNodeToString(expr)}`);
+                    if (IDebug.isActive()) {
+                        IDebug.ilogGroup(`floughByBinaryExpressionEqualCompare[in] expr:${IDebug.dbgs.nodeToString(expr)}`);
                     }
                     if (
                         ![
@@ -2746,9 +2728,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
                     leftMntr.unmerged.forEach((leftRttr0, _leftidx) => {
                         const leftRttr = applyCritNoneToOne(leftRttr0, leftExpr, inferStatus.groupNodeToTypeMap);
-                        if (getMyDebug()) {
+                        if (IDebug.isActive()) {
                             floughTypeModule.dbgRefTypesTypeToStrings(leftRttr.type).forEach(str => {
-                                consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
+                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
                             });
                         }
                         let rightMntr: FloughReturn;
@@ -2770,9 +2752,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         Debug.assert(rightMntr);
                         rightMntr.unmerged.forEach((rightRttr0, _rightidx) => {
                             const rightRttr = applyCritNoneToOne(rightRttr0, rightExpr, inferStatus.groupNodeToTypeMap);
-                            if (getMyDebug()) {
+                            if (IDebug.isActive()) {
                                 floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str => {
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
+                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
                                 });
                             }
                             let sciLeftRight0: RefTypesSymtabConstraintItem;
@@ -2788,9 +2770,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 }
                             }
 
-                            if (getMyDebug()) {
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
-                                consoleLog(`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
+                            if (IDebug.isActive()) {
+                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
+                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
                             }
 
                             const iad = floughTypeModule.intersectionsAndDifferencesForEqualityCompare(leftRttr.type, rightRttr.type);
@@ -2818,18 +2800,18 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                     return floughTypeModule.getTsTypesFromFloughType(x);
                                 }
                                 let sctmp: RefTypesSymtabConstraintItem = sciLeftRight0;
-                                if (getMyDebug()) {
+                                if (IDebug.isActive()) {
                                     const leftFt1 = both ?? left;
                                     const rightFt1 = both ?? right;
                                     Debug.assert(leftFt1 && rightFt1);
-                                    consoleLog(
+                                    IDebug.ilog(
                                         `floughByBinaryExpressionEqualCompare[dbg] -- before`
                                             + `[${_i}][0] left:${dbgRefTypesTypeToString(leftFt1)}, right:${dbgRefTypesTypeToString(rightFt1)}, pass:${pass},fail:${fail}`,
                                     );
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] leftRttr0.symbol:${dbgSymbolToStringSimple(leftRttr0.symbol)}, rightRttr0.symbol:${dbgSymbolToStringSimple(rightRttr0.symbol)}`);
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] !!leftMntr.typeof:${!!leftMntr.typeof}, !!rightMntr.typeof:${!!rightMntr.typeof}`);
-                                    consoleLog(`floughByBinaryExpressionEqualCompare[dbg] !!leftRttr.logicalObjectAccessData:${!!leftRttr.logicalObjectAccessData}, !!rightRttr.logicalObjectAccessData:${!!rightRttr.logicalObjectAccessData}`);
-                                    dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s => consoleLog(`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`));
+                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] leftRttr0.symbol:${IDebug.dbgs.symbolToString(leftRttr0.symbol)}, rightRttr0.symbol:${IDebug.dbgs.symbolToString(rightRttr0.symbol)}`);
+                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] !!leftMntr.typeof:${!!leftMntr.typeof}, !!rightMntr.typeof:${!!rightMntr.typeof}`);
+                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] !!leftRttr.logicalObjectAccessData:${!!leftRttr.logicalObjectAccessData}, !!rightRttr.logicalObjectAccessData:${!!rightRttr.logicalObjectAccessData}`);
+                                    dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s => IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`));
                                 }
 
                                 const tftype = pass ? (fail ? trueAndFalseType : nomativeTrueType) : nomativeFalseType;
@@ -2911,15 +2893,15 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                         ({ /*type,*/ sc: sctmp } = resolveLogicalObjectAccessData(rightRttr0.logicalObjectAccessData!, sctmp, rightTypeTmp));
                                     }
                                 }
-                                if (getMyDebug()) {
+                                if (IDebug.isActive()) {
                                     const leftx = both ?? left;
                                     const rightx = both ?? right;
                                     Debug.assert(leftx && rightx);
-                                    consoleLog(
+                                    IDebug.ilog(
                                         `floughByBinaryExpressionEqualCompare[dbg] -- after`
                                             + `[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`,
                                     );
-                                    dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s => consoleLog(`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`));
+                                    dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s => IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`));
                                 }
                                 arrRefTypesTableReturn.push({
                                     type: tftype,
@@ -2934,8 +2916,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 // @ ts-ignore
                 function floughAccessExpressionCritNone(): FloughInnerReturn {
                     assertCastType<ElementAccessExpression | PropertyAccessExpression>(expr);
-                    if (getMyDebug()) {
-                        consoleGroup(`floughAccessExpressionCritNone[in] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth:${accessDepth}`);
+                    if (IDebug.isActive()) {
+                        IDebug.ilogGroup(`floughAccessExpressionCritNone[in] expr: ${IDebug.dbgs.nodeToString(expr)}, accessDepth:${accessDepth}`);
                     }
                     Debug.assert((accessDepth === undefined) === (refAccessArgs === undefined));
                     if (!accessDepth || !refAccessArgs) {
@@ -3007,9 +2989,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             refAccessArgs[0].expressions,
                         );
 
-                        if (getMyDebug()) {
+                        if (IDebug.isActive()) {
                             floughLogicalObjectInnerModule.dbgLogicalObjectAccessResult(raccess).forEach(s => {
-                                consoleLog(`accessResult: ${s}`);
+                                IDebug.ilog(()=>`accessResult: ${s}`);
                             });
                         }
 
@@ -3057,9 +3039,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         unmerged.push({ type, sci: sciFinal });
                     }
 
-                    if (getMyDebug()) {
-                        consoleLog(`floughAccessExpressionCritNone[out] expr: ${dbgsModule.dbgNodeToString(expr)}, accessDepth: ${accessDepth}`);
-                        consoleGroupEnd();
+                    if (IDebug.isActive()) {
+                        IDebug.ilog(()=>`floughAccessExpressionCritNone[out] expr: ${IDebug.dbgs.nodeToString(expr)}, accessDepth: ${accessDepth}`);
+                        IDebug.ilogGroupEnd();
                     }
                     const ret: FloughInnerReturn = { unmerged };
                     return ret;

@@ -240,7 +240,7 @@ function dbgLogicalObjectToStrings(logicalObjectTop: Readonly<FloughLogicalObjec
     if (!logicalObjectTop.id) (logicalObjectTop as FloughLogicalObjectOuter).id = nextLogicalObjectOuterId++;
     const { inner, effectiveDeclaredTsType: effectiveDeclaredType, id } = logicalObjectTop;
     as.push(`logicalObjectOuter:id: ${id}`);
-    if (effectiveDeclaredType) as.push(`effectiveDeclaredType: ${dbgsModule.dbgTypeToString(effectiveDeclaredType)}`);
+    if (effectiveDeclaredType) as.push(`effectiveDeclaredType: ${IDebug.dbgs.typeToString(effectiveDeclaredType)}`);
     else as.push(`effectiveDeclaredType: <undef>`);
     floughLogicalObjectInnerModule.dbgLogicalObjectToStrings(inner).forEach(s => as.push(`inner: ${s}`));
     return as;

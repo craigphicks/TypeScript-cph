@@ -234,6 +234,6 @@ export function dbgFlowToString(flow: FlowNode | undefined): string {
     let str = "";
     str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
     if ((flow as FlowLabel).branchKind) str += `branchKind:${((flow as FlowLabel).branchKind)}, `;
-    if ((flow as any).node) str += IDebug.dbgs.dbgNodeToString((flow as any).node as any as Node);
+    if ((flow as any).node) str += IDebug.dbgs.nodeToString((flow as any).node as any as Node);
     return str;
 };

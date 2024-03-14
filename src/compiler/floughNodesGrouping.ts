@@ -117,14 +117,14 @@ function makeConnectedGroupsGraphs(orderedGroups: Readonly<GroupForFlow[]>, grou
             const graphIndex = arrConnectedGraphs.length;
             arrConnectedGraphs.push([group]);
             arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
-            if (getMyDebug()) group.dbgGraphIdx = graphIndex;
+            if (IDebug.isActive()) group.dbgGraphIdx = graphIndex;
         }
         else {
             const anteGroup = anteGroups.values().next().value as GroupForFlow;
             const graphIndex = arrGroupIndexToConnectGraph[anteGroup.groupIdx];
             arrConnectedGraphs[graphIndex].push(group);
             arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
-            if (getMyDebug()) group.dbgGraphIdx = graphIndex;
+            if (IDebug.isActive()) group.dbgGraphIdx = graphIndex;
         }
     }
     if (extraAsserts) {
@@ -613,7 +613,7 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
         connectedGroupsGraphs: makeConnectedGroupsGraphs(orderedGroups, groupToAnteGroupMap),
         // dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx,
     };
-    if (getMyDebug()) {
+    if (IDebug.isActive()) {
         retval.dbgFlowToOriginatingGroupIdx = flowToOriginatingGroupIdx;
     }
     return retval;
@@ -762,16 +762,16 @@ export function dbgGroupsForFlowToStrings(
     checker: FloughTypeChecker,
 ): string[] {
     const dbgs = createDbgs(checker);
-    const dbgNodeToString = dbgs.dbgNodeToString;
+    const IDebug.dbgs.nodeToString = dbgs.IDebug.dbgs.nodeToString;
     const dbgFlowToString = dbgs.dbgFlowToString;
     const astr: string[] = [];
     gff.orderedGroups.forEach((g, i) => {
         const maxnode = gff.posOrderedNodes[g.maximalIdx];
         // const maxnodecont = gff.precOrderContainerItems[g.precOrdContainerIdx];
-        astr.push(`groups[${i}]: {kind, ${g.kind}, maxnode: ${dbgNodeToString(maxnode)}}`);
+        astr.push(`groups[${i}]: {kind, ${g.kind}, maxnode: ${IDebug.dbgs.nodeToString(maxnode)}}`);
         for (let idx = g.idxb; idx !== g.idxe; idx++) {
             const node = gff.posOrderedNodes[idx];
-            let str = `groups[${i}]:  [${idx}]: node: ${dbgNodeToString(node)}`;
+            let str = `groups[${i}]:  [${idx}]: node: ${IDebug.dbgs.nodeToString(node)}`;
             if (isNodeWithFlow(node)) str += `, flow: ${dbgFlowToString(node.flowNode, /**/ true)}`;
             astr.push(str);
         }
@@ -819,10 +819,10 @@ export function dbgGroupsForFlowToStrings(
     });
 
     gff.precOrderContainerItems.forEach((ci, i) => {
-        astr.push(`containerItems[${i}]: node:${dbgNodeToString(ci.node)}`);
+        astr.push(`containerItems[${i}]: node:${IDebug.dbgs.nodeToString(ci.node)}`);
     });
     gff.posOrderedNodes.forEach((node, i) => {
-        astr.push(`[${i}]: node:${dbgNodeToString(node)}`);
+        astr.push(`[${i}]: node:${IDebug.dbgs.nodeToString(node)}`);
     });
     return astr;
 }

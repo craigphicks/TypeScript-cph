@@ -17,6 +17,7 @@ export interface ILoggingHost {
 
 export namespace IDebug {
     /* eslint-disable prefer-const */
+    var loggerLevelDefault = Number.MAX_SAFE_INTEGER;
     export let logLevel = LogLevel.Off;
     export let assertLevel = 0;
     //export let isDebugging = false;
@@ -24,15 +25,17 @@ export namespace IDebug {
     export let loggingHost: ILoggingHost | undefined;
     export let dbgs: Dbgs = 0 as any as Dbgs;
     export let checker: TypeChecker | undefined;
-    export function isActive(loggerLevel: number) { return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile(); }
-    export function ilog(message: (()=>string), level?: LogLevel) {
+    export function isActive(loggerLevel = loggerLevelDefault) {
+        return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile();
+    }
+    export function ilog(message: (()=>string), level: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
     }
-    export function ilogGroup(message: (()=>string), level?: LogLevel): number {
+    export function ilogGroup(message: (()=>string), level: LogLevel): number {
         if (loggingHost) return loggingHost.ilogGroup(message, level);
         return 0;
     }
-    export function ilogGroupEnd(message?: (()=>string), level?: LogLevel, expectedIndent?: number) {
+    export function ilogGroupEnd(message: (()=>string), level: LogLevel, expectedIndent?: number) {
         if (loggingHost) loggingHost.ilogGroupEnd(message, level, expectedIndent);
     }
     export let suffix = "";
@@ -60,6 +63,8 @@ export namespace IDebug {
         if (type===specialNeverTypes.unreachableNeverType) return "unreachableNeverType";
         return undefined;
     }
+
+
 
 }
 
@@ -152,28 +157,28 @@ export class ILoggingClass implements ILoggingHost {
 
 
 export interface Dbgs {
-    dbgGetNodeText: (node: Node) => any;
+    getNodeText: (node: Node) => any;
     // dbgFlowToString: (flow: FlowNode | undefined, withAntecedants?: boolean) => string;
     // dbgFloughTypeToString: (flowType: FloughType) => string;
-    dbgIntersectionState(x: /*IntersectionState*/0|1|2): string;
-    dbgRecursionFlags(x: 0|1|2|3): string;
-    dbgTernaryToString(x: Ternary): string;
-    dbgTypeToString: (type: Type | undefined) => string;
+    intersectionState(x: /*IntersectionState*/0|1|2): string;
+    recursionFlags(x: 0|1|2|3): string;
+    ternaryToString(x: Ternary): string;
+    typeToString: (type: Type | undefined) => string;
     // dbgTypeToStringDetail: (type: Type) => string[];
-    dbgNodeToString: (node: Node | undefined) => string;
-    dbgSignatureId: (c: Signature | undefined) => number;
-    dbgSignatureToString: (c: Signature | undefined) => string;
+    nodeToString: (node: Node | undefined) => string;
+    signatureId: (c: Signature | undefined) => number;
+    signatureToString: (c: Signature | undefined) => string;
     // Show composite signatures
-    dbgSignatureAndCompositesToStrings: (c: Signature | undefined) => string[];
+    signatureAndCompositesToStrings: (c: Signature | undefined) => string[];
     // dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
-    dbgSymbolToString(s: Readonly<Symbol | undefined>): string;
-    dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[];
-    dbgMapperToString(mapper: TypeMapper | undefined): string;
-    dbgInferenceInfoToStrings(info: InferenceInfo): string[];
-    dbgInferenceContextToStrings(ic: InferenceContext): string[];
+    symbolToString(s: Readonly<Symbol | undefined>): string;
+    diagnosticsToStrings(diagnostic: Diagnostic | undefined): string[];
+    mapperToString(mapper: TypeMapper | undefined): string;
+    inferenceInfoToStrings(info: InferenceInfo): string[];
+    inferenceContextToStrings(ic: InferenceContext): string[];
 
-    dbgCheckModeToString(mode: CheckMode | undefined): string;
-    dbgSignatureCheckModeToString(mode: SignatureCheckMode | undefined): string;
+    checkModeToString(mode: CheckMode | undefined): string;
+    signatureCheckModeToString(mode: SignatureCheckMode | undefined): string;
 }
 
 export class DbgsClass implements Dbgs{
@@ -209,10 +214,10 @@ export class DbgsClass implements Dbgs{
     }
 
 
-    dbgGetNodeText(node: Node){
+    getNodeText(node: Node){
         return (node as Identifier).escapedText ?? (((node as any).getText && node.pos>=0) ? (node as any).getText() : "<text is unknown>");
     }
-    dbgTernaryToString(x: Ternary): string {
+    ternaryToString(x: Ternary): string {
         switch (x){
             case Ternary.True: return "True";
             case Ternary.False: return "False";
@@ -226,7 +231,7 @@ export class DbgsClass implements Dbgs{
     //     Source = 1 << 0, // Source type is a constituent of an outer intersection
     //     Target = 1 << 1, // Target type is a constituent of an outer intersection
     // }
-    dbgIntersectionState(x: /*IntersectionState*/0|1|2): string {
+    intersectionState(x: /*IntersectionState*/0|1|2): string {
         switch (x){
             case 0: return "None";
             case 1: return "Source";
@@ -240,7 +245,7 @@ export class DbgsClass implements Dbgs{
     //     Target = 1 << 1,
     //     Both = Source | Target,
     // }
-    dbgRecursionFlags(x: 0|1|2|3): string {
+    recursionFlags(x: 0|1|2|3): string {
         switch (x){
             case 0: return "None";
             case 1: return "Source";
@@ -250,24 +255,24 @@ export class DbgsClass implements Dbgs{
         }
     }
 
-    dbgTypeToString = (type: Type | undefined): string => {
+    typeToString = (type: Type | undefined): string => {
         if (!type) return "<undef>";
         return `[t${type.id}] ${this.getSafeCheckerTypeToString(type)}`;
     };
-    dbgNodeToString(node: Node | undefined): string {
+    nodeToString(node: Node | undefined): string {
         if (!node) return "<undef>";
         const getOneLineNodeTxt = (()=>{
-            let str = this.dbgGetNodeText(node);
+            let str = this.getNodeText(node);
             str = str.replace(/\n/g, " ");
             if (str.length>120) str = str.slice(0,50) + "..." + str.slice(-50);
             return str;
         });
         return `[n${this.getNodeId(node)}] ${getOneLineNodeTxt()}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
     }
-    dbgSignatureId(c: Signature | undefined): number {
+    signatureId(c: Signature | undefined): number {
         return c ? this.getSignatureId(c) : -1;
     }
-    dbgSignatureToString(c: Signature | undefined): string {
+    signatureToString(c: Signature | undefined): string {
         if (!c) return "<undef>";
         const specialStr = IDebug.getSpecialSignatureString(c);
         if (specialStr) return specialStr;
@@ -275,34 +280,34 @@ export class DbgsClass implements Dbgs{
         let astr: string[] = [];
         c.parameters.forEach(symbol=> {
             const typeOfSymbol = this.getSafeCheckerTypeOfSymbol(symbol);
-            astr.push(this.dbgTypeToString(typeOfSymbol));
+            astr.push(this.typeToString(typeOfSymbol));
         });
         let str = `[sg:${this.getSignatureId(c)}] (` +astr.join("; ") + ") => ";
-        str += c.resolvedReturnType ? this.dbgTypeToString(c.resolvedReturnType) : "<no resolved type>";
+        str += c.resolvedReturnType ? this.typeToString(c.resolvedReturnType) : "<no resolved type>";
         if (c.compositeKind===TypeFlags.Union) str += ` /* composite union [${c.compositeSignatures?.length}] */`;
         else if (c.compositeKind===TypeFlags.Intersection) str += ` /* composite intersection [${c.compositeSignatures?.length}] */`;
         else if (c.compositeSignatures) str += ` /* composite ??? [${c.compositeSignatures?.length}] */`;
         return str;
     }
-    dbgSignatureAndCompositesToStrings(c: Signature | undefined): string[] {
+    signatureAndCompositesToStrings(c: Signature | undefined): string[] {
         if (!c) return ["<undef>"];
         let astr: string[] = [];
-        astr.push(this.dbgSignatureToString(c));
+        astr.push(this.signatureToString(c));
         if (c.compositeSignatures){
             c.compositeSignatures.forEach((s,i)=>{
-                astr.push(`composite[${i}]: ${this.dbgSignatureToString(s)}`);
+                astr.push(`composite[${i}]: ${this.signatureToString(s)}`);
             });
         }
         return astr;
     }
 
-    dbgSymbolToString(s: Readonly<Symbol | undefined>): string {
+    symbolToString(s: Readonly<Symbol | undefined>): string {
         if (!s) return "<undef>";
         const idStr = s.id ? `id:${s.id}, ` : "";
         const transientIdStr = s.transientId ? `transientId:${s.transientId}, ` : "";
         return `{ ${idStr}${transientIdStr}ename: ${s.escapedName} }`;
     }
-    dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[] {
+    diagnosticsToStrings(diagnostic: Diagnostic | undefined): string[] {
         if (!diagnostic) return ["<undef>"];
         const astr: string[] = [];
         let d: Diagnostic | DiagnosticMessageChain | undefined = diagnostic;
@@ -320,7 +325,7 @@ export class DbgsClass implements Dbgs{
         }
         return astr;
     }
-    dbgMapperToString(mapper: TypeMapper | undefined): string {
+    mapperToString(mapper: TypeMapper | undefined): string {
         if (!mapper) return "<#undef>";
         return "CANNOT DO - using Debug.DebugTypeMapper.__debugToString() may change inference results"
         return (mapper as any as Debug.DebugTypeMapper).__debugToString();
@@ -330,13 +335,13 @@ export class DbgsClass implements Dbgs{
         //return dtm.__debugToString.call(mapper);
     }
 
-    dbgInferenceInfoToStrings(info: InferenceInfo): string[] {
+    inferenceInfoToStrings(info: InferenceInfo): string[] {
         //castHereafter<DbgsClass>(this);
         const ret: string[] = [];
-        ret.push(`typeParameter: ${this.dbgTypeToString(info.typeParameter)}`);
-        ret.push(`candidates: ${info.candidates?.map(this.dbgTypeToString).join(",")}`);
-        ret.push(`contraCandidates: ${info.contraCandidates?.map(this.dbgTypeToString).join(",")}`);
-        ret.push(`inferredType: ${this.dbgTypeToString(info.inferredType)}`);
+        ret.push(`typeParameter: ${this.typeToString(info.typeParameter)}`);
+        ret.push(`candidates: ${info.candidates?.map(this.typeToString).join(",")}`);
+        ret.push(`contraCandidates: ${info.contraCandidates?.map(this.typeToString).join(",")}`);
+        ret.push(`inferredType: ${this.typeToString(info.inferredType)}`);
         ret.push(`priority: ${info.priority}`);
         ret.push(`topLevel: ${info.topLevel}`);
         ret.push(`isFixed: ${info.isFixed}`);
@@ -344,33 +349,33 @@ export class DbgsClass implements Dbgs{
         return ret;
     }
 
-    dbgIntraExpressionInferenceSite(site: IntraExpressionInferenceSite): string {
-        return `node: ${this.dbgNodeToString(site.node)}, type: ${this.dbgTypeToString(site.type)}`;
+    intraExpressionInferenceSite(site: IntraExpressionInferenceSite): string {
+        return `node: ${this.nodeToString(site.node)}, type: ${this.typeToString(site.type)}`;
     }
 
-    dbgInferenceContextToStrings(ic: InferenceContext): string[] {
+    inferenceContextToStrings(ic: InferenceContext): string[] {
         const ret: string[] = [];
-        ret.push(`signature: ${this.dbgSignatureToString(ic.signature)}`);
+        ret.push(`signature: ${this.signatureToString(ic.signature)}`);
         ret.push(`flags: ${ic.flags}`);
-        ret.push(`inferredTypeParameters: ${ic.inferredTypeParameters?.map(this.dbgTypeToString).join(",")}`);
+        ret.push(`inferredTypeParameters: ${ic.inferredTypeParameters?.map(this.typeToString).join(",")}`);
         // ret.push(`mapper: ${this.dbgMapperToString(ic.mapper)}`);
         // ret.push(`nonFixingMapper: ${this.dbgMapperToString(ic.nonFixingMapper)}`);
         // ret.push(`returnMapper: ${this.dbgMapperToString(ic.returnMapper)}`);
         ic.intraExpressionInferenceSites?.forEach((site,i)=>{
-            ret.push(`intraExpressionInferenceSite[${i}]: ${this.dbgIntraExpressionInferenceSite(site)}`);
+            ret.push(`intraExpressionInferenceSite[${i}]: ${this.intraExpressionInferenceSite(site)}`);
         });
         ic.inferences.forEach((inf,i)=>{
-            this.dbgInferenceInfoToStrings(inf).forEach(s=>ret.push(`inference[${i}]: ${s}`));
+            this.inferenceInfoToStrings(inf).forEach(s=>ret.push(`inference[${i}]: ${s}`));
         });
         ret.push(`compareTypes: TODO`);
         return ret;
     }
 
-    dbgCheckModeToString(mode: CheckMode | undefined): string {
+    checkModeToString(mode: CheckMode | undefined): string {
         const str = Debug.formatEnum(mode, (ts as any).CheckMode, /*isFlags*/ true);
         return `CheckMode: ${str}`;
     }
-    dbgSignatureCheckModeToString(mode: SignatureCheckMode | undefined): string {
+    signatureCheckModeToString(mode: SignatureCheckMode | undefined): string {
         const str = Debug.formatEnum(mode, (ts as any).SignatureCheckMode, /*isFlags*/ true);
         return `SignatureCheckMode: ${str}`;
     }

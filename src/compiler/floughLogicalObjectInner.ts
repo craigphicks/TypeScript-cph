@@ -48,9 +48,9 @@ import {
 } from "./floughGroupRefTypesSymtab";
 import {
     getMyDebug,
-    consoleLog,
-    consoleGroup,
-    consoleGroupEnd,
+    IDebug.ilog,
+    IDebug.ilogGroup,
+    IDebug.ilogGroupEnd,
     DbgsX,
 } from "./myConsole";
 
@@ -1493,22 +1493,22 @@ function logicalObjectModify(
      */
 
     const doLog = true;
-    if (getMyDebug()) {
+    if (IDebug.isActive()) {
         if (doLog) {
-            consoleGroup(`logicalObjectModify[in]`);
+            IDebug.ilogGroup(`logicalObjectModify[in]`);
             modTypesIn.forEach((mt, idx) => {
                 const st = state.finalTypes[idx].type;
                 if (mt) {
                     floughTypeModule.dbgFloughTypeToStrings(mt).forEach(s => {
-                        consoleLog(`logicalObjectModify[in] modTypesIn[${idx}]: ${s}`);
+                        IDebug.ilog(()=>`logicalObjectModify[in] modTypesIn[${idx}]: ${s}`);
                     });
                 }
-                else consoleLog(`logicalObjectModify[in] modTypesIn[${idx}]: <undef>`);
+                else IDebug.ilog(()=>`logicalObjectModify[in] modTypesIn[${idx}]: <undef>`);
                 floughTypeModule.dbgFloughTypeToStrings(st).forEach(s => {
-                    consoleLog(`logicalObjectModify[in] state.finalTypes[${idx}]: ${s}`);
+                    IDebug.ilog(()=>`logicalObjectModify[in] state.finalTypes[${idx}]: ${s}`);
                 });
                 if (arrCallUndefinedAllowed) {
-                    consoleLog(`logicalObjectModify[in] arrCallUndefinedAllowed[${idx}]: ${arrCallUndefinedAllowed[idx]}`);
+                    IDebug.ilog(()=>`logicalObjectModify[in] arrCallUndefinedAllowed[${idx}]: ${arrCallUndefinedAllowed[idx]}`);
                 }
             });
         }
@@ -1685,31 +1685,31 @@ function logicalObjectModify(
         sci: orSymtabConstraints(results.map(x => x.sci)),
     };
 
-    if (getMyDebug()) {
+    if (IDebug.isActive()) {
         if (doLog) {
             results.forEach((r, ridx) => {
                 const hstr = `logicalObjectModify[out] [${ridx}] `;
-                // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>consoleLog(`${hstr} type: ${s}`));
-                // else consoleLog(`${hstr} type: <undef>`);
-                if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s => consoleLog(`${hstr} rootNonObj: ${s}`));
-                else consoleLog(`${hstr} rootNonObj: <undef>`);
-                if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s => consoleLog(`${hstr} rootLogicalObject: ${s}`));
-                else consoleLog(`${hstr} rootLogicalObject: <undef>`);
-                dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s => consoleLog(`${hstr} sci: ${s}`));
+                // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>IDebug.ilog(()=>`${hstr} type: ${s}`));
+                // else IDebug.ilog(()=>`${hstr} type: <undef>`);
+                if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s => IDebug.ilog(()=>`${hstr} rootNonObj: ${s}`));
+                else IDebug.ilog(()=>`${hstr} rootNonObj: <undef>`);
+                if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s => IDebug.ilog(()=>`${hstr} rootLogicalObject: ${s}`));
+                else IDebug.ilog(()=>`${hstr} rootLogicalObject: <undef>`);
+                dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s => IDebug.ilog(()=>`${hstr} sci: ${s}`));
             });
             {
-                consoleLog("logicalObjectModify[out] --- unionized");
+                IDebug.ilog("logicalObjectModify[out] --- unionized");
                 const hstr = `logicalObjectModify[out] [union]`;
                 const r = ret;
-                // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>consoleLog(`${hstr} type: ${s}`));
-                // else consoleLog(`${hstr} type: <undef>`);
-                if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s => consoleLog(`${hstr} rootNonObj: ${s}`));
-                else consoleLog(`${hstr} rootNonObj: <undef>`);
-                if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s => consoleLog(`${hstr} rootLogicalObject: ${s}`));
-                else consoleLog(`${hstr} rootLogicalObject: <undef>`);
-                dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s => consoleLog(`${hstr} sci: ${s}`));
+                // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>IDebug.ilog(()=>`${hstr} type: ${s}`));
+                // else IDebug.ilog(()=>`${hstr} type: <undef>`);
+                if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s => IDebug.ilog(()=>`${hstr} rootNonObj: ${s}`));
+                else IDebug.ilog(()=>`${hstr} rootNonObj: <undef>`);
+                if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s => IDebug.ilog(()=>`${hstr} rootLogicalObject: ${s}`));
+                else IDebug.ilog(()=>`${hstr} rootLogicalObject: <undef>`);
+                dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s => IDebug.ilog(()=>`${hstr} sci: ${s}`));
             }
-            consoleGroupEnd();
+            IDebug.ilogGroupEnd();
         }
     }
     return ret;
@@ -1873,10 +1873,10 @@ function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF)
         as.push("  kind: " + logicalObject.kind);
         if (logicalObject.kind === "plain") {
             // as.push(` logicalObject.item.objectTypeInstanceId: ${logicalObject.item.objectTypeInstanceId}`);
-            as.push("  logicalObject.tsType: " + dbgs.dbgTypeToString(logicalObject.tsType));
+            as.push("  logicalObject.tsType: " + dbgs.IDebug.dbgs.typeToString(logicalObject.tsType));
         }
         if (logicalObject.kind === "tsintersection" || logicalObject.kind === "tsunion") {
-            as.push("  logicalObject.tsType: " + dbgs.dbgTypeToString(logicalObject.tsType));
+            as.push("  logicalObject.tsType: " + dbgs.IDebug.dbgs.typeToString(logicalObject.tsType));
         }
         if (logicalObject.kind === "plain" || logicalObject.kind === "tsintersection") {
             if (logicalObject.variations) {

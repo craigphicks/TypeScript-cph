@@ -36,7 +36,7 @@ import {
 import {
     MrNarrow,
 } from "./floughGroup2";
-import { getMyDebug, consoleGroup, consoleLog, consoleGroupEnd } from "./myConsole";
+import { IDebug } from "./mydebug";
 
 const mrNarrow: MrNarrow = undefined as any as MrNarrow;
 const symbolFlowInfoMap: SymbolFlowInfoMap = undefined as any as SymbolFlowInfoMap;
@@ -196,17 +196,18 @@ export function createSubLoopRefTypesSymtabConstraint(outerSC: Readonly<RefTypes
 }
 
 function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypesSymtab {
+    const loggerLevel = 2;
     // function getProxyType(symbol: Symbol, st: Readonly<RefTypesSymtabProxy>): RefTypesSymtabProxyType | undefined {
     //     return st.symtabInner.get(symbol) ?? (st.symtabOuter ? getProxyType(symbol, st.symtabOuter) : undefined);
     //  }
     assertCastType<Readonly<RefTypesSymtabProxy>>(stin);
     Debug.assert(!stin.isSubloop || stin.loopState);
-    if (getMyDebug()) {
-        consoleGroup(`createSuperloopRefTypesSymtab[in]`);
+    if (IDebug.isActive()) {
+        IDebug.ilogGroup(()=>`createSuperloopRefTypesSymtab[in]`, loggerLevel);
         // if (stin.isSubloop){
-        //     consoleLog(`createSuperloopRefTypesSymtab[in] idx:${stin.loopGroup?.groupIdx}, invocations${stin.loopState?.invocations}`);
+        //     IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] idx:${stin.loopGroup?.groupIdx}, invocations${stin.loopState?.invocations}`);
         // }
-        dbgRefTypesSymtabToStrings(stin).forEach(str => consoleLog(`createSuperloopRefTypesSymtab[in] stin: ${str}`));
+        dbgRefTypesSymtabToStrings(stin).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] stin: ${str}`, loggerLevel));
     }
     const stout = copyRefTypesSymtab(stin.symtabOuter!);
     // let symbolsReadNotAssigned: undefined | Set<Symbol>;
@@ -225,10 +226,9 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
         }
     });
     // if (stin.loopState) stin.loopState.symbolsReadNotAssigned = symbolsReadNotAssigned;
-    if (getMyDebug()) {
-        dbgRefTypesSymtabToStrings(stout).forEach(str => consoleLog(`createSuperloopRefTypesSymtab[out] stout: ${str}`));
-        consoleLog(`createSuperloopRefTypesSymtab[out]`);
-        consoleGroupEnd();
+    if (IDebug.isActive()) {
+        dbgRefTypesSymtabToStrings(stout).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[out] stout: ${str}`, loggerLevel));
+        IDebug.ilogGroupEnd(()=>`createSuperloopRefTypesSymtab[out]`, loggerLevel);
     }
     return stout;
 }
@@ -290,11 +290,11 @@ export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstr
  * while nobj types are still or'd immediately, but without computing via Type.
  */
 export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
-    const dolog = true;
-    if (dolog && getMyDebug()) {
-        consoleGroup(`unionArrRefTypesSymtabV2[in]`);
+    const loggerLevel = 2;
+    if (IDebug.isActive(loggerLevel)) {
+        IDebug.ilogGroup(()=>`unionArrRefTypesSymtabV2[in]`, loggerLevel);
         arr.forEach((rts, i) => {
-            dbgRefTypesSymtabToStrings(rts).forEach(str => consoleLog(`unionArrRefTypesSymtabV2[in] symtab[${i}] ${str}`));
+            dbgRefTypesSymtabToStrings(rts).forEach(str => IDebug.ilog(()=>`unionArrRefTypesSymtabV2[in] symtab[${i}] ${str}`, loggerLevel));
         });
     }
     function unionArrRefTypesSymtab1(): RefTypesSymtab {
@@ -397,19 +397,19 @@ export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefType
     }
     const target = unionArrRefTypesSymtab1();
     {
-        if (dolog && getMyDebug()) {
-            dbgRefTypesSymtabToStrings(target).forEach(str => consoleLog(`unionArrRefTypesSymtab[out] return: ${str}`));
-            consoleGroupEnd();
+        if (IDebug.isActive(loggerLevel)) {
+            dbgRefTypesSymtabToStrings(target).forEach(str => IDebug.ilog(()=>`unionArrRefTypesSymtab: return: ${str}`, loggerLevel));
+            IDebug.ilogGroupEnd(()=>`unionArrRefTypesSymtab[out]`, loggerLevel);
         }
     }
     return target;
 } // unionArrRefTypesSymtabV2
 
 export function modifiedInnerSymtabUsingOuterForFinalCondition(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
-    const dolog = true;
-    if (dolog && getMyDebug()) {
-        consoleGroup(`modifiedInnerSymtabUsingOuterForFinalCondition[in]`);
-        dbgRefTypesSymtabToStrings(symtab).forEach(str => consoleLog(`modifiedInnerSymtabUsingOuterForFinalCondition[in] symtab: ${str}`));
+    const loggerLevel = 2;
+    if (IDebug.isActive(loggerLevel)) {
+        IDebug.ilogGroup(()=>`modifiedInnerSymtabUsingOuterForFinalCondition[in]`, loggerLevel);
+        dbgRefTypesSymtabToStrings(symtab).forEach(str => IDebug.ilog(()=>`modifiedInnerSymtabUsingOuterForFinalCondition[in] symtab: ${str}`, loggerLevel));
     }
     assertCastType<Readonly<RefTypesSymtabProxy>>(symtab);
     const updates: [Symbol, RefTypesType][] = [];
@@ -441,9 +441,9 @@ export function modifiedInnerSymtabUsingOuterForFinalCondition(symtab: Readonly<
         symtab1 = copyRefTypesSymtab(symtab) as RefTypesSymtabProxy;
         updates.forEach(([symbol, type]) => symtab1.symtabInner.set(symbol, { type, assignedType: undefined }));
     }
-    if (dolog && getMyDebug()) {
-        dbgRefTypesSymtabToStrings(symtab1).forEach(str => consoleLog(`modifiedInnerSymtabUsingOuterForFinalCondition[out] symtab: ${str}`));
-        consoleGroupEnd();
+    if (IDebug.isActive(loggerLevel)) {
+        dbgRefTypesSymtabToStrings(symtab1).forEach(str => IDebug.ilog(()=>`modifiedInnerSymtabUsingOuterForFinalCondition: symtab: ${str}`, loggerLevel));
+        IDebug.ilogGroupEnd(()=>`modifiedInnerSymtabUsingOuterForFinalCondition[out]`, loggerLevel);
     }
     return symtab1;
 }
