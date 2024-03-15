@@ -38,13 +38,13 @@ import {
     ConstraintItem,
     NodeToTypeMap,
     ReplayableItem,
-    InferStatus,
+    FloughStatus,
     TypeCheckerFn,
     RefTypesSymtabConstraintItemNotNever,
     assertCastType,
     ConstraintItemNotNever,
-    InferCrit,
-    InferCritKind,
+    FloughCrit,
+    FloughCritKind,
 } from "./floughTypedefs";
 import {
     orSymtabConstraints,
@@ -56,7 +56,7 @@ import {
     createMrNarrow,
 } from "./floughGroup2";
 import {
-    initFlowGroupInferApplyCrit,
+    initFloughGroupApplyCrit,
     applyCritNoneUnion,
     applyCrit,
 } from "./floughGroupApplyCrit";
@@ -538,7 +538,7 @@ export function createSourceFileFloughState(sourceFile: SourceFile, checker: Flo
     // const refTypesTypeModule = floughTypeModule.createRefTypesTypeModule(checker);
     const mrNarrow = createMrNarrow(checker, sourceFile, mrState, /*refTypesTypeModule, */ compilerOptions);
     initializeFlowGroupRefTypesSymtabModule(mrNarrow);
-    initFlowGroupInferApplyCrit(checker, mrNarrow);
+    initFloughGroupApplyCrit(checker, mrNarrow);
     initFloughTypeModule(checker, compilerOptions);
     initFloughLogicalObjectOuter(checker);
     initFloughLogicalObjectInner(checker, mrNarrow);
@@ -762,7 +762,7 @@ export function updateHeapWithConnectedGroupsGraph(group: Readonly<GroupForFlow>
     }
 }
 
-function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileFloughState, accumBranches: false): InferStatus {
+function createFloughStatus(groupForFlow: GroupForFlow, sourceFileMrState: SourceFileFloughState, accumBranches: false): FloughStatus {
     const loggerLevel = 2;
     const mrState = sourceFileMrState.mrState;
     Debug.assert(sourceFileMrState.mrState.forFlowTop.groupToNodeToType);
@@ -959,7 +959,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
     // let cachedSubloopSCForLoopConditionIn: RefTypesSymtabConstraintItem;
     let outerSCForLoopConditionIn: RefTypesSymtabConstraintItem;
     {
-        const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
+        const inferStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
         // Caching of scForLoop0 is only required for the outermost, depth===1, loop
         if (sourceFileMrState.mrState.currentLoopDepth === 1) {
             if (loopState.invocations === 0) {
@@ -1031,7 +1031,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             if (forFlowParent.currentBranchesMap.has(loopGroup)) deleteCurrentBranchesMap(loopGroup); // This is not required because it will be overwritten anyway.
             if (forFlowParent.groupToNodeToType!.has(loopGroup)) forFlowParent.groupToNodeToType!.delete(loopGroup);
 
-            const inferStatus: InferStatus = createInferStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
+            const inferStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
             resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop: scForConditionUnionOfInAndContinue, loopGroupIdx: loopGroup.groupIdx });
 
             IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
@@ -1104,7 +1104,7 @@ function resolveHeap(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow,
             processLoopOuter(groupForFlow, sourceFileMrState, forFlow);
             continue;
         }
-        const inferStatus: InferStatus = createInferStatus(groupForFlow, sourceFileMrState, withinLoop);
+        const inferStatus: FloughStatus = createFloughStatus(groupForFlow, sourceFileMrState, withinLoop);
         resolveGroupForFlow(groupForFlow, inferStatus, sourceFileMrState, forFlow);
     } // while (!heap.isEmpty())
 }
@@ -1272,7 +1272,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
     }
 }
 
-function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: InferStatus, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, options?: { cachedSCForLoop: RefTypesSymtabConstraintItem; loopGroupIdx: number; }): void {
+function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus: FloughStatus, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, options?: { cachedSCForLoop: RefTypesSymtabConstraintItem; loopGroupIdx: number; }): void {
     const loggerLevel = 2;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const mrNarrow = sourceFileMrState.mrNarrow;
@@ -1341,13 +1341,13 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
         IDebug.ilog(()=>`resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():`, loggerLevel);
     }
 
-    const crit: InferCrit = !inferStatus.inCondition ? { kind: InferCritKind.none } : { kind: InferCritKind.truthy, alsoFailing: true };
+    const crit: FloughCrit = !floughStatus.inCondition ? { kind: FloughCritKind.none } : { kind: FloughCritKind.truthy, alsoFailing: true };
     Debug.assert(forFlow.groupToNodeToType);
 
     let scpassing: RefTypesSymtabConstraintItem;
     let scfailing: RefTypesSymtabConstraintItem | undefined;
 
-    inferStatus.isInLoop = !!forFlow.loopState;
+    floughStatus.isInLoop = !!forFlow.loopState;
     if (getDevDebugger(maximalNode, sourceFileMrState.sourceFile)) {
         debugger;
     }
@@ -1356,22 +1356,22 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
         expr: maximalNode,
         crit,
         qdotfallout: undefined,
-        inferStatus,
+        floughStatus: floughStatus,
     });
 
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilog(()=>`resolveGroupForFlow[after flough]${IDebug.dbgs.nodeToString(maximalNode)}`, loggerLevel);
     }
 
-    if (!inferStatus.inCondition) {
-        scpassing = applyCritNoneUnion(mntr, inferStatus.groupNodeToTypeMap).sci;
+    if (!floughStatus.inCondition) {
+        scpassing = applyCritNoneUnion(mntr, floughStatus.groupNodeToTypeMap).sci;
     }
     else {
-        const critret = applyCrit(mntr, { kind: InferCritKind.truthy, alsoFailing: true }, inferStatus.groupNodeToTypeMap);
+        const critret = applyCrit(mntr, { kind: FloughCritKind.truthy, alsoFailing: true }, floughStatus.groupNodeToTypeMap);
         scpassing = critret.passing.sci;
         scfailing = critret.failing!.sci;
     }
-    if (inferStatus.inCondition) {
+    if (floughStatus.inCondition) {
         const cbe: CurrentBranchElementTF = {
             kind: CurrentBranchesElementKind.tf,
             gff: groupForFlow,
@@ -1382,7 +1382,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
                 sc: { symtab: scpassing.symtab, constraintItem: scpassing.constraintItem },
             },
         };
-        if (!inferStatus.accumBranches) {
+        if (!floughStatus.accumBranches) {
             Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
             forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
@@ -1398,7 +1398,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
                 sc: { symtab: scpassing.symtab, constraintItem: scpassing.constraintItem },
             },
         };
-        if (!inferStatus.accumBranches) {
+        if (!floughStatus.accumBranches) {
             Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
             forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
@@ -1408,7 +1408,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`, loggerLevel);
         dbgForFlow(sourceFileMrState, forFlow).forEach(s => IDebug.ilog(()=>`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`, loggerLevel));
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`, loggerLevel);
-        dbgNodeToTypeMap(inferStatus.groupNodeToTypeMap).forEach(str => {
+        dbgNodeToTypeMap(floughStatus.groupNodeToTypeMap).forEach(str => {
             IDebug.ilog(()=>`resolveGroupForFlow[dbg] groupNodeToTypeMap: ${str}`, loggerLevel);
         });
         IDebug.ilogGroupEnd(()=>`resolveGroupForFlow[out]: ${IDebug.dbgs.nodeToString(maximalNode)}, `, loggerLevel);

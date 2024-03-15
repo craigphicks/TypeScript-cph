@@ -25,7 +25,7 @@ import {
 import {
     MrNarrow,
 } from "./floughGroup2";
-import { RefTypesTableReturnNoSymbol, InferCrit, InferCritKind, RefTypesTableReturn, NodeToTypeMap, FloughReturn, RefTypesSymtabConstraintItem, LogicalObjecAccessData, RefTypesSymtabConstraintItemNotNever, assertCastType } from "./floughTypedefs";
+import { RefTypesTableReturnNoSymbol, FloughCrit, FloughCritKind, RefTypesTableReturn, NodeToTypeMap, FloughReturn, RefTypesSymtabConstraintItem, LogicalObjecAccessData, RefTypesSymtabConstraintItemNotNever, assertCastType } from "./floughTypedefs";
 import { GetDeclaredTypeFn, andSymbolTypeIntoSymtabConstraint, orSymtabConstraints } from "./floughConstraints";
 import { createRefTypesSymtabConstraintItemNever, isRefTypesSymtabConstraintItemNever, copyRefTypesSymtabConstraintItem } from "./floughGroupRefTypesSymtab";
 import { FloughTypeChecker } from "./floughTypedefs"
@@ -35,7 +35,7 @@ const checker: FloughTypeChecker = undefined as any as FloughTypeChecker;
 const getDeclaredType: GetDeclaredTypeFn = undefined as any as GetDeclaredTypeFn;
 const mrNarrow: MrNarrow = undefined as any as MrNarrow;
 
-export function initFlowGroupInferApplyCrit(checkerIn: TypeChecker, mrNarrowIn: MrNarrow): void {
+export function initFloughGroupApplyCrit(checkerIn: TypeChecker, mrNarrowIn: MrNarrow): void {
     (checker as any) = checkerIn;
     (mrNarrow as any) = mrNarrowIn;
     (getDeclaredType as any) = mrNarrowIn.getDeclaredType;
@@ -49,12 +49,12 @@ function createNever(): RefTypesTableReturnNoSymbol {
 }
 
 export type CritToTypeV2Result = FloughType | undefined;
-export function applyCritToTypeV2(rt: Readonly<FloughType>, crit: Readonly<InferCrit>): { pass: CritToTypeV2Result; fail?: CritToTypeV2Result; } {
+export function applyCritToTypeV2(rt: Readonly<FloughType>, crit: Readonly<FloughCrit>): { pass: CritToTypeV2Result; fail?: CritToTypeV2Result; } {
     const { logicalObject, remaining } = floughTypeModule.splitLogicalObject(rt);
     const arrtstype = floughTypeModule.getTsTypesFromFloughType(remaining);
 
-    function worker(crit: Readonly<InferCrit>) {
-        if (crit.kind === InferCritKind.truthy) {
+    function worker(crit: Readonly<FloughCrit>) {
+        if (crit.kind === FloughCritKind.truthy) {
             const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
             const arrpass: Type[] = arrtstype.filter(t => (checker.getTypeFacts(t) & pfacts));
             const logobjpass = crit.negate ? undefined : logicalObject;
@@ -73,15 +73,15 @@ export function applyCritToTypeV2(rt: Readonly<FloughType>, crit: Readonly<Infer
     const ret: ReturnType<typeof applyCritToTypeV2> = {
         pass: worker(crit),
     };
-    if (crit.alsoFailing) ret.fail = worker({ ...crit, negate: !crit.negate } as Readonly<InferCrit>);
+    if (crit.alsoFailing) ret.fail = worker({ ...crit, negate: !crit.negate } as Readonly<FloughCrit>);
     (crit as any).done = true;
     return ret;
 }
 
-function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<InferCrit>, passtype: RefTypesType, failtype?: RefTypesType | undefined): void {
+function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<FloughCrit>, passtype: RefTypesType, failtype?: RefTypesType | undefined): void {
     Debug.assert(!crit.done);
-    Debug.assert(crit.kind !== InferCritKind.none);
-    if (crit.kind === InferCritKind.truthy) {
+    Debug.assert(crit.kind !== FloughCritKind.none);
+    if (crit.kind === FloughCritKind.truthy) {
         if (crit.alsoFailing) {
             const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
             const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
@@ -99,7 +99,7 @@ function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<InferC
             });
         }
     }
-    else if (crit.kind === InferCritKind.notnullundef) {
+    else if (crit.kind === FloughCritKind.notnullundef) {
         const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
         const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
         floughTypeModule.forEachRefTypesTypeType(rt, t => {
@@ -108,7 +108,7 @@ function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<InferC
             if (failtype && tf & ffacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t, failtype);
         });
     }
-    else if (crit.kind === InferCritKind.assignable) {
+    else if (crit.kind === FloughCritKind.assignable) {
         const assignableRelation = checker.getRelations().assignableRelation;
         floughTypeModule.forEachRefTypesTypeType(rt, source => {
             let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
@@ -117,7 +117,7 @@ function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<InferC
             else if (failtype) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(source, failtype);
         });
     }
-    else if (crit.kind === InferCritKind.subtype) {
+    else if (crit.kind === FloughCritKind.subtype) {
         const subtypeRelation = checker.getRelations().subtypeRelation;
         floughTypeModule.forEachRefTypesTypeType(rt, source => {
             let rel = checker.isTypeRelatedTo(source, crit.target, subtypeRelation);
@@ -255,14 +255,14 @@ export function resolveLogicalObjectAccessData(load: LogicalObjecAccessData, sc:
     return { type: typeOut, sc: scOut };
 }
 
-export function applyCrit(x: Readonly<FloughReturn>, crit: Readonly<InferCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
+export function applyCrit(x: Readonly<FloughReturn>, crit: Readonly<FloughCrit>, nodeToTypeMap: NodeToTypeMap | undefined): {
     passing: RefTypesTableReturnNoSymbol;
     failing?: RefTypesTableReturnNoSymbol | undefined;
 } {
     return applyCrit1(x.unmerged, crit, x.nodeForMap, nodeToTypeMap);
 }
 
-export function applyCrit1ToOne(rttr: Readonly<RefTypesTableReturn>, crit: Readonly<InferCrit>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): {
+export function applyCrit1ToOne(rttr: Readonly<RefTypesTableReturn>, crit: Readonly<FloughCrit>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): {
     passing: RefTypesTableReturnNoSymbol;
     failing?: RefTypesTableReturnNoSymbol | undefined;
 } {
@@ -273,7 +273,7 @@ export function applyCrit1ToOne(rttr: Readonly<RefTypesTableReturn>, crit: Reado
         if (extraAsserts) {
             Debug.assert(isRefTypesSymtabConstraintItemNever(rttr.sci));
         }
-        (crit as InferCrit).done = true; // note: overriding readonly
+        (crit as FloughCrit).done = true; // note: overriding readonly
         return {
             passing: createNever(),
             failing: createNever(),
@@ -332,11 +332,11 @@ export function applyCrit1ToOne(rttr: Readonly<RefTypesTableReturn>, crit: Reado
             sci: failsc!,
         };
     }
-    (crit as InferCrit).done = true; // note: overriding readonly
+    (crit as FloughCrit).done = true; // note: overriding readonly
     return { passing, failing };
 }
 
-function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<InferCrit>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): {
+function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<FloughCrit>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): {
     passing: RefTypesTableReturnNoSymbol;
     failing?: RefTypesTableReturnNoSymbol | undefined;
 } {

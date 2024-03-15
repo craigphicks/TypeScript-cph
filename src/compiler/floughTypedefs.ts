@@ -113,7 +113,7 @@ export type RefTypesTableReturn = {
     sci: RefTypesSymtabConstraintItem;
     logicalObjectAccessData?: LogicalObjecAccessData;
 };
-export enum InferCritKind {
+export enum FloughCritKind {
     none = "none",
     truthy = "truthy",
     notnullundef = "notnullundef",
@@ -121,32 +121,32 @@ export enum InferCritKind {
     subtype = "subtype",
     equalLiteral = "equalLiteral",
 }
-export type InferCrit =
+export type FloughCrit =
     & (
         | {
-            kind: typeof InferCritKind.none; // this is just to get the resulting type without any criteria
+            kind: typeof FloughCritKind.none; // this is just to get the resulting type without any criteria
             negate?: false;
         }
         | {
-            kind: typeof InferCritKind.truthy;
+            kind: typeof FloughCritKind.truthy;
             negate?: boolean;
         }
         | {
-            kind: typeof InferCritKind.notnullundef;
+            kind: typeof FloughCritKind.notnullundef;
             negate?: boolean;
         }
         | {
-            kind: typeof InferCritKind.assignable;
-            negate?: boolean;
-            target: Type;
-        }
-        | {
-            kind: typeof InferCritKind.subtype;
+            kind: typeof FloughCritKind.assignable;
             negate?: boolean;
             target: Type;
         }
         | {
-            kind: typeof InferCritKind.equalLiteral;
+            kind: typeof FloughCritKind.subtype;
+            negate?: boolean;
+            target: Type;
+        }
+        | {
+            kind: typeof FloughCritKind.equalLiteral;
             negate?: boolean;
             targetFloughType: FloughType;
         }
@@ -177,7 +177,7 @@ export type RefDeltaInferState = {
     symtab: RefTypesSymtab;
     constraintItem: ConstraintItem;
     deltaNodeToTypeMap: Map<Node, Type>;
-    inferStatus: InferStatus;
+    inferStatus: FloughStatus;
 };
 
 export type ReplayData = {
@@ -186,7 +186,7 @@ export type ReplayData = {
 
 export type TypeCheckerFn = (...args: any[]) => any;
 
-export type InferStatus = {
+export type FloughStatus = {
     inCondition: boolean;
     currentReplayableItem?: undefined | ReplayableItem;
     replayables: WeakMap<Symbol, ReplayableItem>;
@@ -220,8 +220,8 @@ export type FloughArgs = {
     sci: RefTypesSymtabConstraintItem;
     expr: Readonly<Node>;
     qdotfallout?: RefTypesTableReturn[];
-    inferStatus: InferStatus;
-    crit: InferCrit;
+    floughStatus: FloughStatus;
+    crit: FloughCrit;
     accessDepth?: number;
     refAccessArgs?: [{
         roots: AccessArgsRoot[] | undefined; // the length of this array is the number of branches in the root
@@ -240,11 +240,11 @@ export type FloughReturn = {
     };
 };
 
-export type InferRefInnerArgs = {
+export type FloughRefInnerArgs = {
     sci: RefTypesSymtabConstraintItemNotNever;
     expr: Readonly<Node>;
     qdotfallout?: RefTypesTableReturn[] | undefined;
-    inferStatus: InferStatus;
+    inferStatus: FloughStatus;
 };
 
 export type FloughInnerReturn = {

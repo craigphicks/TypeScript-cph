@@ -40,9 +40,9 @@ import {
     FloughInnerReturn,
     FloughReturn,
     FloughTypeChecker,
-    InferCrit,
-    InferCritKind,
-    InferStatus,
+    FloughCrit,
+    FloughCritKind,
+    FloughStatus,
     LogicalObjecAccessData,
     NodeToTypeMap,
     RefTypesSymtabConstraintItem,
@@ -138,7 +138,7 @@ import { IDebug } from "./mydebug";
 // export const enableMapReplayedObjectTypesToSymbolFlowInfoTypes = true;
 
 export interface MrNarrow {
-    flough({ sci, expr, crit, qdotfallout, inferStatus }: FloughArgs): FloughReturn;
+    flough({ sci, expr, crit, qdotfallout, floughStatus }: FloughArgs): FloughReturn;
     createRefTypesSymtab(): RefTypesSymtab;
     copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
     dbgRefTypesTableToStrings(t: RefTypesTable): string[];
@@ -480,13 +480,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
      * @param crit
      * @returns type narrowed by criterion crit
      */
-    function applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType, crit: InferCrit, func: F): void {
-        if (crit.kind === InferCritKind.none) {
+    function applyCritToRefTypesType<F extends (t: Type, pass: boolean, fail: boolean) => void>(rt: RefTypesType, crit: FloughCrit, func: F): void {
+        if (crit.kind === FloughCritKind.none) {
             floughTypeModule.forEachRefTypesTypeType(rt, t => {
                 func(t, /* pass */ true, /* fail */ false);
             });
         }
-        else if (crit.kind === InferCritKind.truthy) {
+        else if (crit.kind === FloughCritKind.truthy) {
             const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
             const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
             floughTypeModule.forEachRefTypesTypeType(rt, t => {
@@ -494,7 +494,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 func(t, !!(tf & pfacts), !!(tf & ffacts));
             });
         }
-        else if (crit.kind === InferCritKind.notnullundef) {
+        else if (crit.kind === FloughCritKind.notnullundef) {
             const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
             const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
             floughTypeModule.forEachRefTypesTypeType(rt, t => {
@@ -502,7 +502,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 func(t, !!(tf & pfacts), !!(tf & ffacts));
             });
         }
-        else if (crit.kind === InferCritKind.assignable) {
+        else if (crit.kind === FloughCritKind.assignable) {
             floughTypeModule.forEachRefTypesTypeType(rt, source => {
                 let rel = checker.isTypeRelatedTo(source, crit.target, assignableRelation);
                 if (crit.negate) rel = !rel;
@@ -712,7 +712,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     function floughByCallExpressionProcessCallArguments(args: {
         callExpr: Readonly<CallExpression>;
         sc: RefTypesSymtabConstraintItem;
-        inferStatus: InferStatus;
+        inferStatus: FloughStatus;
         // setOfTransientCallArgumentSymbol: Set<TransientCallArgumentSymbol>
     }): {
         sc: RefTypesSymtabConstraintItem;
@@ -745,10 +745,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     sci: sctmp,
                     expr: (carg as SpreadElement).expression,
                     crit: {
-                        kind: InferCritKind.none,
+                        kind: FloughCritKind.none,
                     },
                     qdotfallout: undefined,
-                    inferStatus,
+                    floughStatus: inferStatus,
                 });
                 const unmerged = mntr.unmerged;
                 let symbolOuter: Symbol | undefined;
@@ -815,10 +815,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     sci: sctmp,
                     expr: carg,
                     crit: {
-                        kind: InferCritKind.none,
+                        kind: FloughCritKind.none,
                     },
                     qdotfallout: undefined,
-                    inferStatus,
+                    floughStatus: inferStatus,
                 });
                 const unmerged = mntr.unmerged;
                 let symbol: Symbol | undefined;
@@ -879,7 +879,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         }
     }
 
-    function getQuickIdentifierOrIsReplayableItem(expr: Expression, inferStatus: Readonly<InferStatus>): { symbol: Symbol; type?: FloughType | undefined; isReplayable?: boolean | undefined; } {
+    function getQuickIdentifierOrIsReplayableItem(expr: Expression, floughStatus: Readonly<FloughStatus>): { symbol: Symbol; type?: FloughType | undefined; isReplayable?: boolean | undefined; } {
         if (expr.kind !== SyntaxKind.Identifier) Debug.fail("unexpected");
         Debug.assert(isIdentifier(expr));
 
@@ -900,7 +900,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             type = floughTypeModule.createRefTypesType(floughGetTsTypeOfSymbol(symbol));
         }
         else {
-            isReplayable = inferStatus.replayables.has(symbol);
+            isReplayable = floughStatus.replayables.has(symbol);
         }
         return { symbol, type, isReplayable };
     }
@@ -909,13 +909,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
      * @param param0
      * @returns
      */
-    function flough({ sci, expr: expr, inferStatus, qdotfallout, crit, accessDepth, refAccessArgs }: FloughArgs): FloughReturn {
+    function flough({ sci, expr: expr, floughStatus: floughStatus, qdotfallout, crit, accessDepth, refAccessArgs }: FloughArgs): FloughReturn {
         const loggerLevel = 2;
         if (IDebug.isActive(loggerLevel)) {
             IDebug.ilogGroup(()=>
                 `flough[in] expr:${IDebug.dbgs.nodeToString(expr)}},`
                     + `crit:{kind:${crit.kind},alsoFailing:${crit.alsoFailing},negate:${crit.negate}, ${(crit as any).target ? IDebug.dbgs.typeToString((crit as any).target as Type) : ""}},`
-                    + `inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(inferStatus.currentReplayableItem.symbol)}}` : undefined}}, `
+                    + `inferStatus:{inCondition:${floughStatus.inCondition}, currentReplayable:${floughStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(floughStatus.currentReplayableItem.symbol)}}` : undefined}}, `
                     + `qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}, `
                     + `accessDepth:${accessDepth}`, loggerLevel);
             IDebug.ilog(()=>`flough[in] refTypesSymtab:`, loggerLevel);
@@ -943,10 +943,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     expr: (expr as ParenthesizedExpression).expression,
                     qdotfallout,
                     sci,
-                    inferStatus,
+                    floughStatus: floughStatus,
                     crit,
                 });
-                applyCritNoneUnion(mntr, inferStatus.groupNodeToTypeMap);
+                applyCritNoneUnion(mntr, floughStatus.groupNodeToTypeMap);
                 return mntr;
             }
             return floughAux();
@@ -957,8 +957,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`  flough[dbg]: unmerged[${i}]: ${s}`, loggerLevel));
             });
             IDebug.ilog(()=>`flough[out] floughReturn.typeof: ${floughReturn.typeof ? "present" : "<undef>"}`, loggerLevel);
-            IDebug.ilog(()=>`flough[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`, loggerLevel);
-            inferStatus.groupNodeToTypeMap.forEach((t, n) => {
+            IDebug.ilog(()=>`flough[out] groupNodeToTypeMap.size: ${floughStatus.groupNodeToTypeMap.size}`, loggerLevel);
+            floughStatus.groupNodeToTypeMap.forEach((t, n) => {
                 for (let ntmp = n; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                     if (ntmp === expr) {
                         IDebug.ilog(()=>`flough[out] groupNodeToTypeMap: node: ${IDebug.dbgs.nodeToString(n)}, type: ${typeToString(t)}`, loggerLevel);
@@ -975,7 +975,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             function floughIdentifierAux(): FloughReturn {
                 Debug.assert(isIdentifier(expr));
 
-                const { symbol, type: quickType, isReplayable: isReplayable } = getQuickIdentifierOrIsReplayableItem(expr, inferStatus); // : { symbol: Symbol, type?: FloughType | undefined, isReplayableItem?: boolean | undefined } {
+                const { symbol, type: quickType, isReplayable: isReplayable } = getQuickIdentifierOrIsReplayableItem(expr, floughStatus); // : { symbol: Symbol, type?: FloughType | undefined, isReplayableItem?: boolean | undefined } {
                 if (quickType) {
                     return createfloughReturn([createRefTypesTableReturn(
                         quickType,
@@ -996,7 +996,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                 if (isReplayable) {
                     IDebug.ilog(()=>`floughIdentifier[dbg]: start replay for ${IDebug.dbgs.symbolToString(symbol)}, ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
-                    const replayable = inferStatus.replayables.get(symbol)!;
+                    const replayable = floughStatus.replayables.get(symbol)!;
                     /**
                      * Replay with new constraints
                      * The existing inferStatus.groupNodeToTypeMap should not be overwritten during replay.
@@ -1007,10 +1007,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     const dummyNodeToTypeMap = new Map<Node, Type>();
                     const mntr = flough({
                         expr: replayable?.expr,
-                        crit: { kind: InferCritKind.none },
+                        crit: { kind: FloughCritKind.none },
                         sci,
                         qdotfallout: undefined,
-                        inferStatus: { ...inferStatus, inCondition: true, currentReplayableItem: replayable, groupNodeToTypeMap: dummyNodeToTypeMap },
+                        floughStatus: { ...floughStatus, inCondition: true, currentReplayableItem: replayable, groupNodeToTypeMap: dummyNodeToTypeMap },
                     });
                     IDebug.ilog(()=>`floughIdentifier[dbg]: end replay for ${IDebug.dbgs.symbolToString(symbol)}, ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
 
@@ -1018,7 +1018,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                      * When the replay rhs is an identifier, e.g. _caxnc-rp-001, we need to expand the type before so the lhs and rhs symbols
                      * can be correlated.
                      */
-                    if (inferStatus.inCondition && replayable.expr.kind === SyntaxKind.Identifier && mntr.unmerged.length === 1) {
+                    if (floughStatus.inCondition && replayable.expr.kind === SyntaxKind.Identifier && mntr.unmerged.length === 1) {
                         const unmerged: RefTypesTableReturn[] = [];
                         floughTypeModule.forEachRefTypesTypeType(mntr.unmerged[0].type, t =>
                             unmerged.push({
@@ -1098,13 +1098,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 const isconst = symbolFlowInfo.isconst;
                 type = sci.symtab?.get(symbol) ?? getEffectiveDeclaredType(symbolFlowInfo);
                 Debug.assert(type);
-                if (inferStatus.currentReplayableItem) {
+                if (floughStatus.currentReplayableItem) {
                     // If the value of the symbol has definitely NOT changed since the defintion of the replayable.
                     // then we can continue on below to find the value via constraints.  Otherwise, we must use the value of the symbol
                     // at the time of the definition of the replayable, as recorded in the replayables byNode map.
                     // Currently `isconst` is equivalent to "definitely NOT changed".
                     if (!isconst) {
-                        const tstype = inferStatus.currentReplayableItem.nodeToTypeMap.get(expr)!;
+                        const tstype = floughStatus.currentReplayableItem.nodeToTypeMap.get(expr)!;
                         Debug.assert(type);
                         type = floughTypeModule.createRefTypesType(tstype);
                         return {
@@ -1135,8 +1135,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 });
                 IDebug.ilog(()=>`floughIdentifier[out] floughReturn.typeof: ${ret.typeof}`, loggerLevel);
 
-                IDebug.ilog(()=>`floughIdentifier[out] groupNodeToTypeMap.size: ${inferStatus.groupNodeToTypeMap.size}`, loggerLevel);
-                inferStatus.groupNodeToTypeMap.forEach((t, n) => {
+                IDebug.ilog(()=>`floughIdentifier[out] groupNodeToTypeMap.size: ${floughStatus.groupNodeToTypeMap.size}`, loggerLevel);
+                floughStatus.groupNodeToTypeMap.forEach((t, n) => {
                     for (let ntmp = n; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                         if (ntmp === expr) {
                             IDebug.ilog(()=>`floughIdentifier[out] groupNodeToTypeMap: node: ${IDebug.dbgs.nodeToString(n)}, type: ${typeToString(t)}`, loggerLevel);
@@ -1149,18 +1149,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             return ret;
         } // endof mrNarrowIdentifier()
 
-        function floughAux(/* { sci, expr, inferStatus, qdotfallout: qdotfallout }: floughArgs */): FloughReturn {
+        function floughAux(): FloughReturn {
             assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-            // if (IDebug.isActive(loggerLevel)) {
-            //     IDebug.ilogGroup(`flough[in] expr:${IDebug.dbgs.nodeToString(expr)}},`
-            //     +`crit:{kind:${crit.kind},alsoFailing:${crit.alsoFailing},negate:${crit.negate}, ${(crit as any).target ? IDebug.dbgs.typeToString((crit as any).target as Type): ""}},`
-            //     +`inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayable:${inferStatus.currentReplayableItem?`{symbol:${IDebug.dbgs.symbolToStringSimple(inferStatus.currentReplayableItem.symbol)}}`:undefined}}, `
-            //     +`qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}`);
-            //     IDebug.ilog(()=>`flough[in] refTypesSymtab:`);
-            //     dbgRefTypesSymtabToStrings(sci.symtab).forEach(str=> IDebug.ilog(()=>`  ${str}`));
-            //     IDebug.ilog(()=>`flough[in] constraintItemIn:`);
-            //     dbgConstraintItem(sci.constraintItem).forEach(str=> IDebug.ilog(()=>`  ${str}`));
-            // }
             const qdotfallout1 = qdotfallout ?? ([] as RefTypesTableReturn[]);
             const innerret = floughInner(qdotfallout1);
             let finalArrRefTypesTableReturn = innerret.unmerged;
@@ -1197,7 +1187,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         function floughInner(qdotfalloutInner: RefTypesTableReturn[]): FloughInnerReturn {
             assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
             if (IDebug.isActive(loggerLevel)) {
-                IDebug.ilogGroup(()=>`floughInner[in] expr:${IDebug.dbgs.nodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(inferStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
+                IDebug.ilogGroup(()=>`floughInner[in] expr:${IDebug.dbgs.nodeToString(expr)}, inferStatus:{inCondition:${floughStatus.inCondition}, currentReplayableItem:${floughStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(floughStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
                 IDebug.ilog(()=>`floughInner[in] refTypesSymtab:`, loggerLevel);
                 dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`floughInner[in] refTypesSymtab:  ${str}`, loggerLevel));
                 IDebug.ilog(()=>`floughInner[in] constraintItemIn:`, loggerLevel);
@@ -1210,7 +1200,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         IDebug.ilog(()=>`floughInner[out]:  innerret.unmerged[${i}]: ${str}`, loggerLevel);
                     });
                 });
-                inferStatus.groupNodeToTypeMap.forEach((type, node) => {
+                floughStatus.groupNodeToTypeMap.forEach((type, node) => {
                     for (let ntmp = node; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                         if (ntmp === expr) {
                             IDebug.ilog(()=>`floughInner[out]:  innerret.byNode: { node: ${IDebug.dbgs.nodeToString(node)}, type: ${typeToString(type)}`, loggerLevel);
@@ -1218,7 +1208,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         }
                     }
                 });
-                IDebug.ilog(()=>`floughInner[out] expr:${IDebug.dbgs.nodeToString(expr)}, inferStatus:{inCondition:${inferStatus.inCondition}, currentReplayableItem:${inferStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(inferStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
+                IDebug.ilog(()=>`floughInner[out] expr:${IDebug.dbgs.nodeToString(expr)}, inferStatus:{inCondition:${floughStatus.inCondition}, currentReplayableItem:${floughStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(floughStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
                 IDebug.ilogGroupEnd(()=>`floughInner[out] innret.typeof: ${innerret.typeof ? "present" : "<undef>"}`, loggerLevel);
             }
             return innerret;
@@ -1252,7 +1242,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         const sym1 = checker.getPropertyOfType(type0, expr.name.escapedText as string);
                         // const type1enum = checker.getTypeOfSymbol(sym1);
                         const type1lit = enumMemberSymbolToLiteralTsType(sym1!);
-                        orTsTypesIntoNodeToTypeMap([type0], expr.expression, inferStatus.groupNodeToTypeMap);
+                        orTsTypesIntoNodeToTypeMap([type0], expr.expression, floughStatus.groupNodeToTypeMap);
                         if (IDebug.isActive(loggerLevel)) {
                             const sym0f = Debug.formatSymbolFlags(sym0.flags);
                             const sym1f = Debug.formatSymbolFlags(sym1!.flags);
@@ -1325,7 +1315,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
                     // fall through
                     case SyntaxKind.ElementAccessExpression:
-                        if (crit.kind === InferCritKind.none) {
+                        if (crit.kind === FloughCritKind.none) {
                             return floughAccessExpressionCritNone();
                         }
                         return floughAccessExpressionCritNone();
@@ -1424,7 +1414,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                      */
                     // const innerret = floughInner({ sci, expr: expr.expression,
                     //     qdotfallout, inferStatus });
-                    const innerret = flough({ sci, expr: expr.expression, crit: { kind: InferCritKind.notnullundef }, qdotfallout: qdotfalloutInner, inferStatus });
+                    const innerret = flough({ sci, expr: expr.expression, crit: { kind: FloughCritKind.notnullundef }, qdotfallout: qdotfalloutInner, floughStatus: floughStatus });
 
                     /**
                      * Apply notnullundef criteria without squashing the result into passing/failing
@@ -1434,7 +1424,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         const arrOut: RefTypesTableReturn[] = [];
                         arrRttr.forEach(rttr => {
                             const type = floughTypeModule.createRefTypesType();
-                            applyCritToRefTypesType(rttr.type, { kind: InferCritKind.notnullundef }, (tstype, bpass, _bfail) => {
+                            applyCritToRefTypesType(rttr.type, { kind: FloughCritKind.notnullundef }, (tstype, bpass, _bfail) => {
                                 if (bpass) floughTypeModule.addTypeToRefTypesType({ source: tstype, target: type });
                             });
                             if (floughTypeModule.isNeverType(type)) {
@@ -1459,21 +1449,21 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         flough({
                             sci,
                             expr: condition,
-                            crit: { kind: InferCritKind.truthy, alsoFailing: true },
-                            inferStatus: { ...inferStatus, inCondition: true },
+                            crit: { kind: FloughCritKind.truthy, alsoFailing: true },
+                            floughStatus: { ...floughStatus, inCondition: true },
                         }),
-                        { kind: InferCritKind.truthy, alsoFailing: true },
-                        inferStatus.groupNodeToTypeMap,
+                        { kind: FloughCritKind.truthy, alsoFailing: true },
+                        floughStatus.groupNodeToTypeMap,
                     );
 
                     if (IDebug.isActive(loggerLevel)) IDebug.ilog(()=>`floughInner[dbg] case SyntaxKind.ConditionalExpression ; whenTrue`, loggerLevel);
                     const trueRes = flough({
                         sci: rcond.passing.sci,
                         expr: whenTrue,
-                        crit: { kind: InferCritKind.none },
-                        inferStatus, // : { ...inferStatus, inCondition: true }
+                        crit: { kind: FloughCritKind.none },
+                        floughStatus: floughStatus, // : { ...inferStatus, inCondition: true }
                     });
-                    const retTrue = applyCritNoneUnion(trueRes, inferStatus.groupNodeToTypeMap);
+                    const retTrue = applyCritNoneUnion(trueRes, floughStatus.groupNodeToTypeMap);
                     // const retTrue = applyCritNoneUnion(flough({
                     //     sci: rcond.passing.sci,
                     //     expr: whenTrue,
@@ -1486,10 +1476,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         flough({
                             sci: rcond.failing!.sci,
                             expr: whenFalse,
-                            crit: { kind: InferCritKind.none },
-                            inferStatus, // : { ...inferStatus, inCondition: true }
+                            crit: { kind: FloughCritKind.none },
+                            floughStatus: floughStatus, // : { ...inferStatus, inCondition: true }
                         }),
-                        inferStatus.groupNodeToTypeMap,
+                        floughStatus.groupNodeToTypeMap,
                     );
 
                     const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
@@ -1507,12 +1497,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             flough({
                                 sci,
                                 expr: (expr as PrefixUnaryExpression).operand,
-                                crit: { negate: true, kind: InferCritKind.truthy, alsoFailing: true },
+                                crit: { negate: true, kind: FloughCritKind.truthy, alsoFailing: true },
                                 qdotfallout: undefined,
-                                inferStatus: { ...inferStatus, inCondition: true },
+                                floughStatus: { ...floughStatus, inCondition: true },
                             }),
-                            { negate: true, kind: InferCritKind.truthy, alsoFailing: true },
-                            inferStatus.groupNodeToTypeMap,
+                            { negate: true, kind: FloughCritKind.truthy, alsoFailing: true },
+                            floughStatus.groupNodeToTypeMap,
                         );
                         /**
                          * The crit was already set with negate: true to reverse the passing and failing.
@@ -1549,11 +1539,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         flough({
                             sci,
                             expr: initializer,
-                            crit: { kind: InferCritKind.none },
+                            crit: { kind: FloughCritKind.none },
                             qdotfallout: undefined,
-                            inferStatus: { ...inferStatus, inCondition: false },
+                            floughStatus: { ...floughStatus, inCondition: false },
                         }),
-                        inferStatus.groupNodeToTypeMap,
+                        floughStatus.groupNodeToTypeMap,
                     );
 
                     // NOTE: in case of inferStatus.withinLoop, no action should be required here because the effect is already incorporated on the rhs
@@ -1642,10 +1632,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 expr: expr.initializer,
                                 symbol,
                                 isconst: isconstVar,
-                                nodeToTypeMap: new Map<Node, Type>(inferStatus.groupNodeToTypeMap),
+                                nodeToTypeMap: new Map<Node, Type>(floughStatus.groupNodeToTypeMap),
                             };
                             symbolFlowInfo.replayableItem = replayableItem;
-                            inferStatus.replayables.set(symbol, replayableItem);
+                            floughStatus.replayables.set(symbol, replayableItem);
                             if (IDebug.isActive(loggerLevel)) {
                                 const shdr = `floughInner[dbg] case SyntaxKind.VariableDeclaration +replayable `;
                                 IDebug.ilog(()=>shdr, loggerLevel);
@@ -1729,11 +1719,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             flough({
                                 sci: sci1,
                                 expr: (e.kind === SyntaxKind.SpreadElement) ? (e as SpreadElement).expression : e,
-                                crit: { kind: InferCritKind.none },
+                                crit: { kind: FloughCritKind.none },
                                 qdotfallout: undefined,
-                                inferStatus,
+                                floughStatus: floughStatus,
                             }),
-                            inferStatus.groupNodeToTypeMap,
+                            floughStatus.groupNodeToTypeMap,
                         ));
                         if (refactorConnectedGroupsGraphsNoShallowRecursion) {
                             const tstype = checker.getUnionType(floughTypeModule.getTsTypesFromFloughType(type));
@@ -1769,7 +1759,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         arrayType = checker.createTupleType(elemTsTypes, elemFlags);
                     }
                     else {
-                        arrayType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
+                        arrayType = floughStatus.getTypeOfExpressionShallowRecursion(sci, expr);
                     }
                     if (IDebug.isActive(loggerLevel)) IDebug.ilog(()=>`floughInner[dbg]: case SyntaxKind.ArrayLiteralExpression: arrayType: ${IDebug.dbgs.typeToString(arrayType)}`, loggerLevel);
                     return {
@@ -1788,15 +1778,15 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             flough({
                                 sci: sci1,
                                 expr: e,
-                                crit: { kind: InferCritKind.none },
+                                crit: { kind: FloughCritKind.none },
                                 qdotfallout: undefined,
-                                inferStatus: { ...inferStatus, isAsConstObject: undefined },
+                                floughStatus: { ...floughStatus, isAsConstObject: undefined },
                             }),
-                            inferStatus.groupNodeToTypeMap,
+                            floughStatus.groupNodeToTypeMap,
                         ));
                     }
                     let newObjectTsType: Type;
-                    if (inferStatus.isAsConstObject) {
+                    if (floughStatus.isAsConstObject) {
                         if (extraAsserts) {
                             const typeNode = (expr.parent as AsExpression).type;
                             Debug.assert(
@@ -1805,14 +1795,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                     ((typeNode as TypeReferenceNode).typeName as Identifier).escapedText === "const",
                             );
                         }
-                        newObjectTsType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr.parent as Expression);
+                        newObjectTsType = floughStatus.getTypeOfExpressionShallowRecursion(sci, expr.parent as Expression);
                     }
                     else {
-                        newObjectTsType = inferStatus.getTypeOfExpressionShallowRecursion(sci, expr);
+                        newObjectTsType = floughStatus.getTypeOfExpressionShallowRecursion(sci, expr);
                     }
                     let type: FloughType;
-                    if (inferStatus.currentReplayableItem) {
-                        const originalObjectTsType = inferStatus.currentReplayableItem.nodeToTypeMap.get(expr);
+                    if (floughStatus.currentReplayableItem) {
+                        const originalObjectTsType = floughStatus.currentReplayableItem.nodeToTypeMap.get(expr);
                         Debug.assert(originalObjectTsType);
                         assertCastType<ObjectType>(originalObjectTsType);
                         assertCastType<ObjectType>(newObjectTsType);
@@ -1851,11 +1841,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             flough({
                                 sci,
                                 expr: initializer,
-                                crit: { kind: InferCritKind.none },
+                                crit: { kind: FloughCritKind.none },
                                 qdotfallout: undefined,
-                                inferStatus,
+                                floughStatus: floughStatus,
                             }),
-                            inferStatus.groupNodeToTypeMap,
+                            floughStatus.groupNodeToTypeMap,
                         );
 
                         /**
@@ -1904,11 +1894,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         flough({
                             sci,
                             expr: lhsExpression,
-                            crit: { kind: InferCritKind.none },
+                            crit: { kind: FloughCritKind.none },
                             qdotfallout: undefined,
-                            inferStatus: { ...inferStatus, isAsConstObject },
+                            floughStatus: { ...floughStatus, isAsConstObject },
                         }),
-                        inferStatus.groupNodeToTypeMap,
+                        floughStatus.groupNodeToTypeMap,
                     );
 
                     if (isAsConstObject) {
@@ -2163,9 +2153,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
                     Debug.assert(qdotfalloutInner);
                     // const { name, expression } = expr as CallExpression;
-                    const leftMntr = flough({ expr: (expr as CallExpression).expression, sci, crit: { kind: InferCritKind.none }, qdotfallout: undefined, inferStatus });
+                    const leftMntr = flough({ expr: (expr as CallExpression).expression, sci, crit: { kind: FloughCritKind.none }, qdotfallout: undefined, floughStatus: floughStatus });
                     const leftUnmerged = leftMntr.unmerged.map(rttr => {
-                        return applyCritNoneToOne(rttr, (expr as CallExpression).expression, inferStatus.groupNodeToTypeMap);
+                        return applyCritNoneToOne(rttr, (expr as CallExpression).expression, floughStatus.groupNodeToTypeMap);
                     });
                     // const setOfTransientCallArgumentSymbol = new Set<TransientCallArgumentSymbol>();
 
@@ -2261,7 +2251,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         const { sc: scResolvedArgs, resolvedCallArguments } = floughByCallExpressionProcessCallArguments({
                             callExpr: expr as Readonly<CallExpression>,
                             sc: scIsolated,
-                            inferStatus,
+                            inferStatus: floughStatus,
                             /*setOfTransientCallArgumentSymbol*/
                         });
 
@@ -2417,11 +2407,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (leftExpr.kind === SyntaxKind.Identifier) {
                         const rhs = flough({
                             sci,
-                            crit: { kind: InferCritKind.none },
+                            crit: { kind: FloughCritKind.none },
                             expr: rightExpr,
-                            inferStatus,
+                            floughStatus: floughStatus,
                         });
-                        const passing = applyCritNoneUnion(rhs, inferStatus.groupNodeToTypeMap);
+                        const passing = applyCritNoneUnion(rhs, floughStatus.groupNodeToTypeMap);
 
                         assertCastType<Identifier>(leftExpr);
                         const symbol = getResolvedSymbol(leftExpr);
@@ -2473,8 +2463,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
                     else if (leftExpr.kind === SyntaxKind.PropertyAccessExpression || leftExpr.kind === SyntaxKind.ElementAccessExpression) {
                         const unmerged: RefTypesTableReturn[] = [];
-                        const lhs = flough({ expr: leftExpr, sci, crit: { kind: InferCritKind.none }, inferStatus });
-                        const lhsUnion = applyCritNoneUnion(lhs, inferStatus.groupNodeToTypeMap);
+                        const lhs = flough({ expr: leftExpr, sci, crit: { kind: FloughCritKind.none }, floughStatus: floughStatus });
+                        const lhsUnion = applyCritNoneUnion(lhs, floughStatus.groupNodeToTypeMap);
                         // if (extraAsserts){
                         //     Debug.assert(lhs.unmerged.slice(1).every(rttr=>rttr.sci===lhs.unmerged[0].sci));
                         //     Debug.assert(lhs.unmerged.slice(1).every(
@@ -2484,14 +2474,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         const assignCountBeforeRhs = lhsUnion.sci.symtab?.getAssignCount() ?? -1;
                         const rhs = flough({
                             sci: leftSci,
-                            crit: { kind: InferCritKind.none },
+                            crit: { kind: FloughCritKind.none },
                             expr: rightExpr,
-                            inferStatus,
+                            floughStatus: floughStatus,
                         });
 
                         lhs.unmerged.forEach((rttrLeft0, _ileft) => {
                             rhs.unmerged.forEach((rttrRight0, _iright) => {
-                                const rightRttr = applyCritNoneToOne(rttrRight0, rightExpr, inferStatus.groupNodeToTypeMap);
+                                const rightRttr = applyCritNoneToOne(rttrRight0, rightExpr, floughStatus.groupNodeToTypeMap);
                                 const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
                                 const leftRightIdependent = assignCountBeforeRhs === assignCountAfterRhs;
                                 let sciFinal = leftRightIdependent ? rttrLeft0.sci : rttrRight0.sci;
@@ -2530,11 +2520,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (IDebug.isActive(loggerLevel)) IDebug.ilog(()=>`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`, loggerLevel);
                     const leftRet0 = flough({
                         sci,
-                        crit: { kind: InferCritKind.truthy, alsoFailing: true },
+                        crit: { kind: FloughCritKind.truthy, alsoFailing: true },
                         expr: leftExpr,
-                        inferStatus,
+                        floughStatus: floughStatus,
                     });
-                    const leftRet = applyCrit(leftRet0, { kind: InferCritKind.truthy, alsoFailing: true }, inferStatus.groupNodeToTypeMap);
+                    const leftRet = applyCrit(leftRet0, { kind: FloughCritKind.truthy, alsoFailing: true }, floughStatus.groupNodeToTypeMap);
 
                     const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
 
@@ -2544,18 +2534,18 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (IDebug.isActive(loggerLevel)) IDebug.ilog(()=>`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`, loggerLevel);
                         const leftTrueRightRet0 = flough({
                             sci: leftRet.passing.sci, // leftRet.inferRefRtnType.passing.sci,
-                            crit: { kind: InferCritKind.truthy, alsoFailing: true },
+                            crit: { kind: FloughCritKind.truthy, alsoFailing: true },
                             expr: rightExpr,
-                            inferStatus,
+                            floughStatus: floughStatus,
                         });
-                        if (!inferStatus.inCondition) {
-                            const leftTrueRightRet = applyCrit(leftTrueRightRet0, { kind: InferCritKind.truthy, alsoFailing: true }, inferStatus.groupNodeToTypeMap);
+                        if (!floughStatus.inCondition) {
+                            const leftTrueRightRet = applyCrit(leftTrueRightRet0, { kind: FloughCritKind.truthy, alsoFailing: true }, floughStatus.groupNodeToTypeMap);
                             arrRefTypesTableReturn.push(leftTrueRightRet.passing);
                             arrRefTypesTableReturn.push(leftTrueRightRet.failing!);
                         }
                         else {
                             leftTrueRightRet0.unmerged.forEach(rttr => {
-                                const { passing, failing } = applyCrit1ToOne(rttr, { kind: InferCritKind.truthy, alsoFailing: true }, rightExpr, inferStatus.groupNodeToTypeMap);
+                                const { passing, failing } = applyCrit1ToOne(rttr, { kind: FloughCritKind.truthy, alsoFailing: true }, rightExpr, floughStatus.groupNodeToTypeMap);
                                 arrRefTypesTableReturn.push(passing);
                                 arrRefTypesTableReturn.push(failing!);
                             });
@@ -2569,19 +2559,19 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         const leftFalseRightRet0 = flough({
                             sci: leftRet.failing!.sci,
                             // refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
-                            crit: { kind: InferCritKind.truthy, alsoFailing: true },
+                            crit: { kind: FloughCritKind.truthy, alsoFailing: true },
                             expr: rightExpr,
-                            inferStatus,
+                            floughStatus: floughStatus,
                             // constraintItem: leftRet.inferRefRtnType.failing!.constraintItem
                         });
-                        if (!inferStatus.inCondition) {
-                            const leftFalseRightRet = applyCrit(leftFalseRightRet0, { kind: InferCritKind.truthy, alsoFailing: true }, inferStatus.groupNodeToTypeMap);
+                        if (!floughStatus.inCondition) {
+                            const leftFalseRightRet = applyCrit(leftFalseRightRet0, { kind: FloughCritKind.truthy, alsoFailing: true }, floughStatus.groupNodeToTypeMap);
                             arrRefTypesTableReturn.push(leftFalseRightRet.passing);
                             arrRefTypesTableReturn.push(leftFalseRightRet.failing!);
                         }
                         else {
                             leftFalseRightRet0.unmerged.forEach(rttr => {
-                                const { passing, failing } = applyCrit1ToOne(rttr, { kind: InferCritKind.truthy, alsoFailing: true }, rightExpr, inferStatus.groupNodeToTypeMap);
+                                const { passing, failing } = applyCrit1ToOne(rttr, { kind: FloughCritKind.truthy, alsoFailing: true }, rightExpr, floughStatus.groupNodeToTypeMap);
                                 arrRefTypesTableReturn.push(passing);
                                 arrRefTypesTableReturn.push(failing!);
                             });
@@ -2594,13 +2584,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                 function floughByTypeofExpression(): FloughInnerReturn {
                     assertCastType<TypeOfExpression>(expr);
-                    const mntr = flough({ sci, expr: expr.expression, qdotfallout: undefined, inferStatus, crit: { kind: InferCritKind.none } });
+                    const mntr = flough({ sci, expr: expr.expression, qdotfallout: undefined, floughStatus: floughStatus, crit: { kind: FloughCritKind.none } });
 
-                    if (true || inferStatus.inCondition) {
+                    if (true || floughStatus.inCondition) {
                         let symbolAttribsOut: SymbolWithAttributes | undefined;
                         const typeofArgSymbol = getSymbolIfUnique(mntr.unmerged)?.symbol; // TODO: remove this, it appears to be never set
-                        const rhs = applyCritNoneUnion(mntr, inferStatus.groupNodeToTypeMap);
-                        if (!inferStatus.inCondition || !typeofArgSymbol) {
+                        const rhs = applyCritNoneUnion(mntr, floughStatus.groupNodeToTypeMap);
+                        if (!floughStatus.inCondition || !typeofArgSymbol) {
                             const setOfTypeOfStrings = new Set<string>();
                             floughTypeModule.forEachRefTypesTypeType(rhs.type, t => {
                                 typeToTypeofStrings(t).forEach(str => {
@@ -2682,9 +2672,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                     const leftMntr = flough({
                         expr: leftExpr,
-                        crit: { kind: InferCritKind.none },
+                        crit: { kind: FloughCritKind.none },
                         qdotfallout: undefined,
-                        inferStatus, /*:{ ...inferStatus, inCondition:false }*/
+                        floughStatus: floughStatus, /*:{ ...inferStatus, inCondition:false }*/
                         sci,
                     });
 
@@ -2700,16 +2690,16 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     let rightMntrSeparable: FloughReturn | undefined;
                     let useLeftSci = false;
                     if (assumeSeparable) {
-                        leftRttrUnion = applyCritNoneUnion(leftMntr, inferStatus.groupNodeToTypeMap);
+                        leftRttrUnion = applyCritNoneUnion(leftMntr, floughStatus.groupNodeToTypeMap);
                         rightMntrSeparable = flough({
                             expr: rightExpr,
-                            crit: { kind: InferCritKind.none },
+                            crit: { kind: FloughCritKind.none },
                             qdotfallout: undefined,
-                            inferStatus, /*:{ ...inferStatus, inCondition:false }*/
+                            floughStatus: floughStatus, /*:{ ...inferStatus, inCondition:false }*/
                             sci: leftRttrUnion.sci,
                         });
                         if (leftRttrUnion.sci !== sci) {
-                            const rightMntrSeparableUnion = applyCritNoneUnion(rightMntrSeparable, inferStatus.groupNodeToTypeMap);
+                            const rightMntrSeparableUnion = applyCritNoneUnion(rightMntrSeparable, floughStatus.groupNodeToTypeMap);
                             if (rightMntrSeparableUnion.sci === leftRttrUnion.sci) {
                                 useLeftSci = true;
                             }
@@ -2723,7 +2713,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                     const arrRefTypesTableReturn: RefTypesTableReturn[] = [];
                     leftMntr.unmerged.forEach((leftRttr0, _leftidx) => {
-                        const leftRttr = applyCritNoneToOne(leftRttr0, leftExpr, inferStatus.groupNodeToTypeMap);
+                        const leftRttr = applyCritNoneToOne(leftRttr0, leftExpr, floughStatus.groupNodeToTypeMap);
                         if (IDebug.isActive(loggerLevel)) {
                             floughTypeModule.dbgRefTypesTypeToStrings(leftRttr.type).forEach(str => {
                                 IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`, loggerLevel);
@@ -2734,9 +2724,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (!assumeSeparable) {
                             rightMntrNotSeparable = flough({
                                 expr: rightExpr,
-                                crit: { kind: InferCritKind.none },
+                                crit: { kind: FloughCritKind.none },
                                 qdotfallout: undefined,
-                                inferStatus, /*:{ ...inferStatus, inCondition:false }*/
+                                floughStatus: floughStatus, /*:{ ...inferStatus, inCondition:false }*/
                                 sci: leftRttr.sci,
                             });
                             rightMntr = rightMntrNotSeparable;
@@ -2747,7 +2737,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                         Debug.assert(rightMntr);
                         rightMntr.unmerged.forEach((rightRttr0, _rightidx) => {
-                            const rightRttr = applyCritNoneToOne(rightRttr0, rightExpr, inferStatus.groupNodeToTypeMap);
+                            const rightRttr = applyCritNoneToOne(rightRttr0, rightExpr, floughStatus.groupNodeToTypeMap);
                             if (IDebug.isActive(loggerLevel)) {
                                 floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str => {
                                     IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`, loggerLevel);
@@ -2925,9 +2915,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                     const leftMntr = flough({
                         expr: expr.expression,
-                        crit: { kind: InferCritKind.none },
+                        crit: { kind: FloughCritKind.none },
                         qdotfallout: undefined,
-                        inferStatus,
+                        floughStatus: floughStatus,
                         sci,
                         accessDepth: accessDepth + 1,
                         refAccessArgs,
@@ -2942,12 +2932,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (expr.kind === SyntaxKind.ElementAccessExpression) {
                         const argMntr = flough({
                             expr: expr.argumentExpression,
-                            crit: { kind: InferCritKind.none },
+                            crit: { kind: FloughCritKind.none },
                             qdotfallout: undefined,
-                            inferStatus,
+                            floughStatus: floughStatus,
                             sci: leftSci,
                         });
-                        const argRttrUnion = applyCritNoneUnion(argMntr, inferStatus.groupNodeToTypeMap);
+                        const argRttrUnion = applyCritNoneUnion(argMntr, floughStatus.groupNodeToTypeMap);
                         sciFinal = argRttrUnion.sci;
                         refAccessArgs[0].keyTypes.push(argRttrUnion.type);
                         refAccessArgs[0].expressions.push(expr);
@@ -3026,9 +3016,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         }
                         for (let level = 0, nlevel = raccess.collated.length; level !== nlevel; level++) {
                             const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess, level);
-                            orIntoNodeToTypeMap(newRootType, refAccessArgs[0].expressions[level].expression, inferStatus.groupNodeToTypeMap);
+                            orIntoNodeToTypeMap(newRootType, refAccessArgs[0].expressions[level].expression, floughStatus.groupNodeToTypeMap);
                         }
-                        orIntoNodeToTypeMap(finalType, expr, inferStatus.groupNodeToTypeMap);
+                        orIntoNodeToTypeMap(finalType, expr, floughStatus.groupNodeToTypeMap);
                     }
                     // if (accessDepth===0)
                     else {
@@ -3046,21 +3036,21 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     const { left: keyExpr, right: objExpr } = expr as BinaryExpression;
                     const keyMntr = flough({
                         expr: keyExpr,
-                        crit: { kind: InferCritKind.none },
+                        crit: { kind: FloughCritKind.none },
                         qdotfallout: undefined,
-                        inferStatus,
+                        floughStatus: floughStatus,
                         sci,
                     });
-                    const keyRttrUnion = applyCritNoneUnion(keyMntr, inferStatus.groupNodeToTypeMap);
+                    const keyRttrUnion = applyCritNoneUnion(keyMntr, floughStatus.groupNodeToTypeMap);
                     const { remaining: keyNobjType } = floughTypeModule.splitLogicalObject(keyRttrUnion.type);
 
                     const keySymbol = (keyMntr.unmerged.length === 1 && keyMntr.unmerged[0].symbol) ? keyMntr.unmerged[0].symbol : undefined;
 
                     const objMntr = flough({
                         expr: objExpr,
-                        crit: { kind: InferCritKind.none },
+                        crit: { kind: FloughCritKind.none },
                         qdotfallout: undefined,
-                        inferStatus,
+                        floughStatus: floughStatus,
                         sci: keyRttrUnion.sci,
                     });
                     // If there is no key, or the key is unknown, terminate this branch; it is an error anyway.
@@ -3070,7 +3060,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                     const unmergedOut: RefTypesTableReturn[] = [];
                     objMntr.unmerged.forEach((rttr0, _rttridx) => {
-                        const rttr = applyCritNoneToOne(rttr0, objExpr, inferStatus.groupNodeToTypeMap);
+                        const rttr = applyCritNoneToOne(rttr0, objExpr, floughStatus.groupNodeToTypeMap);
                         const { logicalObject, remaining: _remaining } = floughTypeModule.splitLogicalObject(rttr.type);
                         if (!logicalObject) return;
                         if (isAnyKeyType || usableKeys.genericString) {
