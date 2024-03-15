@@ -2158,7 +2158,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 // @ ts-expect-error
                 function floughByCallExpressionV3(): FloughInnerReturn {
                     assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
-                    if (IDebug.isActive()) {
+                    if (IDebug.isActive(loggerLevel)) {
                         IDebug.ilogGroup(()=>`floughByCallExpression[in]`, loggerLevel);
                     }
                     Debug.assert(qdotfalloutInner);
@@ -2333,7 +2333,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                         }
                                         if (extraAsserts) Debug.assert(!floughTypeModule.isNeverType(assignableType));
                                         if (IDebug.isActive()) {
-                                            IDebug.ilog(()=>`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (1) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType)}`, loggerLevel);
+                                            IDebug.ilog(()=>`arg matching: rttridx:${rttridx}, sigidx:${sigidx}, cargidx:${cargidx}, (1) assignableType: ${floughTypeModule.dbgRefTypesTypeToStrings(assignableType!)}`, loggerLevel);
                                         }
                                         oneMapping.push(assignableType);
                                         return true;
@@ -2348,7 +2348,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                     if (IDebug.isActive()) {
                                         let str = "";
                                         oneMapping.forEach((t, _i) => str += `${dbgRefTypesTypeToString(t)}, `);
-                                        IDebug.ilog(()=>`floughByCallExpression[one sig done] rttridx:${rttridx}, sigidx:${sigidx} pass1:${pass1}, oneMapping:[${str}]`);
+                                        IDebug.ilog(()=>`floughByCallExpression[one sig done] rttridx:${rttridx}, sigidx:${sigidx} pass1:${pass1}, oneMapping:[${str}]`, loggerLevel);
                                     }
                                     if (pass1) {
                                         allMappings.push(oneMapping);
@@ -2361,14 +2361,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                             };
                                             if (IDebug.isActive()) {
                                                 dbgRefTypesTableToStrings(rttr).forEach(s => {
-                                                    IDebug.ilog(()=>`floughByCallExpression[adding return rttr out] rttridx(in):${rttridx}/${leftUnmerged.length}, tstypeidx:${tstypes.length}, sigidx:${sigidx}/${arrsig.length}, rttr: ${s}`);
+                                                    IDebug.ilog(()=>`floughByCallExpression[adding return rttr out] rttridx(in):${rttridx}/${leftUnmerged.length}, tstypeidx:${tstypes.length}, sigidx:${sigidx}/${arrsig.length}, rttr: ${s}`, loggerLevel);
                                                 });
                                             }
                                             arrRefTypesTableReturn.push(rttr);
                                         }
                                         else {
                                             if (IDebug.isActive()) {
-                                                IDebug.ilog(()=>`floughByCallExpression[skipping because never function return type] rttridx(in):${rttridx}/${leftUnmerged.length}, tstypeidx:${tstypes.length}, sigidx:${sigidx}/${arrsig.length}`);
+                                                IDebug.ilog(()=>`floughByCallExpression[skipping because never function return type] rttridx(in):${rttridx}/${leftUnmerged.length}, tstypeidx:${tstypes.length}, sigidx:${sigidx}/${arrsig.length}`, loggerLevel);
                                             }
                                         }
                                     }
@@ -2389,18 +2389,18 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 });
                             }
                             if (IDebug.isActive()) {
-                                IDebug.ilog(()=>`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}`);
+                                IDebug.ilog(()=>`floughByCallExpression sigGroupFailedCount:${sigGroupFailedCount}`, loggerLevel);
                             }
                             if (IDebug.isActive()) {
-                                IDebug.ilog(()=>`floughByCallExpression[dbg rttridx:${rttridx}/${leftUnmerged.length}, tstypeidx: ${tstypeidx}/${tstypes.length}, finished:${finished}`);
+                                IDebug.ilog(()=>`floughByCallExpression[dbg rttridx:${rttridx}/${leftUnmerged.length}, tstypeidx: ${tstypeidx}/${tstypes.length}, finished:${finished}`, loggerLevel);
                             }
                         }); // tstypes.forEach
                     }); // pre.unmergedPassing.forEach
                     // Note: transient symbols no longer being produced.
                     // setOfTransientCallArgumentSymbol.forEach(symbol=>_mrState.symbolFlowInfoMap.delete(symbol));
                     const floughInnerReturn: FloughInnerReturn = { unmerged: arrRefTypesTableReturn };
-                    if (IDebug.isActive()) {
-                        IDebug.ilogGroupEnd();
+                    if (IDebug.isActive(loggerLevel)) {
+                        IDebug.ilogGroupEnd(()=>`floughByCallExpression[out]`, loggerLevel);
                     }
                     return floughInnerReturn;
                 } // floughByCallExpressionV3
@@ -2410,8 +2410,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                  */
                 function floughByBinaryExpresionAssign(): FloughInnerReturn {
                     assertCastType<BinaryExpression>(expr);
-                    if (IDebug.isActive()) {
-                        IDebug.ilogGroup(`floughByBinaryExpresionAssign[in] ${Debug.formatSyntaxKind(expr.left.kind)}`);
+                    if (IDebug.isActive(loggerLevel)) {
+                        IDebug.ilogGroup(()=>`floughByBinaryExpresionAssign[in] ${Debug.formatSyntaxKind(expr.left.kind)}`, loggerLevel);
                     }
                     const { left: leftExpr, right: rightExpr } = expr;
                     if (leftExpr.kind === SyntaxKind.Identifier) {
@@ -2459,8 +2459,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             debugDevExpectEffectiveDeclaredType(leftExpr.parent, symbolFlowInfo);
                         }
                         // const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
-                        if (IDebug.isActive()) {
-                            IDebug.ilogGroupEnd();
+                        if (IDebug.isActive(loggerLevel)) {
+                            IDebug.ilogGroupEnd(()=>`floughByBinaryExpresionAssign`, loggerLevel);
                         }
                         return {
                             unmerged: [{
@@ -2516,22 +2516,18 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 });
                             }); // just to make sure that rhs is evaluated
                         });
-                        if (IDebug.isActive()) {
-                            IDebug.ilog(()=>`floughByBinaryExpresionAssign[out] ${Debug.formatSyntaxKind(expr.left.kind)}`);
-                            IDebug.ilogGroupEnd();
+                        if (IDebug.isActive(loggerLevel)) {
+                            IDebug.ilogGroupEnd(()=>`floughByBinaryExpresionAssign[out] ${Debug.formatSyntaxKind(expr.left.kind)}`, loggerLevel);
                         }
                         return { unmerged };
                     }
                     else Debug.fail("not yet implemented");
-                    if (IDebug.isActive()) {
-                        IDebug.ilogGroupEnd();
-                    }
                 }
 
                 function floughByBinaryExpressionAmpersandAmpersandToken(): FloughInnerReturn {
-                    if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.(AmpersandAmpersand|BarBar)Token START`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.(AmpersandAmpersand|BarBar)Token START`, loggerLevel);
                     const { left: leftExpr, operatorToken, right: rightExpr } = expr as BinaryExpression;
-                    if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`);
+                    if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.(AmpersandAmpersand|BarBar)Token left`, loggerLevel);
                     const leftRet0 = flough({
                         sci,
                         crit: { kind: InferCritKind.truthy, alsoFailing: true },
@@ -2545,7 +2541,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (operatorToken.kind === SyntaxKind.AmpersandAmpersandToken) {
                         arrRefTypesTableReturn.push(leftRet.failing!);
 
-                        if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`);
+                        if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.AmpersandAmpersandToken right (for left passing)`, loggerLevel);
                         const leftTrueRightRet0 = flough({
                             sci: leftRet.passing.sci, // leftRet.inferRefRtnType.passing.sci,
                             crit: { kind: InferCritKind.truthy, alsoFailing: true },
@@ -2569,7 +2565,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (operatorToken.kind === SyntaxKind.BarBarToken) {
                         arrRefTypesTableReturn.push(leftRet.passing);
 
-                        if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`);
+                        if (IDebug.isActive()) IDebug.ilog(()=>`case SyntaxKind.AmpersandAmpersandToken right (for left failing)`, loggerLevel);
                         const leftFalseRightRet0 = flough({
                             sci: leftRet.failing!.sci,
                             // refTypesSymtab: copyRefTypesSymtab(leftRet.inferRefRtnType.failing!.symtab),
@@ -2664,7 +2660,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     assertCastType<BinaryExpression>(expr);
                     const { left: leftExpr, operatorToken, right: rightExpr } = expr;
                     if (IDebug.isActive()) {
-                        IDebug.ilogGroup(`floughByBinaryExpressionEqualCompare[in] expr:${IDebug.dbgs.nodeToString(expr)}`);
+                        IDebug.ilogGroup(()=>`floughByBinaryExpressionEqualCompare[in] expr:${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
                     }
                     if (
                         ![
@@ -2730,7 +2726,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         const leftRttr = applyCritNoneToOne(leftRttr0, leftExpr, inferStatus.groupNodeToTypeMap);
                         if (IDebug.isActive()) {
                             floughTypeModule.dbgRefTypesTypeToStrings(leftRttr.type).forEach(str => {
-                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`);
+                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[l:${_leftidx}] leftRttr.type:${str}`, loggerLevel);
                             });
                         }
                         let rightMntr: FloughReturn;
@@ -2754,7 +2750,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             const rightRttr = applyCritNoneToOne(rightRttr0, rightExpr, inferStatus.groupNodeToTypeMap);
                             if (IDebug.isActive()) {
                                 floughTypeModule.dbgRefTypesTypeToStrings(rightRttr.type).forEach(str => {
-                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`);
+                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[l:${_leftidx},r:${_rightidx}] rightRttr.type:${str}`, loggerLevel);
                                 });
                             }
                             let sciLeftRight0: RefTypesSymtabConstraintItem;
@@ -2771,8 +2767,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             }
 
                             if (IDebug.isActive()) {
-                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`);
-                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`);
+                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] leftRttr.type:${dbgRefTypesTypeToString(leftRttr.type)}, rightRttr.type:${dbgRefTypesTypeToString(rightRttr.type)}`, loggerLevel);
+                                IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] calling partitionForEqualityCompare(leftRttr.type,rightRttr.type))`, loggerLevel);
                             }
 
                             const iad = floughTypeModule.intersectionsAndDifferencesForEqualityCompare(leftRttr.type, rightRttr.type);
@@ -2804,14 +2800,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                     const leftFt1 = both ?? left;
                                     const rightFt1 = both ?? right;
                                     Debug.assert(leftFt1 && rightFt1);
-                                    IDebug.ilog(
+                                    IDebug.ilog(()=>
                                         `floughByBinaryExpressionEqualCompare[dbg] -- before`
-                                            + `[${_i}][0] left:${dbgRefTypesTypeToString(leftFt1)}, right:${dbgRefTypesTypeToString(rightFt1)}, pass:${pass},fail:${fail}`,
+                                            + `[${_i}][0] left:${dbgRefTypesTypeToString(leftFt1)}, right:${dbgRefTypesTypeToString(rightFt1)}, pass:${pass},fail:${fail}`, loggerLevel
                                     );
-                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] leftRttr0.symbol:${IDebug.dbgs.symbolToString(leftRttr0.symbol)}, rightRttr0.symbol:${IDebug.dbgs.symbolToString(rightRttr0.symbol)}`);
-                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] !!leftMntr.typeof:${!!leftMntr.typeof}, !!rightMntr.typeof:${!!rightMntr.typeof}`);
-                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] !!leftRttr.logicalObjectAccessData:${!!leftRttr.logicalObjectAccessData}, !!rightRttr.logicalObjectAccessData:${!!rightRttr.logicalObjectAccessData}`);
-                                    dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s => IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`));
+                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] leftRttr0.symbol:${IDebug.dbgs.symbolToString(leftRttr0.symbol)}, rightRttr0.symbol:${IDebug.dbgs.symbolToString(rightRttr0.symbol)}`, loggerLevel);
+                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] !!leftMntr.typeof:${!!leftMntr.typeof}, !!rightMntr.typeof:${!!rightMntr.typeof}`, loggerLevel);
+                                    IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] !!leftRttr.logicalObjectAccessData:${!!leftRttr.logicalObjectAccessData}, !!rightRttr.logicalObjectAccessData:${!!rightRttr.logicalObjectAccessData}`, loggerLevel);
+                                    dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s => IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`, loggerLevel));
                                 }
 
                                 const tftype = pass ? (fail ? trueAndFalseType : nomativeTrueType) : nomativeFalseType;
@@ -2897,11 +2893,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                     const leftx = both ?? left;
                                     const rightx = both ?? right;
                                     Debug.assert(leftx && rightx);
-                                    IDebug.ilog(
+                                    IDebug.ilog(()=>
                                         `floughByBinaryExpressionEqualCompare[dbg] -- after`
-                                            + `[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`,
+                                            + `[${_i}][0] left:${dbgRefTypesTypeToString(leftx)}, right:${dbgRefTypesTypeToString(rightx)}, pass:${pass},fail:${fail}`, loggerLevel
                                     );
-                                    dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s => IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`));
+                                    dbgRefTypesSymtabConstrinatItemToStrings(sctmp).forEach(s => IDebug.ilog(()=>`floughByBinaryExpressionEqualCompare[dbg] sctmp:${s}`, loggerLevel));
                                 }
                                 arrRefTypesTableReturn.push({
                                     type: tftype,
@@ -2917,7 +2913,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 function floughAccessExpressionCritNone(): FloughInnerReturn {
                     assertCastType<ElementAccessExpression | PropertyAccessExpression>(expr);
                     if (IDebug.isActive()) {
-                        IDebug.ilogGroup(`floughAccessExpressionCritNone[in] expr: ${IDebug.dbgs.nodeToString(expr)}, accessDepth:${accessDepth}`);
+                        IDebug.ilogGroup(()=>`floughAccessExpressionCritNone[in] expr: ${IDebug.dbgs.nodeToString(expr)}, accessDepth:${accessDepth}`, loggerLevel);
                     }
                     Debug.assert((accessDepth === undefined) === (refAccessArgs === undefined));
                     if (!accessDepth || !refAccessArgs) {
@@ -2991,7 +2987,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                         if (IDebug.isActive()) {
                             floughLogicalObjectInnerModule.dbgLogicalObjectAccessResult(raccess).forEach(s => {
-                                IDebug.ilog(()=>`accessResult: ${s}`);
+                                IDebug.ilog(()=>`accessResult: ${s}`, loggerLevel);
                             });
                         }
 
@@ -3040,8 +3036,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
 
                     if (IDebug.isActive()) {
-                        IDebug.ilog(()=>`floughAccessExpressionCritNone[out] expr: ${IDebug.dbgs.nodeToString(expr)}, accessDepth: ${accessDepth}`);
-                        IDebug.ilogGroupEnd();
+                        IDebug.ilogGroupEnd(()=>`floughAccessExpressionCritNone[out] expr: ${IDebug.dbgs.nodeToString(expr)}, accessDepth: ${accessDepth}`, loggerLevel);
                     }
                     const ret: FloughInnerReturn = { unmerged };
                     return ret;

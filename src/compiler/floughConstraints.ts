@@ -536,7 +536,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
         IDebug.ilogGroup(()=>`andSymbolTypeIntoSymtabConstraint[in] symbol:${IDebug.dbgs.symbolToString(symbol)}, isconst:${isconst}, isAssigned: ${isAssign}}`,loggerLevel);
         floughTypeModule.dbgRefTypesTypeToStrings(typeIn).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[in], typeIn: ${s}`,loggerLevel));
         dbgRefTypesSymtabConstrinatItemToStrings(sc).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[in] sc: ${s}`,loggerLevel));
-        // +`symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
+        // +`symbol:${IDebug.dbgs.symbolToString(symbol)}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
     }
     if (isRefTypesSymtabConstraintItemNever(sc)) {
         if (IDebug.isActive()) {
@@ -773,7 +773,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 //     function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
 //         if (IDebug.isActive()){
 //             mapSymbolType.forEach((type,symbol)=>{
-//                 IDebug.ilog(()=>`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
+//                 IDebug.ilog(()=>`evalCoverPerSymbolV1 vtor#${prodnum} ${IDebug.dbgs.symbolToString(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
 //             });
 //             prodnum++;
 //         }
@@ -792,7 +792,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 //     visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
 //     if (IDebug.isActive()){
 //         map.forEach((type,symbol)=>{
-//             IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
+//             IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${IDebug.dbgs.symbolToString(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
 //         });
 //         IDebug.ilogGroupEnd();
 //     }
@@ -809,10 +809,10 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 //     function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
 //         if (log && IDebug.isActive()) {
 //             mapSymbolType.forEach((type, symbol) => {
-//                 floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(str => IDebug.ilog(()=>`evalCoverPerSymbolV1 , ${mrNarrow.dbgSymbolToStringSimple(symbol)}, vtor#${prodnum} ${str}`));
+//                 floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(str => IDebug.ilog(()=>`evalCoverPerSymbolV1 , ${IDebug.dbgs.symbolToString(symbol)}, vtor#${prodnum} ${str}`));
 //             });
 //             // mapSymbolType.forEach((type,symbol)=>{
-//             //     IDebug.ilog(()=>`evalCoverPerSymbolV1 vtor#${prodnum} ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
+//             //     IDebug.ilog(()=>`evalCoverPerSymbolV1 vtor#${prodnum} ${IDebug.dbgs.symbolToString(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
 //             // });
 //             prodnum++;
 //         }
@@ -832,8 +832,8 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 //     visitSOP(ciTop, visitor, mrNarrow, getDeclaredType);
 //     if (log && IDebug.isActive()) {
 //         map.forEach((type, symbol) => {
-//             floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(str => IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${str}`));
-//             // IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${mrNarrow.dbgSymbolToStringSimple(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
+//             floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(str => IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${IDebug.dbgs.symbolToString(symbol)}, ${str}`));
+//             // IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${IDebug.dbgs.symbolToString(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
 //         });
 //         IDebug.ilogGroupEnd();
 //     }
@@ -1176,15 +1176,15 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 //         // const coverMap = evalCoverPerSymbol(data.in.cin, getDeclaredType, mrNarrow);
 //         // if (true) {
 //         //     coverMap.forEach((_type, symbol) => {
-//         //         Debug.assert(data.out.has(symbol), `data[${_iter}].out missing symbol ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+//         //         Debug.assert(data.out.has(symbol), `data[${_iter}].out missing symbol ${IDebug.dbgs.symbolToString(symbol)}`);
 //         //     });
 //         //     data.out.forEach((type, symbol) => {
 //         //         const actualType = coverMap.get(symbol) ?? floughTypeModule.createRefTypesType(); // never
 
 //         //         Debug.assert(floughTypeModule.isASubsetOfB(actualType, type), "fail", () => floughTypeModule.dbgRefTypesTypeToStrings(actualType).join(",") + " is not a subset of " + floughTypeModule.dbgRefTypesTypeToStrings(type).join(","));
-//         //         // `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(actualType:${floughTypeModule.dbgRefTypesTypeToString(actualType)}, expectedType:${floughTypeModule.dbgRefTypesTypeToString(type)})`);
+//         //         // `data[${_iter}] fail symbol:${IDebug.dbgs.symbolToString(symbol)}, mrNarrow.isASubsetOfB(actualType:${floughTypeModule.dbgRefTypesTypeToString(actualType)}, expectedType:${floughTypeModule.dbgRefTypesTypeToString(type)})`);
 //         //         Debug.assert(floughTypeModule.isASubsetOfB(type, actualType), "fail", () => `expectedType:` + floughTypeModule.dbgRefTypesTypeToStrings(type).join(",") + ";;; actualType:" + floughTypeModule.dbgRefTypesTypeToStrings(actualType).join(","));
-//         //         /// `data[${_iter}] fail symbol:${mrNarrow.dbgSymbolToStringSimple(symbol)}, mrNarrow.isASubsetOfB(expectedType:${floughTypeModule.dbgRefTypesTypeToString(type)}, actualType:${floughTypeModule.dbgRefTypesTypeToString(actualType)})`);
+//         //         /// `data[${_iter}] fail symbol:${IDebug.dbgs.symbolToString(symbol)}, mrNarrow.isASubsetOfB(expectedType:${floughTypeModule.dbgRefTypesTypeToString(type)}, actualType:${floughTypeModule.dbgRefTypesTypeToString(actualType)})`);
 //         //     });
 //         // }
 //     });

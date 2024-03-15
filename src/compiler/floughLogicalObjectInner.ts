@@ -46,14 +46,7 @@ import {
     createRefTypesSymtabConstraintItemNever,
     dbgRefTypesSymtabConstrinatItemToStrings,
 } from "./floughGroupRefTypesSymtab";
-import {
-    getMyDebug,
-    IDebug.ilog,
-    IDebug.ilogGroup,
-    IDebug.ilogGroupEnd,
-    DbgsX,
-} from "./myConsole";
-
+import { IDebug } from "./mydebug";
 /**
  * FlowLogicalObjectIF
  * Types have a hierachy:
@@ -89,7 +82,7 @@ import {
  */
 
 const checker = undefined as any as FloughTypeChecker; // TODO: intialize;
-const dbgs = undefined as any as DbgsX;
+//const dbgs = undefined as any as DbgsX;
 const mrNarrow = undefined as any as MrNarrow;
 
 export type OldToNewLogicalObjectMap = Map<FloughLogicalObjectInnerIF, FloughLogicalObjectInnerIF>;
@@ -207,10 +200,9 @@ type HasKeys = Map<string, HasKeyItem>;
 //     else Debug.fail("unexpected");
 // }
 
-export function initFloughLogicalObjectInner(checkerIn: TypeChecker, dbgsIn: DbgsX, mrNarrowIn: MrNarrow) {
+export function initFloughLogicalObjectInner(checkerIn: TypeChecker, mrNarrowIn: MrNarrow) {
     (checker as any) = checkerIn;
     // (refTypesTypeModule as any) = refTypesTypeModuleIn;
-    (dbgs as any) = dbgsIn;
     (mrNarrow as any) = mrNarrowIn;
 }
 enum FloughLogicalObjectKind {
@@ -1492,23 +1484,23 @@ function logicalObjectModify(
      * but now it is only called via logicalObjectAccessModule.modifyOne() which calls this function with only has a single non-undefined value.
      */
 
-    const doLog = true;
+    const loggerLevel = 2;
     if (IDebug.isActive()) {
-        if (doLog) {
-            IDebug.ilogGroup(`logicalObjectModify[in]`);
+        if (true) {
+            IDebug.ilogGroup(()=>`logicalObjectModify[in]`, loggerLevel);
             modTypesIn.forEach((mt, idx) => {
                 const st = state.finalTypes[idx].type;
                 if (mt) {
                     floughTypeModule.dbgFloughTypeToStrings(mt).forEach(s => {
-                        IDebug.ilog(()=>`logicalObjectModify[in] modTypesIn[${idx}]: ${s}`);
+                        IDebug.ilog(()=>`logicalObjectModify[in] modTypesIn[${idx}]: ${s}`, loggerLevel);
                     });
                 }
-                else IDebug.ilog(()=>`logicalObjectModify[in] modTypesIn[${idx}]: <undef>`);
+                else IDebug.ilog(()=>`logicalObjectModify[in] modTypesIn[${idx}]: <undef>`, loggerLevel);
                 floughTypeModule.dbgFloughTypeToStrings(st).forEach(s => {
-                    IDebug.ilog(()=>`logicalObjectModify[in] state.finalTypes[${idx}]: ${s}`);
+                    IDebug.ilog(()=>`logicalObjectModify[in] state.finalTypes[${idx}]: ${s}`, loggerLevel);
                 });
                 if (arrCallUndefinedAllowed) {
-                    IDebug.ilog(()=>`logicalObjectModify[in] arrCallUndefinedAllowed[${idx}]: ${arrCallUndefinedAllowed[idx]}`);
+                    IDebug.ilog(()=>`logicalObjectModify[in] arrCallUndefinedAllowed[${idx}]: ${arrCallUndefinedAllowed[idx]}`, loggerLevel);
                 }
             });
         }
@@ -1686,30 +1678,30 @@ function logicalObjectModify(
     };
 
     if (IDebug.isActive()) {
-        if (doLog) {
+        if (true) {
             results.forEach((r, ridx) => {
                 const hstr = `logicalObjectModify[out] [${ridx}] `;
-                // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>IDebug.ilog(()=>`${hstr} type: ${s}`));
-                // else IDebug.ilog(()=>`${hstr} type: <undef>`);
-                if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s => IDebug.ilog(()=>`${hstr} rootNonObj: ${s}`));
-                else IDebug.ilog(()=>`${hstr} rootNonObj: <undef>`);
-                if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s => IDebug.ilog(()=>`${hstr} rootLogicalObject: ${s}`));
-                else IDebug.ilog(()=>`${hstr} rootLogicalObject: <undef>`);
-                dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s => IDebug.ilog(()=>`${hstr} sci: ${s}`));
+                // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>IDebug.ilog(()=>`${hstr} type: ${s}`), loggerLevel);
+                // else IDebug.ilog(()=>`${hstr} type: <undef>`, loggerLevel);
+                if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s => IDebug.ilog(()=>`${hstr} rootNonObj: ${s}`, loggerLevel));
+                else IDebug.ilog(()=>`${hstr} rootNonObj: <undef>`, loggerLevel);
+                if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s => IDebug.ilog(()=>`${hstr} rootLogicalObject: ${s}`, loggerLevel));
+                else IDebug.ilog(()=>`${hstr} rootLogicalObject: <undef>`, loggerLevel);
+                dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s => IDebug.ilog(()=>`${hstr} sci: ${s}`, loggerLevel));
             });
             {
-                IDebug.ilog("logicalObjectModify[out] --- unionized");
-                const hstr = `logicalObjectModify[out] [union]`;
+                IDebug.ilog(()=>"logicalObjectModify: --- unionized", loggerLevel);
+                const hstr = `logicalObjectModify: [union]`;
                 const r = ret;
-                // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>IDebug.ilog(()=>`${hstr} type: ${s}`));
-                // else IDebug.ilog(()=>`${hstr} type: <undef>`);
-                if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s => IDebug.ilog(()=>`${hstr} rootNonObj: ${s}`));
-                else IDebug.ilog(()=>`${hstr} rootNonObj: <undef>`);
-                if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s => IDebug.ilog(()=>`${hstr} rootLogicalObject: ${s}`));
-                else IDebug.ilog(()=>`${hstr} rootLogicalObject: <undef>`);
-                dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s => IDebug.ilog(()=>`${hstr} sci: ${s}`));
+                // if (r.type) floughTypeModule.dbgFloughTypeToStrings(r.type).forEach(s=>IDebug.ilog(()=>`${hstr} type: ${s}`), loggerLevel);
+                // else IDebug.ilog(()=>`${hstr} type: <undef>`, loggerLevel);
+                if (r.rootNonObj) floughTypeModule.dbgFloughTypeToStrings(r.rootNonObj).forEach(s => IDebug.ilog(()=>`${hstr} rootNonObj: ${s}`, loggerLevel));
+                else IDebug.ilog(()=>`${hstr} rootNonObj: <undef>`, loggerLevel);
+                if (r.rootLogicalObject) dbgLogicalObjectToStrings(r.rootLogicalObject).forEach(s => IDebug.ilog(()=>`${hstr} rootLogicalObject: ${s}`, loggerLevel));
+                else IDebug.ilog(()=>`${hstr} rootLogicalObject: <undef>`, loggerLevel);
+                dbgRefTypesSymtabConstrinatItemToStrings(r.sci).forEach(s => IDebug.ilog(()=>`${hstr} sci: ${s}`, loggerLevel));
             }
-            IDebug.ilogGroupEnd();
+            IDebug.ilogGroupEnd(()=>`logicalObjectModify[out]`, loggerLevel);
         }
     }
     return ret;
@@ -1873,10 +1865,10 @@ function dbgLogicalObjectToStrings(logicalObjectTop: FloughLogicalObjectInnerIF)
         as.push("  kind: " + logicalObject.kind);
         if (logicalObject.kind === "plain") {
             // as.push(` logicalObject.item.objectTypeInstanceId: ${logicalObject.item.objectTypeInstanceId}`);
-            as.push("  logicalObject.tsType: " + dbgs.IDebug.dbgs.typeToString(logicalObject.tsType));
+            as.push("  logicalObject.tsType: " + IDebug.dbgs.typeToString(logicalObject.tsType));
         }
         if (logicalObject.kind === "tsintersection" || logicalObject.kind === "tsunion") {
-            as.push("  logicalObject.tsType: " + dbgs.IDebug.dbgs.typeToString(logicalObject.tsType));
+            as.push("  logicalObject.tsType: " + IDebug.dbgs.typeToString(logicalObject.tsType));
         }
         if (logicalObject.kind === "plain" || logicalObject.kind === "tsintersection") {
             if (logicalObject.variations) {

@@ -8,6 +8,10 @@ import {
     isFlowSwitchClause,
     isFlowReduceLabel,
     isFlowStart,
+    getFlowAntecedents,
+    isFlowLabel,
+    isFlowWithNode,
+
 } from "./floughNodesGrouping";
 import {
     forEachChild,
@@ -226,7 +230,7 @@ export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: 
 }
 
 
-export function dbgFlowToString(flow: FlowNode | undefined): string {
+export function dbgFlowToString(flow: FlowNode | undefined, _withAntecedentants = false): string {
     if (!flow) return "<undef>";
     const getFlowNodeId = (flow: FlowNode) => {
         return flow.id;
@@ -235,5 +239,41 @@ export function dbgFlowToString(flow: FlowNode | undefined): string {
     str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
     if ((flow as FlowLabel).branchKind) str += `branchKind:${((flow as FlowLabel).branchKind)}, `;
     if ((flow as any).node) str += IDebug.dbgs.nodeToString((flow as any).node as any as Node);
+    return str;
+};
+
+function getFlowNodeId(flow: FlowNode): number {
+    return flow.id ?? 0;
+}
+function dbgFlowToString2(flow: FlowNode | undefined, withAntecedants?: boolean): string {
+    if (!flow) return "<undef>";
+    let str = "";
+    //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
+    str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
+    if (isFlowLabel(flow)){
+        str += `branchKind: ${flow.branchKind}, `;
+    }
+    if (isFlowWithNode(flow)) str += IDebug.dbgs.nodeToString(flow.node);
+    if (isFlowLabel(flow) && flow.originatingExpression){
+        str += `originatingExpression: [n${flow.originatingExpression.id}]{pos:${flow.originatingExpression.pos},end:${flow.originatingExpression.end}}, `;
+        // str += `originatingExpression: ${dbgNodeToString(flow.originatingExpression)},`;
+    }
+    // if (isFlowJoin(flow)) str += `[joinNode:${dbgNodeToString(flow.joinNode)}`;aaaaaa
+    if (!withAntecedants) return str;
+    const antefn = getFlowAntecedents(flow);
+    if (antefn.length) {
+        str += `antecedents(${antefn.length}):[`;
+        antefn.forEach(fn=>{
+            str += "[";
+            const withAntecedants2 = isFlowLabel(fn) /*&& fn.branchKind===BranchKind.postIf*/;
+            str += dbgFlowToString(fn, withAntecedants2);
+            str += "]";
+        });
+        str += "]";
+    }
+    if (isFlowLabel(flow) && flow.controlExits){
+        str += `controlExits:`;
+        str += "["+flow.controlExits.map(fn=>`${fn.id}`).join(",")+"]";
+    }
     return str;
 };

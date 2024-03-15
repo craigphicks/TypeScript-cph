@@ -461,7 +461,7 @@ export function dbgRefTypesSymtabToStrings(x: RefTypesSymtab): string[] {
         as.push(`loopGroup?.groupIdx:${x.loopGroup?.groupIdx}, x.loopState?.invocations:${x.loopState?.invocations}`);
         let str = `x.loopState.symbolsAssigned:[`;
         x.loopState!.symbolsAssigned?.forEach(s => {
-            str += `${mrNarrow.dbgSymbolToStringSimple(s)},`;
+            str += `${IDebug.dbgs.symbolToString(s)},`;
         });
         str += `]`;
         as.push(str);
@@ -473,23 +473,23 @@ export function dbgRefTypesSymtabToStrings(x: RefTypesSymtab): string[] {
             symbolsDone.add(s);
             if (x.loopState!.symbolsAssignedRange?.has(s)) {
                 const rangeType = x.loopState!.symbolsAssignedRange.get(s)!;
-                floughTypeModule.dbgRefTypesTypeToStrings(rangeType).forEach(str1 => as.push(`outer: symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${str1}`));
-                // str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
+                floughTypeModule.dbgRefTypesTypeToStrings(rangeType).forEach(str1 => as.push(`outer: symbol:${IDebug.dbgs.symbolToString(s)},type:${str1}`));
+                // str+=`{symbol:${IDebug.dbgs.symbolToString(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
             }
         });
         x.symtabInner.forEach((_pt, s) => {
             if (symbolsDone.has(s)) return;
             if (x.loopState!.symbolsAssignedRange?.has(s)) {
                 const rangeType = x.loopState!.symbolsAssignedRange.get(s)!;
-                floughTypeModule.dbgRefTypesTypeToStrings(rangeType).forEach(str1 => as.push(`inner: symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${str1}`));
-                // str+=`{symbol:${mrNarrow.dbgSymbolToStringSimple(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
+                floughTypeModule.dbgRefTypesTypeToStrings(rangeType).forEach(str1 => as.push(`inner: symbol:${IDebug.dbgs.symbolToString(s)},type:${str1}`));
+                // str+=`{symbol:${IDebug.dbgs.symbolToString(s)},type:${floughTypeModule.dbgRefTypesTypeToString(rangeType)}}, `;
             }
         });
         str += `]`;
         as.push(str);
     }
     x.symtabInner.forEach(({ type, assignedType }, s) => {
-        as.push(`  symbol:${mrNarrow.dbgSymbolToStringSimple(s)}, `);
+        as.push(`  symbol:${IDebug.dbgs.symbolToString(s)}, `);
         floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(str => as.push(`    type:${str}`));
         if (assignedType) floughTypeModule.dbgRefTypesTypeToStrings(assignedType).forEach(str => as.push(`    assignedType:${str}`));
         // + `{ type:${floughTypeModule.dbgRefTypesTypeToString(type)}, assignedType:${assignedType?floughTypeModule.dbgRefTypesTypeToString(type):"<undef>"}}`);

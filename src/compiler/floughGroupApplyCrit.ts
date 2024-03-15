@@ -28,8 +28,8 @@ import {
 import { RefTypesTableReturnNoSymbol, InferCrit, InferCritKind, RefTypesTableReturn, NodeToTypeMap, FloughReturn, RefTypesSymtabConstraintItem, LogicalObjecAccessData, RefTypesSymtabConstraintItemNotNever, assertCastType } from "./floughTypedefs";
 import { GetDeclaredTypeFn, andSymbolTypeIntoSymtabConstraint, orSymtabConstraints } from "./floughConstraints";
 import { createRefTypesSymtabConstraintItemNever, isRefTypesSymtabConstraintItemNever, copyRefTypesSymtabConstraintItem } from "./floughGroupRefTypesSymtab";
-import { getMyDebug, IDebug.ilog, dbgsModule, IDebug.ilogGroup, IDebug.ilogGroupEnd } from "./myConsole";
 import { FloughTypeChecker } from "./floughTypedefs"
+import { IDebug } from "./mydebug";
 
 const checker: FloughTypeChecker = undefined as any as FloughTypeChecker;
 const getDeclaredType: GetDeclaredTypeFn = undefined as any as GetDeclaredTypeFn;
@@ -153,14 +153,16 @@ export function getSymbolIfUnique(arrRttr: Readonly<RefTypesTableReturn[]>): { s
  * @param nodeToTypeMap
  */
 export function orIntoNodeToTypeMap(type: Readonly<RefTypesType>, node: Node, nodeToTypeMap: NodeToTypeMap) {
+    const loggerLevel = 2;
     const tstype = floughTypeModule.getTsTypeFromFloughType(type, /*forNodeToTypeMap*/ true);
     const got = nodeToTypeMap.get(node);
     if (!got) nodeToTypeMap.set(node, tstype);
     else nodeToTypeMap.set(node, checker.getUnionType([got, tstype], UnionReduction.Literal));
     if (IDebug.isActive()) {
-        IDebug.ilog(
+        IDebug.ilog(()=>
             `orIntoNodeToTypeMap(node:${IDebug.dbgs.nodeToString(node)}, type:${floughTypeModule.dbgFloughTypeToString(type)}) :: `
                 + `${got ? IDebug.dbgs.typeToString(got) : "*"} -> ${IDebug.dbgs.typeToString(nodeToTypeMap.get(node))}`,
+            loggerLevel
         );
     }
 }
@@ -338,8 +340,9 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Inf
     passing: RefTypesTableReturnNoSymbol;
     failing?: RefTypesTableReturnNoSymbol | undefined;
 } {
+    const loggerLevel = 2;
     if (IDebug.isActive()) {
-        IDebug.ilogGroup(`applyCrit1[in]`);
+        IDebug.ilogGroup(()=>`applyCrit1[in]`, loggerLevel);
     }
     const ret = (() => {
         if (arrRttr.length === 0) return { passing: createNever(), failing: crit.alsoFailing ? createNever() : undefined };
@@ -361,9 +364,9 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Inf
         const arrFailSC: RefTypesSymtabConstraintItemNotNever[] = [];
         arrRttr.forEach((rttr, _rttridx) => {
             if (IDebug.isActive()) {
-                IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}]`);
+                IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}]`, loggerLevel);
                 mrNarrow.dbgRefTypesTableToStrings(rttr).forEach(s => {
-                    IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] rttr: ${s}`);
+                    IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] rttr: ${s}`, loggerLevel);
                 });
             }
             if (floughTypeModule.isNeverType(rttr.type)) {
@@ -380,7 +383,7 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Inf
             applyCritToTypeMutate(rttr.type, crit, passtype, failtype);
             if (IDebug.isActive()) {
                 floughTypeModule.dbgFloughTypeToStrings(passtype).forEach(s => {
-                    IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] passtype@0: ${s}`);
+                    IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] passtype@0: ${s}`, loggerLevel);
                 });
             }
 
@@ -402,12 +405,12 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Inf
                 }
                 if (IDebug.isActive()) {
                     floughTypeModule.dbgFloughTypeToStrings(passtype).forEach(s => {
-                        IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] passtype@1: ${s}`);
+                        IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] passtype@1: ${s}`, loggerLevel);
                     });
                 }
                 if (IDebug.isActive()) {
                     floughTypeModule.dbgFloughTypeToStrings(passtype).forEach(s => {
-                        IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] passtype@2: ${s}`);
+                        IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] passtype@2: ${s}`, loggerLevel);
                     });
                 }
                 if (!floughTypeModule.isNeverType(passtype)) {
@@ -419,7 +422,7 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Inf
                 assertCastType<FloughType>(failtype);
                 if (IDebug.isActive()) {
                     floughTypeModule.dbgFloughTypeToStrings(failtype).forEach(s => {
-                        IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] failtype@0: ${s}`);
+                        IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] failtype@0: ${s}`, loggerLevel);
                     });
                 }
                 if (!floughTypeModule.isNeverType(failtype)) {
@@ -440,12 +443,12 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Inf
                     }
                     if (IDebug.isActive()) {
                         floughTypeModule.dbgFloughTypeToStrings(failtype).forEach(s => {
-                            IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] failtype@1: ${s}`);
+                            IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] failtype@1: ${s}`, loggerLevel);
                         });
                     }
                     if (IDebug.isActive()) {
                         floughTypeModule.dbgFloughTypeToStrings(failtype).forEach(s => {
-                            IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] failtype@2: ${s}`);
+                            IDebug.ilog(()=>`applyCrit1[dbg,rttridx:${_rttridx}] failtype@2: ${s}`, loggerLevel);
                         });
                     }
                     if (!floughTypeModule.isNeverType(failtype)) {
@@ -481,8 +484,7 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Inf
     })();
     if (IDebug.isActive()) {
         // dbg ret.passing
-        IDebug.ilog(()=>`applyCrit1[out]`);
-        IDebug.ilogGroupEnd();
+        IDebug.ilogGroupEnd(()=>`applyCrit1[out]`, loggerLevel);
     }
     return ret;
 }

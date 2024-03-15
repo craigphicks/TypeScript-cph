@@ -541,7 +541,7 @@ export function createSourceFileFloughState(sourceFile: SourceFile, checker: Flo
     initFlowGroupInferApplyCrit(checker, mrNarrow);
     initFloughTypeModule(checker, compilerOptions);
     initFloughLogicalObjectOuter(checker);
-    initFloughLogicalObjectInner(checker, dbgs, mrNarrow);
+    initFloughLogicalObjectInner(checker, mrNarrow);
     return {
         sourceFile,
         groupsForFlow,
@@ -1247,7 +1247,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
         // const newsymtab = copyRefTypesSymtab(sc.symtab);
         // fglab.originatingBlock.locals?.forEach((symbol)=>{
         //     if (IDebug.isActive()){
-        //         IDebug.ilog(()=>`doPostBlock: descoping symbol ${mrNarrow.dbgSymbolToStringSimple(symbol)}`);
+        //         IDebug.ilog(()=>`doPostBlock: descoping symbol ${IDebug.dbgs.symbolToString(symbol)}`);
         //     }
         //     newsymtab.delete(symbol);
         // });

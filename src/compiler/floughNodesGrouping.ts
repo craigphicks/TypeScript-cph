@@ -49,7 +49,9 @@ import {
 import {
     FloughTypeChecker
 } from "./floughTypedefs";
-import { getMyDebug, createDbgs, DbgsX } from "./myConsole";
+//import { getMyDebug, createDbgs, DbgsX } from "./myConsole";
+import { dbgFlowToString } from "./floughNodesDebugWrite"
+import { IDebug } from "./mydebug"
 
 function nodeIsExpressionForGrouping(node: Node) {
     const yes = [
@@ -697,7 +699,7 @@ export function getFlowAntecedents(fn: FlowNodeBase): FlowNode[] {
     else return [];
 }
 
-function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, dbgs: DbgsX, checker: TypeChecker): string[] {
+function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, checker: TypeChecker): string[] {
     const as: string[] = [`kind:${fglab.kind}`];
     switch (fglab.kind) {
         case FlowGroupLabelKind.ref:
@@ -710,7 +712,7 @@ function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, dbgs: DbgsX, checker:
         case FlowGroupLabelKind.postIf:
             as.push(`originatingGroupIdx:${fglab.originatingGroupIdx}`);
             fglab.arrAnte.forEach((ante, anteidx) => {
-                as.push(...dbgFlowGroupLabelToStrings(ante, dbgs, checker).map(s => `    ante[${anteidx}]: ` + s));
+                as.push(...dbgFlowGroupLabelToStrings(ante, checker).map(s => `    ante[${anteidx}]: ` + s));
             });
             // as.push(`anteThen:`);
             // as.push(...dbgFlowGroupLabelToStrings(fglab.anteThen, dbgs, checker).map(s=>"    "+s));
@@ -719,15 +721,15 @@ function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, dbgs: DbgsX, checker:
             break;
         case FlowGroupLabelKind.loop:
             as.push(`antePrevious:`);
-            as.push(...dbgFlowGroupLabelToStrings(fglab.antePrevious, dbgs, checker).map(s => "    " + s));
+            as.push(...dbgFlowGroupLabelToStrings(fglab.antePrevious, checker).map(s => "    " + s));
             as.push(`arrAnteContinue:`);
             fglab.arrAnteContinue.forEach((fgac, fgacidx) => {
-                as.push(...dbgFlowGroupLabelToStrings(fgac, dbgs, checker).map(s => `    [${fgacidx}]  ${s}`));
+                as.push(...dbgFlowGroupLabelToStrings(fgac, checker).map(s => `    [${fgacidx}]  ${s}`));
             });
             if (fglab.arrControlExit) {
                 as.push(`arrControlExits:`);
                 fglab.arrControlExit.forEach((fgac, fgacidx) => {
-                    as.push(...dbgFlowGroupLabelToStrings(fgac, dbgs, checker).map(s => `    [${fgacidx}]  ${s}`));
+                    as.push(...dbgFlowGroupLabelToStrings(fgac, checker).map(s => `    [${fgacidx}]  ${s}`));
                 });
             }
             break;
@@ -738,13 +740,13 @@ function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, dbgs: DbgsX, checker:
             as.push(`loopGroupIdx: ${fglab.loopGroupIdx}`);
             as.push(`arrAnteBreak:`);
             fglab.arrAnteBreak.forEach((fgac, fgacidx) => {
-                as.push(...dbgFlowGroupLabelToStrings(fgac, dbgs, checker).map(s => `    [${fgacidx}]  ${s}`));
+                as.push(...dbgFlowGroupLabelToStrings(fgac, checker).map(s => `    [${fgacidx}]  ${s}`));
             });
             break;
         case FlowGroupLabelKind.block:
         case FlowGroupLabelKind.postBlock:
             as.push(`originatingBlock: [n${fglab.originatingBlock.id}](${fglab.originatingBlock.pos},${fglab.originatingBlock.end})`);
-            as.push(...dbgFlowGroupLabelToStrings(fglab.ante, dbgs, checker).map(s => `ante: ${s}`));
+            as.push(...dbgFlowGroupLabelToStrings(fglab.ante, checker).map(s => `ante: ${s}`));
             break;
             // as.push( fglab.originatingBlock
         case FlowGroupLabelKind.none:
@@ -761,9 +763,6 @@ export function dbgGroupsForFlowToStrings(
     gff: GroupsForFlow,
     checker: FloughTypeChecker,
 ): string[] {
-    const dbgs = createDbgs(checker);
-    const IDebug.dbgs.nodeToString = dbgs.IDebug.dbgs.nodeToString;
-    const dbgFlowToString = dbgs.dbgFlowToString;
     const astr: string[] = [];
     gff.orderedGroups.forEach((g, i) => {
         const maxnode = gff.posOrderedNodes[g.maximalIdx];
@@ -802,7 +801,7 @@ export function dbgGroupsForFlowToStrings(
             astr.push(`groups[${i}]:    previousAnteGroupIdx:${g.previousAnteGroupIdx}`);
         }
         g.anteGroupLabels.forEach((fglab, idx) => {
-            dbgFlowGroupLabelToStrings(fglab, dbgs, checker).forEach(s => {
+            dbgFlowGroupLabelToStrings(fglab, checker).forEach(s => {
                 astr.push(`groups[${i}]:    anteGroupLabels[${idx}]: ${s}`);
             });
         });

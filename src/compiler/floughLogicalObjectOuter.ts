@@ -25,8 +25,8 @@ import {
     assertCastType,
 } from "./floughTypedefs";
 import {
-    dbgsModule,
-} from "./myConsole";
+    IDebug,
+} from "./mydebug";
 
 const checker = undefined as any as TypeChecker; // TODO: intialize;
 export function initFloughLogicalObjectOuter(checkerIn: TypeChecker) {
