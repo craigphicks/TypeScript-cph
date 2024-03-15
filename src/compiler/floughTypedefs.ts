@@ -177,7 +177,7 @@ export type RefDeltaInferState = {
     symtab: RefTypesSymtab;
     constraintItem: ConstraintItem;
     deltaNodeToTypeMap: Map<Node, Type>;
-    inferStatus: FloughStatus;
+    floughStatus: FloughStatus;
 };
 
 export type ReplayData = {
@@ -244,7 +244,7 @@ export type FloughRefInnerArgs = {
     sci: RefTypesSymtabConstraintItemNotNever;
     expr: Readonly<Node>;
     qdotfallout?: RefTypesTableReturn[] | undefined;
-    inferStatus: FloughStatus;
+    floughStatus: FloughStatus;
 };
 
 export type FloughInnerReturn = {

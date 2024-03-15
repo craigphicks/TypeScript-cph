@@ -959,7 +959,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
     // let cachedSubloopSCForLoopConditionIn: RefTypesSymtabConstraintItem;
     let outerSCForLoopConditionIn: RefTypesSymtabConstraintItem;
     {
-        const inferStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
+        const floughStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
         // Caching of scForLoop0 is only required for the outermost, depth===1, loop
         if (sourceFileMrState.mrState.currentLoopDepth === 1) {
             if (loopState.invocations === 0) {
@@ -987,7 +987,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
         // };
         const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
 
-        resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { loopGroupIdx: loopGroup.groupIdx, cachedSCForLoop: subloopSCForLoopConditionIn });
+        resolveGroupForFlow(loopGroup, floughStatus, sourceFileMrState, forFlow, { loopGroupIdx: loopGroup.groupIdx, cachedSCForLoop: subloopSCForLoopConditionIn });
     }
     IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
     do {
@@ -1031,8 +1031,8 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             if (forFlowParent.currentBranchesMap.has(loopGroup)) deleteCurrentBranchesMap(loopGroup); // This is not required because it will be overwritten anyway.
             if (forFlowParent.groupToNodeToType!.has(loopGroup)) forFlowParent.groupToNodeToType!.delete(loopGroup);
 
-            const inferStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
-            resolveGroupForFlow(loopGroup, inferStatus, sourceFileMrState, forFlow, { cachedSCForLoop: scForConditionUnionOfInAndContinue, loopGroupIdx: loopGroup.groupIdx });
+            const floughStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
+            resolveGroupForFlow(loopGroup, floughStatus, sourceFileMrState, forFlow, { cachedSCForLoop: scForConditionUnionOfInAndContinue, loopGroupIdx: loopGroup.groupIdx });
 
             IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
         }
@@ -1104,8 +1104,8 @@ function resolveHeap(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow,
             processLoopOuter(groupForFlow, sourceFileMrState, forFlow);
             continue;
         }
-        const inferStatus: FloughStatus = createFloughStatus(groupForFlow, sourceFileMrState, withinLoop);
-        resolveGroupForFlow(groupForFlow, inferStatus, sourceFileMrState, forFlow);
+        const floughStatus: FloughStatus = createFloughStatus(groupForFlow, sourceFileMrState, withinLoop);
+        resolveGroupForFlow(groupForFlow, floughStatus, sourceFileMrState, forFlow);
     } // while (!heap.isEmpty())
 }
 
