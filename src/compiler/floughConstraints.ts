@@ -150,7 +150,7 @@ export function isAlwaysConstraint(c: ConstraintItem): boolean {
 //     depth?: number;
 // }): RefTypesType {
 //     depth = depth ?? 0;
-//     if (IDebug.isActive()) {
+//     if (IDebug.isActive(loggerLevel)) {
 //         const as: string[] = [];
 //         IDebug.ilogGroup(`evalTypeOverConstraint[in][${depth}]`);
 //         floughTypeModule.dbgRefTypesTypeToStrings(typeRange).forEach(s => as.push(`evalTypeOverConstraint[in][${depth}]: symbol:${symbol.escapedName}, negate:${negate}, typeRange: ${s}`));
@@ -160,7 +160,7 @@ export function isAlwaysConstraint(c: ConstraintItem): boolean {
 //         as.forEach(s => IDebug.ilog(s));
 //     }
 //     const r = evalTypeOverConstraint_aux({ cin, symbol, typeRange, negate, mrNarrow, depth });
-//     if (IDebug.isActive()) {
+//     if (IDebug.isActive(loggerLevel)) {
 //         floughTypeModule.dbgRefTypesTypeToStrings(r).forEach(s => IDebug.ilog(()=>`evalTypeOverConstraint[out][${depth}] type: ${s}`));
 //         // IDebug.ilog(()=>`evalTypeOverConstraint[out][${depth}]: ${floughTypeModule.dbgRefTypesTypeToString(r)}`);
 //         IDebug.ilogGroupEnd();
@@ -258,7 +258,7 @@ export function isAlwaysConstraint(c: ConstraintItem): boolean {
 //     if (!refCountOut) refCountOut = [0];
 //     if (!declaredType) declaredType = getDeclaredType(symbol);
 //     const doLog = false;
-//     if (doLog && IDebug.isActive()) {
+//     if (doLog && IDebug.isActive(loggerLevel)) {
 //         floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(s => IDebug.ilog(()=>`andDistributeDivide[in][${depth ?? 0}] type: ${s}`));
 //         // IDebug.ilogGroup(`andDistributeDivide[in][${depth??0}] symbol:${symbol.escapedName}, type: ${floughTypeModule.dbgRefTypesTypeToString(type)}, typeRange: ${floughTypeModule.dbgRefTypesTypeToString(declaredType)}, negate: ${negate??false}}, countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
 //         mrNarrow.dbgConstraintItem(cin).forEach(s => {
@@ -266,7 +266,7 @@ export function isAlwaysConstraint(c: ConstraintItem): boolean {
 //         });
 //     }
 //     const creturn = andDistributeDivideAux({ symbol, type, declaredType, cin, negate, getDeclaredType, mrNarrow, refCountIn, refCountOut, depth });
-//     if (doLog && IDebug.isActive()) {
+//     if (doLog && IDebug.isActive(loggerLevel)) {
 //         IDebug.ilog(()=>`andDistributeDivide[out][${depth ?? 0}] countIn: ${refCountIn[0]}, countOut: ${refCountOut[0]}`);
 //         mrNarrow.dbgConstraintItem(creturn).forEach(s => {
 //             IDebug.ilog(()=>`andDistributeDivide[out][${depth ?? 0}] constraint: ${s}`);
@@ -539,7 +539,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
         // +`symbol:${IDebug.dbgs.symbolToString(symbol)}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
     }
     if (isRefTypesSymtabConstraintItemNever(sc)) {
-        if (IDebug.isActive()) {
+        if (IDebug.isActive(loggerLevel)) {
             IDebug.ilogGroupEnd(()=>`andSymbolTypeIntoSymtabConstraint[out] isconst:${isconst}, isAssigned: ${isAssign}}, sc out: never`, loggerLevel);
         }
         return { type: floughTypeModule.createRefTypesType(), sc };
@@ -765,13 +765,13 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 //     setOfInvolvedSymbols: Set<Symbol>, getDeclaredType: GetDeclaredTypeFn,
 //     mrNarrow: MrNarrow):
 //  Map<Symbol,RefTypesType> {
-//     if (IDebug.isActive()){
+//     if (IDebug.isActive(loggerLevel)){
 //         IDebug.ilogGroup(`evalCoverPerSymbolV1`);
 //     }
 //     const map = new Map<Symbol,RefTypesType>();
 //     let prodnum = 0;
 //     function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
-//         if (IDebug.isActive()){
+//         if (IDebug.isActive(loggerLevel)){
 //             mapSymbolType.forEach((type,symbol)=>{
 //                 IDebug.ilog(()=>`evalCoverPerSymbolV1 vtor#${prodnum} ${IDebug.dbgs.symbolToString(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
 //             });
@@ -790,7 +790,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 //         // });
 //     }
 //     visitSOP(ciTop,visitor,mrNarrow,getDeclaredType);
-//     if (IDebug.isActive()){
+//     if (IDebug.isActive(loggerLevel)){
 //         map.forEach((type,symbol)=>{
 //             IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${IDebug.dbgs.symbolToString(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);
 //         });
@@ -800,14 +800,14 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 // }
 // function evalCoverPerSymbolV2(ciTop: Readonly<ConstraintItem>, getDeclaredType: GetDeclaredTypeFn, mrNarrow: MrNarrow): Map<Symbol, RefTypesType> {
 //     const log = false;
-//     if (log && IDebug.isActive()) {
+//     if (log && IDebug.isActive(loggerLevel)) {
 //         IDebug.ilogGroup(`evalCoverPerSymbolV1`);
 //         mrNarrow.dbgConstraintItem(ciTop).forEach(str => IDebug.ilog(()=>`evalCoverPerSymbolV1 ciTop: ${str}`));
 //     }
 //     const map = new Map<Symbol, RefTypesType>();
 //     let prodnum = 0;
 //     function visitor(mapSymbolType: Readonly<VisitSOPMap>): void {
-//         if (log && IDebug.isActive()) {
+//         if (log && IDebug.isActive(loggerLevel)) {
 //             mapSymbolType.forEach((type, symbol) => {
 //                 floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(str => IDebug.ilog(()=>`evalCoverPerSymbolV1 , ${IDebug.dbgs.symbolToString(symbol)}, vtor#${prodnum} ${str}`));
 //             });
@@ -830,7 +830,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 //         });
 //     }
 //     visitSOP(ciTop, visitor, mrNarrow, getDeclaredType);
-//     if (log && IDebug.isActive()) {
+//     if (log && IDebug.isActive(loggerLevel)) {
 //         map.forEach((type, symbol) => {
 //             floughTypeModule.dbgRefTypesTypeToStrings(type).forEach(str => IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${IDebug.dbgs.symbolToString(symbol)}, ${str}`));
 //             // IDebug.ilog(()=>`evalCoverPerSymbolV1 covermap ${IDebug.dbgs.symbolToString(symbol)}, ${floughTypeModule.dbgRefTypesTypeToString(type)}`);

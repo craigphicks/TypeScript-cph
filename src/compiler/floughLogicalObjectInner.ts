@@ -1485,7 +1485,7 @@ function logicalObjectModify(
      */
 
     const loggerLevel = 2;
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         if (true) {
             IDebug.ilogGroup(()=>`logicalObjectModify[in]`, loggerLevel);
             modTypesIn.forEach((mt, idx) => {
@@ -1677,7 +1677,7 @@ function logicalObjectModify(
         sci: orSymtabConstraints(results.map(x => x.sci)),
     };
 
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         if (true) {
             results.forEach((r, ridx) => {
                 const hstr = `logicalObjectModify[out] [${ridx}] `;

@@ -78,7 +78,7 @@ import {
 } from "./floughNodesGrouping";
 import {
     defineOneIndexingHeaper,
-} from "./heaper";
+} from "./floughHeaper";
 import {
     getMyDebug,
     createDbgs,
@@ -466,7 +466,7 @@ function breakpoint() {
 }
 export function createSourceFileFloughState(sourceFile: SourceFile, checker: FloughTypeChecker, compilerOptions: CompilerOptions): SourceFileFloughState {
     const t0 = process.hrtime.bigint();
-    // if (IDebug.isActive()) breakpoint();;
+    // if (IDebug.isActive(loggerLevel)) breakpoint();;
     if (compilerOptions.floughConstraintsEnable === undefined) compilerOptions.floughConstraintsEnable = false;
     if (compilerOptions.enableTSDevExpectString === undefined) compilerOptions.enableTSDevExpectString = false;
     if (compilerOptions.floughDoNotWidenInitalizedFlowType === undefined) compilerOptions.floughDoNotWidenInitalizedFlowType = false;
@@ -483,7 +483,7 @@ export function createSourceFileFloughState(sourceFile: SourceFile, checker: Flo
 
 
     const groupsForFlow = makeGroupsForFlow(sourceFile, checker);
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(0)) {
         // just to set up the ids for debugging
         sourceFile.allFlowNodes?.forEach(fn => checker.getFlowNodeId(fn));
     }
@@ -653,7 +653,7 @@ export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, source
     const loggerLevel = 2;
     const minGroupIdxToAdd = options?.minGroupIdxToAdd;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         const maximalNode = groupsForFlow.posOrderedNodes[group.maximalIdx];
         IDebug.ilogGroup(()=>`updateHeapWithGroupForFlow[in]: group: {groupIdx: ${group.groupIdx}, maximalNode: ${IDebug.dbgs.nodeToString(maximalNode)}}. minGroupIdxToAdd: ${minGroupIdxToAdd}`,loggerLevel);
     }
@@ -778,12 +778,12 @@ function createInferStatus(groupForFlow: GroupForFlow, sourceFileMrState: Source
         groupNodeToTypeMap,
         accumBranches,
         getTypeOfExpressionShallowRecursion(sc: RefTypesSymtabConstraintItem, expr: Expression, returnErrorTypeOnFail?: boolean): Type {
-            if (IDebug.isActive()) {
+            if (IDebug.isActive(loggerLevel)) {
                 const dbgstr = `getTypeOfExpressionShallowRecursion[in]: expr: ${IDebug.dbgs.nodeToString(expr)}, returnErrorTypeOnFail: ${returnErrorTypeOnFail}`;
                 IDebug.ilogGroup(()=>dbgstr, loggerLevel);
             }
             const ret = this.callCheckerFunctionWithShallowRecursion(expr, sc, returnErrorTypeOnFail ?? false, mrState.checker.getTypeOfExpression, expr);
-            if (IDebug.isActive()) {
+            if (IDebug.isActive(loggerLevel)) {
                 const dbgstr = `getTypeOfExpressionShallowRecursion[out]: expr: ${IDebug.dbgs.nodeToString(expr)}, return type: ${IDebug.dbgs.typeToString(ret)}`;
                 IDebug.ilogGroupEnd(()=>dbgstr, loggerLevel);
             }
@@ -1123,7 +1123,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
     function filterSymtabBySymbolTable(symtab: Readonly<RefTypesSymtab>, locals: Readonly<SymbolTable> | undefined, dbgCaller: string): RefTypesSymtab {
         let newsymtab: RefTypesSymtab | undefined;
         locals?.forEach(s => {
-            if (IDebug.isActive() && symtab.has(s)) {
+            if (IDebug.isActive(loggerLevel) && symtab.has(s)) {
                 IDebug.ilog(()=>`${dbgCaller}: descoping symbol ${IDebug.dbgs.symbolToString(s)}`, loggerLevel);
             }
             if (!newsymtab) {
@@ -1246,7 +1246,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
         // remove the going-out-of-scope symbols from thre symbol table.
         // const newsymtab = copyRefTypesSymtab(sc.symtab);
         // fglab.originatingBlock.locals?.forEach((symbol)=>{
-        //     if (IDebug.isActive()){
+        //     if (IDebug.isActive(loggerLevel)){
         //         IDebug.ilog(()=>`doPostBlock: descoping symbol ${IDebug.dbgs.symbolToString(symbol)}`);
         //     }
         //     newsymtab.delete(symbol);
@@ -1277,7 +1277,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const mrNarrow = sourceFileMrState.mrNarrow;
     const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>
             `resolveGroupForFlow[in]: ${IDebug.dbgs.nodeToString(maximalNode)}, `
                 + `groupIndex:${groupForFlow.groupIdx}, kind:${groupForFlow.kind}, `
@@ -1328,7 +1328,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
      * Delete all the no-longer-needed CurrentBranchElements.
      */
     setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff) => forFlow.currentBranchesMap.delete(gff, set));
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         IDebug.ilog(()=>`resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():`, loggerLevel);
         if (!isRefTypesSymtabConstraintItemNever(anteSCArg)) {
             mrNarrow.dbgRefTypesSymtabToStrings(anteSCArg.symtab!).forEach(s => {
@@ -1359,7 +1359,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
         inferStatus,
     });
 
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         IDebug.ilog(()=>`resolveGroupForFlow[after flough]${IDebug.dbgs.nodeToString(maximalNode)}`, loggerLevel);
     }
 
@@ -1404,7 +1404,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
         }
     }
 
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] currentBranchesMap[after]:`, loggerLevel);
         dbgForFlow(sourceFileMrState, forFlow).forEach(s => IDebug.ilog(()=>`resolveGroupForFlow[dbg:] currentBranchesMap[after]: ${s}`, loggerLevel));
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] endof currentBranchesMap[after]:`, loggerLevel);
@@ -1416,9 +1416,9 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, inferStatus: 
 }
 export function getTypeByFlough(reference: Node, sourceFileMrState: SourceFileFloughState): Type {
     const loggerLevel = 2;
-    if (IDebug.isActive()) IDebug.ilogGroup(()=>`getTypeByMrNarrow[in] expr: ${IDebug.dbgs.nodeToString(reference)}`, loggerLevel);
+    if (IDebug.isActive(loggerLevel)) IDebug.ilogGroup(()=>`getTypeByMrNarrow[in] expr: ${IDebug.dbgs.nodeToString(reference)}`, loggerLevel);
     const type = getTypeByMrNarrowAux(reference, sourceFileMrState);
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroupEnd(()=>`getTypeByMrNarrow[out] expr: ${IDebug.dbgs.nodeToString(reference)} -> ${IDebug.dbgs.typeToString(type)}`, loggerLevel);
     }
     return type;
@@ -1435,7 +1435,7 @@ export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileFl
          * However the queries should be answerable below with groupNodeToTypeMap, so we need to fall through to that,
          * and only fail if that doesn't work.
          */
-        if (IDebug.isActive()) {
+        if (IDebug.isActive(loggerLevel)) {
             IDebug.ilog(()=>`getTypeByMrNarrowAux[dbg]: !!mrState.dataForGetTypeOfExpressionShallowRecursive: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
             // let p = expr;
             // while (p!==mrState.dataForGetTypeOfExpressionShallowRecursive.expr && p.kind!==SyntaxKind.SourceFile) p=p.parent;
@@ -1456,7 +1456,7 @@ export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileFl
         return fg;
     })();
     if (!groupForFlow) {
-        if (IDebug.isActive()) {
+        if (IDebug.isActive(loggerLevel)) {
             IDebug.ilog(()=>`getTypeByMrNarrowAux[dbg]: reference: ${IDebug.dbgs.nodeToString(expr)}, does not have flowGroup`, loggerLevel);
         }
         // TODO: This is almost certainly never taken.
@@ -1472,7 +1472,7 @@ export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileFl
         }
         Debug.fail();
     }
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         const maxnode = sourceFileMrState.groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
         IDebug.ilog(()=>`getTypeByMrNarrowAux[dbg]: reference: ${IDebug.dbgs.nodeToString(expr)}, maximalNode: ${IDebug.dbgs.nodeToString(maxnode)}`, loggerLevel);
     }
@@ -1494,18 +1494,18 @@ export function getTypeByMrNarrowAux(expr: Node, sourceFileMrState: SourceFileFl
         if (!cachedType) {
             const graphIndex = groupsForFlow.connectedGroupsGraphs.arrGroupIndexToConnectGraph[groupForFlow.groupIdx];
             if (mrState.connectGroupsGraphsCompleted[graphIndex]) {
-                if (IDebug.isActive()) IDebug.ilog(()=>`getTypeByMrNarrowAux[dbg]: virtual cache hit, never branch in completed graph`, loggerLevel);
+                if (IDebug.isActive(loggerLevel)) IDebug.ilog(()=>`getTypeByMrNarrowAux[dbg]: virtual cache hit, never branch in completed graph`, loggerLevel);
                 cachedType = sourceFileMrState.mrState.checker.getNeverType();
             }
         }
     }
     if (cachedType) {
-        if (IDebug.isActive()) IDebug.ilog(()=>`getTypeByMrNarrowAux[dbg]: cache hit`, loggerLevel);
+        if (IDebug.isActive(loggerLevel)) IDebug.ilog(()=>`getTypeByMrNarrowAux[dbg]: cache hit`, loggerLevel);
         return cachedType;
     }
 
     if (mrState.dataForGetTypeOfExpressionShallowRecursive?.returnErrorTypeOnFail) {
-        if (IDebug.isActive()) {
+        if (IDebug.isActive(loggerLevel)) {
             IDebug.ilog(()=>`getTypeByMrNarrowAux[dbg]: !!mrState.dataForGetTypeOfExpressionShallowRecursive step 2 failed, returnErrorTypeOnFail`, loggerLevel);
         }
         return sourceFileMrState.mrState.checker.getErrorType();

@@ -24,13 +24,10 @@ import {
     FloughTypeChecker,
     assertCastType,
 } from "./floughTypedefs";
-import {
-    getMyDebug,
-    IDebug.ilogGroup,
-    IDebug.ilog,
-    IDebug.ilogGroupEnd,
-    dbgsModule,
-} from "./myConsole";
+
+import { IDebug } from "./mydebug";
+
+
 
 const uniqueNeverType: FloughType = { nobj: {} } as const;
 
@@ -1180,10 +1177,11 @@ export type IntersectionsAndDifferencesNobjInteralReturnType = {
     bonly?: FloughTypeNobj;
 };
 function intersectionsAndDifferencesNobjInternal(a: Readonly<FloughTypeNobj>, b: Readonly<FloughTypeNobj>): IntersectionsAndDifferencesNobjInteralReturnType {
-    if (IDebug.isActive()) {
-        IDebug.ilogGroup("intersectionsAndDifferencesNobjInternal[in]");
-        IDebug.ilog(()=>`intersectionsAndDifferencesNobjInternal[in] a:${dbgFloughTypeNobjToStrings(a)}`);
-        IDebug.ilog(()=>`intersectionsAndDifferencesNobjInternal[in] b:${dbgFloughTypeNobjToStrings(b)}`);
+    const loggerLevel = 2;
+    if (IDebug.isActive(loggerLevel)) {
+        IDebug.ilogGroup(()=>"intersectionsAndDifferencesNobjInternal[in]", loggerLevel);
+        IDebug.ilog(()=>`intersectionsAndDifferencesNobjInternal[in] a:${dbgFloughTypeNobjToStrings(a)}`, loggerLevel);
+        IDebug.ilog(()=>`intersectionsAndDifferencesNobjInternal[in] b:${dbgFloughTypeNobjToStrings(b)}`, loggerLevel);
     }
     let bothUnique: FloughTypeNobj | undefined;
     let bypassBothUnique = false;
@@ -1391,17 +1389,17 @@ function intersectionsAndDifferencesNobjInternal(a: Readonly<FloughTypeNobj>, b:
     if (Object.keys(aonly).length !== 0) ret.aonly = aonly;
     if (Object.keys(bonly).length !== 0) ret.bonly = bonly;
 
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         const f = (k: keyof typeof ret) => {
             if (ret[k]) {
-                dbgFloughTypeNobjToStrings(ret[k] as FloughTypeNobj).forEach(s => IDebug.ilog(()=>`intersectionsAndDifferences[out] ${k}:${s}`));
+                dbgFloughTypeNobjToStrings(ret[k] as FloughTypeNobj).forEach(s => IDebug.ilog(()=>`intersectionsAndDifferences[out] ${k}:${s}`, loggerLevel));
             }
         };
         f("bothUnique");
         f("bothNotUnique");
         f("aonly");
         f("bonly");
-        IDebug.ilogGroupEnd();
+        IDebug.ilogGroupEnd(()=>`intersectionsAndDifferencesNobjInternal[out]`, loggerLevel);
     }
     return ret;
 }
@@ -1414,6 +1412,7 @@ export type IntersectionsAndDifferencesForEqualityCompareReturnType = {
     bonly?: FloughType;
 };
 function intersectionsAndDifferencesForEqualityCompare(aIn: Readonly<FloughTypei>, bIn: Readonly<FloughTypei>): IntersectionsAndDifferencesForEqualityCompareReturnType {
+    const loggerLevel = 2;
     if (aIn.any || aIn.unknown) {
         if (bIn.any || bIn.unknown) {
             if (aIn.any && bIn.any) return { bothNotUniqueA: aIn, bothNotUniqueB: bIn };
@@ -1428,12 +1427,12 @@ function intersectionsAndDifferencesForEqualityCompare(aIn: Readonly<FloughTypei
     const b = bIn.nobj;
     const aobj = aIn.logicalObject;
     const bobj = bIn.logicalObject;
-    if (IDebug.isActive()) {
-        IDebug.ilogGroup("intersectionsAndDifferences[in]");
-        IDebug.ilog(()=>`intersectionsAndDifferences[in] a.nobj:${dbgFloughTypeNobjToStrings(a)}`);
-        IDebug.ilog(()=>`intersectionsAndDifferences[in] a.obj:${aobj ? "<...>" : "<undef>"}`);
-        IDebug.ilog(()=>`intersectionsAndDifferences[in] b.nobj:${dbgFloughTypeNobjToStrings(b)}`);
-        IDebug.ilog(()=>`intersectionsAndDifferences[in] b.obj:${bobj ? "<...>" : "<undef>"}`);
+    if (IDebug.isActive(loggerLevel)) {
+        IDebug.ilogGroup(()=>"intersectionsAndDifferences[in]", loggerLevel);
+        IDebug.ilog(()=>`intersectionsAndDifferences[in] a.nobj:${dbgFloughTypeNobjToStrings(a)}`, loggerLevel);
+        IDebug.ilog(()=>`intersectionsAndDifferences[in] a.obj:${aobj ? "<...>" : "<undef>"}`, loggerLevel);
+        IDebug.ilog(()=>`intersectionsAndDifferences[in] b.nobj:${dbgFloughTypeNobjToStrings(b)}`, loggerLevel);
+        IDebug.ilog(()=>`intersectionsAndDifferences[in] b.obj:${bobj ? "<...>" : "<undef>"}`, loggerLevel);
     }
     const { bothUnique, bothNotUnique, aonly, bonly } = intersectionsAndDifferencesNobjInternal(a, b);
     const ret: IntersectionsAndDifferencesForEqualityCompareReturnType = {};
@@ -1448,11 +1447,11 @@ function intersectionsAndDifferencesForEqualityCompare(aIn: Readonly<FloughTypei
     if (bonly && Object.keys(bonly).length !== 0 || (!aobj && bobj)) {
         ret.bonly = { nobj: { ...bonly }, logicalObject: bobj };
     }
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         const f = (k: keyof typeof ret) => {
             if (ret[k]) {
-                dbgFloughTypeNobjToStrings((ret[k] as FloughTypei).nobj).forEach(s => IDebug.ilog(()=>`intersectionsAndDifferences[out] ${k}.nobj:${s}`));
-                IDebug.ilog(()=>`intersectionsAndDifferences[in] ${k}.obj:${aobj ? "<...>" : "<undef>"}`);
+                dbgFloughTypeNobjToStrings((ret[k] as FloughTypei).nobj).forEach(s => IDebug.ilog(()=>`intersectionsAndDifferences[out] ${k}.nobj:${s}`, loggerLevel));
+                IDebug.ilog(()=>`intersectionsAndDifferences[in] ${k}.obj:${aobj ? "<...>" : "<undef>"}`, loggerLevel);
             }
         };
         f("bothUnique");
@@ -1460,7 +1459,7 @@ function intersectionsAndDifferencesForEqualityCompare(aIn: Readonly<FloughTypei
         f("bothNotUniqueB");
         f("aonly");
         f("bonly");
-        IDebug.ilogGroupEnd();
+        IDebug.ilogGroupEnd(()=>`intersectionsAndDifferences[out]`, loggerLevel);
     }
     return ret;
 }

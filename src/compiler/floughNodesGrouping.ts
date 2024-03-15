@@ -119,14 +119,14 @@ function makeConnectedGroupsGraphs(orderedGroups: Readonly<GroupForFlow[]>, grou
             const graphIndex = arrConnectedGraphs.length;
             arrConnectedGraphs.push([group]);
             arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
-            if (IDebug.isActive()) group.dbgGraphIdx = graphIndex;
+            if (IDebug.isActive(0)) group.dbgGraphIdx = graphIndex;
         }
         else {
             const anteGroup = anteGroups.values().next().value as GroupForFlow;
             const graphIndex = arrGroupIndexToConnectGraph[anteGroup.groupIdx];
             arrConnectedGraphs[graphIndex].push(group);
             arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
-            if (IDebug.isActive()) group.dbgGraphIdx = graphIndex;
+            if (IDebug.isActive(0)) group.dbgGraphIdx = graphIndex;
         }
     }
     if (extraAsserts) {
@@ -615,7 +615,7 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
         connectedGroupsGraphs: makeConnectedGroupsGraphs(orderedGroups, groupToAnteGroupMap),
         // dbgFlowToOriginatingGroupIdx: flowToOriginatingGroupIdx,
     };
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(0)) {
         retval.dbgFlowToOriginatingGroupIdx = flowToOriginatingGroupIdx;
     }
     return retval;

@@ -202,7 +202,7 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
     //  }
     assertCastType<Readonly<RefTypesSymtabProxy>>(stin);
     Debug.assert(!stin.isSubloop || stin.loopState);
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>`createSuperloopRefTypesSymtab[in]`, loggerLevel);
         // if (stin.isSubloop){
         //     IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] idx:${stin.loopGroup?.groupIdx}, invocations${stin.loopState?.invocations}`);
@@ -226,7 +226,7 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
         }
     });
     // if (stin.loopState) stin.loopState.symbolsReadNotAssigned = symbolsReadNotAssigned;
-    if (IDebug.isActive()) {
+    if (IDebug.isActive(loggerLevel)) {
         dbgRefTypesSymtabToStrings(stout).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[out] stout: ${str}`, loggerLevel));
         IDebug.ilogGroupEnd(()=>`createSuperloopRefTypesSymtab[out]`, loggerLevel);
     }
