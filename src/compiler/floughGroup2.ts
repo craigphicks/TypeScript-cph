@@ -534,7 +534,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         if (
             uType.flags & TypeFlags.NumberLiteral && (
                 (uType as NumberLiteralType).value === 0 ||
-                (uType as NumberLiteralType).value === -0 ||
+                //(uType as NumberLiteralType).value === -0 ||
                 isNaN((uType as NumberLiteralType).value)
             )
         ) {

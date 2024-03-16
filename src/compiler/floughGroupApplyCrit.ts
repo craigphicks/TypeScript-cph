@@ -31,14 +31,14 @@ import { createRefTypesSymtabConstraintItemNever, isRefTypesSymtabConstraintItem
 import { FloughTypeChecker } from "./floughTypedefs"
 import { IDebug } from "./mydebug";
 
-const checker: FloughTypeChecker = undefined as any as FloughTypeChecker;
-const getDeclaredType: GetDeclaredTypeFn = undefined as any as GetDeclaredTypeFn;
-const mrNarrow: MrNarrow = undefined as any as MrNarrow;
+var checker: FloughTypeChecker;
+var getDeclaredType: GetDeclaredTypeFn;
+var mrNarrow: MrNarrow;
 
-export function initFloughGroupApplyCrit(checkerIn: TypeChecker, mrNarrowIn: MrNarrow): void {
-    (checker as any) = checkerIn;
-    (mrNarrow as any) = mrNarrowIn;
-    (getDeclaredType as any) = mrNarrowIn.getDeclaredType;
+export function initFloughGroupApplyCrit(checkerIn: FloughTypeChecker, mrNarrowIn: MrNarrow): void {
+    checker = checkerIn;
+    mrNarrow = mrNarrowIn;
+    getDeclaredType = mrNarrowIn.getDeclaredType;
 }
 
 function createNever(): RefTypesTableReturnNoSymbol {

@@ -1,9 +1,9 @@
+//import type { Symbol } from "./types";
 import {
     Debug,
     Expression,
     IntersectionType,
     ObjectType,
-    Symbol,
     Type,
     TypeChecker,
     UnionType,
@@ -28,9 +28,9 @@ import {
     IDebug,
 } from "./mydebug";
 
-const checker = undefined as any as TypeChecker; // TODO: intialize;
+var checker: TypeChecker; // TODO: intialize;
 export function initFloughLogicalObjectOuter(checkerIn: TypeChecker) {
-    (checker as any) = checkerIn;
+    checker = checkerIn;
 }
 
 export type DiscriminantFn = (type: Readonly<FloughType>) => FloughType | true | undefined; // true means type doesn't change, undefined means type becomes never, else become FloughType

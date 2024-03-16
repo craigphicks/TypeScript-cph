@@ -38,11 +38,11 @@ import {
 } from "./floughGroup2";
 import { IDebug } from "./mydebug";
 
-const mrNarrow: MrNarrow = undefined as any as MrNarrow;
-const symbolFlowInfoMap: SymbolFlowInfoMap = undefined as any as SymbolFlowInfoMap;
+var mrNarrow: MrNarrow;
+var symbolFlowInfoMap: SymbolFlowInfoMap;
 export function initializeFlowGroupRefTypesSymtabModule(mrNarrowIn: MrNarrow) {
-    (mrNarrow as any) = mrNarrowIn;
-    (symbolFlowInfoMap as any) = mrNarrowIn.mrState.symbolFlowInfoMap;
+    mrNarrow = mrNarrowIn;
+    symbolFlowInfoMap = mrNarrowIn.mrState.symbolFlowInfoMap;
 }
 
 export interface RefTypesSymtabProxyI {

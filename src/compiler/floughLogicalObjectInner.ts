@@ -1,3 +1,4 @@
+import type { Symbol } from "./types";
 import {
     AccessExpression,
     Debug,
@@ -8,7 +9,6 @@ import {
     LiteralType,
     ObjectType,
     PropertyAccessExpression,
-    Symbol,
     SymbolFlags,
     TupleType,
     TupleTypeReference,
@@ -81,9 +81,9 @@ import { IDebug } from "./mydebug";
  * to prevent duplicate keys.
  */
 
-const checker = undefined as any as FloughTypeChecker; // TODO: intialize;
-//const dbgs = undefined as any as DbgsX;
-const mrNarrow = undefined as any as MrNarrow;
+
+var checker: FloughTypeChecker;
+var mrNarrow: MrNarrow;
 
 export type OldToNewLogicalObjectMap = Map<FloughLogicalObjectInnerIF, FloughLogicalObjectInnerIF>;
 
@@ -201,9 +201,10 @@ type HasKeys = Map<string, HasKeyItem>;
 // }
 
 export function initFloughLogicalObjectInner(checkerIn: TypeChecker, mrNarrowIn: MrNarrow) {
-    (checker as any) = checkerIn;
-    // (refTypesTypeModule as any) = refTypesTypeModuleIn;
-    (mrNarrow as any) = mrNarrowIn;
+    // @ts-ignore
+    checker = checkerIn;
+    // @ts-ignore
+    mrNarrow = mrNarrowIn;
 }
 enum FloughLogicalObjectKind {
     plain = "plain",

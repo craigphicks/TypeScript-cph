@@ -209,7 +209,7 @@ export function createDbgs(checker: FloughTypeChecker): DbgsX{
         dbgWriteSignatureArray,
         dbgSymbolToStringSimple,
     };
-    (dbgsModule as any) = ret;
+    [(dbgsModule as any)][0] = ret;
     return ret;
 }
 

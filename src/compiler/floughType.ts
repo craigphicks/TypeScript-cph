@@ -345,12 +345,12 @@ function setToArray<T>(set: Set<T>): T[] {
 
 function castFloughTypei(_ft: FloughType): asserts _ft is FloughTypei {}
 function castReadonlyFloughTypei(_ft: FloughType): asserts _ft is Readonly<FloughTypei> {}
-const checker = 0 as any as FloughTypeChecker;
-const compilerOptions = 0 as any as CompilerOptions;
+var checker: FloughTypeChecker;
+var compilerOptions: CompilerOptions;
 
-export function initFloughTypeModule(checkerIn: TypeChecker, compilerOptionsIn: CompilerOptions): void {
-    (checker as any) = checkerIn;
-    (compilerOptions as any) = compilerOptionsIn;
+export function initFloughTypeModule(checkerIn: FloughTypeChecker, compilerOptionsIn: CompilerOptions): void {
+    checker = checkerIn;
+    compilerOptions = compilerOptionsIn;
 }
 
 type FloughTypeNobj = {
