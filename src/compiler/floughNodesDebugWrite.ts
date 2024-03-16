@@ -1,3 +1,5 @@
+import { BranchKind, FloughFlags, FloughLabel, FloughNode, FlowExpressionStatement, SourceFileWithFloughNodes} from "./floughTsExtensions";
+
 import {
     getNodeId,
 } from "./checker";
@@ -20,21 +22,21 @@ import {
     sys,
 } from "./sys";
 import {
-    FlowNode,
+    //FlowNode,
     Type,
     TypeChecker,
     Node,
-    FlowLabel,
-    SourceFile,
+    //FlowLabel,
+    //SourceFile,
 } from "./types";
 
 import { IDebug } from "./mydebug";
 
-function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<FlowNode[]>, mapPeType: Map<string, Type> | undefined, checker: TypeChecker): void {
+function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<FloughNode[]>, mapPeType: Map<string, Type> | undefined, checker: TypeChecker): void {
     const map_peID = new Map<string, number>(); // TID, text ID
     const map_nID = new Map<Node, number>(); // NID, node ID
-    const map_fID = new Map<FlowNode, number>(); // FID, physical FlowNode object ID
-    const set_loopDetect = new Set<FlowNode>();
+    const map_fID = new Map<FloughNode, number>(); // FID, physical FlowNode object ID
+    const set_loopDetect = new Set<FloughNode>();
     const write = (s: string) => {
         writeIn(s + sys.newLine);
     };
@@ -53,7 +55,7 @@ function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<F
         t += ` [${node.pos},${node.end}]`;
         return t;
     };
-    const doOne = (fn: FlowNode) => {
+    const doOne = (fn: FloughNode) => {
         const recursiveReference = set_loopDetect.has(fn);
         currentIndent++;
         write(indent() + "~~~~~~");
@@ -77,7 +79,7 @@ function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<F
         }
         // Flows with nodes that have same text range should have same ID. (edit: => TID)
         let idstr = `id: ${fn.id}, `;
-        if ((fn as FlowLabel).branchKind) idstr += ` branchKind: ${(fn as FlowLabel).branchKind}, `;
+        if ((fn as FloughLabel).branchKind) idstr += ` branchKind: ${(fn as FloughLabel).branchKind}, `;
         idstr += `FID: ${map_fID.get(fn)!}`;
         if (node && map_nID.has(node)) idstr += `, NID: [n${map_nID.get(node)}]`;
         if (pekey && map_peID.has(pekey)) idstr += `, TID: ${map_peID.get(pekey)}`;
@@ -114,12 +116,12 @@ function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<F
         //     write(indent()+`joinNode: ${getText(fn.joinNode)}`);
         // }
         if ((fn as any).antecedents) {
-            write(indent() + `antecedents:[${((fn as any).antecedents as FlowNode[]).length}]`);
-            ((fn as any).antecedents as Readonly<FlowNode[]>).forEach(a => doOne(a));
+            write(indent() + `antecedents:[${((fn as any).antecedents as FloughNode[]).length}]`);
+            ((fn as any).antecedents as Readonly<FloughNode[]>).forEach(a => doOne(a));
         }
-        if ((fn as FlowLabel).controlExits) {
-            write(indent() + `controlExits:[${((fn as FlowLabel).controlExits as FlowNode[]).length}]`);
-            ((fn as FlowLabel).controlExits as Readonly<FlowNode[]>).forEach(a => doOne(a));
+        if ((fn as FloughLabel).controlExits) {
+            write(indent() + `controlExits:[${((fn as FloughLabel).controlExits as FloughNode[]).length}]`);
+            ((fn as FloughLabel).controlExits as Readonly<FloughNode[]>).forEach(a => doOne(a));
         }
         if ((fn as any).antecedent) {
             write(indent() + "antecedent:");
@@ -136,7 +138,7 @@ function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<F
     // write(`myMaxDepth:${myMaxDepth}`);
 }
 
-export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: FlowNode) => number, checker: TypeChecker): string {
+export function flowNodesToString(sourceFile: SourceFileWithFloughNodes, getFlowNodeId: (flow: FloughNode) => number, checker: TypeChecker): string {
     let contents = "";
     let write = (s: string) => {
         contents += s;
@@ -145,22 +147,22 @@ export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: 
     False = false;
     if (False) write = console.log;
     // const write = (s: string)=>contents+=s;
-    const endFlowNodes: FlowNode[] = [];
+    const endFlowNodes: FloughNode[] = [];
     // @ts-ignore
-    const flowNodes: FlowNode[] = [];
+    const flowNodes: FloughNode[] = [];
     // endFlowNodes is at least not always easy to find, might not even exist in any container?
-    const setv = new Set<FlowNode>();
+    const setv = new Set<FloughNode>();
     const visitorEfn = (n: Node) => {
         // if ((n as any).endFlowNode) endFlowNodes.push((n as any).endFlowNode);
         if ((n as any).flowNode) {
-            const fn = (n as any).flowNode as FlowNode;
+            const fn = (n as any).flowNode as FloughNode;
             if (!setv.has(fn) && !isFlowStart(fn)) {
                 flowNodes.push(fn);
                 setv.add(fn);
             }
         }
         if ((n as any).endFlowNode) {
-            const fn = (n as any).endFlowNode as FlowNode;
+            const fn = (n as any).endFlowNode as FloughNode;
             if (!setv.has(fn) && !isFlowStart(fn)) {
                 flowNodes.push(fn);
                 setv.add(fn);
@@ -169,15 +171,15 @@ export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: 
         forEachChild(n, visitorEfn);
     };
     visitorEfn(sourceFile);
-    const setAnte = new Set<FlowNode>();
+    const setAnte = new Set<FloughNode>();
     // const setNotAnte = new Set<FlowNode>();
     // some flow nodes are not referenced by any node
-    const addAntesToSet = (f: FlowNode) => {
+    const addAntesToSet = (f: FloughNode) => {
         if ((f as any).antecedent) {
             if (!setAnte.has((f as any).antecedent)) setAnte.add((f as any).antecedent);
         }
         if ((f as any).antecedents) {
-            (f as any).antecedents.forEach((a: FlowNode) => {
+            (f as any).antecedents.forEach((a: FloughNode) => {
                 if (!setAnte.has(a)) setAnte.add(a);
             });
         }
@@ -191,16 +193,16 @@ export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: 
         change = setAnte.size !== size;
     }
     setv.clear();
-    const visitMark = (f: FlowNode) => {
+    const visitMark = (f: FloughNode) => {
         if (setv.has(f)) return;
         setv.add(f);
         if ((f as any).antecedent) {
-            const a: FlowNode = (f as any).antecedent;
+            const a: FloughNode = (f as any).antecedent;
             getFlowNodeId(a);
             visitMark(a);
         }
         else if ((f as any).antecedents) {
-            (f as any).antecedents.forEach((a: FlowNode) => {
+            (f as any).antecedents.forEach((a: FloughNode) => {
                 getFlowNodeId(a);
                 visitMark(a);
             });
@@ -230,22 +232,22 @@ export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: 
 }
 
 
-export function dbgFlowToString(flow: FlowNode | undefined, _withAntecedentants = false): string {
+export function dbgFlowToString(flow: FloughNode | undefined, _withAntecedentants = false): string {
     if (!flow) return "<undef>";
-    const getFlowNodeId = (flow: FlowNode) => {
+    const getFlowNodeId = (flow: FloughNode) => {
         return flow.id;
     };
     let str = "";
     str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
-    if ((flow as FlowLabel).branchKind) str += `branchKind:${((flow as FlowLabel).branchKind)}, `;
+    if ((flow as FloughLabel).branchKind) str += `branchKind:${((flow as FloughLabel).branchKind)}, `;
     if ((flow as any).node) str += IDebug.dbgs.nodeToString((flow as any).node as any as Node);
     return str;
 };
 
-function getFlowNodeId(flow: FlowNode): number {
+function getFlowNodeId(flow: FloughNode): number {
     return flow.id ?? 0;
 }
-function dbgFlowToString2(flow: FlowNode | undefined, withAntecedants?: boolean): string {
+function dbgFlowToString2(flow: FloughNode | undefined, withAntecedants?: boolean): string {
     if (!flow) return "<undef>";
     let str = "";
     //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;

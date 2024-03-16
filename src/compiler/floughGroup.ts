@@ -1,11 +1,12 @@
 import {
     Debug,
 } from "./debug";
+import { BranchKind, FloughFlags, FloughLabel, FloughNode, FlowExpressionStatement, SourceFileWithFloughNodes } from "./floughTsExtensions";
 import {
     Node,
     FlowLabel,
-    FlowNode,
-    SourceFile,
+    //FlowNode,
+    //SourceFile,
     Type,
     Expression,
     CompilerOptions,
@@ -79,11 +80,6 @@ import {
 import {
     defineOneIndexingHeaper,
 } from "./floughHeaper";
-import {
-    getMyDebug,
-    createDbgs,
-    DbgsX,
-} from "./myConsole";
 import { IDebug } from "./mydebug";
 import {
     FloughTypeChecker,
@@ -105,9 +101,7 @@ export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnected
  */
 export const enableBypassEffectiveDeclaredType = true;
 
-// export const disableLogicalObjectIntersections = true;
 
-let dbgs: DbgsX | undefined;
 export enum GroupForFlowKind {
     none = "none",
     plain = "plain",
@@ -217,12 +211,12 @@ export interface GroupsForFlow {
     groupToAnteGroupMap: Map<GroupForFlow, Set<GroupForFlow>>; // used in updateHeap
     nodeToGroupMap: Map<Node, GroupForFlow>;
     connectedGroupsGraphs: ConnectedGroupsGraphs;
-    dbgFlowToOriginatingGroupIdx?: Map<FlowNode, number>;
+    dbgFlowToOriginatingGroupIdx?: Map<FloughNode, number>;
     dbgCreationTimeMs?: bigint;
 }
 
 export interface SourceFileFloughState {
-    sourceFile: SourceFile;
+    sourceFile: SourceFileWithFloughNodes;
     groupsForFlow: GroupsForFlow;
     mrState: MrState;
     mrNarrow: MrNarrow;
@@ -464,7 +458,7 @@ function createForFlow(groupsForFlow: GroupsForFlow) {
 function breakpoint() {
     debugger;
 }
-export function createSourceFileFloughState(sourceFile: SourceFile, checker: FloughTypeChecker, compilerOptions: CompilerOptions): SourceFileFloughState {
+export function createSourceFileFloughState(sourceFile: SourceFileWithFloughNodes, checker: FloughTypeChecker, compilerOptions: CompilerOptions): SourceFileFloughState {
     const t0 = process.hrtime.bigint();
     // if (IDebug.isActive(loggerLevel)) breakpoint();;
     if (compilerOptions.floughConstraintsEnable === undefined) compilerOptions.floughConstraintsEnable = false;
@@ -523,7 +517,6 @@ export function createSourceFileFloughState(sourceFile: SourceFile, checker: Flo
 
     const t1 = process.hrtime.bigint() - t0;
     groupsForFlow.dbgCreationTimeMs = t1 / BigInt(1000000);
-    dbgs = createDbgs(checker);
     const mrState: MrState = {
         checker,
         replayableItems: new WeakMap<Symbol, ReplayableItem>(),
@@ -812,7 +805,7 @@ function createProcessLoopState(loopGroup: Readonly<GroupForFlow>, _setOfLoopDep
     };
 }
 
-export function getDevDebugger(node: Node, sourceFile: SourceFile): boolean {
+export function getDevDebugger(node: Node, sourceFile: SourceFileWithFloughNodes): boolean {
     const num = Number(process.env.myDebug);
     if (isNaN(num) || num === 0) return false;
     let stmnt = node;
@@ -841,7 +834,7 @@ export function getDevDebugger(node: Node, sourceFile: SourceFile): boolean {
     return false;
 }
 
-export function getDevExpectString(node: Node, sourceFile: SourceFile): string | undefined {
+export function getDevExpectString(node: Node, sourceFile: SourceFileWithFloughNodes): string | undefined {
     const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
     let cr: CommentRange | undefined;
     if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length - 1];
@@ -854,7 +847,7 @@ export function getDevExpectString(node: Node, sourceFile: SourceFile): string |
     }
     return undefined;
 }
-export function getDevExpectStrings(node: Node, sourceFile: SourceFile): string[] | undefined {
+export function getDevExpectStrings(node: Node, sourceFile: SourceFileWithFloughNodes): string[] | undefined {
     const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
     const arrstr: string[] = [];
     if (!arrCommentRange) return undefined;
@@ -1077,7 +1070,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
     //     });
     // }
     /** */
-    if (getMyDebug(loggerLevel)) {
+    if (IDebug.isActive(loggerLevel)) {
         setOfLoopDeps.forEach(g => {
             const cbe = forFlowFinal.currentBranchesMap.get(g); // some will have been deleted already, only those referenced externally should be present
             if (cbe) {

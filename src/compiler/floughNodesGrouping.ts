@@ -1,4 +1,9 @@
 /* eslint-disable no-double-space */
+import {
+    BranchKind, FloughFlags, FloughLabel, FloughNode, FlowExpressionStatement, SourceFileWithFloughNodes,
+    FloughNodeBase,
+    NodeWithFlough, FloughWithAntecedent, FloughWithAntecedents,
+} from "./floughTsExtensions";
 
 import {
     Debug,
@@ -27,11 +32,11 @@ import {
 import {
     Node,
     SyntaxKind,
-    SourceFile,
-    TypeChecker,
-    FlowNode,
-    FlowLabel,
-    FlowFlags,
+    //SourceFile,
+    //TypeChecker,
+    //FlowNode,
+    //FlowLabel,
+    //FlowFlags,
     FlowStart,
     FlowAssignment,
     FlowCall,
@@ -39,9 +44,7 @@ import {
     FlowSwitchClause,
     FlowArrayMutation,
     FlowReduceLabel,
-    FlowNodeBase,
-    BranchKind,
-    FlowExpressionStatement,
+    FlowContainer,
 } from "./types";
 import {
     isStatement,
@@ -49,7 +52,6 @@ import {
 import {
     FloughTypeChecker
 } from "./floughTypedefs";
-//import { getMyDebug, createDbgs, DbgsX } from "./myConsole";
 import { dbgFlowToString } from "./floughNodesDebugWrite"
 import { IDebug } from "./mydebug"
 
@@ -144,9 +146,9 @@ function makeConnectedGroupsGraphs(orderedGroups: Readonly<GroupForFlow[]>, grou
     return { arrConnectedGraphs, arrGroupIndexToDependantCount, arrGroupIndexToConnectGraph };
 }
 
-export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChecker): GroupsForFlow {
-    const flowNodes: FlowNode[] = sourceFile.allFlowNodes ?? [];
-    const nodesWithFlow: Node[] = sourceFile.allNodesWithFlowOneSourceFile ?? [];
+export function makeGroupsForFlow(sourceFile: SourceFileWithFloughNodes, checker: FloughTypeChecker): GroupsForFlow {
+    const flowNodes: FloughNode[] = sourceFile.allFlowNodes ?? [];
+    const nodesWithFlow: NodeWithFlough[] = sourceFile.allNodesWithFlowOneSourceFile ?? [];
 
     interface Container extends Node {
         nextContainer: Node | undefined;
@@ -177,7 +179,7 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
     // };
 
     const setOfNodes = new Set<Node>();
-    nodesWithFlow.forEach((n: Node) => {
+    nodesWithFlow.forEach((n: NodeWithFlough) => {
         Debug.assert(isNodeWithFlow(n));
         const fn = n.flowNode;
         if (isFlowStart(fn)) return;
@@ -321,11 +323,11 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
      * Set group index and
      * Find the flow linked groups for each group.
      */
-    const groupToSetOfFlowMap = new Map<GroupForFlow, Set<FlowNode>>();
-    const flowToOriginatingGroupIdx = new Map<FlowNode, number>();
+    const groupToSetOfFlowMap = new Map<GroupForFlow, Set<FloughNode>>();
+    const flowToOriginatingGroupIdx = new Map<FloughNode, number>();
     orderedGroups.forEach((g, groupIdx) => {
         g.groupIdx = groupIdx;
-        const set = new Set<FlowNode>();
+        const set = new Set<FloughNode>();
         const { pos: gpos, end: gend } = orderedNodes[g.maximalIdx];
         for (let idx = g.idxb; idx !== g.idxe; idx++) {
             const node = orderedNodes[idx];
@@ -369,10 +371,10 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
         if (!origSetOfFlow) return;
         const setOfGroup = new Set<GroupForFlow>();
         const setOfAnteGroup = new Set<GroupForFlow>(); // determined through previousAnteGroupIdx and FlowGroupLabel's
-        const filteredSetOfFlow = new Set<FlowNode>();
+        const filteredSetOfFlow = new Set<FloughNode>();
         // const anteLabels: GroupForFlow["anteLabels"] = {};
         // let hadAnteLabel = false;
-        const dbgSetOfUnhandledFlowLabel = new Set<FlowLabel>();
+        const dbgSetOfUnhandledFlowLabel = new Set<FloughLabel>();
         origSetOfFlow.forEach(fn => {
             if (isFlowStart(fn)) return;
             if (isFlowWithNode(fn)) {
@@ -395,7 +397,7 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
                 ////////////////////////////////////////////////////////////////////////////////////////
                 if (isFlowLabel(fn)) {
                     // const flowBranchLoopResolve = (fn: FlowLabel):
-                    const flowBranchThenElseToFlowGroupLabelThenElse = (fn: FlowLabel): FlowGroupLabelThen | FlowGroupLabelElse => {
+                    const flowBranchThenElseToFlowGroupLabelThenElse = (fn: FloughLabel): FlowGroupLabelThen | FlowGroupLabelElse => {
                         Debug.assert(fn.antecedents);
                         Debug.assert(fn.antecedents.length >= 1); // Turns out fn.antecedents[1], if exists, leads to redundent duplicate oppostite logic
                         let fnante = fn.antecedents[0];
@@ -405,8 +407,8 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
                         }
                         Debug.assert(isFlowWithNode(fnante));
 
-                        if (!!(fn.flags & FlowFlags.TrueCondition)) Debug.assert(fn.branchKind === BranchKind.then);
-                        if (!!(fn.flags & FlowFlags.FalseCondition)) Debug.assert(fn.branchKind === BranchKind.else);
+                        if (!!(fn.flags & FloughFlags.TrueCondition)) Debug.assert(fn.branchKind === BranchKind.then);
+                        if (!!(fn.flags & FloughFlags.FalseCondition)) Debug.assert(fn.branchKind === BranchKind.else);
 
                         const anteg = nodeToGroupMap.get(fnante.node);
                         Debug.assert(anteg && anteg !== g);
@@ -416,7 +418,7 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
                         setOfAnteGroup.add(anteg);
                         return { kind: fglkind, ifGroupIdx: anteg.groupIdx };
                     }; // flowBranchThenElseToFlowGroupLabelThenElse
-                    const flowBranchPostIfResolve = (fn: FlowLabel): FlowGroupLabelPostIf => {
+                    const flowBranchPostIfResolve = (fn: FloughLabel): FlowGroupLabelPostIf => {
                         //  fn.antecedents?.length may be less than 2, c.f., while(x){ if (x) continue; }
                         Debug.assert(!fn.antecedents || fn.antecedents.length <= 2);
                         const originatingGroupIdx = nodeToGroupMap.get(fn.originatingExpression!)!.groupIdx;
@@ -435,8 +437,8 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
                             originatingGroupIdx,
                         };
                     };
-                    const flowBranchPreWhileLoopResolve = (fn: FlowLabel): FlowGroupLabelLoop => {
-                        Debug.assert(fn.flags & FlowFlags.LoopLabel && fn.branchKind === BranchKind.preWhileLoop);
+                    const flowBranchPreWhileLoopResolve = (fn: FloughLabel): FlowGroupLabelLoop => {
+                        Debug.assert(fn.flags & FloughFlags.LoopLabel && fn.branchKind === BranchKind.preWhileLoop);
                         Debug.assert(fn.antecedents && fn.antecedents.length >= 1);
                         const antePrevious: FlowGroupLabel = flowNodeResolve(fn.antecedents[0])!;
                         Debug.assert(antePrevious);
@@ -456,10 +458,10 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
                         }
                         return ret;
                     };
-                    const flowBranchPreWhileBodyResolve = (fn: FlowLabel): FlowGroupLabelLoopThen => {
-                        Debug.assert(fn.flags & FlowFlags.BranchLabel && fn.branchKind === BranchKind.preWhileBody);
+                    const flowBranchPreWhileBodyResolve = (fn: FloughLabel): FlowGroupLabelLoopThen => {
+                        Debug.assert(fn.flags & FloughFlags.BranchLabel && fn.branchKind === BranchKind.preWhileBody);
                         Debug.assert(fn.antecedents && fn.antecedents.length === 1);
-                        Debug.assert(fn.antecedents[0].flags & FlowFlags.TrueCondition && isFlowWithNode(fn.antecedents[0]));
+                        Debug.assert(fn.antecedents[0].flags & FloughFlags.TrueCondition && isFlowWithNode(fn.antecedents[0]));
                         const loopGroupIdx = nodeToGroupMap.get(fn.antecedents[0].node)!.groupIdx;
                         setOfAnteGroup.add(orderedGroups[loopGroupIdx]);
                         return {
@@ -467,10 +469,10 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
                             loopGroupIdx,
                         };
                     };
-                    const flowBranchPostWhileLoopResolve = (fn: FlowLabel): FlowGroupLabelLoopElse => {
-                        Debug.assert(fn.flags & FlowFlags.BranchLabel && fn.branchKind === BranchKind.postWhileLoop);
+                    const flowBranchPostWhileLoopResolve = (fn: FloughLabel): FlowGroupLabelLoopElse => {
+                        Debug.assert(fn.flags & FloughFlags.BranchLabel && fn.branchKind === BranchKind.postWhileLoop);
                         Debug.assert(fn.antecedents && fn.antecedents.length >= 1);
-                        Debug.assert(fn.antecedents[0].flags & FlowFlags.FalseCondition && isFlowWithNode(fn.antecedents[0]));
+                        Debug.assert(fn.antecedents[0].flags & FloughFlags.FalseCondition && isFlowWithNode(fn.antecedents[0]));
                         const loopGroup = nodeToGroupMap.get(fn.antecedents[0].node)!;
                         const loopGroupIdx = loopGroup.groupIdx;
                         setOfAnteGroup.add(loopGroup);
@@ -489,7 +491,7 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
                             arrAnteBreak,
                         };
                     };
-                    const flowNodeResolve = (fn: FlowNode): FlowGroupLabel | undefined => {
+                    const flowNodeResolve = (fn: FloughNode): FlowGroupLabel | undefined => {
                         if (isFlowStart(fn)) {
                             return {
                                 kind: FlowGroupLabelKind.start,
@@ -621,76 +623,76 @@ export function makeGroupsForFlow(sourceFile: SourceFile, checker: FloughTypeChe
     return retval;
 }
 
-interface NodeWithFlow extends Node {
-    flowNode: FlowNode;
-}
-export function isNodeWithFlow(n: Node): n is NodeWithFlow {
-    return !!n.flowNode;
+// interface NodeWithFlow extends Node {
+//     flowNode: FloughNode;
+// }
+export function isNodeWithFlow(n: Node): n is NodeWithFlough {
+    return !!(n as FlowContainer).flowNode;
 }
 
-export function isFlowStart(fn: FlowNode | undefined): fn is FlowStart {
-    return !!fn && !!(fn.flags & FlowFlags.Start);
+export function isFlowStart(fn: FloughNode | undefined): fn is FlowStart {
+    return !!fn && !!(fn.flags & FloughFlags.Start);
 }
-export function isFlowLabel(fn: FlowNode | undefined): fn is FlowLabel {
-    return !!fn && !!(fn.flags & FlowFlags.Label);
+export function isFlowLabel(fn: FloughNode | undefined): fn is FloughLabel {
+    return !!fn && !!(fn.flags & FloughFlags.Label);
 }
-export function isFlowBranch(fn: FlowNode | undefined): fn is FlowLabel {
-    return !!fn && !!(fn.flags & FlowFlags.BranchLabel);
+export function isFlowBranch(fn: FloughNode | undefined): fn is FloughLabel {
+    return !!fn && !!(fn.flags & FloughFlags.BranchLabel);
 }
-export function isFlowLoop(fn: FlowNode | undefined): fn is FlowLabel {
-    return !!fn && !!(fn.flags & FlowFlags.LoopLabel);
+export function isFlowLoop(fn: FloughNode | undefined): fn is FloughLabel {
+    return !!fn && !!(fn.flags & FloughFlags.LoopLabel);
 }
-export function isFlowAssignment(fn: FlowNode | undefined): fn is FlowAssignment {
-    return !!fn && !!(fn.flags & FlowFlags.Assignment);
+export function isFlowAssignment(fn: FloughNode | undefined): fn is FlowAssignment {
+    return !!fn && !!(fn.flags & FloughFlags.Assignment);
 }
-export function isFlowCall(fn: FlowNode | undefined): fn is FlowCall {
-    return !!fn && !!(fn.flags & FlowFlags.Call);
+export function isFlowCall(fn: FloughNode | undefined): fn is FlowCall {
+    return !!fn && !!(fn.flags & FloughFlags.Call);
 }
-export function isFlowCondition(fn: FlowNode | undefined): fn is FlowCondition {
-    return !!fn && !!(fn.flags & FlowFlags.Condition);
+export function isFlowCondition(fn: FloughNode | undefined): fn is FlowCondition {
+    return !!fn && !!(fn.flags & FloughFlags.Condition);
 }
-export function isFlowSwitchClause(fn: FlowNode | undefined): fn is FlowSwitchClause {
-    return !!fn && !!(fn.flags & FlowFlags.SwitchClause);
+export function isFlowSwitchClause(fn: FloughNode | undefined): fn is FlowSwitchClause {
+    return !!fn && !!(fn.flags & FloughFlags.SwitchClause);
 }
-export function isFlowArrayMutation(fn: FlowNode | undefined): fn is FlowArrayMutation {
-    return !!fn && !!(fn.flags & FlowFlags.ArrayMutation);
+export function isFlowArrayMutation(fn: FloughNode | undefined): fn is FlowArrayMutation {
+    return !!fn && !!(fn.flags & FloughFlags.ArrayMutation);
 }
-export function isFlowReduceLabel(fn: FlowNode | undefined): fn is FlowReduceLabel {
-    return !!fn && !!(fn.flags & FlowFlags.ReduceLabel);
+export function isFlowReduceLabel(fn: FloughNode | undefined): fn is FlowReduceLabel {
+    return !!fn && !!(fn.flags & FloughFlags.ReduceLabel);
 }
-export function isFlowExpressionStatement(fn: FlowNode): fn is FlowExpressionStatement & FlowNode {
-    return !!fn && !!(fn.flags & FlowFlags.ExpressionStatement);
+export function isFlowExpressionStatement(fn: FloughNode): fn is FlowExpressionStatement & FloughNode {
+    return !!fn && !!(fn.flags & FloughFlags.ExpressionStatement);
 }
 // export function isFlowJoin(fn: FlowNode): fn is FlowJoin {
 //     return !!fn &&  !!(fn.flags & FlowFlags.Join);
 // }
-export function isFlowWithNode(fn: FlowNode | undefined): fn is FlowNode & { node: Node; } {
+export function isFlowWithNode(fn: FloughNode | undefined): fn is FloughNode & { node: Node; } {
     return !!fn && !!(fn as any).node;
 }
 export function isFlowConditionBoolean(fn: FlowCondition): boolean {
-    return !!(fn.flags & (FlowFlags.TrueCondition | FlowFlags.FalseCondition));
+    return !!(fn.flags & (FloughFlags.TrueCondition | FloughFlags.FalseCondition));
 }
 export function getFlowConditionBoolean(fn: FlowCondition): boolean {
-    return !!(fn.flags & FlowFlags.TrueCondition) ? true : !!(fn.flags & FlowFlags.FalseCondition) ? false : (() => {
+    return !!(fn.flags & FloughFlags.TrueCondition) ? true : !!(fn.flags & FloughFlags.FalseCondition) ? false : (() => {
         Debug.assert(false, "getFlowConditionBoolean neither true nor false, qualify with isFlowConditionBoolean");
         return true;
     })();
 }
-interface FlowWithAntecedent extends FlowNodeBase {
-    antecedent: FlowNode;
-}
+// interface FlowWithAntecedent extends FlowNodeBase {
+//     antecedent: FloughNode;
+// }
 /* @ ts-expect-error */
-function isFlowWithAntecedent(fn: FlowNodeBase): fn is FlowWithAntecedent {
+function isFlowWithAntecedent(fn: FloughNodeBase): fn is FloughWithAntecedent {
     return !!(fn as any).antecedent;
 }
-interface FlowWithAntecedents extends FlowNodeBase {
-    antecedents: FlowNode[];
-}
+// interface FlowWithAntecedents extends FlowNodeBase {
+//     antecedents: FloughNode[];
+// }
 /* @ ts-expect-error */
-function isFlowWithAntecedents(fn: FlowNodeBase): fn is FlowWithAntecedents {
+function isFlowWithAntecedents(fn: FloughNodeBase): fn is FloughWithAntecedents {
     return !!(fn as any).antecedents;
 }
-export function getFlowAntecedents(fn: FlowNodeBase): FlowNode[] {
+export function getFlowAntecedents(fn: FloughNodeBase): FloughNode[] {
     if (isFlowWithAntecedent(fn)) {
         if (isFlowWithAntecedents(fn)) return [fn.antecedent, ...fn.antecedents];
         else return [fn.antecedent];
@@ -699,7 +701,7 @@ export function getFlowAntecedents(fn: FlowNodeBase): FlowNode[] {
     else return [];
 }
 
-function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, checker: TypeChecker): string[] {
+function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, checker: FloughTypeChecker): string[] {
     const as: string[] = [`kind:${fglab.kind}`];
     switch (fglab.kind) {
         case FlowGroupLabelKind.ref:

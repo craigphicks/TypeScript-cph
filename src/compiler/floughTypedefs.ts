@@ -1,3 +1,11 @@
+import {
+    BranchKind, FloughFlags, FloughLabel,
+    FloughNode,
+    FlowExpressionStatement, SourceFileWithFloughNodes,
+    FloughNodeBase,
+    NodeWithFlough, FloughWithAntecedent, FloughWithAntecedents,
+} from "./floughTsExtensions";
+
 import { TypeFacts } from "./checker";
 import {
     LogicalObjectAccessReturn,
@@ -16,7 +24,6 @@ import {
     ElementAccessExpression,
     PropertyAccessExpression,
     LiteralType,
-    FlowNode,
     TupleTypeReference,
     TypeReference,
     ObjectType,
@@ -27,7 +34,6 @@ import {
     TypeFlags,
     VariableDeclaration,
     ElementFlags,
-    GenericType,
     NamedTupleMember,
     ParameterDeclaration,
 } from "./types";
@@ -49,7 +55,7 @@ export interface Relations {
 
 
 export type FloughTypeChecker = TSTypeChecker & {
-    getFlowNodeId(node: FlowNode): number;
+    getFlowNodeId(node: FloughNode): number;
     getIntersectionType(types: Type[]): Type;
     getUnionType(types: Type[]): Type;
     forEachType<T>(type: Type, f: (t: Type) => T | undefined): T | undefined,
@@ -66,7 +72,7 @@ export type FloughTypeChecker = TSTypeChecker & {
     isConstVariable(symbol: Symbol): boolean;
     getResolvedSymbol(node: Identifier, noDiagnostics?: boolean): Symbol;
     getSymbolOfNode(node: Node): Symbol | undefined;
-    getFlowNodeId(flowNode: FlowNode): number;
+    getFlowNodeId(flowNode: FloughNode): number;
     getTypeOfExpression(node: Expression): Type;
     createLiteralType(flags: TypeFlags, value: string | number | PseudoBigInt, symbol?: Symbol, regularType?: LiteralType): LiteralType;
     getTypeFacts(type: Type, callerOnlyNeeds?: TypeFacts): TypeFacts;
