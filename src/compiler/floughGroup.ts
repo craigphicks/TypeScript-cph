@@ -101,7 +101,7 @@ export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnected
 
 /**
  * enableBypassEffectiveDeclaredType allows more detailed description of the state at each node.
- * However, it also causes named types might to not use the name even if the type is the full named type.
+ * However, it also causes named types to possibly not use the name even if the type is the full named type.
  */
 export const enableBypassEffectiveDeclaredType = true;
 
@@ -473,8 +473,9 @@ export function createSourceFileFloughState(sourceFile: SourceFile, checker: Flo
     if (hardCodeEnableTSDevExpectStringFalse) {
         compilerOptions.enableTSDevExpectString = false;
     }
+    var enableDbgFlowNodes = Number(process.env.enableDbgFlowNodes ?? 0);
     // Only on first pass
-    if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && process.env.enableDbgFlowNodes) {
+    if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && enableDbgFlowNodes) {
         const ofilenameRoot = IDebug.loggingHost.getBaseTestFilepath(sourceFile) + `.flowNodes.txt`;
         //`tmp.${getBaseFileName(node.originalFileName)}.di${myDisableInfer?1:0}.${dbgFlowFileCnt}.flow`;
         //export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: FlowNode) => number, checker: TypeChecker): string {
@@ -488,7 +489,7 @@ export function createSourceFileFloughState(sourceFile: SourceFile, checker: Flo
         sourceFile.allFlowNodes?.forEach(fn => checker.getFlowNodeId(fn));
     }
 
-    if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && process.env.enableDbgFlowNodes) {
+    if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && enableDbgFlowNodes) {
         const astr3 = dbgGroupsForFlowToStrings(groupsForFlow,checker);
         const ofilename3 = IDebug.loggingHost.getBaseTestFilepath(sourceFile)+`.gff.txt`;
         sys.writeFile(ofilename3, astr3.join(sys.newLine));

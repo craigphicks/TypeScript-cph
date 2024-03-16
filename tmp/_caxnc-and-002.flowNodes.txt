@@ -1,0 +1,57 @@
+~~~~~~
+id: 1, FID: 1, flags: BranchLabel
+antecedents:[2]
+ -~~~~~~
+ -id: 2, FID: 2, NID: [n12], TID: 1, flags: TrueCondition|Condition|Referenced|Shared
+ -b2 [134,137], (134,137), Identifier
+ -antecedent:
+ - -~~~~~~
+ - -id: 3, FID: 3, NID: [n13], TID: 2, flags: TrueCondition|Condition|Referenced|Shared
+ - -b1 [129,131], (129,131), Identifier
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 4, FID: 4, flags: Start|Referenced|Shared
+ -~~~~~~
+ -id: 5, FID: 5, flags: BranchLabel|Label|Referenced
+ -antecedents:[3]
+ - -~~~~~~
+ - -id: 6, FID: 6, NID: [n14], TID: 3, flags: FalseCondition|Condition|Referenced
+ - -b1 [180,187], (180,187), Identifier
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 7, FID: 7, flags: BranchLabel|Label|Referenced|Shared
+ - - -antecedents:[2]
+ - - - -~~~~~~
+ - - - -id: 8, FID: 8, NID: [n13], TID: 2, flags: FalseCondition|Condition|Referenced
+ - - - -b1 [129,131], (129,131), Identifier
+ - - - -antecedent:
+ - - - - -~~~~~~
+ - - - - -id: 4, FID: 4, flags: Start|Referenced|Shared, REPEAT REFERENCE!!!
+ - - - -~~~~~~
+ - - - -id: 9, FID: 9, NID: [n12], TID: 1, flags: FalseCondition|Condition|Referenced
+ - - - -b2 [134,137], (134,137), Identifier
+ - - - -antecedent:
+ - - - - -~~~~~~
+ - - - - -id: 3, FID: 3, NID: [n13], TID: 2, flags: TrueCondition|Condition|Referenced|Shared, REPEAT REFERENCE!!!
+ - - - - -b1 [129,131], (129,131), Identifier
+ - -~~~~~~
+ - -id: 10, FID: 10, NID: [n15], TID: 4, flags: TrueCondition|Condition|Referenced
+ - -b2 [190,193], (190,193), Identifier
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 11, FID: 11, NID: [n14], TID: 3, flags: TrueCondition|Condition|Referenced|Shared
+ - - -b1 [180,187], (180,187), Identifier
+ - - -antecedent:
+ - - - -~~~~~~
+ - - - -id: 7, FID: 7, flags: BranchLabel|Label|Referenced|Shared, REPEAT REFERENCE!!!
+ - -~~~~~~
+ - -id: 12, FID: 12, NID: [n15], TID: 4, flags: FalseCondition|Condition|Referenced
+ - -b2 [190,193], (190,193), Identifier
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 11, FID: 11, NID: [n14], TID: 3, flags: TrueCondition|Condition|Referenced|Shared, REPEAT REFERENCE!!!
+ - - -b1 [180,187], (180,187), Identifier
+
+# of FlowNodes:12
+# of unique Nodes referenced:10
+# of unique text positions referenced:10

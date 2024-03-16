@@ -47417,7 +47417,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             createTupleType,
         }
 
-        return typeChecker as any as FloughTypeChecker;
+        return floughTypeChecker;
     }
 
     function checkSourceFile(node: SourceFile) {
