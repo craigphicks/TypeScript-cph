@@ -28,9 +28,18 @@ import {
     Node,
     //FlowLabel,
     //SourceFile,
+    FlowFlags as OriginalFlowFlags,
 } from "./types";
 
+
 import { IDebug } from "./mydebug";
+
+
+function formatFloughFlags(flags: FloughFlags | OriginalFlowFlags): string {
+    // @ts-expect-error
+    return Debug.formatEnum(flags, FloughFlags, /*isFlags*/ true);
+}
+
 
 function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<FloughNode[]>, mapPeType: Map<string, Type> | undefined, checker: TypeChecker): void {
     const map_peID = new Map<string, number>(); // TID, text ID
@@ -83,7 +92,7 @@ function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<F
         idstr += `FID: ${map_fID.get(fn)!}`;
         if (node && map_nID.has(node)) idstr += `, NID: [n${map_nID.get(node)}]`;
         if (pekey && map_peID.has(pekey)) idstr += `, TID: ${map_peID.get(pekey)}`;
-        idstr += `, flags: ${Debug.formatFlowFlags(fn.flags)}`;
+        idstr += `, flags: ${formatFloughFlags(fn.flags)}`;
         if (recursiveReference) idstr += `, REPEAT REFERENCE!!!`;
         write(indent() + idstr);
         if (node) {
@@ -238,7 +247,7 @@ export function dbgFlowToString(flow: FloughNode | undefined, _withAntecedentant
         return flow.id;
     };
     let str = "";
-    str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
+    str += `[f${getFlowNodeId(flow)}], ${formatFloughFlags(flow.flags)}, `;
     if ((flow as FloughLabel).branchKind) str += `branchKind:${((flow as FloughLabel).branchKind)}, `;
     if ((flow as any).node) str += IDebug.dbgs.nodeToString((flow as any).node as any as Node);
     return str;
@@ -251,7 +260,7 @@ function dbgFlowToString2(flow: FloughNode | undefined, withAntecedants?: boolea
     if (!flow) return "<undef>";
     let str = "";
     //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
-    str += `[f${getFlowNodeId(flow)}], ${Debug.formatFlowFlags(flow.flags)}, `;
+    str += `[f${getFlowNodeId(flow)}], ${formatFloughFlags(flow.flags)}, `;
     if (isFlowLabel(flow)){
         str += `branchKind: ${flow.branchKind}, `;
     }

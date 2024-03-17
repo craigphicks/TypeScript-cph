@@ -1,4 +1,4 @@
-import { Expression, ExpressionStatement, FlowLabel, FlowNode, FlowNodeBase, LocalsContainer, Node, SourceFile } from "./types";
+import { Expression, ExpressionStatement, FlowFlags, FlowLabel, FlowNode, FlowNodeBase, LocalsContainer, Node, SourceFile } from "./types";
 
 
 export const enum FloughFlags {
@@ -22,7 +22,7 @@ export const enum FloughFlags {
 
 //export type FloughNodeBase = FlowNodeBase; // doesn't work well because of { flags: FlowFlags; }
 export type FloughNodeBase = {
-    flags: FloughFlags;
+    flags: FloughFlags | FlowFlags;
     id?: number; // Node id used by flow type cache in checker
 }
 
