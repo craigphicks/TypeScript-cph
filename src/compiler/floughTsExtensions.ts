@@ -1,4 +1,4 @@
-import { ExpressionStatement, FlowLabel, FlowNode, FlowNodeBase, LocalsContainer, Node, SourceFile } from "./types";
+import { Expression, ExpressionStatement, FlowLabel, FlowNode, FlowNodeBase, LocalsContainer, Node, SourceFile } from "./types";
 
 
 export const enum FloughFlags {
@@ -20,12 +20,16 @@ export const enum FloughFlags {
     Condition = TrueCondition | FalseCondition,
 };
 
-export type FloughNodeBase = FlowNodeBase;
+//export type FloughNodeBase = FlowNodeBase; // doesn't work well because of { flags: FlowFlags; }
+export type FloughNodeBase = {
+    flags: FloughFlags;
+    id?: number; // Node id used by flow type cache in checker
+}
 
 export type FloughNode = FlowNode | FlowExpressionStatement;
 
-export interface FlowExpressionStatement extends FlowNodeBase {
-    node: ExpressionStatement;
+export interface FlowExpressionStatement extends FloughNodeBase {
+    node: Expression; // was ExpressionStatement;
     antecedent: FlowNode;
 };
 
@@ -68,6 +72,6 @@ export interface FloughLabel extends FlowLabel {
 
 export interface SourceFileWithFloughNodes extends SourceFile {
     allFlowNodes?: FloughNode[];
-    allNodesWithFlowOneSourceFile?: (NodeWithFlough & LocalsContainer)[];
+    allNodesWithFlowOneSourceFile?: (NodeWithFlough /*& LocalsContainer*/)[];
 };
 
