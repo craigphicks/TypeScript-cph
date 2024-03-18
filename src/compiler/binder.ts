@@ -508,11 +508,11 @@ export const enum ContainerFlags {
 }
 
 
-    let labelBlockScopes = false;
+    let floughLabelBlockScopes = false;
     let allNodesWithFlowOneSourceFile: NodeWithFlough[] | undefined;
     function setNodeFlow(node: Node, flow: FlowNode): void {
         if (!flow) return;
-        if (labelBlockScopes){
+        if (floughLabelBlockScopes){
             const branchKind = (flow as FloughLabel).branchKind;
             if (branchKind && (branchKind===BranchKind.block || branchKind===BranchKind.postBlock)){
                 Debug.assert((flow as FlowLabel).antecedents?.length===1);
@@ -569,12 +569,12 @@ export function bindSourceFile(file: SourceFile, options: CompilerOptions) {
 
 function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
 
-    const myDisableInfer = (process.env.myDisableInfer===undefined) ? false : !!Number(process.env.myDisableInfer);;
-    labelBlockScopes = !myDisableInfer;
-    const labelAllFunctionCalls = !myDisableInfer;
-    const alwaysAddFlowToConditionNode = !myDisableInfer;
-    const recordBreakAndReturnOnControlLoop = !myDisableInfer;
-    const doArrayOrObjectLiteralExpression = !myDisableInfer;
+    const enableFlough = !!Number(process.env.enableFlough ?? 0);;
+    floughLabelBlockScopes = enableFlough;
+    const floughLabelAllFunctionCalls = enableFlough;
+    const floughAlwaysAddFlowToConditionNode = enableFlough;
+    const floughRecordBreakAndReturnOnControlLoop = enableFlough;
+    const floughDoArrayOrObjectLiteralExpression = enableFlough;
 
     // Why var? It avoids TDZ checks in the runtime which can be costly.
     // See: https://github.com/microsoft/TypeScript/issues/52924
@@ -1252,7 +1252,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             }
             case SyntaxKind.Block:
             case SyntaxKind.ModuleBlock:
-                    if (labelBlockScopes){
+                    if (floughLabelBlockScopes){
                         const blockLabel = createBranchLabel(BranchKind.block);
                         (blockLabel as FloughLabel).originatingExpression = node;
                         const postBlockLabel = createBranchLabel(BranchKind.postBlock);
@@ -1275,7 +1275,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
                 break;
             case SyntaxKind.ObjectLiteralExpression:
             case SyntaxKind.ArrayLiteralExpression:
-                    if (doArrayOrObjectLiteralExpression){
+                    if (floughDoArrayOrObjectLiteralExpression){
                         bindEachChild(node);
                         currentFlow = createFlowExpressionStatement(currentFlow,node as Expression) as unknown as FlowNode;
                         inAssignmentPattern = saveInAssignmentPattern;
@@ -1426,7 +1426,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
         }
     }
         function addControlExit(label: FlowLabel, controlExit: FlowNode): void {
-            Debug.assert(recordBreakAndReturnOnControlLoop);
+            Debug.assert(floughRecordBreakAndReturnOnControlLoop);
             if (!contains((label as FloughLabel).controlExits, controlExit)) {
                 ((label as FloughLabel).controlExits || ((label as FloughLabel).controlExits = [])).push(controlExit);
                 setFlowNodeReferenced(controlExit);
@@ -1440,7 +1440,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
         if (!expression) {
             return flags & FlowFlags.TrueCondition ? antecedent : unreachableFlow;
         }
-        if (!alwaysAddFlowToConditionNode){
+        if (!floughAlwaysAddFlowToConditionNode){
         if (
             (expression.kind === SyntaxKind.TrueKeyword && flags & FlowFlags.FalseCondition ||
                 expression.kind === SyntaxKind.FalseKeyword && flags & FlowFlags.TrueCondition) &&
@@ -1541,7 +1541,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
     }
 
     function bindCondition(node: Expression | undefined, trueTarget: FlowLabel, falseTarget: FlowLabel) {
-            if (node && alwaysAddFlowToConditionNode){
+            if (node && floughAlwaysAddFlowToConditionNode){
                 setNodeFlow(node, currentFlow); // This might get set again (overwritten) in `bind`, but that's ok.
             }
         doWithConditionalBranches(bind, node, trueTarget, falseTarget);
@@ -1679,7 +1679,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
              * to record the `currentFlow` as a dependency leaf relative to the `currentContinueTarget`.  No need to do so with `continue`,
              * because that is already noted as a dependecy on the `currentContinueTarget`.
              */
-            if (recordBreakAndReturnOnControlLoop){
+            if (floughRecordBreakAndReturnOnControlLoop){
                 if (node.kind === SyntaxKind.BreakStatement && currentContinueTarget){
                     addControlExit(currentContinueTarget, currentFlow);
                 }
@@ -2288,7 +2288,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
                 if (node.expression.kind === SyntaxKind.SuperKeyword) {
                     currentFlow = createFlowCall(currentFlow, node);
                 }
-                    else if (labelAllFunctionCalls){
+                    else if (floughLabelAllFunctionCalls){
                         currentFlow = createFlowCall(currentFlow, node);
                     }
             }
