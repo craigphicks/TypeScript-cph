@@ -328,8 +328,8 @@ import {
     FloughWithAntecedents,
     FlowExpressionStatement,
     NodeWithFlough,
-    SourceFileWithFloughNodes
-} from "./floughTsExtensions"
+    SourceFileWithFloughNodes,
+} from "./floughTsExtensions";
 
 /** @internal */
 export const enum ModuleInstanceState {
@@ -507,31 +507,28 @@ export const enum ContainerFlags {
     IsObjectLiteralOrClassExpressionMethodOrAccessor = 1 << 7,
 }
 
-
-    let floughLabelBlockScopes = false;
-    let allNodesWithFlowOneSourceFile: NodeWithFlough[] | undefined;
-    function setNodeFlow(node: Node, flow: FlowNode): void {
-        if (!flow) return;
-        if (floughLabelBlockScopes){
-            const branchKind = (flow as FloughLabel).branchKind;
-            if (branchKind && (branchKind===BranchKind.block || branchKind===BranchKind.postBlock)){
-                Debug.assert((flow as FlowLabel).antecedents?.length===1);
-                setNodeFlow(node,(flow as FlowLabel).antecedents![0]);
-                return;
-            }
+let floughLabelBlockScopes = false;
+let allNodesWithFlowOneSourceFile: NodeWithFlough[] | undefined;
+function setNodeFlow(node: Node, flow: FlowNode): void {
+    if (!flow) return;
+    if (floughLabelBlockScopes) {
+        const branchKind = (flow as FloughLabel).branchKind;
+        if (branchKind && (branchKind === BranchKind.block || branchKind === BranchKind.postBlock)) {
+            Debug.assert((flow as FlowLabel).antecedents?.length === 1);
+            setNodeFlow(node, (flow as FlowLabel).antecedents![0]);
+            return;
         }
-        (node as NodeWithFlough).flowNode = flow;
-        allNodesWithFlowOneSourceFile?.push(node as NodeWithFlough);
     }
+    (node as NodeWithFlough).flowNode = flow;
+    allNodesWithFlowOneSourceFile?.push(node as NodeWithFlough);
+}
 
-    let allFlowNodesOneSourceFile: FloughNode[] | undefined;
-    function initFlowNode<T extends FloughNode>(node: T) {
-        Debug.attachFlowNodeDebugInfo(node as FlowNode);
-        allFlowNodesOneSourceFile?.push(node);
-        return node;
-    }
-
-
+let allFlowNodesOneSourceFile: FloughNode[] | undefined;
+function initFlowNode<T extends FloughNode>(node: T) {
+    Debug.attachFlowNodeDebugInfo(node as FlowNode);
+    allFlowNodesOneSourceFile?.push(node);
+    return node;
+}
 
 const binder = /* @__PURE__ */ createBinder();
 
@@ -540,36 +537,35 @@ export function bindSourceFile(file: SourceFile, options: CompilerOptions) {
     performance.mark("beforeBind");
     perfLogger?.logStartBindFile("" + file.fileName);
 
-        /**
-         * In src/harness/compilerImpl.ts ...
-         *  const preProgram = !skipErrorComparison ? ts.createProgram(rootFiles || [], { ...compilerOptions, configFile: compilerOptions.configFile, traceResolution: false }, host) : undefined;
-         *  const preErrors = preProgram && ts.getPreEmitDiagnostics(preProgram);
-         *  const program = ts.createProgram(rootFiles || [], compilerOptions, host);
-         *  const emitResult = program.emit();
-         * createProgram is called twice but in binder (below) is file.locals already exists, then the binding is not performed again.
-         * So without the guard `!file.allFlowNodes` the existing info will be erased and not recreated.
-         */
-        if (!(file as SourceFileWithFloughNodes).allFlowNodes){
-            allFlowNodesOneSourceFile=[];
-            allNodesWithFlowOneSourceFile=[];
-        }
+    /**
+     * In src/harness/compilerImpl.ts ...
+     *  const preProgram = !skipErrorComparison ? ts.createProgram(rootFiles || [], { ...compilerOptions, configFile: compilerOptions.configFile, traceResolution: false }, host) : undefined;
+     *  const preErrors = preProgram && ts.getPreEmitDiagnostics(preProgram);
+     *  const program = ts.createProgram(rootFiles || [], compilerOptions, host);
+     *  const emitResult = program.emit();
+     * createProgram is called twice but in binder (below) is file.locals already exists, then the binding is not performed again.
+     * So without the guard `!file.allFlowNodes` the existing info will be erased and not recreated.
+     */
+    if (!(file as SourceFileWithFloughNodes).allFlowNodes) {
+        allFlowNodesOneSourceFile = [];
+        allNodesWithFlowOneSourceFile = [];
+    }
 
     binder(file, options);
 
-        if (!(file as SourceFileWithFloughNodes).allFlowNodes){
-            (file as SourceFileWithFloughNodes).allFlowNodes = allFlowNodesOneSourceFile;
-            allFlowNodesOneSourceFile = undefined;
-            (file as SourceFileWithFloughNodes).allNodesWithFlowOneSourceFile= allNodesWithFlowOneSourceFile;
-            allNodesWithFlowOneSourceFile = undefined;
-        }
+    if (!(file as SourceFileWithFloughNodes).allFlowNodes) {
+        (file as SourceFileWithFloughNodes).allFlowNodes = allFlowNodesOneSourceFile;
+        allFlowNodesOneSourceFile = undefined;
+        (file as SourceFileWithFloughNodes).allNodesWithFlowOneSourceFile = allNodesWithFlowOneSourceFile;
+        allNodesWithFlowOneSourceFile = undefined;
+    }
     perfLogger?.logStopBindFile();
     performance.mark("afterBind");
     performance.measure("Bind", "beforeBind", "afterBind");
 }
 
 function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
-
-    const enableFlough = !!Number(process.env.enableFlough ?? 0);;
+    const enableFlough = !!Number(process.env.enableFlough ?? 0);
     floughLabelBlockScopes = enableFlough;
     const floughLabelAllFunctionCalls = enableFlough;
     const floughAlwaysAddFlowToConditionNode = enableFlough;
@@ -1252,20 +1248,20 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             }
             case SyntaxKind.Block:
             case SyntaxKind.ModuleBlock:
-                    if (floughLabelBlockScopes){
-                        const blockLabel = createBranchLabel(BranchKind.block);
-                        (blockLabel as FloughLabel).originatingExpression = node;
-                        const postBlockLabel = createBranchLabel(BranchKind.postBlock);
-                        (postBlockLabel as FloughLabel).originatingExpression = node;
-                        addAntecedent(blockLabel, currentFlow);
-                        currentFlow = finishFlowLabel(blockLabel);
-                        //
-                        bindEachFunctionsFirst((node as Block).statements);
-                        //
-                        addAntecedent(postBlockLabel, currentFlow);
-                        currentFlow = finishFlowLabel(postBlockLabel);
-                    }
-                    else bindEachFunctionsFirst((node as Block).statements);
+                if (floughLabelBlockScopes) {
+                    const blockLabel = createBranchLabel(BranchKind.block);
+                    (blockLabel as FloughLabel).originatingExpression = node;
+                    const postBlockLabel = createBranchLabel(BranchKind.postBlock);
+                    (postBlockLabel as FloughLabel).originatingExpression = node;
+                    addAntecedent(blockLabel, currentFlow);
+                    currentFlow = finishFlowLabel(blockLabel);
+                    //
+                    bindEachFunctionsFirst((node as Block).statements);
+                    //
+                    addAntecedent(postBlockLabel, currentFlow);
+                    currentFlow = finishFlowLabel(postBlockLabel);
+                }
+                else bindEachFunctionsFirst((node as Block).statements);
                 break;
             case SyntaxKind.BindingElement:
                 bindBindingElementFlow(node as BindingElement);
@@ -1275,13 +1271,13 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
                 break;
             case SyntaxKind.ObjectLiteralExpression:
             case SyntaxKind.ArrayLiteralExpression:
-                    if (floughDoArrayOrObjectLiteralExpression){
-                        bindEachChild(node);
-                        currentFlow = createFlowExpressionStatement(currentFlow,node as Expression) as unknown as FlowNode;
-                        inAssignmentPattern = saveInAssignmentPattern;
-                        break;
-                    }
-                    // falls through
+                if (floughDoArrayOrObjectLiteralExpression) {
+                    bindEachChild(node);
+                    currentFlow = createFlowExpressionStatement(currentFlow, node as Expression) as unknown as FlowNode;
+                    inAssignmentPattern = saveInAssignmentPattern;
+                    break;
+                }
+                // falls through
             case SyntaxKind.PropertyAssignment:
             case SyntaxKind.SpreadElement:
                 // Carry over whether we are in an assignment pattern of Object and Array literals
@@ -1398,17 +1394,16 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
     // function createBranchLabel(): FlowLabel {
     //     return initFlowNode({ flags: FlowFlags.BranchLabel, antecedents: undefined });
     // }
-        function createBranchLabel(branchKind: BranchKind = BranchKind.none): FlowLabel {
-            return initFlowNode({ flags: FlowFlags.BranchLabel, antecedents: undefined, branchKind });
-
-        }
+    function createBranchLabel(branchKind: BranchKind = BranchKind.none): FlowLabel {
+        return initFlowNode({ flags: FlowFlags.BranchLabel, antecedents: undefined, branchKind });
+    }
 
     // function createLoopLabel(): FlowLabel {
     //     return initFlowNode({ flags: FlowFlags.LoopLabel, antecedents: undefined });
     // }
-        function createLoopLabel(branchKind: BranchKind = BranchKind.none): FlowLabel {
-            return initFlowNode({ flags: FlowFlags.LoopLabel, antecedents: undefined, branchKind });
-        }
+    function createLoopLabel(branchKind: BranchKind = BranchKind.none): FlowLabel {
+        return initFlowNode({ flags: FlowFlags.LoopLabel, antecedents: undefined, branchKind });
+    }
 
     function createReduceLabel(target: FlowLabel, antecedents: FlowNode[], antecedent: FlowNode): FlowReduceLabel {
         return initFlowNode({ flags: FlowFlags.ReduceLabel, target, antecedents, antecedent });
@@ -1425,13 +1420,13 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             setFlowNodeReferenced(antecedent);
         }
     }
-        function addControlExit(label: FlowLabel, controlExit: FlowNode): void {
-            Debug.assert(floughRecordBreakAndReturnOnControlLoop);
-            if (!contains((label as FloughLabel).controlExits, controlExit)) {
-                ((label as FloughLabel).controlExits || ((label as FloughLabel).controlExits = [])).push(controlExit);
-                setFlowNodeReferenced(controlExit);
-            }
+    function addControlExit(label: FlowLabel, controlExit: FlowNode): void {
+        Debug.assert(floughRecordBreakAndReturnOnControlLoop);
+        if (!contains((label as FloughLabel).controlExits, controlExit)) {
+            ((label as FloughLabel).controlExits || ((label as FloughLabel).controlExits = [])).push(controlExit);
+            setFlowNodeReferenced(controlExit);
         }
+    }
 
     function createFlowCondition(flags: FlowFlags, antecedent: FlowNode, expression: Expression | undefined): FlowNode {
         if (antecedent.flags & FlowFlags.Unreachable) {
@@ -1440,17 +1435,17 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
         if (!expression) {
             return flags & FlowFlags.TrueCondition ? antecedent : unreachableFlow;
         }
-        if (!floughAlwaysAddFlowToConditionNode){
-        if (
-            (expression.kind === SyntaxKind.TrueKeyword && flags & FlowFlags.FalseCondition ||
-                expression.kind === SyntaxKind.FalseKeyword && flags & FlowFlags.TrueCondition) &&
-            !isExpressionOfOptionalChainRoot(expression) && !isNullishCoalesce(expression.parent)
-        ) {
-            return unreachableFlow;
-        }
-        if (!isNarrowingExpression(expression)) {
-            return antecedent;
-        }
+        if (!floughAlwaysAddFlowToConditionNode) {
+            if (
+                (expression.kind === SyntaxKind.TrueKeyword && flags & FlowFlags.FalseCondition ||
+                    expression.kind === SyntaxKind.FalseKeyword && flags & FlowFlags.TrueCondition) &&
+                !isExpressionOfOptionalChainRoot(expression) && !isNullishCoalesce(expression.parent)
+            ) {
+                return unreachableFlow;
+            }
+            if (!isNarrowingExpression(expression)) {
+                return antecedent;
+            }
         }
         setFlowNodeReferenced(antecedent);
         return initFlowNode({ flags, antecedent, node: expression });
@@ -1541,9 +1536,9 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
     }
 
     function bindCondition(node: Expression | undefined, trueTarget: FlowLabel, falseTarget: FlowLabel) {
-            if (node && floughAlwaysAddFlowToConditionNode){
-                setNodeFlow(node, currentFlow); // This might get set again (overwritten) in `bind`, but that's ok.
-            }
+        if (node && floughAlwaysAddFlowToConditionNode) {
+            setNodeFlow(node, currentFlow); // This might get set again (overwritten) in `bind`, but that's ok.
+        }
         doWithConditionalBranches(bind, node, trueTarget, falseTarget);
         if (!node || !isLogicalAssignmentExpression(node) && !isLogicalExpression(node) && !(isOptionalChain(node) && isOutermostOptionalChain(node))) {
             addAntecedent(trueTarget, createFlowCondition(FlowFlags.TrueCondition, currentFlow, node));
@@ -1674,16 +1669,16 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
     }
 
     function bindBreakOrContinueStatement(node: BreakOrContinueStatement): void {
-            /**
-             * Because mrNarrow needs to know the groups (not within subloops) upon which a loop depends, the loop `break` and `return` statement must be used
-             * to record the `currentFlow` as a dependency leaf relative to the `currentContinueTarget`.  No need to do so with `continue`,
-             * because that is already noted as a dependecy on the `currentContinueTarget`.
-             */
-            if (floughRecordBreakAndReturnOnControlLoop){
-                if (node.kind === SyntaxKind.BreakStatement && currentContinueTarget){
-                    addControlExit(currentContinueTarget, currentFlow);
-                }
+        /**
+         * Because mrNarrow needs to know the groups (not within subloops) upon which a loop depends, the loop `break` and `return` statement must be used
+         * to record the `currentFlow` as a dependency leaf relative to the `currentContinueTarget`.  No need to do so with `continue`,
+         * because that is already noted as a dependecy on the `currentContinueTarget`.
+         */
+        if (floughRecordBreakAndReturnOnControlLoop) {
+            if (node.kind === SyntaxKind.BreakStatement && currentContinueTarget) {
+                addControlExit(currentContinueTarget, currentFlow);
             }
+        }
         bind(node.label);
         if (node.label) {
             const activeLabel = findActiveLabel(node.label.escapedText);
@@ -1820,7 +1815,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             fallthroughFlow = currentFlow;
             if (!(currentFlow.flags & FlowFlags.Unreachable) && i !== clauses.length - 1 && options.noFallthroughCasesInSwitch) {
                 clause.fallthroughFlowNode = currentFlow;
-                    allFlowNodesOneSourceFile?.push(currentFlow);
+                allFlowNodesOneSourceFile?.push(currentFlow);
             }
         }
     }
@@ -1841,23 +1836,23 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
     function maybeBindExpressionFlowIfCall(node: Expression) {
         // A top level or comma expression call expression with a dotted function name and at least one argument
         // is potentially an assertion and is therefore included in the control flow.
-            let done = false;
+        let done = false;
         if (node.kind === SyntaxKind.CallExpression) {
             const call = node as CallExpression;
             if (call.expression.kind !== SyntaxKind.SuperKeyword && isDottedName(call.expression)) {
                 currentFlow = createFlowCall(currentFlow, call);
-                    done = true;
+                done = true;
             }
         }
-            if (!done && isNarrowableReference(node)){
-                currentFlow = createFlowExpressionStatement(currentFlow, node) as unknown as FlowNode; // not necessarily ExpressionStatement ?
-                (currentFlow as unknown as FlowExpressionStatement).node = node;
-            }
+        if (enableFlough && !done && isNarrowableReference(node)) {
+            currentFlow = createFlowExpressionStatement(currentFlow, node) as unknown as FlowNode; // not necessarily ExpressionStatement ?
+            (currentFlow as unknown as FlowExpressionStatement).node = node;
+        }
     }
     // This should maybe just be "createFlowExpression" ??
     function createFlowExpressionStatement(antecedent: FlowNode, node: Expression): FlowExpressionStatement {
         setFlowNodeReferenced(antecedent);
-        return initFlowNode({ flags: FloughFlags.ExpressionStatement, antecedent, node } as FlowExpressionStatement) ;
+        return initFlowNode({ flags: FloughFlags.ExpressionStatement, antecedent, node } as FlowExpressionStatement);
     }
 
     function bindLabeledStatement(node: LabeledStatement): void {
@@ -2288,9 +2283,9 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
                 if (node.expression.kind === SyntaxKind.SuperKeyword) {
                     currentFlow = createFlowCall(currentFlow, node);
                 }
-                    else if (floughLabelAllFunctionCalls){
-                        currentFlow = createFlowCall(currentFlow, node);
-                    }
+                else if (floughLabelAllFunctionCalls) {
+                    currentFlow = createFlowCall(currentFlow, node);
+                }
             }
         }
         if (node.expression.kind === SyntaxKind.PropertyAccessExpression) {
