@@ -2328,10 +2328,18 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getCachedType(key: string | undefined) {
+    const loggerLevel = 2;
+    const ret = (()=>{
         return key ? cachedTypes.get(key) : undefined;
+    })();
+    IDebug.ilog(()=>`  getCachedType(${key}) -> ${IDebug.dbgs.typeToString(ret)}`,loggerLevel);
+    return ret;
     }
 
     function setCachedType(key: string | undefined, type: Type) {
+        const loggerLevel = 2;
+        if (key) IDebug.ilog(()=>`  setCachedType(${key}) -> ${IDebug.dbgs.typeToString(type)}`,loggerLevel);
+
         if (key) cachedTypes.set(key, type);
         return type;
     }
@@ -39820,6 +39828,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * with computing the type and may not fully check all contained sub-expressions for errors.
      */
     function getTypeOfExpression(node: Expression) {
+    const logLevel = 2;
+    IDebug.ilogGroup(()=>`getTypeOfExpression[in]: node:${IDebug.dbgs.nodeToString(node)}`,logLevel);
+    const ret = (()=>{
         // Don't bother caching types that require no flow analysis and are quick to compute.
         const quickType = getQuickTypeOfExpression(node);
         if (quickType) {
@@ -39841,6 +39852,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             setNodeFlags(node, node.flags | NodeFlags.TypeCached);
         }
         return type;
+    })();
+    IDebug.ilogGroupEnd(()=>`getTypeOfExpression[out]: returns ${IDebug.dbgs.typeToString(ret)}`,logLevel);
+    return ret;
     }
 
     function getQuickTypeOfExpression(node: Expression): Type | undefined {
