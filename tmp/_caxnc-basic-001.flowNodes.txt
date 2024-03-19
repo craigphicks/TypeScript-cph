@@ -1,0 +1,23 @@
+~~~~~~
+id: 1,  branchKind: none, FID: 1, flags: BranchLabel
+antecedents:[2]
+ -~~~~~~
+ -id: 2, FID: 2, NID: [n12], TID: 1, flags: Referenced|Shared|ExpressionStatement
+ -b1 [40,47], (40,47), Identifier
+ -antecedent:
+ - -~~~~~~
+ - -id: 3, FID: 3, NID: [n13], TID: 2, flags: TrueCondition|Condition|Referenced|Shared
+ - -b1 [36,38], (36,38), Identifier
+ - -antecedent:
+ - - -~~~~~~
+ - - -id: 4, FID: 4, flags: Start|Referenced|Shared
+ -~~~~~~
+ -id: 5, FID: 5, NID: [n13], TID: 2, flags: FalseCondition|Condition|Referenced|Shared
+ -b1 [36,38], (36,38), Identifier
+ -antecedent:
+ - -~~~~~~
+ - -id: 4, FID: 4, flags: Start|Referenced|Shared, REPEAT REFERENCE!!!
+
+# of FlowNodes:5
+# of unique Nodes referenced:3
+# of unique text positions referenced:3

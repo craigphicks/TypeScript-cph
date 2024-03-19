@@ -226,6 +226,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     function projectTsTypeEnumLiteralsToPlainLiterals(tstype: Type): Type {
         const setFromEnum = new Set<LiteralType>();
         let tOtherCount = 0;
+        const at: Type[] = [];
         checker.forEachType(tstype, t => {
             if (t.flags & TypeFlags.EnumLiteral) {
                 const litValue = (t as LiteralType).value;
@@ -238,21 +239,20 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 }
                 else Debug.fail("unexpected");
             }
-            else if (t.flags & TypeFlags.Literal) {
+            else if (t.flags & TypeFlags.Literal && !(t.flags & TypeFlags.BooleanLiteral)) {
                 const regularType = (t as LiteralType).regularType as LiteralType;
                 Debug.assert(regularType.value);
                 setFromEnum.add(regularType);
             }
-            else tOtherCount++;
+            else at.push(t); //tOtherCount++;
         });
         if (setFromEnum.size === 0) return tstype;
-        const at: Type[] = [];
         setFromEnum.forEach(lt => at.push(lt));
-        if (tOtherCount !== 0) {
-            checker.forEachType(tstype, t => {
-                if (!(t.flags & (TypeFlags.EnumLiteral | TypeFlags.Literal))) at.push(t);
-            });
-        }
+        // if (tOtherCount !== 0) {
+        //     checker.forEachType(tstype, t => {
+        //         if (!(t.flags & (TypeFlags.EnumLiteral | TypeFlags.Literal))) at.push(t);
+        //     });
+        // }
         return checker.getUnionType(at);
     }
 
@@ -490,7 +490,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
             const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
             floughTypeModule.forEachRefTypesTypeType(rt, t => {
-                const tf = checker.getTypeFacts(t);
+                const tf = checker.getTypeFacts(t, TypeFacts.Truthy | TypeFacts.Falsy);
                 func(t, !!(tf & pfacts), !!(tf & ffacts));
             });
         }
@@ -498,7 +498,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
             const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
             floughTypeModule.forEachRefTypesTypeType(rt, t => {
-                const tf = checker.getTypeFacts(t);
+                const tf = checker.getTypeFacts(t, TypeFacts.NEUndefinedOrNull | TypeFacts.EQUndefinedOrNull);
                 func(t, !!(tf & pfacts), !!(tf & ffacts));
             });
         }

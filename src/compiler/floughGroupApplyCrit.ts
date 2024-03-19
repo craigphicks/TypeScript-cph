@@ -56,7 +56,7 @@ export function applyCritToTypeV2(rt: Readonly<FloughType>, crit: Readonly<Floug
     function worker(crit: Readonly<FloughCrit>) {
         if (crit.kind === FloughCritKind.truthy) {
             const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
-            const arrpass: Type[] = arrtstype.filter(t => (checker.getTypeFacts(t) & pfacts));
+            const arrpass: Type[] = arrtstype.filter(t => (checker.getTypeFacts(t, pfacts) & pfacts));
             const logobjpass = crit.negate ? undefined : logicalObject;
             if (logobjpass) {
                 if (arrpass.length === arrtstype.length) return rt;
@@ -86,7 +86,8 @@ function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<Flough
             const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
             const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
             floughTypeModule.forEachRefTypesTypeType(rt, t => {
-                const tf = checker.getTypeFacts(t);
+                const tf = checker.getTypeFacts(t, TypeFacts.Truthy | TypeFacts.Falsy);
+                Debug.assert(tf !== TypeFacts.None);
                 if (tf & pfacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t, passtype);
                 if (tf & ffacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t, failtype!);
             });
@@ -94,7 +95,7 @@ function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<Flough
         else {
             const pfacts = !crit.negate ? TypeFacts.Truthy : TypeFacts.Falsy;
             floughTypeModule.forEachRefTypesTypeType(rt, t => {
-                const tf = checker.getTypeFacts(t);
+                const tf = checker.getTypeFacts(t, TypeFacts.Truthy | TypeFacts.Falsy);
                 if (tf & pfacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t, passtype);
             });
         }
@@ -103,7 +104,7 @@ function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<Flough
         const pfacts = !crit.negate ? TypeFacts.NEUndefinedOrNull : TypeFacts.EQUndefinedOrNull;
         const ffacts = !crit.negate ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull;
         floughTypeModule.forEachRefTypesTypeType(rt, t => {
-            const tf = checker.getTypeFacts(t);
+            const tf = checker.getTypeFacts(t, TypeFacts.NEUndefinedOrNull | TypeFacts.EQUndefinedOrNull);
             if (tf & pfacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t, passtype);
             if (failtype && tf & ffacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t, failtype);
         });

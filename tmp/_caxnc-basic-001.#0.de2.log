@@ -1,0 +1,79 @@
+checkSourceElement[in]: [n15] declare const b1: true | false;, [0,31], VariableStatement
+  checkSourceElement[in]: [n16] b1: true | false, [13,30], VariableDeclaration
+    checkSourceElement[in]: [n17] true | false, [17,30], UnionType
+      checkSourceElement[in]: [n18] true, [17,22], LiteralType
+      checkSourceElement[out]: [n18] true, [17,22], LiteralType
+      checkSourceElement[in]: [n19] false, [24,30], LiteralType
+      checkSourceElement[out]: [n19] false, [24,30], LiteralType
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n20] true, [17,22], TrueKeyword, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t20] true
+        checkExpression: type: [t20] true
+      checkExpression[out]: return: [t20] true
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n21] false, [24,30], FalseKeyword, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t18] false
+        checkExpression: type: [t18] false
+      checkExpression[out]: return: [t18] false
+    checkSourceElement[out]: [n17] true | false, [17,30], UnionType
+  checkSourceElement[out]: [n16] b1: true | false, [13,30], VariableDeclaration
+checkSourceElement[out]: [n15] declare const b1: true | false;, [0,31], VariableStatement
+checkSourceElement[in]: [n22] if (b1){     b1; }, [31,50], IfStatement
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n13] b1, [36,38], Identifier, forceTuple:undefined
+    getTypeByMrNarrow[in] expr: [n13] b1, [36,38], Identifier
+      getTypeByMrNarrowAux[dbg]: reference: [n13] b1, [36,38], Identifier, maximalNode: [n13] b1, [36,38], Identifier
+      updateHeapWithConnectedGroupsGraph[in]: group: {groupIdx: 0, maximalNode: [n13] b1, [36,38], Identifier}, graphIndex: 0
+          updateHeapWithConnectedGroupsGraph[dbg] heap[1=>0] [n13] b1, [36,38], Identifier
+          updateHeapWithConnectedGroupsGraph[dbg] heap[2=>1] [n12] b1, [40,47], Identifier
+      updateHeapWithConnectedGroupsGraph[out]: group: {maximalNode: [n13] b1, [36,38], Identifier}
+      resolveGroupForFlow[in]: [n13] b1, [36,38], Identifier, groupIndex:0, kind:ifexpr, maximalNode.parent.kind:IfStatement, 
+        resolveGroupForFlow[dbg:] currentBranchesMap[before]:
+        resolveGroupForFlow[dbg:] currentBranchesMap[before]: forFlow.currentBranchesMap.size:0
+        resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:
+        resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():
+        resolveGroupForFlow[dbg] symtab: [
+        resolveGroupForFlow[dbg] symtab: ]
+        resolveGroupForFlow[dbg] constraintItem: {
+        resolveGroupForFlow[dbg] constraintItem:  symbolsInvoled:
+        resolveGroupForFlow[dbg] constraintItem:  kind: always,
+        resolveGroupForFlow[dbg] constraintItem: },
+        resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():
+        flough[in] expr:[n13] b1, [36,38], Identifier},crit:{kind:truthy,alsoFailing:true,negate:undefined, },floughStatus:{inCondition:true, currentReplayable:undefined}, qdotfalloutIn: <undef>, accessDepth:undefined
+          flough[in] refTypesSymtab:
+            [
+            ]
+          flough[in] constraintItemIn:
+            {
+             symbolsInvoled:
+             kind: always,
+            },
+          floughIdentifier[in] [n13] b1, [36,38], Identifier
+            floughIdentifier[out]: unmerged[0]: {
+            floughIdentifier[out]: unmerged[0]:   symbol: { id:16, ename: b1 },
+            floughIdentifier[out]: unmerged[0]:   isconst: true,
+            floughIdentifier[out]: unmerged[0]:   type: [t19] false | [t21] true
+            floughIdentifier[out]: unmerged[0]:   symtab: [
+            floughIdentifier[out]: unmerged[0]:   ]
+            floughIdentifier[out]: unmerged[0]:   constraintItem: {
+            floughIdentifier[out]: unmerged[0]:      symbolsInvoled:
+            floughIdentifier[out]: unmerged[0]:      kind: always,
+            floughIdentifier[out]: unmerged[0]:     },
+            floughIdentifier[out]: unmerged[0]: }
+            floughIdentifier[out] floughReturn.typeof: undefined
+            floughIdentifier[out] groupNodeToTypeMap.size: 0
+          floughIdentifier[out] [n13] b1, [36,38], Identifier
+            flough[dbg]: unmerged[0]: {
+            flough[dbg]: unmerged[0]:   symbol: { id:16, ename: b1 },
+            flough[dbg]: unmerged[0]:   isconst: true,
+            flough[dbg]: unmerged[0]:   type: [t19] false | [t21] true
+            flough[dbg]: unmerged[0]:   symtab: [
+            flough[dbg]: unmerged[0]:   ]
+            flough[dbg]: unmerged[0]:   constraintItem: {
+            flough[dbg]: unmerged[0]:      symbolsInvoled:
+            flough[dbg]: unmerged[0]:      kind: always,
+            flough[dbg]: unmerged[0]:     },
+            flough[dbg]: unmerged[0]: }
+          flough[out] floughReturn.typeof: <undef>
+          flough[out] groupNodeToTypeMap.size: 0
+        flough: [n13] b1, [36,38], Identifier
+        resolveGroupForFlow[after flough][n13] b1, [36,38], Identifier
+        applyCrit1[in]
+          orIntoNodeToTypeMap(node:[n13] b1, [36,38], Identifier, type:[t22] boolean) :: * -> [t22] boolean

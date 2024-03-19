@@ -46969,6 +46969,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function checkSourceElement(node: Node | undefined): void {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`checkSourceElement[in]: ${IDebug.dbgs.nodeToString(node)}`,loggerLevel);
         if (node) {
             const saveCurrentNode = currentNode;
             currentNode = node;
@@ -46976,6 +46978,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             checkSourceElementWorker(node);
             currentNode = saveCurrentNode;
         }
+    IDebug.ilogGroupEnd(()=>`checkSourceElement[out]: ${IDebug.dbgs.nodeToString(node)}`,loggerLevel);
     }
 
     function checkSourceElementWorker(node: Node): void {

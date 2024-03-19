@@ -1,1 +1,0 @@
-containerItems[0]: node:[n16] declare const b1: true | false; declare const b2: ...     b2; } else {     b1;     b2;     b1 && b2; } , [0,197], SourceFile

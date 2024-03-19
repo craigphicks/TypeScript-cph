@@ -1,0 +1,14 @@
+groups[0]: {kind, ifexpr, maxnode: [n13] b1, [36,38], Identifier}
+groups[0]:  [0]: node: [n13] b1, [36,38], Identifier, flow: [f4], Start|Referenced|Shared, 
+groups[0]:  setOfAnteGroups.size===0
+groups[0]:  setOfAnteGroups.size===0, []
+groups[0]:    dbgGraphIdx:0
+groups[1]: {kind, plain, maxnode: [n12] b1, [40,47], Identifier}
+groups[1]:  [1]: node: [n12] b1, [40,47], Identifier, flow: [f3], TrueCondition|Condition|Referenced|Shared, [n13] b1, [36,38], Identifier
+groups[1]:  setOfAnteGroups.size===1
+groups[1]:  setOfAnteGroups.size===1, [0,]
+groups[1]:    previousAnteGroupIdx:0
+groups[1]:    dbgGraphIdx:0
+containerItems[0]: node:[n14] declare const b1: true | false; if (b1){     b1; } // else { //     b1; // } //b1;, [0,82], SourceFile
+[0]: node:[n13] b1, [36,38], Identifier
+[1]: node:[n12] b1, [40,47], Identifier

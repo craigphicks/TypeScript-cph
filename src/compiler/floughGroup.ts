@@ -1280,6 +1280,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] currentBranchesMap[before]:`, loggerLevel);
         dbgForFlow(sourceFileMrState, forFlow).forEach(s => IDebug.ilog(()=>`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`, loggerLevel));
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`, loggerLevel);
+        IDebug.ilog(()=>`resolveGroupForFlow[dbg:] previousAnteGroupIdx:${groupForFlow.previousAnteGroupIdx}`, loggerLevel);
     }
     const setOfKeysToDeleteFromCurrentBranchesMap = new Map<GroupForFlow, Set<"then" | "else"> | undefined>();
     const getAnteConstraintItemAndSymtab = (): RefTypesSymtabConstraintItem => {

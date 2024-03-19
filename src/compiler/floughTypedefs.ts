@@ -75,7 +75,7 @@ export type FloughTypeChecker = TSTypeChecker & {
     getFlowNodeId(flowNode: FloughNode): number;
     getTypeOfExpression(node: Expression): Type;
     createLiteralType(flags: TypeFlags, value: string | number | PseudoBigInt, symbol?: Symbol, regularType?: LiteralType): LiteralType;
-    getTypeFacts(type: Type, callerOnlyNeeds?: TypeFacts): TypeFacts;
+    getTypeFacts(type: Type, callerOnlyNeeds: TypeFacts): TypeFacts;
     isTypeRelatedTo(source: Type, target: Type, relation: Map<string, RelationComparisonResult>): boolean;
     isConstantReference(node: Node): boolean;
     getRelations(): Relations;
