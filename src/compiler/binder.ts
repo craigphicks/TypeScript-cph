@@ -1088,10 +1088,12 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
                 node.flags |= NodeFlags.HasImplicitReturn;
                 if (hasExplicitReturn) node.flags |= NodeFlags.HasExplicitReturn;
                 (node as FunctionLikeDeclaration | ClassStaticBlockDeclaration).endFlowNode = currentFlow;
+                if (enableFlough) allFlowNodesOneSourceFile?.push(currentFlow);
             }
             if (node.kind === SyntaxKind.SourceFile) {
                 node.flags |= emitFlags;
                 (node as SourceFile).endFlowNode = currentFlow;
+                if (enableFlough) allFlowNodesOneSourceFile?.push(currentFlow);
             }
 
             if (currentReturnTarget) {
@@ -1099,6 +1101,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
                 currentFlow = finishFlowLabel(currentReturnTarget);
                 if (node.kind === SyntaxKind.Constructor || node.kind === SyntaxKind.ClassStaticBlockDeclaration || (isInJSFile(node) && (node.kind === SyntaxKind.FunctionDeclaration || node.kind === SyntaxKind.FunctionExpression))) {
                     (node as FunctionLikeDeclaration | ClassStaticBlockDeclaration).returnFlowNode = currentFlow;
+                    if (enableFlough) allFlowNodesOneSourceFile?.push(currentFlow);
                 }
             }
             if (!isImmediatelyInvoked) {
@@ -1155,7 +1158,8 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             return;
         }
         if (node.kind >= SyntaxKind.FirstStatement && node.kind <= SyntaxKind.LastStatement && !options.allowUnreachableCode) {
-            (node as HasFlowNode).flowNode = currentFlow;
+            //node.flowNode = currentFlow;
+            setNodeFlow(node, currentFlow);
         }
         switch (node.kind) {
             case SyntaxKind.WhileStatement:
@@ -1394,14 +1398,14 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
     // function createBranchLabel(): FlowLabel {
     //     return initFlowNode({ flags: FlowFlags.BranchLabel, antecedents: undefined });
     // }
-    function createBranchLabel(branchKind: BranchKind = BranchKind.none): FlowLabel {
+    function createBranchLabel(branchKind: BranchKind = BranchKind.none): FloughLabel {
         return initFlowNode({ flags: FlowFlags.BranchLabel, antecedents: undefined, branchKind });
     }
 
     // function createLoopLabel(): FlowLabel {
     //     return initFlowNode({ flags: FlowFlags.LoopLabel, antecedents: undefined });
     // }
-    function createLoopLabel(branchKind: BranchKind = BranchKind.none): FlowLabel {
+    function createLoopLabel(branchKind: BranchKind = BranchKind.none): FloughLabel {
         return initFlowNode({ flags: FlowFlags.LoopLabel, antecedents: undefined, branchKind });
     }
 
@@ -1475,7 +1479,8 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
         if (!antecedents) {
             return unreachableFlow;
         }
-        if (antecedents.length === 1) {
+        // de-optimize for floughProcessing, but re-optimizing is a TODO
+        if (!enableFlough && antecedents.length === 1) {
             return antecedents[0];
         }
         return flow;
@@ -1567,9 +1572,19 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
     }
 
     function bindWhileStatement(node: WhileStatement): void {
-        const preWhileLabel = setContinueTarget(node, createLoopLabel());
-        const preBodyLabel = createBranchLabel();
-        const postWhileLabel = createBranchLabel();
+//-            const preWhileLabel = setContinueTarget(node, createLoopLabel());
+//-            const preBodyLabel = createBranchLabel();
+//-            const postWhileLabel = createBranchLabel();
+//+            const preWhileLabel = setContinueTarget(node, createLoopLabel(BranchKind.preWhileLoop));
+//+            const preBodyLabel = createBranchLabel(BranchKind.preWhileBody);
+//+            const postWhileLabel = createBranchLabel(BranchKind.postWhileLoop);
+//+            postWhileLabel.originatingExpression = node.expression; // to enable merging of unchanged then/else branch pairs
+
+        const preWhileLabel = setContinueTarget(node, createLoopLabel(BranchKind.preWhileLoop));
+        const preBodyLabel = createBranchLabel(BranchKind.preWhileBody);
+        const postWhileLabel = createBranchLabel(BranchKind.postWhileLoop);
+        postWhileLabel.originatingExpression = node.expression; // to enable merging of unchanged then/else branch pairs
+
         addAntecedent(preWhileLabel, currentFlow);
         currentFlow = preWhileLabel;
         bindCondition(node.expression, preBodyLabel, postWhileLabel);
@@ -1627,9 +1642,21 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
     }
 
     function bindIfStatement(node: IfStatement): void {
-        const thenLabel = createBranchLabel();
-        const elseLabel = createBranchLabel();
-        const postIfLabel = createBranchLabel();
+
+// -            const thenLabel = createBranchLabel();
+// -            const elseLabel = createBranchLabel();
+// -            const postIfLabel = createBranchLabel();
+// +            const thenLabel = createBranchLabel(BranchKind.then);
+// +            const elseLabel = createBranchLabel(BranchKind.else);
+// +            const postIfLabel = createBranchLabel(BranchKind.postIf);
+// +            postIfLabel.originatingExpression = node.expression; // to enable merging of unchanged then/else branch pairs
+
+        const thenLabel = createBranchLabel(BranchKind.then);
+        const elseLabel = createBranchLabel(BranchKind.else);
+        const postIfLabel = createBranchLabel(BranchKind.postIf);
+        postIfLabel.originatingExpression = node.expression; // to enable merging of unchanged then/else branch pairs
+
+
         bindCondition(node.expression, thenLabel, elseLabel);
         currentFlow = finishFlowLabel(thenLabel);
         bind(node.thenStatement);
@@ -1815,7 +1842,7 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             fallthroughFlow = currentFlow;
             if (!(currentFlow.flags & FlowFlags.Unreachable) && i !== clauses.length - 1 && options.noFallthroughCasesInSwitch) {
                 clause.fallthroughFlowNode = currentFlow;
-                allFlowNodesOneSourceFile?.push(currentFlow);
+                if (enableFlough) allFlowNodesOneSourceFile?.push(currentFlow);
             }
         }
     }
@@ -2894,18 +2921,21 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             case SyntaxKind.ThisKeyword:
                 // TODO: Why use `isExpression` here? both Identifier and ThisKeyword are expressions.
                 if (currentFlow && (isExpression(node) || parent.kind === SyntaxKind.ShorthandPropertyAssignment)) {
-                    (node as Identifier | ThisExpression).flowNode = currentFlow;
+                    // (node as Identifier | ThisExpression).flowNode = currentFlow;
+                    setNodeFlow(node, currentFlow);
                 }
                 // TODO: a `ThisExpression` is not an Identifier, this cast is unsound
                 return checkContextualIdentifier(node as Identifier);
             case SyntaxKind.QualifiedName:
                 if (currentFlow && isPartOfTypeQuery(node)) {
-                    (node as QualifiedName).flowNode = currentFlow;
+                    // (node as QualifiedName).flowNode = currentFlow;
+                    setNodeFlow(node, currentFlow);
                 }
                 break;
             case SyntaxKind.MetaProperty:
             case SyntaxKind.SuperKeyword:
-                (node as MetaProperty | SuperExpression).flowNode = currentFlow;
+                // (node as MetaProperty | SuperExpression).flowNode = currentFlow;
+                setNodeFlow(node, currentFlow);
                 break;
             case SyntaxKind.PrivateIdentifier:
                 return checkPrivateIdentifier(node as PrivateIdentifier);
@@ -2913,7 +2943,8 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             case SyntaxKind.ElementAccessExpression:
                 const expr = node as PropertyAccessExpression | ElementAccessExpression;
                 if (currentFlow && isNarrowableReference(expr)) {
-                    expr.flowNode = currentFlow;
+                    // expr.flowNode = currentFlow;
+                    setNodeFlow(node, currentFlow);
                 }
                 if (isSpecialPropertyDeclaration(expr)) {
                     bindSpecialPropertyDeclaration(expr);
@@ -3757,7 +3788,8 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
             }
         }
         if (currentFlow) {
-            node.flowNode = currentFlow;
+            // node.flowNode = currentFlow;
+            setNodeFlow(node, currentFlow);
         }
         checkStrictModeFunctionName(node);
         const bindingName = node.name ? node.name.escapedText : InternalSymbolName.Function;
@@ -3770,7 +3802,8 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
         }
 
         if (currentFlow && isObjectLiteralOrClassExpressionMethodOrAccessor(node)) {
-            node.flowNode = currentFlow;
+            // node.flowNode = currentFlow;
+            setNodeFlow(node, currentFlow);
         }
 
         return hasDynamicName(node)
