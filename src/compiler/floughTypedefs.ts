@@ -36,6 +36,7 @@ import {
     ElementFlags,
     NamedTupleMember,
     ParameterDeclaration,
+    SourceFile,
 } from "./types";
 
 import {
@@ -55,6 +56,7 @@ export interface Relations {
 
 
 export type FloughTypeChecker = TSTypeChecker & {
+    loadFloughStateForSourceFile(sourceFile: SourceFile): void; // called from harnessIO.ts
     getFlowNodeId(node: FloughNode): number;
     getIntersectionType(types: Type[]): Type;
     getUnionType(types: Type[]): Type;

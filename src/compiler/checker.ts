@@ -2293,7 +2293,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         [enumRelation, "enumRelation"],
     ]);
     var sourceFileFloughState: SourceFileFloughState | undefined;
-    var mapPathToSourceFileFloughState = new Map<string, SourceFileFloughState>();
+    var mapSourceFileToFloughState = new WeakMap<SourceFile, SourceFileFloughState>();
     var flowTypeQueryState = {
         disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
         //aliasableAssignments: new Map<Symbol, AliasAssignableState>(),
@@ -47414,8 +47414,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function createFloughTypeChecker(typeChecker: TypeChecker): FloughTypeChecker {
+
         const floughTypeChecker: FloughTypeChecker = {
             ...typeChecker,
+            loadFloughStateForSourceFile(sourceFile: SourceFile): void {
+                Debug.assert(mapSourceFileToFloughState.has(sourceFile));
+                sourceFileFloughState = mapSourceFileToFloughState.get(sourceFile);
+            },
             getIntersectionType,
             getUnionType,
             forEachType,
@@ -47459,7 +47464,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             widenTypeInferredFromInitializer,
             getFreshTypeOfLiteralType,
             createTupleType,
-        }
+        };
+        // fudge so the harnessIO may use original typeChecker:
+        (typeChecker as FloughTypeChecker).loadFloughStateForSourceFile = floughTypeChecker.loadFloughStateForSourceFile;
 
         return floughTypeChecker;
     }
@@ -47475,16 +47482,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
 
         if (enableFlough){
-            sourceFileFloughState = createSourceFileFloughState(node, createFloughTypeChecker(checker), compilerOptions);
+            if (mapSourceFileToFloughState.has(node)) {
+                sourceFileFloughState = mapSourceFileToFloughState.get(node);
+            }
+            else {
+                sourceFileFloughState = createSourceFileFloughState(node, createFloughTypeChecker(checker), compilerOptions);
+                mapSourceFileToFloughState.set(node, sourceFileFloughState);
+            }
         }
 
         checkSourceFileWorker(node);
 
-        if (enableFlough){
-            if (sourceFileFloughState) {
-                //sourceFileFloughState = undefined;
-            }
-        }
+        // if (enableFlough){
+        //     if (sourceFileFloughState) {
+        //         // Should be able to unload here without adverse side effects.
+        //         sourceFileFloughState = undefined;
+        //     }
+        // }
 
         performance.mark("afterCheck");
         performance.measure("Check", "beforeCheck", "afterCheck");

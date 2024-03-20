@@ -4953,7 +4953,7 @@ export interface TypeCheckerHost extends ModuleSpecifierResolutionHost {
     packageBundlesTypes(packageName: string): boolean;
 }
 
-export interface TypeChecker {
+export interface TypeChecker { 
     getTypeOfSymbolAtLocation(symbol: Symbol, node: Node): Type;
     getTypeOfSymbol(symbol: Symbol): Type;
     getDeclaredTypeOfSymbol(symbol: Symbol): Type;

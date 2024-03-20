@@ -797,6 +797,11 @@ export namespace Compiler {
                 const codeLines = ts.flatMap(file.content.split(/\r?\n/g), e => e.split(/[\r\u2028\u2029]/g));
                 const gen: IterableIterator<TypeWriterResult> = isSymbolBaseline ? fullWalker.getSymbols(unitName) : fullWalker.getTypes(unitName);
                 let lastIndexWritten: number | undefined;
+                // flough
+                if (process.env.enableFlough && fullWalker.currentSourceFile) {
+                    type Tmp = ts.TypeChecker & { loadFloughStateForSourceFile(sourceFile: ts.SourceFile): void };
+                    ((fullWalker as any).checker as Tmp).loadFloughStateForSourceFile((fullWalker as any).currentSourceFile);
+                }
                 for (const result of gen) {
                     if (isSymbolBaseline && !result.symbol) {
                         return;
