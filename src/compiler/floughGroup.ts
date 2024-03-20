@@ -481,38 +481,35 @@ export function createSourceFileFloughState(sourceFile: SourceFileWithFloughNode
     if (IDebug.isActive(0)) {
         // just to set up the ids for debugging
         sourceFile.allFlowNodes?.forEach(fn => checker.getFlowNodeId(fn));
-    }
-
-    if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && enableDbgFlowNodes) {
-        const astr3 = dbgGroupsForFlowToStrings(groupsForFlow,checker);
-        const ofilename3 = IDebug.loggingHost.getBaseTestFilepath(sourceFile)+`.gff.txt`;
-        sys.writeFile(ofilename3, astr3.join(sys.newLine));
-
-        if (sourceFile.allFlowNodes) {
-            const astr4: string[] = [];
-            sourceFile.allFlowNodes.forEach(fn => {
-                let str = dbgFlowToString(fn);
-                if (groupsForFlow.dbgFlowToOriginatingGroupIdx) {
-                    const originatingGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(fn) ?? -1;
-                    str += `, originatingGroupIdx: ${originatingGroupIdx}`;
-                    str += `, anteFlow:[`;
-                    const tmpas: string[] = [];
-                    getFlowAntecedents(fn).forEach(antefn => {
-                        str += `${dbgFlowToString(antefn)}; `;
-                        const anteGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx!.get(antefn) ?? -1;
-                        tmpas.push(anteGroupIdx.toString());
-                    });
-                    str += "]";
-                    if (tmpas.length) {
-                        str += `, anteGroups:[${tmpas.join(",")}]`;
+        if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && enableDbgFlowNodes) {
+            const astr3 = dbgGroupsForFlowToStrings(groupsForFlow,checker);
+            const ofilename3 = IDebug.loggingHost.getBaseTestFilepath(sourceFile)+`.gff.txt`;
+            sys.writeFile(ofilename3, astr3.join(sys.newLine));
+            if (sourceFile.allFlowNodes) {
+                const astr4: string[] = [];
+                sourceFile.allFlowNodes.forEach(fn => {
+                    let str = dbgFlowToString(fn);
+                    if (groupsForFlow.dbgFlowToOriginatingGroupIdx) {
+                        const originatingGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx.get(fn) ?? -1;
+                        str += `, originatingGroupIdx: ${originatingGroupIdx}`;
+                        str += `, anteFlow:[`;
+                        const tmpas: string[] = [];
+                        getFlowAntecedents(fn).forEach(antefn => {
+                            str += `${dbgFlowToString(antefn)}; `;
+                            const anteGroupIdx = groupsForFlow.dbgFlowToOriginatingGroupIdx!.get(antefn) ?? -1;
+                            tmpas.push(anteGroupIdx.toString());
+                        });
+                        str += "]";
+                        if (tmpas.length) {
+                            str += `, anteGroups:[${tmpas.join(",")}]`;
+                        }
+                        astr4.push(str);
                     }
-                    astr4.push(str);
-                }
-            });
-            const ofilename4 = IDebug.loggingHost.getBaseTestFilepath(sourceFile)+`.afn.txt`;
-            sys.writeFile(ofilename4, astr4.join(sys.newLine));
+                });
+                const ofilename4 = IDebug.loggingHost.getBaseTestFilepath(sourceFile)+`.afn.txt`;
+                sys.writeFile(ofilename4, astr4.join(sys.newLine));
+            }
         }
-
     }
 
     const t1 = process.hrtime.bigint() - t0;

@@ -27937,8 +27937,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getFlowTypeOfReference(reference: Node, declaredType: Type, initialType = declaredType, flowContainer?: Node, flowNode = tryCast(reference, canHaveFlowNode)?.flowNode): Type {
-
-
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getFlowTypeOfReference[in]: ${IDebug.dbgs.nodeToString(reference)}, declaredType: ${IDebug.dbgs.typeToString(declaredType)
+    }, initialType: ${IDebug.dbgs.typeToString(initialType)}, flowContainer: ${flowContainer?getNodeId(flowContainer):-1}, flowNode: ${flowNode?.id}`, loggerLevel);
+    const ret = (()=>{
         flowTypeQueryState.disable = !enableFlough;
 
         /**
@@ -27967,6 +27969,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // if (myDebug) {
         //     consoleGroup(`getFlowTypeOfReference[in]: ` + dbgstr);
         // }
+        IDebug.ilog(()=>`enableFlough: ${enableFlough}, getSourceFileFloughState(): ${!!getSourceFileFloughState()}`, loggerLevel);
         if (enableFlough && getSourceFileFloughState()){
             const insideGetFlowTypeOfReference = !!flowTypeQueryState.getFlowTypeOfReferenceStack.length;
             //let inFlowGroup = false;
@@ -28006,6 +28009,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // }
         // if (myDebug) consoleGroupEnd();
         return type;
+    })();
+    IDebug.ilogGroupEnd(()=>`getFlowTypeOfReference[out]: returns ${IDebug.dbgs.typeToString(ret)}`, loggerLevel);
+    return ret;
     }
 
 
@@ -29424,6 +29430,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getNarrowableTypeForReference(type: Type, reference: Node, checkMode?: CheckMode) {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getNarrowableTypeForReference[in] type: ${IDebug.dbgs.typeToString(type)} reference: ${IDebug.dbgs.nodeToString(reference)
+        }, checkMode: ${IDebug.dbgs.checkModeToString(checkMode)}`, loggerLevel);
+    const ret = (()=>{
         // When the type of a reference is or contains an instantiable type with a union type constraint, and
         // when the reference is in a constraint position (where it is known we'll obtain the apparent type) or
         // has a contextual type containing no top-level instantiables (meaning constraints will determine
@@ -29435,6 +29445,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             someType(type, isGenericTypeWithUnionConstraint) &&
             (isConstraintPosition(type, reference) || hasContextualTypeWithNoGenericTypes(reference, checkMode));
         return substituteConstraints ? mapType(type, getBaseConstraintOrType) : type;
+    })();
+    IDebug.ilogGroupEnd(()=>`getNarrowableTypeForReference[out]: returns ${IDebug.dbgs.typeToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function isExportOrExportExpression(location: Node) {
@@ -29478,6 +29491,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getNarrowedTypeOfSymbol(symbol: Symbol, location: Identifier, checkMode?: CheckMode) {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getNarrowedTypeOfSymbol[in]: symbol:${IDebug.dbgs.symbolToString(symbol)}, location:${IDebug.dbgs.nodeToString(location)
+        }, checkMode:${IDebug.dbgs.checkModeToString(checkMode)}`,loggerLevel);
+    const ret = (()=>{
         const type = getTypeOfSymbol(symbol, checkMode);
         const declaration = symbol.valueDeclaration;
         if (declaration) {
@@ -29564,9 +29581,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         return type;
+    })();
+    IDebug.ilogGroupEnd(()=>`getNarrowedTypeOfSymbol[out]: returns ${IDebug.dbgs.typeToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function checkIdentifier(node: Identifier, checkMode: CheckMode | undefined): Type {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`checkIdentifier[in]: node:${IDebug.dbgs.nodeToString(node)}, checkMode: ${IDebug.dbgs.checkModeToString(checkMode)}`, loggerLevel);
+    const ret = (()=>{
         if (isThisInTypeQuery(node)) {
             return checkThisExpression(node);
         }
@@ -29751,6 +29774,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return type;
         }
         return assignmentKind ? getBaseTypeOfLiteralType(flowType) : flowType;
+    })();
+    IDebug.ilogGroupEnd(()=>`checkIdentifier[out] returns ${IDebug.dbgs.typeToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function isSameScopedBindingElement(node: Identifier, declaration: Declaration) {
@@ -47388,7 +47414,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function createFloughTypeChecker(typeChecker: TypeChecker): FloughTypeChecker {
         const floughTypeChecker: FloughTypeChecker = {
-            ...checker,
+            ...typeChecker,
             getIntersectionType,
             getUnionType,
             forEachType,
