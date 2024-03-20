@@ -72,7 +72,7 @@ export class ILoggingClass implements ILoggingHost {
     indent: number = 0;
     oneIndent: string = '  ';
     currentSourceFn: string = '';
-    currentSourceFnCount: number = 0;
+    currentSourceFnCount: number = -1;
     sourceToFilenameCount: Map<string, number> = new Map<string, number>();
     logFilename: string | undefined= undefined;
     logFileFd: number = 0;
@@ -118,10 +118,23 @@ export class ILoggingClass implements ILoggingHost {
     }
     notifySourceFile(sourceFile: SourceFile, typeChecker: TypeChecker) {
         this.currentSourceFn = sourceFile.originalFileName;
-        this.currentSourceFnCount = 0;
+        this.currentSourceFnCount = -1;
+        this.logFilename = undefined;
+        this.logFileFd = 0;
+        this.numOutLines = 0;
+
         if (this.dbgTestFilenameMatches(sourceFile)){
-            this.sourceToFilenameCount.set(this.currentSourceFn, 0);
-            this.logFilename = this.dbgTestFilename(sourceFile);
+            if (!this.sourceToFilenameCount.has(sourceFile.path)){
+                this.currentSourceFnCount = 0;
+                //this.sourceToFilenameCount.set(sourceFile.path, 0)
+            }
+            else {
+                this.currentSourceFnCount = this.sourceToFilenameCount.get(sourceFile.path)! + 1;
+                //this.sourceToFilenameCount.set(sourceFile.path, this.sourceToFilenameCount.get(sourceFile.path)! + 1)
+            }
+            this.sourceToFilenameCount.set(sourceFile.path, this.currentSourceFnCount);
+
+            this.logFilename = this.dbgTestFilename(sourceFile, this.currentSourceFnCount);
             this.logFileFd = this.nodeFs.openSync(this.logFilename, 'w');
             this.numOutLines = 0;
             IDebug.checker = typeChecker;
@@ -133,18 +146,18 @@ export class ILoggingClass implements ILoggingHost {
         const nameMatched = (node.path.match(re) && node.path.slice(-5)!==".d.ts");
         return !!nameMatched;
     }
-    private dbgTestFilename(node: SourceFile): string | undefined {
-        if (!this.sourceToFilenameCount.has(node.path)){
-            this.sourceToFilenameCount.set(node.path, 0);
-            this.currentSourceFnCount = 0;
-        }
-        else {
-            this.currentSourceFnCount = this.sourceToFilenameCount.get(node.path)! + 1;
-            this.sourceToFilenameCount.set(node.path, this.currentSourceFnCount);
-        }
+    private dbgTestFilename(node: SourceFile, index: number): string | undefined {
+        // if (!this.sourceToFilenameCount.has(node.path)){
+        //     this.sourceToFilenameCount.set(node.path, 0);
+        //     this.currentSourceFnCount = 0;
+        // }
+        // else {
+        //     this.currentSourceFnCount = this.sourceToFilenameCount.get(node.path)! + 1;
+        //     this.sourceToFilenameCount.set(node.path, this.currentSourceFnCount);
+        // }
         const nameRet = this.nodePath.basename(node.path, ".ts");
         this.nodeFs.mkdirSync("tmp", {recursive: true});
-        const retfn = "tmp/" + nameRet +`.#${this.currentSourceFnCount}` +`.de${IDebug.logLevel}.log${IDebug.suffix?`-${IDebug.suffix}`:""}`;
+        const retfn = "tmp/" + nameRet +`.#${index}` +`.de${IDebug.logLevel}.log${IDebug.suffix?`-${IDebug.suffix}`:""}`;
         return retfn;
     }
     getBaseTestFilepath(node: SourceFile) {

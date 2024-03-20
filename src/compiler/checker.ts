@@ -2293,6 +2293,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         [enumRelation, "enumRelation"],
     ]);
     var sourceFileFloughState: SourceFileFloughState | undefined;
+    var mapPathToSourceFileFloughState = new Map<string, SourceFileFloughState>();
     var flowTypeQueryState = {
         disable: false, // to enable/disable per file, set at top of getFlowTypeOfReference
         //aliasableAssignments: new Map<Symbol, AliasAssignableState>(),
@@ -47481,7 +47482,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         if (enableFlough){
             if (sourceFileFloughState) {
-                sourceFileFloughState = undefined;
+                //sourceFileFloughState = undefined;
             }
         }
 

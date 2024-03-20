@@ -469,7 +469,7 @@ export function createSourceFileFloughState(sourceFile: SourceFileWithFloughNode
     }
     var enableDbgFlowNodes = Number(process.env.enableDbgFlowNodes ?? 0);
     // Only on first pass
-    if (IDebug.loggingHost?.getCurrentSourceFnCount()===0 && enableDbgFlowNodes) {
+    if (IDebug.isActive(0) && IDebug.loggingHost?.getCurrentSourceFnCount()===0 && enableDbgFlowNodes) {
         const ofilenameRoot = IDebug.loggingHost.getBaseTestFilepath(sourceFile) + `.flowNodes.txt`;
         //`tmp.${getBaseFileName(node.originalFileName)}.di${myDisableInfer?1:0}.${dbgFlowFileCnt}.flow`;
         //export function flowNodesToString(sourceFile: SourceFile, getFlowNodeId: (flow: FlowNode) => number, checker: TypeChecker): string {

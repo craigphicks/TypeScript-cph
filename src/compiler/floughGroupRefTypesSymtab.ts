@@ -354,7 +354,11 @@ export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefType
                 if (!rts.symtabInner.has(symbol)) {
                     let otype;
                     if (!arr[0].isSubloop) {
-                        otype = mrNarrow.getEffectiveDeclaredType(symbolFlowInfoMap.get(symbol) ?? Debug.fail("unexpected"));
+                        const symbolFlowInfo = symbolFlowInfoMap.get(symbol);
+                        if (!symbolFlowInfo) {
+                            Debug.fail("unexpected");
+                        }
+                        otype = mrNarrow.getEffectiveDeclaredType(symbolFlowInfo);
                     }
                     else {
                         otype = rts.symtabOuter?.get(symbol);
