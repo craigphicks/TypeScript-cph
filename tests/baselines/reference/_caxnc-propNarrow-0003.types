@@ -1,0 +1,53 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0003.ts ===
+declare const x: boolean;
+>x : boolean
+
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: string; b: string; }"
+let r = x ? { a: 1} : { a: "one", b: "two"};
+>r : { a: number; b?: undefined; } | { a: string; b: string; }
+>x ? { a: 1} : { a: "one", b: "two"} : { a: number; } | { a: string; b: string; }
+>x : boolean
+>{ a: 1} : { a: number; }
+>a : number
+>1 : 1
+>{ a: "one", b: "two"} : { a: string; b: string; }
+>a : string
+>"one" : "one"
+>b : string
+>"two" : "two"
+
+if (r.b===undefined){
+>r.b===undefined : boolean
+>r.b : undefined | string
+>r : { a: number; } | { a: string; b: string; }
+>b : undefined | string
+>undefined : undefined
+
+    r; // expect { a: number; }
+>r : { a: number; }
+
+    r.a; // expect number
+>r.a : number
+>r : { a: number; }
+>a : number
+
+    r.b; // expect any (error)
+>r.b : any
+>r : { a: number; }
+>b : any
+}
+else {
+    r; // expect { a: string; b: string; }
+>r : { a: string; b: string; }
+
+    r.a; // expect string
+>r.a : string
+>r : { a: string; b: string; }
+>a : string
+
+    r.b; // expect string
+>r.b : string
+>r : { a: string; b: string; }
+>b : string
+}
+

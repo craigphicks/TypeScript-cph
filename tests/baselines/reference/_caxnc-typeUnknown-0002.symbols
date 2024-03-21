@@ -1,0 +1,41 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0002.ts ===
+declare const x: unknown;
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0002.ts, 0, 13))
+
+declare const maybe: boolean;
+>maybe : Symbol(maybe, Decl(_caxnc-typeUnknown-0002.ts, 1, 13))
+
+let a = 1;
+>a : Symbol(a, Decl(_caxnc-typeUnknown-0002.ts, 2, 3))
+
+const b = 2;
+>b : Symbol(b, Decl(_caxnc-typeUnknown-0002.ts, 3, 5))
+
+let u = x;
+>u : Symbol(u, Decl(_caxnc-typeUnknown-0002.ts, 4, 3))
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0002.ts, 0, 13))
+
+if (maybe) {
+>maybe : Symbol(maybe, Decl(_caxnc-typeUnknown-0002.ts, 1, 13))
+
+    u = a;
+>u : Symbol(u, Decl(_caxnc-typeUnknown-0002.ts, 4, 3))
+>a : Symbol(a, Decl(_caxnc-typeUnknown-0002.ts, 2, 3))
+
+    u;
+>u : Symbol(u, Decl(_caxnc-typeUnknown-0002.ts, 4, 3))
+}
+else {
+    u = b;
+>u : Symbol(u, Decl(_caxnc-typeUnknown-0002.ts, 4, 3))
+>b : Symbol(b, Decl(_caxnc-typeUnknown-0002.ts, 3, 5))
+
+    u;
+>u : Symbol(u, Decl(_caxnc-typeUnknown-0002.ts, 4, 3))
+}
+u;
+>u : Symbol(u, Decl(_caxnc-typeUnknown-0002.ts, 4, 3))
+
+
+
+

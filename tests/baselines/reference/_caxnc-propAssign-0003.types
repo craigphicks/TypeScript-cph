@@ -1,0 +1,24 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0003.ts ===
+declare type T2 = { };
+>T2 : {}
+
+const t: T2 = { };
+>t : T2
+>{ } : {}
+
+t;
+>t : {}
+
+t;
+>t : {}
+
+let tl: T2 = { };
+>tl : T2
+>{ } : {}
+
+tl;
+>tl : {}
+
+tl;
+>tl : {}
+

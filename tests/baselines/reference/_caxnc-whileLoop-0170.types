@@ -1,0 +1,59 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0170.ts ===
+function t70(){
+>t70 : () => void
+
+    let b = true;
+>b : boolean
+>true : true
+
+    let c = true;
+>c : boolean
+>true : true
+
+    let d = true;
+>d : boolean
+>true : true
+
+    while (d){
+>d : boolean
+
+        d = c;
+>d = c : boolean
+>d : boolean
+>c : boolean
+
+        c = b;
+>c = b : true
+>c : boolean
+>b : true
+
+        b;c;d; // expecting true,true,boolean
+>b : true
+>c : true
+>d : boolean
+
+        [b,c,d]; // expecting [true,true,boolean] 
+>[b,c,d] : boolean[]
+>b : true
+>c : true
+>d : boolean
+
+        let e = b;
+>e : boolean
+>b : true
+
+        b;c;d;e; // expecting true,true,boolean,true
+>b : true
+>c : true
+>d : boolean
+>e : true
+
+        [b,c,d,e]; // expecting true,true,boolean,true
+>[b,c,d,e] : boolean[]
+>b : true
+>c : true
+>d : boolean
+>e : true
+    }
+}
+

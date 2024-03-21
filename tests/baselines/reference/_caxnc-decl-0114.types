@@ -1,0 +1,45 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0114.ts ===
+declare const b: boolean;
+>b : boolean
+
+function decl0014(){
+>decl0014 : () => void
+
+    let x: string | any[];
+>x : any[] | string
+
+    if (b) {
+>b : boolean
+
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | any[]"
+        x = [0];
+>x = [0] : number[]
+>x : any[] | string
+>[0] : number[]
+>0 : 0
+
+        x;
+>x : number[]
+    }
+    else {
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | any[]"
+        x = "1";
+>x = "1" : "1"
+>x : any[] | string
+>"1" : "1"
+
+        x;
+>x : "1"
+    }
+    x;
+>x : "1" | number[]
+
+    x = 2;
+>x = 2 : 2
+>x : any[] | string
+>2 : 2
+
+    x;
+>x : 2
+}
+

@@ -1,0 +1,25 @@
+=== tests/cases/conformance/_caxnc/_caxnc-ez0002.ts ===
+declare type Foo = { readonly foo: (x?:number)=>number[] };
+>Foo : Symbol(Foo, Decl(_caxnc-ez0002.ts, 0, 0))
+>foo : Symbol(foo, Decl(_caxnc-ez0002.ts, 0, 20))
+>x : Symbol(x, Decl(_caxnc-ez0002.ts, 0, 36))
+
+declare const obj: Foo | undefined;
+>obj : Symbol(obj, Decl(_caxnc-ez0002.ts, 1, 13))
+>Foo : Symbol(Foo, Decl(_caxnc-ez0002.ts, 0, 0))
+
+const isFoo = obj?.foo();
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0002.ts, 2, 5))
+>obj?.foo : Symbol(foo, Decl(_caxnc-ez0002.ts, 0, 20))
+>obj : Symbol(obj, Decl(_caxnc-ez0002.ts, 1, 13))
+>foo : Symbol(foo, Decl(_caxnc-ez0002.ts, 0, 20))
+
+if (isFoo) {
+>isFoo : Symbol(isFoo, Decl(_caxnc-ez0002.ts, 2, 5))
+
+    obj.foo(); // obj should be of type Foo
+>obj.foo : Symbol(foo, Decl(_caxnc-ez0002.ts, 0, 20))
+>obj : Symbol(obj, Decl(_caxnc-ez0002.ts, 1, 13))
+>foo : Symbol(foo, Decl(_caxnc-ez0002.ts, 0, 20))
+}
+

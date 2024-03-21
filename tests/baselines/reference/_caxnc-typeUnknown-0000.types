@@ -1,0 +1,63 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0000.ts ===
+declare const pAny: any;
+>pAny : any
+
+declare const pNever: never;
+>pNever : never
+
+let x: unknown;
+>x : unknown
+
+x = x;
+>x = x : unknown
+>x : unknown
+>x : unknown
+
+x; // expect unknown
+>x : unknown
+
+x = 123;
+>x = 123 : 123
+>x : unknown
+>123 : 123
+
+x; // expect 123
+>x : 123
+
+x = "hello";
+>x = "hello" : "hello"
+>x : unknown
+>"hello" : "hello"
+
+x; // exper "hello"
+>x : "hello"
+
+x = [1, 2, 3];
+>x = [1, 2, 3] : number[]
+>x : unknown
+>[1, 2, 3] : number[]
+>1 : 1
+>2 : 2
+>3 : 3
+
+x; // expect number[]
+>x : number[]
+
+//x = new Error();
+x = pAny;
+>x = pAny : any
+>x : unknown
+>pAny : any
+
+x; // expect any
+>x : any
+
+x = pNever;
+>x = pNever : never
+>x : unknown
+>pNever : never
+
+x; // expect never
+>x : never
+
+

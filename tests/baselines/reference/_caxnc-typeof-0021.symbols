@@ -1,0 +1,11 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeof-0021.ts ===
+declare const a: number|string;
+>a : Symbol(a, Decl(_caxnc-typeof-0021.ts, 0, 13))
+
+if (typeof a==="number"){
+>a : Symbol(a, Decl(_caxnc-typeof-0021.ts, 0, 13))
+
+    a;
+>a : Symbol(a, Decl(_caxnc-typeof-0021.ts, 0, 13))
+}
+

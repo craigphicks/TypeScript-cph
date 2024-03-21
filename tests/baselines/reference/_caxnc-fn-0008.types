@@ -1,0 +1,27 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0008.ts ===
+declare interface FooA {
+    foo(b:string): "A";
+>foo : { (b: string): "A"; (...args: any[]): unknown; }
+>b : string
+
+    foo(...args:any[]): unknown;
+>foo : { (b: string): "A"; (...args: any[]): unknown; }
+>args : any[]
+}
+declare const obja: FooA;
+>obja : FooA
+
+declare const arg: string;
+>arg : string
+
+const x = obja.foo(arg);
+>x : "A"
+>obja.foo(arg) : "A"
+>obja.foo : { (b: string): "A"; (...args: any[]): unknown; }
+>obja : FooA
+>foo : { (b: string): "A"; (...args: any[]): unknown; }
+>arg : string
+
+x; // x should be unknown
+>x : unknown
+

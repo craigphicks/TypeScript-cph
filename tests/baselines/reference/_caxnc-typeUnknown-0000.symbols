@@ -1,0 +1,51 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0000.ts ===
+declare const pAny: any;
+>pAny : Symbol(pAny, Decl(_caxnc-typeUnknown-0000.ts, 0, 13))
+
+declare const pNever: never;
+>pNever : Symbol(pNever, Decl(_caxnc-typeUnknown-0000.ts, 1, 13))
+
+let x: unknown;
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x = x;
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x; // expect unknown
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x = 123;
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x; // expect 123
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x = "hello";
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x; // exper "hello"
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x = [1, 2, 3];
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x; // expect number[]
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+//x = new Error();
+x = pAny;
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+>pAny : Symbol(pAny, Decl(_caxnc-typeUnknown-0000.ts, 0, 13))
+
+x; // expect any
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+x = pNever;
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+>pNever : Symbol(pNever, Decl(_caxnc-typeUnknown-0000.ts, 1, 13))
+
+x; // expect never
+>x : Symbol(x, Decl(_caxnc-typeUnknown-0000.ts, 2, 3))
+
+

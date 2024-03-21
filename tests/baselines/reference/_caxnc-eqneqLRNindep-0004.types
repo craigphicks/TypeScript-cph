@@ -1,0 +1,32 @@
+=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0004.ts ===
+let x: string | number | bigint = 1;
+>x : string | number | bigint
+>1 : 1
+
+let y: string | number | bigint = 1;
+>y : string | number | bigint
+>1 : 1
+
+x;
+>x : 1
+
+y;
+>y : 1
+
+if (x===(y=x)){
+>x===(y=x) : boolean
+>x : 1
+>(y=x) : 1
+>y=x : 1
+>y : string | number | bigint
+>x : 1
+
+    x;y;
+>x : 1
+>y : 1
+}
+else {
+    x;y;
+>x : never
+>y : never
+}

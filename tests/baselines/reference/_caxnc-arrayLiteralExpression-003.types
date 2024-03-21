@@ -1,0 +1,46 @@
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-003.ts ===
+declare const c: boolean;
+>c : boolean
+
+const x:[boolean,boolean] = c ? [c,c] : [c,c];
+>x : [boolean, boolean]
+>c ? [c,c] : [c,c] : [false, false] | [true, true]
+>c : boolean
+>[c,c] : [true, true]
+>c : true
+>c : true
+>[c,c] : [false, false]
+>c : false
+>c : false
+
+if (c) {
+>c : boolean
+
+    x;
+>x : [true, true]
+
+    x[0];
+>x[0] : true
+>x : [true, true]
+>0 : 0
+
+    x[1];
+>x[1] : true
+>x : [true, true]
+>1 : 1
+}
+else {
+    x;
+>x : [false, false]
+
+    x[0];
+>x[0] : false
+>x : [false, false]
+>0 : 0
+
+    x[1];
+>x[1] : false
+>x : [false, false]
+>1 : 1
+}
+

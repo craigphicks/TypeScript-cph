@@ -1,0 +1,32 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0121.ts ===
+function decl0021(){
+>decl0021 : Symbol(decl0021, Decl(_caxnc-decl-0121.ts, 0, 0))
+
+    enum X {
+>X : Symbol(X, Decl(_caxnc-decl-0121.ts, 0, 20))
+
+        zero=0,
+>zero : Symbol(X.zero, Decl(_caxnc-decl-0121.ts, 1, 12))
+
+        one=1,
+>one : Symbol(X.one, Decl(_caxnc-decl-0121.ts, 2, 15))
+
+        two="2",
+>two : Symbol(X.two, Decl(_caxnc-decl-0121.ts, 3, 14))
+
+    };
+
+    // the Type assigned to symbolFlowInfo.effectiveDeclaredTsType has a member "aliasSymbol" with name "X",
+    // as well as a member "types" containting the 3 literal types.  "checker.typeToString" prints "X".
+    // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: X"
+    let x: X = X.two;
+>x : Symbol(x, Decl(_caxnc-decl-0121.ts, 10, 7))
+>X : Symbol(X, Decl(_caxnc-decl-0121.ts, 0, 20))
+>X.two : Symbol(X.two, Decl(_caxnc-decl-0121.ts, 3, 14))
+>X : Symbol(X, Decl(_caxnc-decl-0121.ts, 0, 20))
+>two : Symbol(X.two, Decl(_caxnc-decl-0121.ts, 3, 14))
+
+    x;
+>x : Symbol(x, Decl(_caxnc-decl-0121.ts, 10, 7))
+
+}

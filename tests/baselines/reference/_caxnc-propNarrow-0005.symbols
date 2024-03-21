@@ -1,0 +1,19 @@
+=== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0005.ts ===
+declare const x: boolean;
+>x : Symbol(x, Decl(_caxnc-propNarrow-0005.ts, 0, 13))
+
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { readonly a: 1; } | { readonly a: 2; readonly b: 2; }"
+let r = x ? { a: 1 } as const : { a: 2, b:2 } as const ;
+>r : Symbol(r, Decl(_caxnc-propNarrow-0005.ts, 3, 3))
+>x : Symbol(x, Decl(_caxnc-propNarrow-0005.ts, 0, 13))
+>a : Symbol(a, Decl(_caxnc-propNarrow-0005.ts, 3, 13))
+>const : Symbol(const)
+>a : Symbol(a, Decl(_caxnc-propNarrow-0005.ts, 3, 33))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0005.ts, 3, 39))
+>const : Symbol(const)
+
+r.b; // expect undefined | 2
+>r.b : Symbol(b, Decl(_caxnc-propNarrow-0005.ts, 3, 39))
+>r : Symbol(r, Decl(_caxnc-propNarrow-0005.ts, 3, 3))
+>b : Symbol(b, Decl(_caxnc-propNarrow-0005.ts, 3, 39))
+

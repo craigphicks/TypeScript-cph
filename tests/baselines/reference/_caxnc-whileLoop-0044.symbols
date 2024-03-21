@@ -1,0 +1,68 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0044.ts ===
+function t44(){
+>t44 : Symbol(t44, Decl(_caxnc-whileLoop-0044.ts, 0, 0))
+
+    type D = 0 | 1 | 2 | 3 ;
+>D : Symbol(D, Decl(_caxnc-whileLoop-0044.ts, 0, 15))
+
+    let d1: D = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0044.ts, 0, 15))
+
+    d1; // expect 0
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+
+    while (true){
+        let d2: D = d1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0044.ts, 5, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0044.ts, 0, 15))
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+
+        d1; // expect 0 | 1
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+
+        d2; // expect 0 | 1
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0044.ts, 5, 11))
+
+        while (true){
+            if (d2===0){
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0044.ts, 5, 11))
+
+                d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0044.ts, 5, 11))
+            }
+            else if (d2===1) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0044.ts, 5, 11))
+
+                d2=2; break;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0044.ts, 5, 11))
+            }
+        }
+        d1; // expect 0 | 1
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+
+        d2; // expect 2
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0044.ts, 5, 11))
+
+        if (d1===0){
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+
+            d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+        }
+        else if (d1===1) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+
+            d1=2; break;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+        }
+        d1; // expect 1
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+
+        d2; // expect 2
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0044.ts, 5, 11))
+    }
+    d1; // expect 2
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0044.ts, 2, 7))
+}
+

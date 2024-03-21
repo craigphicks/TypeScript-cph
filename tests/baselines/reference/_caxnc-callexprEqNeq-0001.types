@@ -1,0 +1,31 @@
+=== tests/cases/conformance/_caxnc-callexprArgs/_caxnc-callexprEqNeq-0001.ts ===
+declare function f(x:1): 1;
+>f : { (x: 1): 1; (x: 2): 2; }
+>x : 1
+
+declare function f(x:2): 2;
+>f : { (x: 1): 1; (x: 2): 2; }
+>x : 2
+
+
+declare const x: 1|2;
+>x : 1 | 2
+
+// @ts-ignore-error 2769
+if (f(x)===1)
+>f(x)===1 : boolean
+>f(x) : never
+>f : { (x: 1): 1; (x: 2): 2; }
+>x : 1 | 2
+>1 : 1
+{
+    x;
+>x : 1
+}
+else {
+    x;
+>x : 2
+}
+x;
+>x : 1 | 2
+

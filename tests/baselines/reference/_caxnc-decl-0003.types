@@ -1,0 +1,39 @@
+=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0003.ts ===
+declare const b: boolean;
+>b : boolean
+
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number[]"
+let x = [b?1:1];
+>x : number[]
+>[b?1:1] : number[]
+>b?1:1 : 1
+>b : boolean
+>1 : 1
+>1 : 1
+
+x;
+>x : number[]
+
+const y = [b?1:1];
+>y : number[]
+>[b?1:1] : number[]
+>b?1:1 : 1
+>b : boolean
+>1 : 1
+>1 : 1
+
+y;
+>y : number[]
+
+const z = [b?1:1] as const;
+>z : readonly [1]
+>[b?1:1] as const : readonly [1]
+>[b?1:1] : readonly [1]
+>b?1:1 : 1
+>b : boolean
+>1 : 1
+>1 : 1
+
+z;
+>z : readonly [1]
+

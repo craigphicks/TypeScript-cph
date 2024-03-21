@@ -1,0 +1,67 @@
+=== tests/cases/conformance/_caxnc-flowgraph/_caxnc-flowgraph-0001.ts ===
+declare function maybe(): boolean;
+>maybe : () => boolean
+
+let x = 1;
+>x : number
+>1 : 1
+
+const y = 2;
+>y : 2
+>2 : 2
+
+function f1(){
+>f1 : () => void
+
+    if (x!==1){
+>x!==1 : boolean
+>x : number
+>1 : 1
+
+        x = 1
+>x = 1 : 1
+>x : number
+>1 : 1
+    }
+    else {
+        x = 3;
+>x = 3 : 3
+>x : number
+>3 : 3
+    }
+}
+
+function f2(){
+>f2 : () => void
+
+    if (x!==y){
+>x!==y : boolean
+>x : number
+>y : 2
+
+        x = y
+>x = y : 2
+>x : number
+>y : 2
+    }
+    else{
+        x = 3;
+>x = 3 : 3
+>x : number
+>3 : 3
+    }
+}
+
+x = 4;
+>x = 4 : 4
+>x : number
+>4 : 4
+
+f1();
+>f1() : void
+>f1 : () => void
+
+f2();
+>f2() : void
+>f2 : () => void
+

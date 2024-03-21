@@ -1,0 +1,29 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0120.ts ===
+declare function maybe(): boolean;
+>maybe : () => boolean
+
+function t20(){
+>t20 : () => void
+
+    let b = true;
+>b : boolean
+>true : true
+
+    while (b){
+>b : true
+
+        if (b) break;
+>b : true
+
+        b = false;
+>b = false : false
+>b : boolean
+>false : false
+
+        b;
+>b : never
+    }
+    b;
+>b : true
+}
+

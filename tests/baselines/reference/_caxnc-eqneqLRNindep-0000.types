@@ -1,0 +1,25 @@
+=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0000.ts ===
+let x: string | number= 1;
+>x : string | number
+>1 : 1
+
+let y: string | number= 1;
+>y : string | number
+>1 : 1
+
+if (x===(y="one")){
+>x===(y="one") : boolean
+>x : number
+>(y="one") : "one"
+>y="one" : "one"
+>y : string | number
+>"one" : "one"
+
+    x;y;
+>x : never
+>y : never
+}
+x;y;
+>x : number
+>y : "one"
+

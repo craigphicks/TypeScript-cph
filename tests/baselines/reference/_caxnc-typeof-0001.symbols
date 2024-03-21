@@ -1,0 +1,18 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeof-0001.ts ===
+const x = typeof 1;
+>x : Symbol(x, Decl(_caxnc-typeof-0001.ts, 0, 5))
+
+x;
+>x : Symbol(x, Decl(_caxnc-typeof-0001.ts, 0, 5))
+
+// the nominal type of the result of a typeof operator is widened to the union all 8 types,
+// not by flow but by somewhere in checkExpression.  Therefore this gives an error:
+// !!! error TS2322: Type '"string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"' is not assignable to type '"string" | "number"'.
+// !!! error TS2322:   Type '"bigint"' is not assignable to type '"string" | "number"'.
+const y: "number" | "string" = typeof 1;
+>y : Symbol(y, Decl(_caxnc-typeof-0001.ts, 6, 5))
+
+// However in the mrNarrow flow processing, the narrowed type is used.
+y;
+>y : Symbol(y, Decl(_caxnc-typeof-0001.ts, 6, 5))
+

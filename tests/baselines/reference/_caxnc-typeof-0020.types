@@ -1,0 +1,47 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeof-0020.ts ===
+declare const a: number|string;
+>a : string | number
+
+declare const b: number|boolean;
+>b : number | boolean
+
+const xa = typeof a;
+>xa : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>typeof a : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>a : string | number
+
+xa;
+>xa : "number" | "string"
+
+const xb = typeof b;
+>xb : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>typeof b : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>b : number | boolean
+
+xb;
+>xb : "boolean" | "number"
+
+if (xa==="number"){
+>xa==="number" : boolean
+>xa : "number" | "string"
+>"number" : "number"
+
+    a;
+>a : number
+
+    xa;
+>xa : "number"
+}
+if (typeof a ==="number"){
+>typeof a ==="number" : boolean
+>typeof a : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>a : string | number
+>"number" : "number"
+
+    a;
+>a : number
+
+    xa;
+>xa : "number"
+}
+

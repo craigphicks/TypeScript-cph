@@ -1,0 +1,23 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0106.ts ===
+// This loop terminates at 1 iteration
+function t6(){
+>t6 : () => void
+
+    let b = true;
+>b : boolean
+>true : true
+
+    b;
+>b : true
+
+    while (b){
+>b : boolean
+
+        b = false;
+>b = false : false
+>b : boolean
+>false : false
+    }
+    b;
+>b : false
+}

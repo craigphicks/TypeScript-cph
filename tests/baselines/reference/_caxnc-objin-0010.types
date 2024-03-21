@@ -1,0 +1,22 @@
+=== tests/cases/conformance/_caxnc-objin/_caxnc-objin-0010.ts ===
+function fin10(x: { a?: string | undefined }){
+>fin10 : (x: {    a?: undefined | string;}) => void
+>x : { a?: undefined | string; }
+>a : undefined | string
+
+    if ("a" in x) {
+>"a" in x : boolean
+>"a" : "a"
+>x : { a?: undefined | string; }
+
+        x;
+>x : { a?: undefined | string; }
+    }
+    else {
+        x;
+>x : { a?: undefined | string; }
+    }
+    x;
+>x : { a?: undefined | string; }
+}
+

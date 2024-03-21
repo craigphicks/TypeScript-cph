@@ -1,0 +1,32 @@
+=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0008.ts ===
+function t8(){
+>t8 : () => void
+
+    //@ts-ignore
+    function maybe():boolean {/**/}
+>maybe : () => boolean
+
+    let d = true;
+>d : boolean
+>true : true
+
+    while (d){
+>d : boolean
+
+        d = maybe();
+>d = maybe() : boolean
+>d : boolean
+>maybe() : boolean
+>maybe : () => boolean
+
+        if (d) continue;
+>d : boolean
+
+        [d]; 
+>[d] : false[]
+>d : false
+    }
+    d;
+>d : false
+}
+

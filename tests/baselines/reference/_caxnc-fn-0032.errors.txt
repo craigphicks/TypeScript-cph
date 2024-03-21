@@ -1,0 +1,28 @@
+tests/cases/conformance/_caxnc/_caxnc-fn-0032.ts(18,36): error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'string'.
+
+
+==== tests/cases/conformance/_caxnc/_caxnc-fn-0032.ts (1 errors) ====
+    declare function foo(x:string): number[];
+    declare function foo(x?:string,y?:string,...z:string[]): string[];
+    
+    const a0 = foo();
+    a0; // expect string[]
+    const a1 = foo("");
+    a1; // expect  number[] | string[]
+    const a2 = foo("","");
+    a2; // expect string[]
+    const a3 = foo("","","");
+    a3; // expect string[]
+    const a4 = foo("","","","");
+    a4; // expect string[]
+    const b1 = foo(undefined);
+    b1; // expect string[]
+    const b2 = foo(undefined,undefined);
+    b2; // expect string[]
+    const b3 = foo(undefined,undefined,undefined);
+                                       ~~~~~~~~~
+!!! error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'string'.
+    b3; // expect never
+    [a0,a1,a2,a3,a4,b1,b2,b3]; // expect never[] and expect each element to be never
+    
+    

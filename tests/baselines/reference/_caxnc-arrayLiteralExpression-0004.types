@@ -1,0 +1,15 @@
+=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-0004.ts ===
+const x = [1,"2"] as [number,string];
+>x : [number, string]
+>[1,"2"] as [number,string] : [number, string]
+>[1,"2"] : [number, string]
+>1 : 1
+>"2" : "2"
+
+// This calls ArrayLiteralExpression with a spread element.
+let y = [...x];
+>y : (string | number)[]
+>[...x] : (string | number)[]
+>...x : string | number
+>x : [number, string]
+

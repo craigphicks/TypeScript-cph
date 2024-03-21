@@ -1,0 +1,66 @@
+=== tests/cases/conformance/_caxnc/_caxnc-fn-0004.ts ===
+declare interface FooA {
+    foo(a:string): "A";
+>foo : { (a: string): "A"; (...args: any[]): undefined; }
+>a : string
+
+    foo(...args: any[]): undefined;
+>foo : { (a: string): "A"; (...args: any[]): undefined; }
+>args : any[]
+}
+declare interface FooB {
+    foo(b:number): "B";
+>foo : { (b: number): "B"; (...args: any[]): undefined; }
+>b : number
+
+    foo(...args: any[]): undefined;
+>foo : { (b: number): "B"; (...args: any[]): undefined; }
+>args : any[]
+
+};
+declare const obja: FooA;
+>obja : FooA
+
+declare const objb: FooB;
+>objb : FooB
+
+declare const arg: string | number;
+>arg : string | number
+
+declare const b: boolean;
+>b : boolean
+
+const obj = b? obja : objb
+>obj : FooA | FooB
+>b? obja : objb : FooA | FooB
+>b : boolean
+>obja : FooA
+>objb : FooB
+
+if (obj.foo(arg)){
+>obj.foo(arg) : undefined
+>obj.foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
+>obj : FooA | FooB
+>foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
+>arg : string | number
+
+    const x = obj.foo(arg); // x should be "A" | "B"
+>x : undefined
+>obj.foo(arg) : undefined
+>obj.foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
+>obj : FooA | FooB
+>foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
+>arg : string | number
+
+    obj;
+>obj : FooA | FooB
+
+    obj.foo;
+>obj.foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
+>obj : FooA | FooB
+>foo : { (a: string): "A"; (...args: any[]): undefined; } | { (b: number): "B"; (...args: any[]): undefined; }
+
+    x; // expect "A" | "B" | undefined  (because `if (obj.foo(arg)){...}` doesn't currently narrow signatures)
+>x : "A" | "B" | undefined
+}
+

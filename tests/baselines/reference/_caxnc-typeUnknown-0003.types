@@ -1,0 +1,16 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0003.ts ===
+declare const x: unknown;
+>x : unknown
+
+if (x==="A"){
+>x==="A" : boolean
+>x : unknown
+>"A" : "A"
+
+    x;
+>x : "A"
+}
+
+
+
+

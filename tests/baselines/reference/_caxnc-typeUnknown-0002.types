@@ -1,0 +1,45 @@
+=== tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0002.ts ===
+declare const x: unknown;
+>x : unknown
+
+declare const maybe: boolean;
+>maybe : boolean
+
+let a = 1;
+>a : number
+>1 : 1
+
+const b = 2;
+>b : 2
+>2 : 2
+
+let u = x;
+>u : unknown
+>x : unknown
+
+if (maybe) {
+>maybe : boolean
+
+    u = a;
+>u = a : number
+>u : unknown
+>a : number
+
+    u;
+>u : number
+}
+else {
+    u = b;
+>u = b : 2
+>u : unknown
+>b : 2
+
+    u;
+>u : 2
+}
+u;
+>u : number
+
+
+
+

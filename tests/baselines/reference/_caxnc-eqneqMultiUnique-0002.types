@@ -1,0 +1,17 @@
+=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0002.ts ===
+declare const a: true|"2";
+>a : "2" | true
+>true : true
+
+declare const b: boolean|number|string;
+>b : string | number | boolean
+
+if (b===a)
+>b===a : boolean
+>b : string | number | boolean
+>a : "2" | true
+{
+    b;
+>b : "2" | true
+}
+

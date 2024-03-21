@@ -1,0 +1,12 @@
+=== tests/cases/conformance/_caxnc/_caxnc-bi3.ts ===
+declare const bar: boolean;
+>bar : Symbol(bar, Decl(_caxnc-bi3.ts, 0, 13))
+
+const rab2 = bar ? !bar : bar;
+>rab2 : Symbol(rab2, Decl(_caxnc-bi3.ts, 1, 5))
+>bar : Symbol(bar, Decl(_caxnc-bi3.ts, 0, 13))
+>bar : Symbol(bar, Decl(_caxnc-bi3.ts, 0, 13))
+>bar : Symbol(bar, Decl(_caxnc-bi3.ts, 0, 13))
+
+//bar ? !bar : bar;
+

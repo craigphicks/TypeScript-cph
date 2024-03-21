@@ -1,0 +1,81 @@
+=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0005.ts ===
+declare const a1: true|1;
+>a1 : Symbol(a1, Decl(_caxnc-eqneqMultiUnique-0005.ts, 0, 13))
+
+declare const a2: true|1|"2"|"3";
+>a2 : Symbol(a2, Decl(_caxnc-eqneqMultiUnique-0005.ts, 1, 13))
+
+declare const a3: true|1|"2"|"3"|4n|5n;
+>a3 : Symbol(a3, Decl(_caxnc-eqneqMultiUnique-0005.ts, 2, 13))
+
+declare const a4: true|1|"2"|"3"|4n|5n|null|undefined;
+>a4 : Symbol(a4, Decl(_caxnc-eqneqMultiUnique-0005.ts, 3, 13))
+
+declare const b: boolean|number|string|bigint|null|undefined;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+if (b===a1)
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+>a1 : Symbol(a1, Decl(_caxnc-eqneqMultiUnique-0005.ts, 0, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+else if (b===a2)
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+>a2 : Symbol(a2, Decl(_caxnc-eqneqMultiUnique-0005.ts, 1, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+else if (b===a3)
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+>a3 : Symbol(a3, Decl(_caxnc-eqneqMultiUnique-0005.ts, 2, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+else if (b===a4)
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+>a4 : Symbol(a4, Decl(_caxnc-eqneqMultiUnique-0005.ts, 3, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+else b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+if (b===a1){
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+>a1 : Symbol(a1, Decl(_caxnc-eqneqMultiUnique-0005.ts, 0, 13))
+
+    b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+    if (b===a2) {
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+>a2 : Symbol(a2, Decl(_caxnc-eqneqMultiUnique-0005.ts, 1, 13))
+
+        b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+        if (b===a3) {
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+>a3 : Symbol(a3, Decl(_caxnc-eqneqMultiUnique-0005.ts, 2, 13))
+
+            b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+
+            if (b===a4) {
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+>a4 : Symbol(a4, Decl(_caxnc-eqneqMultiUnique-0005.ts, 3, 13))
+
+                b;
+>b : Symbol(b, Decl(_caxnc-eqneqMultiUnique-0005.ts, 4, 13))
+            }
+        }
+    }
+}
