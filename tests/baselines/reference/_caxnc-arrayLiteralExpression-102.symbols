@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-102.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-102.ts] ////
+
+=== _caxnc-arrayLiteralExpression-102.ts ===
 let x = [0,1] as const;
 >x : Symbol(x, Decl(_caxnc-arrayLiteralExpression-102.ts, 0, 3))
 >const : Symbol(const)

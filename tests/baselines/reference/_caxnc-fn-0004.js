@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0004.ts] ////
+
 //// [_caxnc-fn-0004.ts]
 declare interface FooA {
     foo(a:string): "A";

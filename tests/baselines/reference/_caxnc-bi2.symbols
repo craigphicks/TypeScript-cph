@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-bi2.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-bi2.ts] ////
+
+=== _caxnc-bi2.ts ===
 declare const bar: boolean;
 >bar : Symbol(bar, Decl(_caxnc-bi2.ts, 0, 13))
 

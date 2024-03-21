@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-101.ts] ////
+
 //// [_caxnc-arrayLiteralExpression-101.ts]
 let x = [0,1] as const;
 

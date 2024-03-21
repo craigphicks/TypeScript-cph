@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0012.ts] ////
+
 //// [_caxnc-ez0012.ts]
 /**
  * Mix object and non-object function root types.
@@ -32,8 +34,8 @@ v;
  * Mix object and non-object function root types.
  * Checker type of v outside of the if statement includes undefined.
  */
-declare type Foo = () => number[];
-declare type ObjFoo = {
+type Foo = () => number[];
+type ObjFoo = {
     foo: () => string[];
 };
 declare const b: boolean;

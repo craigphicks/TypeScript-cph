@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0000.ts] ////
+
 //// [_caxnc-ez0000.ts]
 declare type Foo = { readonly foo: (x?:number)=>number[] };
 declare const obj: Foo | undefined;

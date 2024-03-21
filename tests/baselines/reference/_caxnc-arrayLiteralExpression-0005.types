@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-0005.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-0005.ts] ////
+
+=== _caxnc-arrayLiteralExpression-0005.ts ===
 const x = [1,"2"] as const;
 >x : readonly [1, "2"]
 >[1,"2"] as const : readonly [1, "2"]

@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0023.ts] ////
+
 //// [_caxnc-fn-0023.ts]
 declare function foo(x?:number):number[];
 declare function foo(x?:number,y?:string,z?:string):string[];

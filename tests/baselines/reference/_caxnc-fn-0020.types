@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-fn-0020.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0020.ts] ////
+
+=== _caxnc-fn-0020.ts ===
 declare type Foo = {
 >Foo : { foo(x?: number): number[]; foo(x?: number, y?: string): string[]; }
 

@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0022.ts] ////
+
 //// [_caxnc-ez0022.ts]
 declare interface FooA {
     foo(b:string): "1",

@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-fn-0041.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0041.ts] ////
+
+=== _caxnc-fn-0041.ts ===
 declare function isTrue(b:boolean): boolean;
 >isTrue : Symbol(isTrue, Decl(_caxnc-fn-0041.ts, 0, 0))
 >b : Symbol(b, Decl(_caxnc-fn-0041.ts, 0, 24))

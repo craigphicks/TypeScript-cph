@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-ez0002.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0002.ts] ////
+
+=== _caxnc-ez0002.ts ===
 declare type Foo = { readonly foo: (x?:number)=>number[] };
 >Foo : { readonly foo: (x?: number) => number[]; }
 >foo : (x?: number) => number[]

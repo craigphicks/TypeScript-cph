@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0014.ts] ////
+
 //// [_caxnc-ez0014.ts]
 declare type Boo = {
     foo():bigint[]

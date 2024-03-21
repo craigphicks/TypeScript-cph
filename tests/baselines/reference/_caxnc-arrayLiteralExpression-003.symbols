@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-003.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-003.ts] ////
+
+=== _caxnc-arrayLiteralExpression-003.ts ===
 declare const c: boolean;
 >c : Symbol(c, Decl(_caxnc-arrayLiteralExpression-003.ts, 0, 13))
 

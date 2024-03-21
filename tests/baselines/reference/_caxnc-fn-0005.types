@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-fn-0005.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0005.ts] ////
+
+=== _caxnc-fn-0005.ts ===
 declare interface FooA {
     foo(b:string): "A";
 >foo : { (b: string): "A"; (...args: any[]): unknown; }

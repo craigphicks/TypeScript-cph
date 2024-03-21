@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-015.ts] ////
+
 //// [_caxnc-arrayLiteralExpression-015.ts]
 declare const c: true;
 const u = [c,c];

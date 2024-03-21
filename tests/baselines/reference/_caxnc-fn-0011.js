@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0011.ts] ////
+
 //// [_caxnc-fn-0011.ts]
 declare const bar: boolean;
 declare function isTrue(b:true): true;

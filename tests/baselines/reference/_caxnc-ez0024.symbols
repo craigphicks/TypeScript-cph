@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-ez0024.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0024.ts] ////
+
+=== _caxnc-ez0024.ts ===
 declare interface FooA {
 >FooA : Symbol(FooA, Decl(_caxnc-ez0024.ts, 0, 0))
 

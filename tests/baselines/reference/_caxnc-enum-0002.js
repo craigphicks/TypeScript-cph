@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-enum-0002.ts] ////
+
 //// [_caxnc-enum-0002.ts]
 declare const enum E {
     n1 = 1,

@@ -1,7 +1,7 @@
-tests/cases/conformance/_caxnc/_caxnc-ez0001.ts(8,5): error TS2532: Object is possibly 'undefined'.
+_caxnc-ez0001.ts(8,5): error TS18048: 'obj' is possibly 'undefined'.
 
 
-==== tests/cases/conformance/_caxnc/_caxnc-ez0001.ts (1 errors) ====
+==== _caxnc-ez0001.ts (1 errors) ====
     declare type Foo = { readonly foo: number[] };
     
     declare const obj: Foo | undefined;
@@ -11,5 +11,5 @@ tests/cases/conformance/_caxnc/_caxnc-ez0001.ts(8,5): error TS2532: Object is po
     } else {
         obj.foo;
         ~~~
-!!! error TS2532: Object is possibly 'undefined'.
+!!! error TS18048: 'obj' is possibly 'undefined'.
     }

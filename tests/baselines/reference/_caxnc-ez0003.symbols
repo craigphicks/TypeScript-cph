@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-ez0003.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0003.ts] ////
+
+=== _caxnc-ez0003.ts ===
 declare type Foo = {
 >Foo : Symbol(Foo, Decl(_caxnc-ez0003.ts, 0, 0))
 

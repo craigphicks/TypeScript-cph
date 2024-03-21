@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-ez0010.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0010.ts] ////
+
+=== _caxnc-ez0010.ts ===
 type Foo = (x?:number) => number[];
 >Foo : Symbol(Foo, Decl(_caxnc-ez0010.ts, 0, 0))
 >x : Symbol(x, Decl(_caxnc-ez0010.ts, 0, 12))

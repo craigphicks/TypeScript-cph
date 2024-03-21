@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-ez0013.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0013.ts] ////
+
+=== _caxnc-ez0013.ts ===
 /**
  * Mix object and non-object function root types.
  * Checker type of v outside of the if statement includes undefined when v is const.

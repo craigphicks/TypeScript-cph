@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-if-006.ts] ////
+
 //// [_caxnc-if-006.ts]
 declare const c1: true | false;
 declare const c2: true | false;

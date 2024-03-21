@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-0004.ts] ////
+
 //// [_caxnc-arrayLiteralExpression-0004.ts]
 const x = [1,"2"] as [number,string];
 // This calls ArrayLiteralExpression with a spread element.

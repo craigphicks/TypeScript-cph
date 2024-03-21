@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0020.ts] ////
+
 //// [_caxnc-fn-0020.ts]
 declare type Foo = {
     foo(x?:number):number[]

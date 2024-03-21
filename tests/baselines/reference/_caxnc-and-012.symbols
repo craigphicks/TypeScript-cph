@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-and-012.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-and-012.ts] ////
+
+=== _caxnc-and-012.ts ===
 declare const b1: true;
 >b1 : Symbol(b1, Decl(_caxnc-and-012.ts, 0, 13))
 

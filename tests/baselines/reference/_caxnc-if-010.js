@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-if-010.ts] ////
+
 //// [_caxnc-if-010.ts]
 declare const c1: false;
 if (c1) {

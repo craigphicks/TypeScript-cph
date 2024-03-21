@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-bi3.ts] ////
+
 //// [_caxnc-bi3.ts]
 declare const bar: boolean;
 const rab2 = bar ? !bar : bar;

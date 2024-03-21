@@ -10696,6 +10696,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function findResolutionCycleStartIndex(target: TypeSystemEntity, propertyName: TypeSystemPropertyName): number {
+        if (enableFlough) return -1; // To stop circularity checking when using flough, e.g. _caxnc-fn-0022, error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
         for (let i = resolutionTargets.length - 1; i >= resolutionStart; i--) {
             if (resolutionTargetHasProperty(resolutionTargets[i], resolutionPropertyNames[i])) {
                 return -1;

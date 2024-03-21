@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-ez0001.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0001.ts] ////
+
+=== _caxnc-ez0001.ts ===
 declare type Foo = { readonly foo: number[] };
 >Foo : Symbol(Foo, Decl(_caxnc-ez0001.ts, 0, 0))
 >foo : Symbol(foo, Decl(_caxnc-ez0001.ts, 0, 20))

@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0001.ts] ////
+
 //// [_caxnc-ez0001.ts]
 declare type Foo = { readonly foo: number[] };
 

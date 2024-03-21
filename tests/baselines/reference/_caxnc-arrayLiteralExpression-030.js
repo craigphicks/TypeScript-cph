@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-030.ts] ////
+
 //// [_caxnc-arrayLiteralExpression-030.ts]
 declare const c: boolean;
 

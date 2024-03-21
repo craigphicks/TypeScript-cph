@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-ez0006.ts] ////
+
 //// [_caxnc-ez0006.ts]
 // Note that Foo1.foo1 is overwritable, but it shouldn't make a difference because the type must be the same.
 declare type Foo1 = { foo1: ()=> number[] };

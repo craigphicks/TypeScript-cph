@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-block-001.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-block-001.ts] ////
+
+=== _caxnc-block-001.ts ===
 declare const c11: boolean;
 >c11 : Symbol(c11, Decl(_caxnc-block-001.ts, 0, 13))
 {

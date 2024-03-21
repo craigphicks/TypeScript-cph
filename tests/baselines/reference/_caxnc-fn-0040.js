@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0040.ts] ////
+
 //// [_caxnc-fn-0040.ts]
 declare function isTrue(): boolean;
 const x = isTrue();

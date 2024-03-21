@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-fn-0024.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-fn-0024.ts] ////
+
+=== _caxnc-fn-0024.ts ===
 declare function foo(x?:number):number[];
 >foo : { (x?: number): number[]; (x?: undefined | number, y?: undefined | string, z?: undefined | string): string[]; }
 >x : undefined | number

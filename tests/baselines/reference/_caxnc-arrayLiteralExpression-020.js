@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-020.ts] ////
+
 //// [_caxnc-arrayLiteralExpression-020.ts]
 declare const c: boolean;
 let x: readonly[boolean] = [c];
