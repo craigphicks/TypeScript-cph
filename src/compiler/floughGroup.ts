@@ -454,10 +454,7 @@ function createForFlow(groupsForFlow: GroupsForFlow) {
     };
 }
 
-// @ts-ignore
-function breakpoint() {
-    debugger;
-}
+
 export function createSourceFileFloughState(sourceFile: SourceFileWithFloughNodes, checker: FloughTypeChecker, compilerOptions: CompilerOptions): SourceFileFloughState {
     const t0 = process.hrtime.bigint();
     // if (IDebug.isActive(loggerLevel)) breakpoint();;

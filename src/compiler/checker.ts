@@ -1102,6 +1102,7 @@ import { FloughTypeChecker } from "./floughTypedefs";
 import { IDebug } from "./mydebug";
 //const contextualLogLevel = 2;
 const enableFlough = !!Number(process.env.enableFlough ?? 0);
+const enableTypeWriterSortUnionTypes = enableFlough;
 // cphdebug-end
 const ambientModuleSymbolRegex = /^".+"$/;
 const anon = "(anonymous)" as __String & string;
@@ -6474,7 +6475,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // Otherwise, we always strip comments out.
         const printer = type !== unresolvedType ? createPrinterWithRemoveComments() : createPrinterWithDefaults();
         const sourceFile = enclosingDeclaration && getSourceFileOfNode(enclosingDeclaration);
-        printer.writeNode(EmitHint.Unspecified, typeNode, /*sourceFile*/ sourceFile, writer);
+        /* @ts-ignore sortUnionTypes */
+        printer.writeNode(EmitHint.Unspecified, typeNode, /*sourceFile*/ sourceFile, writer, enableTypeWriterSortUnionTypes);
         const result = writer.getText();
 
         const maxLength = noTruncation ? noTruncationMaximumTruncationLength * 2 : defaultMaximumTruncationLength * 2;
