@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-decl/_caxnc-decl-0120.ts ===
+//// [tests/cases/conformance/_caxnc-decl/_caxnc-decl-0120.ts] ////
+
+=== _caxnc-decl-0120.ts ===
 function decl0020(){
 >decl0020 : Symbol(decl0020, Decl(_caxnc-decl-0120.ts, 0, 0))
 

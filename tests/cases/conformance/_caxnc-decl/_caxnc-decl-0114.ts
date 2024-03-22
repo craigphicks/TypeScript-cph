@@ -8,12 +8,12 @@ declare const b: boolean;
 function decl0014(){
     let x: string | any[];
     if (b) {
-        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | any[]"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any[] | string"
         x = [0];
         x;
     }
     else {
-        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: string | any[]"
+        // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: any[] | string"
         x = "1";
         x;
     }

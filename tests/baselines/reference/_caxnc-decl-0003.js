@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-decl/_caxnc-decl-0003.ts] ////
+
 //// [_caxnc-decl-0003.ts]
 declare const b: boolean;
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number[]"

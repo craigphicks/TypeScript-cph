@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-decl/_caxnc-decl-0120.ts] ////
+
 //// [_caxnc-decl-0120.ts]
 function decl0020(){
     type X = 0|1|2;

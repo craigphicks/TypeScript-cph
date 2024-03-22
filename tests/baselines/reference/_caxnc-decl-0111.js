@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-decl/_caxnc-decl-0111.ts] ////
+
 //// [_caxnc-decl-0111.ts]
 declare const b: boolean;
 function decl0011(){

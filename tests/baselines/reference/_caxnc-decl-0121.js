@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-decl/_caxnc-decl-0121.ts] ////
+
 //// [_caxnc-decl-0121.ts]
 function decl0021(){
     enum X {
