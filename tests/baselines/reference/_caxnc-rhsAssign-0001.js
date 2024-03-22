@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-rhsAssign-0001.ts] ////
+
 //// [_caxnc-rhsAssign-0001.ts]
 function rhsAssign0001(){
     let a = 0;
