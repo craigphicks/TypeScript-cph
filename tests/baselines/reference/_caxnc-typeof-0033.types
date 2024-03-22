@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-typeof-0033.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-typeof-0033.ts] ////
+
+=== _caxnc-typeof-0033.ts ===
 declare const a: number|string;
 >a : string | number
 

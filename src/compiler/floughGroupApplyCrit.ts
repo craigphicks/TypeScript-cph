@@ -87,7 +87,6 @@ function applyCritToTypeMutate(rt: Readonly<RefTypesType>, crit: Readonly<Flough
             const ffacts = !crit.negate ? TypeFacts.Falsy : TypeFacts.Truthy;
             floughTypeModule.forEachRefTypesTypeType(rt, t => {
                 const tf = checker.getTypeFacts(t, TypeFacts.Truthy | TypeFacts.Falsy);
-                Debug.assert(tf !== TypeFacts.None);
                 if (tf & pfacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t, passtype);
                 if (tf & ffacts) floughTypeModule.addTsTypeNonUnionToRefTypesTypeMutate(t, failtype!);
             });

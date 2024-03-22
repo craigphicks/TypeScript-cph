@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-typeof-0011.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-typeof-0011.ts] ////
+
+=== _caxnc-typeof-0011.ts ===
 const typeof1 = typeof 1;
 >typeof1 : Symbol(typeof1, Decl(_caxnc-typeof-0011.ts, 0, 5))
 

@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-let-0002.ts] ////
+
 //// [_caxnc-let-0002.ts]
 declare const c1: true | false;
 let b1 = c1;

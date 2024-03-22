@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0003.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0003.ts] ////
+
+=== _caxnc-typeUnknown-0003.ts ===
 declare const x: unknown;
 >x : Symbol(x, Decl(_caxnc-typeUnknown-0003.ts, 0, 13))
 

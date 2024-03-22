@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-lt-0002.ts] ////
+
 //// [_caxnc-lt-0002.ts]
 declare const x: 0|1;
 declare const y: 0|1;

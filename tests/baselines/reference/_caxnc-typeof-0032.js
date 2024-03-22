@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-typeof-0032.ts] ////
+
 //// [_caxnc-typeof-0032.ts]
 declare const a: number|string;
 declare const b: number|boolean;

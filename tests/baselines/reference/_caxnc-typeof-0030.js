@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-typeof-0030.ts] ////
+
 //// [_caxnc-typeof-0030.ts]
 declare const a: number|string;
 const xa = typeof a;

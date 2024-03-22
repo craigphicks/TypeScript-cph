@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-typeof-0021.ts] ////
+
 //// [_caxnc-typeof-0021.ts]
 declare const a: number|string;
 if (typeof a==="number"){

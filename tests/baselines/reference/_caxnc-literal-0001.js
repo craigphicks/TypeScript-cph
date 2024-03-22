@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-literal-0001.ts] ////
+
 //// [_caxnc-literal-0001.ts]
 let x = "number";
 x;

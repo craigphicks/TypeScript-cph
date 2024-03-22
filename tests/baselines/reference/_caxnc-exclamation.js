@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-exclamation.ts] ////
+
 //// [_caxnc-exclamation.ts]
 declare const n: 0 | 1;
 const b = !!n;

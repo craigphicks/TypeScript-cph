@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-110.ts] ////
+
 //// [_caxnc-arrayLiteralExpression-110.ts]
 declare const b: boolean;
 declare const c: 0|1;

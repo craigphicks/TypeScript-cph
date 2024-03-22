@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-typeof-0001.ts] ////
+
 //// [_caxnc-typeof-0001.ts]
 const x = typeof 1;
 x;

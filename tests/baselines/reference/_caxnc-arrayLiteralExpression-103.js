@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-arrayLiteralExpression-103.ts] ////
+
 //// [_caxnc-arrayLiteralExpression-103.ts]
 declare const c: 0|1;
 let x = [c,c] as const;

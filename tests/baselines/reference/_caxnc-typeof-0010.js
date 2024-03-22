@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-typeof-0010.ts] ////
+
 //// [_caxnc-typeof-0010.ts]
 const x = typeof 1 === "number";
 x;

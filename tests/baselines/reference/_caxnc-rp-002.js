@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-rp-002.ts] ////
+
 //// [_caxnc-rp-002.ts]
 declare const b:0|1|2;
 const c = b;

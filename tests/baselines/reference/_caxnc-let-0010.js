@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-let-0010.ts] ////
+
 //// [_caxnc-let-0010.ts]
 declare const c1: true | false;
 declare const c2: true | false;

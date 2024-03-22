@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-parens-0000.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-parens-0000.ts] ////
+
+=== _caxnc-parens-0000.ts ===
 declare const a: number|string;
 >a : Symbol(a, Decl(_caxnc-parens-0000.ts, 0, 13))
 

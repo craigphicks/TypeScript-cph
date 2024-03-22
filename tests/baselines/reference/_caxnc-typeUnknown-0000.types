@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0000.ts ===
+//// [tests/cases/conformance/_caxnc/_caxnc-typeUnknown-0000.ts] ////
+
+=== _caxnc-typeUnknown-0000.ts ===
 declare const pAny: any;
 >pAny : any
 

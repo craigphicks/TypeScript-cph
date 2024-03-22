@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-litobj-0001.ts] ////
+
 //// [_caxnc-litobj-0001.ts]
 // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: 2; b: number; }"
 let r = { a: 2 as const, b: 2 };

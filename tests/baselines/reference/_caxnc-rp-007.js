@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-rp-007.ts] ////
+
 //// [_caxnc-rp-007.ts]
 declare const b01:0|1;
 declare const b02:0|2;

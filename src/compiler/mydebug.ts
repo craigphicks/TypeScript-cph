@@ -97,6 +97,7 @@ export class ILoggingClass implements ILoggingHost {
         this.numOutLines++;
     }
     ilog(message: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER) {
+        return;
         this.log(level, message);
     }
     ilogGroup (message: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER) {

@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-parens-0010.ts] ////
+
 //// [_caxnc-parens-0010.ts]
 declare const a: boolean;
 declare const b: boolean;
