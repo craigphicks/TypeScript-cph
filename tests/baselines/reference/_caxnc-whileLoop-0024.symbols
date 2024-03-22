@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0024.ts ===
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0024.ts] ////
+
+=== _caxnc-whileLoop-0024.ts ===
 declare function maybe(): boolean;
 >maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0024.ts, 0, 0))
 

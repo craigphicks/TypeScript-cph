@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0002.ts ===
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0002.ts] ////
+
+=== _caxnc-eqneqLRNindep-0002.ts ===
 let x: string | number | bigint = 1;
 >x : bigint | string | number
 >1 : 1

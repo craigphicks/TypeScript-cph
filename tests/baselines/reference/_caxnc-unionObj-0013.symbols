@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-prop/_caxnc-unionObj-0013.ts ===
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-unionObj-0013.ts] ////
+
+=== _caxnc-unionObj-0013.ts ===
 // C.f. _caxnc-union-0003.ts, and see notes there.
 
 declare const x: boolean;
@@ -13,7 +15,7 @@ let bar = { a: 1, b: 2 };
 >a : Symbol(a, Decl(_caxnc-unionObj-0013.ts, 5, 11))
 >b : Symbol(b, Decl(_caxnc-unionObj-0013.ts, 5, 17))
 
-// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: number; b: number; }"
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; b: number; } | { a: number; }"
 let result = x ? foo : bar;
 >result : Symbol(result, Decl(_caxnc-unionObj-0013.ts, 8, 3))
 >x : Symbol(x, Decl(_caxnc-unionObj-0013.ts, 2, 13))

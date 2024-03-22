@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-objin/_caxnc-objin-0005.ts ===
+//// [tests/cases/conformance/_caxnc-objin/_caxnc-objin-0005.ts] ////
+
+=== _caxnc-objin-0005.ts ===
 declare function maybe(): boolean;
 >maybe : Symbol(maybe, Decl(_caxnc-objin-0005.ts, 0, 0))
 

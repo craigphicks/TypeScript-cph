@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneq-0020.ts] ////
+
 //// [_caxnc-eqneq-0020.ts]
 declare const a: string | undefined;
 if (a===undefined)

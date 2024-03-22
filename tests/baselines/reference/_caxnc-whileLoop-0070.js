@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0070.ts] ////
+
 //// [_caxnc-whileLoop-0070.ts]
 function t70(){
     let b = true;

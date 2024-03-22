@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0143.ts ===
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0143.ts] ////
+
+=== _caxnc-whileLoop-0143.ts ===
 function t43(){
 >t43 : () => void
 

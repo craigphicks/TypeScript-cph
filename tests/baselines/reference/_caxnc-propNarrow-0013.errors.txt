@@ -1,7 +1,7 @@
-tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0013.ts(10,7): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+_caxnc-propNarrow-0013.ts(10,7): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
 
 
-==== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0013.ts (1 errors) ====
+==== _caxnc-propNarrow-0013.ts (1 errors) ====
     declare const x: boolean;
     
     let y = { a: 1};

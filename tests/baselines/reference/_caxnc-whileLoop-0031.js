@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0031.ts] ////
+
 //// [_caxnc-whileLoop-0031.ts]
 declare function maybe(): boolean;
 function t31(){

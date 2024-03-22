@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-prop-0001.ts] ////
+
 //// [_caxnc-prop-0001.ts]
 declare type X = {
     foo: boolean;

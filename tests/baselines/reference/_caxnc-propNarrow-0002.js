@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0002.ts] ////
+
 //// [_caxnc-propNarrow-0002.ts]
 declare const x: boolean;
 

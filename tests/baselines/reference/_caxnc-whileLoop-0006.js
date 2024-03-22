@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0006.ts] ////
+
 //// [_caxnc-whileLoop-0006.ts]
 // This loop terminates at 1 iteration
 function t6(){

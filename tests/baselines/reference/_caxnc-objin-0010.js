@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-objin/_caxnc-objin-0010.ts] ////
+
 //// [_caxnc-objin-0010.ts]
 function fin10(x: { a?: string | undefined }){
     if ("a" in x) {

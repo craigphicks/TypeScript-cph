@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-prop-0102.ts] ////
+
 //// [_caxnc-prop-0102.ts]
 declare type X = {
     foo?: { bar: boolean };

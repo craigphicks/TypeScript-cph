@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneq-0002.ts] ////
+
 //// [_caxnc-eqneq-0002.ts]
 // declare function f(x:1,y:1): 1;
 // declare function f(x:2,y:2): 2;

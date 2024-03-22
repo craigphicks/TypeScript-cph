@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqLRNindep-0001.ts] ////
+
 //// [_caxnc-eqneqLRNindep-0001.ts]
 let x: string | number = 1;
 let y: string | number = 1;

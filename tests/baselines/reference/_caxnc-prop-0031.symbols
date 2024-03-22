@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0031.ts ===
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-prop-0031.ts] ////
+
+=== _caxnc-prop-0031.ts ===
 declare type X = {
 >X : Symbol(X, Decl(_caxnc-prop-0031.ts, 0, 0))
 

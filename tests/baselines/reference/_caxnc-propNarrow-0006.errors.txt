@@ -1,9 +1,9 @@
-tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0006.ts(8,11): error TS2339: Property 'b' does not exist on type '{ readonly a: 1; }'.
-tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0006.ts(16,11): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
-tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0006.ts(24,11): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+_caxnc-propNarrow-0006.ts(8,11): error TS2339: Property 'b' does not exist on type '{ readonly a: 1; }'.
+_caxnc-propNarrow-0006.ts(16,11): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+_caxnc-propNarrow-0006.ts(24,11): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
 
 
-==== tests/cases/conformance/_caxnc-prop/_caxnc-propNarrow-0006.ts (3 errors) ====
+==== _caxnc-propNarrow-0006.ts (3 errors) ====
     declare const x: boolean;
     
     function testWithConst() {

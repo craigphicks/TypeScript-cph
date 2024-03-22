@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0002.ts] ////
+
 //// [_caxnc-eqneqMultiUnique-0002.ts]
 declare const a: true|"2";
 declare const b: boolean|number|string;

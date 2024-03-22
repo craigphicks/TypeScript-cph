@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0002.ts ===
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0002.ts] ////
+
+=== _caxnc-eqneqMultiUnique-0002.ts ===
 declare const a: true|"2";
 >a : Symbol(a, Decl(_caxnc-eqneqMultiUnique-0002.ts, 0, 13))
 

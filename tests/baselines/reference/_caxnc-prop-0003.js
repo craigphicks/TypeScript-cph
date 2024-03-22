@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-prop-0003.ts] ////
+
 //// [_caxnc-prop-0003.ts]
 declare enum X {one="1",two="2"};
 declare const x:X;

@@ -8,6 +8,6 @@
 
 declare const x: boolean;
 
-// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; } | { a: number; b: number; }"
+// @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: { a: number; b: number; } | { a: number; }"
 let result = x ? { a: 1 } : { a: 1, b: 2 };
 result.b; // expect number | undefined

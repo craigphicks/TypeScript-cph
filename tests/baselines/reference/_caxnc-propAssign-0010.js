@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0010.ts] ////
+
 //// [_caxnc-propAssign-0010.ts]
 declare type T = { u: U, t: T };
 declare type U = { u?: U, t: T };

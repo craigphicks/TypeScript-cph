@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0003.ts] ////
+
 //// [_caxnc-propAssign-0003.ts]
 declare type T2 = { };
 const t: T2 = { };

@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-prop-0031.ts] ////
+
 //// [_caxnc-prop-0031.ts]
 declare type X = {
     a1?:{a2?:{a3?:1|2}};

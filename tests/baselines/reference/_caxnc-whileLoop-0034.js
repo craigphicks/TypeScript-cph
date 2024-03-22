@@ -1,10 +1,11 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0034.ts] ////
+
 //// [_caxnc-whileLoop-0034.ts]
 declare function maybe(): boolean;
 function t34(){
     let b1 = true;
     let b2 = true;
-    loop1:
-
+    // loop1: // unused labels are not allowed TS7028
     while (b1){
         b1;b2;
 
@@ -27,7 +28,8 @@ function t34(){
 function t34() {
     var b1 = true;
     var b2 = true;
-    loop1: while (b1) {
+    // loop1: // unused labels are not allowed TS7028
+    while (b1) {
         b1;
         b2;
         while (b2) {

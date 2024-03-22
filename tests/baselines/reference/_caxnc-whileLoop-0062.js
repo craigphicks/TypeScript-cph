@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0062.ts] ////
+
 //// [_caxnc-whileLoop-0062.ts]
 function t62(){
     type D = 0 | 1 | 2 | 3 | 4 | 5;

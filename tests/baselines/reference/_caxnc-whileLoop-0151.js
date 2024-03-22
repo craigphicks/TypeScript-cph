@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0151.ts] ////
+
 //// [_caxnc-whileLoop-0151.ts]
 function t51(){
     // @ts-dev-expect-string "count: 0, effectiveDeclaredTsType: number"

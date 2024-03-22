@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0005.ts ===
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0005.ts] ////
+
+=== _caxnc-eqneqMultiUnique-0005.ts ===
 declare const a1: true|1;
 >a1 : 1 | true
 >true : true
@@ -14,11 +16,9 @@ declare const a3: true|1|"2"|"3"|4n|5n;
 declare const a4: true|1|"2"|"3"|4n|5n|null|undefined;
 >a4 : "2" | "3" | 1 | 4n | 5n | null | true | undefined
 >true : true
->null : null
 
 declare const b: boolean|number|string|bigint|null|undefined;
 >b : null | bigint | undefined | string | number | boolean
->null : null
 
 if (b===a1)
 >b===a1 : boolean

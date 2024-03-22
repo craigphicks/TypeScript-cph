@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0170.ts ===
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0170.ts] ////
+
+=== _caxnc-whileLoop-0170.ts ===
 function t70(){
 >t70 : Symbol(t70, Decl(_caxnc-whileLoop-0170.ts, 0, 0))
 

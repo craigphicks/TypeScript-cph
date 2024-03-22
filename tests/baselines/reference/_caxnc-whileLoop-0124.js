@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0124.ts] ////
+
 //// [_caxnc-whileLoop-0124.ts]
 declare function maybe(): boolean;
 function t24(){

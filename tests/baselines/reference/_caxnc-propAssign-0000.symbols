@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0000.ts ===
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0000.ts] ////
+
+=== _caxnc-propAssign-0000.ts ===
 declare type T = { p: number };
 >T : Symbol(T, Decl(_caxnc-propAssign-0000.ts, 0, 0))
 >p : Symbol(p, Decl(_caxnc-propAssign-0000.ts, 0, 18))

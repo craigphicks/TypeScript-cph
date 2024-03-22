@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneqMultiUnique-0005.ts] ////
+
 //// [_caxnc-eqneqMultiUnique-0005.ts]
 declare const a1: true|1;
 declare const a2: true|1|"2"|"3";

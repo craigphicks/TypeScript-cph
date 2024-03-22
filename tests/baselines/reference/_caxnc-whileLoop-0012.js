@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0012.ts] ////
+
 //// [_caxnc-whileLoop-0012.ts]
 // this loop never terminates because it always continues at `if (b)`
 declare function maybe(): boolean;

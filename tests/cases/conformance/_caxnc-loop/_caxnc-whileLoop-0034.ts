@@ -10,8 +10,7 @@ declare function maybe(): boolean;
 function t34(){
     let b1 = true;
     let b2 = true;
-    loop1:
-
+    // loop1: // unused labels are not allowed TS7028
     while (b1){
         b1;b2;
 

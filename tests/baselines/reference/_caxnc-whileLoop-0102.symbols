@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0102.ts ===
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0102.ts] ////
+
+=== _caxnc-whileLoop-0102.ts ===
 function t2(){
 >t2 : Symbol(t2, Decl(_caxnc-whileLoop-0102.ts, 0, 0))
 

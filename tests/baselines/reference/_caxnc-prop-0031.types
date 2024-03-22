@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-prop/_caxnc-prop-0031.ts ===
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-prop-0031.ts] ////
+
+=== _caxnc-prop-0031.ts ===
 declare type X = {
 >X : { a1?: { a2?: { a3?: 1 | 2 | undefined; } | undefined; } | undefined; }
 
@@ -10,7 +12,6 @@ declare type X = {
 };
 declare const x:X|null;
 >x : null | X
->null : null
 
 function prop0021(){
 >prop0021 : () => void

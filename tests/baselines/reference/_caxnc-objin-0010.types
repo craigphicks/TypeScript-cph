@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-objin/_caxnc-objin-0010.ts ===
+//// [tests/cases/conformance/_caxnc-objin/_caxnc-objin-0010.ts] ////
+
+=== _caxnc-objin-0010.ts ===
 function fin10(x: { a?: string | undefined }){
 >fin10 : (x: {    a?: undefined | string;}) => void
 >x : { a?: undefined | string; }

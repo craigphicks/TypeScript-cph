@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0000.ts] ////
+
 //// [_caxnc-propAssign-0000.ts]
 declare type T = { p: number };
 declare const t:T;

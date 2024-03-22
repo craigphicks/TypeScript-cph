@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-objin/_caxnc-objin-0001.ts] ////
+
 //// [_caxnc-objin-0001.ts]
 function fin1(x: { a: string } | { b: number }){
     if ("a" in x) {

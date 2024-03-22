@@ -1,4 +1,6 @@
-=== tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0134.ts ===
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0134.ts] ////
+
+=== _caxnc-whileLoop-0134.ts ===
 declare function maybe(): boolean;
 >maybe : Symbol(maybe, Decl(_caxnc-whileLoop-0134.ts, 0, 0))
 
@@ -11,7 +13,7 @@ function t34(){
     let b2 = true;
 >b2 : Symbol(b2, Decl(_caxnc-whileLoop-0134.ts, 3, 7))
 
-    loop1:
+    // loop1: // unused labels are not allowed TS7028
 
     while (b1){
 >b1 : Symbol(b1, Decl(_caxnc-whileLoop-0134.ts, 2, 7))

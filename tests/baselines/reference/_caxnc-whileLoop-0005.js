@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0005.ts] ////
+
 //// [_caxnc-whileLoop-0005.ts]
 // this loop never terminates reliably but converges
 // loop finished due to type map converged, loopCount=3

@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-prop/_caxnc-propAssign-0002.ts] ////
+
 //// [_caxnc-propAssign-0002.ts]
 declare type T2 = { };
 function propAssign0002_1(): any {

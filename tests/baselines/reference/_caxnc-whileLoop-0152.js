@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0152.ts] ////
+
 //// [_caxnc-whileLoop-0152.ts]
 function t52(){
     let d1 = 0;

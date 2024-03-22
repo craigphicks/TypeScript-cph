@@ -1,3 +1,5 @@
+//// [tests/cases/conformance/_caxnc-eqneq/_caxnc-eqneq-0010.ts] ////
+
 //// [_caxnc-eqneq-0010.ts]
 declare const a: 1|2;
 declare const b: 1|2;
