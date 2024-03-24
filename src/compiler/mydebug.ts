@@ -97,8 +97,8 @@ export class ILoggingClass implements ILoggingHost {
         this.numOutLines++;
     }
     ilog(message: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER) {
-        return;
-        this.log(level, message);
+        //this.log(level, message);
+        this.log(level+1, message);
     }
     ilogGroup (message: (()=>string), level: LogLevel = Number.MAX_SAFE_INTEGER) {
         if (!this.logFileFd) return 0;

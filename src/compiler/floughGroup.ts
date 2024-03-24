@@ -86,6 +86,7 @@ import {
 } from "./floughTypedefs";
 import { dbgFlowToString, flowNodesToString } from "./floughNodesDebugWrite";
 import { sys } from "./sys";
+import { FloughSymtab, createFloughSymtab } from "./floughSymtab";
 
 export const extraAsserts = true; // not suitable for release or timing tests.
 const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
@@ -101,6 +102,7 @@ export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnected
  */
 export const enableBypassEffectiveDeclaredType = true;
 
+const enablePerBlockSymbtabs = false;
 
 export enum GroupForFlowKind {
     none = "none",
@@ -708,7 +710,7 @@ export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, source
 }
 
 export function updateHeapWithConnectedGroupsGraph(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow): void {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const graphIndex = groupsForFlow.connectedGroupsGraphs.arrGroupIndexToConnectGraph[group.groupIdx];
     if (extraAsserts) {
@@ -1131,6 +1133,9 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
                 const cbe = forFlow.currentBranchesMap.get(anteg);
                 Debug.assert(!cbe || cbe.kind === CurrentBranchesElementKind.plain);
                 if (!cbe || !((cbe as CurrentBranchElementPlain).item.sc as RefTypesSymtabConstraintItemNotNever).symtab) {
+                    if (enablePerBlockSymbtabs){
+                        Debug.assert(!((cbe as CurrentBranchElementPlain).item.sc as RefTypesSymtabConstraintItemNotNever).fsymtab);
+                    }
                     // This may happen if continues after a loop are not yet fulfilled.
                     return { constraintItem: createFlowConstraintNever() };
                 }
@@ -1138,7 +1143,13 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
                 Debug.assert(cbe.kind === CurrentBranchesElementKind.plain);
                 setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, undefined);
                 const ret: Partial<RefTypesSymtabConstraintItemNotNever> = { constraintItem: cbe.item.sc.constraintItem as ConstraintItemNotNever };
-                if ((cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab) ret.symtab = (cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab;
+                if ((cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab) {
+                    if (enablePerBlockSymbtabs){
+                        Debug.assert((cbe.item.sc as RefTypesSymtabConstraintItemNotNever).fsymtab);
+                        ret.fsymtab = (cbe.item.sc as RefTypesSymtabConstraintItemNotNever).fsymtab;
+                    }
+                    ret.symtab = (cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab;
+                }
                 return ret as RefTypesSymtabConstraintItem;
             }
             case FlowGroupLabelKind.then:
@@ -1214,48 +1225,21 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
             Debug.fail("unexpected");
         }
     }
-    // function doPostLoop(loopGroupIdx: number): RefTypesSymtabConstraintItem {
-    //     const loopGroup = groupsForFlow.orderedGroups[loopGroupIdx];
-    //     // if (loopGroup.postLoopGroupIdx!==undefined){
-    //     //     const postLoopGroup = groupsForFlow.orderedGroups[loopGroup.postLoopGroupIdx];
-    //     // }
-    //     const cbe = forFlow.currentBranchesMap.get(loopGroup);
-    //     Debug.assert(cbe && cbe.kind===CurrentBranchesElementKind.tf);
-    //     const {constraintItem,symtab}=cbe.falsy.sc;
-    //     return { constraintItem,symtab };
-    // }
     function doPostBlock(fglab: FlowGroupLabelPostBlock): RefTypesSymtabConstraintItem {
         const sc = doFlowGroupLabelAux(fglab.ante);
         if (isRefTypesSymtabConstraintItemNever(sc)) return sc;
         if ((fglab.originatingBlock as LocalsContainer).locals?.size) {
             sc.symtab = filterSymtabBySymbolTable(sc.symtab!, (fglab.originatingBlock as LocalsContainer).locals, "postBlock");
         }
+        if (enablePerBlockSymbtabs && (fglab.originatingBlock as LocalsContainer).locals?.size){
+            Debug.assert(fglab.originatingBlock === sc.fsymtab?.localsContainer);
+            debugger;
+            // how to merge?
+        }
         return sc;
-        // remove the going-out-of-scope symbols from thre symbol table.
-        // const newsymtab = copyRefTypesSymtab(sc.symtab);
-        // fglab.originatingBlock.locals?.forEach((symbol)=>{
-        //     if (IDebug.isActive(loggerLevel)){
-        //         IDebug.ilog(()=>`doPostBlock: descoping symbol ${IDebug.dbgs.symbolToString(symbol)}`);
-        //     }
-        //     newsymtab.delete(symbol);
-        // });
-        // return { symtab:newsymtab, constraintItem:sc.constraintItem };
     }
     function doOneFlowGroupLabelPostIf(fglab: FlowGroupLabelPostIf): RefTypesSymtabConstraintItem {
         const arrsc = fglab.arrAnte.map(ante => doFlowGroupLabelAux(ante));
-        // if (mrNarrow.compilerOptions.mrNarrowConstraintsEnable){
-        //     const origGroup = groupsForFlow.orderedGroups[fglab.originatingGroupIdx];
-        //     const origCbe = forFlow.currentBranchesMap.get(origGroup)!;
-        //     Debug.assert(origCbe.kind===CurrentBranchesElementKind.tf);
-        //     if (arrsc.length===2 &&
-        //         arrsc[0].constraintItem===origCbe.truthy.sc.constraintItem &&
-        //         arrsc[1].constraintItem===origCbe.falsy.sc.constraintItem){
-        //         return {
-        //             symtab: orSymtabs(arrsc.map(x=>x.symtab), mrNarrow),
-        //             constraintItem: origCbe.originalConstraintIn
-        //         };
-        //     }
-        // }
         return orSymtabConstraints(arrsc /*, mrNarrow*/);
     }
 }
@@ -1276,8 +1260,12 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`, loggerLevel);
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] previousAnteGroupIdx:${groupForFlow.previousAnteGroupIdx}`, loggerLevel);
     }
+
+
     const setOfKeysToDeleteFromCurrentBranchesMap = new Map<GroupForFlow, Set<"then" | "else"> | undefined>();
     const getAnteConstraintItemAndSymtab = (): RefTypesSymtabConstraintItem => {
+
+
         let sc: RefTypesSymtabConstraintItem | undefined;
         if (groupForFlow.anteGroupLabels.length) {
             Debug.assert(groupForFlow.anteGroupLabels.length === 1);
@@ -1309,7 +1297,38 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
             }
             return { ...cbe.item.sc };
         }
-        return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintAlways() };
+
+        // enablePerBlockSymbtabs
+        /**
+         * If there is not a current symtab, then initialize the symbtab chain.
+         * Else,  if the current symbtabs block is not the same as the current block, then check for intermediate block locals and add to symtab chanin as necessary.
+         */
+        if (enablePerBlockSymbtabs) {
+            const alocalsContainers: LocalsContainer[] = [];
+            let node = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+            for (; node; node = node.parent) {
+                if ((node as LocalsContainer).locals?.size) {
+                    alocalsContainers.push(node as LocalsContainer);
+                }
+            };
+            alocalsContainers.reverse();
+            if (IDebug.isActive(loggerLevel)) {
+                IDebug.ilog(()=>`resolveGroupForFlow[dbg] alocals.length:${alocalsContainers.length}`, loggerLevel);
+                alocalsContainers.forEach((localsContainers, idx) => {
+                    let astr: string[]=[];
+                    localsContainers.locals?.forEach(s=> astr.push(IDebug.dbgs.symbolToString(s)));
+                    IDebug.ilog(()=>`resolveGroupForFlow[dbg] alocals[${idx}]: ${astr.join(", ")}`, loggerLevel);
+                });
+            }
+            Debug.assert(alocalsContainers.length >= 1);
+            let fsymtab: FloughSymtab | undefined;
+            alocalsContainers.forEach((localsContainers, idx) => {
+                if (!fsymtab) fsymtab = createFloughSymtab(localsContainers);
+                else fsymtab = createFloughSymtab(localsContainers, fsymtab);
+            });
+            return { fsymtab, symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintAlways() };
+        }
+        else return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintAlways() };
     };
 
     const anteSCArg = getAnteConstraintItemAndSymtab();
@@ -1329,6 +1348,9 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
         });
         IDebug.ilog(()=>`resolveGroupForFlow[dbg] end of result of getAnteConstraintItemAndSymtab():`, loggerLevel);
     }
+
+
+
 
     const crit: FloughCrit = !floughStatus.inCondition ? { kind: FloughCritKind.none } : { kind: FloughCritKind.truthy, alsoFailing: true };
     Debug.assert(forFlow.groupToNodeToType);

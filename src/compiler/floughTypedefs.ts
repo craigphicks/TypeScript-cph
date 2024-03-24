@@ -42,6 +42,7 @@ import {
 import {
     TypeChecker as TSTypeChecker,
 } from "./types";
+import { FloughSymtab } from "./floughSymtab";
 
 
 
@@ -169,6 +170,7 @@ export type ReplayableItem = {
 };
 
 export type RefTypesSymtabConstraintItemNotNever = {
+    fsymtab?: FloughSymtab | undefined;
     symtab: RefTypesSymtab;
     constraintItem: ConstraintItemNotNever;
 };
@@ -177,16 +179,17 @@ export type RefTypesSymtabConstraintItemNever = {
 };
 
 export interface RefTypesSymtabConstraintItem {
+    fsymtab?: FloughSymtab | undefined;
     symtab?: RefTypesSymtab | undefined;
     constraintItem: ConstraintItem;
 }
 
-export type RefDeltaInferState = {
-    symtab: RefTypesSymtab;
-    constraintItem: ConstraintItem;
-    deltaNodeToTypeMap: Map<Node, Type>;
-    floughStatus: FloughStatus;
-};
+// export type RefDeltaInferState = {
+//     symtab: RefTypesSymtab;
+//     constraintItem: ConstraintItem;
+//     deltaNodeToTypeMap: Map<Node, Type>;
+//     floughStatus: FloughStatus;
+// };
 
 export type ReplayData = {
     byNode: NodeToTypeMap;

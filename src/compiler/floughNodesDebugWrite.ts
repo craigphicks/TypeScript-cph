@@ -124,6 +124,9 @@ function writeFlowNodesUp(writeIn: (s: string) => void, arrFlowNodes: Readonly<F
         // else if (isFlowJoin(fn)){
         //     write(indent()+`joinNode: ${getText(fn.joinNode)}`);
         // }
+        if (isFlowLabel(fn) && fn.originatingExpression) {
+            write(indent() + `originatingExpression: ${Debug.formatSyntaxKind(fn.originatingExpression.kind)}, pos:${fn.originatingExpression.pos}, end:${fn.originatingExpression.end}`);
+        }
         if ((fn as any).antecedents) {
             write(indent() + `antecedents:[${((fn as any).antecedents as FloughNode[]).length}]`);
             ((fn as any).antecedents as Readonly<FloughNode[]>).forEach(a => doOne(a));
@@ -241,7 +244,7 @@ export function flowNodesToString(sourceFile: SourceFileWithFloughNodes, getFlow
 }
 
 
-export function dbgFlowToString(flow: FloughNode | undefined, _withAntecedentants = false): string {
+export function dbgFlowToString1(flow: FloughNode | undefined, _withAntecedentants = false): string {
     if (!flow) return "<undef>";
     const getFlowNodeId = (flow: FloughNode) => {
         return flow.id;
@@ -256,7 +259,7 @@ export function dbgFlowToString(flow: FloughNode | undefined, _withAntecedentant
 function getFlowNodeId(flow: FloughNode): number {
     return flow.id ?? 0;
 }
-function dbgFlowToString2(flow: FloughNode | undefined, withAntecedants?: boolean): string {
+export function dbgFlowToString(flow: FloughNode | undefined, withAntecedants?: boolean): string {
     if (!flow) return "<undef>";
     let str = "";
     //if (isFlowWithNode(flow)) str += `[${(flow.node as any).getText()}, (${flow.node.pos},${flow.node.end})]`;
