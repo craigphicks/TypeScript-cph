@@ -26693,7 +26693,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
     }
 
-    function getResolvedSymbol(node: Identifier): Symbol {
+        function getResolvedSymbol(node: Identifier, noDiagnostics?: boolean | undefined): Symbol {
         const links = getNodeLinks(node);
         if (!links.resolvedSymbol) {
             links.resolvedSymbol = !nodeIsMissing(node) &&
@@ -26701,7 +26701,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         node,
                         node.escapedText,
                         SymbolFlags.Value | SymbolFlags.ExportValue,
-                        getCannotFindNameDiagnosticForName(node),
+                        noDiagnostics ? undefined : getCannotFindNameDiagnosticForName(node),
                         node,
                         !isWriteOnlyAccess(node),
                         /*excludeGlobals*/ false,
