@@ -71,8 +71,10 @@ import {
     copyRefTypesSymtab,
     createSuperloopRefTypesSymtabConstraintItem,
     createRefTypesSymtab,
+    copyRefTypesSymtabConstraintItem,
 } from "./floughGroupRefTypesSymtab";
 import {
+    dbgFlowGroupLabelToStrings,
     dbgGroupsForFlowToStrings,
     getFlowAntecedents,
     makeGroupsForFlow,
@@ -193,6 +195,7 @@ export interface GroupForFlow {
     dbgSetOfUnhandledFlow?: Set<FlowLabel>;
     postLoopGroupIdx?: number; // only present for a loop control group - required for processLoop updateHeap
     arrPreLoopGroupsIdx?: number[]; // only present for a postLoop group - required for processLoop updateHeap
+    localsContainer?: LocalsContainer;
     dbgGraphIdx?: number;
 }
 
@@ -890,7 +893,7 @@ function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFile
 }
 
 function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloughState, forFlowParent: ForFlow, setOfLoopDeps: Readonly<Set<GroupForFlow>>, maxGroupIdxProcessed: number): void {
-    const loggerLevel = 1;
+    const loggerLevel = 2;
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}`,loggerLevel);
     }
@@ -1100,9 +1103,16 @@ function resolveHeap(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow,
 }
 
 function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap: Map<GroupForFlow, Set<"then" | "else"> | undefined>, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow): RefTypesSymtabConstraintItem {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     const { groupsForFlow, mrNarrow } = sourceFileMrState;
-    return doFlowGroupLabelAux(fglabIn);
+    IDebug.ilogGroup(()=>`doFlowGroupLabel[in]:`, loggerLevel);
+    if (IDebug.isActive(loggerLevel)){
+        dbgFlowGroupLabelToStrings(fglabIn, sourceFileMrState.mrState.checker).forEach(s=>IDebug.ilog(()=>`doFlowGroupLabel: ${s}`, loggerLevel));
+        //IDebug.ilog(()=>`doFlowGroupLabel[in]: fglabIn: ${dbgFlowGroupLabelToString(fglabIn)}`, loggerLevel);
+    }
+    const ret = doFlowGroupLabelAux(fglabIn);
+    IDebug.ilogGroupEnd(()=>`doFlowGroupLabel[out]:`, loggerLevel);
+    return ret;
 
     function getLoopLocals(loopGroup: Readonly<GroupForFlow>): Readonly<SymbolTable> | undefined {
         const loopGroupMaximalNode = sourceFileMrState.groupsForFlow.posOrderedNodes[loopGroup.maximalIdx];
@@ -1245,7 +1255,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
 }
 
 function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus: FloughStatus, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, options?: { cachedSCForLoop: RefTypesSymtabConstraintItem; loopGroupIdx: number; }): void {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const mrNarrow = sourceFileMrState.mrNarrow;
     const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
@@ -1259,8 +1269,41 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
         dbgForFlow(sourceFileMrState, forFlow).forEach(s => IDebug.ilog(()=>`resolveGroupForFlow[dbg:] currentBranchesMap[before]: ${s}`, loggerLevel));
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] endof currentBranchesMap[before]:`, loggerLevel);
         IDebug.ilog(()=>`resolveGroupForFlow[dbg:] previousAnteGroupIdx:${groupForFlow.previousAnteGroupIdx}`, loggerLevel);
+        IDebug.ilog(()=>`resolveGroupForFlow[dbg:] groupForFlow.anteGroupLabels.length: ${groupForFlow.anteGroupLabels.length}`, loggerLevel);
+        if (groupForFlow.anteGroupLabels.length){
+            dbgFlowGroupLabelToStrings(groupForFlow.anteGroupLabels[0], sourceFileMrState.mrState.checker).forEach(s =>
+                IDebug.ilog(()=>`resolveGroupForFlow[dbg:] anteGroupLabels[0]: ${s}`, loggerLevel));
+        }
+        IDebug.ilog(()=>`resolveGroupForFlow[dbg:] groupForFlow.localsContainer: ${groupForFlow.localsContainer ?`(${groupForFlow.localsContainer.pos},${groupForFlow.localsContainer.end})`:`<undef>` }`, loggerLevel);
     }
 
+    function findSharedAncestorLocalsContainer(loc1: LocalsContainer, loc2: LocalsContainer): LocalsContainer {
+        let node1: Node = loc1;
+        let node2: Node = loc2;
+        while (node1 !== node2) {
+            if (node1.pos < node2.pos) {
+                node2 = node2.parent;
+            }
+            else {
+                node1 = node1.parent;
+            }
+        }
+        while (node1 && !(node1 as LocalsContainer).locals) {
+            node1 = node1.parent;
+        }
+        return node1 as LocalsContainer;
+    }
+
+    /**
+     *
+     * @param ancestorLoc
+     * @param fsymtab
+     */
+    // function mergeSymtabToDirectAncestor(ancestorLoc: LocalsContainer, fsymtab: FloughSymtab): FloughSymtab {
+
+    //     // const fsymtab = createFloughSymtab(loc, fsymtabAncestor);
+    //     // return fsymtab;
+    // }
 
     const setOfKeysToDeleteFromCurrentBranchesMap = new Map<GroupForFlow, Set<"then" | "else"> | undefined>();
     const getAnteConstraintItemAndSymtab = (): RefTypesSymtabConstraintItem => {
@@ -1282,6 +1325,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
             Debug.assert(!sc); // when previousAnteGroupIdx is present, anteGroupLabels.length must have been zero
             const prevAnteGroup = groupsForFlow.orderedGroups[groupForFlow.previousAnteGroupIdx];
 
+
             if (refactorConnectedGroupsGraphsGroupDependancyCountRemaining) {
                 const rem = --sourceFileMrState.mrState.groupDependancyCountRemaining[groupForFlow.previousAnteGroupIdx];
                 Debug.assert(rem >= 0);
@@ -1295,6 +1339,51 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
             if (!(cbe && cbe.kind === CurrentBranchesElementKind.plain)) {
                 Debug.fail("unexpected");
             }
+            if (enablePerBlockSymbtabs && !isRefTypesSymtabConstraintItemNever(cbe.item.sc)) {
+                Debug.assert(groupForFlow.localsContainer && prevAnteGroup.localsContainer);
+                if (cbe.item.sc.fsymtab?.localsContainer !== groupForFlow.localsContainer){
+                    let fsymtab: FloughSymtab;
+                    const fsymtabPrev = cbe.item.sc.fsymtab!;
+                    Debug.assert(fsymtabPrev?.localsContainer!.pos!==groupForFlow.localsContainer.pos);
+                    Debug.assert(fsymtabPrev?.localsContainer!.end!==groupForFlow.localsContainer.end);
+                    if (groupForFlow.localsContainer.pos>fsymtabPrev?.localsContainer!.pos) {
+                        if (groupForFlow.localsContainer.end<fsymtabPrev?.localsContainer!.end) {
+                            // descendent block of the previous block
+                            const alocalsContainers: LocalsContainer[] = [];
+                            let node = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+                            for (; node !== fsymtabPrev.localsContainer; node = node.parent) {
+                                Debug.assert(node);
+                                if ((node as LocalsContainer).locals?.size) {
+                                    alocalsContainers.push(node as LocalsContainer);
+                                }
+                            };
+                            alocalsContainers.reverse();
+                            fsymtab = fsymtabPrev;
+                            alocalsContainers.forEach((localsContainers, idx) => fsymtab = createFloughSymtab(localsContainers, fsymtab));
+                        }
+                        else {
+                            // Neither parent not child block of previous block, find shared ancestor
+                            const sharedAncestor = findSharedAncestorLocalsContainer(fsymtabPrev.localsContainer!, groupForFlow.localsContainer);
+
+
+                            fsymtab = mergeSymtabToDirectAncestor(sharedAncestor, fsymtabPrev);
+                        }
+                    }
+                    else {
+                        // groupForFlow.localsContainer.pos < prevAnteGroup.localsContainer.pos
+                        if (groupForFlow.localsContainer.end>prevAnteGroup.localsContainer.end) {
+                            // ancestor block of the previous block
+                            fsymtab = mergeSymtabToDirectAncestor(groupForFlow.localsContainer, fsymtabPrev);
+                        }
+                        else {
+                            Debug.assert(false, undefined, ()=>`unexpected prev:(${prevAnteGroup.localsContainer!.pos},${prevAnteGroup.localsContainer!.end}), this:(${groupForFlow.localsContainer!.pos},${groupForFlow.localsContainer!.end})`)
+                        }
+                    }
+                    return { ...cbe.item.sc, fsymtab };
+                }
+                // falls through
+            }
+
             return { ...cbe.item.sc };
         }
 
@@ -1332,6 +1421,9 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
     };
 
     const anteSCArg = getAnteConstraintItemAndSymtab();
+
+
+
     /**
      * Delete all the no-longer-needed CurrentBranchElements.
      */

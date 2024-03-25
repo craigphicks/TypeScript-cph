@@ -45,6 +45,7 @@ import {
     FlowArrayMutation,
     FlowReduceLabel,
     FlowContainer,
+    LocalsContainer,
 } from "./types";
 import {
     isStatement,
@@ -353,7 +354,22 @@ export function makeGroupsForFlow(sourceFile: SourceFileWithFloughNodes, checker
                 }
             }
         }
-        if (set.size) groupToSetOfFlowMap.set(g, set);
+        if (set.size) {
+            groupToSetOfFlowMap.set(g, set);
+        }
+    });
+
+    /**
+     * Set localContainers for each group
+     */
+    orderedGroups.forEach((g, groupIdx) => {
+        let node = orderedNodes[g.maximalIdx];
+        for (; node; node = node.parent) {
+            if ((node as LocalsContainer).locals) {
+                g.localsContainer = node as LocalsContainer;
+                break;
+            }
+        }
     });
 
     /**
@@ -701,7 +717,7 @@ export function getFlowAntecedents(fn: FloughNodeBase): FloughNode[] {
     else return [];
 }
 
-function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, checker: FloughTypeChecker): string[] {
+export function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, checker: FloughTypeChecker): string[] {
     const as: string[] = [`kind:${fglab.kind}`];
     switch (fglab.kind) {
         case FlowGroupLabelKind.ref:
