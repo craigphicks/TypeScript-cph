@@ -32,11 +32,13 @@ import {
     ProcessLoopState,
     GroupForFlow,
     extraAsserts,
+    enablePerBlockSymtabs,
 } from "./floughGroup";
 import {
     MrNarrow,
 } from "./floughGroup2";
 import { IDebug } from "./mydebug";
+import { dbgFloughSymtabToStrings } from "./floughSymtab";
 
 var mrNarrow: MrNarrow;
 var symbolFlowInfoMap: SymbolFlowInfoMap;
@@ -259,6 +261,7 @@ export function createRefTypesSymtabWithEmptyInnerSymtab(templateSymtab: Readonl
 }
 export function createRefTypesSymtabConstraintWithEmptyInnerSymtab(templatesc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
     Debug.assert(!isRefTypesSymtabConstraintItemNever(templatesc));
+    if (enablePerBlockSymtabs) Debug.assert(false);
     return {
         symtab: createRefTypesSymtabWithEmptyInnerSymtab(templatesc.symtab),
         constraintItem: { ...templatesc.constraintItem },
@@ -272,6 +275,13 @@ export function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSy
 }
 export function copyRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(sc)) return { constraintItem: { ...sc.constraintItem } };
+    if (enablePerBlockSymtabs){
+        return {
+            symtab: copyRefTypesSymtab(sc.symtab!),
+            fsymtab: sc.fsymtab?.branch(),
+            constraintItem: { ...sc.constraintItem },
+        };
+    }
     return {
         symtab: copyRefTypesSymtab(sc.symtab!),
         constraintItem: { ...sc.constraintItem },
@@ -281,6 +291,7 @@ export function createRefTypesSymtabConstraintItemNever(): RefTypesSymtabConstra
     return { constraintItem: createFlowConstraintNever() };
 }
 export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstraintItemNotNever {
+    if (enablePerBlockSymtabs) Debug.assert(false);
     return { symtab: new RefTypesSymtabProxy(), constraintItem: createFlowConstraintAlways() };
 }
 /**
@@ -509,6 +520,9 @@ export function dbgRefTypesSymtabConstrinatItemToStrings(sc: Readonly<RefTypesSy
     const as: string[] = ["{"];
     if (!sc.symtab) as.push(`  symtab:<undef>`);
     else dbgRefTypesSymtabToStrings(sc.symtab).forEach(s => as.push(`  symtab: ${s}`));
+    if (!sc.fsymtab) as.push(`  fsymtab:<undef>`);
+    else dbgFloughSymtabToStrings(sc.fsymtab).forEach(s => as.push(`  fsymtab: ${s}`));
+
     mrNarrow.dbgConstraintItem(sc.constraintItem).forEach(s => as.push(`  constraintItem: ${s}`));
     as.push(`}`);
     return as;

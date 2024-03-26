@@ -64,6 +64,7 @@ import {
     getDevExpectStrings,
     extraAsserts,
     refactorConnectedGroupsGraphsNoShallowRecursion,
+    enablePerBlockSymtabs,
 } from "./floughGroup";
 import {
     applyCritNoneUnion,
@@ -952,6 +953,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
                 }
             });
+            if (enablePerBlockSymtabs){
+                if (!isRefTypesSymtabConstraintItemNever(sci)) {
+                    Debug.assert(!sci.symtab || sci.fsymtab);
+                }
+            }
             IDebug.ilogGroupEnd(()=>`flough[out]: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
         }
         return floughReturn;
@@ -990,6 +996,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                      * NOTE: tests show this causes no harm, but don't have a test case that shows it is necessary.
                      */
                     const replayableInType = sci.symtab?.get(symbol);
+                    if (enablePerBlockSymtabs){
+                        if (sci.symtab) {
+                            Debug.assert(sci.fsymtab);
+                            const t = sci.fsymtab.get(symbol);
+                            Debug.assert(t===replayableInType);
+                        }
+                    }
                     const dummyNodeToTypeMap = new Map<Node, Type>();
                     const mntr = flough({
                         expr: replayable?.expr,
@@ -1080,9 +1093,16 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
                 } // endof if (floughStatus.replayables.has(symbol))
 
-                let type: RefTypesType | undefined;
+                let type: RefTypesType | undefined = sci.symtab?.get(symbol);
+                if (enablePerBlockSymtabs){
+                    if (sci.symtab) {
+                        Debug.assert(sci.fsymtab);
+                        const t = sci.fsymtab.get(symbol);
+                        Debug.assert(t===type);
+                    }
+                }
                 const isconst = symbolFlowInfo.isconst;
-                type = sci.symtab?.get(symbol) ?? getEffectiveDeclaredType(symbolFlowInfo);
+                type = type ?? getEffectiveDeclaredType(symbolFlowInfo);
                 Debug.assert(type);
                 if (floughStatus.currentReplayableItem) {
                     // If the value of the symbol has definitely NOT changed since the defintion of the replayable.
@@ -1117,23 +1137,30 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
             if (IDebug.isActive(loggerLevel)) {
                 ret.unmerged.forEach((rttr, i) => {
-                    dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`floughIdentifier[out]: unmerged[${i}]: ${s}`, loggerLevel));
+                    dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`floughIdentifier[end]: unmerged[${i}]: ${s}`, loggerLevel));
                 });
-                IDebug.ilog(()=>`floughIdentifier[out] floughReturn.typeof: ${ret.typeof}`, loggerLevel);
+                IDebug.ilog(()=>`floughIdentifier[end] floughReturn.typeof: ${ret.typeof}`, loggerLevel);
 
-                IDebug.ilog(()=>`floughIdentifier[out] groupNodeToTypeMap.size: ${floughStatus.groupNodeToTypeMap.size}`, loggerLevel);
+                IDebug.ilog(()=>`floughIdentifier[end] groupNodeToTypeMap.size: ${floughStatus.groupNodeToTypeMap.size}`, loggerLevel);
                 floughStatus.groupNodeToTypeMap.forEach((t, n) => {
                     for (let ntmp = n; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                         if (ntmp === expr) {
-                            IDebug.ilog(()=>`floughIdentifier[out] groupNodeToTypeMap: node: ${IDebug.dbgs.nodeToString(n)}, type: ${typeToString(t)}`, loggerLevel);
+                            IDebug.ilog(()=>`floughIdentifier[end] groupNodeToTypeMap: node: ${IDebug.dbgs.nodeToString(n)}, type: ${typeToString(t)}`, loggerLevel);
                             break;
                         }
                     }
                 });
-                IDebug.ilogGroupEnd(()=>`floughIdentifier[out] ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
+            }
+            IDebug.ilogGroupEnd(()=>`floughIdentifier[out]: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
+            if (enablePerBlockSymtabs){
+                ret.unmerged.forEach(rttr => {
+                    if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
+                        Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
+                    }
+                });
             }
             return ret;
-        } // endof mrNarrowIdentifier()
+        } // endof floughIdentifier()
 
         function floughAux(): FloughReturn {
             assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
@@ -1167,6 +1194,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 nodeForMap: expr,
             };
             if (innerret.typeof) floughReturn.typeof = innerret.typeof;
+
+            if (enablePerBlockSymtabs){
+                floughReturn.unmerged.forEach(rttr => {
+                    if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
+                        Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
+                    }
+                });
+            }
             return floughReturn;
         } // endof floughAux()
 
@@ -1581,6 +1616,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (sci.symtab.has(symbol)) {
                             Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
                         }
+                        if (enablePerBlockSymtabs){
+                            Debug.assert(sci.fsymtab);
+                            if (sci.fsymtab.has(symbol)) {
+                                Debug.assert("unexpected"); // should only be declared once.
+                            }
+                        }
                         const rhsWidenedType = widenDeclarationOrAssignmentRhs(rhs.type, symbolFlowInfo);
                         if (isconstVar) {
                             const replayableItem: ReplayableItem = {
@@ -1952,6 +1993,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             if (rttrModObj.symbol) {
                                 if (extraAsserts) Debug.assert(scIsolated.symtab);
                                 scIsolated.symtab!.set(rttrModObj.symbol, rttrModObj.type);
+                                if (enablePerBlockSymtabs){
+                                    scIsolated.fsymtab!.set(rttrModObj.symbol, rttrModObj.type);
+                                }
                             }
                         }
 
@@ -2124,10 +2168,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                  * @returns FloughInnerReturn
                  */
                 function floughByBinaryExpresionAssign(): FloughInnerReturn {
+                if (IDebug.isActive(loggerLevel)) {
+                    IDebug.ilogGroup(()=>`floughByBinaryExpresionAssign[in] ${Debug.formatSyntaxKind((expr as BinaryExpression).left.kind)}`, loggerLevel);
+                }
+                const ret = (() => {
                     assertCastType<BinaryExpression>(expr);
-                    if (IDebug.isActive(loggerLevel)) {
-                        IDebug.ilogGroup(()=>`floughByBinaryExpresionAssign[in] ${Debug.formatSyntaxKind(expr.left.kind)}`, loggerLevel);
-                    }
                     const { left: leftExpr, right: rightExpr } = expr;
                     if (leftExpr.kind === SyntaxKind.Identifier) {
                         const rhs = flough({
@@ -2174,9 +2219,6 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             debugDevExpectEffectiveDeclaredType(leftExpr.parent, symbolFlowInfo);
                         }
                         // const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
-                        if (IDebug.isActive(loggerLevel)) {
-                            IDebug.ilogGroupEnd(()=>`floughByBinaryExpresionAssign`, loggerLevel);
-                        }
                         return {
                             unmerged: [{
                                 ...passing,
@@ -2222,6 +2264,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                         if (floughTypeModule.isNeverType(newRootType)) return;
                                         sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
                                         sciFinal.symtab!.setAsAssigned(symbol, newRootType);
+                                        if (enablePerBlockSymtabs){
+                                            sciFinal.fsymtab!.setAsAssigned(symbol, newRootType);
+                                        }
                                     }
                                     rttrLeft0.logicalObjectAccessData = undefined;
                                 }
@@ -2231,12 +2276,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 });
                             }); // just to make sure that rhs is evaluated
                         });
-                        if (IDebug.isActive(loggerLevel)) {
-                            IDebug.ilogGroupEnd(()=>`floughByBinaryExpresionAssign[out] ${Debug.formatSyntaxKind(expr.left.kind)}`, loggerLevel);
-                        }
                         return { unmerged };
                     }
                     else Debug.fail("not yet implemented");
+                })();
+                IDebug.ilogGroupEnd(()=>`floughByBinaryExpresionAssign[out] ${Debug.formatSyntaxKind(expr.left.kind)}`, loggerLevel);
+                return ret;
                 }
 
                 function floughByBinaryExpressionAmpersandAmpersandToken(): FloughInnerReturn {
@@ -2704,6 +2749,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         }
 
                         if (symbol && !sciFinal.symtab?.get(symbol)) {
+                            if (enablePerBlockSymtabs && sciFinal.symtab){
+                                Debug.assert(sciFinal.fsymtab);
+                                const t = sciFinal.fsymtab.get(symbol);
+                                Debug.assert(!t);
+                            }
                             // nothing changed symbol value so only add if not already present.
                             const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess, 0);
                             sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
@@ -2838,6 +2888,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             });
                         }
                     });
+                    if (enablePerBlockSymtabs){
+                        unmergedOut.forEach(rttr=>{
+                            Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
+                        });
+                    }
                     return { unmerged: unmergedOut };
                 } // endof floughByBinaryExpressionInKeyword
             } // endof floughInnerAux()
