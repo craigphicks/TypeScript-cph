@@ -474,51 +474,16 @@ export function isAlwaysConstraint(c: ConstraintItem): boolean {
 //     return createFlowConstraintNodeOr({ constraints: ac });
 // }
 
-function orSymtabConstraintsV2(asc: Readonly<RefTypesSymtabConstraintItem>[] /*, mrNarrow: MrNarrow*/): RefTypesSymtabConstraintItem {
+export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[] /*, mrNarrow: MrNarrow*/): RefTypesSymtabConstraintItem {
     if (asc.length === 0) Debug.fail("unexpected"); // return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
     if (asc.length === 1) return asc[0];
     const asc1 = asc.filter(sc => !isNeverConstraint(sc.constraintItem));
     if (asc1.length === 0) return createRefTypesSymtabConstraintItemNever(); // assuming or of nevers is never
     if (asc1.length === 1) return asc1[0];
     const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.symtab));
-    const oredConstraint = createFlowConstraintAlways(); // orConstraints(asc.map(x=>x.constraintItem));
-    // const symbolsInvolved = new Set<Symbol>();
-    // asc.forEach(x=>{
-    //     if (x.constraintItem.symbolsInvolved) x.constraintItem.symbolsInvolved.forEach(s=>symbolsInvolved.add(s));
-    // });
-    // const constraintItem = orIntoConstraintsShallow(asc.map(x=>x.constraintItem));
-    // constraintItem.symbolsInvolved = symbolsInvolved;
-    return { symtab: unionSymtab, constraintItem: oredConstraint };
+    const unionFsymbtab = unionFloughSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab));
+    return { symtab: unionSymtab, constraintItem: createFlowConstraintAlways() };
 }
-// called from floughGroup.ts when merging branches post-if
-// export function orSymtabs(asc: Readonly<RefTypesSymtab[]>,mrNarrow: MrNarrow): RefTypesSymtab {
-//     return unionArrRefTypesSymtab(asc);
-// }
-// export function orConstraints(asc: Readonly<ConstraintItem>[]): ConstraintItem {
-//     const symbolsInvolved = new Set<Symbol>();
-//     asc.forEach(x => {
-//         if (x.symbolsInvolved) x.symbolsInvolved.forEach(s => symbolsInvolved.add(s));
-//     });
-//     const constraintItem = orIntoConstraintsShallow(asc);
-//     constraintItem.symbolsInvolved = symbolsInvolved;
-//     return constraintItem;
-// }
-export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[] /*, mrNarrow: MrNarrow , getDeclaredType: GetDeclaredTypeFn*/): RefTypesSymtabConstraintItem {
-    return orSymtabConstraintsV2(asc /*, mrNarrow*/);
-}
-
-// export function andSymbolTypeIntoSymtabConstraint({symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType}: Readonly<{
-//     symbol: Readonly<Symbol>,
-//     readonly isconst: undefined | boolean,
-//     readonly isAssign?: boolean | undefined,
-//     type: Readonly<RefTypesType>,
-//     sc: RefTypesSymtabConstraintItem,
-//     getDeclaredType: GetDeclaredTypeFn,
-//     mrNarrow: MrNarrow}>): { type: RefTypesType, sc: RefTypesSymtabConstraintItem } {
-//     //Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
-//     if (isRefTypesSymtabConstraintItemNever(sc)) return { type:floughTypeModule.createRefTypesType(),sc };
-//     return andSymbolTypeIntoSymtabConstraintV2({ symbol,isconst,isAssign,type:typeIn,sc,mrNarrow,getDeclaredType });
-// }
 
 export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, type: typeIn, sc, mrNarrow, getDeclaredType: _ }: Readonly<{
     symbol: Readonly<Symbol>;

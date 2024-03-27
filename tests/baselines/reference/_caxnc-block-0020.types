@@ -1,0 +1,36 @@
+//// [tests/cases/conformance/_caxnc-block/_caxnc-block-0020.ts] ////
+
+=== _caxnc-block-0020.ts ===
+//
+
+function f(a: number): void {
+>f : (a: number) => void
+>a : number
+    {
+        let b: number | string
+>b : string | number
+
+        b = a;
+>b = a : number
+>b : string | number
+>a : number
+        {
+            let c: number
+>c : number
+
+            c = b;
+>c = b : number
+>c : number
+>b : number
+
+            b = "hello";
+>b = "hello" : "hello"
+>b : string | number
+>"hello" : "hello"
+        }
+        b;
+>b : "hello"
+    }
+    a;
+>a : number
+}

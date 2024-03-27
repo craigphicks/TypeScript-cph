@@ -3,6 +3,7 @@ import { Debug } from "./debug";
 import { FloughType } from "./floughType";
 import { IDebug } from "./mydebug";
 import { floughTypeModule } from "./floughType";
+import { assertCastType } from "./floughTypedefs";
 
 
 export interface FloughSymtab {
@@ -23,6 +24,8 @@ type InnerMap = Map<Symbol, { type: FloughType, wasAssigned?: boolean }>;
 function createInnerMap(clone?: InnerMap): InnerMap { return clone? new Map(clone) : new Map(); }
 
 class FloughSymtabImpl implements FloughSymtab {
+    static nextdbgid = 1;
+    dbgid?: number;
     tableDepth: number;
     outer: FloughSymtabImpl | undefined;
     localMap = createInnerMap(); // only symbols in locals (therefore could be a weak map)
@@ -30,6 +33,7 @@ class FloughSymtabImpl implements FloughSymtab {
     locals?: Readonly<SymbolTable>;
     localsContainer?: LocalsContainer;
     constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap) {
+        if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
         this.localsContainer = localsContainer
         Debug.assert(!localsContainer || localsContainer.locals?.size,undefined,()=>`FloughSymtabImpl.constructor(): localsContainer has no locals`);
         if (localsContainer) this.locals = localsContainer.locals;
@@ -156,8 +160,90 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
 }
 
 
+/**
+ *
+ * @param afsIn Had another idea
+ * @returns
+ */
+export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): FloughSymtab {
+    /**
+     * We never have to look back further than the closest common ancestor.
+     */
+    assertCastType<Readonly<FloughSymtabImpl>[]>(afsIn);
+    if (afsIn.length === 0) Debug.assert(false);
+    if (afsIn.length === 1) return afsIn[0];
+    /**
+     * fsca will be the nearest common ancestor
+     */
+    let fsca = afsIn[0];
+    for (let i=1; i<afsIn.length; i++) {
+        let fs1 = afsIn[i];
+        while (fsca.tableDepth>fs1.tableDepth) {
+            fsca = fsca.outer!;
+            if (IDebug.assertLevel) Debug.assert(fsca);
+        }
+        while (fs1.tableDepth>fsca.tableDepth) {
+            fs1 = fs1.outer!;
+            if (IDebug.assertLevel) Debug.assert(fs1);
+        }
+        while (fsca!==fs1) {
+            fsca = fsca.outer!;
+            fs1 = fs1.outer!;
+            if (IDebug.assertLevel) {
+                Debug.assert(fsca && fs1);
+                Debug.assert(fsca.tableDepth === fs1.tableDepth);
+            }
+        }
+        if (IDebug.assertLevel>=1) {
+            Debug.assert(fsca);
+            Debug.assert(fs1);
+            Debug.assert(fsca === fs1);
+        }
+        fsca = fs1;
+    }
+    // fs0 should be the common ancestor
+    if (IDebug.assertLevel>=1) {
+        afsIn.forEach(fsx => {
+            while (fsx && fsx !== fsca) {
+                fsx = fsx.outer!;
+                Debug.assert(fsx);
+                Debug.assert(!fsx.localsContainer); // If this fails, it is a TODO
+            }
+            Debug.assert(fsx===fsca);
+        });
+    }
+    const setAncestors = new Set<FloughSymtabImpl>();
+    const mapSymbolToSet = new Map<Symbol,{type: FloughType, wasAssigned?:boolean}[]/*length afsIn.length*/>();
+    afsIn.forEach((fs,idx)=>{
+        const afsr: FloughSymtabImpl[] = [];
+        for (let fsx = fs; fsx!==fsca; fsx = fsx.outer!) {
+            afsr.push(fsx);
+            setAncestors.add(fsx);
+            if (fsx.shadowMap.size) {
+                fsx.shadowMap.forEach(({type, wasAssigned}, symbol) => {
+                    let arr = mapSymbolToSet.get(symbol);
+                    if (!arr) {
+                        arr = new Array(afsIn.length);
+                        
+                        mapSymbolToSet.set(symbol, arr);
+                    }
+                    arr[idx] = type;
+                });
+            }
+        }
+        afsr.push(fsca);
+        afsr.reverse();
+
+    });
+
+}
+
+
+
+
 export function dbgFloughSymtabToStringsOne(fsIn: Readonly<FloughSymtab>): string[] {
     const arr: string[] = [];
+    if ((fsIn as FloughSymtabImpl).dbgid) arr.push(`dbgid: ${(fsIn as FloughSymtabImpl).dbgid}`);
     arr.push(`tableDepth: ${(fsIn as FloughSymtabImpl).tableDepth}`);
     if (!fsIn.localsContainer) arr.push(`localsContainer: <undef>`);
     else if (!fsIn.localsContainer.locals) arr.push(`localsContainer.locals: <undef>`);

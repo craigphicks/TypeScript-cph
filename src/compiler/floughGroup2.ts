@@ -133,6 +133,7 @@ import {
     getSourceTextOfNodeFromSourceFile,
 } from "./utilities";
 import { IDebug } from "./mydebug";
+import { dbgFloughSymtabToStrings } from "./floughSymtab";
 
 /* eslint-disable no-double-space */
 
@@ -335,6 +336,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         if (true) {
             if (!rtt.sci.symtab) as.push("  symtab: <undef>");
             else dbgRefTypesSymtabToStrings(rtt.sci.symtab).forEach((str, i) => as.push(((i === 0) ? "  symtab: " : "  ") + str));
+            if (!rtt.sci.fsymtab) as.push("  fsymtab: <undef>");
+            else dbgFloughSymtabToStrings(rtt.sci.fsymtab).forEach((str) => as.push(`  fsymtab: ${str}`));
             if (!rtt.sci.constraintItem) {
                 as.push("  constraintItem: undefined");
             }

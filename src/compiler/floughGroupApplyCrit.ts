@@ -358,7 +358,7 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Flo
     passing: RefTypesTableReturnNoSymbol;
     failing?: RefTypesTableReturnNoSymbol | undefined;
 } {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>`applyCrit1[in]`, loggerLevel);
     }
