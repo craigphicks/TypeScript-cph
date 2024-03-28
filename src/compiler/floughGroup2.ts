@@ -944,14 +944,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
         if (IDebug.isActive(loggerLevel)) {
             floughReturn.unmerged.forEach((rttr, i) => {
-                dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`  flough[end]: unmerged[${i}]: ${s}`, loggerLevel));
+                dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`flough[end]: unmerged[${i}]: ${s}`, loggerLevel));
             });
             IDebug.ilog(()=>`flough[end]: floughReturn.typeof: ${floughReturn.typeof ? "present" : "<undef>"}`, loggerLevel);
             IDebug.ilog(()=>`flough[end]: groupNodeToTypeMap.size: ${floughStatus.groupNodeToTypeMap.size}`, loggerLevel);
             floughStatus.groupNodeToTypeMap.forEach((t, n) => {
                 for (let ntmp = n; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                     if (ntmp === expr) {
-                        IDebug.ilog(()=>`flough groupNodeToTypeMap: node: ${IDebug.dbgs.nodeToString(n)}, type: ${typeToString(t)}`, loggerLevel);
+                        IDebug.ilog(()=>`flough[end] groupNodeToTypeMap: node: ${IDebug.dbgs.nodeToString(n)}, type: ${typeToString(t)}`, loggerLevel);
                         break;
                     }
                 }
@@ -1212,27 +1212,27 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
             if (IDebug.isActive(loggerLevel)) {
                 IDebug.ilogGroup(()=>`floughInner[in] expr:${IDebug.dbgs.nodeToString(expr)}, floughStatus:{inCondition:${floughStatus.inCondition}, currentReplayableItem:${floughStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(floughStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
-                IDebug.ilog(()=>`floughInner[in] refTypesSymtab:`, loggerLevel);
-                dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`floughInner[in] refTypesSymtab:  ${str}`, loggerLevel));
-                IDebug.ilog(()=>`floughInner[in] constraintItemIn:`, loggerLevel);
-                if (sci.constraintItem) dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`floughInner[in] constraintItemIn:  ${str}`, loggerLevel));
+                IDebug.ilog(()=>`floughInner[begin] refTypesSymtab:`, loggerLevel);
+                dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`floughInner[begin] refTypesSymtab:  ${str}`, loggerLevel));
+                IDebug.ilog(()=>`floughInner[begin] constraintItemIn:`, loggerLevel);
+                if (sci.constraintItem) dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`floughInner[begin] constraintItemIn:  ${str}`, loggerLevel));
             }
             const innerret = floughInnerAux(qdotfalloutInner);
             if (IDebug.isActive(loggerLevel)) {
                 innerret.unmerged.forEach((rttr, i) => {
                     dbgRefTypesTableToStrings(rttr).forEach(str => {
-                        IDebug.ilog(()=>`floughInner[out]:  innerret.unmerged[${i}]: ${str}`, loggerLevel);
+                        IDebug.ilog(()=>`floughInner[end]:  innerret.unmerged[${i}]: ${str}`, loggerLevel);
                     });
                 });
                 floughStatus.groupNodeToTypeMap.forEach((type, node) => {
                     for (let ntmp = node; ntmp.kind !== SyntaxKind.SourceFile; ntmp = ntmp.parent) {
                         if (ntmp === expr) {
-                            IDebug.ilog(()=>`floughInner[out]:  innerret.byNode: { node: ${IDebug.dbgs.nodeToString(node)}, type: ${typeToString(type)}`, loggerLevel);
+                            IDebug.ilog(()=>`floughInner[end]:  innerret.byNode: { node: ${IDebug.dbgs.nodeToString(node)}, type: ${typeToString(type)}`, loggerLevel);
                             break;
                         }
                     }
                 });
-                IDebug.ilog(()=>`floughInner[out] expr:${IDebug.dbgs.nodeToString(expr)}, floughStatus:{inCondition:${floughStatus.inCondition}, currentReplayableItem:${floughStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(floughStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
+                IDebug.ilog(()=>`floughInner[end] expr:${IDebug.dbgs.nodeToString(expr)}, floughStatus:{inCondition:${floughStatus.inCondition}, currentReplayableItem:${floughStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(floughStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
                 IDebug.ilogGroupEnd(()=>`floughInner[out] innret.typeof: ${innerret.typeof ? "present" : "<undef>"}`, loggerLevel);
             }
             return innerret;
@@ -1523,6 +1523,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 } // floughInnerPrefixUnaryExpression
 
                 function floughInnerVariableDeclaration(): FloughInnerReturn {
+                IDebug.ilogGroup(()=>`floughInnerVariableDeclaration[in] ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
+                const ret = (()=>{
                     assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
                     Debug.assert(isVariableDeclaration(expr));
                     Debug.assert(expr.initializer);
@@ -1661,6 +1663,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         // could be binding, or could a proeprty access on the lhs
                         Debug.fail("not yet implemented");
                     }
+                })();
+                if (IDebug.isActive(loggerLevel)){
+                    ret.unmerged.forEach((rttr, i) => {
+                        dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`floughInnerVariableDeclaration: returns unmerged[${i}]: ${s}`, loggerLevel-1));
+                    });
+                }
+                IDebug.ilogGroupEnd(()=>`floughInnerVariableDeclaration[out] ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
+                return ret;
                 } // floughInnerVariableDeclaration
 
                 function floughInnerLiteralNumberStringBigintBooleanExpression(): FloughInnerReturn {

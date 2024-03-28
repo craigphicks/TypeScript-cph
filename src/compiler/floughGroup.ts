@@ -104,7 +104,7 @@ export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnected
  */
 export const enableBypassEffectiveDeclaredType = true;
 
-export const enablePerBlockSymtabs = true;
+export const enablePerBlockSymtabs = !!Number(process.env.enablePerBlockSymtabs ?? 0);
 
 export enum GroupForFlowKind {
     none = "none",
@@ -1249,8 +1249,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
         }
         if (enablePerBlockSymtabs && (fglab.originatingBlock as LocalsContainer).locals?.size){
             Debug.assert(fglab.originatingBlock === sc.fsymtab?.localsContainer);
-            debugger;
-            // how to merge?
+            Debug.assert(false, "TODO");
         }
         return sc;
     }
@@ -1535,6 +1534,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
                 const depCount = sourceFileMrState.groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount[groupForFlow.groupIdx]
                 if (depCount) forFlow.currentBranchesMap.set(groupForFlow, cbe);
             }
+            else forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
     }
     if (IDebug.isActive(loggerLevel)) {

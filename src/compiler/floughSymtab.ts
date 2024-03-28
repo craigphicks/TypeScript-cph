@@ -258,48 +258,48 @@ export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): Flo
             }
         }
     });
-    // fill in the blanks
-    mapSymbolToSet.forEach((arr,symbol) => {
-        arr.forEach((e,i)=>{
-            if (!e) {
-                arr[i] = { type: mrNarrow.getDeclaredType(symbol) };
-            }
-        });
-    });
-    assertCastType<Map<Symbol,{type: FloughType, wasAssigned?:boolean}[]>>(mapSymbolToSet);
+    // // fill in the blanks
+    // mapSymbolToSet.forEach((arr,symbol) => {
+    //     arr.forEach((e,i)=>{
+    //         if (!e) {
+    //             arr[i] = { type: mrNarrow.getDeclaredType(symbol) };
+    //         }
+    //     });
+    // });
+    // assertCastType<Map<Symbol,{type: FloughType, wasAssigned?:boolean}[]>>(mapSymbolToSet);
 
     if (IDebug.isActive(loggerLevel)) {
         //dbgFloughSymtabToStrings(fsymtab).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
         mapSymbolToSet.forEach((arr,symbol) => {
-            IDebug.ilog(()=>`symbol: ${IDebug.dbgs.symbolToString(symbol)} -> ${arr.map(x => `[${floughTypeModule.dbgFloughTypeToString(x.type)}, ${x.wasAssigned}]`).join(", ")}`, loggerLevel);
+            IDebug.ilog(()=>`symbol: ${
+                IDebug.dbgs.symbolToString(symbol)} -> ${
+                    arr.map(x => `[${x ? `${floughTypeModule.dbgFloughTypeToString(x.type)}, ${x.wasAssigned}]` : `<undef>`}`).join(", ")}`, loggerLevel);
         });
     }
 
-    const localMap: InnerMap | undefined = fsca.localMap ? createInnerMap(fsca.localMap) : fsca.localsContainer ? createInnerMap() : undefined;
-    let shadowMap: InnerMap = createInnerMap(fsca.shadowMap);
+    //const localMap: InnerMap | undefined = fsca.localMap ? createInnerMap(fsca.localMap) : fsca.localsContainer ? createInnerMap() : undefined;
+    let shadowMap: InnerMap | undefined = createInnerMap();
     //const mapSymbolUnion = new Map<Symbol,{type: FloughType, wasAssigned?:boolean}>();
     mapSymbolToSet.forEach((arr,symbol) => {
-        if (localMap?.has(symbol)) arr.push(localMap.get(symbol)!);
-        else if (shadowMap.has(symbol)) arr.push(shadowMap.get(symbol)!);
-        let result =  arr.reduce((acc, x) =>  ({
-            type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type), wasAssigned: acc.wasAssigned || x.wasAssigned
-        }));
-        if (fsca.localsContainer?.locals?.has(symbol.escapedName)) {
-            localMap!.set(symbol, result);
-        }
-        else {
-            shadowMap.set(symbol, result);
-        }
+        //if (shadowMap.has(symbol)) arr.push(shadowMap.get(symbol)!);
+        let result =  arr.reduce((acc, x) =>  {
+            Debug.assert(acc);
+            if (!x) return acc;
+            return { type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type), wasAssigned: acc.wasAssigned || x.wasAssigned };
+        }, { type: floughTypeModule.createNeverType() }); // // need to initialize with a fresh never type because it will be mutated
+        if (floughTypeModule.isNeverType(result!.type)) shadowMap.set(symbol, result!);
     });
-    const fsymtab = new FloughSymtabImpl(fsca.localsContainer, fsca.outer, localMap, shadowMap);
+    let returnFsymtab: FloughSymtabImpl;
+    if (shadowMap.size === 0) returnFsymtab = fsca;
+    else returnFsymtab = new FloughSymtabImpl(undefined, fsca, undefined, shadowMap);
 
     if (IDebug.isActive(loggerLevel)) {
-        dbgFloughSymtabToStrings(fsymtab).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
+        dbgFloughSymtabToStrings(returnFsymtab).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
     }
 
     IDebug.ilogGroupEnd(()=>`unionFloughSymtab[out]`, loggerLevel);
 
-    return fsymtab;
+    return returnFsymtab;
 }
 
 
