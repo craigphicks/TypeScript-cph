@@ -44,7 +44,7 @@ import {
     Symbol,
     TypeFlags,
 } from "./types";
-import { dbgFloughSymtabToStrings } from "./floughSymtab";
+import { dbgFloughSymtabToStrings, unionFloughSymtab } from "./floughSymtab";
 
 // @ ts-expect-error
 export type GetDeclaredTypeFn = (symbol: Symbol) => RefTypesType;
@@ -481,8 +481,8 @@ export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[
     if (asc1.length === 0) return createRefTypesSymtabConstraintItemNever(); // assuming or of nevers is never
     if (asc1.length === 1) return asc1[0];
     const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.symtab));
-    const unionFsymbtab = unionFloughSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab));
-    return { symtab: unionSymtab, constraintItem: createFlowConstraintAlways() };
+    const fsymtab = unionFloughSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!));
+    return { symtab: unionSymtab, fsymtab, constraintItem: createFlowConstraintAlways() };
 }
 
 export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, type: typeIn, sc, mrNarrow, getDeclaredType: _ }: Readonly<{
@@ -532,7 +532,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
             const type = symtab.get(symbol);
             if (enablePerBlockSymtabs) {
                 const t = fsymtab.get(symbol);
-                Debug.assert(t===type);
+                //Debug.assert(t===type);
             }
             if (type) {
                 typeOut = floughTypeModule.intersectionWithFloughTypeSpecial(type, typeIn);

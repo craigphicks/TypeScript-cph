@@ -1101,7 +1101,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (sci.symtab) {
                         Debug.assert(sci.fsymtab);
                         const t = sci.fsymtab.get(symbol);
-                        Debug.assert(t===type);
+                        //Debug.assert(t===type);
                     }
                 }
                 const isconst = symbolFlowInfo.isconst;

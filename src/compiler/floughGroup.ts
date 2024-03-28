@@ -88,7 +88,7 @@ import {
 } from "./floughTypedefs";
 import { dbgFlowToString, flowNodesToString } from "./floughNodesDebugWrite";
 import { sys } from "./sys";
-import { FloughSymtab, createFloughSymtab, dbgFloughSymtabToStrings, floughSymtabRollupToAncestor } from "./floughSymtab";
+import { FloughSymtab, createFloughSymtab, dbgFloughSymtabToStrings, floughSymtabRollupToAncestor, initFloughSymtab } from "./floughSymtab";
 
 export const extraAsserts = true; // not suitable for release or timing tests.
 const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
@@ -535,6 +535,7 @@ export function createSourceFileFloughState(sourceFile: SourceFileWithFloughNode
     initFloughTypeModule(checker, compilerOptions);
     initFloughLogicalObjectOuter(checker);
     initFloughLogicalObjectInner(checker, mrNarrow);
+    initFloughSymtab(mrNarrow);
     return {
         sourceFile,
         groupsForFlow,
@@ -1183,8 +1184,13 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
 
                 const locals = getLoopLocals(sourceFileMrState.groupsForFlow.orderedGroups[fglab.loopGroupIdx]);
                 if (locals) {
-                    if (sc0) sc0 = { symtab: filterSymtabBySymbolTable(sc0.symtab!, locals, "postLoop-main"), constraintItem: sc0.constraintItem };
-                    asc = asc.map(sc => ({ symtab: filterSymtabBySymbolTable(sc.symtab, locals, "postLoop-break"), constraintItem: sc.constraintItem }));
+                    if (enablePerBlockSymtabs){
+                        Debug.assert(false, "TODO: implement this");
+                    }
+                    else {
+                        if (sc0) sc0 = { symtab: filterSymtabBySymbolTable(sc0.symtab!, locals, "postLoop-main"), constraintItem: sc0.constraintItem };
+                        asc = asc.map(sc => ({ symtab: filterSymtabBySymbolTable(sc.symtab, locals, "postLoop-break"), constraintItem: sc.constraintItem }));
+                    }
                 }
                 if (sc0) asc.push(sc0 as RefTypesSymtabConstraintItemNotNever);
 
@@ -1725,4 +1731,5 @@ function dbgForFlow(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow):
     });
     return astr;
 }
+
 

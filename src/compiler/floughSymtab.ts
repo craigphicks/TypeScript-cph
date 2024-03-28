@@ -4,6 +4,12 @@ import { FloughType } from "./floughType";
 import { IDebug } from "./mydebug";
 import { floughTypeModule } from "./floughType";
 import { assertCastType } from "./floughTypedefs";
+import { MrNarrow } from "./floughGroup2";
+
+var mrNarrow: MrNarrow = undefined as any as MrNarrow;
+export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
+    mrNarrow = mrNarrowInit;
+}
 
 
 export interface FloughSymtab {
@@ -72,14 +78,22 @@ class FloughSymtabImpl implements FloughSymtab {
     }
     get(symbol: Symbol): FloughType | undefined {
         if (this.localMap.has(symbol)) return this.localMap.get(symbol)?.type;
-        if (this.locals?.has(symbol.escapedName)) return undefined;
+        if (this.locals?.has(symbol.escapedName)) {
+            const type = mrNarrow.getDeclaredType(symbol);
+            this.localMap.set(symbol, { type });
+            return type;
+        }
         if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol)?.type;
         if (this.outer) return this.outer.get(symbol);
         Debug.assert(false,undefined,()=>`FloughSymtab.get(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
     }
     getWithAssigned(symbol: Symbol): { type: FloughType, wasAssigned?: boolean } | undefined {
         if (this.localMap.has(symbol)) return this.localMap.get(symbol);
-        if (this.locals?.has(symbol.escapedName)) return undefined;
+        if (this.locals?.has(symbol.escapedName)) {
+            const type = mrNarrow.getDeclaredType(symbol);
+            this.localMap.set(symbol, { type });
+            return { type };
+        }
         if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);
         Debug.assert(false,undefined,()=>`FloughSymtab.getWithAssigned(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
     }
@@ -166,6 +180,13 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  * @returns
  */
 export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): FloughSymtab {
+    const loggerLevel = 1;
+    IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length})`, loggerLevel);
+    if (IDebug.isActive(loggerLevel)) {
+        afsIn.forEach((fs,idx) => {
+            dbgFloughSymtabToStrings(fs).forEach(s => IDebug.ilog(()=>`[#${idx}]${s}`, loggerLevel));
+        });
+    }
     /**
      * We never have to look back further than the closest common ancestor.
      */
@@ -201,41 +222,84 @@ export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): Flo
         }
         fsca = fs1;
     }
-    // fs0 should be the common ancestor
+    if (IDebug.isActive(loggerLevel)) {
+        dbgFloughSymtabToStrings(fsca).forEach(s => IDebug.ilog(()=>`fsca: ${s}`, loggerLevel));
+    }
+
+    // fsca should be a common ancestor
     if (IDebug.assertLevel>=1) {
         afsIn.forEach(fsx => {
             while (fsx && fsx !== fsca) {
-                fsx = fsx.outer!;
                 Debug.assert(fsx);
                 Debug.assert(!fsx.localsContainer); // If this fails, it is a TODO
+                fsx = fsx.outer!;
             }
             Debug.assert(fsx===fsca);
         });
     }
     const setAncestors = new Set<FloughSymtabImpl>();
-    const mapSymbolToSet = new Map<Symbol,{type: FloughType, wasAssigned?:boolean}[]/*length afsIn.length*/>();
+    const mapSymbolToSet = new Map<Symbol,({type: FloughType, wasAssigned?:boolean}|undefined)[]/*length afsIn.length*/>();
     afsIn.forEach((fs,idx)=>{
-        const afsr: FloughSymtabImpl[] = [];
         for (let fsx = fs; fsx!==fsca; fsx = fsx.outer!) {
-            afsr.push(fsx);
+            if (setAncestors.has(fsx)) break;
             setAncestors.add(fsx);
             if (fsx.shadowMap.size) {
                 fsx.shadowMap.forEach(({type, wasAssigned}, symbol) => {
                     let arr = mapSymbolToSet.get(symbol);
                     if (!arr) {
-                        arr = new Array(afsIn.length);
-                        
+                        arr = new Array(afsIn.length).fill(undefined);
                         mapSymbolToSet.set(symbol, arr);
                     }
-                    arr[idx] = type;
+                    arr[idx] ??= {type, wasAssigned}; // if it is already set, do not set again
                 });
             }
+            if (IDebug.assertLevel>=1) {
+                Debug.assert(!fsx.localsContainer);
+            }
         }
-        afsr.push(fsca);
-        afsr.reverse();
-
     });
+    // fill in the blanks
+    mapSymbolToSet.forEach((arr,symbol) => {
+        arr.forEach((e,i)=>{
+            if (!e) {
+                arr[i] = { type: mrNarrow.getDeclaredType(symbol) };
+            }
+        });
+    });
+    assertCastType<Map<Symbol,{type: FloughType, wasAssigned?:boolean}[]>>(mapSymbolToSet);
 
+    if (IDebug.isActive(loggerLevel)) {
+        //dbgFloughSymtabToStrings(fsymtab).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
+        mapSymbolToSet.forEach((arr,symbol) => {
+            IDebug.ilog(()=>`symbol: ${IDebug.dbgs.symbolToString(symbol)} -> ${arr.map(x => `[${floughTypeModule.dbgFloughTypeToString(x.type)}, ${x.wasAssigned}]`).join(", ")}`, loggerLevel);
+        });
+    }
+
+    const localMap: InnerMap | undefined = fsca.localMap ? createInnerMap(fsca.localMap) : fsca.localsContainer ? createInnerMap() : undefined;
+    let shadowMap: InnerMap = createInnerMap(fsca.shadowMap);
+    //const mapSymbolUnion = new Map<Symbol,{type: FloughType, wasAssigned?:boolean}>();
+    mapSymbolToSet.forEach((arr,symbol) => {
+        if (localMap?.has(symbol)) arr.push(localMap.get(symbol)!);
+        else if (shadowMap.has(symbol)) arr.push(shadowMap.get(symbol)!);
+        let result =  arr.reduce((acc, x) =>  ({
+            type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type), wasAssigned: acc.wasAssigned || x.wasAssigned
+        }));
+        if (fsca.localsContainer?.locals?.has(symbol.escapedName)) {
+            localMap!.set(symbol, result);
+        }
+        else {
+            shadowMap.set(symbol, result);
+        }
+    });
+    const fsymtab = new FloughSymtabImpl(fsca.localsContainer, fsca.outer, localMap, shadowMap);
+
+    if (IDebug.isActive(loggerLevel)) {
+        dbgFloughSymtabToStrings(fsymtab).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
+    }
+
+    IDebug.ilogGroupEnd(()=>`unionFloughSymtab[out]`, loggerLevel);
+
+    return fsymtab;
 }
 
 
@@ -259,10 +323,11 @@ export function dbgFloughSymtabToStringsOne(fsIn: Readonly<FloughSymtab>): strin
     return arr;
 }
 
-export function dbgFloughSymtabToStrings(fsIn: Readonly<FloughSymtab>): string[] {
+export function dbgFloughSymtabToStrings(fsIn: Readonly<FloughSymtab>, upTo?: Readonly<FloughSymtabImpl> ): string[] {
     const arr: string[] = [];
     for (let fs: FloughSymtab | undefined = fsIn, x=0; fs; fs = (fs as FloughSymtabImpl).outer, x--) {
         arr.push(...dbgFloughSymtabToStringsOne(fs).map(s => `[${x}]: ${s}`));
+        if (fs && fs === upTo) break;
     }
     return arr;
 }

@@ -291,7 +291,7 @@ export function createRefTypesSymtabConstraintItemNever(): RefTypesSymtabConstra
     return { constraintItem: createFlowConstraintNever() };
 }
 export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstraintItemNotNever {
-    if (enablePerBlockSymtabs) Debug.assert(false);
+    if (enablePerBlockSymtabs) Debug.assert(false, "TODO");
     return { symtab: new RefTypesSymtabProxy(), constraintItem: createFlowConstraintAlways() };
 }
 /**
