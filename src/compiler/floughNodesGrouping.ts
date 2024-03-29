@@ -251,7 +251,7 @@ export function makeGroupsForFlow(sourceFile: SourceFileWithFloughNodes, checker
         if (pos > curpos && pos >= curend) {
             const maximal = orderedNodes[maximalIdx];
             const kind = getGroupForFlowKind(maximal);
-            const group: GroupForFlow = {
+            const group: Omit<GroupForFlow, "localsContainer"> = {
                 kind,
                 idxb,
                 idxe: fi,
@@ -260,7 +260,7 @@ export function makeGroupsForFlow(sourceFile: SourceFileWithFloughNodes, checker
                 groupIdx: -1,
                 anteGroupLabels: [], // referencingGroupIdxs:[],
             };
-            groups.push(group);
+            groups.push(group as GroupForFlow);
             idxb = fi;
             curpos = pos;
             curend = end;
@@ -281,7 +281,7 @@ export function makeGroupsForFlow(sourceFile: SourceFileWithFloughNodes, checker
         // const precOrdCIIdx = findPrecOrdCIIdx(orderedNodes[maximalIdx]);
         const maximal = orderedNodes[maximalIdx];
         const kind = getGroupForFlowKind(maximal);
-        const group: GroupForFlow = {
+        const group: Omit<GroupForFlow, "localsContainer">= {
             kind,
             idxb,
             idxe: orderedNodes.length,
@@ -290,7 +290,7 @@ export function makeGroupsForFlow(sourceFile: SourceFileWithFloughNodes, checker
             groupIdx: -1,
             anteGroupLabels: [], // referencingGroupIdxs:[]
         };
-        groups.push(group);
+        groups.push(group as GroupForFlow);
     }
     const arefGroups = groups.map((_v, i) => i);
     /**
@@ -432,7 +432,15 @@ export function makeGroupsForFlow(sourceFile: SourceFileWithFloughNodes, checker
                             : BranchKind.else ? FlowGroupLabelKind.else
                             : Debug.fail("unexpected");
                         setOfAnteGroup.add(anteg);
-                        return { kind: fglkind, ifGroupIdx: anteg.groupIdx };
+                        const arrAnte: FlowGroupLabel[] = [];
+                        if (fn.antecedents) {
+                            for (const antecedent of fn.antecedents) {
+                                const x = flowNodeResolve(antecedent)!;
+                                Debug.assert(x);
+                                arrAnte.push(x);
+                            }
+                        }
+                        return { kind: fglkind, ifGroupIdx: anteg.groupIdx, arrAnte };
                     }; // flowBranchThenElseToFlowGroupLabelThenElse
                     const flowBranchPostIfResolve = (fn: FloughLabel): FlowGroupLabelPostIf => {
                         //  fn.antecedents?.length may be less than 2, c.f., while(x){ if (x) continue; }
@@ -726,6 +734,9 @@ export function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, checker: Floug
         case FlowGroupLabelKind.then:
         case FlowGroupLabelKind.else:
             as.push(`ifGroupIdx:${fglab.ifGroupIdx}`);
+            fglab.arrAnte.forEach((ante, anteidx) => {
+                as.push(...dbgFlowGroupLabelToStrings(ante, checker).map(s => `    ante[${anteidx}]: ` + s));
+            });
             break;
         case FlowGroupLabelKind.postIf:
             as.push(`originatingGroupIdx:${fglab.originatingGroupIdx}`);

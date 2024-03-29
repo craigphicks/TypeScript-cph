@@ -127,6 +127,38 @@ export function createFloughSymtab(localsContainer: LocalsContainer, outer?: Rea
     return new FloughSymtabImpl(localsContainer, outer);
 }
 
+/**
+ * Exit the LocalsContainer scope.
+ * @param fsymtabIn
+ * @param scopeLoc  LocalContainer to exit
+ * @returns
+ */
+export function floughSymtabRollupLocalsScope(fsymtabIn: FloughSymtab, scopeLoc: LocalsContainer): FloughSymtab {
+    const arrfs: FloughSymtabImpl[] = [];
+    {
+        let fs: FloughSymtabImpl | undefined = (fsymtabIn as FloughSymtabImpl);
+        for (; fs && fs.localsContainer!==scopeLoc; fs = fs.outer) {
+            arrfs.push(fs);
+        }
+        Debug.assert(fs); // TODO
+        arrfs.push(fs);
+    }
+    arrfs.reverse();
+    const topShadowMap = createInnerMap(arrfs[0].shadowMap); // will change
+    const topLocalSet = new Set(arrfs[0].locals?.values()); // will not change
+    arrfs.slice(1).forEach((fs,idx) => {
+        fs.shadowMap.forEach(({type, wasAssigned}, symbol) => {
+            if (topLocalSet.has(symbol)) return;
+            topShadowMap.set(symbol, { type, wasAssigned: wasAssigned || (topShadowMap.get(symbol)?.wasAssigned ?? false) });
+        });
+    });
+    if (topShadowMap.size === 0) {
+        Debug.assert(arrfs[0].outer);
+        return arrfs[0].outer;
+    }
+    return new FloughSymtabImpl(undefined, arrfs[0].outer, undefined, topShadowMap);
+}
+
 
 export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLoc: LocalsContainer): FloughSymtab {
     const arrfs: FloughSymtabImpl[] = [];
@@ -180,7 +212,7 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  * @returns
  */
 export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): FloughSymtab {
-    const loggerLevel = 1;
+    const loggerLevel = 2;
     IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length})`, loggerLevel);
     if (IDebug.isActive(loggerLevel)) {
         afsIn.forEach((fs,idx) => {

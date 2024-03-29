@@ -88,7 +88,7 @@ import {
 } from "./floughTypedefs";
 import { dbgFlowToString, flowNodesToString } from "./floughNodesDebugWrite";
 import { sys } from "./sys";
-import { FloughSymtab, createFloughSymtab, dbgFloughSymtabToStrings, floughSymtabRollupToAncestor, initFloughSymtab } from "./floughSymtab";
+import { FloughSymtab, createFloughSymtab, dbgFloughSymtabToStrings, floughSymtabRollupLocalsScope, floughSymtabRollupToAncestor, initFloughSymtab } from "./floughSymtab";
 
 export const extraAsserts = true; // not suitable for release or timing tests.
 const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
@@ -152,10 +152,12 @@ export type FlowGroupLabelPostBlock = {
 export type FlowGroupLabelThen = {
     kind: FlowGroupLabelKind.then;
     ifGroupIdx: number;
+    arrAnte: FlowGroupLabel[]; // will this ever have length > 1?
 };
 export type FlowGroupLabelElse = {
     kind: FlowGroupLabelKind.else;
     ifGroupIdx: number;
+    arrAnte: FlowGroupLabel[]; // will this ever have length > 1?
 };
 export type FlowGroupLabelPostIf = {
     kind: FlowGroupLabelKind.postIf;
@@ -195,7 +197,7 @@ export interface GroupForFlow {
     dbgSetOfUnhandledFlow?: Set<FlowLabel>;
     postLoopGroupIdx?: number; // only present for a loop control group - required for processLoop updateHeap
     arrPreLoopGroupsIdx?: number[]; // only present for a postLoop group - required for processLoop updateHeap
-    localsContainer?: LocalsContainer;
+    localsContainer: LocalsContainer;
     dbgGraphIdx?: number;
 }
 
@@ -274,7 +276,7 @@ interface CurrentBranchesMap {
 }
 let nextCurrentBranchesMapCId = 0;
 export class CurrentBranchesMapC implements CurrentBranchesMap {
-    static loggerLevel = 1;
+    static loggerLevel = 2;
     id: number;
     data: Map<Readonly<GroupForFlow>, CurrentBranchElement>;
     constructor() {
@@ -714,7 +716,7 @@ export function updateHeapWithGroupForFlow(group: Readonly<GroupForFlow>, source
 }
 
 export function updateHeapWithConnectedGroupsGraph(group: Readonly<GroupForFlow>, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow): void {
-    const loggerLevel = 1;
+    const loggerLevel = 2;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const graphIndex = groupsForFlow.connectedGroupsGraphs.arrGroupIndexToConnectGraph[group.groupIdx];
     if (extraAsserts) {
@@ -1248,8 +1250,9 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
             sc.symtab = filterSymtabBySymbolTable(sc.symtab!, (fglab.originatingBlock as LocalsContainer).locals, "postBlock");
         }
         if (enablePerBlockSymtabs && (fglab.originatingBlock as LocalsContainer).locals?.size){
-            Debug.assert(fglab.originatingBlock === sc.fsymtab?.localsContainer);
-            Debug.assert(false, "TODO");
+            Debug.assert(sc.fsymtab)
+            Debug.assert(fglab.originatingBlock === sc.fsymtab.getLocalsContainer());
+            return { ...sc, fsymtab: floughSymtabRollupLocalsScope(sc.fsymtab, fglab.originatingBlock as LocalsContainer) };
         }
         return sc;
     }
@@ -1299,6 +1302,51 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
         return node1 as LocalsContainer;
     }
 
+    function calculateFloughSymtab(fsymtabPrev: FloughSymtab, groupForFlow: Readonly<GroupForFlow & {localsContainer: LocalsContainer}>): FloughSymtab {
+        const prevFloughSymtabLocalContainer = fsymtabPrev.getLocalsContainer();
+        {
+            Debug.assert(prevFloughSymtabLocalContainer.pos !== groupForFlow.localsContainer.pos);
+            Debug.assert(prevFloughSymtabLocalContainer.end !== groupForFlow.localsContainer.end);
+        }
+        let fsymtab: FloughSymtab;
+        if (groupForFlow.localsContainer.pos>prevFloughSymtabLocalContainer.pos) {
+            if (groupForFlow.localsContainer.end<prevFloughSymtabLocalContainer.end) {
+                // descendent block of the previous block
+                const alocalsContainers: LocalsContainer[] = [];
+                let node = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+                for (; node !== prevFloughSymtabLocalContainer; node = node.parent) {
+                    Debug.assert(node);
+                    if ((node as LocalsContainer).locals?.size) {
+                        alocalsContainers.push(node as LocalsContainer);
+                    }
+                };
+                alocalsContainers.reverse();
+                fsymtab = fsymtabPrev;
+                alocalsContainers.forEach((localsContainers, idx) => fsymtab = createFloughSymtab(localsContainers, fsymtab));
+            }
+            else {
+                Debug.assert(groupForFlow.localsContainer.pos>prevFloughSymtabLocalContainer.end);
+                // Neither parent not child block of previous block, find shared ancestor
+                const sharedAncestor = findSharedAncestorLocalsContainer(prevFloughSymtabLocalContainer!, groupForFlow.localsContainer);
+                fsymtab = floughSymtabRollupToAncestor(fsymtabPrev, sharedAncestor);
+            }
+        }
+        else {
+            Debug.assert(groupForFlow.localsContainer.pos<prevFloughSymtabLocalContainer.end);
+            // groupForFlow.localsContainer.pos < prevAnteGroup.localsContainer.pos
+            if (groupForFlow.localsContainer.end>prevFloughSymtabLocalContainer.end) {
+                // ancestor block of the previous block
+                fsymtab = floughSymtabRollupToAncestor(fsymtabPrev, groupForFlow.localsContainer);
+            }
+            else {
+                Debug.assert(false, undefined, ()=>`unexpected prev:(${prevFloughSymtabLocalContainer.pos},${prevFloughSymtabLocalContainer.end}
+                    ), this:(${groupForFlow.localsContainer!.pos},${groupForFlow.localsContainer!.end})`)
+            }
+        }
+        return fsymtab;
+    }
+
+
     /**
      *
      * @param ancestorLoc
@@ -1324,6 +1372,14 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
                 const flowGroupLabel = groupForFlow.anteGroupLabels[0];
                 sc = doFlowGroupLabel(flowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
             }
+            if (enablePerBlockSymtabs && !isRefTypesSymtabConstraintItemNever(sc)) {
+                const prevFloughSymtabLocalContainer = sc.fsymtab!.getLocalsContainer();
+                if (prevFloughSymtabLocalContainer !== groupForFlow.localsContainer){
+                    const fsymtab = calculateFloughSymtab(sc.fsymtab!, groupForFlow);
+                    return { ...sc, fsymtab };
+                }
+                // falls through
+            }
             return sc;
         }
         if (groupForFlow.previousAnteGroupIdx !== undefined) {
@@ -1345,52 +1401,54 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
                 Debug.fail("unexpected");
             }
             if (enablePerBlockSymtabs && !isRefTypesSymtabConstraintItemNever(cbe.item.sc)) {
-                Debug.assert(groupForFlow.localsContainer && prevAnteGroup.localsContainer);
+
                 const prevFloughSymtabLocalContainer = cbe.item.sc.fsymtab!.getLocalsContainer();
                 if (prevFloughSymtabLocalContainer !== groupForFlow.localsContainer){
-                    Debug.assert(cbe.item.sc.fsymtab);
-                    let fsymtab: FloughSymtab;
-                    const fsymtabPrev = cbe.item.sc.fsymtab!;
-                    {
-                        Debug.assert(prevFloughSymtabLocalContainer.pos !== groupForFlow.localsContainer.pos);
-                        Debug.assert(prevFloughSymtabLocalContainer.end !== groupForFlow.localsContainer.end);
-                    }
-                    if (groupForFlow.localsContainer.pos>prevFloughSymtabLocalContainer.pos) {
-                        if (groupForFlow.localsContainer.end<prevFloughSymtabLocalContainer.end) {
-                            // descendent block of the previous block
-                            const alocalsContainers: LocalsContainer[] = [];
-                            let node = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
-                            for (; node !== prevFloughSymtabLocalContainer; node = node.parent) {
-                                Debug.assert(node);
-                                if ((node as LocalsContainer).locals?.size) {
-                                    alocalsContainers.push(node as LocalsContainer);
-                                }
-                            };
-                            alocalsContainers.reverse();
-                            fsymtab = fsymtabPrev;
-                            alocalsContainers.forEach((localsContainers, idx) => fsymtab = createFloughSymtab(localsContainers, fsymtab));
-                        }
-                        else {
-                            Debug.assert(groupForFlow.localsContainer.pos>prevFloughSymtabLocalContainer.end);
-                            // Neither parent not child block of previous block, find shared ancestor
-                            const sharedAncestor = findSharedAncestorLocalsContainer(prevFloughSymtabLocalContainer!, groupForFlow.localsContainer);
+                    const fsymtab = calculateFloughSymtab(cbe.item.sc.fsymtab!, groupForFlow);
+
+                    // Debug.assert(cbe.item.sc.fsymtab);
+                    // let fsymtab: FloughSymtab;
+                    // const fsymtabPrev = cbe.item.sc.fsymtab!;
+                    // {
+                    //     Debug.assert(prevFloughSymtabLocalContainer.pos !== groupForFlow.localsContainer.pos);
+                    //     Debug.assert(prevFloughSymtabLocalContainer.end !== groupForFlow.localsContainer.end);
+                    // }
+                    // if (groupForFlow.localsContainer.pos>prevFloughSymtabLocalContainer.pos) {
+                    //     if (groupForFlow.localsContainer.end<prevFloughSymtabLocalContainer.end) {
+                    //         // descendent block of the previous block
+                    //         const alocalsContainers: LocalsContainer[] = [];
+                    //         let node = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
+                    //         for (; node !== prevFloughSymtabLocalContainer; node = node.parent) {
+                    //             Debug.assert(node);
+                    //             if ((node as LocalsContainer).locals?.size) {
+                    //                 alocalsContainers.push(node as LocalsContainer);
+                    //             }
+                    //         };
+                    //         alocalsContainers.reverse();
+                    //         fsymtab = fsymtabPrev;
+                    //         alocalsContainers.forEach((localsContainers, idx) => fsymtab = createFloughSymtab(localsContainers, fsymtab));
+                    //     }
+                    //     else {
+                    //         Debug.assert(groupForFlow.localsContainer.pos>prevFloughSymtabLocalContainer.end);
+                    //         // Neither parent not child block of previous block, find shared ancestor
+                    //         const sharedAncestor = findSharedAncestorLocalsContainer(prevFloughSymtabLocalContainer!, groupForFlow.localsContainer);
 
 
-                            fsymtab = floughSymtabRollupToAncestor(fsymtabPrev, sharedAncestor);
-                        }
-                    }
-                    else {
-                        Debug.assert(groupForFlow.localsContainer.pos<prevFloughSymtabLocalContainer.end);
-                        // groupForFlow.localsContainer.pos < prevAnteGroup.localsContainer.pos
-                        if (groupForFlow.localsContainer.end>prevFloughSymtabLocalContainer.end) {
-                            // ancestor block of the previous block
-                            fsymtab = floughSymtabRollupToAncestor(fsymtabPrev, groupForFlow.localsContainer);
-                        }
-                        else {
-                            Debug.assert(false, undefined, ()=>`unexpected prev:(${prevFloughSymtabLocalContainer.pos},${prevFloughSymtabLocalContainer.end}
-                                ), this:(${groupForFlow.localsContainer!.pos},${groupForFlow.localsContainer!.end})`)
-                        }
-                    }
+                    //         fsymtab = floughSymtabRollupToAncestor(fsymtabPrev, sharedAncestor);
+                    //     }
+                    // }
+                    // else {
+                    //     Debug.assert(groupForFlow.localsContainer.pos<prevFloughSymtabLocalContainer.end);
+                    //     // groupForFlow.localsContainer.pos < prevAnteGroup.localsContainer.pos
+                    //     if (groupForFlow.localsContainer.end>prevFloughSymtabLocalContainer.end) {
+                    //         // ancestor block of the previous block
+                    //         fsymtab = floughSymtabRollupToAncestor(fsymtabPrev, groupForFlow.localsContainer);
+                    //     }
+                    //     else {
+                    //         Debug.assert(false, undefined, ()=>`unexpected prev:(${prevFloughSymtabLocalContainer.pos},${prevFloughSymtabLocalContainer.end}
+                    //             ), this:(${groupForFlow.localsContainer!.pos},${groupForFlow.localsContainer!.end})`)
+                    //     }
+                    // }
                     return { ...cbe.item.sc, fsymtab };
                 }
                 // falls through

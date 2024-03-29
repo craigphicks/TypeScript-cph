@@ -1,0 +1,26 @@
+//// [tests/cases/conformance/_caxnc-block/_caxnc-block-002.ts] ////
+
+=== _caxnc-block-002.ts ===
+declare const c11: boolean;
+>c11 : Symbol(c11, Decl(_caxnc-block-002.ts, 0, 13))
+
+let c12 = true
+>c12 : Symbol(c12, Decl(_caxnc-block-002.ts, 1, 3))
+{
+    const c21 = c11 || c12;
+>c21 : Symbol(c21, Decl(_caxnc-block-002.ts, 3, 9))
+>c11 : Symbol(c11, Decl(_caxnc-block-002.ts, 0, 13))
+>c12 : Symbol(c12, Decl(_caxnc-block-002.ts, 1, 3))
+
+    c12 = c21;
+>c12 : Symbol(c12, Decl(_caxnc-block-002.ts, 1, 3))
+>c21 : Symbol(c21, Decl(_caxnc-block-002.ts, 3, 9))
+}
+const c31 = c12;
+>c31 : Symbol(c31, Decl(_caxnc-block-002.ts, 6, 5))
+>c12 : Symbol(c12, Decl(_caxnc-block-002.ts, 1, 3))
+
+c12 = c31;
+>c12 : Symbol(c12, Decl(_caxnc-block-002.ts, 1, 3))
+>c31 : Symbol(c31, Decl(_caxnc-block-002.ts, 6, 5))
+

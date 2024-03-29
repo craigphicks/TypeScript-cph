@@ -798,7 +798,7 @@ export namespace Compiler {
                 const gen: IterableIterator<TypeWriterResult> = isSymbolBaseline ? fullWalker.getSymbols(unitName) : fullWalker.getTypes(unitName);
                 let lastIndexWritten: number | undefined;
                 // flough
-                if (process.env.enableFlough && fullWalker.currentSourceFile) {
+                if (!!Number(process.env.enableFlough) && fullWalker.currentSourceFile) {
                     type Tmp = ts.TypeChecker & { loadFloughStateForSourceFile(sourceFile: ts.SourceFile): void };
                     ((fullWalker as any).checker as Tmp).loadFloughStateForSourceFile((fullWalker as any).currentSourceFile);
                 }

@@ -1,0 +1,42 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-if-020.ts] ////
+
+=== _caxnc-if-020.ts ===
+declare let c1: boolean;
+>c1 : boolean
+
+declare function fmaybe(): boolean;
+>fmaybe : () => boolean
+
+if (c1) {
+>c1 : boolean
+
+    c1;
+>c1 : true
+
+    let c2 = fmaybe();
+>c2 : boolean
+>fmaybe() : boolean
+>fmaybe : () => boolean
+
+    if (c2) {
+>c2 : boolean
+
+        let c3 = fmaybe();
+>c3 : boolean
+>fmaybe() : boolean
+>fmaybe : () => boolean
+
+        c2 = c3;
+>c2 = c3 : boolean
+>c2 : boolean
+>c3 : boolean
+    }
+    c1;
+>c1 : true
+
+    c2
+>c2 : boolean
+}
+c1;
+>c1 : boolean
+

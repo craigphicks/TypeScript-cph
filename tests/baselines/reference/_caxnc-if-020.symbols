@@ -1,0 +1,39 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-if-020.ts] ////
+
+=== _caxnc-if-020.ts ===
+declare let c1: boolean;
+>c1 : Symbol(c1, Decl(_caxnc-if-020.ts, 0, 11))
+
+declare function fmaybe(): boolean;
+>fmaybe : Symbol(fmaybe, Decl(_caxnc-if-020.ts, 0, 24))
+
+if (c1) {
+>c1 : Symbol(c1, Decl(_caxnc-if-020.ts, 0, 11))
+
+    c1;
+>c1 : Symbol(c1, Decl(_caxnc-if-020.ts, 0, 11))
+
+    let c2 = fmaybe();
+>c2 : Symbol(c2, Decl(_caxnc-if-020.ts, 4, 7))
+>fmaybe : Symbol(fmaybe, Decl(_caxnc-if-020.ts, 0, 24))
+
+    if (c2) {
+>c2 : Symbol(c2, Decl(_caxnc-if-020.ts, 4, 7))
+
+        let c3 = fmaybe();
+>c3 : Symbol(c3, Decl(_caxnc-if-020.ts, 6, 11))
+>fmaybe : Symbol(fmaybe, Decl(_caxnc-if-020.ts, 0, 24))
+
+        c2 = c3;
+>c2 : Symbol(c2, Decl(_caxnc-if-020.ts, 4, 7))
+>c3 : Symbol(c3, Decl(_caxnc-if-020.ts, 6, 11))
+    }
+    c1;
+>c1 : Symbol(c1, Decl(_caxnc-if-020.ts, 0, 11))
+
+    c2
+>c2 : Symbol(c2, Decl(_caxnc-if-020.ts, 4, 7))
+}
+c1;
+>c1 : Symbol(c1, Decl(_caxnc-if-020.ts, 0, 11))
+

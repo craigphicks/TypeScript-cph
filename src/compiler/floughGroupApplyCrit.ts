@@ -252,7 +252,9 @@ export function resolveLogicalObjectAccessData(load: LogicalObjecAccessData, sc:
         if (!floughTypeModule.isNeverType(objType)) {
             scOut = copyRefTypesSymtabConstraintItem(sci); // copyRefTypesSymtabConstraintItem(sc);
             scOut.symtab!.set(symbol, objType);
-            scOut.fsymtab!.set(symbol, objType);
+            if (enablePerBlockSymtabs) {
+                scOut.fsymtab!.set(symbol, objType);
+            }
         }
         else {
             typeOut = floughTypeModule.getNeverType();
@@ -358,7 +360,7 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Flo
     passing: RefTypesTableReturnNoSymbol;
     failing?: RefTypesTableReturnNoSymbol | undefined;
 } {
-    const loggerLevel = 1;
+    const loggerLevel = 2;
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>`applyCrit1[in]`, loggerLevel);
     }

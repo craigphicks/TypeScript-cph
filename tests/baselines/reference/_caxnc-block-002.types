@@ -1,0 +1,30 @@
+//// [tests/cases/conformance/_caxnc-block/_caxnc-block-002.ts] ////
+
+=== _caxnc-block-002.ts ===
+declare const c11: boolean;
+>c11 : boolean
+
+let c12 = true
+>c12 : boolean
+>true : true
+{
+    const c21 = c11 || c12;
+>c21 : true
+>c11 || c12 : true
+>c11 : boolean
+>c12 : true
+
+    c12 = c21;
+>c12 = c21 : true
+>c12 : boolean
+>c21 : true
+}
+const c31 = c12;
+>c31 : true
+>c12 : true
+
+c12 = c31;
+>c12 = c31 : true
+>c12 : boolean
+>c31 : true
+

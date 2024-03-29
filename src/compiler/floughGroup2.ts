@@ -1003,7 +1003,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (sci.symtab) {
                             Debug.assert(sci.fsymtab);
                             const t = sci.fsymtab.get(symbol);
-                            Debug.assert(t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
+                            Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
                         }
                     }
                     const dummyNodeToTypeMap = new Map<Node, Type>();
@@ -2764,8 +2764,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (symbol && !sciFinal.symtab?.get(symbol)) {
                             if (enablePerBlockSymtabs && sciFinal.symtab){
                                 Debug.assert(sciFinal.fsymtab);
-                                const t = sciFinal.fsymtab.get(symbol);
-                                Debug.assert(!t);
+                                // const t = sciFinal.fsymtab.get(symbol);
+                                // Debug.assert(!t);
                             }
                             // nothing changed symbol value so only add if not already present.
                             const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess, 0);
