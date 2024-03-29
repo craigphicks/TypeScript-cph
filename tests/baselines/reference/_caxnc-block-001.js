@@ -1,4 +1,4 @@
-//// [tests/cases/conformance/_caxnc/_caxnc-block-001.ts] ////
+//// [tests/cases/conformance/_caxnc-block/_caxnc-block-001.ts] ////
 
 //// [_caxnc-block-001.ts]
 declare const c11: boolean;

@@ -1,0 +1,25 @@
+//// [tests/cases/conformance/_caxnc-block/_caxnc-block-suppress-ts2304.ts] ////
+
+=== _caxnc-block-suppress-ts2304.ts ===
+//
+
+function f(a: number): void {
+>f : Symbol(f, Decl(_caxnc-block-suppress-ts2304.ts, 0, 0))
+>a : Symbol(a, Decl(_caxnc-block-suppress-ts2304.ts, 2, 11))
+    {
+        let b: number
+>b : Symbol(b, Decl(_caxnc-block-suppress-ts2304.ts, 4, 11))
+
+        b = a;
+>b : Symbol(b, Decl(_caxnc-block-suppress-ts2304.ts, 4, 11))
+>a : Symbol(a, Decl(_caxnc-block-suppress-ts2304.ts, 2, 11))
+        {
+            let c: number
+>c : Symbol(c, Decl(_caxnc-block-suppress-ts2304.ts, 7, 15))
+
+            c = b;
+>c : Symbol(c, Decl(_caxnc-block-suppress-ts2304.ts, 7, 15))
+>b : Symbol(b, Decl(_caxnc-block-suppress-ts2304.ts, 4, 11))
+        }
+    }
+}

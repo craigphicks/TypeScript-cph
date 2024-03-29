@@ -1,0 +1,27 @@
+//// [tests/cases/conformance/_caxnc-block/_caxnc-block-suppress-ts2304.ts] ////
+
+=== _caxnc-block-suppress-ts2304.ts ===
+//
+
+function f(a: number): void {
+>f : (a: number) => void
+>a : number
+    {
+        let b: number
+>b : number
+
+        b = a;
+>b = a : number
+>b : number
+>a : number
+        {
+            let c: number
+>c : number
+
+            c = b;
+>c = b : number
+>c : number
+>b : number
+        }
+    }
+}

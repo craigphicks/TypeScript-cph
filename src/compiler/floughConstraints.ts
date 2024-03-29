@@ -483,7 +483,6 @@ export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[
     const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.symtab));
     if (enablePerBlockSymtabs){
         const fsymtab = unionFloughSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!));
-        //const fsymtab = asc[0].fsymtab; // IWOZERE   //unionFloughSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!));
         return { symtab: unionSymtab, fsymtab, constraintItem: createFlowConstraintAlways() };
     }
     return { symtab: unionSymtab, constraintItem: createFlowConstraintAlways() };
@@ -536,7 +535,8 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
             const type = symtab.get(symbol);
             if (enablePerBlockSymtabs) {
                 const t = fsymtab!.get(symbol);
-                //Debug.assert(t===type);
+                Debug.assert(!type || t===type || t && floughTypeModule.equalRefTypesTypes(t!,type!));
+                //Debug.assert(t===type || t && type && floughTypeModule.equalRefTypesTypes(t!,type!));
             }
             if (type) {
                 typeOut = floughTypeModule.intersectionWithFloughTypeSpecial(type, typeIn);

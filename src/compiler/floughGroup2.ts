@@ -1003,7 +1003,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (sci.symtab) {
                             Debug.assert(sci.fsymtab);
                             const t = sci.fsymtab.get(symbol);
-                            Debug.assert(t===replayableInType);
+                            Debug.assert(t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
                         }
                     }
                     const dummyNodeToTypeMap = new Map<Node, Type>();
@@ -1101,7 +1101,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (sci.symtab) {
                         Debug.assert(sci.fsymtab);
                         const t = sci.fsymtab.get(symbol);
-                        //Debug.assert(t===type);
+                        Debug.assert(!type || t===type || t && floughTypeModule.equalRefTypesTypes(t!,type!));
                     }
                 }
                 const isconst = symbolFlowInfo.isconst;
