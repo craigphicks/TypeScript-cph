@@ -1008,7 +1008,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
                                 const typeTsType = floughTypeModule.getTsTypeFromFloughType(replayableInType!);
                                 const eql = mrNarrow.checker.isTypeRelatedTo(tTsType, typeTsType, mrNarrow.checker.getRelations().identityRelation);
-                                Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)}`);
+                                Debug.assert(eql, undefined, ()=>{
+                                    if (IDebug.isActive(0)) {
+                                        return `assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`;
+                                    }
+                                    return "";
+                                });
                             }
                             // Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
                         }
@@ -1112,7 +1117,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
                             const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
                             const eql = checker.isTypeRelatedTo(tTsType, typeTsType, checker.getRelations().identityRelation);
-                            Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)}`);
+                            Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`);
                             //Debug.assert(eql);
                         }
                     }

@@ -1305,12 +1305,12 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
     function calculateFloughSymtab(fsymtabPrev: FloughSymtab, groupForFlow: Readonly<GroupForFlow /*& {localsContainer: LocalsContainer}*/>): FloughSymtab {
         const prevFloughSymtabLocalContainer = fsymtabPrev.getLocalsContainer();
         {
-            Debug.assert(prevFloughSymtabLocalContainer.pos !== groupForFlow.localsContainer.pos);
-            Debug.assert(prevFloughSymtabLocalContainer.end !== groupForFlow.localsContainer.end);
+            Debug.assert(!(prevFloughSymtabLocalContainer.pos === groupForFlow.localsContainer.pos
+            && prevFloughSymtabLocalContainer.end === groupForFlow.localsContainer.end));
         }
         let fsymtab: FloughSymtab;
         if (groupForFlow.localsContainer.pos>prevFloughSymtabLocalContainer.pos) {
-            if (groupForFlow.localsContainer.end<prevFloughSymtabLocalContainer.end) {
+            if (groupForFlow.localsContainer.end<=prevFloughSymtabLocalContainer.end) {
                 // descendent block of the previous block
                 const alocalsContainers: LocalsContainer[] = [];
                 let node = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
@@ -1325,7 +1325,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
                 alocalsContainers.forEach((localsContainers, idx) => fsymtab = createFloughSymtab(localsContainers, fsymtab));
             }
             else {
-                Debug.assert(groupForFlow.localsContainer.pos>prevFloughSymtabLocalContainer.end);
+                Debug.assert(groupForFlow.localsContainer.pos > prevFloughSymtabLocalContainer.end);
                 // Neither parent not child block of previous block, find shared ancestor
                 const sharedAncestor = findSharedAncestorLocalsContainer(prevFloughSymtabLocalContainer!, groupForFlow.localsContainer);
                 fsymtab = floughSymtabRollupToAncestor(fsymtabPrev, sharedAncestor);

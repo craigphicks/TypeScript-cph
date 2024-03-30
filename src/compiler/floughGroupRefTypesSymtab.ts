@@ -301,7 +301,7 @@ export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstr
  * while nobj types are still or'd immediately, but without computing via Type.
  */
 export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>`unionArrRefTypesSymtabV2[in]`, loggerLevel);
         arr.forEach((rts, i) => {
