@@ -152,12 +152,12 @@ export type FlowGroupLabelPostBlock = {
 export type FlowGroupLabelThen = {
     kind: FlowGroupLabelKind.then;
     ifGroupIdx: number;
-    arrAnte: FlowGroupLabel[]; // will this ever have length > 1?
+    // arrAnte: FlowGroupLabel[]; // will this ever have length > 1?
 };
 export type FlowGroupLabelElse = {
     kind: FlowGroupLabelKind.else;
     ifGroupIdx: number;
-    arrAnte: FlowGroupLabel[]; // will this ever have length > 1?
+    // arrAnte: FlowGroupLabel[]; // will this ever have length > 1?
 };
 export type FlowGroupLabelPostIf = {
     kind: FlowGroupLabelKind.postIf;
@@ -1302,7 +1302,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
         return node1 as LocalsContainer;
     }
 
-    function calculateFloughSymtab(fsymtabPrev: FloughSymtab, groupForFlow: Readonly<GroupForFlow & {localsContainer: LocalsContainer}>): FloughSymtab {
+    function calculateFloughSymtab(fsymtabPrev: FloughSymtab, groupForFlow: Readonly<GroupForFlow /*& {localsContainer: LocalsContainer}*/>): FloughSymtab {
         const prevFloughSymtabLocalContainer = fsymtabPrev.getLocalsContainer();
         {
             Debug.assert(prevFloughSymtabLocalContainer.pos !== groupForFlow.localsContainer.pos);

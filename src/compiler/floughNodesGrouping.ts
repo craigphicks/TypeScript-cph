@@ -440,7 +440,7 @@ export function makeGroupsForFlow(sourceFile: SourceFileWithFloughNodes, checker
                                 arrAnte.push(x);
                             }
                         }
-                        return { kind: fglkind, ifGroupIdx: anteg.groupIdx, arrAnte };
+                        return { kind: fglkind, ifGroupIdx: anteg.groupIdx /*, arrAnte */ };
                     }; // flowBranchThenElseToFlowGroupLabelThenElse
                     const flowBranchPostIfResolve = (fn: FloughLabel): FlowGroupLabelPostIf => {
                         //  fn.antecedents?.length may be less than 2, c.f., while(x){ if (x) continue; }
@@ -734,9 +734,9 @@ export function dbgFlowGroupLabelToStrings(fglab: FlowGroupLabel, checker: Floug
         case FlowGroupLabelKind.then:
         case FlowGroupLabelKind.else:
             as.push(`ifGroupIdx:${fglab.ifGroupIdx}`);
-            fglab.arrAnte.forEach((ante, anteidx) => {
-                as.push(...dbgFlowGroupLabelToStrings(ante, checker).map(s => `    ante[${anteidx}]: ` + s));
-            });
+            // fglab.arrAnte.forEach((ante, anteidx) => {
+            //     as.push(...dbgFlowGroupLabelToStrings(ante, checker).map(s => `    ante[${anteidx}]: ` + s));
+            // });
             break;
         case FlowGroupLabelKind.postIf:
             as.push(`originatingGroupIdx:${fglab.originatingGroupIdx}`);

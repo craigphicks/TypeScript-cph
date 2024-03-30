@@ -152,7 +152,7 @@ export interface MrNarrow {
     mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void;
     getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo): RefTypesType;
     getDeclaredType(symbol: Symbol): RefTypesType;
-    checker: TypeChecker;
+    checker: FloughTypeChecker;
     compilerOptions: CompilerOptions;
     mrState: MrState;
 }
@@ -1003,7 +1003,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (sci.symtab) {
                             Debug.assert(sci.fsymtab);
                             const t = sci.fsymtab.get(symbol);
-                            Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
+
+                            if (replayableInType && t!==replayableInType) {
+                                const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
+                                const typeTsType = floughTypeModule.getTsTypeFromFloughType(replayableInType!);
+                                const eql = mrNarrow.checker.isTypeRelatedTo(tTsType, typeTsType, mrNarrow.checker.getRelations().identityRelation);
+                                Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)}`);
+                            }
+                            // Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
                         }
                     }
                     const dummyNodeToTypeMap = new Map<Node, Type>();
@@ -1101,7 +1108,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     if (sci.symtab) {
                         Debug.assert(sci.fsymtab);
                         const t = sci.fsymtab.get(symbol);
-                        Debug.assert(!type || t===type || t && floughTypeModule.equalRefTypesTypes(t!,type!));
+                        if (type && t!==type) {
+                            const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
+                            const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
+                            const eql = checker.isTypeRelatedTo(tTsType, typeTsType, checker.getRelations().identityRelation);
+                            Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)}`);
+                            //Debug.assert(eql);
+                        }
                     }
                 }
                 const isconst = symbolFlowInfo.isconst;

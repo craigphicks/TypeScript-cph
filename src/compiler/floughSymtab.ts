@@ -11,14 +11,13 @@ export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
     mrNarrow = mrNarrowInit;
 }
 
-
 export interface FloughSymtab {
     localsContainer?: LocalsContainer;
     branch(): FloughSymtab;
     getLocalsContainer(): LocalsContainer;
     has(symbol: Symbol): boolean;
     get(symbol: Symbol): FloughType | undefined;
-    getWithAssigned(symbol: Symbol): { type: FloughType, wasAssigned?: boolean } | undefined;
+    //getWithAssigned(symbol: Symbol): { type: FloughType, wasAssigned?: boolean } | undefined;
     set(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab; // so that we can write fsymtab = fsymtab.branch().set(symbol, type)
     setAsAssigned(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab; // // so that we can write fsymtab = fsymtab.branch().setAsAssigned(symbol, type)
     forEachLocalMap(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void;
@@ -74,7 +73,8 @@ class FloughSymtabImpl implements FloughSymtab {
         if (this.locals?.has(symbol.escapedName)) return false;
         if (this.shadowMap.has(symbol)) return true;
         if (this.outer) return this.outer.has(symbol);
-        Debug.assert(false,undefined,()=>`FloughSymtab.has(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
+        return false;
+        //Debug.assert(false,undefined,()=>`FloughSymtab.has(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
     }
     get(symbol: Symbol): FloughType | undefined {
         if (this.localMap.has(symbol)) return this.localMap.get(symbol)?.type;
@@ -85,18 +85,21 @@ class FloughSymtabImpl implements FloughSymtab {
         }
         if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol)?.type;
         if (this.outer) return this.outer.get(symbol);
-        Debug.assert(false,undefined,()=>`FloughSymtab.get(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
+        return undefined;
+        //Debug.assert(false,undefined,()=>`FloughSymtab.get(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
     }
-    getWithAssigned(symbol: Symbol): { type: FloughType, wasAssigned?: boolean } | undefined {
-        if (this.localMap.has(symbol)) return this.localMap.get(symbol);
-        if (this.locals?.has(symbol.escapedName)) {
-            const type = mrNarrow.getDeclaredType(symbol);
-            this.localMap.set(symbol, { type });
-            return { type };
-        }
-        if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);
-        Debug.assert(false,undefined,()=>`FloughSymtab.getWithAssigned(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
-    }
+    // getWithAssigned(symbol: Symbol): { type: FloughType, wasAssigned?: boolean } | undefined {
+    //     if (this.localMap.has(symbol)) return this.localMap.get(symbol);
+    //     if (this.locals?.has(symbol.escapedName)) {
+    //         const type = mrNarrow.getDeclaredType(symbol);
+    //         this.localMap.set(symbol, { type });
+    //         return { type };
+    //     }
+    //     if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);
+    //     if (this.outer) return this.outer.getWithAssigned(symbol);
+    //     return undefined;
+    //     //Debug.assert(false,undefined,()=>`FloughSymtab.getWithAssigned(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
+    // }
 
     set(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {
         if (this.locals?.has(symbol.escapedName)) this.localMap.set(symbol, { type });
@@ -269,12 +272,12 @@ export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): Flo
             Debug.assert(fsx===fsca);
         });
     }
-    const setAncestors = new Set<FloughSymtabImpl>();
+    //const setAncestors = new Set<FloughSymtabImpl>();
     const mapSymbolToSet = new Map<Symbol,({type: FloughType, wasAssigned?:boolean}|undefined)[]/*length afsIn.length*/>();
     afsIn.forEach((fs,idx)=>{
         for (let fsx = fs; fsx!==fsca; fsx = fsx.outer!) {
-            if (setAncestors.has(fsx)) break;
-            setAncestors.add(fsx);
+            //if (setAncestors.has(fsx)) break;
+            //setAncestors.add(fsx);
             if (fsx.shadowMap.size) {
                 fsx.shadowMap.forEach(({type, wasAssigned}, symbol) => {
                     let arr = mapSymbolToSet.get(symbol);
@@ -290,24 +293,27 @@ export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): Flo
             }
         }
     });
-    // // fill in the blanks
-    // mapSymbolToSet.forEach((arr,symbol) => {
-    //     arr.forEach((e,i)=>{
-    //         if (!e) {
-    //             arr[i] = { type: mrNarrow.getDeclaredType(symbol) };
-    //         }
-    //     });
-    // });
-    // assertCastType<Map<Symbol,{type: FloughType, wasAssigned?:boolean}[]>>(mapSymbolToSet);
 
     if (IDebug.isActive(loggerLevel)) {
         //dbgFloughSymtabToStrings(fsymtab).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
         mapSymbolToSet.forEach((arr,symbol) => {
             IDebug.ilog(()=>`symbol: ${
                 IDebug.dbgs.symbolToString(symbol)} -> ${
-                    arr.map(x => `[${x ? `${floughTypeModule.dbgFloughTypeToString(x.type)}, ${x.wasAssigned}]` : `<undef>`}`).join(", ")}`, loggerLevel);
+                    arr.map(x => x ? `[{type:${floughTypeModule.dbgFloughTypeToString(x.type)}, wasAssigned:${x.wasAssigned}}]` : `[<undef>]`).join(", ")}`, loggerLevel);
         });
     }
+
+
+    // fill in the blanks
+    mapSymbolToSet.forEach((arr,symbol) => {
+        arr.forEach((e,i)=>{
+            if (!e) {
+                arr[i] = { type: mrNarrow.getDeclaredType(symbol) };
+            }
+        });
+    });
+    assertCastType<Map<Symbol,{type: FloughType, wasAssigned?:boolean}[]>>(mapSymbolToSet);
+
 
     //const localMap: InnerMap | undefined = fsca.localMap ? createInnerMap(fsca.localMap) : fsca.localsContainer ? createInnerMap() : undefined;
     let shadowMap: InnerMap | undefined = createInnerMap();
@@ -319,7 +325,8 @@ export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): Flo
             if (!x) return acc;
             return { type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type), wasAssigned: acc.wasAssigned || x.wasAssigned };
         }, { type: floughTypeModule.createNeverType() }); // // need to initialize with a fresh never type because it will be mutated
-        if (floughTypeModule.isNeverType(result!.type)) shadowMap.set(symbol, result!);
+        //if (!floughTypeModule.isNeverType(result!.type))
+        shadowMap.set(symbol, result!);
     });
     let returnFsymtab: FloughSymtabImpl;
     if (shadowMap.size === 0) returnFsymtab = fsca;

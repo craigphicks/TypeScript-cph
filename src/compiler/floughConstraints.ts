@@ -535,7 +535,15 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
             const type = symtab.get(symbol);
             if (enablePerBlockSymtabs) {
                 const t = fsymtab!.get(symbol);
-                Debug.assert(!type || t===type || t && floughTypeModule.equalRefTypesTypes(t!,type!));
+                if (type && t!==type) {
+                    const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
+                    const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
+                    const eql = mrNarrow.checker.isTypeRelatedTo(tTsType, typeTsType, mrNarrow.checker.getRelations().identityRelation);
+                    //Debug.assert(eql);
+                    Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)}`);
+                }
+
+                //Debug.assert(!type || t===type || t && floughTypeModule.equalRefTypesTypes(t!,type!));
                 //Debug.assert(t===type || t && type && floughTypeModule.equalRefTypesTypes(t!,type!));
             }
             if (type) {
