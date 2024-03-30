@@ -76,17 +76,20 @@ class FloughSymtabImpl implements FloughSymtab {
         return false;
         //Debug.assert(false,undefined,()=>`FloughSymtab.has(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
     }
+    // get(symbol: Symbol): FloughType | undefined {
+    //     if (this.localMap.has(symbol)) return this.localMap.get(symbol)?.type;
+    //     if (this.locals?.has(symbol.escapedName)) {
+    //         const type = mrNarrow.getDeclaredType(symbol);
+    //         this.localMap.set(symbol, { type });
+    //         return type;
+    //     }
+    //     if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol)?.type;
+    //     if (this.outer) return this.outer.get(symbol);
+    //     return undefined;
+    //     //Debug.assert(false,undefined,()=>`FloughSymtab.get(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
+    // }
     get(symbol: Symbol): FloughType | undefined {
-        if (this.localMap.has(symbol)) return this.localMap.get(symbol)?.type;
-        if (this.locals?.has(symbol.escapedName)) {
-            const type = mrNarrow.getDeclaredType(symbol);
-            this.localMap.set(symbol, { type });
-            return type;
-        }
-        if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol)?.type;
-        if (this.outer) return this.outer.get(symbol);
-        return undefined;
-        //Debug.assert(false,undefined,()=>`FloughSymtab.get(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
+        return this.getWithAssigned(symbol)?.type;
     }
     getWithAssigned(symbol: Symbol): { type: FloughType, wasAssigned?: boolean } | undefined {
         if (this.localMap.has(symbol)) return this.localMap.get(symbol);
@@ -215,7 +218,7 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  * @returns
  */
 export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): FloughSymtab {
-    const loggerLevel = 1;
+    const loggerLevel = 2;
     IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length})`, loggerLevel);
     if (IDebug.isActive(loggerLevel)) {
         afsIn.forEach((fs,idx) => {
