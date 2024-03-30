@@ -126,10 +126,19 @@ function makeConnectedGroupsGraphs(orderedGroups: Readonly<GroupForFlow[]>, grou
         }
         else {
             const anteGroup = anteGroups.values().next().value as GroupForFlow;
-            const graphIndex = arrGroupIndexToConnectGraph[anteGroup.groupIdx];
-            arrConnectedGraphs[graphIndex].push(group);
-            arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
-            if (IDebug.isActive(0)) group.dbgGraphIdx = graphIndex;
+            let graphIndex = arrGroupIndexToConnectGraph[anteGroup.groupIdx];
+            if (graphIndex === -1) {
+                Debug.assert(group===anteGroup);
+                const graphIndex = arrConnectedGraphs.length;
+                arrConnectedGraphs.push([group]);
+                arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
+                if (IDebug.isActive(0)) group.dbgGraphIdx = graphIndex;
+            }
+            else {
+                arrConnectedGraphs[graphIndex].push(group);
+                arrGroupIndexToConnectGraph[groupIdx] = graphIndex;
+                if (IDebug.isActive(0)) group.dbgGraphIdx = graphIndex;
+            }
         }
     }
     if (extraAsserts) {
