@@ -191,8 +191,10 @@ function createSubloopRefTypesSymtab(outer: Readonly<RefTypesSymtab>, loopState:
 export function createSubLoopRefTypesSymtabConstraint(outerSC: Readonly<RefTypesSymtabConstraintItem>, loopState: ProcessLoopState, loopGroup: Readonly<GroupForFlow>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(outerSC)) return outerSC; // as RefTypesSymtabConstraintItemNever;
     // castType<Readonly<RefTypesSymtabConstraintItemNotNever>>(outerSC);
+    const fsymtab = enablePerBlockSymtabs ? outerSC.fsymtab!.branch() : undefined;
     return {
         symtab: createSubloopRefTypesSymtab(outerSC.symtab!, loopState, loopGroup),
+        ...(()=>fsymtab ? { fsymtab } : {})(),
         constraintItem: outerSC.constraintItem,
     };
 }
@@ -236,6 +238,7 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
 }
 export function createSuperloopRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(sc)) return sc; // as RefTypesSymtabConstraintItemNever;
+    Debug.assert(!enablePerBlockSymtabs);
     return {
         symtab: createSuperloopRefTypesSymtab(sc.symtab!),
         constraintItem: sc.constraintItem,

@@ -1012,7 +1012,11 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             }
             const scForConditionUnionOfInAndContinue: RefTypesSymtabConstraintItem = isRefTypesSymtabConstraintItemNever(scForConditionContinue)
                 ? createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup)
-                : { symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!), constraintItem: scForConditionContinue.constraintItem };
+                : {
+                    symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!),
+                    ... (enablePerBlockSymtabs ? { fsymtab: scForConditionContinue.fsymtab!.branch() } : {}),
+                    constraintItem: scForConditionContinue.constraintItem
+                };
 
             if (loopState.invocations === 1) {
                 loopState.symbolsAssignedRange = undefined;
@@ -1367,10 +1371,16 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
             Debug.assert(groupForFlow.anteGroupLabels.length === 1);
             if (options && options.loopGroupIdx === groupForFlow.groupIdx) {
                 sc = options.cachedSCForLoop;
+                if (enablePerBlockSymtabs) {
+                    Debug.assert(!sc.symtab || sc.fsymtab);
+                }
             }
             else {
                 const flowGroupLabel = groupForFlow.anteGroupLabels[0];
                 sc = doFlowGroupLabel(flowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
+                if (enablePerBlockSymtabs) {
+                    Debug.assert(!sc.symtab || sc.fsymtab);
+                }
             }
             if (enablePerBlockSymtabs && !isRefTypesSymtabConstraintItemNever(sc)) {
                 const prevFloughSymtabLocalContainer = sc.fsymtab!.getLocalsContainer();

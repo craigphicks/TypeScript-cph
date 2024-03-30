@@ -1,0 +1,27 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0081.ts] ////
+
+=== _caxnc-whileLoop-0081.ts ===
+// @ floughDoNotWidenInitalizedFlowType: true
+
+declare function maybe(): boolean;
+>maybe : () => boolean
+
+function f81() {
+>f81 : () => void
+
+    let x = maybe();
+>x : boolean
+>maybe() : boolean
+>maybe : () => boolean
+
+    while (x) {
+>x : boolean
+
+        x = maybe();
+>x = maybe() : boolean
+>x : boolean
+>maybe() : boolean
+>maybe : () => boolean
+    }
+}
+
