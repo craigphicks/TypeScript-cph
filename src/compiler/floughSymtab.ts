@@ -5,6 +5,7 @@ import { IDebug } from "./mydebug";
 import { floughTypeModule } from "./floughType";
 import { assertCastType } from "./floughTypedefs";
 import { MrNarrow } from "./floughGroup2";
+import { ProcessLoopState } from "./floughGroup";
 
 var mrNarrow: MrNarrow = undefined as any as MrNarrow;
 export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
@@ -13,7 +14,7 @@ export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
 
 export interface FloughSymtab {
     localsContainer?: LocalsContainer;
-    branch(): FloughSymtab;
+    branch(loopState?: ProcessLoopState): FloughSymtab;
     getLocalsContainer(): LocalsContainer;
     has(symbol: Symbol): boolean;
     get(symbol: Symbol): FloughType | undefined;
@@ -37,7 +38,8 @@ class FloughSymtabImpl implements FloughSymtab {
     shadowMap = createInnerMap();
     locals?: Readonly<SymbolTable>;
     localsContainer?: LocalsContainer;
-    constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap) {
+    loopState?: ProcessLoopState; // TODO: Limit to only necessary members
+    constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopState?: ProcessLoopState) {
         if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
         this.localsContainer = localsContainer
         Debug.assert(!localsContainer || localsContainer.locals?.size,undefined,()=>`FloughSymtabImpl.constructor(): localsContainer has no locals`);
@@ -49,14 +51,15 @@ class FloughSymtabImpl implements FloughSymtab {
         else this.tableDepth = 0;
         if (localMap) this.localMap = localMap;
         if (shadowMap) this.shadowMap = shadowMap;
+        if (loopState) this.loopState = loopState;
     }
     /**
      * For now we always create a new FloughSymtab when branching.
      * We could choose to make a copy of the localMap and shadowMap if they were below a certain size.
      * @returns a new FloughSymtab that is a branch of this FloughSymtab
      */
-    branch(): FloughSymtabImpl {
-        return new FloughSymtabImpl(undefined, this, undefined, undefined);
+    branch(loopState?: ProcessLoopState): FloughSymtabImpl {
+        return new FloughSymtabImpl(undefined, this, undefined, undefined, loopState);
     }
     getLocalsContainer(): LocalsContainer {
         if (this.localsContainer) return this.localsContainer;
@@ -95,10 +98,22 @@ class FloughSymtabImpl implements FloughSymtab {
         if (this.localMap.has(symbol)) return this.localMap.get(symbol);
         if (this.locals?.has(symbol.escapedName)) {
             const type = mrNarrow.getDeclaredType(symbol);
-            this.localMap.set(symbol, { type });
+            this.localMap.set(symbol, { type }); // TODO: Not nice to mutate the FloughSymtabImpl with a get, although this might be harmless.  Try removing it?
             return { type };
         }
         if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);
+        if (this.loopState?.invocations===0){
+            const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
+            Debug.assert(symbolInfo);
+            if (symbolInfo && !symbolInfo.isconst){
+                // Presence of loopState indicates loop boundary. The condition
+                // (this.loopState?.invocations===0 && symbolInfo && !symbolInfo.isconst) indicates that
+                // the symbol type should be widened because we don't yet know the loop feedback at loop start.
+                const type = mrNarrow.getEffectiveDeclaredType(symbolInfo);
+                // this.shadowMap.set(symbol, { type }); <-- probably don't want to mutate the FloughSymtabImpl
+                return { type };
+            }
+        }
         if (this.outer) return this.outer.getWithAssigned(symbol);
         return undefined;
         //Debug.assert(false,undefined,()=>`FloughSymtab.getWithAssigned(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
@@ -348,14 +363,19 @@ export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): Flo
 
 
 export function dbgFloughSymtabToStringsOne(fsIn: Readonly<FloughSymtab>): string[] {
+    assertCastType<FloughSymtabImpl>(fsIn);
     const arr: string[] = [];
-    if ((fsIn as FloughSymtabImpl).dbgid) arr.push(`dbgid: ${(fsIn as FloughSymtabImpl).dbgid}`);
-    arr.push(`tableDepth: ${(fsIn as FloughSymtabImpl).tableDepth}`);
+    if (fsIn.dbgid) arr.push(`dbgid: ${fsIn.dbgid}`);
+    arr.push(`tableDepth: ${fsIn.tableDepth}`);
+
+    if (fsIn.loopState) arr.push(`loopState: {invocations: ${fsIn.loopState.invocations}, loopGroup.groupIdx: ${fsIn.loopState.loopGroup.groupIdx}}`);
+
     if (!fsIn.localsContainer) arr.push(`localsContainer: <undef>`);
     else if (!fsIn.localsContainer.locals) arr.push(`localsContainer.locals: <undef>`);
     else fsIn.localsContainer.locals.forEach((symbol, _escapedName) => {
         arr.push(`localsContainer.locals: ${IDebug.dbgs.symbolToString(symbol)}`)
     });
+
     fsIn.forEachLocalMap(({type, wasAssigned}, symbol) => {
         arr.push(`localMap: ${IDebug.dbgs.symbolToString(symbol)} -> { floughType: ${floughTypeModule.dbgFloughTypeToString(type)}, wasAssigned: ${wasAssigned?? "<undef>"}}`);
     });
@@ -365,7 +385,8 @@ export function dbgFloughSymtabToStringsOne(fsIn: Readonly<FloughSymtab>): strin
     return arr;
 }
 
-export function dbgFloughSymtabToStrings(fsIn: Readonly<FloughSymtab>, upTo?: Readonly<FloughSymtabImpl> ): string[] {
+export function dbgFloughSymtabToStrings(fsIn: Readonly<FloughSymtab> | undefined, upTo?: Readonly<FloughSymtabImpl> ): string[] {
+    if (!fsIn) return ["<undef>"];
     const arr: string[] = [];
     for (let fs: FloughSymtab | undefined = fsIn, x=0; fs; fs = (fs as FloughSymtabImpl).outer, x--) {
         arr.push(...dbgFloughSymtabToStringsOne(fs).map(s => `[${x}]: ${s}`));

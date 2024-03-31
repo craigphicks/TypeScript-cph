@@ -191,16 +191,21 @@ function createSubloopRefTypesSymtab(outer: Readonly<RefTypesSymtab>, loopState:
 export function createSubLoopRefTypesSymtabConstraint(outerSC: Readonly<RefTypesSymtabConstraintItem>, loopState: ProcessLoopState, loopGroup: Readonly<GroupForFlow>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(outerSC)) return outerSC; // as RefTypesSymtabConstraintItemNever;
     // castType<Readonly<RefTypesSymtabConstraintItemNotNever>>(outerSC);
-    const fsymtab = enablePerBlockSymtabs ? outerSC.fsymtab!.branch() : undefined;
+    // if (enablePerBlockSymtabs){
+    //     return {
+    //         symtab: createSubloopRefTypesSymtab(outerSC.symtab!, loopState, loopGroup),
+    //         fsymtab: outerSC.fsymtab!.branch(loopState),
+    //         constraintItem: outerSC.constraintItem,
+    //     };
+    // }
     return {
         symtab: createSubloopRefTypesSymtab(outerSC.symtab!, loopState, loopGroup),
-        ...(()=>fsymtab ? { fsymtab } : {})(),
         constraintItem: outerSC.constraintItem,
     };
 }
 
 function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypesSymtab {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     // function getProxyType(symbol: Symbol, st: Readonly<RefTypesSymtabProxy>): RefTypesSymtabProxyType | undefined {
     //     return st.symtabInner.get(symbol) ?? (st.symtabOuter ? getProxyType(symbol, st.symtabOuter) : undefined);
     //  }
@@ -212,6 +217,10 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
         //     IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] idx:${stin.loopGroup?.groupIdx}, invocations${stin.loopState?.invocations}`);
         // }
         dbgRefTypesSymtabToStrings(stin).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] stin: ${str}`, loggerLevel));
+    }
+    if (enablePerBlockSymtabs) {
+        //Debug.assert(false);
+        IDebug.ilog(()=>`createSuperloopRefTypesSymtab: enablePerBlockSymtabs: true, WARNING: may require changes to support superloop`, 1);
     }
     const stout = copyRefTypesSymtab(stin.symtabOuter!);
     // let symbolsReadNotAssigned: undefined | Set<Symbol>;
@@ -238,7 +247,15 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
 }
 export function createSuperloopRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(sc)) return sc; // as RefTypesSymtabConstraintItemNever;
-    Debug.assert(!enablePerBlockSymtabs);
+    //Debug.assert(!enablePerBlockSymtabs);
+    if (enablePerBlockSymtabs){
+        IDebug.ilog(()=>`createSuperloopRefTypesSymtabConstraintItem: enablePerBlockSymtabs: true, not using branch() ok ?`, 1);
+        return {
+            symtab: createSuperloopRefTypesSymtab(sc.symtab!),
+            fsymtab: sc.fsymtab,
+            constraintItem: sc.constraintItem,
+        };
+    }
     return {
         symtab: createSuperloopRefTypesSymtab(sc.symtab!),
         constraintItem: sc.constraintItem,
