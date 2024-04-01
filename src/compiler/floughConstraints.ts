@@ -533,7 +533,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
             }
         }
         else {
-            const type = symtab.get(symbol);
+            let type = symtab.get(symbol);
             if (enablePerBlockSymtabs) {
                 const t = fsymtab!.get(symbol);
                 if (type && t!==type) {
@@ -544,6 +544,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
                         Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`);
                     }
                 }
+                type = t;
 
                 //Debug.assert(!type || t===type || t && floughTypeModule.equalRefTypesTypes(t!,type!));
                 //Debug.assert(t===type || t && type && floughTypeModule.equalRefTypesTypes(t!,type!));

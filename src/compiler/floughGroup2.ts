@@ -999,11 +999,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                      * Therefore we substitute in a dummy map.
                      * NOTE: tests show this causes no harm, but don't have a test case that shows it is necessary.
                      */
-                    const replayableInType = sci.symtab?.get(symbol);
+                    let replayableInType = sci.symtab?.get(symbol);
                     if (enablePerBlockSymtabs){
+                        const t = sci.fsymtab?.get(symbol);
                         if (sci.symtab) {
                             Debug.assert(sci.fsymtab);
-                            const t = sci.fsymtab.get(symbol);
 
                             if (replayableInType && t!==replayableInType) {
                                 const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
@@ -1020,6 +1020,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             }
                             // Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
                         }
+                        replayableInType = t;
                     }
                     const dummyNodeToTypeMap = new Map<Node, Type>();
                     const mntr = flough({
@@ -1113,9 +1114,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                 let type: RefTypesType | undefined = sci.symtab?.get(symbol);
                 if (enablePerBlockSymtabs){
+                    const t = sci.fsymtab?.get(symbol);
                     if (sci.symtab) {
                         Debug.assert(sci.fsymtab);
-                        const t = sci.fsymtab.get(symbol);
                         if (type && t!==type) {
                             const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
                             const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
@@ -1125,6 +1126,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             }
                         }
                     }
+                    type = t;
                 }
                 const isconst = symbolFlowInfo.isconst;
                 type = type ?? getEffectiveDeclaredType(symbolFlowInfo);
@@ -2784,8 +2786,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         }
 
                         if (symbol && !sciFinal.symtab?.get(symbol)) {
-                            if (enablePerBlockSymtabs && sciFinal.symtab){
-                                Debug.assert(sciFinal.fsymtab);
+                            if (enablePerBlockSymtabs) {
+                                if (sciFinal.symtab) Debug.assert(sciFinal.fsymtab);
                                 // const t = sciFinal.fsymtab.get(symbol);
                                 // Debug.assert(!t);
                             }
@@ -2793,6 +2795,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess, 0);
                             sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
                             sciFinal.symtab!.set(symbol, newRootType);
+                            if (enablePerBlockSymtabs){
+                                sciFinal.fsymtab!.set(symbol, newRootType);
+                            }
                         }
 
                         const includeQDotUndefined = expr.parent?.kind !== SyntaxKind.CallExpression;
