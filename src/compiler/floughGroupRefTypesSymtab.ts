@@ -116,7 +116,7 @@ class RefTypesSymtabProxy implements RefTypesSymtabProxyI {
             this.symtabInner.set(symbol, { type, assignedType: undefined });
             return type;
         }
-        if (this.loopState?.invocations !== 0) {
+        if (this.loopState?.invocations !== 0 && this.loopState?.loopConditionCall !== "final") {
             let range: RefTypesType | undefined;
             if (!(range = this.loopState?.symbolsAssignedRange?.get(symbol))) {
                 // symbol wasn't assigned in invocation 0, so can be treated like a const
@@ -190,14 +190,6 @@ function createSubloopRefTypesSymtab(outer: Readonly<RefTypesSymtab>, loopState:
 }
 export function createSubLoopRefTypesSymtabConstraint(outerSC: Readonly<RefTypesSymtabConstraintItem>, loopState: ProcessLoopState, loopGroup: Readonly<GroupForFlow>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(outerSC)) return outerSC; // as RefTypesSymtabConstraintItemNever;
-    // castType<Readonly<RefTypesSymtabConstraintItemNotNever>>(outerSC);
-    // if (enablePerBlockSymtabs){
-    //     return {
-    //         symtab: createSubloopRefTypesSymtab(outerSC.symtab!, loopState, loopGroup),
-    //         fsymtab: outerSC.fsymtab!.branch(loopState),
-    //         constraintItem: outerSC.constraintItem,
-    //     };
-    // }
     return {
         symtab: createSubloopRefTypesSymtab(outerSC.symtab!, loopState, loopGroup),
         constraintItem: outerSC.constraintItem,

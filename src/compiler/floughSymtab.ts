@@ -102,7 +102,7 @@ class FloughSymtabImpl implements FloughSymtab {
             return { type };
         }
         if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);
-        if (this.loopState?.invocations===0){
+        if (this.loopState?.invocations===0 && this.loopState.loopConditionCall !== "final"){
             const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
             Debug.assert(symbolInfo);
             if (symbolInfo && !symbolInfo.isconst){
@@ -233,7 +233,7 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  * @returns
  */
 export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): FloughSymtab {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length})`, loggerLevel);
     if (IDebug.isActive(loggerLevel)) {
         afsIn.forEach((fs,idx) => {
@@ -368,7 +368,7 @@ export function dbgFloughSymtabToStringsOne(fsIn: Readonly<FloughSymtab>): strin
     if (fsIn.dbgid) arr.push(`dbgid: ${fsIn.dbgid}`);
     arr.push(`tableDepth: ${fsIn.tableDepth}`);
 
-    if (fsIn.loopState) arr.push(`loopState: {invocations: ${fsIn.loopState.invocations}, loopGroup.groupIdx: ${fsIn.loopState.loopGroup.groupIdx}}`);
+    if (fsIn.loopState) arr.push(`loopState: {invocations: ${fsIn.loopState.invocations}, loopConditionCall:${fsIn.loopState.loopConditionCall}, loopGroup.groupIdx: ${fsIn.loopState.loopGroup.groupIdx}}`);
 
     if (!fsIn.localsContainer) arr.push(`localsContainer: <undef>`);
     else if (!fsIn.localsContainer.locals) arr.push(`localsContainer.locals: <undef>`);

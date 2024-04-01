@@ -369,7 +369,7 @@ export interface ProcessLoopState {
     scForLoop0?: RefTypesSymtabConstraintItem;
     /* enableProcessLoopSaveScConditionContinue */
     scConditionContinue?: RefTypesSymtabConstraintItem;
-    loopConditionCall?: "begin" | "end";
+    loopConditionCall?: "initial" | "final";
 }
 export type SymbolFlowInfo = {
     passCount: number;
@@ -908,48 +908,11 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
     const anteGroupLabel: FlowGroupLabel = loopGroup.anteGroupLabels[0];
     Debug.assert(anteGroupLabel.kind === FlowGroupLabelKind.loop);
 
-    // function createFloughSymtabForConditionUnionOfInAndContinue(scForLoopConditionIn: RefTypesSymtabConstraintItem, scForConditionContinue: RefTypesSymtabConstraintItem): FloughSymtab {
-    //     IDebug.ilogGroup(()=>`createScForConditionUnionOfInAndContinue[in]`,loggerLevel);
-    //     let scForConditionUnionOfInAndContinue: RefTypesSymtabConstraintItem;
-    //     if (isRefTypesSymtabConstraintItemNever(scForConditionContinue)) {
-    //         // enablePerBlockSymtabs handled inside createSubLoopRefTypesSymtabConstraint
-    //         scForConditionUnionOfInAndContinue = createSubLoopRefTypesSymtabConstraint(scForLoopConditionIn, loopState, loopGroup);
-    //     }
-    //     else {
-    //         if (enablePerBlockSymtabs){
 
-    //             if (IDebug.isActive(loggerLevel)) {
-    //                 dbgFloughSymtabToStrings(scForLoopConditionIn.fsymtab!).forEach(s =>
-    //                     IDebug.ilog(()=>`processLoop[dbg] invocations:${loopState.invocations
-    //                     } outerSCForLoopConditionIn.fsymtab: ${s}`, loggerLevel));
-    //                 dbgFloughSymtabToStrings(scForConditionContinue.fsymtab!).forEach(s =>
-    //                     IDebug.ilog(()=>`processLoop[dbg] invocations:${loopState.invocations
-    //                     } scForConditionContinue.fsymtab: ${s}`, loggerLevel));
-    //             }
-
-    //             scForConditionUnionOfInAndContinue = {
-    //                 symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!),
-    //                 fsymtab: scForConditionContinue.fsymtab!.branch(loopState),
-    //                 constraintItem: scForConditionContinue.constraintItem
-    //             }
-    //         }
-    //         else {
-    //             scForConditionUnionOfInAndContinue = {
-    //                 symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!),
-    //                 constraintItem: scForConditionContinue.constraintItem
-    //             }
-    //         }
-    //     }
-    //     IDebug.ilogGroupEnd(()=>`createScForConditionUnionOfInAndContinue[out]`,loggerLevel);
-    //     return ;
-    // }
-
-
-    // const mrNarrow = sourceFileMrState.mrNarrow;
-    // @ ts-expect-error
-    const groupDependancyCountRemaining = sourceFileMrState.mrState.groupDependancyCountRemaining;
-    // @ ts-expect-error
-    const arrGroupIndexToDependantCount = sourceFileMrState.groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount;
+    // // @ ts-expect-error
+    // const groupDependancyCountRemaining = sourceFileMrState.mrState.groupDependancyCountRemaining;
+    // // @ ts-expect-error
+    // const arrGroupIndexToDependantCount = sourceFileMrState.groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount;
     function deleteCurrentBranchesMap(gff: GroupForFlow, set?: Set<"then" | "else"> | undefined) {
         forFlowParent.currentBranchesMap.delete(gff, set);
         // if (refactorConnectedGroupsGraphs){
@@ -1030,7 +993,9 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             subloopSCForLoopConditionIn.fsymtab = fsymtab.branch(loopState);
         }
 
+        loopState.loopConditionCall = "initial";
         resolveGroupForFlow(loopGroup, floughStatus, sourceFileMrState, forFlow, { loopGroupIdx: loopGroup.groupIdx, cachedSCForLoop: subloopSCForLoopConditionIn });
+        loopState.loopConditionCall = undefined;
 
     }
     IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the initial condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
@@ -1066,7 +1031,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             if (isRefTypesSymtabConstraintItemNever(scForConditionContinue)) {
                 // enablePerBlockSymtabs handled inside createSubLoopRefTypesSymtabConstraint
                 scForConditionUnionOfInAndContinue = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
-                scForConditionUnionOfInAndContinue.fsymtab = outerSCForLoopConditionIn.fsymtab!.branch(loopState);
+                if (enablePerBlockSymtabs) scForConditionUnionOfInAndContinue.fsymtab = outerSCForLoopConditionIn.fsymtab!.branch(loopState);
             }
             else {
                 if (enablePerBlockSymtabs){
@@ -1116,7 +1081,9 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             if (forFlowParent.groupToNodeToType!.has(loopGroup)) forFlowParent.groupToNodeToType!.delete(loopGroup);
 
             const floughStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
+            loopState.loopConditionCall = "final";
             resolveGroupForFlow(loopGroup, floughStatus, sourceFileMrState, forFlow, { cachedSCForLoop: scForConditionUnionOfInAndContinue, loopGroupIdx: loopGroup.groupIdx });
+            loopState.loopConditionCall = undefined;
 
             IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
         }
@@ -1360,7 +1327,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
 }
 
 function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus: FloughStatus, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, options?: { cachedSCForLoop: RefTypesSymtabConstraintItem; loopGroupIdx: number; }): void {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const mrNarrow = sourceFileMrState.mrNarrow;
     const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];
