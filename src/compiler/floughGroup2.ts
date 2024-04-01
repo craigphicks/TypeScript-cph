@@ -65,6 +65,7 @@ import {
     extraAsserts,
     refactorConnectedGroupsGraphsNoShallowRecursion,
     enablePerBlockSymtabs,
+    enableSupressFSymtabEqualAsserts,
 } from "./floughGroup";
 import {
     applyCritNoneUnion,
@@ -1008,12 +1009,14 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                 const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
                                 const typeTsType = floughTypeModule.getTsTypeFromFloughType(replayableInType!);
                                 const eql = mrNarrow.checker.isTypeRelatedTo(tTsType, typeTsType, mrNarrow.checker.getRelations().identityRelation);
-                                Debug.assert(eql, undefined, ()=>{
-                                    if (IDebug.isActive(0)) {
-                                        return `assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`;
-                                    }
-                                    return "";
-                                });
+                                if (!enableSupressFSymtabEqualAsserts) {
+                                    Debug.assert(eql, undefined, ()=>{
+                                        if (IDebug.isActive(0)) {
+                                            return `assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`;
+                                        }
+                                        return "";
+                                    });
+                                }
                             }
                             // Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
                         }
@@ -1117,8 +1120,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
                             const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
                             const eql = checker.isTypeRelatedTo(tTsType, typeTsType, checker.getRelations().identityRelation);
-                            Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`);
-                            //Debug.assert(eql);
+                            if (!enableSupressFSymtabEqualAsserts) {
+                                Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`);
+                            }
                         }
                     }
                 }
@@ -1684,7 +1688,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 })();
                 if (IDebug.isActive(loggerLevel)){
                     ret.unmerged.forEach((rttr, i) => {
-                        dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`floughInnerVariableDeclaration: returns unmerged[${i}]: ${s}`, loggerLevel-1));
+                        dbgRefTypesTableToStrings(rttr).forEach(s => IDebug.ilog(()=>`floughInnerVariableDeclaration: returns unmerged[${i}]: ${s}`, loggerLevel));
                     });
                 }
                 IDebug.ilogGroupEnd(()=>`floughInnerVariableDeclaration[out] ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);

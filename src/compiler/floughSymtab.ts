@@ -232,20 +232,26 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  * @param afsIn Had another idea
  * @returns
  */
-export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): FloughSymtab {
-    const loggerLevel = 1;
-    IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length})`, loggerLevel);
-    if (IDebug.isActive(loggerLevel)) {
-        afsIn.forEach((fs,idx) => {
-            dbgFloughSymtabToStrings(fs).forEach(s => IDebug.ilog(()=>`[#${idx}]${s}`, loggerLevel));
-        });
-    }
+export function unionFloughSymtab(afsIn: readonly (Readonly<FloughSymtab> | undefined)[]): FloughSymtab {
+const loggerLevel = 2;
+IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length})`, loggerLevel);
+if (IDebug.isActive(loggerLevel)) {
+    afsIn.forEach((fs,idx) => {
+        dbgFloughSymtabToStrings(fs).forEach(s => IDebug.ilog(()=>`[#${idx}]${s}`, loggerLevel));
+    });
+}
+const ret = (()=>{
+    afsIn = afsIn.filter(fs => fs); // remove undefineds
     /**
      * We never have to look back further than the closest common ancestor.
      */
     assertCastType<Readonly<FloughSymtabImpl>[]>(afsIn);
-    if (afsIn.length === 0) Debug.assert(false);
-    if (afsIn.length === 1) return afsIn[0];
+    if (afsIn.length === 0) {
+        Debug.assert(false);
+    }
+    if (afsIn.length === 1) {
+        return afsIn[0];
+    }
     /**
      * fsca will be the nearest common ancestor
      */
@@ -346,17 +352,15 @@ export function unionFloughSymtab(afsIn: readonly Readonly<FloughSymtab>[]): Flo
         //if (!floughTypeModule.isNeverType(result!.type))
         shadowMap.set(symbol, result!);
     });
-    let returnFsymtab: FloughSymtabImpl;
-    if (shadowMap.size === 0) returnFsymtab = fsca;
-    else returnFsymtab = new FloughSymtabImpl(undefined, fsca, undefined, shadowMap);
+    if (shadowMap.size === 0) return fsca;
+    return new FloughSymtabImpl(undefined, fsca, undefined, shadowMap);
 
-    if (IDebug.isActive(loggerLevel)) {
-        dbgFloughSymtabToStrings(returnFsymtab).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
-    }
-
-    IDebug.ilogGroupEnd(()=>`unionFloughSymtab[out]`, loggerLevel);
-
-    return returnFsymtab;
+})();
+if (IDebug.isActive(loggerLevel)) {
+    dbgFloughSymtabToStrings(ret).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
+}
+IDebug.ilogGroupEnd(()=>`unionFloughSymtab[out]`, loggerLevel);
+return ret;
 }
 
 
