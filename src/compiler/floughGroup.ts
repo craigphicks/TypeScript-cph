@@ -1085,7 +1085,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             const floughStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
             loopState.loopConditionCall = "final";
             resolveGroupForFlow(loopGroup, floughStatus, sourceFileMrState, forFlow, { cachedSCForLoop: scForConditionUnionOfInAndContinue, loopGroupIdx: loopGroup.groupIdx });
-            loopState.loopConditionCall = undefined;
+            //loopState.loopConditionCall = undefined; commented out to leave it as "final" to prevent widening
 
             IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
         }
