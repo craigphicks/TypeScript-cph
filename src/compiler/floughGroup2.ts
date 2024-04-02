@@ -152,7 +152,7 @@ export interface MrNarrow {
     createNodeToTypeMap(): NodeToTypeMap;
     mergeIntoNodeToTypeMaps(source: Readonly<NodeToTypeMap>, target: NodeToTypeMap): void;
     getEffectiveDeclaredType(symbolFlowInfo: SymbolFlowInfo): RefTypesType;
-    getDeclaredType(symbol: Symbol): RefTypesType;
+    getEffectiveDeclaredTypeFromSymbol(symbol: Symbol): RefTypesType;
     checker: FloughTypeChecker;
     compilerOptions: CompilerOptions;
     mrState: MrState;
@@ -199,7 +199,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         createNodeToTypeMap,
         mergeIntoNodeToTypeMaps: mergeIntoMapIntoNodeToTypeMaps,
         getEffectiveDeclaredType,
-        getDeclaredType: getEffectiveDeclaredTypeFromSymbol,
+        getEffectiveDeclaredTypeFromSymbol,
         checker,
         compilerOptions,
         mrState: _mrState,

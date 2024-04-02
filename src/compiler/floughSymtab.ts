@@ -104,8 +104,8 @@ class FloughSymtabImpl implements FloughSymtab {
 
         if (this.localMap.has(symbol)) return this.localMap.get(symbol);
         if (this.locals?.has(symbol.escapedName)) {
-            const type = mrNarrow.getDeclaredType(symbol);
-            this.localMap.set(symbol, { type }); // TODO: Not nice to mutate the FloughSymtabImpl with a get, although this might be harmless.  Try removing it?
+            const type = mrNarrow.getEffectiveDeclaredTypeFromSymbol(symbol);
+            //this.localMap.set(symbol, { type }); // TODO: Not nice to mutate the FloughSymtabImpl with a get, although this might be harmless.  Try removing it?
             return { type };
         }
         if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);

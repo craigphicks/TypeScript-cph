@@ -39,7 +39,7 @@ var mrNarrow: MrNarrow;
 export function initFloughGroupApplyCrit(checkerIn: FloughTypeChecker, mrNarrowIn: MrNarrow): void {
     checker = checkerIn;
     mrNarrow = mrNarrowIn;
-    getDeclaredType = mrNarrowIn.getDeclaredType;
+    getDeclaredType = mrNarrowIn.getEffectiveDeclaredTypeFromSymbol;
 }
 
 function createNever(): RefTypesTableReturnNoSymbol {
