@@ -347,6 +347,14 @@ const ret = (()=>{
         let result =  arr.reduce((acc, x) =>  {
             Debug.assert(acc);
             if (!x) return acc;
+            // if (!x.wasAssigned && acc.wasAssigned) {
+            //     return acc;
+            // }
+            // if (x.wasAssigned && !acc.wasAssigned) {
+            //     // return x; cannot use x because x.type is not a fresh object
+            //     acc = { type: floughTypeModule.cloneType(x.type), wasAssigned: x.wasAssigned};
+            //     return acc;
+            // }
             return { type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type), wasAssigned: acc.wasAssigned || x.wasAssigned };
         }, { type: floughTypeModule.createNeverType() }); // // need to initialize with a fresh never type because it will be mutated
         //if (!floughTypeModule.isNeverType(result!.type))
