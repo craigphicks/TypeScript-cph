@@ -14,7 +14,7 @@ export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
 
 export interface FloughSymtab {
     localsContainer?: LocalsContainer;
-    branch(loopState?: ProcessLoopState): FloughSymtab;
+    branch(loopStatus?:{loopGroupIdx: number, widening?: boolean},loopState?: ProcessLoopState): FloughSymtab;
     getLocalsContainer(): LocalsContainer;
     has(symbol: Symbol): boolean;
     get(symbol: Symbol): FloughType | undefined;
@@ -26,7 +26,7 @@ export interface FloughSymtab {
     forEach(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void;
 };
 
-type InnerMap = Map<Symbol, { type: FloughType, wasAssigned?: boolean }>;
+type InnerMap = Map<Symbol, { type: FloughType, wtype?: FloughType, wasAssigned?: boolean }>;
 function createInnerMap(clone?: InnerMap): InnerMap { return clone? new Map(clone) : new Map(); }
 
 class FloughSymtabImpl implements FloughSymtab {
@@ -38,8 +38,12 @@ class FloughSymtabImpl implements FloughSymtab {
     shadowMap = createInnerMap();
     locals?: Readonly<SymbolTable>;
     localsContainer?: LocalsContainer;
+    loopStatus?:{
+        loopGroupIdx: number;
+        widening?: boolean;
+    };
     loopState?: ProcessLoopState; // TODO: Limit to only necessary members
-    constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopState?: ProcessLoopState) {
+    constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopStatus?:{loopGroupIdx: number, widening?: boolean}, loopState?: ProcessLoopState) {
         if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
         this.localsContainer = localsContainer
         Debug.assert(!localsContainer || localsContainer.locals?.size,undefined,()=>`FloughSymtabImpl.constructor(): localsContainer has no locals`);
@@ -51,6 +55,7 @@ class FloughSymtabImpl implements FloughSymtab {
         else this.tableDepth = 0;
         if (localMap) this.localMap = localMap;
         if (shadowMap) this.shadowMap = shadowMap;
+        if (loopStatus) this.loopStatus = loopStatus;
         if (loopState) this.loopState = loopState;
     }
     /**
@@ -58,8 +63,8 @@ class FloughSymtabImpl implements FloughSymtab {
      * We could choose to make a copy of the localMap and shadowMap if they were below a certain size.
      * @returns a new FloughSymtab that is a branch of this FloughSymtab
      */
-    branch(loopState?: ProcessLoopState): FloughSymtabImpl {
-        return new FloughSymtabImpl(undefined, this, undefined, undefined, loopState);
+    branch(loopStatus?:{loopGroupIdx: number, widening?: boolean}, loopState?: ProcessLoopState): FloughSymtabImpl {
+        return new FloughSymtabImpl(undefined, this, undefined, undefined, loopStatus, loopState);
     }
     getLocalsContainer(): LocalsContainer {
         if (this.localsContainer) return this.localsContainer;
@@ -94,7 +99,9 @@ class FloughSymtabImpl implements FloughSymtab {
     get(symbol: Symbol): FloughType | undefined {
         return this.getWithAssigned(symbol)?.type;
     }
-    getWithAssigned(symbol: Symbol): { type: FloughType, wasAssigned?: boolean } | undefined {
+    getWithAssigned(symbol: Symbol): { type: FloughType, wtype?: FloughType | undefined; } | undefined {
+
+
         if (this.localMap.has(symbol)) return this.localMap.get(symbol);
         if (this.locals?.has(symbol.escapedName)) {
             const type = mrNarrow.getDeclaredType(symbol);
@@ -116,7 +123,43 @@ class FloughSymtabImpl implements FloughSymtab {
         }
         if (this.outer) return this.outer.getWithAssigned(symbol);
         return undefined;
-        //Debug.assert(false,undefined,()=>`FloughSymtab.getWithAssigned(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
+
+
+        // if (this.localMap.has(symbol)) return this.localMap.get(symbol);
+        // if (this.locals?.has(symbol.escapedName)) {
+        //     const type = mrNarrow.getDeclaredType(symbol);
+        //     this.localMap.set(symbol, { type }); // TODO: Not nice to mutate the FloughSymtabImpl with a get, although this might be harmless.  Try removing it?
+        //     return { type };
+        // }
+        // let wtype: FloughType | undefined;
+        // let type: FloughType | undefined;
+        // if (this.shadowMap.has(symbol)) {
+        //     type = this.shadowMap.get(symbol)?.type;
+        //     if ((type as any).type) Debug.assert(false);
+        // }
+        // else if (this.outer) {
+        //     type = this.outer.getWithAssigned(symbol)?.type;
+        //     if ((type as any).type) Debug.assert(false);
+        // }
+
+        // if (this.loopStatus?.widening){
+        //     const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
+        //     Debug.assert(symbolInfo);
+        //     if (symbolInfo && !symbolInfo.isconst){
+        //         // Presence of loopState indicates loop boundary. The condition
+        //         // (this.loopState?.invocations===0 && symbolInfo && !symbolInfo.isconst) indicates that
+        //         // the symbol type should be widened because we don't yet know the loop feedback at loop start.
+        //         const type = mrNarrow.getEffectiveDeclaredType(symbolInfo);
+        //         // this.shadowMap.set(symbol, { type }); <-- probably don't want to mutate the FloughSymtabImpl
+        //         wtype = type;
+        //         //return { type };
+        //     }
+        //     Debug.assert(!!type == !!wtype);
+        // }
+        // //if (this.outer) return this.outer.getWithAssigned(symbol);
+        // if (!type) undefined;
+        // if ((type as any).type) Debug.assert(false);
+        // return { type: type!, wtype };
     }
 
     set(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {

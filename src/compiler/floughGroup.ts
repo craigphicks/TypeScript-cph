@@ -992,7 +992,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             else {
                 fsymtab = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, loopState.scConditionContinue?.fsymtab!]);
             }
-            subloopSCForLoopConditionIn.fsymtab = fsymtab.branch(loopState);
+            subloopSCForLoopConditionIn.fsymtab = fsymtab.branch({loopGroupIdx: loopGroup.groupIdx, widening: true },loopState);
         }
 
         loopState.loopConditionCall = "initial";
@@ -1033,7 +1033,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             if (isRefTypesSymtabConstraintItemNever(scForConditionContinue)) {
                 // enablePerBlockSymtabs handled inside createSubLoopRefTypesSymtabConstraint
                 scForConditionUnionOfInAndContinue = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
-                if (enablePerBlockSymtabs) scForConditionUnionOfInAndContinue.fsymtab = outerSCForLoopConditionIn.fsymtab!.branch(loopState);
+                if (enablePerBlockSymtabs) scForConditionUnionOfInAndContinue.fsymtab = outerSCForLoopConditionIn.fsymtab!.branch({loopGroupIdx:loopGroup.groupIdx},loopState);
             }
             else {
                 if (enablePerBlockSymtabs){
@@ -1050,7 +1050,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
 
                     scForConditionUnionOfInAndContinue = {
                         symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!),
-                        fsymtab: fsymtabUnion!.branch(loopState),
+                        fsymtab: fsymtabUnion!.branch({loopGroupIdx: loopGroup.groupIdx}, loopState),
                         constraintItem: scForConditionContinue.constraintItem
                     }
                 }
