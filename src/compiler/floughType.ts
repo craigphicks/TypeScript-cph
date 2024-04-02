@@ -568,6 +568,9 @@ function unionWithTsTypeMutate(tstype: Readonly<Type>, ftin: FloughTypei): Floug
     let logicalObject = ftin.logicalObject;
     function doUnionOne(t: Type, expectOnlyPrimitive?: true): void {
         // if (t.flags & TypeFlags.Union) Debug.fail("unexpected: union in doUnionOne");
+        if ((t as any).regularType  && (t as any).regularType!== t){
+            t = (t as any).regularType as Readonly<Type>
+        }
         if (t.flags & TypeFlags.Never) return;
         if (t.flags & TypeFlags.StringLike) {
             if (t.flags & TypeFlags.String) {
