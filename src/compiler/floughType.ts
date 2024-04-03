@@ -113,7 +113,7 @@ export interface FloughTypeModule {
     intersectionWithUndefinedNull(ft: Readonly<FloughType>): FloughType | undefined;
 
     dbgFloughTypeToStrings(type: Readonly<FloughType>): string[];
-    dbgFloughTypeToString(type: Readonly<FloughType>): string;
+    dbgFloughTypeToString(type: Readonly<FloughType> | undefined): string;
 }
 
 export type PartitionForEqualityCompareItem = { both?: FloughType; left?: FloughType; right?: FloughType; true?: boolean; false?: boolean; };
@@ -1598,7 +1598,8 @@ function dbgFloughTypeToStrings(ft: Readonly<FloughType>): string[] {
     }
     return arr;
 }
-function dbgFloughTypeToString(ft: Readonly<FloughType>): string {
+function dbgFloughTypeToString(ft: Readonly<FloughType> | undefined): string {
+    if (!ft) return "<undef>";
     castReadonlyFloughTypei(ft);
     const tstype = getTsTypeFromFloughType(ft);
     return IDebug.dbgs.typeToString(tstype);

@@ -7,14 +7,20 @@ import { assertCastType } from "./floughTypedefs";
 import { MrNarrow } from "./floughGroup2";
 import { ProcessLoopState } from "./floughGroup";
 
+
+const useWType = true;
+
+
 var mrNarrow: MrNarrow = undefined as any as MrNarrow;
 export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
     mrNarrow = mrNarrowInit;
 }
 
+export interface FloughSymtabLoopStatus {loopGroupIdx: number, widening?: boolean}
+
 export interface FloughSymtab {
     localsContainer?: LocalsContainer;
-    branch(loopStatus?:{loopGroupIdx: number, widening?: boolean},loopState?: ProcessLoopState): FloughSymtab;
+    branch(loopStatus?:FloughSymtabLoopStatus,loopState?: ProcessLoopState): FloughSymtab;
     getLocalsContainer(): LocalsContainer;
     has(symbol: Symbol): boolean;
     get(symbol: Symbol): FloughType | undefined;
@@ -44,7 +50,7 @@ class FloughSymtabImpl implements FloughSymtab {
         widening?: boolean;
     };
     loopState?: ProcessLoopState; // TODO: Limit to only necessary members
-    constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopStatus?:{loopGroupIdx: number, widening?: boolean}, loopState?: ProcessLoopState) {
+    constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState) {
         if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
         this.localsContainer = localsContainer
         Debug.assert(!localsContainer || localsContainer.locals?.size,undefined,()=>`FloughSymtabImpl.constructor(): localsContainer has no locals`);
@@ -64,7 +70,7 @@ class FloughSymtabImpl implements FloughSymtab {
      * We could choose to make a copy of the localMap and shadowMap if they were below a certain size.
      * @returns a new FloughSymtab that is a branch of this FloughSymtab
      */
-    branch(loopStatus?:{loopGroupIdx: number, widening?: boolean}, loopState?: ProcessLoopState): FloughSymtabImpl {
+    branch(loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState): FloughSymtabImpl {
         return new FloughSymtabImpl(undefined, this, undefined, undefined, loopStatus, loopState);
     }
     getLocalsContainer(): LocalsContainer {
@@ -98,14 +104,16 @@ class FloughSymtabImpl implements FloughSymtab {
     //     //Debug.assert(false,undefined,()=>`FloughSymtab.get(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
     // }
     get(symbol: Symbol): FloughType | undefined {
-        return this.getWithAssigned(symbol)?.type;
+        const entry = this.getWithAssigned(symbol);
+        if (!entry) return undefined;
+        if (!entry.wtype) return entry.type;
+        return floughTypeModule.unionOfRefTypesType([entry.type, entry.wtype]);
     }
     getWithAssigned(symbol: Symbol): { type: FloughType, wtype?: FloughType | undefined; } | undefined {
 
-        let newWay = true;
         let doNotMutateInGet = true;
 
-        if (!newWay) {
+        if (!useWType) {
             if (this.localMap.has(symbol)) return this.localMap.get(symbol);
             if (this.locals?.has(symbol.escapedName)) {
                 const type = mrNarrow.getEffectiveDeclaredTypeFromSymbol(symbol);
@@ -130,7 +138,10 @@ class FloughSymtabImpl implements FloughSymtab {
         }
 
         let entry: Entry | undefined;
-        if (entry = this.localMap.get(symbol)) return entry;
+        if (entry = this.localMap.get(symbol)) {
+            Debug.assert(!entry.wtype);
+            return entry;
+        }
         if (this.locals?.has(symbol.escapedName)) {
             const type = mrNarrow.getEffectiveDeclaredTypeFromSymbol(symbol);
             if (!doNotMutateInGet) this.localMap.set(symbol, { type }); // TODO: Not nice to mutate the FloughSymtabImpl with a get, although this might be harmless.  Try removing it?
@@ -138,27 +149,37 @@ class FloughSymtabImpl implements FloughSymtab {
         }
         let wtype: FloughType | undefined;
         //let type: FloughType | undefined;
+
+        if (this.loopStatus){
+            if (this.loopStatus.widening){
+                const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
+                Debug.assert(symbolInfo);
+                if (symbolInfo && !symbolInfo.isconst){
+                    // Presence of loopState indicates loop boundary. The condition
+                    // (this.loopState?.invocations===0 && symbolInfo && !symbolInfo.isconst) indicates that
+                    // the symbol type should be widened because we don't yet know the loop feedback at loop start.
+                    wtype = mrNarrow.getEffectiveDeclaredType(symbolInfo);
+                    if (!doNotMutateInGet) this.shadowMap.set(symbol, { type: wtype, wtype }); // <-- probably don't want to mutate the FloughSymtabImpl
+                }
+                //Debug.assert(wtype && entry);
+            }
+        }
+
         entry = this.shadowMap.get(symbol);
         if (!entry && this.outer) {
             entry = this.outer.getWithAssigned(symbol);
-            if (!entry) return undefined;
         }
-
-        if (this.loopStatus?.widening){
-            Debug.assert(entry);
-            const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
-            Debug.assert(symbolInfo);
-            if (symbolInfo && !symbolInfo.isconst){
-                // Presence of loopState indicates loop boundary. The condition
-                // (this.loopState?.invocations===0 && symbolInfo && !symbolInfo.isconst) indicates that
-                // the symbol type should be widened because we don't yet know the loop feedback at loop start.
-                wtype = mrNarrow.getEffectiveDeclaredType(symbolInfo);
-                if (!doNotMutateInGet) this.shadowMap.set(symbol, { type: entry.type, wtype }); // <-- probably don't want to mutate the FloughSymtabImpl
+        if (!entry) {
+            Debug.assert(!wtype);
+            return undefined;
+        }
+        if (this.loopStatus){
+            if (!this.loopStatus.widening){
+                Debug.assert(!wtype);
+                return { type: entry.type } ;
             }
-            Debug.assert(wtype && entry);
         }
-        if (!entry || !entry.type) return undefined;
-        return { type: entry.type, wtype };
+        return { type: entry.type, wtype: wtype ?? entry.wtype };
     }
 
     set(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {
@@ -168,18 +189,18 @@ class FloughSymtabImpl implements FloughSymtab {
     }
     setAsAssigned(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {
         if (this.locals?.has(symbol.escapedName)) this.localMap.set(symbol, { type, wasAssigned: true});
-        else this.shadowMap.set(symbol, { type, wasAssigned: true});
+        else this.shadowMap.set(symbol, { type, wtype: type, wasAssigned: true});
         return this;
     }
 
-    forEachLocalMap(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void {
-        this.localMap.forEach((typeWithWasAssigned, symbol) => f(typeWithWasAssigned, symbol));
+    forEachLocalMap(f: (entry:Entry, symbol: Symbol) => void): void {
+        this.localMap.forEach((entry, symbol) => f(entry, symbol));
     }
-    forEachShadowMap(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void {
-        this.shadowMap.forEach((typeWithWasAssigned, symbol) => f(typeWithWasAssigned, symbol));
+    forEachShadowMap(f: (entry:Entry, symbol: Symbol) => void): void {
+        this.shadowMap.forEach((entry, symbol) => f(entry, symbol));
     }
 
-    forEach(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void {
+    forEach(f: (entry:Entry, symbol: Symbol) => void): void {
         this.forEachLocalMap(f);
         this.forEachShadowMap(f);
     }
@@ -275,7 +296,7 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  * @returns
  */
 export function unionFloughSymtab(afsIn: readonly (Readonly<FloughSymtab> | undefined)[]): FloughSymtab {
-const loggerLevel = 2;
+const loggerLevel = 1;
 IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length})`, loggerLevel);
 if (IDebug.isActive(loggerLevel)) {
     afsIn.forEach((fs,idx) => {
@@ -333,6 +354,7 @@ const ret = (()=>{
             while (fsx && fsx !== fsca) {
                 Debug.assert(fsx);
                 Debug.assert(!fsx.localsContainer); // If this fails, it is a TODO
+                //Debug.assert(!fsx.loopStatus); // If this fails, it is a TODO
                 fsx = fsx.outer!;
             }
             Debug.assert(fsx===fsca);
@@ -345,13 +367,13 @@ const ret = (()=>{
             //if (setAncestors.has(fsx)) break;
             //setAncestors.add(fsx);
             if (fsx.shadowMap.size) {
-                fsx.shadowMap.forEach(({type, wasAssigned}, symbol) => {
+                fsx.shadowMap.forEach((entry, symbol) => {
                     let arr = mapSymbolToSet.get(symbol);
                     if (!arr) {
                         arr = new Array(afsIn.length).fill(undefined);
                         mapSymbolToSet.set(symbol, arr);
                     }
-                    arr[idx] ??= {type, wasAssigned}; // if it is already set, do not set again
+                    arr[idx] ??= entry; // if it is already set, do not set again
                 });
             }
             if (IDebug.assertLevel>=1) {
@@ -378,7 +400,7 @@ const ret = (()=>{
             }
         });
     });
-    assertCastType<Map<Symbol,{type: FloughType, wasAssigned?:boolean}[]>>(mapSymbolToSet);
+    assertCastType<Map<Symbol,Entry[]>>(mapSymbolToSet);
 
 
     //const localMap: InnerMap | undefined = fsca.localMap ? createInnerMap(fsca.localMap) : fsca.localsContainer ? createInnerMap() : undefined;
@@ -397,9 +419,14 @@ const ret = (()=>{
             //     acc = { type: floughTypeModule.cloneType(x.type), wasAssigned: x.wasAssigned};
             //     return acc;
             // }
-            return { type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type), wasAssigned: acc.wasAssigned || x.wasAssigned };
-        }, { type: floughTypeModule.createNeverType() }); // // need to initialize with a fresh never type because it will be mutated
+            return {
+                type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type),
+                wtype: x.wtype ? floughTypeModule.unionWithFloughTypeMutate(x.wtype, acc.wtype!) : acc.wtype!,
+                wasAssigned: acc.wasAssigned || x.wasAssigned
+            };
+        }, { type: floughTypeModule.createNeverType(), wtype: floughTypeModule.createNeverType() }); // // need to initialize with a fresh never type because it will be mutated
         //if (!floughTypeModule.isNeverType(result!.type))
+        if (floughTypeModule.isNeverType(result.wtype!)) result.wtype = undefined;
         shadowMap.set(symbol, result!);
     });
     if (shadowMap.size === 0) return fsca;
@@ -422,6 +449,7 @@ export function dbgFloughSymtabToStringsOne(fsIn: Readonly<FloughSymtab>): strin
     if (fsIn.dbgid) arr.push(`dbgid: ${fsIn.dbgid}`);
     arr.push(`tableDepth: ${fsIn.tableDepth}`);
 
+    if (fsIn.loopStatus) arr.push(`loopStatus: {widening:${fsIn.loopStatus.widening}, loopGroupIdx:${fsIn.loopStatus.loopGroupIdx}}`);
     if (fsIn.loopState) arr.push(`loopState: {invocations: ${fsIn.loopState.invocations}, loopConditionCall:${fsIn.loopState.loopConditionCall}, loopGroup.groupIdx: ${fsIn.loopState.loopGroup.groupIdx}}`);
 
     if (!fsIn.localsContainer) arr.push(`localsContainer: <undef>`);
@@ -430,11 +458,14 @@ export function dbgFloughSymtabToStringsOne(fsIn: Readonly<FloughSymtab>): strin
         arr.push(`localsContainer.locals: ${IDebug.dbgs.symbolToString(symbol)}`)
     });
 
-    fsIn.forEachLocalMap(({type, wasAssigned}, symbol) => {
-        arr.push(`localMap: ${IDebug.dbgs.symbolToString(symbol)} -> { floughType: ${floughTypeModule.dbgFloughTypeToString(type)}, wasAssigned: ${wasAssigned?? "<undef>"}}`);
+    fsIn.forEachLocalMap(({type, wtype, wasAssigned}, symbol) => {
+        Debug.assert(!wtype); // should not be defined for local map.
+        arr.push(`localMap: ${IDebug.dbgs.symbolToString(symbol)
+        } -> { type: ${floughTypeModule.dbgFloughTypeToString(type)}, wasAssigned: ${wasAssigned?? "<undef>"}}`);
     });
-    fsIn.forEachShadowMap(({type, wasAssigned}, symbol) => {
-        arr.push(`shadowMap: ${IDebug.dbgs.symbolToString(symbol)} -> { floughType: ${floughTypeModule.dbgFloughTypeToString(type)}, wasAssigned: ${wasAssigned?? "<undef>"}}`);
+    fsIn.forEachShadowMap(({type, wtype, wasAssigned}, symbol) => {
+        arr.push(`shadowMap: ${IDebug.dbgs.symbolToString(symbol)
+        } -> { type: ${floughTypeModule.dbgFloughTypeToString(type)}, wtype: ${floughTypeModule.dbgFloughTypeToString(wtype)}, wasAssigned: ${wasAssigned?? "<undef>"}}`);
     });
     return arr;
 }

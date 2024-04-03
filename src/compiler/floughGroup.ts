@@ -88,7 +88,7 @@ import {
 } from "./floughTypedefs";
 import { dbgFlowToString, flowNodesToString } from "./floughNodesDebugWrite";
 import { sys } from "./sys";
-import { FloughSymtab, createFloughSymtab, dbgFloughSymtabToStrings, floughSymtabRollupLocalsScope, floughSymtabRollupToAncestor, initFloughSymtab, unionFloughSymtab } from "./floughSymtab";
+import { FloughSymtab, FloughSymtabLoopStatus, createFloughSymtab, dbgFloughSymtabToStrings, floughSymtabRollupLocalsScope, floughSymtabRollupToAncestor, initFloughSymtab, unionFloughSymtab } from "./floughSymtab";
 
 export const extraAsserts = true; // not suitable for release or timing tests.
 const hardCodeEnableTSDevExpectStringFalse = false; // gated with extraAsserts
@@ -902,7 +902,7 @@ function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFile
 
 function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloughState, forFlowParent: ForFlow, setOfLoopDeps: Readonly<Set<GroupForFlow>>, maxGroupIdxProcessed: number): void {
     const enableProcessLoopSaveScConditionContinue = false;
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}`,loggerLevel);
     }
@@ -992,7 +992,9 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             else {
                 fsymtab = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, loopState.scConditionContinue?.fsymtab!]);
             }
-            subloopSCForLoopConditionIn.fsymtab = fsymtab.branch({loopGroupIdx: loopGroup.groupIdx, widening: true },loopState);
+            const loopStatus: FloughSymtabLoopStatus = {loopGroupIdx: loopGroup.groupIdx };
+            if (loopState.invocations === 0) loopStatus.widening = true;
+            subloopSCForLoopConditionIn.fsymtab = fsymtab.branch(loopStatus,loopState);
         }
 
         loopState.loopConditionCall = "initial";
@@ -1329,7 +1331,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
 }
 
 function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus: FloughStatus, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, options?: { cachedSCForLoop: RefTypesSymtabConstraintItem; loopGroupIdx: number; }): void {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const mrNarrow = sourceFileMrState.mrNarrow;
     const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];

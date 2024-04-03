@@ -901,7 +901,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
      * @returns
      */
     function flough({ sci, expr: expr, floughStatus: floughStatus, qdotfallout, crit, accessDepth, refAccessArgs }: FloughArgs): FloughReturn {
-        const loggerLevel = 2;
+        const loggerLevel = 1;
         if (IDebug.isActive(loggerLevel)) {
             IDebug.ilogGroup(()=>
                 `flough[in] expr:${IDebug.dbgs.nodeToString(expr)}},`
