@@ -410,6 +410,7 @@ export interface MrState {
      * but with variations.
      */
     nodeToOriginalObjectLiteralTypeMap: Map<Node, Type>;
+    getCurrentLoopState(): ProcessLoopState | undefined;
 }
 
 function createHeap(groupsForFlow: GroupsForFlow): Heap {
@@ -536,6 +537,11 @@ export function createSourceFileFloughState(sourceFile: SourceFileWithFloughNode
         connectGroupsGraphsCompleted: new Array(groupsForFlow.connectedGroupsGraphs.arrConnectedGraphs.length).fill(/*value*/ false),
         groupDependancyCountRemaining: groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount.slice(),
         nodeToOriginalObjectLiteralTypeMap: new Map<Node, Type>(),
+        getCurrentLoopState() {
+            const currentLoopGroup = this.currentLoopStack.at(-1);
+            return currentLoopGroup ? this.loopGroupToProcessLoopStateMap!.get(currentLoopGroup) : undefined;
+
+        }
     };
     // const refTypesTypeModule = floughTypeModule.createRefTypesTypeModule(checker);
     const mrNarrow = createMrNarrow(checker, sourceFile, mrState, /*refTypesTypeModule, */ compilerOptions);
@@ -1028,6 +1034,15 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
         setOfKeysToDeleteFromCurrentBranchesMap.clear();
 
         if (true) {
+
+            const invocation0FloughSymtab = loopState.invocations === 0 ? createFloughSymtab(undefined,outerSCForLoopConditionIn.fsymtab) : undefined;
+            if (enablePerBlockSymtabs && loopState.invocations === 0) {
+                // IWOZERE
+                // Before "orSymtabConstraint",
+                // for each item in arrSCForLoopContinue pick out the "assignedType" values of symbols in loopState.symbolsAssigned.
+                // Other symbols left empty so they will refernce back to the outerSCForLoopConditionIn.fsymtab
+            }
+
             const scForConditionContinue = orSymtabConstraints(arrSCForLoopContinue /*, mrNarrow*/);
             if (loopState.invocations === 0) {
                 if (enablePerBlockSymtabs){

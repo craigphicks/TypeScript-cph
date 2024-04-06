@@ -8,7 +8,7 @@ import { MrNarrow } from "./floughGroup2";
 import { ProcessLoopState } from "./floughGroup";
 
 
-const useWType = true;
+const useWType = false;
 
 
 var mrNarrow: MrNarrow = undefined as any as MrNarrow;
@@ -17,7 +17,7 @@ export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
 }
 
 export interface FloughSymtabLoopStatus {loopGroupIdx: number, widening?: boolean}
-export interface FloughSymtabEntry { type: FloughType, wtype?: FloughType | undefined, wasAssigned?: boolean };
+export interface FloughSymtabEntry { type: FloughType, assignedType?: FloughType, wtype?: FloughType | undefined, wasAssigned?: boolean };
 
 export interface FloughSymtab {
     localsContainer?: LocalsContainer;
@@ -106,8 +106,9 @@ class FloughSymtabImpl implements FloughSymtab {
     get(symbol: Symbol): FloughType | undefined {
         const entry = this.getWithAssigned(symbol);
         if (!entry) return undefined;
-        if (!entry.wtype) return entry.type;
-        return floughTypeModule.unionOfRefTypesType([entry.type, entry.wtype]);
+        return entry.type;
+        // if (!entry.wtype) return entry.type;
+        // return floughTypeModule.unionOfRefTypesType([entry.type, entry.wtype]);
     }
     getWithAssigned(symbol: Symbol): FloughSymtabEntry | undefined {
 
@@ -121,7 +122,7 @@ class FloughSymtabImpl implements FloughSymtab {
                 return { type };
             }
             if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);
-            if (this.loopState?.invocations===0 && this.loopState.loopConditionCall !== "final"){
+            if (this.loopState?.invocations===0 && this.loopStatus?.widening){
                 const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
                 Debug.assert(symbolInfo);
                 if (symbolInfo && !symbolInfo.isconst){
@@ -129,7 +130,7 @@ class FloughSymtabImpl implements FloughSymtab {
                     // (this.loopState?.invocations===0 && symbolInfo && !symbolInfo.isconst) indicates that
                     // the symbol type should be widened because we don't yet know the loop feedback at loop start.
                     const type = mrNarrow.getEffectiveDeclaredType(symbolInfo);
-                    this.shadowMap.set(symbol, { type }); // <-- probably don't want to mutate the FloughSymtabImpl
+                    if (!doNotMutateInGet) this.shadowMap.set(symbol, { type }); // <-- probably don't want to mutate the FloughSymtabImpl
                     return { type };
                 }
             }
@@ -184,12 +185,23 @@ class FloughSymtabImpl implements FloughSymtab {
 
     set(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {
         if (this.locals?.has(symbol.escapedName)) this.localMap.set(symbol, { type });
-        else this.shadowMap.set(symbol, { type });
+        else {
+            const got = this.getWithAssigned(symbol);
+            // assigned type gets set to narrowed previous assigned type if it exists, otherwise undefined
+            this.shadowMap.set(symbol, { type, assignedType: got ? type : undefined });
+        }
         return this;
     }
     setAsAssigned(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {
-        if (this.locals?.has(symbol.escapedName)) this.localMap.set(symbol, { type, wasAssigned: true});
-        else this.shadowMap.set(symbol, { type, wasAssigned: true});
+        if (this.locals?.has(symbol.escapedName)) this.localMap.set(symbol, { type, assignedType: type, wasAssigned: true});
+        else {
+            this.shadowMap.set(symbol, { type, assignedType: type, wasAssigned: true});
+            const loopState = mrNarrow.mrState.getCurrentLoopState();
+            if (loopState && loopState.invocations===0) {
+                // add symbol to assigned list
+                loopState.symbolsAssigned!.add(symbol);
+            }
+        }
         return this;
     }
 
@@ -207,7 +219,7 @@ class FloughSymtabImpl implements FloughSymtab {
 
 }
 
-export function createFloughSymtab(localsContainer: LocalsContainer, outer?: Readonly<FloughSymtab>): FloughSymtab {
+export function createFloughSymtab(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>): FloughSymtab {
     return new FloughSymtabImpl(localsContainer, outer);
 }
 
