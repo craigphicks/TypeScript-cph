@@ -2,6 +2,8 @@ import * as ts from "./_namespaces/ts";
 import { Debug, LogLevel } from "./debug";
 import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite, TypeFlags, UnionOrIntersectionType, Ternary, ObjectType } from "./types";
 import { getNodeId, CheckMode, SignatureCheckMode } from "./checker";
+import { getLineAndCharacterOfPosition } from "./_namespaces/ts";
+import { FloughTypeChecker } from "./floughTypedefs";
 //import { castHereafter } from "./core";
 
 export interface ILoggingHost {
@@ -24,7 +26,7 @@ export namespace IDebug {
     //export let loggingHost: LoggingHost | undefined;
     export let loggingHost: ILoggingHost | undefined;
     export let dbgs: Dbgs = 0 as any as Dbgs;
-    export let checker: TypeChecker | undefined;
+    export let checker: FloughTypeChecker | undefined;
     export function isActive(loggerLevel = loggerLevelDefault) {
         return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile();
     }
@@ -117,7 +119,7 @@ export class ILoggingClass implements ILoggingHost {
             this.log(level, message);
         }
     }
-    notifySourceFile(sourceFile: SourceFile, typeChecker: TypeChecker) {
+    notifySourceFile(sourceFile: SourceFile, typeChecker: FloughTypeChecker) {
         this.currentSourceFn = sourceFile.originalFileName;
         this.currentSourceFnCount = -1;
         this.logFilename = undefined;
@@ -275,13 +277,18 @@ export class DbgsClass implements Dbgs{
     };
     nodeToString(node: Node | undefined): string {
         if (!node) return "<undef>";
+
+        const sourceFile = IDebug.checker?.getCurrentSourceFileFloughState().sourceFile;
+        const line = sourceFile ? getLineAndCharacterOfPosition(sourceFile, node.pos) : undefined;
+        const linestr = line ? `(${line.line},${line.character})` : "(?,?)";
+
         const getOneLineNodeTxt = (()=>{
             let str = this.getNodeText(node);
             str = str.replace(/\n/g, " ");
             if (str.length>120) str = str.slice(0,50) + "..." + str.slice(-50);
             return str;
         });
-        return `[n${this.getNodeId(node)}] ${getOneLineNodeTxt()}, [${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
+        return `[n${this.getNodeId(node)}] ${getOneLineNodeTxt()}, [${linestr}:${node.pos},${node.end}], ${Debug.formatSyntaxKind(node.kind)}`;
     }
     signatureId(c: Signature | undefined): number {
         return c ? this.getSignatureId(c) : -1;

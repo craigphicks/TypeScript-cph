@@ -134,7 +134,7 @@ import {
     getSourceTextOfNodeFromSourceFile,
 } from "./utilities";
 import { IDebug } from "./mydebug";
-import { dbgFloughSymtabToStrings } from "./floughSymtab";
+import { FloughSymtabEntry, dbgFloughSymtabToStrings } from "./floughSymtab";
 
 /* eslint-disable no-double-space */
 
@@ -642,6 +642,37 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
         }
     }
 
+    function debugDevExpectFloughSymtabEntry(node: Node, count: number, floughSymtabEntry: Readonly<FloughSymtabEntry>): void {
+        const loggerLevel = 1;
+        const arrexpected = getDevExpectStrings(node, sourceFile);
+        if (arrexpected) {
+            function floughTypeToPlainString(t: FloughType): string {
+                return typeToString(floughTypeModule.getTsTypeFromFloughType(t));
+            }
+            // const actual = `count: ${symbolFlowInfo.passCount}, actualDeclaredTsType: ${typeToString(symbolFlowInfo.effectiveDeclaredTsType)}`;
+            let actual = `count: ${count}, type: ${floughTypeToPlainString(floughSymtabEntry.type)}`;
+            if (floughSymtabEntry.wtype) {
+                actual += `, wtype: ${floughTypeToPlainString(floughSymtabEntry.wtype)}`;
+            }
+            const pass = arrexpected.some(expected => {
+                return actual === expected;
+            });
+            if (!pass) {
+                    if (IDebug.isActive(loggerLevel)) {
+                        IDebug.ilog(()=>`debugDevExpectEffectiveDeclaredType: failed ts-dev-expect-string "${actual}"`, 0);
+                        arrexpected.forEach(expected => IDebug.ilog(()=>`debugDevExpectEffectiveDeclaredType: expected ts-dev-expect-string "${expected}"`, 0));
+                        IDebug.ilog(()=>`expr: ${IDebug.dbgs.nodeToString(node)}`, 0);
+                    }
+                    Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}", expr: ${IDebug.dbgs.nodeToString(node)}`);
+            }
+            if (IDebug.isActive(loggerLevel)) {
+                IDebug.ilog(()=>`debugDevExpectEffectiveDeclaredType: passed ts-dev-expect-string "${actual}", expr: ${IDebug.dbgs.nodeToString(node)}`, loggerLevel);
+            }
+        }
+    }
+
+
+
     // @ ts-expect-error
     function getSigParamType(sig: Readonly<Signature>, idx: number): { type: Type; isRest?: boolean; optional?: boolean; symbol: Symbol; } {
         if (idx >= sig.parameters.length - 1) {
@@ -1111,6 +1142,27 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         return floughReturn;
                     }
                 } // endof if (floughStatus.replayables.has(symbol))
+
+                if (enablePerBlockSymtabs){
+                    if (compilerOptions.enableTSDevExpectString) {
+                        if (!sci.fsymtab) {
+                            Debug.fail("unexpected !sci.fsymtab");
+                        }
+                        let entry = sci.fsymtab.getWithAssigned(symbol);
+                        if (!entry) {
+                            entry = {
+                                type: floughTypeModule.createNeverType(),
+                            };
+                        }
+                        const currentLoopGroup = floughStatus.sourceFileFloughState.mrState.currentLoopStack.at(-1);
+                        const count = currentLoopGroup ? floughStatus.sourceFileFloughState.mrState.loopGroupToProcessLoopStateMap!.get(currentLoopGroup)?.invocations : 0;
+                        Debug.assert(count !== undefined);
+                        // const count = floughStatus.sourceFileFloughState.mrState.currentLoopStack.length ?
+                        //     floughStatus.sourceFileFloughState.mrState.currentLoopStack[].
+                        debugDevExpectFloughSymtabEntry(expr, count, entry);
+                    }
+                }
+                //debugDevExpectFloughSymtabEntry
 
                 let type: RefTypesType | undefined = sci.symtab?.get(symbol);
                 if (enablePerBlockSymtabs){

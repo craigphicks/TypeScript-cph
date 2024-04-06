@@ -395,8 +395,9 @@ export interface MrState {
         expr: Expression | Node;
         returnErrorTypeOnFail: boolean | undefined;
     } | undefined;
-    currentLoopDepth: number;
-    currentLoopsInLoopScope: Set<GroupForFlow>;
+    currentLoopDepth: number; // TODO: should be able use currentLoopStack instead
+    currentLoopsInLoopScope: Set<GroupForFlow>; // TODO: should be able use currentLoopStack instead
+    currentLoopStack: GroupForFlow[];
     loopGroupToProcessLoopStateMap?: WeakMap<GroupForFlow, ProcessLoopState>;
     symbolFlowInfoMap: SymbolFlowInfoMap;
     connectGroupsGraphsCompleted: boolean[];
@@ -530,6 +531,7 @@ export function createSourceFileFloughState(sourceFile: SourceFileWithFloughNode
         forFlowTop: createForFlow(groupsForFlow),
         currentLoopDepth: 0,
         currentLoopsInLoopScope: new Set<GroupForFlow>(),
+        currentLoopStack: [],
         symbolFlowInfoMap: new WeakMap<Symbol, SymbolFlowInfo | undefined>(),
         connectGroupsGraphsCompleted: new Array(groupsForFlow.connectedGroupsGraphs.arrConnectedGraphs.length).fill(/*value*/ false),
         groupDependancyCountRemaining: groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount.slice(),
@@ -773,6 +775,7 @@ function createFloughStatus(groupForFlow: GroupForFlow, sourceFileMrState: Sourc
         mrState.forFlowTop.groupToNodeToType!.set(groupForFlow, groupNodeToTypeMap);
     }
     return {
+        sourceFileFloughState: sourceFileMrState,
         inCondition: groupForFlow.kind === GroupForFlowKind.ifexpr || groupForFlow.kind === GroupForFlowKind.loop,
         currentReplayableItem: undefined,
         replayables: sourceFileMrState.mrState.replayableItems,
@@ -841,19 +844,19 @@ export function getDevDebugger(node: Node, sourceFile: SourceFileWithFloughNodes
     return false;
 }
 
-export function getDevExpectString(node: Node, sourceFile: SourceFileWithFloughNodes): string | undefined {
-    const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
-    let cr: CommentRange | undefined;
-    if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length - 1];
-    if (cr) {
-        const comment = sourceFile.text.slice(cr.pos, cr.end);
-        const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
-        if (matches && matches.length >= 2) {
-            return matches[1];
-        }
-    }
-    return undefined;
-}
+// export function getDevExpectString(node: Node, sourceFile: SourceFileWithFloughNodes): string | undefined {
+//     const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
+//     let cr: CommentRange | undefined;
+//     if (arrCommentRange) cr = arrCommentRange[arrCommentRange.length - 1];
+//     if (cr) {
+//         const comment = sourceFile.text.slice(cr.pos, cr.end);
+//         const matches = /@ts-dev-expect-string "(.+?)"/.exec(comment);
+//         if (matches && matches.length >= 2) {
+//             return matches[1];
+//         }
+//     }
+//     return undefined;
+// }
 export function getDevExpectStrings(node: Node, sourceFile: SourceFileWithFloughNodes): string[] | undefined {
     const arrCommentRange = getLeadingCommentRangesOfNode(node, sourceFile);
     const arrstr: string[] = [];
@@ -870,6 +873,7 @@ export function getDevExpectStrings(node: Node, sourceFile: SourceFileWithFlough
 
 function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloughState, forFlowParent: ForFlow): void {
     sourceFileMrState.mrState.currentLoopsInLoopScope.add(loopGroup);
+    sourceFileMrState.mrState.currentLoopStack.push(loopGroup);
     sourceFileMrState.mrState.currentLoopDepth++;
     let maxGroupIdxProcessed: number;
     const setOfLoopDeps = getGroupDependencies(loopGroup, sourceFileMrState, /*forFlow*/ undefined, { minGroupIdxToAdd: loopGroup.groupIdx });
@@ -897,6 +901,7 @@ function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFile
         processLoop(loopGroup, sourceFileMrState, forFlowParent, setOfLoopDeps, maxGroupIdxProcessed);
     }
     sourceFileMrState.mrState.currentLoopDepth--;
+    sourceFileMrState.mrState.currentLoopStack.pop();
     if (sourceFileMrState.mrState.currentLoopDepth === 0) sourceFileMrState.mrState.currentLoopsInLoopScope.clear();
 }
 

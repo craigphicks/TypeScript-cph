@@ -17,6 +17,7 @@ export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
 }
 
 export interface FloughSymtabLoopStatus {loopGroupIdx: number, widening?: boolean}
+export interface FloughSymtabEntry { type: FloughType, wtype?: FloughType | undefined, wasAssigned?: boolean };
 
 export interface FloughSymtab {
     localsContainer?: LocalsContainer;
@@ -24,7 +25,7 @@ export interface FloughSymtab {
     getLocalsContainer(): LocalsContainer;
     has(symbol: Symbol): boolean;
     get(symbol: Symbol): FloughType | undefined;
-    //getWithAssigned(symbol: Symbol): { type: FloughType, wasAssigned?: boolean } | undefined;
+    getWithAssigned(symbol: Symbol): FloughSymtabEntry | undefined; // currentlly exposed for debug use only
     set(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab; // so that we can write fsymtab = fsymtab.branch().set(symbol, type)
     setAsAssigned(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab; // // so that we can write fsymtab = fsymtab.branch().setAsAssigned(symbol, type)
     forEachLocalMap(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void;
@@ -32,8 +33,7 @@ export interface FloughSymtab {
     forEach(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void;
 };
 
-interface Entry { type: FloughType, wtype?: FloughType, wasAssigned?: boolean };
-type InnerMap = Map<Symbol, Entry>;
+type InnerMap = Map<Symbol, FloughSymtabEntry>;
 function createInnerMap(clone?: InnerMap): InnerMap { return clone? new Map(clone) : new Map(); }
 
 class FloughSymtabImpl implements FloughSymtab {
@@ -109,7 +109,7 @@ class FloughSymtabImpl implements FloughSymtab {
         if (!entry.wtype) return entry.type;
         return floughTypeModule.unionOfRefTypesType([entry.type, entry.wtype]);
     }
-    getWithAssigned(symbol: Symbol): { type: FloughType, wtype?: FloughType | undefined; } | undefined {
+    getWithAssigned(symbol: Symbol): FloughSymtabEntry | undefined {
 
         let doNotMutateInGet = true;
 
@@ -137,7 +137,7 @@ class FloughSymtabImpl implements FloughSymtab {
             return undefined;
         }
 
-        let entry: Entry | undefined;
+        let entry: FloughSymtabEntry | undefined;
         if (entry = this.localMap.get(symbol)) {
             Debug.assert(!entry.wtype);
             return entry;
@@ -189,18 +189,18 @@ class FloughSymtabImpl implements FloughSymtab {
     }
     setAsAssigned(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {
         if (this.locals?.has(symbol.escapedName)) this.localMap.set(symbol, { type, wasAssigned: true});
-        else this.shadowMap.set(symbol, { type, wtype: type, wasAssigned: true});
+        else this.shadowMap.set(symbol, { type, wasAssigned: true});
         return this;
     }
 
-    forEachLocalMap(f: (entry:Entry, symbol: Symbol) => void): void {
+    forEachLocalMap(f: (entry:FloughSymtabEntry, symbol: Symbol) => void): void {
         this.localMap.forEach((entry, symbol) => f(entry, symbol));
     }
-    forEachShadowMap(f: (entry:Entry, symbol: Symbol) => void): void {
+    forEachShadowMap(f: (entry:FloughSymtabEntry, symbol: Symbol) => void): void {
         this.shadowMap.forEach((entry, symbol) => f(entry, symbol));
     }
 
-    forEach(f: (entry:Entry, symbol: Symbol) => void): void {
+    forEach(f: (entry:FloughSymtabEntry, symbol: Symbol) => void): void {
         this.forEachLocalMap(f);
         this.forEachShadowMap(f);
     }
@@ -353,11 +353,10 @@ const ret = (()=>{
         afsIn.forEach(fsx => {
             while (fsx && fsx !== fsca) {
                 Debug.assert(fsx);
-                Debug.assert(!fsx.localsContainer); // If this fails, it is a TODO
-                //Debug.assert(!fsx.loopStatus); // If this fails, it is a TODO
+                // Debug.assert(!fsx.localsContainer); // If it is an earlier group idx than the current loop group idx, not a problem
                 fsx = fsx.outer!;
             }
-            Debug.assert(fsx===fsca);
+            // Debug.assert(fsx===fsca); // If it is an earlier group idx than the current loop group idx, not a problem
         });
     }
     //const setAncestors = new Set<FloughSymtabImpl>();
@@ -377,7 +376,7 @@ const ret = (()=>{
                 });
             }
             if (IDebug.assertLevel>=1) {
-                Debug.assert(!fsx.localsContainer);
+                // Debug.assert(!fsx.localsContainer);
             }
         }
     });
@@ -400,7 +399,7 @@ const ret = (()=>{
             }
         });
     });
-    assertCastType<Map<Symbol,Entry[]>>(mapSymbolToSet);
+    assertCastType<Map<Symbol,FloughSymtabEntry[]>>(mapSymbolToSet);
 
 
     //const localMap: InnerMap | undefined = fsca.localMap ? createInnerMap(fsca.localMap) : fsca.localsContainer ? createInnerMap() : undefined;

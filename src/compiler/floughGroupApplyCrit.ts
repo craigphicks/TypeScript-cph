@@ -176,7 +176,7 @@ export function orIntoNodeToTypeMap(type: Readonly<RefTypesType>, node: Node, no
  * @param nodeToTypeMap
  * @returns RefTypesTableReturnNoSymbol
  */
-export function applyCritNoneToOne(rttr: Readonly<RefTypesTableReturn>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined): RefTypesTableReturnNoSymbol {
+export function applyCritNoneToOne(rttr: Readonly<RefTypesTableReturn>, nodeForMap: Readonly<Node>, nodeToTypeMap: NodeToTypeMap | undefined /*, andIntoSymtab?: boolean*/): RefTypesTableReturnNoSymbol {
     if (!rttr.symbol) {
         if (nodeToTypeMap) orIntoNodeToTypeMap(rttr.type, nodeForMap, nodeToTypeMap);
         return rttr;
@@ -374,8 +374,8 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Flo
             if (extraAsserts) {
                 Debug.assert(arrRttr[0].critsense === "passing" && arrRttr[1].critsense === "failing");
             }
-            const passing = applyCritNoneToOne(arrRttr[0], nodeForMap, nodeToTypeMap);
-            const failing = applyCritNoneToOne(arrRttr[1], nodeForMap, nodeToTypeMap);
+            const passing = applyCritNoneToOne(arrRttr[0], nodeForMap, nodeToTypeMap, /*andIntoSymtab*/ /*true*/);
+            const failing = applyCritNoneToOne(arrRttr[1], nodeForMap, nodeToTypeMap, /*andIntoSymtab*/ /*true*/);
             return { passing, failing };
         }
         const arrPassType: RefTypesType[] = [];

@@ -43,6 +43,7 @@ import {
     TypeChecker as TSTypeChecker,
 } from "./types";
 import { FloughSymtab } from "./floughSymtab";
+import { SourceFileFloughState } from "./floughGroup";
 
 
 
@@ -58,6 +59,7 @@ export interface Relations {
 
 export type FloughTypeChecker = TSTypeChecker & {
     loadFloughStateForSourceFile(sourceFile: SourceFile): void; // called from harnessIO.ts
+    getCurrentSourceFileFloughState(): SourceFileFloughState;
     getFlowNodeId(node: FloughNode): number;
     getIntersectionType(types: Type[]): Type;
     getUnionType(types: Type[]): Type;
@@ -197,14 +199,17 @@ export type ReplayData = {
 
 export type TypeCheckerFn = (...args: any[]) => any;
 
+
+
 export type FloughStatus = {
+    sourceFileFloughState: SourceFileFloughState;
     inCondition: boolean;
     currentReplayableItem?: undefined | ReplayableItem;
     replayables: WeakMap<Symbol, ReplayableItem>;
     groupNodeToTypeMap: Map<Node, Type>;
     accumBranches: boolean;
     isInLoop?: boolean;
-    isAsConstObject?: boolean | undefined; // Passed from AsExpression to floughObjectLiteralExprssion
+    isAsConstObject?: boolean | undefined; // Passed from AsExpression to floughObjectLiteralExpression
     /**
      * This allows checker.getTypeOfExpression(expr) to be called on any node in groupNodeToTypeMap, which may be conputed deep within a speculative branch,
      * e.g., floughByCallExpression.  (In test _cax-fn-0020.ts it is called in SpreadElement deep under floughByCallExpression)

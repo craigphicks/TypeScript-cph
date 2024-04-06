@@ -47424,6 +47424,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 Debug.assert(mapSourceFileToFloughState.has(sourceFile));
                 sourceFileFloughState = mapSourceFileToFloughState.get(sourceFile);
             },
+            getCurrentSourceFileFloughState() {
+                return sourceFileFloughState!;
+            },
             getIntersectionType,
             getUnionType,
             forEachType,
@@ -47478,8 +47481,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         tracing?.push(tracing.Phase.Check, "checkSourceFile", { path: node.path }, /*separateBeginAndEnd*/ true);
         performance.mark("beforeCheck");
         // cphdebug-start
+        const floughTypeChecker = createFloughTypeChecker(checker);
         if (IDebug.loggingHost){
-            IDebug.loggingHost.notifySourceFile(node, checker);
+            IDebug.loggingHost.notifySourceFile(node, floughTypeChecker);
         }
         // cphdebug-end
 
@@ -47489,7 +47493,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 sourceFileFloughState = mapSourceFileToFloughState.get(node);
             }
             else {
-                sourceFileFloughState = createSourceFileFloughState(node, createFloughTypeChecker(checker), compilerOptions);
+                sourceFileFloughState = createSourceFileFloughState(node, floughTypeChecker, compilerOptions);
                 mapSourceFileToFloughState.set(node, sourceFileFloughState);
             }
         }
