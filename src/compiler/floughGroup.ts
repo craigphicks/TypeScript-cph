@@ -894,6 +894,7 @@ function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFile
         Debug.assert(sourceFileMrState.mrState.currentLoopsInLoopScope.size === 1);
         Debug.assert(!sourceFileMrState.mrState.loopGroupToProcessLoopStateMap);
         sourceFileMrState.mrState.loopGroupToProcessLoopStateMap = new WeakMap<GroupForFlow, ProcessLoopState>();
+        sourceFileMrState.mrState.loopStatus.widening = true;
         processLoop(loopGroup, sourceFileMrState, forFlowParent, setOfLoopDeps, maxGroupIdxProcessed);
 
         // before calling the loop the second time, we must know the "symbolsReadNotAssigned".
@@ -901,11 +902,13 @@ function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFile
         updateHeapWithGroupForFlowLoop(setOfLoopDeps, forFlowParent.heap, sourceFileMrState);
         Debug.assert(forFlowParent.heap.peek() === loopGroup.groupIdx);
         forFlowParent.heap.remove();
+        sourceFileMrState.mrState.loopStatus.widening = false;
         processLoop(loopGroup, sourceFileMrState, forFlowParent, setOfLoopDeps, maxGroupIdxProcessed);
         delete sourceFileMrState.mrState.loopGroupToProcessLoopStateMap;
     }
     else {
         Debug.assert(sourceFileMrState.mrState.loopGroupToProcessLoopStateMap);
+        sourceFileMrState.mrState.loopStatus.widening = sourceFileMrState.mrState.getCurrentLoopState()?.invocations===1 ? false : true;
         processLoop(loopGroup, sourceFileMrState, forFlowParent, setOfLoopDeps, maxGroupIdxProcessed);
     }
     sourceFileMrState.mrState.currentLoopDepth--;
@@ -971,7 +974,8 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
         // loopGroupToProcessLoopStateMap
     };
 
-    IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the initial condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`,loggerLevel);
+    IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, do the initial condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations
+    }, sourceFileMrState.mrState.loopStatus.widening: ${sourceFileMrState.mrState.loopStatus.widening}`,loggerLevel);
     // let cachedSubloopSCForLoopConditionIn: RefTypesSymtabConstraintItem;
     let outerSCForLoopConditionIn: RefTypesSymtabConstraintItem;
     {
@@ -979,6 +983,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
         // Caching of scForLoop0 is only required for the outermost, depth===1, loop
         if (sourceFileMrState.mrState.currentLoopDepth === 1) {
             if (loopState.invocations === 0) {
+                // if (loopState.invocations === 0) sourceFileMrState.mrState.loopStatus.widening = true; set to true in processLoopOuter
                 Debug.assert(!loopState.scForLoop0);
                 outerSCForLoopConditionIn = doFlowGroupLabel(anteGroupLabel.antePrevious, setOfKeysToDeleteFromCurrentBranchesMap, sourceFileMrState, forFlow);
                 setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff) => deleteCurrentBranchesMap(gff, set));
@@ -1005,7 +1010,6 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             else {
                 fsymtab = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, loopState.scConditionContinue?.fsymtab!]);
             }
-            if (loopState.invocations === 0) sourceFileMrState.mrState.loopStatus.widening = true;
             subloopSCForLoopConditionIn.fsymtab = fsymtab.branch(sourceFileMrState.mrState.loopStatus,loopState);
         }
 
@@ -1035,7 +1039,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
         setOfKeysToDeleteFromCurrentBranchesMap.clear();
 
         IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, merge before final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
-        if (true) {
+        (()=>{
 
             // const invocation0FloughSymtab = loopState.invocations === 0 ? createFloughSymtab(undefined,outerSCForLoopConditionIn.fsymtab) : undefined;
             // if (enablePerBlockSymtabs && loopState.invocations === 0) {
@@ -1081,7 +1085,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
                             } scForConditionContinue.fsymtab: ${s}`, loggerLevel));
                     }
                     const fsymtabUnion = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, scForConditionContinue.fsymtab!],
-                        //{knownAncestor: outerSCForLoopConditionIn.fsymtab!, useAssignedType: true}
+                        {knownAncestor: outerSCForLoopConditionIn.fsymtab!, useAssignedType: true}
                     );
 
 
@@ -1125,7 +1129,8 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             //loopState.loopConditionCall = undefined; commented out to leave it as "final" to prevent widening
 
             IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
-        }
+        })();
+        sourceFileMrState.mrState.loopStatus.widening = loopState.invocations === 0 ? true : false;
 
         const converged = true;
         if (converged) {
