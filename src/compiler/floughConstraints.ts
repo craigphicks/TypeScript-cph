@@ -45,7 +45,7 @@ import {
     Symbol,
     TypeFlags,
 } from "./types";
-import { dbgFloughSymtabToStrings, unionFloughSymtab } from "./floughSymtab";
+import { FloughSymtab, dbgFloughSymtabToStrings, unionFloughSymtab } from "./floughSymtab";
 
 // @ ts-expect-error
 export type GetDeclaredTypeFn = (symbol: Symbol) => RefTypesType;
@@ -475,7 +475,7 @@ export function isAlwaysConstraint(c: ConstraintItem): boolean {
 //     return createFlowConstraintNodeOr({ constraints: ac });
 // }
 
-export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[] /*, mrNarrow: MrNarrow*/): RefTypesSymtabConstraintItem {
+export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], fsymtabOptions?: {knownAncestor?: FloughSymtab, useAssignedType: boolean, }): RefTypesSymtabConstraintItem {
     if (asc.length === 0) Debug.fail("unexpected"); // return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
     if (asc.length === 1) return asc[0];
     const asc1 = asc.filter(sc => !isNeverConstraint(sc.constraintItem));
@@ -483,7 +483,7 @@ export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[
     if (asc1.length === 1) return asc1[0];
     const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.symtab));
     if (enablePerBlockSymtabs){
-        const fsymtab = unionFloughSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!));
+        const fsymtab = unionFloughSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!), fsymtabOptions);
         return { symtab: unionSymtab, fsymtab, constraintItem: createFlowConstraintAlways() };
     }
     return { symtab: unionSymtab, constraintItem: createFlowConstraintAlways() };

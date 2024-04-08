@@ -371,7 +371,7 @@ export interface ProcessLoopState {
     scForLoop0?: RefTypesSymtabConstraintItem;
     /* enableProcessLoopSaveScConditionContinue */
     scConditionContinue?: RefTypesSymtabConstraintItem;
-    loopConditionCall?: "initial" | "final";
+    //loopConditionCall?: "initial" | "final";
 }
 export type SymbolFlowInfo = {
     passCount: number;
@@ -398,6 +398,7 @@ export interface MrState {
     currentLoopDepth: number; // TODO: should be able use currentLoopStack instead
     currentLoopsInLoopScope: Set<GroupForFlow>; // TODO: should be able use currentLoopStack instead
     currentLoopStack: GroupForFlow[];
+    loopStatus: FloughSymtabLoopStatus;
     loopGroupToProcessLoopStateMap?: WeakMap<GroupForFlow, ProcessLoopState>;
     symbolFlowInfoMap: SymbolFlowInfoMap;
     connectGroupsGraphsCompleted: boolean[];
@@ -533,6 +534,7 @@ export function createSourceFileFloughState(sourceFile: SourceFileWithFloughNode
         currentLoopDepth: 0,
         currentLoopsInLoopScope: new Set<GroupForFlow>(),
         currentLoopStack: [],
+        loopStatus: {loopGroupIdx: -1 },
         symbolFlowInfoMap: new WeakMap<Symbol, SymbolFlowInfo | undefined>(),
         connectGroupsGraphsCompleted: new Array(groupsForFlow.connectedGroupsGraphs.arrConnectedGraphs.length).fill(/*value*/ false),
         groupDependancyCountRemaining: groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount.slice(),
@@ -1003,14 +1005,13 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             else {
                 fsymtab = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, loopState.scConditionContinue?.fsymtab!]);
             }
-            const loopStatus: FloughSymtabLoopStatus = {loopGroupIdx: loopGroup.groupIdx };
-            if (loopState.invocations === 0) loopStatus.widening = true;
-            subloopSCForLoopConditionIn.fsymtab = fsymtab.branch(loopStatus,loopState);
+            if (loopState.invocations === 0) sourceFileMrState.mrState.loopStatus.widening = true;
+            subloopSCForLoopConditionIn.fsymtab = fsymtab.branch(sourceFileMrState.mrState.loopStatus,loopState);
         }
 
-        loopState.loopConditionCall = "initial";
+        //loopState.loopConditionCall = "initial";
         resolveGroupForFlow(loopGroup, floughStatus, sourceFileMrState, forFlow, { loopGroupIdx: loopGroup.groupIdx, cachedSCForLoop: subloopSCForLoopConditionIn });
-        loopState.loopConditionCall = undefined;
+        //loopState.loopConditionCall = undefined;
 
     }
     IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the initial condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
@@ -1033,17 +1034,28 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
         setOfKeysToDeleteFromCurrentBranchesMap.forEach((set, gff) => deleteCurrentBranchesMap(gff, set));
         setOfKeysToDeleteFromCurrentBranchesMap.clear();
 
+        IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, merge before final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
         if (true) {
 
-            const invocation0FloughSymtab = loopState.invocations === 0 ? createFloughSymtab(undefined,outerSCForLoopConditionIn.fsymtab) : undefined;
-            if (enablePerBlockSymtabs && loopState.invocations === 0) {
-                // IWOZERE
-                // Before "orSymtabConstraint",
-                // for each item in arrSCForLoopContinue pick out the "assignedType" values of symbols in loopState.symbolsAssigned.
-                // Other symbols left empty so they will refernce back to the outerSCForLoopConditionIn.fsymtab
-            }
+            // const invocation0FloughSymtab = loopState.invocations === 0 ? createFloughSymtab(undefined,outerSCForLoopConditionIn.fsymtab) : undefined;
+            // if (enablePerBlockSymtabs && loopState.invocations === 0) {
+            //     // IWOZERE
+            //     // Before "orSymtabConstraint",
+            //     // for each item in arrSCForLoopContinue pick out the "assignedType" values of symbols in loopState.symbolsAssigned.
+            //     // Other symbols left empty so they will refernce back to the outerSCForLoopConditionIn.fsymtab
+            //     // This would only be an optimization doing it here instead of later.  But we try it here?
 
-            const scForConditionContinue = orSymtabConstraints(arrSCForLoopContinue /*, mrNarrow*/);
+            // }
+            let fsymtabOptions: {knownAncestor: FloughSymtab, useAssignedType: boolean} | undefined;
+            if (enablePerBlockSymtabs){
+                fsymtabOptions = {
+                    knownAncestor: outerSCForLoopConditionIn.fsymtab!,
+                    useAssignedType: loopState.invocations === 0
+                };
+            }
+            sourceFileMrState.mrState.loopStatus.widening = false;
+            //loopState.loopConditionCall = "final";
+            const scForConditionContinue = orSymtabConstraints(arrSCForLoopContinue ,fsymtabOptions);
             if (loopState.invocations === 0) {
                 if (enablePerBlockSymtabs){
                     loopState.scConditionContinue = scForConditionContinue;
@@ -1068,7 +1080,10 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
                             IDebug.ilog(()=>`processLoop[dbg] (final condition) invocations:${loopState.invocations
                             } scForConditionContinue.fsymtab: ${s}`, loggerLevel));
                     }
-                    const fsymtabUnion = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, scForConditionContinue.fsymtab!]);
+                    const fsymtabUnion = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, scForConditionContinue.fsymtab!],
+                        //{knownAncestor: outerSCForLoopConditionIn.fsymtab!, useAssignedType: true}
+                    );
+
 
                     scForConditionUnionOfInAndContinue = {
                         symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!),
@@ -1105,7 +1120,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             if (forFlowParent.groupToNodeToType!.has(loopGroup)) forFlowParent.groupToNodeToType!.delete(loopGroup);
 
             const floughStatus: FloughStatus = createFloughStatus(loopGroup, sourceFileMrState, /*accumBranches*/ false);
-            loopState.loopConditionCall = "final";
+            //loopState.loopConditionCall = "final";
             resolveGroupForFlow(loopGroup, floughStatus, sourceFileMrState, forFlow, { cachedSCForLoop: scForConditionUnionOfInAndContinue, loopGroupIdx: loopGroup.groupIdx });
             //loopState.loopConditionCall = undefined; commented out to leave it as "final" to prevent widening
 

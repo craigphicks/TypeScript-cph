@@ -645,15 +645,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     function debugDevExpectFloughSymtabEntry(node: Node, count: number, floughSymtabEntry: Readonly<FloughSymtabEntry>): void {
         const loggerLevel = 1;
         const arrexpected = getDevExpectStrings(node, sourceFile);
-        if (arrexpected) {
+        let doit = false;
+        if (doit && arrexpected) {
             function floughTypeToPlainString(t: FloughType): string {
                 return typeToString(floughTypeModule.getTsTypeFromFloughType(t));
             }
             // const actual = `count: ${symbolFlowInfo.passCount}, actualDeclaredTsType: ${typeToString(symbolFlowInfo.effectiveDeclaredTsType)}`;
             let actual = `count: ${count}, type: ${floughTypeToPlainString(floughSymtabEntry.type)}`;
-            if (floughSymtabEntry.wtype) {
-                actual += `, wtype: ${floughTypeToPlainString(floughSymtabEntry.wtype)}`;
-            }
             const pass = arrexpected.some(expected => {
                 return actual === expected;
             });
