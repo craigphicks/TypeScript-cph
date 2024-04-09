@@ -21,7 +21,7 @@ export interface FloughSymtabEntry { type: FloughType, assignedType?: FloughType
 
 export interface FloughSymtab {
     localsContainer?: LocalsContainer;
-    branch(loopStatus?:FloughSymtabLoopStatus,loopState?: ProcessLoopState): FloughSymtab;
+    branch(loopStatus?:FloughSymtabLoopStatus,loopState?: ProcessLoopState, shadowMap?: InnerMap): FloughSymtab;
     getLocalsContainer(): LocalsContainer;
     has(symbol: Symbol): boolean;
     get(symbol: Symbol): FloughType | undefined;
@@ -70,8 +70,8 @@ class FloughSymtabImpl implements FloughSymtab {
      * We could choose to make a copy of the localMap and shadowMap if they were below a certain size.
      * @returns a new FloughSymtab that is a branch of this FloughSymtab
      */
-    branch(loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState): FloughSymtabImpl {
-        return new FloughSymtabImpl(undefined, this, undefined, undefined, loopStatus, loopState);
+    branch(loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState, shadowMap?: InnerMap): FloughSymtabImpl {
+        return new FloughSymtabImpl(undefined, this, undefined, shadowMap, loopStatus, loopState);
     }
     getLocalsContainer(): LocalsContainer {
         if (this.localsContainer) return this.localsContainer;
@@ -190,7 +190,9 @@ class FloughSymtabImpl implements FloughSymtab {
             const got = this.getWithAssigned(symbol);
             // assigned type gets set to narrowed previous assigned type if it exists, otherwise undefined
             this.shadowMap.set(symbol, { type, assignedType: got ? type : undefined });
-        }
+            const loopState = mrNarrow.mrState.getCurrentLoopState();
+            loopState?.symbolsNarrowed?.add(symbol);
+       }
         return this;
     }
     setAsAssigned(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {
@@ -198,10 +200,11 @@ class FloughSymtabImpl implements FloughSymtab {
         else {
             this.shadowMap.set(symbol, { type, assignedType: type, wasAssigned: true});
             const loopState = mrNarrow.mrState.getCurrentLoopState();
-            if (loopState && loopState.invocations===0) {
-                // add symbol to assigned list
-                // loopState.symbolsAssigned!.add(symbol);  not using this for now
-            }
+            loopState?.symbolsAssigned?.add(symbol);
+            // if (loopState && loopState.invocations===0) {
+            //     // add symbol to assigned list
+            //     // loopState.symbolsAssigned!.add(symbol);  not using this for now
+            // }
         }
         return this;
     }
@@ -310,10 +313,9 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  * TODO: union of assignedType
  * TODO: logicalObjs
  */
-export function unionFloughSymtab(afsIn: readonly (Readonly<FloughSymtab> | undefined)[], options?: {knownAncestor?: FloughSymtab, useAssignedType?: boolean}): FloughSymtab {
+export function unionFloughSymtab(afsIn: readonly (Readonly<FloughSymtab> | undefined)[] /*, options?: {knownAncestor?: FloughSymtab, useAssignedType?: boolean}*/): FloughSymtab {
 const loggerLevel = 1;
-const {knownAncestor, useAssignedType} = options || {};
-IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length}, !!knownAncestor: ${!!knownAncestor}, useAssignedType: ${useAssignedType})`, loggerLevel);
+IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length}`, loggerLevel);
 if (IDebug.isActive(loggerLevel)) {
     afsIn.forEach((fs,idx) => {
         dbgFloughSymtabToStrings(fs).forEach(s => IDebug.ilog(()=>`[#${idx}]${s}`, loggerLevel));
@@ -335,10 +337,7 @@ const ret = (()=>{
      * fsca will be the nearest common ancestor
      */
     let fsca: FloughSymtabImpl;
-    if (knownAncestor) {
-        fsca = knownAncestor as FloughSymtabImpl;
-    }
-    else {
+    {
         fsca = afsIn[0];
         for (let i=1; i<afsIn.length; i++) {
             let fs1 = afsIn[i];
@@ -432,10 +431,11 @@ const ret = (()=>{
         let result =  arr.reduce((acc, x) =>  {
             Debug.assert(acc);
             if (!x) return acc;
-            if (useAssignedType) {
-                if (!x.assignedType) return acc;
-                return { type: floughTypeModule.unionWithFloughTypeMutate(x.assignedType, x.type) };
-            }
+            // if (useAssignedType) {
+            //     if (!x.assignedType) return acc;
+            //     return { type: floughTypeModule.unionWithFloughTypeMutate(x.assignedType, x.type) };
+            // }
+            // TODO: optimize for case x.type===x.assignedType && acc.type===acc.assignedType
             return {
                 type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type),
                 assignedType: x.assignedType ? floughTypeModule.unionWithFloughTypeMutate(x.assignedType, acc.assignedType!) : acc.assignedType!
@@ -456,13 +456,107 @@ IDebug.ilogGroupEnd(()=>`unionFloughSymtab[out]`, loggerLevel);
 return ret;
 }
 
-export function setTypeToAssignedTypeAndAssignedTypeToUndefined(entry: FloughSymtabEntry): FloughSymtabEntry {
-    if (!entry.assignedType) return entry;
-    return { type: entry.assignedType, assignedType: undefined };
+/**
+ *
+ * @param arrFsContinue : These branches will be unionized, the all should have fsTop as an ancestor
+ * @param assignedSymbols  : These symbols will be unionized - modifed to remove locals
+ * @param narrowedSymbols  : These symbols will be unionized (only second pass) - modifed to remove locals
+ * @param fsTop : common ancestor of all branches in arrFsContinue
+ * @returns shadowMap with unionized types of assignedSymbols
+ */
+export function shadowMapOfAffected(arrFsContinue: Readonly<FloughSymtab>[], fsTop:Readonly<FloughSymtab>, assignedSymbols: Set<Symbol>, narrowedSymbols?: Set<Symbol> ): InnerMap | undefined {
+    assertCastType<Readonly<FloughSymtabImpl>[]>(arrFsContinue);
+    assertCastType<Readonly<FloughSymtabImpl>>(fsTop);
+    //for (const symbol of assignedSymbols) {
+    const symbolToAssignedTypeSet = new Map<Symbol,Set<FloughType>>();
+    const symbolToNarrowedTypeSet = narrowedSymbols && new Map<Symbol,Set<FloughType>>();
+
+    const localSymbols = new Set<Symbol>();
+    arrFsContinue.forEach(fs => {
+        for (;fs !== fsTop; fs = fs.outer!) {
+            if (fs.localMap) {
+                fs.localMap.forEach((entry, symbol) => {
+                    localSymbols.add(symbol);
+                    if (assignedSymbols.has(symbol)) assignedSymbols.delete(symbol);
+                    if (narrowedSymbols?.has(symbol)) narrowedSymbols.delete(symbol);
+                });
+            }
+        }
+    });
+
+    const fsDone = new Set<FloughSymtabImpl>;
+    arrFsContinue.forEach(fs => {
+        const symbolsDone = new Set<Symbol>();
+        for (;fs !== fsTop; fs = fs.outer!) {
+            if (fsDone.has(fs)) break;
+            if (fs.shadowMap){
+                fs.shadowMap.forEach((entry, symbol) => {
+                    if (localSymbols.has(symbol)) return;
+                    if (symbolsDone.has(symbol)) return;
+                    if (entry.assignedType) {
+                        let set = symbolToAssignedTypeSet.get(symbol);
+                        if (!set) {
+                            set = new Set();
+                            symbolToAssignedTypeSet.set(symbol, set);
+                        }
+                        set.add(entry.assignedType);
+                        symbolsDone.add(symbol);
+                        return; // next (entry, symbol)
+                    }
+                    if (symbolToNarrowedTypeSet && entry.type) {  // narrowedSymbols is a
+                        // This should be loop second pass - on the first pass we only use assignedType
+                        let set = symbolToAssignedTypeSet.get(symbol);
+                        if (!set) {
+                            set = new Set();
+                            symbolToNarrowedTypeSet.set(symbol, set);
+                        }
+                        set.add(entry.type);
+                        symbolsDone.add(symbol);
+                        return; // next (entry, symbol)
+                    }
+                })
+            }
+            fsDone.add(fs);
+        }
+    });
+
+    const shadowMap = createInnerMap();
+    symbolToAssignedTypeSet.forEach((set, symbol) => {
+        const uAssignedType = floughTypeModule.unionOfRefTypesType([...set]);
+        const uNarrowedType = symbolToNarrowedTypeSet?.get(symbol) ? floughTypeModule.unionOfRefTypesType([...symbolToNarrowedTypeSet.get(symbol)!]) : undefined;
+        const utype = uNarrowedType ? floughTypeModule.unionWithFloughTypeMutate(uAssignedType, uNarrowedType) : uAssignedType;
+        shadowMap.set(symbol, { type: utype, assignedType: uAssignedType});
+    });
+    symbolToNarrowedTypeSet?.forEach((set, symbol) => {
+        if (shadowMap.has(symbol)) return;
+        const utype = floughTypeModule.unionOfRefTypesType([...set]);
+        shadowMap.set(symbol, { type: utype });
+    });
+
+
+    // assignedSymbols.forEach(symbol => {
+    //     //const entries: FloughSymtabEntry[] = [];
+    //     const types: FloughType[] = [];
+    //     arrFsContinue.forEach(fs => {
+
+    //         for (;fs !== fsTop; fs = fs.outer!) {
+    //             const got = fs.shadowMap.get(symbol);
+    //             if (got?.assignedType) {
+    //                 types.push(got);
+    //                 break;
+    //             }
+    //         }
+    //     });
+    //     Debug.assert(types.length); // otherwise symbol should not be in assignedSymbols
+    //     const utype = floughTypeModule.unionOfRefTypesType(types);
+    //     shadowMap.set(symbol, { type: utype, assignedType: utype});
+    // });
+    if (shadowMap.size === 0) return undefined;
+    return shadowMap;
 }
 
 
-function dbgFloughSymtabEntryToString(entry: FloughSymtabEntry): string {
+export function dbgFloughSymtabEntryToString(entry: FloughSymtabEntry): string {
     return `{ type: ${floughTypeModule.dbgFloughTypeToString(entry.type)}, assignedType: ${floughTypeModule.dbgFloughTypeToString(entry.assignedType)} }`
 }
 

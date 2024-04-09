@@ -160,7 +160,7 @@ class RefTypesSymtabProxy implements RefTypesSymtabProxyI {
     delete(symbol: Symbol): boolean {
         const ret = this.symtabInner.delete(symbol);
         if (this.loopState) {
-            this.loopState.symbolsAssigned?.delete(symbol);
+            //this.loopState.symbolsAssigned?.delete(symbol);
             this.loopState.symbolsAssignedRange?.delete(symbol);
         }
         return ret;

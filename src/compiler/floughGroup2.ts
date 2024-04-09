@@ -1563,17 +1563,26 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
                 function floughInnerPrefixUnaryExpression(): FloughInnerReturn {
                     if ((expr as PrefixUnaryExpression).operator === SyntaxKind.ExclamationToken) {
-                        const ret = applyCrit(
-                            flough({
-                                sci,
-                                expr: (expr as PrefixUnaryExpression).operand,
-                                crit: { negate: true, kind: FloughCritKind.truthy, alsoFailing: true },
-                                qdotfallout: undefined,
-                                floughStatus: { ...floughStatus, inCondition: true },
-                            }),
-                            { negate: true, kind: FloughCritKind.truthy, alsoFailing: true },
-                            floughStatus.groupNodeToTypeMap,
-                        );
+                        const floughReturn = flough({
+                            sci,
+                            expr: (expr as PrefixUnaryExpression).operand,
+                            crit: { negate: true, kind: FloughCritKind.truthy, alsoFailing: true },
+                            qdotfallout: undefined,
+                            floughStatus: { ...floughStatus, inCondition: true },
+                        });
+                        const ret = applyCrit(floughReturn, { negate: true, kind: FloughCritKind.truthy, alsoFailing: true }, floughStatus.groupNodeToTypeMap);
+
+                        // const ret = applyCrit(
+                        //     flough({
+                        //         sci,
+                        //         expr: (expr as PrefixUnaryExpression).operand,
+                        //         crit: { negate: true, kind: FloughCritKind.truthy, alsoFailing: true },
+                        //         qdotfallout: undefined,
+                        //         floughStatus: { ...floughStatus, inCondition: true },
+                        //     }),
+                        //     { negate: true, kind: FloughCritKind.truthy, alsoFailing: true },
+                        //     floughStatus.groupNodeToTypeMap,
+                        // );
                         /**
                          * The crit was already set with negate: true to reverse the passing and failing.
                          * Below, the symbols are set to undefined, and the types converted to booleans.
