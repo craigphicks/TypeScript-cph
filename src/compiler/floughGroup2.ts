@@ -1566,7 +1566,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         const floughReturn = flough({
                             sci,
                             expr: (expr as PrefixUnaryExpression).operand,
-                            crit: { negate: true, kind: FloughCritKind.truthy, alsoFailing: true },
+                            crit: { negate: true, kind: FloughCritKind.truthy, alsoFailing: true }, // TODO: try to make this crit none
                             qdotfallout: undefined,
                             floughStatus: { ...floughStatus, inCondition: true },
                         });

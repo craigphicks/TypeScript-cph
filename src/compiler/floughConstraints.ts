@@ -477,13 +477,13 @@ export function isAlwaysConstraint(c: ConstraintItem): boolean {
 
 export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], omitFloughSymtab?: boolean): RefTypesSymtabConstraintItem {
     if (asc.length === 0) Debug.fail("unexpected"); // return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
-    if (asc.length === 1) return asc[0];
+    if (asc.length === 1) return omitFloughSymtab ? { symtab: asc[0].symtab, constraintItem: asc[0].constraintItem} : asc[0];
     const asc1 = asc.filter(sc => !isNeverConstraint(sc.constraintItem));
     if (asc1.length === 0) return createRefTypesSymtabConstraintItemNever(); // assuming or of nevers is never
-    if (asc1.length === 1) return asc1[0];
+    if (asc1.length === 1) return omitFloughSymtab ? { symtab: asc1[0].symtab, constraintItem: asc1[0].constraintItem} : asc1[0];
     const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.symtab));
     if (enablePerBlockSymtabs && !omitFloughSymtab) {
-        const fsymtab = unionFloughSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!));
+        const fsymtab = unionFloughSymtab((asc1 as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!));
         return { symtab: unionSymtab, fsymtab, constraintItem: createFlowConstraintAlways() };
     }
     return { symtab: unionSymtab, constraintItem: createFlowConstraintAlways() };

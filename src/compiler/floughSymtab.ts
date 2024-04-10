@@ -223,8 +223,8 @@ class FloughSymtabImpl implements FloughSymtab {
 
 }
 
-export function createFloughSymtab(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>): FloughSymtab {
-    return new FloughSymtabImpl(localsContainer, outer);
+export function createFloughSymtab(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, other?: {shadowMap: InnerMap}): FloughSymtab {
+    return new FloughSymtabImpl(localsContainer, outer, undefined, other?.shadowMap);
 }
 
 /**
@@ -233,7 +233,7 @@ export function createFloughSymtab(localsContainer?: LocalsContainer, outer?: Re
  * @param scopeLoc  LocalContainer to exit
  * @returns
  */
-export function floughSymtabRollupLocalsScope(fsymtabIn: FloughSymtab, scopeLoc: LocalsContainer): FloughSymtab {
+function floughSymtabRollupLocalsScopeV1(fsymtabIn: FloughSymtab, scopeLoc: LocalsContainer): FloughSymtab {
     const arrfs: FloughSymtabImpl[] = [];
     {
         let fs: FloughSymtabImpl | undefined = (fsymtabIn as FloughSymtabImpl);
@@ -257,6 +257,32 @@ export function floughSymtabRollupLocalsScope(fsymtabIn: FloughSymtab, scopeLoc:
         return arrfs[0].outer;
     }
     return new FloughSymtabImpl(undefined, arrfs[0].outer, undefined, topShadowMap);
+}
+
+/**
+ * Exit the LocalsContainer scope.
+ * @param fsymtabIn
+ * @param scopeLoc  LocalContainer to exit
+ * @returns
+ */
+export function floughSymtabRollupLocalsScope(fsymtabIn: FloughSymtab, scopeLoc: LocalsContainer): FloughSymtab {
+    //const arrfs: FloughSymtabImpl[] = [];
+    let fsLocals: FloughSymtabImpl = fsymtabIn as FloughSymtabImpl;
+    for (; fsLocals.localsContainer!==scopeLoc; fsLocals = fsLocals.outer!) {
+        Debug.assert(!fsLocals.localsContainer);
+    }
+    const localMap = fsLocals.localMap!;
+    const symbolsDone = new Set<Symbol>();
+    const shadowMap = createInnerMap();
+    for (let fs = fsymtabIn as FloughSymtabImpl; fs !== fsLocals; fs = fs.outer!) {
+        fs.shadowMap?.forEach((entry, symbol) => {
+            if (localMap.has(symbol)) return;
+            if (symbolsDone.has(symbol)) return;
+            shadowMap.set(symbol, entry);
+            symbolsDone.add(symbol);
+        });
+    }
+    return new FloughSymtabImpl(undefined, fsLocals.outer, undefined, shadowMap);
 }
 
 
@@ -505,7 +531,7 @@ export function shadowMapOfAffected(arrFsContinue: Readonly<FloughSymtab>[], fsT
                     }
                     if (symbolToNarrowedTypeSet && entry.type) {  // narrowedSymbols is a
                         // This should be loop second pass - on the first pass we only use assignedType
-                        let set = symbolToAssignedTypeSet.get(symbol);
+                        let set = symbolToNarrowedTypeSet.get(symbol);
                         if (!set) {
                             set = new Set();
                             symbolToNarrowedTypeSet.set(symbol, set);

@@ -371,7 +371,8 @@ export interface ProcessLoopState {
     symbolsAssignedRange?: WeakMap<Symbol, RefTypesType>;
     scForLoop0?: RefTypesSymtabConstraintItem;
     /* enableProcessLoopSaveScConditionContinue */
-    scShadowMapContinue?: Map<Symbol,FloughSymtabEntry>; // TODO: for enablePer5BlockSymtabs, was previously subsumed into FloughRefTypesSymtab (too opaque)
+    shadowMapContinue?: Map<Symbol,FloughSymtabEntry>; // loopDepth >1 only
+    fsymtabUnionInAndContinue?: FloughSymtab; // loopDepth === 1 only
     //loopConditionCall?: "initial" | "final";
 }
 export type SymbolFlowInfo = {
@@ -1007,13 +1008,31 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
         const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
         if (enablePerBlockSymtabs && !isRefTypesSymtabConstraintItemNever(subloopSCForLoopConditionIn)) {
             let fsymtab: FloughSymtab;
-            if (loopState.invocations === 0) {
-                fsymtab = outerSCForLoopConditionIn.fsymtab!;
+            if (sourceFileMrState.mrState.currentLoopDepth === 1) {
+                if (loopState.invocations === 0) {
+                    fsymtab = outerSCForLoopConditionIn.fsymtab!;
+                }
+                else {
+                    // Debug.assert(loopState.fsymtabUnionInAndContinue);
+                    // loopState.fsymtabUnionInAndContinue can be undefined is there is no continue feedback.
+                    Debug.assert(outerSCForLoopConditionIn.fsymtab);
+                    fsymtab = loopState.fsymtabUnionInAndContinue ?? outerSCForLoopConditionIn.fsymtab!; //
+                }
             }
             else {
-                fsymtab = outerSCForLoopConditionIn.fsymtab!.branch(undefined,undefined,loopState.scShadowMapContinue);
-                //fsymtab = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, loopState.scShadowMapContinue?.fsymtab!]);
+                if (loopState.invocations === 0) {
+                    fsymtab = outerSCForLoopConditionIn.fsymtab!;
+                }
+                else {
+                    //const fsymtabContinue = createFloughSymtab(undefined, outerSCForLoopConditionIn.fsymtab!, loopState.shadowMapContinue ? { shadowMap:shadowMapContinue } : undefined);
+                    if (loopState.shadowMapContinue){
+                        const fsymtabContinue = createFloughSymtab(undefined, outerSCForLoopConditionIn.fsymtab!, { shadowMap: loopState.shadowMapContinue });
+                        fsymtab = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, fsymtabContinue]);
+                    }
+                    else fsymtab = outerSCForLoopConditionIn.fsymtab!;
+                }
             }
+            // Branch adds the loop boundary indicator.
             subloopSCForLoopConditionIn.fsymtab = fsymtab.branch(sourceFileMrState.mrState.loopStatus,loopState); // TODO: should this be only for the first invocation?
         }
 
@@ -1059,6 +1078,8 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             sourceFileMrState.mrState.loopStatus.widening = false;
             //loopState.loopConditionCall = "final";
             const scForConditionContinue = orSymtabConstraints(arrSCForLoopContinue, /* omitFloughSymtab */ enablePerBlockSymtabs);
+            if (enablePerBlockSymtabs) Debug.assert(!scForConditionContinue.fsymtab);
+            //arrSCForLoopContinue.forEach(sc => sc.fsymtab = undefined);
 
 
             if (loopState.invocations === 0) {
@@ -1066,26 +1087,32 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
                     ? getSymbolsAssignedRange(scForConditionContinue.symtab) : undefined;
             }
             let scForConditionUnionOfInAndContinue: RefTypesSymtabConstraintItem;
+
             if (isRefTypesSymtabConstraintItemNever(scForConditionContinue)) {
                 // No continue feedback.
                 scForConditionUnionOfInAndContinue = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
                 if (enablePerBlockSymtabs) {
+                    scForConditionUnionOfInAndContinue.fsymtab = outerSCForLoopConditionIn.fsymtab!; // does it need a branch with loopState?
                     // no need to do anything.
                 }
             }
             else {
                 if (enablePerBlockSymtabs){
-
+                    const arrFloughSymtabForLoopContinue = arrSCForLoopContinue.map(x=>x.fsymtab).filter(x=>!!x) as FloughSymtab[];
                     if (IDebug.isActive(loggerLevel)) {
-                        dbgFloughSymtabToStrings(outerSCForLoopConditionIn.fsymtab!).forEach(s =>
-                            IDebug.ilog(()=>`processLoop[dbg] (final condition) invocations:${loopState.invocations
-                            } outerSCForLoopConditionIn.fsymtab: ${s}`, loggerLevel));
-                        dbgFloughSymtabToStrings(scForConditionContinue.fsymtab!).forEach(s =>
-                            IDebug.ilog(()=>`processLoop[dbg] (final condition) invocations:${loopState.invocations
-                            } scForConditionContinue.fsymtab: ${s}`, loggerLevel));
+                        dbgFloughSymtabToStrings(outerSCForLoopConditionIn.fsymtab!).forEach(s => {
+                            IDebug.ilog(()=>`processLoop (final condition) invocations:${loopState.invocations
+                            } outerSCForLoopConditionIn.fsymtab: ${s}`, loggerLevel);
+                        });
+
+                        arrFloughSymtabForLoopContinue.forEach((fs, idx) => {
+                            dbgFloughSymtabToStrings(fs).forEach(s =>
+                                IDebug.ilog(()=>`processLoo (final condition) invocations:${loopState.invocations
+                                } arrFloughSymtabForLoopContinue[${idx}].fsymtab: ${s}`, loggerLevel));
+                        });
                     }
                     let shadowMapContinue: Map<Symbol,FloughSymtabEntry> | undefined = shadowMapOfAffected(
-                        arrSCForLoopContinue.map(x=>x.fsymtab).filter(x=>!!x) as FloughSymtab[],
+                        arrFloughSymtabForLoopContinue,
                         outerSCForLoopConditionIn.fsymtab!,
                         loopState.symbolsAssigned!, loopState.invocations===0 ? undefined : loopState.symbolsNarrowed!);
                     if (IDebug.isActive(loggerLevel)) {
@@ -1097,20 +1124,46 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
                         }
                     }
 
-                    if (loopState.invocations === 0) {
-                        loopState.scShadowMapContinue = shadowMapContinue;
-                    }
-                    else {
-                        loopState.scShadowMapContinue = undefined;
-                    }
+                    // if (loopState.invocations === 0) {
+                    //     loopState.scShadowMapContinue = shadowMapContinue;
+                    // }
+                    // else {
+                    //     loopState.scShadowMapContinue = undefined;
+                    // }
                     loopState.symbolsAssigned = undefined;
                     loopState.symbolsNarrowed = undefined;
 
-                    const fsymtabUnion = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, scForConditionContinue.fsymtab!]);
+                    let fsymtabUnionInAndContinue: FloughSymtab;
+                    if (shadowMapContinue){
+                        const fsymtabContinue = createFloughSymtab(undefined, outerSCForLoopConditionIn.fsymtab!, shadowMapContinue ? { shadowMap:shadowMapContinue } : undefined);
+                        fsymtabUnionInAndContinue = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, fsymtabContinue]);
+                    }
+                    else fsymtabUnionInAndContinue = outerSCForLoopConditionIn.fsymtab!;
+
+                    if (IDebug.isActive(loggerLevel)) {
+                        dbgFloughSymtabToStrings(fsymtabUnionInAndContinue).forEach(s => {
+                            IDebug.ilog(()=>`processLoop (final condition) invocations:${loopState.invocations
+                            } fsymtabUnionInAndContinue: ${s}`, loggerLevel);
+                        });
+                    }
+
+                    if (sourceFileMrState.mrState.currentLoopDepth === 1) {
+                        if (loopState.invocations===0){
+                            Debug.assert(fsymtabUnionInAndContinue);
+                            loopState.fsymtabUnionInAndContinue = fsymtabUnionInAndContinue;
+                        }
+                    }
+                    else {
+                        if (loopState.invocations===0){
+                            loopState.shadowMapContinue = shadowMapContinue;
+                        }
+                    }
+
+
 
                     scForConditionUnionOfInAndContinue = {
                         symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!),
-                        fsymtab: fsymtabUnion!.branch(undefined,undefined,shadowMapContinue),
+                        fsymtab: fsymtabUnionInAndContinue,
                         constraintItem: scForConditionContinue.constraintItem
                     }
                 }
@@ -1224,7 +1277,7 @@ function resolveHeap(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow,
 }
 
 function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap: Map<GroupForFlow, Set<"then" | "else"> | undefined>, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow): RefTypesSymtabConstraintItem {
-    const loggerLevel = 2;
+    const loggerLevel = 1;
     const { groupsForFlow, mrNarrow } = sourceFileMrState;
     IDebug.ilogGroup(()=>`doFlowGroupLabel[in]:`, loggerLevel);
     if (IDebug.isActive(loggerLevel)){
@@ -1379,7 +1432,8 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
         if (enablePerBlockSymtabs && (fglab.originatingBlock as LocalsContainer).locals?.size){
             Debug.assert(sc.fsymtab)
             Debug.assert(fglab.originatingBlock === sc.fsymtab.getLocalsContainer());
-            return { ...sc, fsymtab: floughSymtabRollupLocalsScope(sc.fsymtab, fglab.originatingBlock as LocalsContainer) };
+            const fsymtab = floughSymtabRollupLocalsScope(sc.fsymtab, fglab.originatingBlock as LocalsContainer)
+            return { ...sc, fsymtab };
         }
         return sc;
     }
