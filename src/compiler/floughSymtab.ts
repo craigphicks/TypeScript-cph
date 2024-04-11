@@ -8,7 +8,7 @@ import { MrNarrow } from "./floughGroup2";
 import { ProcessLoopState } from "./floughGroup";
 
 
-const useWType = false;
+//const useWType = false;
 
 
 var mrNarrow: MrNarrow = undefined as any as MrNarrow;
@@ -114,74 +114,27 @@ class FloughSymtabImpl implements FloughSymtab {
 
         let doNotMutateInGet = true;
 
-        if (!useWType) {
-            if (this.localMap.has(symbol)) return this.localMap.get(symbol);
-            if (this.locals?.has(symbol.escapedName)) {
-                const type = mrNarrow.getEffectiveDeclaredTypeFromSymbol(symbol);
-                //this.localMap.set(symbol, { type }); // TODO: Not nice to mutate the FloughSymtabImpl with a get, although this might be harmless.  Try removing it?
-                return { type };
-            }
-            if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);
-            //if (this.loopState?.invocations===0 && this.loopStatus?.widening){
-            if (this.loopState?.invocations===0 && this.loopStatus!.widening){
-                const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
-                Debug.assert(symbolInfo);
-                if (symbolInfo && !symbolInfo.isconst){
-                    // Presence of loopState indicates loop boundary. The condition
-                    // (this.loopState?.invocations===0 && symbolInfo && !symbolInfo.isconst) indicates that
-                    // the symbol type should be widened because we don't yet know the loop feedback at loop start.
-                    const type = mrNarrow.getEffectiveDeclaredType(symbolInfo);
-                    if (!doNotMutateInGet) this.shadowMap.set(symbol, { type }); // <-- probably don't want to mutate the FloughSymtabImpl
-                    return { type };
-                }
-            }
-            if (this.outer) return this.outer.getWithAssigned(symbol);
-            return undefined;
-        }
-
-        let entry: FloughSymtabEntry | undefined;
-        if (entry = this.localMap.get(symbol)) {
-            // Debug.assert(!entry.wtype);
-            return entry;
-        }
+        if (this.localMap.has(symbol)) return this.localMap.get(symbol);
         if (this.locals?.has(symbol.escapedName)) {
             const type = mrNarrow.getEffectiveDeclaredTypeFromSymbol(symbol);
-            if (!doNotMutateInGet) this.localMap.set(symbol, { type }); // TODO: Not nice to mutate the FloughSymtabImpl with a get, although this might be harmless.  Try removing it?
             return { type };
         }
-        let wtype: FloughType | undefined;
-        //let type: FloughType | undefined;
-
-        if (this.loopStatus){
-            if (this.loopStatus.widening){
-                const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
-                Debug.assert(symbolInfo);
-                if (symbolInfo && !symbolInfo.isconst){
-                    // Presence of loopState indicates loop boundary. The condition
-                    // (this.loopState?.invocations===0 && symbolInfo && !symbolInfo.isconst) indicates that
-                    // the symbol type should be widened because we don't yet know the loop feedback at loop start.
-                    wtype = mrNarrow.getEffectiveDeclaredType(symbolInfo);
-                    if (!doNotMutateInGet) this.shadowMap.set(symbol, { type: wtype }); // <-- probably don't want to mutate the FloughSymtabImpl
-                }
-                //Debug.assert(wtype && entry);
+        if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol);
+        if (this.loopState?.invocations===0 && this.loopStatus!.widening){
+            const symbolInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
+            Debug.assert(symbolInfo);
+            if (symbolInfo && !symbolInfo.isconst){
+                // Presence of loopState indicates loop boundary. The condition
+                // (this.loopState?.invocations===0 && symbolInfo && !symbolInfo.isconst) indicates that
+                // the symbol type should be widened because we don't yet know the loop feedback at loop start.
+                const type = mrNarrow.getEffectiveDeclaredType(symbolInfo);
+                if (!doNotMutateInGet) this.shadowMap.set(symbol, { type }); // <-- probably don't want to mutate the FloughSymtabImpl
+                return { type };
             }
         }
+        if (this.outer) return this.outer.getWithAssigned(symbol);
+        return undefined;
 
-        entry = this.shadowMap.get(symbol);
-        if (!entry && this.outer) {
-            entry = this.outer.getWithAssigned(symbol);
-        }
-        if (!entry) {
-            Debug.assert(!wtype);
-            return undefined;
-        }
-        if (this.loopStatus){
-            if (!this.loopStatus.widening){
-                //Debug.assert(!wtype);
-                return { type: entry.type } ;
-            }
-        }
-        return entry;
     }
 
     set(symbol: Symbol, type: Readonly<FloughType>): FloughSymtab {
@@ -189,7 +142,7 @@ class FloughSymtabImpl implements FloughSymtab {
         else {
             const got = this.getWithAssigned(symbol);
             // assigned type gets set to narrowed previous assigned type if it exists, otherwise undefined
-            this.shadowMap.set(symbol, { type, assignedType: got ? type : undefined });
+            this.shadowMap.set(symbol, { type, assignedType: got?.assignedType ? type : undefined });
             const loopState = mrNarrow.mrState.getCurrentLoopState();
             loopState?.symbolsNarrowed?.add(symbol);
        }
