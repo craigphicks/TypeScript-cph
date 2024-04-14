@@ -59,7 +59,7 @@ export interface Relations {
 
 export type FloughTypeChecker = TSTypeChecker & {
     loadFloughStateForSourceFile(sourceFile: SourceFile): void; // called from harnessIO.ts
-    getCurrentSourceFileFloughState(): SourceFileFloughState;
+    getCurrentSourceFileFloughState(): SourceFileFloughState | undefined;
     getFlowNodeId(node: FloughNode): number;
     getIntersectionType(types: Type[]): Type;
     getUnionType(types: Type[]): Type;

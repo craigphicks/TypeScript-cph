@@ -278,7 +278,7 @@ export class DbgsClass implements Dbgs{
     nodeToString(node: Node | undefined): string {
         if (!node) return "<undef>";
 
-        const sourceFile = IDebug.checker?.getCurrentSourceFileFloughState().sourceFile;
+        const sourceFile = IDebug.checker?.getCurrentSourceFileFloughState()?.sourceFile;
         const line = sourceFile ? getLineAndCharacterOfPosition(sourceFile, node.pos) : undefined;
         const linestr = line ? `(${line.line},${line.character})` : "(?,?)";
 
