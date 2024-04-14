@@ -7,10 +7,6 @@ import { assertCastType } from "./floughTypedefs";
 import { MrNarrow } from "./floughGroup2";
 import { ProcessLoopState } from "./floughGroup";
 
-
-//const useWType = false;
-
-
 var mrNarrow: MrNarrow = undefined as any as MrNarrow;
 export function initFloughSymtab(mrNarrowInit: MrNarrow): void {
     mrNarrow = mrNarrowInit;
@@ -33,6 +29,9 @@ export interface FloughSymtab {
     forEach(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void;
 };
 
+// let globalAssignCount = 0;
+// export function getFloughSymtabGlobalAssignCount(): number { return globalAssignCount; }
+
 type InnerMap = Map<Symbol, FloughSymtabEntry>;
 function createInnerMap(clone?: InnerMap): InnerMap { return clone? new Map(clone) : new Map(); }
 
@@ -50,6 +49,7 @@ class FloughSymtabImpl implements FloughSymtab {
         widening?: boolean;
     };
     loopState?: ProcessLoopState; // TODO: Limit to only necessary members
+    assignmentCount?: number;
     constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState) {
         if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
         this.localsContainer = localsContainer
@@ -159,6 +159,7 @@ class FloughSymtabImpl implements FloughSymtab {
             //     // loopState.symbolsAssigned!.add(symbol);  not using this for now
             // }
         }
+        this.assignmentCount = (this.assignmentCount ?? 0) + 1;
         return this;
     }
 
@@ -210,6 +211,15 @@ function floughSymtabRollupLocalsScopeV1(fsymtabIn: FloughSymtab, scopeLoc: Loca
         return arrfs[0].outer;
     }
     return new FloughSymtabImpl(undefined, arrfs[0].outer, undefined, topShadowMap);
+}
+
+export function getAssignCountUptoAncestor(fsIn: Readonly<FloughSymtab>, fsAncestor: Readonly<FloughSymtab>): number {
+    assertCastType<FloughSymtabImpl>(fsIn);
+    let count = 0;
+    for (let fs = fsIn; fs !== fsAncestor; fs = fs.outer!) {
+        count += fs.assignmentCount ?? 0;
+    }
+    return count;
 }
 
 /**

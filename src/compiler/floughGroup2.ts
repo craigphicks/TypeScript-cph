@@ -134,7 +134,7 @@ import {
     getSourceTextOfNodeFromSourceFile,
 } from "./utilities";
 import { IDebug } from "./mydebug";
-import { FloughSymtabEntry, dbgFloughSymtabToStrings } from "./floughSymtab";
+import { FloughSymtabEntry, dbgFloughSymtabToStrings, getAssignCountUptoAncestor } from "./floughSymtab";
 
 /* eslint-disable no-double-space */
 
@@ -2351,6 +2351,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             rhs.unmerged.forEach((rttrRight0, _iright) => {
                                 const rightRttr = applyCritNoneToOne(rttrRight0, rightExpr, floughStatus.groupNodeToTypeMap);
                                 const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
+                                if (enablePerBlockSymtabs){
+                                    const assignCountDiff = getAssignCountUptoAncestor(rightRttr.sci.fsymtab!, lhsUnion.sci.fsymtab!);
+                                    Debug.assert(assignCountDiff === assignCountAfterRhs - assignCountBeforeRhs, "assignCountDiff", ()=>{
+                                        return `floughSymtabAssignCountDiff:${assignCountDiff}, assignCountAfterRhs:${assignCountAfterRhs}, assignCountBeforeRhs:${assignCountBeforeRhs}`;
+                                    });
+                                }
+
                                 const leftRightIdependent = assignCountBeforeRhs === assignCountAfterRhs;
                                 let sciFinal = leftRightIdependent ? rttrLeft0.sci : rttrRight0.sci;
                                 const typeFinal = rightRttr.type;
