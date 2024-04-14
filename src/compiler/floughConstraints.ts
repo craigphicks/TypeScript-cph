@@ -477,16 +477,16 @@ export function isAlwaysConstraint(c: ConstraintItem): boolean {
 
 export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[], omitFloughSymtab?: boolean): RefTypesSymtabConstraintItem {
     if (asc.length === 0) Debug.fail("unexpected"); // return { symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
-    if (asc.length === 1) return omitFloughSymtab ? { symtab: asc[0].symtab, constraintItem: asc[0].constraintItem} : asc[0];
+    if (asc.length === 1) return omitFloughSymtab ? { /*symtab: asc[0].symtab,*/ constraintItem: asc[0].constraintItem} : asc[0];
     const asc1 = asc.filter(sc => !isNeverConstraint(sc.constraintItem));
     if (asc1.length === 0) return createRefTypesSymtabConstraintItemNever(); // assuming or of nevers is never
-    if (asc1.length === 1) return omitFloughSymtab ? { symtab: asc1[0].symtab, constraintItem: asc1[0].constraintItem} : asc1[0];
-    const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.symtab));
+    if (asc1.length === 1) return omitFloughSymtab ? { /*symtab: asc1[0].symtab,*/ constraintItem: asc1[0].constraintItem} : asc1[0];
+    //const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.symtab));
     if (enablePerBlockSymtabs && !omitFloughSymtab) {
         const fsymtab = unionFloughSymtab((asc1 as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!));
-        return { symtab: unionSymtab, fsymtab, constraintItem: createFlowConstraintAlways() };
+        return { /*symtab: unionSymtab,*/ fsymtab, constraintItem: createFlowConstraintAlways() };
     }
-    return { symtab: unionSymtab, constraintItem: createFlowConstraintAlways() };
+    return { /*symtab: unionSymtab,*/ constraintItem: createFlowConstraintAlways() };
 }
 
 export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, type: typeIn, sc, mrNarrow, getDeclaredType: _ }: Readonly<{
@@ -514,7 +514,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 
     const constraintItem = sc.constraintItem;
     Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
-    let symtab = sc.symtab;
+    //let symtab = sc.symtab;
     let fsymtab = sc.fsymtab;
     if (enablePerBlockSymtabs) Debug.assert(fsymtab);
     let typeOut = typeIn;
@@ -522,18 +522,18 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
     if (symbol.flags & (SymbolFlags.ConstEnum | SymbolFlags.RegularEnum)) {
         // do nothing - an enum parent is not a real type
     }
-    else if (!symtab) {
+    else if (!fsymtab) {
         Debug.assert(isRefTypesSymtabConstraintItemNever(sc));
     }
     else {
         if (isAssign) {
-            symtab = mrNarrow.copyRefTypesSymtab(symtab).setAsAssigned(symbol, typeIn);
+            //symtab = mrNarrow.copyRefTypesSymtab(symtab).setAsAssigned(symbol, typeIn);
             if (enablePerBlockSymtabs) {
                 fsymtab = fsymtab!.branch().setAsAssigned(symbol, typeIn);
             }
         }
         else {
-            let type = symtab.get(symbol);
+            let type = fsymtab.get(symbol);
             if (enablePerBlockSymtabs) {
                 const t = fsymtab!.get(symbol);
                 if (type && t!==type) {
@@ -553,14 +553,14 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
                 typeOut = floughTypeModule.intersectionWithFloughTypeSpecial(type, typeIn);
                 // typeOut = floughTypeModule.intersectionOfRefTypesType(type, typeIn);
                 if (!floughTypeModule.equalRefTypesTypes(typeOut, type)) {
-                    symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol, typeOut);
+                    //symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol, typeOut);
                     if (enablePerBlockSymtabs) {
                         fsymtab = fsymtab!.branch().set(symbol, typeOut);
                     }
                 }
             }
             else {
-                symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol, typeIn);
+                //symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol, typeIn);
                 if (enablePerBlockSymtabs) {
                     fsymtab = fsymtab!.branch().set(symbol, typeIn);
                 }
@@ -569,9 +569,9 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
     }
     if (IDebug.isActive(loggerLevel)) {
         let str = "andSymbolTypeIntoSymtabConstraint[end] symtab:";
-        if (!symtab) str += "<undef>";
+        if (!fsymtab) str += "<undef>";
         else {
-            dbgRefTypesSymtabToStrings(symtab).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[end] symtab: ${s}`,loggerLevel));
+            //dbgRefTypesSymtabToStrings(symtab).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[end] symtab: ${s}`,loggerLevel));
             if (enablePerBlockSymtabs) {
                 dbgFloughSymtabToStrings(fsymtab!).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[end] fsymtab: ${s}`,loggerLevel));
             }
@@ -591,7 +591,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
         });
         IDebug.ilogGroupEnd(()=>"andSymbolTypeIntoSymtabConstraint[out]",loggerLevel);
     }
-    return { type: typeOut, sc: { symtab, fsymtab, constraintItem } };
+    return { type: typeOut, sc: { /*symtab,*/ fsymtab, constraintItem } };
 }
 
 // export function andSymbolTypeIntoConstraint({ symbol, type, constraintItem, getDeclaredType, mrNarrow }: Readonly<{

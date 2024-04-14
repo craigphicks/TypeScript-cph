@@ -59,7 +59,7 @@ export interface Relations {
 
 export type FloughTypeChecker = TSTypeChecker & {
     loadFloughStateForSourceFile(sourceFile: SourceFile): void; // called from harnessIO.ts
-    getCurrentSourceFileFloughState(): SourceFileFloughState;
+    getCurrentSourceFileFloughState(): SourceFileFloughState | undefined;
     getFlowNodeId(node: FloughNode): number;
     getIntersectionType(types: Type[]): Type;
     getUnionType(types: Type[]): Type;
@@ -173,7 +173,7 @@ export type ReplayableItem = {
 
 export type RefTypesSymtabConstraintItemNotNever = {
     fsymtab?: FloughSymtab | undefined;
-    symtab: RefTypesSymtab;
+    //symtab: RefTypesSymtab;
     constraintItem: ConstraintItemNotNever;
 };
 export type RefTypesSymtabConstraintItemNever = {
@@ -182,7 +182,7 @@ export type RefTypesSymtabConstraintItemNever = {
 
 export interface RefTypesSymtabConstraintItem {
     fsymtab?: FloughSymtab | undefined;
-    symtab?: RefTypesSymtab | undefined;
+    //symtab?: RefTypesSymtab | undefined;
     constraintItem: ConstraintItem;
 }
 

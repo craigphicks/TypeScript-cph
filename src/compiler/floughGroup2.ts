@@ -335,8 +335,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             as.push(`  type: ${dbgRefTypesTypeToString(rtt.type)}`);
         }
         if (true) {
-            if (!rtt.sci.symtab) as.push("  symtab: <undef>");
-            else dbgRefTypesSymtabToStrings(rtt.sci.symtab).forEach((str, i) => as.push(((i === 0) ? "  symtab: " : "  ") + str));
+            //if (!rtt.sci.symtab) as.push("  symtab: <undef>");
+            //else dbgRefTypesSymtabToStrings(rtt.sci.symtab).forEach((str, i) => as.push(((i === 0) ? "  symtab: " : "  ") + str));
             if (!rtt.sci.fsymtab) as.push("  fsymtab: <undef>");
             else dbgFloughSymtabToStrings(rtt.sci.fsymtab).forEach((str) => as.push(`  fsymtab: ${str}`));
             if (!rtt.sci.constraintItem) {
@@ -944,12 +944,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     + `qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}, `
                     + `accessDepth:${accessDepth}`, loggerLevel);
             IDebug.ilog(()=>`flough[begin] refTypesSymtab:`, loggerLevel);
-            if (sci.symtab) dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
+            //if (sci.symtab) dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
             IDebug.ilog(()=>`flough[begin] constraintItemIn:`, loggerLevel);
             dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
         }
         const floughReturn: FloughReturn = (() => {
-            if (!sci.symtab) {
+            if (!sci.fsymtab) {
                 Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
                 return {
                     unmerged: [{
@@ -991,11 +991,11 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
                 }
             });
-            if (enablePerBlockSymtabs){
-                if (!isRefTypesSymtabConstraintItemNever(sci)) {
-                    Debug.assert(!sci.symtab || sci.fsymtab);
-                }
-            }
+            // if (enablePerBlockSymtabs){
+            //     if (!isRefTypesSymtabConstraintItemNever(sci)) {
+            //         Debug.assert(!sci.symtab || sci.fsymtab);
+            //     }
+            // }
             IDebug.ilogGroupEnd(()=>`flough[out]: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
         }
         return floughReturn;
@@ -1033,29 +1033,29 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                      * Therefore we substitute in a dummy map.
                      * NOTE: tests show this causes no harm, but don't have a test case that shows it is necessary.
                      */
-                    let replayableInType = sci.symtab?.get(symbol);
-                    if (enablePerBlockSymtabs){
-                        const t = sci.fsymtab?.get(symbol);
-                        if (sci.symtab) {
-                            Debug.assert(sci.fsymtab);
+                    let replayableInType = sci.fsymtab?.get(symbol);
+                    // if (enablePerBlockSymtabs){
+                    //     const t = sci.fsymtab?.get(symbol);
+                    //     if (sci.symtab) {
+                    //         Debug.assert(sci.fsymtab);
 
-                            if (replayableInType && t!==replayableInType) {
-                                const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
-                                const typeTsType = floughTypeModule.getTsTypeFromFloughType(replayableInType!);
-                                const eql = mrNarrow.checker.isTypeRelatedTo(tTsType, typeTsType, mrNarrow.checker.getRelations().identityRelation);
-                                if (!enableSupressFSymtabEqualAsserts) {
-                                    Debug.assert(eql, undefined, ()=>{
-                                        if (IDebug.isActive(0)) {
-                                            return `assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`;
-                                        }
-                                        return "";
-                                    });
-                                }
-                            }
-                            // Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
-                        }
-                        replayableInType = t;
-                    }
+                    //         if (replayableInType && t!==replayableInType) {
+                    //             const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
+                    //             const typeTsType = floughTypeModule.getTsTypeFromFloughType(replayableInType!);
+                    //             const eql = mrNarrow.checker.isTypeRelatedTo(tTsType, typeTsType, mrNarrow.checker.getRelations().identityRelation);
+                    //             if (!enableSupressFSymtabEqualAsserts) {
+                    //                 Debug.assert(eql, undefined, ()=>{
+                    //                     if (IDebug.isActive(0)) {
+                    //                         return `assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`;
+                    //                     }
+                    //                     return "";
+                    //                 });
+                    //             }
+                    //         }
+                    //         // Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
+                    //     }
+                    //     replayableInType = t;
+                    // }
                     const dummyNodeToTypeMap = new Map<Node, Type>();
                     const mntr = flough({
                         expr: replayable?.expr,
@@ -1167,22 +1167,22 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 }
                 //debugDevExpectFloughSymtabEntry
 
-                let type: RefTypesType | undefined = sci.symtab?.get(symbol);
-                if (enablePerBlockSymtabs){
-                    const t = sci.fsymtab?.get(symbol);
-                    if (sci.symtab) {
-                        Debug.assert(sci.fsymtab);
-                        if (type && t!==type) {
-                            const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
-                            const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
-                            const eql = checker.isTypeRelatedTo(tTsType, typeTsType, checker.getRelations().identityRelation);
-                            if (!enableSupressFSymtabEqualAsserts) {
-                                Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`);
-                            }
-                        }
-                    }
-                    type = t;
-                }
+                let type: RefTypesType | undefined = sci.fsymtab?.get(symbol);
+                // if (enablePerBlockSymtabs){
+                //     const t = sci.fsymtab?.get(symbol);
+                //     if (sci.symtab) {
+                //         Debug.assert(sci.fsymtab);
+                //         if (type && t!==type) {
+                //             const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
+                //             const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
+                //             const eql = checker.isTypeRelatedTo(tTsType, typeTsType, checker.getRelations().identityRelation);
+                //             if (!enableSupressFSymtabEqualAsserts) {
+                //                 Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`);
+                //             }
+                //         }
+                //     }
+                //     type = t;
+                // }
                 const isconst = symbolFlowInfo.isconst;
                 type = type ?? getEffectiveDeclaredType(symbolFlowInfo);
                 Debug.assert(type);
@@ -1234,13 +1234,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 });
             }
             IDebug.ilogGroupEnd(()=>`floughIdentifier[out]: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
-            if (enablePerBlockSymtabs){
-                ret.unmerged.forEach(rttr => {
-                    if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
-                        Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
-                    }
-                });
-            }
+            // if (enablePerBlockSymtabs){
+            //     ret.unmerged.forEach(rttr => {
+            //         if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
+            //             Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
+            //         }
+            //     });
+            // }
             return ret;
         } // endof floughIdentifier()
 
@@ -1277,13 +1277,13 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             };
             if (innerret.typeof) floughReturn.typeof = innerret.typeof;
 
-            if (enablePerBlockSymtabs){
-                floughReturn.unmerged.forEach(rttr => {
-                    if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
-                        Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
-                    }
-                });
-            }
+            // if (enablePerBlockSymtabs){
+            //     floughReturn.unmerged.forEach(rttr => {
+            //         if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
+            //             Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
+            //         }
+            //     });
+            // }
             return floughReturn;
         } // endof floughAux()
 
@@ -1292,7 +1292,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             if (IDebug.isActive(loggerLevel)) {
                 IDebug.ilogGroup(()=>`floughInner[in] expr:${IDebug.dbgs.nodeToString(expr)}, floughStatus:{inCondition:${floughStatus.inCondition}, currentReplayableItem:${floughStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(floughStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
                 IDebug.ilog(()=>`floughInner[begin] refTypesSymtab:`, loggerLevel);
-                dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`floughInner[begin] refTypesSymtab:  ${str}`, loggerLevel));
+                dbgFloughSymtabToStrings(sci.fsymtab).forEach(str => IDebug.ilog(()=>`floughInner[begin] sci.fsymtab:  ${str}`, loggerLevel));
                 IDebug.ilog(()=>`floughInner[begin] constraintItemIn:`, loggerLevel);
                 if (sci.constraintItem) dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`floughInner[begin] constraintItemIn:  ${str}`, loggerLevel));
             }
@@ -1364,7 +1364,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             function floughInnerAux(qdotfalloutInner: RefTypesTableReturn[]): FloughInnerReturn {
                 if (extraAsserts) {
                     Debug.assert(!isNeverConstraint(sci.constraintItem));
-                    Debug.assert(sci.symtab);
+                    Debug.assert(sci.fsymtab);
                 }
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
                 switch (expr.kind) {
@@ -1706,9 +1706,9 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             debugDevExpectEffectiveDeclaredType(expr.parent, symbolFlowInfo);
                         }
                         const isconstVar = symbolFlowInfo.isconst; // isConstVariable(symbol);
-                        if (sci.symtab.has(symbol)) {
-                            Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
-                        }
+                        // if (sci.symtab.has(symbol)) {
+                        //     Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
+                        // }
                         if (enablePerBlockSymtabs){
                             Debug.assert(sci.fsymtab);
                             if (sci.fsymtab.has(symbol)) {
@@ -2092,8 +2092,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             // const typeModObj = rttrModObj.type;
                             scIsolated = copyRefTypesSymtabConstraintItem(rttrModObj.sci);
                             if (rttrModObj.symbol) {
-                                if (extraAsserts) Debug.assert(scIsolated.symtab);
-                                scIsolated.symtab!.set(rttrModObj.symbol, rttrModObj.type);
+                                if (extraAsserts) Debug.assert(scIsolated.fsymtab);
+                                //scIsolated.symtab!.set(rttrModObj.symbol, rttrModObj.type);
                                 if (enablePerBlockSymtabs){
                                     scIsolated.fsymtab!.set(rttrModObj.symbol, rttrModObj.type);
                                 }
