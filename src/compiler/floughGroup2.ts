@@ -949,7 +949,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
         }
         const floughReturn: FloughReturn = (() => {
-            if (!sci.symtab) {
+            if (enablePerBlockSymtabs ? !sci.fsymtab : !sci.symtab) {
                 Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
                 return {
                     unmerged: [{
