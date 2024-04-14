@@ -50,6 +50,7 @@ class FloughSymtabImpl implements FloughSymtab {
         widening?: boolean;
     };
     loopState?: ProcessLoopState; // TODO: Limit to only necessary members
+    assignmentCount?: number;
     constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState) {
         if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
         this.localsContainer = localsContainer
@@ -210,6 +211,15 @@ function floughSymtabRollupLocalsScopeV1(fsymtabIn: FloughSymtab, scopeLoc: Loca
         return arrfs[0].outer;
     }
     return new FloughSymtabImpl(undefined, arrfs[0].outer, undefined, topShadowMap);
+}
+
+export function getAssignCountUptoAncestor(fsIn: Readonly<FloughSymtab>, fsAncestor: Readonly<FloughSymtab>): number {
+    assertCastType<FloughSymtabImpl>(fsIn);
+    let count = 0;
+    for (let fs = fsIn; fs !== fsAncestor; fs = fs.outer!) {
+        count += fs.assignmentCount ?? 0;
+    }
+    return count;
 }
 
 /**
