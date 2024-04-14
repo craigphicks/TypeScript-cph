@@ -920,7 +920,7 @@ function processLoopOuter(loopGroup: GroupForFlow, sourceFileMrState: SourceFile
 
 function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloughState, forFlowParent: ForFlow, setOfLoopDeps: Readonly<Set<GroupForFlow>>, maxGroupIdxProcessed: number): void {
     const enableProcessLoopSaveScConditionContinue = false;
-    const loggerLevel = 1;
+    const loggerLevel = 2;
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>`processLoop[in] loopGroup.groupIdx:${loopGroup.groupIdx}, currentLoopDepth:${sourceFileMrState.mrState.currentLoopDepth}`,loggerLevel);
     }
@@ -1277,7 +1277,7 @@ function resolveHeap(sourceFileMrState: SourceFileFloughState, forFlow: ForFlow,
 }
 
 function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentBranchesMap: Map<GroupForFlow, Set<"then" | "else"> | undefined>, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow): RefTypesSymtabConstraintItem {
-    const loggerLevel = 1;
+    const loggerLevel = 2;
     const { groupsForFlow, mrNarrow } = sourceFileMrState;
     IDebug.ilogGroup(()=>`doFlowGroupLabel[in]:`, loggerLevel);
     if (IDebug.isActive(loggerLevel)){
@@ -1444,7 +1444,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
 }
 
 function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus: FloughStatus, sourceFileMrState: SourceFileFloughState, forFlow: ForFlow, options?: { cachedSCForLoop: RefTypesSymtabConstraintItem; loopGroupIdx: number; }): void {
-    const loggerLevel = 1;
+    const loggerLevel = 2;
     const groupsForFlow = sourceFileMrState.groupsForFlow;
     const mrNarrow = sourceFileMrState.mrNarrow;
     const maximalNode = groupsForFlow.posOrderedNodes[groupForFlow.maximalIdx];

@@ -1,0 +1,12 @@
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0080.ts] ////
+
+=== _caxnc-whileLoop-0080.ts ===
+// @ floughDoNotWidenInitalizedFlowType: true
+
+function f80() {
+>f80 : Symbol(f80, Decl(_caxnc-whileLoop-0080.ts, 0, 0))
+
+    while (true) {
+    }
+}
+

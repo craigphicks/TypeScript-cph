@@ -645,26 +645,31 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     function debugDevExpectFloughSymtabEntry(node: Node, count: number, floughSymtabEntry: Readonly<FloughSymtabEntry>): void {
         const loggerLevel = 1;
         const arrexpected = getDevExpectStrings(node, sourceFile);
-        let doit = false;
-        if (doit && arrexpected) {
+        //let doit = false;
+        if (arrexpected) {
             function floughTypeToPlainString(t: FloughType): string {
                 return typeToString(floughTypeModule.getTsTypeFromFloughType(t));
             }
             // const actual = `count: ${symbolFlowInfo.passCount}, actualDeclaredTsType: ${typeToString(symbolFlowInfo.effectiveDeclaredTsType)}`;
             let actual = `count: ${count}, type: ${floughTypeToPlainString(floughSymtabEntry.type)}`;
+            if (floughSymtabEntry.assignedType) actual +=`, assignedType: ${floughTypeToPlainString(floughSymtabEntry.assignedType)}`;
             const pass = arrexpected.some(expected => {
                 return actual === expected;
             });
             if (!pass) {
                     if (IDebug.isActive(loggerLevel)) {
-                        IDebug.ilog(()=>`debugDevExpectEffectiveDeclaredType: failed ts-dev-expect-string "${actual}"`, 0);
-                        arrexpected.forEach(expected => IDebug.ilog(()=>`debugDevExpectEffectiveDeclaredType: expected ts-dev-expect-string "${expected}"`, 0));
+                        IDebug.ilog(()=>`debugDevExpectFloughSymtabEntry: ts-dev-expect-string failed,  node: "${IDebug.dbgs.nodeToString(node)}"`, 0);
+                        IDebug.ilog(()=>`debugDevExpectFloughSymtabEntry: actual: "${actual}"`, 0);
+                        arrexpected.forEach(expected => IDebug.ilog(()=>`debugDevExpectFloughSymtabEntry: expected: "${expected}"`, 0));
                         IDebug.ilog(()=>`expr: ${IDebug.dbgs.nodeToString(node)}`, 0);
                     }
-                    Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}", expr: ${IDebug.dbgs.nodeToString(node)}`);
+                    //Debug.fail(`ts-dev-expect-string: no match for actual: "${actual}", expr: ${IDebug.dbgs.nodeToString(node)}`);
             }
-            if (IDebug.isActive(loggerLevel)) {
-                IDebug.ilog(()=>`debugDevExpectEffectiveDeclaredType: passed ts-dev-expect-string "${actual}", expr: ${IDebug.dbgs.nodeToString(node)}`, loggerLevel);
+            else {
+                if (IDebug.isActive(loggerLevel)) {
+                    IDebug.ilog(()=>`debugDevExpectFloughSymtabEntry: ts-dev-expect-string passed,  node: "${IDebug.dbgs.nodeToString(node)}"`, 0);
+                    IDebug.ilog(()=>`debugDevExpectFloughSymtabEntry: passed ts-dev-expect-string "${actual}"`, loggerLevel);
+                }
             }
         }
     }
@@ -930,7 +935,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
      * @returns
      */
     function flough({ sci, expr: expr, floughStatus: floughStatus, qdotfallout, crit, accessDepth, refAccessArgs }: FloughArgs): FloughReturn {
-        const loggerLevel = 1;
+        const loggerLevel = 2;
         if (IDebug.isActive(loggerLevel)) {
             IDebug.ilogGroup(()=>
                 `flough[in] expr:${IDebug.dbgs.nodeToString(expr)}},`

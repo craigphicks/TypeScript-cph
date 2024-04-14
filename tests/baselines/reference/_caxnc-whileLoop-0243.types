@@ -1,61 +1,110 @@
-// @floughEnable: true
-// @floughConstraintsEnable: false
-// @strict: true
-// @declaration: true
-// @enableTSDevExpectString: true
-// @floughDoNotWidenInitalizedFlowType: true
-// @floughDoNotWidenInitalizedFlowType: true
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0243.ts] ////
 
+=== _caxnc-whileLoop-0243.ts ===
 function t243(){
+>t243 : () => void
+
     type D = 0 | 1 | 2 | 3 ;
+>D : 0 | 1 | 2 | 3
+
     let d1: D = 0;
+>d1 : 0 | 1 | 2 | 3
+>0 : 0
+
     d1; // expect 0
+>d1 : 0
+
     while (true){
+>true : true
+
         let d2: D = 0;
+>d2 : 0 | 1 | 2 | 3
+>0 : 0
+
         // @ts-dev-expect-string "count: 0, type: 0 | 1 | 2 | 3"
         // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
         d1;
+>d1 : 0
+
         // @ts-dev-expect-string "count: 0, type: 0, assignedType: 0"
         // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
         d2;
+>d2 : 0
+
         while (true){
+>true : true
+
             // @ts-dev-expect-string "count: 0, type: 0 | 1 | 2 | 3"
             // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
             d2;
+>d2 : 0
+
             if (d2===0) {
+>d2===0 : boolean
+>d2 : 0
+>0 : 0
+
                 // @ts-dev-expect-string "count: 0, type: 0"
                 // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
                 d2;
+>d2 : 0
+
                 d2=1;
+>d2=1 : 1
+>d2 : 0 | 1 | 2 | 3
+>1 : 1
+
                 // @ts-dev-expect-string "count: 0, type: 1, assignedType: 1"
                 // @ts-dev-expect-string "count: 1, type: 1, assignedType: 1"
                 d2;
+>d2 : 1
+
                 break;
             }
             // @ts-dev-expect-string "count: 0, type: 1 | 2 | 3"
             // @ts-dev-expect-string "count: 1, type: never"
             d2;
+>d2 : never
         }
         // @ts-dev-expect-string "count: 0, type: 0 | 1 | 2 | 3"
         // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
         d1;
+>d1 : 0
+
         // @ts-dev-expect-string "count: 0, type: 1, assignedType: 1"
         // @ts-dev-expect-string "count: 1, type: 1, assignedType: 1"
         d2;
+>d2 : 1
+
         if (d1===0) {
+>d1===0 : boolean
+>d1 : 0
+>0 : 0
+
             // @ts-dev-expect-string "count: 0, type: 0"
             // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
             d1;
+>d1 : 0
+
             d1=1;
+>d1=1 : 1
+>d1 : 0 | 1 | 2 | 3
+>1 : 1
+
             break;
         }
         // @ts-dev-expect-string "count: 0, type: 1 | 2 | 3"
         // @ts-dev-expect-string "count: 1, type: never"
         d1;
+>d1 : never
+
         // @ts-dev-expect-string "count: 0, type: 1, assignedType: 1"
         // @ts-dev-expect-string "count: 1, type: never"
         d2;
+>d2 : never
     }
     // @ts-dev-expect-string "count: 0, type: 1"
     d1; // expect 1
+>d1 : 1
 }
+

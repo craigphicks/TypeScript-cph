@@ -293,7 +293,7 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  * TODO: logicalObjs
  */
 export function unionFloughSymtab(afsIn: readonly (Readonly<FloughSymtab> | undefined)[] /*, options?: {knownAncestor?: FloughSymtab, useAssignedType?: boolean}*/): FloughSymtab {
-const loggerLevel = 1;
+const loggerLevel = 2;
 IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length}`, loggerLevel);
 if (IDebug.isActive(loggerLevel)) {
     afsIn.forEach((fs,idx) => {

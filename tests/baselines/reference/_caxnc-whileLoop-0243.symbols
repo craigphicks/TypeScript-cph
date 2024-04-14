@@ -1,61 +1,98 @@
-// @floughEnable: true
-// @floughConstraintsEnable: false
-// @strict: true
-// @declaration: true
-// @enableTSDevExpectString: true
-// @floughDoNotWidenInitalizedFlowType: true
-// @floughDoNotWidenInitalizedFlowType: true
+//// [tests/cases/conformance/_caxnc-loop/_caxnc-whileLoop-0243.ts] ////
 
+=== _caxnc-whileLoop-0243.ts ===
 function t243(){
+>t243 : Symbol(t243, Decl(_caxnc-whileLoop-0243.ts, 0, 0))
+
     type D = 0 | 1 | 2 | 3 ;
+>D : Symbol(D, Decl(_caxnc-whileLoop-0243.ts, 0, 16))
+
     let d1: D = 0;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0243.ts, 0, 16))
+
     d1; // expect 0
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
+
     while (true){
         let d2: D = 0;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
+>D : Symbol(D, Decl(_caxnc-whileLoop-0243.ts, 0, 16))
+
         // @ts-dev-expect-string "count: 0, type: 0 | 1 | 2 | 3"
         // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
         d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
+
         // @ts-dev-expect-string "count: 0, type: 0, assignedType: 0"
         // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
         d2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
+
         while (true){
             // @ts-dev-expect-string "count: 0, type: 0 | 1 | 2 | 3"
             // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
             d2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
+
             if (d2===0) {
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
+
                 // @ts-dev-expect-string "count: 0, type: 0"
                 // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
                 d2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
+
                 d2=1;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
+
                 // @ts-dev-expect-string "count: 0, type: 1, assignedType: 1"
                 // @ts-dev-expect-string "count: 1, type: 1, assignedType: 1"
                 d2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
+
                 break;
             }
             // @ts-dev-expect-string "count: 0, type: 1 | 2 | 3"
             // @ts-dev-expect-string "count: 1, type: never"
             d2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
         }
         // @ts-dev-expect-string "count: 0, type: 0 | 1 | 2 | 3"
         // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
         d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
+
         // @ts-dev-expect-string "count: 0, type: 1, assignedType: 1"
         // @ts-dev-expect-string "count: 1, type: 1, assignedType: 1"
         d2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
+
         if (d1===0) {
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
+
             // @ts-dev-expect-string "count: 0, type: 0"
             // @ts-dev-expect-string "count: 1, type: 0, assignedType: 0"
             d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
+
             d1=1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
+
             break;
         }
         // @ts-dev-expect-string "count: 0, type: 1 | 2 | 3"
         // @ts-dev-expect-string "count: 1, type: never"
         d1;
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
+
         // @ts-dev-expect-string "count: 0, type: 1, assignedType: 1"
         // @ts-dev-expect-string "count: 1, type: never"
         d2;
+>d2 : Symbol(d2, Decl(_caxnc-whileLoop-0243.ts, 5, 11))
     }
     // @ts-dev-expect-string "count: 0, type: 1"
     d1; // expect 1
+>d1 : Symbol(d1, Decl(_caxnc-whileLoop-0243.ts, 2, 7))
 }
+
