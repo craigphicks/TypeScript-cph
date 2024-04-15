@@ -20,7 +20,6 @@ import {
     RefTypesType,
 } from "./floughType";
 import {
-    enablePerBlockSymtabs,
     extraAsserts,
 } from "./floughGroup";
 import {
@@ -183,9 +182,6 @@ export function applyCritNoneToOne(rttr: Readonly<RefTypesTableReturn>, nodeForM
     }
     const { type, sc } = andSymbolTypeIntoSymtabConstraint({ symbol: rttr.symbol, isconst: rttr.isconst, isAssign: rttr.isAssign, type: rttr.type, sc: rttr.sci, mrNarrow, getDeclaredType });
     if (nodeToTypeMap) orIntoNodeToTypeMap(type, nodeForMap, nodeToTypeMap);
-    if (enablePerBlockSymtabs) {
-        Debug.assert(!sc.symtab || sc.fsymtab);
-    }
     return {
         type,
         sci: sc,
@@ -226,9 +222,6 @@ export function applyCritNone1Union(arrRttr: Readonly<RefTypesTableReturn[]>, no
     const type = floughTypeModule.unionOfRefTypesType(atype);
     if (nodeToTypeMap) orIntoNodeToTypeMap(type, nodeForMap, nodeToTypeMap);
     const sci = orSymtabConstraints(asc /*,mrNarrow*/);
-    if (enablePerBlockSymtabs) {
-        Debug.assert(!sci.symtab || sci.fsymtab);
-    }
     return {
         type,
         sci,
@@ -252,9 +245,7 @@ export function resolveLogicalObjectAccessData(load: LogicalObjecAccessData, sc:
         if (!floughTypeModule.isNeverType(objType)) {
             scOut = copyRefTypesSymtabConstraintItem(sci); // copyRefTypesSymtabConstraintItem(sc);
             scOut.symtab!.set(symbol, objType);
-            if (enablePerBlockSymtabs) {
-                scOut.fsymtab!.set(symbol, objType);
-            }
+            scOut.fsymtab!.set(symbol, objType);
         }
         else {
             typeOut = floughTypeModule.getNeverType();
@@ -263,9 +254,6 @@ export function resolveLogicalObjectAccessData(load: LogicalObjecAccessData, sc:
     }
     else {
         // Do nothing
-    }
-    if (enablePerBlockSymtabs) {
-        Debug.assert(!scOut.symtab || scOut.fsymtab);
     }
     return { type: typeOut, sc: scOut };
 }
@@ -348,10 +336,6 @@ export function applyCrit1ToOne(rttr: Readonly<RefTypesTableReturn>, crit: Reado
         };
     }
     (crit as FloughCrit).done = true; // note: overriding readonly
-    if (enablePerBlockSymtabs) {
-        Debug.assert(!passing.sci.symtab || passing.sci.fsymtab);
-        Debug.assert(!failing || !failing.sci.symtab || failing.sci.fsymtab);
-    }
 
     return { passing, failing };
 }
@@ -505,10 +489,6 @@ function applyCrit1(arrRttr: Readonly<RefTypesTableReturn[]>, crit: Readonly<Flo
     if (IDebug.isActive(loggerLevel)) {
         // dbg ret.passing
         IDebug.ilogGroupEnd(()=>`applyCrit1[out]`, loggerLevel);
-    }
-    if (enablePerBlockSymtabs) {
-        Debug.assert(!ret.passing.sci.symtab || ret.passing.sci.fsymtab);
-        Debug.assert(!ret.failing || !ret.failing.sci.symtab || ret.failing.sci.fsymtab);
     }
     return ret;
 }

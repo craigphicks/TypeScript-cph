@@ -64,8 +64,6 @@ import {
     getDevExpectStrings,
     extraAsserts,
     refactorConnectedGroupsGraphsNoShallowRecursion,
-    enablePerBlockSymtabs,
-    enableSupressFSymtabEqualAsserts,
 } from "./floughGroup";
 import {
     applyCritNoneUnion,
@@ -949,7 +947,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
         }
         const floughReturn: FloughReturn = (() => {
-            if (enablePerBlockSymtabs ? !sci.fsymtab : !sci.symtab) {
+            if (!sci.fsymtab) {
                 Debug.assert(isRefTypesSymtabConstraintItemNever(sci));
                 return {
                     unmerged: [{
@@ -991,11 +989,6 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
                 }
             });
-            if (enablePerBlockSymtabs){
-                if (!isRefTypesSymtabConstraintItemNever(sci)) {
-                    Debug.assert(!sci.symtab || sci.fsymtab);
-                }
-            }
             IDebug.ilogGroupEnd(()=>`flough[out]: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
         }
         return floughReturn;
@@ -1033,29 +1026,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                      * Therefore we substitute in a dummy map.
                      * NOTE: tests show this causes no harm, but don't have a test case that shows it is necessary.
                      */
-                    let replayableInType = sci.symtab?.get(symbol);
-                    if (enablePerBlockSymtabs){
-                        const t = sci.fsymtab?.get(symbol);
-                        if (sci.symtab) {
-                            Debug.assert(sci.fsymtab);
-
-                            if (replayableInType && t!==replayableInType) {
-                                const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
-                                const typeTsType = floughTypeModule.getTsTypeFromFloughType(replayableInType!);
-                                const eql = mrNarrow.checker.isTypeRelatedTo(tTsType, typeTsType, mrNarrow.checker.getRelations().identityRelation);
-                                if (!enableSupressFSymtabEqualAsserts) {
-                                    Debug.assert(eql, undefined, ()=>{
-                                        if (IDebug.isActive(0)) {
-                                            return `assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`;
-                                        }
-                                        return "";
-                                    });
-                                }
-                            }
-                            // Debug.assert(!replayableInType || t===replayableInType || floughTypeModule.equalRefTypesTypes(t!,replayableInType!));
-                        }
-                        replayableInType = t;
-                    }
+                    let replayableInType = sci.fsymtab?.get(symbol);
                     const dummyNodeToTypeMap = new Map<Node, Type>();
                     const mntr = flough({
                         expr: replayable?.expr,
@@ -1146,43 +1117,23 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     }
                 } // endof if (floughStatus.replayables.has(symbol))
 
-                if (enablePerBlockSymtabs){
-                    if (compilerOptions.enableTSDevExpectString) {
-                        if (!sci.fsymtab) {
-                            Debug.fail("unexpected !sci.fsymtab");
-                        }
-                        let entry = sci.fsymtab.getWithAssigned(symbol);
-                        if (!entry) {
-                            entry = {
-                                type: floughTypeModule.createNeverType(),
-                            };
-                        }
-                        const currentLoopGroup = floughStatus.sourceFileFloughState.mrState.currentLoopStack.at(-1);
-                        const count = currentLoopGroup ? floughStatus.sourceFileFloughState.mrState.loopGroupToProcessLoopStateMap!.get(currentLoopGroup)?.invocations : 0;
-                        Debug.assert(count !== undefined);
-                        // const count = floughStatus.sourceFileFloughState.mrState.currentLoopStack.length ?
-                        //     floughStatus.sourceFileFloughState.mrState.currentLoopStack[].
-                        debugDevExpectFloughSymtabEntry(expr, count, entry);
+                if (compilerOptions.enableTSDevExpectString) {
+                    if (!sci.fsymtab) {
+                        Debug.fail("unexpected !sci.fsymtab");
                     }
+                    let entry = sci.fsymtab.getWithAssigned(symbol);
+                    if (!entry) {
+                        entry = {
+                            type: floughTypeModule.createNeverType(),
+                        };
+                    }
+                    const currentLoopGroup = floughStatus.sourceFileFloughState.mrState.currentLoopStack.at(-1);
+                    const count = currentLoopGroup ? floughStatus.sourceFileFloughState.mrState.loopGroupToProcessLoopStateMap!.get(currentLoopGroup)?.invocations : 0;
+                    Debug.assert(count !== undefined);
+                    debugDevExpectFloughSymtabEntry(expr, count, entry);
                 }
-                //debugDevExpectFloughSymtabEntry
 
-                let type: RefTypesType | undefined = sci.symtab?.get(symbol);
-                if (enablePerBlockSymtabs){
-                    const t = sci.fsymtab?.get(symbol);
-                    if (sci.symtab) {
-                        Debug.assert(sci.fsymtab);
-                        if (type && t!==type) {
-                            const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
-                            const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
-                            const eql = checker.isTypeRelatedTo(tTsType, typeTsType, checker.getRelations().identityRelation);
-                            if (!enableSupressFSymtabEqualAsserts) {
-                                Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`);
-                            }
-                        }
-                    }
-                    type = t;
-                }
+                let type: RefTypesType | undefined = sci.fsymtab?.get(symbol);
                 const isconst = symbolFlowInfo.isconst;
                 type = type ?? getEffectiveDeclaredType(symbolFlowInfo);
                 Debug.assert(type);
@@ -1234,7 +1185,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 });
             }
             IDebug.ilogGroupEnd(()=>`floughIdentifier[out]: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
-            if (enablePerBlockSymtabs){
+            if (extraAsserts) {
                 ret.unmerged.forEach(rttr => {
                     if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
                         Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
@@ -1277,10 +1228,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             };
             if (innerret.typeof) floughReturn.typeof = innerret.typeof;
 
-            if (enablePerBlockSymtabs){
+            if (extraAsserts){
                 floughReturn.unmerged.forEach(rttr => {
                     if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
-                        Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
+                        Debug.assert(rttr.sci.fsymtab);
                     }
                 });
             }
@@ -1709,7 +1660,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (sci.symtab.has(symbol)) {
                             Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
                         }
-                        if (enablePerBlockSymtabs){
+                        if (extraAsserts){
                             Debug.assert(sci.fsymtab);
                             if (sci.fsymtab.has(symbol)) {
                                 Debug.assert("unexpected"); // should only be declared once.
@@ -2092,11 +2043,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             // const typeModObj = rttrModObj.type;
                             scIsolated = copyRefTypesSymtabConstraintItem(rttrModObj.sci);
                             if (rttrModObj.symbol) {
-                                if (extraAsserts) Debug.assert(scIsolated.symtab);
-                                scIsolated.symtab!.set(rttrModObj.symbol, rttrModObj.type);
-                                if (enablePerBlockSymtabs){
-                                    scIsolated.fsymtab!.set(rttrModObj.symbol, rttrModObj.type);
-                                }
+                                scIsolated.fsymtab!.set(rttrModObj.symbol, rttrModObj.type);
                             }
                         }
 
@@ -2339,7 +2286,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         //         rttr=>rttr.logicalObjectAccessData?.logicalObjectAccessReturn===lhs.unmerged[0].logicalObjectAccessData?.logicalObjectAccessReturn));
                         // }
                         const leftSci = lhsUnion.sci;
-                        const assignCountBeforeRhs = lhsUnion.sci.symtab?.getAssignCount() ?? -1;
+                        //const assignCountBeforeRhs = lhsUnion.sci.symtab?.getAssignCount() ?? -1;
                         const rhs = flough({
                             sci: leftSci,
                             crit: { kind: FloughCritKind.none },
@@ -2350,15 +2297,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         lhs.unmerged.forEach((rttrLeft0, _ileft) => {
                             rhs.unmerged.forEach((rttrRight0, _iright) => {
                                 const rightRttr = applyCritNoneToOne(rttrRight0, rightExpr, floughStatus.groupNodeToTypeMap);
-                                const assignCountAfterRhs = rightRttr.sci.symtab?.getAssignCount() ?? -1;
-                                if (enablePerBlockSymtabs){
-                                    const assignCountDiff = getAssignCountUptoAncestor(rightRttr.sci.fsymtab!, lhsUnion.sci.fsymtab!);
-                                    Debug.assert(assignCountDiff === assignCountAfterRhs - assignCountBeforeRhs, "assignCountDiff", ()=>{
-                                        return `floughSymtabAssignCountDiff:${assignCountDiff}, assignCountAfterRhs:${assignCountAfterRhs}, assignCountBeforeRhs:${assignCountBeforeRhs}`;
-                                    });
-                                }
-
-                                const leftRightIdependent = assignCountBeforeRhs === assignCountAfterRhs;
+                                const leftRightIdependent = getAssignCountUptoAncestor(rightRttr.sci.fsymtab!, lhsUnion.sci.fsymtab!);
                                 let sciFinal = leftRightIdependent ? rttrLeft0.sci : rttrRight0.sci;
                                 const typeFinal = rightRttr.type;
                                 if (floughTypeModule.isNeverType(typeFinal)) return;
@@ -2372,9 +2311,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                         if (floughTypeModule.isNeverType(newRootType)) return;
                                         sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
                                         sciFinal.symtab!.setAsAssigned(symbol, newRootType);
-                                        if (enablePerBlockSymtabs){
-                                            sciFinal.fsymtab!.setAsAssigned(symbol, newRootType);
-                                        }
+                                        sciFinal.fsymtab!.setAsAssigned(symbol, newRootType);
                                     }
                                     rttrLeft0.logicalObjectAccessData = undefined;
                                 }
@@ -2856,21 +2793,6 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             });
                         }
 
-                        if (symbol && !sciFinal.symtab?.get(symbol)) {
-                            if (enablePerBlockSymtabs) {
-                                if (sciFinal.symtab) Debug.assert(sciFinal.fsymtab);
-                                // const t = sciFinal.fsymtab.get(symbol);
-                                // Debug.assert(!t);
-                            }
-                            // nothing changed symbol value so only add if not already present.
-                            const { newRootType } = floughLogicalObjectModule.getRootTypeAtLevelFromFromLogicalObjectAccessReturn(raccess, 0);
-                            sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
-                            sciFinal.symtab!.set(symbol, newRootType);
-                            if (enablePerBlockSymtabs){
-                                sciFinal.fsymtab!.set(symbol, newRootType);
-                            }
-                        }
-
                         const includeQDotUndefined = expr.parent?.kind !== SyntaxKind.CallExpression;
                         const finalType: Readonly<FloughType> = floughLogicalObjectModule.getFinalTypeFromLogicalObjectAccessReturn(raccess, includeQDotUndefined);
                         {
@@ -2999,11 +2921,6 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             });
                         }
                     });
-                    if (enablePerBlockSymtabs){
-                        unmergedOut.forEach(rttr=>{
-                            Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
-                        });
-                    }
                     return { unmerged: unmergedOut };
                 } // endof floughByBinaryExpressionInKeyword
             } // endof floughInnerAux()
