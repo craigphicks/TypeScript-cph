@@ -271,49 +271,49 @@ export type FloughInnerReturn = {
     };
 };
 export enum ConstraintItemKind {
-    node = "node",
-    leaf = "leaf",
+    // node = "node",
+    // leaf = "leaf",
     never = "never",
     always = "always",
 }
-export enum ConstraintItemNodeOp {
-    or = "or",
-    and = "and",
-    not = "not",
-}
-export type ConstraintItemBase = {
-    kind: ConstraintItemKind;
-    symbolsInvolved?: Set<Symbol>;
-};
-export type ConstraintItemNodeAnd = ConstraintItemBase & {
-    kind: ConstraintItemKind.node;
-    op: ConstraintItemNodeOp.and;
-    constraints: (ConstraintItem)[];
-};
-export type ConstraintItemNodeOr = ConstraintItemBase & {
-    kind: ConstraintItemKind.node;
-    op: ConstraintItemNodeOp.or;
-    constraints: (ConstraintItem)[];
-};
-export type ConstraintItemNodeNot = ConstraintItemBase & {
-    kind: ConstraintItemKind.node;
-    op: ConstraintItemNodeOp.not;
-    constraint: ConstraintItem;
-};
-export type ConstraintItemNode = ConstraintItemNodeAnd | ConstraintItemNodeOr | ConstraintItemNodeNot;
-export type ConstraintItemLeaf = ConstraintItemBase & {
-    kind: ConstraintItemKind.leaf;
-    symbol: Symbol;
-    type: RefTypesType;
-};
-export type ConstraintItemNever = ConstraintItemBase & {
+// export enum ConstraintItemNodeOp {
+//     or = "or",
+//     and = "and",
+//     not = "not",
+// }
+// export type ConstraintItemBase = {
+//     kind: ConstraintItemKind;
+//     symbolsInvolved?: Set<Symbol>;
+// };
+// export type ConstraintItemNodeAnd = ConstraintItemBase & {
+//     kind: ConstraintItemKind.node;
+//     op: ConstraintItemNodeOp.and;
+//     constraints: (ConstraintItem)[];
+// };
+// export type ConstraintItemNodeOr = ConstraintItemBase & {
+//     kind: ConstraintItemKind.node;
+//     op: ConstraintItemNodeOp.or;
+//     constraints: (ConstraintItem)[];
+// };
+// export type ConstraintItemNodeNot = ConstraintItemBase & {
+//     kind: ConstraintItemKind.node;
+//     op: ConstraintItemNodeOp.not;
+//     constraint: ConstraintItem;
+// };
+// export type ConstraintItemNode = ConstraintItemNodeAnd | ConstraintItemNodeOr | ConstraintItemNodeNot;
+// export type ConstraintItemLeaf = ConstraintItemBase & {
+//     kind: ConstraintItemKind.leaf;
+//     symbol: Symbol;
+//     type: RefTypesType;
+// };
+export type ConstraintItemNever = {
     kind: ConstraintItemKind.never;
 };
-export type ConstraintItemAlways = ConstraintItemBase & {
+export type ConstraintItemAlways = {
     kind: ConstraintItemKind.always;
 };
-export type ConstraintItemNotNever = ConstraintItemLeaf | ConstraintItemNode | ConstraintItemAlways;
-export type ConstraintItem = ConstraintItemLeaf | ConstraintItemNode | ConstraintItemNever | ConstraintItemAlways;
+export type ConstraintItemNotNever = ConstraintItemAlways;
+export type ConstraintItem = ConstraintItemNever | ConstraintItemAlways;
 
 export type LiteralTypeNumber = LiteralType & { value: number; };
 export type LiteralTypeString = LiteralType & { value: string; };

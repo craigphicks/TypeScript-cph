@@ -35,7 +35,7 @@ import {
     AccessArgsRoot,
     ConstraintItem,
     ConstraintItemKind,
-    ConstraintItemNodeOp,
+    //ConstraintItemNodeOp,
     FloughArgs,
     FloughInnerReturn,
     FloughReturn,
@@ -285,38 +285,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
     function dbgConstraintItem(ci: ConstraintItem): string[] {
         Debug.assert(ci);
         const as: string[] = ["{"];
-        if (!ci.symbolsInvolved) as.push(` symbolsInvoled: <undefined>`);
-        else {
-            let str = " symbolsInvoled:";
-            ci.symbolsInvolved.forEach(s => str += `${s.escapedName},`);
-            as.push(str);
-        }
         as.push(` kind: ${ci.kind},`);
-        if (ci.kind === ConstraintItemKind.never) {
-            /**/
-        }
-        else if (ci.kind === ConstraintItemKind.always) {
-            /**/
-        }
-        else if (ci.kind === ConstraintItemKind.leaf) {
-            as.push(`  symbol: ${IDebug.dbgs.symbolToString(ci.symbol)},`);
-            as.push(`  type: ${dbgRefTypesTypeToString(ci.type)},`);
-        }
-        else {
-            as.push(`  node: ${ci.op},`);
-            if (ci.op === ConstraintItemNodeOp.not) {
-                as.push(`  constraint:`);
-                dbgConstraintItem(ci.constraint).forEach(s => as.push("    " + s));
-                as[as.length - 1] += ",";
-            }
-            else {
-                as.push(`  constraints:[`);
-                ci.constraints.forEach(ci1 => {
-                    dbgConstraintItem(ci1).forEach(s => as.push("    " + s));
-                });
-                as.push(`  ],`);
-            }
-        }
         as.push("},");
         return as;
     }

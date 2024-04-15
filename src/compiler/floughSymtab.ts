@@ -45,7 +45,7 @@ class FloughSymtabImpl implements FloughSymtab {
         loopGroupIdx: number; // only used for debugging
         widening?: boolean;
     };
-    loopState?: { invocations: number, loopGroup: { groupIdx: number /* only used for debug */} }; 
+    loopState?: { invocations: number, loopGroup: { groupIdx: number /* only used for debug */} };
     assignmentCount?: number;
     constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState) {
         if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
@@ -138,10 +138,6 @@ class FloughSymtabImpl implements FloughSymtab {
             this.shadowMap.set(symbol, { type, assignedType: type, wasAssigned: true});
             const loopState = mrNarrow.mrState.getCurrentLoopState();
             loopState?.symbolsAssigned?.add(symbol);
-            // if (loopState && loopState.invocations===0) {
-            //     // add symbol to assigned list
-            //     // loopState.symbolsAssigned!.add(symbol);  not using this for now
-            // }
         }
         this.assignmentCount = (this.assignmentCount ?? 0) + 1;
         return this;
@@ -279,12 +275,15 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
 }
 
 
+
+
+
 /**
  *
  * @param afsIn Had another idea
  * @returns
- * TODO: union of assignedType
- * TODO: logicalObjs
+ * TODO: Some special handling for logicalObjects that was done in floughGroupRefTypesSymtab but is not done here.
+ *       Nevertheless, all tests passing without that special handling - it is just lacking a a good test case?
  */
 export function unionFloughSymtab(afsIn: readonly (Readonly<FloughSymtab> | undefined)[] /*, options?: {knownAncestor?: FloughSymtab, useAssignedType?: boolean}*/): FloughSymtab {
 const loggerLevel = 2;
@@ -347,18 +346,13 @@ const ret = (()=>{
         afsIn.forEach(fsx => {
             while (fsx && fsx !== fsca) {
                 Debug.assert(fsx);
-                // Debug.assert(!fsx.localsContainer); // If it is an earlier group idx than the current loop group idx, not a problem
                 fsx = fsx.outer!;
             }
-            // Debug.assert(fsx===fsca); // If it is an earlier group idx than the current loop group idx, not a problem
         });
     }
-    //const setAncestors = new Set<FloughSymtabImpl>();
     const mapSymbolToSet = new Map<Symbol,({type: FloughType, wasAssigned?:boolean}|undefined)[]/*length afsIn.length*/>();
     afsIn.forEach((fs,idx)=>{
         for (let fsx = fs; fsx!==fsca; fsx = fsx.outer!) {
-            //if (setAncestors.has(fsx)) break;
-            //setAncestors.add(fsx);
             if (fsx.shadowMap.size) {
                 fsx.shadowMap.forEach((entry, symbol) => {
                     let arr = mapSymbolToSet.get(symbol);
@@ -369,14 +363,10 @@ const ret = (()=>{
                     arr[idx] ??= entry; // if it is already set, do not set again
                 });
             }
-            if (IDebug.assertLevel>=1) {
-                // Debug.assert(!fsx.localsContainer);
-            }
         }
     });
 
     if (IDebug.isActive(loggerLevel)) {
-        //dbgFloughSymtabToStrings(fsymtab).forEach(s => IDebug.ilog(()=>`return: ${s}`, loggerLevel));
         mapSymbolToSet.forEach((arr,symbol) => {
             IDebug.ilog(()=>`symbol: ${
                 IDebug.dbgs.symbolToString(symbol)} -> ${
@@ -395,27 +385,16 @@ const ret = (()=>{
     });
     assertCastType<Map<Symbol,FloughSymtabEntry[]>>(mapSymbolToSet);
 
-
-    //const localMap: InnerMap | undefined = fsca.localMap ? createInnerMap(fsca.localMap) : fsca.localsContainer ? createInnerMap() : undefined;
     let shadowMap: InnerMap | undefined = createInnerMap();
-    //const mapSymbolUnion = new Map<Symbol,{type: FloughType, wasAssigned?:boolean}>();
     mapSymbolToSet.forEach((arr,symbol) => {
-        //if (shadowMap.has(symbol)) arr.push(shadowMap.get(symbol)!);
         let result =  arr.reduce((acc, x) =>  {
             Debug.assert(acc);
             if (!x) return acc;
-            // if (useAssignedType) {
-            //     if (!x.assignedType) return acc;
-            //     return { type: floughTypeModule.unionWithFloughTypeMutate(x.assignedType, x.type) };
-            // }
-            // TODO: optimize for case x.type===x.assignedType && acc.type===acc.assignedType
             return {
                 type: floughTypeModule.unionWithFloughTypeMutate(x.type, acc.type),
                 assignedType: x.assignedType ? floughTypeModule.unionWithFloughTypeMutate(x.assignedType, acc.assignedType!) : acc.assignedType!
             };
         }, { type: floughTypeModule.createNeverType(), assignedType: floughTypeModule.createNeverType() }); // // need to initialize with a fresh never type because it will be mutated
-        //if (!floughTypeModule.isNeverType(result!.type))
-        //if (floughTypeModule.isNeverType(result.wtype!)) result.wtype = undefined;
         shadowMap.set(symbol, result!);
     });
     if (shadowMap.size === 0) return fsca;

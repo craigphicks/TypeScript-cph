@@ -177,14 +177,6 @@ export type RefTypesSymtab = RefTypesSymtabProxyI;
 export function isRefTypesSymtabConstraintItemNever(sc: Readonly<RefTypesSymtabConstraintItem>): sc is RefTypesSymtabConstraintItemNever {
     return isNeverConstraint(sc.constraintItem);
 }
-// function isRefTypesSymtabConstraintItemNotNever(sc: Readonly<RefTypesSymtabConstraintItem>): sc is RefTypesSymtabConstraintItemNotNever {
-//     return !isNeverConstraint(sc.constraintItem);
-// }
-
-function createSubloopRefTypesSymtab(outer: Readonly<RefTypesSymtab>, loopState: ProcessLoopState, loopGroup: Readonly<GroupForFlow>): RefTypesSymtab {
-    assertCastType<Readonly<RefTypesSymtabProxy>>(outer);
-    return new RefTypesSymtabProxy(outer, undefined, /*isSubloop*/ true, loopState, loopGroup);
-}
 export function createSubLoopRefTypesSymtabConstraint(outerSC: Readonly<RefTypesSymtabConstraintItem>, loopState: ProcessLoopState, loopGroup: Readonly<GroupForFlow>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(outerSC)) return outerSC; // as RefTypesSymtabConstraintItemNever;
     return {
@@ -193,43 +185,31 @@ export function createSubLoopRefTypesSymtabConstraint(outerSC: Readonly<RefTypes
     };
 }
 
-function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypesSymtab {
-    const loggerLevel = 2;
-    // function getProxyType(symbol: Symbol, st: Readonly<RefTypesSymtabProxy>): RefTypesSymtabProxyType | undefined {
-    //     return st.symtabInner.get(symbol) ?? (st.symtabOuter ? getProxyType(symbol, st.symtabOuter) : undefined);
-    //  }
-    assertCastType<Readonly<RefTypesSymtabProxy>>(stin);
-    Debug.assert(!stin.isSubloop || stin.loopState);
-    if (IDebug.isActive(loggerLevel)) {
-        IDebug.ilogGroup(()=>`createSuperloopRefTypesSymtab[in]`, loggerLevel);
-        // if (stin.isSubloop){
-        //     IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] idx:${stin.loopGroup?.groupIdx}, invocations${stin.loopState?.invocations}`);
-        // }
-        dbgRefTypesSymtabToStrings(stin).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] stin: ${str}`, loggerLevel));
-    }
-    const stout = copyRefTypesSymtab(stin.symtabOuter!);
-    // let symbolsReadNotAssigned: undefined | Set<Symbol>;
-    stin.symtabInner.forEach((pt, symbol) => {
-        // eslint-disable-next-line prefer-const
-        let type = pt.type;
-        if (!pt.assignedType) {
-            // After changing to simple `stout.set(symbol, type);` is there any need for pt.assignedType
-            // const outerType = stin.symtabOuter?.get(symbol);
-            // if (outerType) type = mrNarrow.intersectionOfRefTypesType(type,outerType);
-            // else stout.set(symbol, type);
-            stout.set(symbol, type);
-        }
-        else {
-            stout.setAsAssigned(symbol, type);
-        }
-    });
-    // if (stin.loopState) stin.loopState.symbolsReadNotAssigned = symbolsReadNotAssigned;
-    if (IDebug.isActive(loggerLevel)) {
-        dbgRefTypesSymtabToStrings(stout).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[out] stout: ${str}`, loggerLevel));
-        IDebug.ilogGroupEnd(()=>`createSuperloopRefTypesSymtab[out]`, loggerLevel);
-    }
-    return stout;
-}
+// function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypesSymtab {
+//     const loggerLevel = 2;
+//     assertCastType<Readonly<RefTypesSymtabProxy>>(stin);
+//     Debug.assert(!stin.isSubloop || stin.loopState);
+//     if (IDebug.isActive(loggerLevel)) {
+//         IDebug.ilogGroup(()=>`createSuperloopRefTypesSymtab[in]`, loggerLevel);
+//         dbgRefTypesSymtabToStrings(stin).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] stin: ${str}`, loggerLevel));
+//     }
+//     const stout = copyRefTypesSymtab(stin.symtabOuter!);
+//     stin.symtabInner.forEach((pt, symbol) => {
+//         // eslint-disable-next-line prefer-const
+//         let type = pt.type;
+//         if (!pt.assignedType) {
+//             stout.set(symbol, type);
+//         }
+//         else {
+//             stout.setAsAssigned(symbol, type);
+//         }
+//     });
+//     if (IDebug.isActive(loggerLevel)) {
+//         dbgRefTypesSymtabToStrings(stout).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[out] stout: ${str}`, loggerLevel));
+//         IDebug.ilogGroupEnd(()=>`createSuperloopRefTypesSymtab[out]`, loggerLevel);
+//     }
+//     return stout;
+// }
 
 export function getSymbolsAssignedRange(that: Readonly<RefTypesSymtab>): WeakMap<Symbol, RefTypesType> | undefined {
     assertCastType<Readonly<RefTypesSymtabProxy>>(that);
