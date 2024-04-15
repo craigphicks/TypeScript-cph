@@ -76,10 +76,10 @@ import {
     orIntoNodeToTypeMap,
 } from "./floughGroupApplyCrit";
 import {
-    RefTypesSymtab,
-    createRefTypesSymtab,
-    copyRefTypesSymtab,
-    dbgRefTypesSymtabToStrings,
+    // RefTypesSymtab,
+    // createRefTypesSymtab,
+    // copyRefTypesSymtab,
+    // dbgRefTypesSymtabToStrings,
     isRefTypesSymtabConstraintItemNever,
     createRefTypesSymtabConstraintItemNever,
     copyRefTypesSymtabConstraintItem,
@@ -140,10 +140,10 @@ import { FloughSymtabEntry, dbgFloughSymtabToStrings, getAssignCountUptoAncestor
 
 export interface MrNarrow {
     flough({ sci, expr, crit, qdotfallout, floughStatus }: FloughArgs): FloughReturn;
-    createRefTypesSymtab(): RefTypesSymtab;
-    copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
+    // createRefTypesSymtab(): RefTypesSymtab;
+    // copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab;
     dbgRefTypesTableToStrings(t: RefTypesTable): string[];
-    dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[];
+    // dbgRefTypesSymtabToStrings(t: RefTypesSymtab): string[];
     dbgConstraintItem(ci: Readonly<ConstraintItem>): string[];
 //    IDebug.dbgs.symbolToStringSimple(symbol: Readonly<Symbol> | undefined): string;
 //    IDebug.dbgs.nodeToString(node: Node): string;
@@ -187,10 +187,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
 
     const mrNarrow: MrNarrow = {
         flough,
-        createRefTypesSymtab,
-        copyRefTypesSymtab,
+        // createRefTypesSymtab,
+        // copyRefTypesSymtab,
         dbgRefTypesTableToStrings,
-        dbgRefTypesSymtabToStrings,
+        // dbgRefTypesSymtabToStrings,
         dbgConstraintItem,
         // IDebug.dbgs.symbolToStringSimple: IDebug.dbgs.symbolToString,
         // IDebug.dbgs.nodeToString,

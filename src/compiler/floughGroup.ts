@@ -65,8 +65,8 @@ import {
     initializeFlowGroupRefTypesSymtabModule,
     createSubLoopRefTypesSymtabConstraint,
     isRefTypesSymtabConstraintItemNever,
-    RefTypesSymtab,
-    copyRefTypesSymtab,
+    // RefTypesSymtab,
+    // copyRefTypesSymtab,
 } from "./floughGroupRefTypesSymtab";
 import {
     dbgFlowGroupLabelToStrings,
@@ -1253,21 +1253,21 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
         return locals?.size ? locals : undefined;
     }
 
-    function filterSymtabBySymbolTable(symtab: Readonly<RefTypesSymtab>, locals: Readonly<SymbolTable> | undefined, dbgCaller: string): RefTypesSymtab {
-        let newsymtab: RefTypesSymtab | undefined;
-        locals?.forEach(s => {
-            if (IDebug.isActive(loggerLevel) && symtab.has(s)) {
-                IDebug.ilog(()=>`${dbgCaller}: descoping symbol ${IDebug.dbgs.symbolToString(s)}`, loggerLevel);
-            }
-            if (!newsymtab) {
-                if (symtab.has(s)) {
-                    (newsymtab = copyRefTypesSymtab(symtab)).delete(s);
-                }
-            }
-            else newsymtab.delete(s);
-        });
-        return newsymtab ?? symtab;
-    }
+    // function filterSymtabBySymbolTable(symtab: Readonly<RefTypesSymtab>, locals: Readonly<SymbolTable> | undefined, dbgCaller: string): RefTypesSymtab {
+    //     let newsymtab: RefTypesSymtab | undefined;
+    //     locals?.forEach(s => {
+    //         if (IDebug.isActive(loggerLevel) && symtab.has(s)) {
+    //             IDebug.ilog(()=>`${dbgCaller}: descoping symbol ${IDebug.dbgs.symbolToString(s)}`, loggerLevel);
+    //         }
+    //         if (!newsymtab) {
+    //             if (symtab.has(s)) {
+    //                 (newsymtab = copyRefTypesSymtab(symtab)).delete(s);
+    //             }
+    //         }
+    //         else newsymtab.delete(s);
+    //     });
+    //     return newsymtab ?? symtab;
+    // }
 
     function doFlowGroupLabelAux(fglab: FlowGroupLabel): RefTypesSymtabConstraintItem {
         switch (fglab.kind) {

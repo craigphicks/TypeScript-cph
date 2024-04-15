@@ -78,7 +78,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilogGroup(()=>`andSymbolTypeIntoSymtabConstraint[in] symbol:${IDebug.dbgs.symbolToString(symbol)}, isconst:${isconst}, isAssigned: ${isAssign}}`,loggerLevel);
         floughTypeModule.dbgRefTypesTypeToStrings(typeIn).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[begin], typeIn: ${s}`,loggerLevel));
-        dbgRefTypesSymtabConstrinatItemToStrings(sc).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[begin] sc: ${s}`,loggerLevel));
+        //dbgRefTypesSymtabConstrinatItemToStrings(sc).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[begin] sc: ${s}`,loggerLevel));
     }
     if (isRefTypesSymtabConstraintItemNever(sc)) {
         if (IDebug.isActive(loggerLevel)) {
