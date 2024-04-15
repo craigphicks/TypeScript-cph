@@ -436,7 +436,7 @@ function getTsTypesFromFloughType(ft: Readonly<FloughTypei>, forNodeToTypeMap?: 
     const at = getTsTypesFromFloughTypeNobj(ft.nobj);
     // Now for the objects.
     if (ft.logicalObject) {
-        // TODO: return the narrowed types.
+        // TODO: return the narrowed types ??? need a test case reference to show why this is needed.
         if (enableBypassEffectiveDeclaredType) at.push(floughLogicalObjectModule.getTsTypeFromLogicalObject(ft.logicalObject, forNodeToTypeMap));
         else at.push(floughLogicalObjectModule.getEffectiveDeclaredTsTypeFromLogicalObject(ft.logicalObject, forNodeToTypeMap));
     }
