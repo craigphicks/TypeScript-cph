@@ -29,9 +29,6 @@ export interface FloughSymtab {
     forEach(f: ({type,wasAssigned}:{type: FloughType, wasAssigned?: boolean}, symbol: Symbol) => void): void;
 };
 
-// let globalAssignCount = 0;
-// export function getFloughSymtabGlobalAssignCount(): number { return globalAssignCount; }
-
 type InnerMap = Map<Symbol, FloughSymtabEntry>;
 function createInnerMap(clone?: InnerMap): InnerMap { return clone? new Map(clone) : new Map(); }
 
