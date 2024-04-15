@@ -32,7 +32,7 @@ import {
     ProcessLoopState,
     GroupForFlow,
     extraAsserts,
-    enablePerBlockSymtabs,
+    //enablePerBlockSymtabs,
 } from "./floughGroup";
 import {
     MrNarrow,
@@ -210,10 +210,6 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
         // }
         dbgRefTypesSymtabToStrings(stin).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] stin: ${str}`, loggerLevel));
     }
-    if (enablePerBlockSymtabs) {
-        //Debug.assert(false);
-        IDebug.ilog(()=>`createSuperloopRefTypesSymtab: enablePerBlockSymtabs: true, WARNING: may require changes to support superloop`, 1);
-    }
     const stout = copyRefTypesSymtab(stin.symtabOuter!);
     // let symbolsReadNotAssigned: undefined | Set<Symbol>;
     stin.symtabInner.forEach((pt, symbol) => {
@@ -239,17 +235,10 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
 }
 export function createSuperloopRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(sc)) return sc; // as RefTypesSymtabConstraintItemNever;
-    //Debug.assert(!enablePerBlockSymtabs);
-    if (enablePerBlockSymtabs){
-        IDebug.ilog(()=>`createSuperloopRefTypesSymtabConstraintItem: enablePerBlockSymtabs: true, not using branch() ok ?`, 1);
-        return {
-            //symtab: createSuperloopRefTypesSymtab(sc.symtab!),
-            fsymtab: sc.fsymtab,
-            constraintItem: sc.constraintItem,
-        };
-    }
+    IDebug.ilog(()=>`createSuperloopRefTypesSymtabConstraintItem: enablePerBlockSymtabs: true, not using branch() ok ?`, 1);
     return {
         //symtab: createSuperloopRefTypesSymtab(sc.symtab!),
+        fsymtab: sc.fsymtab,
         constraintItem: sc.constraintItem,
     };
 }
@@ -273,9 +262,8 @@ export function createRefTypesSymtabWithEmptyInnerSymtab(templateSymtab: Readonl
 }
 export function createRefTypesSymtabConstraintWithEmptyInnerSymtab(templatesc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
     Debug.assert(!isRefTypesSymtabConstraintItemNever(templatesc));
-    if (enablePerBlockSymtabs) Debug.assert(false);
+    Debug.assert(false);
     return {
-        //symtab: createRefTypesSymtabWithEmptyInnerSymtab(templatesc.symtab),
         constraintItem: { ...templatesc.constraintItem },
     };
 }
@@ -287,15 +275,9 @@ export function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSy
 }
 export function copyRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(sc)) return { constraintItem: { ...sc.constraintItem } };
-    if (enablePerBlockSymtabs){
-        return {
-            //symtab: copyRefTypesSymtab(sc.symtab!),
-            fsymtab: sc.fsymtab?.branch(),
-            constraintItem: { ...sc.constraintItem },
-        };
-    }
     return {
         //symtab: copyRefTypesSymtab(sc.symtab!),
+        fsymtab: sc.fsymtab?.branch(),
         constraintItem: { ...sc.constraintItem },
     };
 }
@@ -303,7 +285,7 @@ export function createRefTypesSymtabConstraintItemNever(): RefTypesSymtabConstra
     return { constraintItem: createFlowConstraintNever() };
 }
 export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstraintItemNotNever {
-    if (enablePerBlockSymtabs) Debug.assert(false, "TODO");
+    Debug.assert(false, "TODO");
     return {
         //symtab: new RefTypesSymtabProxy(),
         constraintItem: createFlowConstraintAlways()
