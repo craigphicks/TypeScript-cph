@@ -22,7 +22,6 @@ import {
 } from "./floughGroup2";
 import {
     createRefTypesSymtabConstraintItemNever,
-    dbgRefTypesSymtabConstrinatItemToStrings,
     isRefTypesSymtabConstraintItemNever,
 } from "./floughGroupRefTypesSymtab";
 import { IDebug } from "./mydebug";

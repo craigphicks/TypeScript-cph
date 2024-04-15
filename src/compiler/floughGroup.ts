@@ -65,8 +65,6 @@ import {
     initializeFlowGroupRefTypesSymtabModule,
     createSubLoopRefTypesSymtabConstraint,
     isRefTypesSymtabConstraintItemNever,
-    // RefTypesSymtab,
-    // copyRefTypesSymtab,
 } from "./floughGroupRefTypesSymtab";
 import {
     dbgFlowGroupLabelToStrings,

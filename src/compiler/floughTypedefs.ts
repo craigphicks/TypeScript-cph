@@ -1,9 +1,5 @@
 import {
-    BranchKind, FloughFlags, FloughLabel,
     FloughNode,
-    FlowExpressionStatement, SourceFileWithFloughNodes,
-    FloughNodeBase,
-    NodeWithFlough, FloughWithAntecedent, FloughWithAntecedents,
 } from "./floughTsExtensions";
 
 import { TypeFacts } from "./checker";
@@ -14,9 +10,6 @@ import {
     RefTypesType,
     FloughType,
 } from "./floughType";
-import {
-    // RefTypesSymtab,
-} from "./floughGroupRefTypesSymtab";
 import {
     Type,
     Node,
@@ -173,7 +166,6 @@ export type ReplayableItem = {
 
 export type RefTypesSymtabConstraintItemNotNever = {
     fsymtab?: FloughSymtab | undefined;
-    //symtab: RefTypesSymtab;
     constraintItem: ConstraintItemNotNever;
 };
 export type RefTypesSymtabConstraintItemNever = {
@@ -182,23 +174,14 @@ export type RefTypesSymtabConstraintItemNever = {
 
 export interface RefTypesSymtabConstraintItem {
     fsymtab?: FloughSymtab | undefined;
-    //symtab?: RefTypesSymtab | undefined;
     constraintItem: ConstraintItem;
 }
-
-// export type RefDeltaInferState = {
-//     symtab: RefTypesSymtab;
-//     constraintItem: ConstraintItem;
-//     deltaNodeToTypeMap: Map<Node, Type>;
-//     floughStatus: FloughStatus;
-// };
 
 export type ReplayData = {
     byNode: NodeToTypeMap;
 };
 
 export type TypeCheckerFn = (...args: any[]) => any;
-
 
 
 export type FloughStatus = {
@@ -276,36 +259,6 @@ export enum ConstraintItemKind {
     never = "never",
     always = "always",
 }
-// export enum ConstraintItemNodeOp {
-//     or = "or",
-//     and = "and",
-//     not = "not",
-// }
-// export type ConstraintItemBase = {
-//     kind: ConstraintItemKind;
-//     symbolsInvolved?: Set<Symbol>;
-// };
-// export type ConstraintItemNodeAnd = ConstraintItemBase & {
-//     kind: ConstraintItemKind.node;
-//     op: ConstraintItemNodeOp.and;
-//     constraints: (ConstraintItem)[];
-// };
-// export type ConstraintItemNodeOr = ConstraintItemBase & {
-//     kind: ConstraintItemKind.node;
-//     op: ConstraintItemNodeOp.or;
-//     constraints: (ConstraintItem)[];
-// };
-// export type ConstraintItemNodeNot = ConstraintItemBase & {
-//     kind: ConstraintItemKind.node;
-//     op: ConstraintItemNodeOp.not;
-//     constraint: ConstraintItem;
-// };
-// export type ConstraintItemNode = ConstraintItemNodeAnd | ConstraintItemNodeOr | ConstraintItemNodeNot;
-// export type ConstraintItemLeaf = ConstraintItemBase & {
-//     kind: ConstraintItemKind.leaf;
-//     symbol: Symbol;
-//     type: RefTypesType;
-// };
 export type ConstraintItemNever = {
     kind: ConstraintItemKind.never;
 };

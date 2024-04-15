@@ -282,10 +282,10 @@ export function floughSymtabRollupToAncestor(fsymtabIn: FloughSymtab, ancestorLo
  *
  * @param afsIn Had another idea
  * @returns
- * TODO: Some special handling for logicalObjects that was done in floughGroupRefTypesSymtab but is not done here.
+ * TODO: Some special handling for logicalObjects that was done in floughGroupRefTypesSymtab:union but is not done here.
  *       Nevertheless, all tests passing without that special handling - it is just lacking a a good test case?
  */
-export function unionFloughSymtab(afsIn: readonly (Readonly<FloughSymtab> | undefined)[] /*, options?: {knownAncestor?: FloughSymtab, useAssignedType?: boolean}*/): FloughSymtab {
+export function unionFloughSymtab(afsIn: readonly (Readonly<FloughSymtab> | undefined)[]): FloughSymtab {
 const loggerLevel = 2;
 IDebug.ilogGroup(()=>`unionFloughSymtab[in]: afsIn.length: ${afsIn.length}`, loggerLevel);
 if (IDebug.isActive(loggerLevel)) {

@@ -76,10 +76,6 @@ import {
     orIntoNodeToTypeMap,
 } from "./floughGroupApplyCrit";
 import {
-    // RefTypesSymtab,
-    // createRefTypesSymtab,
-    // copyRefTypesSymtab,
-    // dbgRefTypesSymtabToStrings,
     isRefTypesSymtabConstraintItemNever,
     createRefTypesSymtabConstraintItemNever,
     copyRefTypesSymtabConstraintItem,
