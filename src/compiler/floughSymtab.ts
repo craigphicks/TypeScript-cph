@@ -42,10 +42,10 @@ class FloughSymtabImpl implements FloughSymtab {
     locals?: Readonly<SymbolTable>;
     localsContainer?: LocalsContainer;
     loopStatus?:{
-        loopGroupIdx: number;
+        loopGroupIdx: number; // only used for debugging
         widening?: boolean;
     };
-    loopState?: ProcessLoopState; // TODO: Limit to only necessary members
+    loopState?: { invocations: number, loopGroup: { groupIdx: number /* only used for debug */} }; 
     assignmentCount?: number;
     constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState) {
         if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
@@ -86,27 +86,14 @@ class FloughSymtabImpl implements FloughSymtab {
         if (this.shadowMap.has(symbol)) return true;
         if (this.outer) return this.outer.has(symbol);
         return false;
-        //Debug.assert(false,undefined,()=>`FloughSymtab.has(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
     }
-    // get(symbol: Symbol): FloughType | undefined {
-    //     if (this.localMap.has(symbol)) return this.localMap.get(symbol)?.type;
-    //     if (this.locals?.has(symbol.escapedName)) {
-    //         const type = mrNarrow.getDeclaredType(symbol);
-    //         this.localMap.set(symbol, { type });
-    //         return type;
-    //     }
-    //     if (this.shadowMap.has(symbol)) return this.shadowMap.get(symbol)?.type;
-    //     if (this.outer) return this.outer.get(symbol);
-    //     return undefined;
-    //     //Debug.assert(false,undefined,()=>`FloughSymtab.get(): Symbol unexpectedly not found in symtab ${symbol.escapedName}`);
-    // }
+
     get(symbol: Symbol): FloughType | undefined {
         const entry = this.getWithAssigned(symbol);
         if (!entry) return undefined;
         return entry.type;
-        // if (!entry.wtype) return entry.type;
-        // return floughTypeModule.unionOfRefTypesType([entry.type, entry.wtype]);
     }
+
     getWithAssigned(symbol: Symbol): FloughSymtabEntry | undefined {
 
         let doNotMutateInGet = true;
