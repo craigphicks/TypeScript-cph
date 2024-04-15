@@ -244,7 +244,6 @@ export function resolveLogicalObjectAccessData(load: LogicalObjecAccessData, sc:
         );
         if (!floughTypeModule.isNeverType(objType)) {
             scOut = copyRefTypesSymtabConstraintItem(sci); // copyRefTypesSymtabConstraintItem(sc);
-            scOut.symtab!.set(symbol, objType);
             scOut.fsymtab!.set(symbol, objType);
         }
         else {

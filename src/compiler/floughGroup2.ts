@@ -333,8 +333,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             as.push(`  type: ${dbgRefTypesTypeToString(rtt.type)}`);
         }
         if (true) {
-            if (!rtt.sci.symtab) as.push("  symtab: <undef>");
-            else dbgRefTypesSymtabToStrings(rtt.sci.symtab).forEach((str, i) => as.push(((i === 0) ? "  symtab: " : "  ") + str));
+            //if (!rtt.sci.symtab) as.push("  symtab: <undef>");
+            //else dbgRefTypesSymtabToStrings(rtt.sci.symtab).forEach((str, i) => as.push(((i === 0) ? "  symtab: " : "  ") + str));
             if (!rtt.sci.fsymtab) as.push("  fsymtab: <undef>");
             else dbgFloughSymtabToStrings(rtt.sci.fsymtab).forEach((str) => as.push(`  fsymtab: ${str}`));
             if (!rtt.sci.constraintItem) {
@@ -942,7 +942,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     + `qdotfalloutIn: ${!qdotfallout ? "<undef>" : `length: ${qdotfallout.length}`}, `
                     + `accessDepth:${accessDepth}`, loggerLevel);
             IDebug.ilog(()=>`flough[begin] refTypesSymtab:`, loggerLevel);
-            if (sci.symtab) dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
+            //if (sci.symtab) dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
             IDebug.ilog(()=>`flough[begin] constraintItemIn:`, loggerLevel);
             dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`  ${str}`, loggerLevel));
         }
@@ -1130,6 +1130,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                     const currentLoopGroup = floughStatus.sourceFileFloughState.mrState.currentLoopStack.at(-1);
                     const count = currentLoopGroup ? floughStatus.sourceFileFloughState.mrState.loopGroupToProcessLoopStateMap!.get(currentLoopGroup)?.invocations : 0;
                     Debug.assert(count !== undefined);
+                    // const count = floughStatus.sourceFileFloughState.mrState.currentLoopStack.length ?
+                    //     floughStatus.sourceFileFloughState.mrState.currentLoopStack[].
                     debugDevExpectFloughSymtabEntry(expr, count, entry);
                 }
 
@@ -1185,13 +1187,6 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                 });
             }
             IDebug.ilogGroupEnd(()=>`floughIdentifier[out]: ${IDebug.dbgs.nodeToString(expr)}`, loggerLevel);
-            if (extraAsserts) {
-                ret.unmerged.forEach(rttr => {
-                    if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
-                        Debug.assert(!rttr.sci.symtab || rttr.sci.fsymtab);
-                    }
-                });
-            }
             return ret;
         } // endof floughIdentifier()
 
@@ -1228,13 +1223,6 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             };
             if (innerret.typeof) floughReturn.typeof = innerret.typeof;
 
-            if (extraAsserts){
-                floughReturn.unmerged.forEach(rttr => {
-                    if (!isRefTypesSymtabConstraintItemNever(rttr.sci)) {
-                        Debug.assert(rttr.sci.fsymtab);
-                    }
-                });
-            }
             return floughReturn;
         } // endof floughAux()
 
@@ -1243,7 +1231,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             if (IDebug.isActive(loggerLevel)) {
                 IDebug.ilogGroup(()=>`floughInner[in] expr:${IDebug.dbgs.nodeToString(expr)}, floughStatus:{inCondition:${floughStatus.inCondition}, currentReplayableItem:${floughStatus.currentReplayableItem ? `{symbol:${IDebug.dbgs.symbolToString(floughStatus.currentReplayableItem.symbol)}}` : undefined}`, loggerLevel);
                 IDebug.ilog(()=>`floughInner[begin] refTypesSymtab:`, loggerLevel);
-                dbgRefTypesSymtabToStrings(sci.symtab).forEach(str => IDebug.ilog(()=>`floughInner[begin] refTypesSymtab:  ${str}`, loggerLevel));
+                dbgFloughSymtabToStrings(sci.fsymtab).forEach(str => IDebug.ilog(()=>`floughInner[begin] sci.fsymtab:  ${str}`, loggerLevel));
                 IDebug.ilog(()=>`floughInner[begin] constraintItemIn:`, loggerLevel);
                 if (sci.constraintItem) dbgConstraintItem(sci.constraintItem).forEach(str => IDebug.ilog(()=>`floughInner[begin] constraintItemIn:  ${str}`, loggerLevel));
             }
@@ -1315,7 +1303,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
             function floughInnerAux(qdotfalloutInner: RefTypesTableReturn[]): FloughInnerReturn {
                 if (extraAsserts) {
                     Debug.assert(!isNeverConstraint(sci.constraintItem));
-                    Debug.assert(sci.symtab);
+                    Debug.assert(sci.fsymtab);
                 }
                 assertCastType<RefTypesSymtabConstraintItemNotNever>(sci);
                 switch (expr.kind) {
@@ -1657,10 +1645,10 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             debugDevExpectEffectiveDeclaredType(expr.parent, symbolFlowInfo);
                         }
                         const isconstVar = symbolFlowInfo.isconst; // isConstVariable(symbol);
-                        if (sci.symtab.has(symbol)) {
-                            Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
-                        }
-                        if (extraAsserts){
+                        // if (sci.symtab.has(symbol)) {
+                        //     Debug.assert("unexpected"); // because symbols are removed as they go out of scope in processLoop.
+                        // }
+                        {
                             Debug.assert(sci.fsymtab);
                             if (sci.fsymtab.has(symbol)) {
                                 Debug.assert("unexpected"); // should only be declared once.
@@ -2043,6 +2031,7 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             // const typeModObj = rttrModObj.type;
                             scIsolated = copyRefTypesSymtabConstraintItem(rttrModObj.sci);
                             if (rttrModObj.symbol) {
+                                if (extraAsserts) Debug.assert(scIsolated.fsymtab);
                                 scIsolated.fsymtab!.set(rttrModObj.symbol, rttrModObj.type);
                             }
                         }
@@ -2297,7 +2286,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         lhs.unmerged.forEach((rttrLeft0, _ileft) => {
                             rhs.unmerged.forEach((rttrRight0, _iright) => {
                                 const rightRttr = applyCritNoneToOne(rttrRight0, rightExpr, floughStatus.groupNodeToTypeMap);
-                                const leftRightIdependent = getAssignCountUptoAncestor(rightRttr.sci.fsymtab!, lhsUnion.sci.fsymtab!);
+
+                                const leftRightIdependent = getAssignCountUptoAncestor(rightRttr.sci.fsymtab!, lhsUnion.sci.fsymtab!)===0;
                                 let sciFinal = leftRightIdependent ? rttrLeft0.sci : rttrRight0.sci;
                                 const typeFinal = rightRttr.type;
                                 if (floughTypeModule.isNeverType(typeFinal)) return;
@@ -2310,7 +2300,6 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                                         );
                                         if (floughTypeModule.isNeverType(newRootType)) return;
                                         sciFinal = copyRefTypesSymtabConstraintItem(sciFinal);
-                                        sciFinal.symtab!.setAsAssigned(symbol, newRootType);
                                         sciFinal.fsymtab!.setAsAssigned(symbol, newRootType);
                                     }
                                     rttrLeft0.logicalObjectAccessData = undefined;

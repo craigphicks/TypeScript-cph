@@ -20,19 +20,16 @@ import {
     RefTypesSymtabConstraintItem,
     RefTypesSymtabConstraintItemNever,
     assertCastType,
-    RefTypesSymtabConstraintItemNotNever,
 } from "./floughTypedefs";
 import {
     isNeverConstraint,
     createFlowConstraintNever,
-    createFlowConstraintAlways,
 } from "./floughConstraints";
 import {
     SymbolFlowInfoMap,
     ProcessLoopState,
     GroupForFlow,
     extraAsserts,
-    enablePerBlockSymtabs,
 } from "./floughGroup";
 import {
     MrNarrow,
@@ -191,7 +188,7 @@ function createSubloopRefTypesSymtab(outer: Readonly<RefTypesSymtab>, loopState:
 export function createSubLoopRefTypesSymtabConstraint(outerSC: Readonly<RefTypesSymtabConstraintItem>, loopState: ProcessLoopState, loopGroup: Readonly<GroupForFlow>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(outerSC)) return outerSC; // as RefTypesSymtabConstraintItemNever;
     return {
-        symtab: createSubloopRefTypesSymtab(outerSC.symtab!, loopState, loopGroup),
+        //symtab: createSubloopRefTypesSymtab(outerSC.symtab!, loopState, loopGroup),
         constraintItem: outerSC.constraintItem,
     };
 }
@@ -209,10 +206,6 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
         //     IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] idx:${stin.loopGroup?.groupIdx}, invocations${stin.loopState?.invocations}`);
         // }
         dbgRefTypesSymtabToStrings(stin).forEach(str => IDebug.ilog(()=>`createSuperloopRefTypesSymtab[in] stin: ${str}`, loggerLevel));
-    }
-    if (enablePerBlockSymtabs) {
-        //Debug.assert(false);
-        IDebug.ilog(()=>`createSuperloopRefTypesSymtab: enablePerBlockSymtabs: true, WARNING: may require changes to support superloop`, 1);
     }
     const stout = copyRefTypesSymtab(stin.symtabOuter!);
     // let symbolsReadNotAssigned: undefined | Set<Symbol>;
@@ -237,22 +230,6 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
     }
     return stout;
 }
-export function createSuperloopRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
-    if (isRefTypesSymtabConstraintItemNever(sc)) return sc; // as RefTypesSymtabConstraintItemNever;
-    //Debug.assert(!enablePerBlockSymtabs);
-    if (enablePerBlockSymtabs){
-        IDebug.ilog(()=>`createSuperloopRefTypesSymtabConstraintItem: enablePerBlockSymtabs: true, not using branch() ok ?`, 1);
-        return {
-            symtab: createSuperloopRefTypesSymtab(sc.symtab!),
-            fsymtab: sc.fsymtab,
-            constraintItem: sc.constraintItem,
-        };
-    }
-    return {
-        symtab: createSuperloopRefTypesSymtab(sc.symtab!),
-        constraintItem: sc.constraintItem,
-    };
-}
 
 export function getSymbolsAssignedRange(that: Readonly<RefTypesSymtab>): WeakMap<Symbol, RefTypesType> | undefined {
     assertCastType<Readonly<RefTypesSymtabProxy>>(that);
@@ -271,14 +248,6 @@ export function createRefTypesSymtabWithEmptyInnerSymtab(templateSymtab: Readonl
     assertCastType<Readonly<RefTypesSymtabProxy>>(templateSymtab);
     return new RefTypesSymtabProxy(templateSymtab.symtabOuter, undefined, templateSymtab.isSubloop, templateSymtab.loopState, templateSymtab.loopGroup);
 }
-export function createRefTypesSymtabConstraintWithEmptyInnerSymtab(templatesc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
-    Debug.assert(!isRefTypesSymtabConstraintItemNever(templatesc));
-    if (enablePerBlockSymtabs) Debug.assert(false);
-    return {
-        symtab: createRefTypesSymtabWithEmptyInnerSymtab(templatesc.symtab),
-        constraintItem: { ...templatesc.constraintItem },
-    };
-}
 
 export function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
     Debug.assert(symtab instanceof RefTypesSymtabProxy);
@@ -287,30 +256,22 @@ export function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSy
 }
 export function copyRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
     if (isRefTypesSymtabConstraintItemNever(sc)) return { constraintItem: { ...sc.constraintItem } };
-    if (enablePerBlockSymtabs){
-        return {
-            symtab: copyRefTypesSymtab(sc.symtab!),
-            fsymtab: sc.fsymtab?.branch(),
-            constraintItem: { ...sc.constraintItem },
-        };
-    }
     return {
-        symtab: copyRefTypesSymtab(sc.symtab!),
+        //symtab: copyRefTypesSymtab(sc.symtab!),
+        fsymtab: sc.fsymtab?.branch(),
         constraintItem: { ...sc.constraintItem },
     };
 }
 export function createRefTypesSymtabConstraintItemNever(): RefTypesSymtabConstraintItemNever {
     return { constraintItem: createFlowConstraintNever() };
 }
-export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstraintItemNotNever {
-    if (enablePerBlockSymtabs) Debug.assert(false, "TODO");
-    return { symtab: new RefTypesSymtabProxy(), constraintItem: createFlowConstraintAlways() };
-}
 /**
  * unionArrRefTypesSymtabV2
  * @param arr
  * Similar to unionArrRefTypesSymtab, but logicalObjects are split and shallow or'd (delayed evaluation),
  * while nobj types are still or'd immediately, but without computing via Type.
+ *
+ * DO NOT ERASE THIS YET - might need for reference documentation per unionFloughSymtab
  */
 export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
     const loggerLevel = 2;
@@ -530,8 +491,8 @@ export function dbgRefTypesSymtabToStrings(x: RefTypesSymtab): string[] {
 
 export function dbgRefTypesSymtabConstrinatItemToStrings(sc: Readonly<RefTypesSymtabConstraintItem>): string[] {
     const as: string[] = ["{"];
-    if (!sc.symtab) as.push(`  symtab:<undef>`);
-    else dbgRefTypesSymtabToStrings(sc.symtab).forEach(s => as.push(`  symtab: ${s}`));
+    //if (!sc.symtab) as.push(`  symtab:<undef>`);
+    // else dbgRefTypesSymtabToStrings(sc.symtab).forEach(s => as.push(`  symtab: ${s}`));
     if (!sc.fsymtab) as.push(`  fsymtab:<undef>`);
     else dbgFloughSymtabToStrings(sc.fsymtab).forEach(s => as.push(`  fsymtab: ${s}`));
 

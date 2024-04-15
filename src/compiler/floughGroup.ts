@@ -64,14 +64,9 @@ import {
 import {
     initializeFlowGroupRefTypesSymtabModule,
     createSubLoopRefTypesSymtabConstraint,
-    getSymbolsAssignedRange,
     isRefTypesSymtabConstraintItemNever,
-    modifiedInnerSymtabUsingOuterForFinalCondition,
     RefTypesSymtab,
     copyRefTypesSymtab,
-    createSuperloopRefTypesSymtabConstraintItem,
-    createRefTypesSymtab,
-    copyRefTypesSymtabConstraintItem,
 } from "./floughGroupRefTypesSymtab";
 import {
     dbgFlowGroupLabelToStrings,
@@ -105,8 +100,6 @@ export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnected
  * However, it also causes named types to possibly not use the name even if the type is the full named type.
  */
 export const enableBypassEffectiveDeclaredType = true;
-
-export const enablePerBlockSymtabs = !!Number(process.env.enablePerBlockSymtabs ?? 0);
 
 export enum GroupForFlowKind {
     none = "none",
@@ -1036,11 +1029,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
             subloopSCForLoopConditionIn.fsymtab = fsymtab.branch(sourceFileMrState.mrState.loopStatus,loopState); // TODO: should this be only for the first invocation?
         }
 
-        loopState.symbolsAssigned = new Set();
-        loopState.symbolsNarrowed = new Set();
-
         resolveGroupForFlow(loopGroup, floughStatus, sourceFileMrState, forFlow, { loopGroupIdx: loopGroup.groupIdx, cachedSCForLoop: subloopSCForLoopConditionIn });
-        //loopState.loopConditionCall = undefined;
 
     }
     IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, did the initial condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
@@ -1066,15 +1055,16 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
         IDebug.ilog(()=>`processLoop[dbg] loopGroup.groupIdx:${loopGroup.groupIdx}, merge before final condition of the loop, loopCount:${loopCount}, loopState.invocations:${loopState.invocations}`, loggerLevel);
         (()=>{
 
-
             sourceFileMrState.mrState.loopStatus.widening = false;
+            //loopState.loopConditionCall = "final";
             const scForConditionContinue = orSymtabConstraints(arrSCForLoopContinue, /* omitFloughSymtab */ true);
             Debug.assert(!scForConditionContinue.fsymtab);
+            //arrSCForLoopContinue.forEach(sc => sc.fsymtab = undefined);
 
 
             if (loopState.invocations === 0) {
-                loopState.symbolsAssignedRange = scForConditionContinue.symtab
-                    ? getSymbolsAssignedRange(scForConditionContinue.symtab) : undefined;
+                // loopState.symbolsAssignedRange = scForConditionContinue.symtab
+                //     ? getSymbolsAssignedRange(scForConditionContinue.symtab) : undefined;
             }
             let scForConditionUnionOfInAndContinue: RefTypesSymtabConstraintItem;
 
@@ -1084,78 +1074,73 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
                 scForConditionUnionOfInAndContinue.fsymtab = outerSCForLoopConditionIn.fsymtab!; // does it need a branch with loopState?
             }
             else {
-                {
-                    const arrFloughSymtabForLoopContinue = arrSCForLoopContinue.map(x=>x.fsymtab).filter(x=>!!x) as FloughSymtab[];
-                    if (IDebug.isActive(loggerLevel)) {
-                        dbgFloughSymtabToStrings(outerSCForLoopConditionIn.fsymtab!).forEach(s => {
-                            IDebug.ilog(()=>`processLoop (final condition) invocations:${loopState.invocations
-                            } outerSCForLoopConditionIn.fsymtab: ${s}`, loggerLevel);
-                        });
+                const arrFloughSymtabForLoopContinue = arrSCForLoopContinue.map(x=>x.fsymtab).filter(x=>!!x) as FloughSymtab[];
+                if (IDebug.isActive(loggerLevel)) {
+                    dbgFloughSymtabToStrings(outerSCForLoopConditionIn.fsymtab!).forEach(s => {
+                        IDebug.ilog(()=>`processLoop (final condition) invocations:${loopState.invocations
+                        } outerSCForLoopConditionIn.fsymtab: ${s}`, loggerLevel);
+                    });
 
-                        arrFloughSymtabForLoopContinue.forEach((fs, idx) => {
-                            dbgFloughSymtabToStrings(fs).forEach(s =>
-                                IDebug.ilog(()=>`processLoo (final condition) invocations:${loopState.invocations
-                                } arrFloughSymtabForLoopContinue[${idx}].fsymtab: ${s}`, loggerLevel));
-                        });
-                    }
-                    let shadowMapContinue: Map<Symbol,FloughSymtabEntry> | undefined = shadowMapOfAffected(
-                        arrFloughSymtabForLoopContinue,
-                        outerSCForLoopConditionIn.fsymtab!,
-                        loopState.symbolsAssigned!, loopState.invocations===0 ? undefined : loopState.symbolsNarrowed!);
-                    if (IDebug.isActive(loggerLevel)) {
-                        if (!shadowMapContinue) IDebug.ilog(()=>`processLoop[dbg] shadowMapContinue: <undef>` , loggerLevel);
-                        else {
-                            shadowMapContinue.forEach((v,k) => {
-                                IDebug.ilog(()=>`processLoop[dbg] shadowMapContinue: ${k.escapedName}, ${dbgFloughSymtabEntryToString(v)}` , loggerLevel);
-                            });
-                        }
-                    }
-
-                    // if (loopState.invocations === 0) {
-                    //     loopState.scShadowMapContinue = shadowMapContinue;
-                    // }
-                    // else {
-                    //     loopState.scShadowMapContinue = undefined;
-                    // }
-                    loopState.symbolsAssigned = undefined;
-                    loopState.symbolsNarrowed = undefined;
-
-                    let fsymtabUnionInAndContinue: FloughSymtab;
-                    if (shadowMapContinue){
-                        const fsymtabContinue = createFloughSymtab(undefined, outerSCForLoopConditionIn.fsymtab!, shadowMapContinue ? { shadowMap:shadowMapContinue } : undefined);
-                        fsymtabUnionInAndContinue = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, fsymtabContinue]);
-                    }
-                    else fsymtabUnionInAndContinue = outerSCForLoopConditionIn.fsymtab!;
-
-                    if (IDebug.isActive(loggerLevel)) {
-                        dbgFloughSymtabToStrings(fsymtabUnionInAndContinue).forEach(s => {
-                            IDebug.ilog(()=>`processLoop (final condition) invocations:${loopState.invocations
-                            } fsymtabUnionInAndContinue: ${s}`, loggerLevel);
-                        });
-                    }
-
-                    if (sourceFileMrState.mrState.currentLoopDepth === 1) {
-                        if (loopState.invocations===0){
-                            Debug.assert(fsymtabUnionInAndContinue);
-                            loopState.fsymtabUnionInAndContinue = fsymtabUnionInAndContinue;
-                        }
-                    }
+                    arrFloughSymtabForLoopContinue.forEach((fs, idx) => {
+                        dbgFloughSymtabToStrings(fs).forEach(s =>
+                            IDebug.ilog(()=>`processLoo (final condition) invocations:${loopState.invocations
+                            } arrFloughSymtabForLoopContinue[${idx}].fsymtab: ${s}`, loggerLevel));
+                    });
+                }
+                let shadowMapContinue: Map<Symbol,FloughSymtabEntry> | undefined = shadowMapOfAffected(
+                    arrFloughSymtabForLoopContinue,
+                    outerSCForLoopConditionIn.fsymtab!,
+                    loopState.symbolsAssigned!, loopState.invocations===0 ? undefined : loopState.symbolsNarrowed!);
+                if (IDebug.isActive(loggerLevel)) {
+                    if (!shadowMapContinue) IDebug.ilog(()=>`processLoop[dbg] shadowMapContinue: <undef>` , loggerLevel);
                     else {
-                        if (loopState.invocations===0){
-                            loopState.shadowMapContinue = shadowMapContinue;
-                        }
-                    }
-
-
-
-                    scForConditionUnionOfInAndContinue = {
-                        symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!),
-                        fsymtab: fsymtabUnionInAndContinue,
-                        constraintItem: scForConditionContinue.constraintItem
+                        shadowMapContinue.forEach((v,k) => {
+                            IDebug.ilog(()=>`processLoop[dbg] shadowMapContinue: ${k.escapedName}, ${dbgFloughSymtabEntryToString(v)}` , loggerLevel);
+                        });
                     }
                 }
-            }
 
+                // if (loopState.invocations === 0) {
+                //     loopState.scShadowMapContinue = shadowMapContinue;
+                // }
+                // else {
+                //     loopState.scShadowMapContinue = undefined;
+                // }
+                loopState.symbolsAssigned = undefined;
+                loopState.symbolsNarrowed = undefined;
+
+                let fsymtabUnionInAndContinue: FloughSymtab;
+                if (shadowMapContinue){
+                    const fsymtabContinue = createFloughSymtab(undefined, outerSCForLoopConditionIn.fsymtab!, shadowMapContinue ? { shadowMap:shadowMapContinue } : undefined);
+                    fsymtabUnionInAndContinue = unionFloughSymtab([outerSCForLoopConditionIn.fsymtab!, fsymtabContinue]);
+                }
+                else fsymtabUnionInAndContinue = outerSCForLoopConditionIn.fsymtab!;
+
+                if (IDebug.isActive(loggerLevel)) {
+                    dbgFloughSymtabToStrings(fsymtabUnionInAndContinue).forEach(s => {
+                        IDebug.ilog(()=>`processLoop (final condition) invocations:${loopState.invocations
+                        } fsymtabUnionInAndContinue: ${s}`, loggerLevel);
+                    });
+                }
+
+                if (sourceFileMrState.mrState.currentLoopDepth === 1) {
+                    if (loopState.invocations===0){
+                        Debug.assert(fsymtabUnionInAndContinue);
+                        loopState.fsymtabUnionInAndContinue = fsymtabUnionInAndContinue;
+                    }
+                }
+                else {
+                    if (loopState.invocations===0){
+                        loopState.shadowMapContinue = shadowMapContinue;
+                    }
+                }
+
+                scForConditionUnionOfInAndContinue = {
+                    //symtab: modifiedInnerSymtabUsingOuterForFinalCondition(scForConditionContinue.symtab!),
+                    fsymtab: fsymtabUnionInAndContinue,
+                    constraintItem: scForConditionContinue.constraintItem
+                }
+            }
             if (loopState.invocations === 1) {
                 loopState.symbolsAssignedRange = undefined;
             }
@@ -1290,7 +1275,7 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
                 const anteg = groupsForFlow.orderedGroups[fglab.groupIdx];
                 const cbe = forFlow.currentBranchesMap.get(anteg);
                 Debug.assert(!cbe || cbe.kind === CurrentBranchesElementKind.plain);
-                if (!cbe || !((cbe as CurrentBranchElementPlain).item.sc as RefTypesSymtabConstraintItemNotNever).symtab) {
+                if (!cbe || !((cbe as CurrentBranchElementPlain).item.sc as RefTypesSymtabConstraintItemNotNever).fsymtab) {
                     Debug.assert(!((cbe as CurrentBranchElementPlain).item.sc as RefTypesSymtabConstraintItemNotNever).fsymtab);
                     // This may happen if continues after a loop are not yet fulfilled.
                     return { constraintItem: createFlowConstraintNever() };
@@ -1299,10 +1284,9 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
                 Debug.assert(cbe.kind === CurrentBranchesElementKind.plain);
                 setOfKeysToDeleteFromCurrentBranchesMap.set(anteg, undefined);
                 const ret: Partial<RefTypesSymtabConstraintItemNotNever> = { constraintItem: cbe.item.sc.constraintItem as ConstraintItemNotNever };
-                if ((cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab) {
+                if ((cbe.item.sc as RefTypesSymtabConstraintItemNotNever).fsymtab) {
                     Debug.assert((cbe.item.sc as RefTypesSymtabConstraintItemNotNever).fsymtab);
                     ret.fsymtab = (cbe.item.sc as RefTypesSymtabConstraintItemNotNever).fsymtab;
-                    ret.symtab = (cbe.item.sc as RefTypesSymtabConstraintItemNotNever).symtab;
                 }
                 return ret as RefTypesSymtabConstraintItem;
             }
@@ -1324,16 +1308,18 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
                 let sc0: RefTypesSymtabConstraintItem | undefined = doThenElse(fglab.loopGroupIdx, /**/ false);
                 if (isRefTypesSymtabConstraintItemNever(sc0)) sc0 = undefined;
                 let asc: RefTypesSymtabConstraintItemNotNever[] = fglab.arrAnteBreak.map(x => doFlowGroupLabelAux(x)).filter(sc => !isRefTypesSymtabConstraintItemNever(sc)) as RefTypesSymtabConstraintItemNotNever[];
+
+                const locals = getLoopLocals(sourceFileMrState.groupsForFlow.orderedGroups[fglab.loopGroupIdx]);
                 if (sc0) asc.push(sc0 as RefTypesSymtabConstraintItemNotNever);
+
                 if (asc.length === 0) return { constraintItem: createFlowConstraintNever() };
-                const oredsc = orSymtabConstraints(asc);
+                const oredsc = orSymtabConstraints(asc );
 
                 if (IDebug.isActive(loggerLevel)) {
                     dbgFloughSymtabToStrings(oredsc.fsymtab!).forEach(s =>
                         IDebug.ilog(()=>`doFlowGroupLabelAux[dbg] postLoop: oredsc.fsymtab: ${s}`, loggerLevel));
                 }
-
-                return createSuperloopRefTypesSymtabConstraintItem(oredsc);
+                return oredsc;
             }
             case FlowGroupLabelKind.block:
                 return doFlowGroupLabelAux(fglab.ante);
@@ -1341,9 +1327,9 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
                 return doPostBlock(fglab);
             }
             case FlowGroupLabelKind.none:
-                return { symtab: mrNarrow.createRefTypesSymtab(), constraintItem: createFlowConstraintNever() };
+                return { /*symtab: mrNarrow.createRefTypesSymtab(),*/ constraintItem: createFlowConstraintNever() };
             case FlowGroupLabelKind.start:
-                return { symtab: mrNarrow.createRefTypesSymtab(), constraintItem: createFlowConstraintAlways() };
+                return { /*symtab: mrNarrow.createRefTypesSymtab(),*/ constraintItem: createFlowConstraintAlways() };
             default:
                 // @ts-expect-error
                 Debug.fail("not yet implemented: " + fglab.kind);
@@ -1380,9 +1366,9 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
     function doPostBlock(fglab: FlowGroupLabelPostBlock): RefTypesSymtabConstraintItem {
         const sc = doFlowGroupLabelAux(fglab.ante);
         if (isRefTypesSymtabConstraintItemNever(sc)) return sc;
-        if ((fglab.originatingBlock as LocalsContainer).locals?.size) {
-            sc.symtab = filterSymtabBySymbolTable(sc.symtab!, (fglab.originatingBlock as LocalsContainer).locals, "postBlock");
-        }
+        // if ((fglab.originatingBlock as LocalsContainer).locals?.size) {
+        //     sc.symtab = filterSymtabBySymbolTable(sc.symtab!, (fglab.originatingBlock as LocalsContainer).locals, "postBlock");
+        // }
         if ((fglab.originatingBlock as LocalsContainer).locals?.size){
             Debug.assert(sc.fsymtab)
             Debug.assert(fglab.originatingBlock === sc.fsymtab.getLocalsContainer());
@@ -1576,7 +1562,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
                 if (!fsymtab) fsymtab = createFloughSymtab(localsContainers);
                 else fsymtab = createFloughSymtab(localsContainers, fsymtab);
             });
-            return { fsymtab, symtab: createRefTypesSymtab(), constraintItem: createFlowConstraintAlways() };
+            return { fsymtab, /*symtab: createRefTypesSymtab(),*/ constraintItem: createFlowConstraintAlways() };
         }
     };
 
@@ -1591,9 +1577,9 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
     if (IDebug.isActive(loggerLevel)) {
         IDebug.ilog(()=>`resolveGroupForFlow[dbg] result of getAnteConstraintItemAndSymtab():`, loggerLevel);
         if (!isRefTypesSymtabConstraintItemNever(anteSCArg)) {
-            mrNarrow.dbgRefTypesSymtabToStrings(anteSCArg.symtab!).forEach(s => {
-                IDebug.ilog(()=>`resolveGroupForFlow[dbg] symtab: ${s}`, loggerLevel);
-            });
+            // mrNarrow.dbgRefTypesSymtabToStrings(anteSCArg.symtab!).forEach(s => {
+            //     IDebug.ilog(()=>`resolveGroupForFlow[dbg] symtab: ${s}`, loggerLevel);
+            // });
             if (!anteSCArg.fsymtab) IDebug.ilog(()=>`resolveGroupForFlow[dbg] fsymtab: <undef>`, loggerLevel);
             else {
                 dbgFloughSymtabToStrings(anteSCArg.fsymtab).forEach(s => {
@@ -1639,6 +1625,7 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
         const critret = applyCrit(mntr, { kind: FloughCritKind.truthy, alsoFailing: true }, floughStatus.groupNodeToTypeMap);
         scpassing = critret.passing.sci;
         scfailing = critret.failing!.sci;
+
     }
     if (floughStatus.inCondition) {
 
@@ -1646,10 +1633,10 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
             kind: CurrentBranchesElementKind.tf,
             gff: groupForFlow,
             falsy: {
-                sc: { symtab: scfailing!.symtab, fsymtab: scfailing!.fsymtab, constraintItem: scfailing!.constraintItem },
+                sc: { /*symtab: scfailing!.symtab,*/ fsymtab: scfailing!.fsymtab, constraintItem: scfailing!.constraintItem },
             },
             truthy: {
-                sc: { symtab: scpassing.symtab, fsymtab: scpassing.fsymtab, constraintItem: scpassing.constraintItem },
+                sc: { /*symtab: scpassing.symtab,*/ fsymtab: scpassing.fsymtab, constraintItem: scpassing.constraintItem },
             },
         };
         if (!floughStatus.accumBranches) {
@@ -1665,15 +1652,13 @@ function resolveGroupForFlow(groupForFlow: Readonly<GroupForFlow>, floughStatus:
             kind: CurrentBranchesElementKind.plain,
             gff: groupForFlow,
             item: {
-                sc: { symtab: scpassing.symtab, fsymtab: scpassing.fsymtab, constraintItem: scpassing.constraintItem },
+                sc: { /*symtab: scpassing.symtab,*/ fsymtab: scpassing.fsymtab, constraintItem: scpassing.constraintItem },
             },
         };
         if (!floughStatus.accumBranches) {
             Debug.assert(!forFlow.currentBranchesMap.has(groupForFlow));
-            {
-                const depCount = sourceFileMrState.groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount[groupForFlow.groupIdx]
-                if (depCount) forFlow.currentBranchesMap.set(groupForFlow, cbe);
-            }
+            const depCount = sourceFileMrState.groupsForFlow.connectedGroupsGraphs.arrGroupIndexToDependantCount[groupForFlow.groupIdx]
+            if (depCount) forFlow.currentBranchesMap.set(groupForFlow, cbe);
         }
     }
     if (IDebug.isActive(loggerLevel)) {
@@ -1805,8 +1790,8 @@ function dbgNodeToTypeMap(map: Readonly<NodeToTypeMap>): string[] {
 function dbgCurrentBranchesItem(cbi: CurrentBranchesItem, mrNarrow: MrNarrow): string[] {
     const astr: string[] = [];
     // astr.push(`nodeToTypeMap:`);
-    if (!cbi.sc.symtab) astr.push("symtab: <undef>");
-    else astr.push(...mrNarrow.dbgRefTypesSymtabToStrings(cbi.sc.symtab).map(s => `symtab:         ${s}`));
+    //if (!cbi.sc.symtab) astr.push("symtab: <undef>");
+    //else astr.push(...mrNarrow.dbgRefTypesSymtabToStrings(cbi.sc.symtab).map(s => `symtab:         ${s}`));
     if (!cbi.sc.fsymtab) astr.push("fsymtab: <undef>");
     else astr.push(...dbgFloughSymtabToStrings(cbi.sc.fsymtab).map(s => `fsymtab:         ${s}`));
     astr.push(...mrNarrow.dbgConstraintItem(cbi.sc.constraintItem).map(s => `constraintItem: ${s}`));

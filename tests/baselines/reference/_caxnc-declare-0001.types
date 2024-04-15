@@ -1,0 +1,14 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-declare-0001.ts] ////
+
+=== _caxnc-declare-0001.ts ===
+function declare0001() {
+>declare0001 : () => void
+
+    // flow is not engaged here
+    const a: number = 0;
+>a : number
+>0 : 0
+    
+    a;
+>a : 0
+}

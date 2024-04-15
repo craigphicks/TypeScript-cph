@@ -173,7 +173,7 @@ export type ReplayableItem = {
 
 export type RefTypesSymtabConstraintItemNotNever = {
     fsymtab?: FloughSymtab | undefined;
-    symtab: RefTypesSymtab;
+    //symtab: RefTypesSymtab;
     constraintItem: ConstraintItemNotNever;
 };
 export type RefTypesSymtabConstraintItemNever = {
@@ -182,7 +182,7 @@ export type RefTypesSymtabConstraintItemNever = {
 
 export interface RefTypesSymtabConstraintItem {
     fsymtab?: FloughSymtab | undefined;
-    symtab?: RefTypesSymtab | undefined;
+    //symtab?: RefTypesSymtab | undefined;
     constraintItem: ConstraintItem;
 }
 
