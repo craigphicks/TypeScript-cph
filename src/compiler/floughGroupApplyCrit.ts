@@ -20,7 +20,6 @@ import {
     RefTypesType,
 } from "./floughType";
 import {
-    //enablePerBlockSymtabs,
     extraAsserts,
 } from "./floughGroup";
 import {

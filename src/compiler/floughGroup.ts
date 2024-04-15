@@ -64,14 +64,9 @@ import {
 import {
     initializeFlowGroupRefTypesSymtabModule,
     createSubLoopRefTypesSymtabConstraint,
-    getSymbolsAssignedRange,
     isRefTypesSymtabConstraintItemNever,
-    modifiedInnerSymtabUsingOuterForFinalCondition,
     RefTypesSymtab,
     copyRefTypesSymtab,
-    createSuperloopRefTypesSymtabConstraintItem,
-    createRefTypesSymtab,
-    copyRefTypesSymtabConstraintItem,
 } from "./floughGroupRefTypesSymtab";
 import {
     dbgFlowGroupLabelToStrings,
@@ -105,8 +100,6 @@ export const refactorConnectedGroupsGraphsNoShallowRecursion = refactorConnected
  * However, it also causes named types to possibly not use the name even if the type is the full named type.
  */
 export const enableBypassEffectiveDeclaredType = true;
-
-export const enablePerBlockSymtabs = !!Number(process.env.enablePerBlockSymtabs ?? 0);
 
 export enum GroupForFlowKind {
     none = "none",
@@ -1319,15 +1312,14 @@ function doFlowGroupLabel(fglabIn: FlowGroupLabel, setOfKeysToDeleteFromCurrentB
                 const locals = getLoopLocals(sourceFileMrState.groupsForFlow.orderedGroups[fglab.loopGroupIdx]);
                 if (sc0) asc.push(sc0 as RefTypesSymtabConstraintItemNotNever);
 
-                // if (!doProxySymtabSqueezing) return orSymtabConstraints([sc0, ...asc], mrNarrow);
                 if (asc.length === 0) return { constraintItem: createFlowConstraintNever() };
-                const oredsc = orSymtabConstraints(asc /*, mrNarrow*/);
+                const oredsc = orSymtabConstraints(asc );
 
                 if (IDebug.isActive(loggerLevel)) {
                     dbgFloughSymtabToStrings(oredsc.fsymtab!).forEach(s =>
                         IDebug.ilog(()=>`doFlowGroupLabelAux[dbg] postLoop: oredsc.fsymtab: ${s}`, loggerLevel));
                 }
-                return createSuperloopRefTypesSymtabConstraintItem(oredsc);
+                return oredsc;
             }
             case FlowGroupLabelKind.block:
                 return doFlowGroupLabelAux(fglab.ante);

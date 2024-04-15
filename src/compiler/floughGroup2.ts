@@ -64,7 +64,6 @@ import {
     getDevExpectStrings,
     extraAsserts,
     refactorConnectedGroupsGraphsNoShallowRecursion,
-    //enablePerBlockSymtabs,
 } from "./floughGroup";
 import {
     applyCritNoneUnion,

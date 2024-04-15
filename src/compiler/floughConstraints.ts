@@ -24,7 +24,6 @@ import {
     RefTypesSymtabConstraintItemNotNever,
 } from "./floughTypedefs";
 import {
-    enablePerBlockSymtabs,
     enableSupressFSymtabEqualAsserts,
     extraAsserts,
 } from "./floughGroup";
@@ -33,17 +32,17 @@ import {
 } from "./floughGroup2";
 import {
     createRefTypesSymtabConstraintItemNever,
-    unionArrRefTypesSymtab,
+    //unionArrRefTypesSymtab,
     dbgRefTypesSymtabConstrinatItemToStrings,
     isRefTypesSymtabConstraintItemNever,
-    dbgRefTypesSymtabToStrings,
+    //dbgRefTypesSymtabToStrings,
 } from "./floughGroupRefTypesSymtab";
 import { IDebug } from "./mydebug";
 import {
     SymbolFlags,
-    TypeChecker,
+    //TypeChecker,
     Symbol,
-    TypeFlags,
+    //TypeFlags,
 } from "./types";
 import { FloughSymtab, dbgFloughSymtabToStrings, unionFloughSymtab } from "./floughSymtab";
 
@@ -481,12 +480,11 @@ export function orSymtabConstraints(asc: Readonly<RefTypesSymtabConstraintItem>[
     const asc1 = asc.filter(sc => !isNeverConstraint(sc.constraintItem));
     if (asc1.length === 0) return createRefTypesSymtabConstraintItemNever(); // assuming or of nevers is never
     if (asc1.length === 1) return omitFloughSymtab ? { /*symtab: asc1[0].symtab,*/ constraintItem: asc1[0].constraintItem} : asc1[0];
-    //const unionSymtab = unionArrRefTypesSymtab((asc as RefTypesSymtabConstraintItemNotNever[]).map(x => x.symtab));
-    if (enablePerBlockSymtabs && !omitFloughSymtab) {
+    if (!omitFloughSymtab) {
         const fsymtab = unionFloughSymtab((asc1 as RefTypesSymtabConstraintItemNotNever[]).map(x => x.fsymtab!));
-        return { /*symtab: unionSymtab,*/ fsymtab, constraintItem: createFlowConstraintAlways() };
+        return { fsymtab, constraintItem: createFlowConstraintAlways() };
     }
-    return { /*symtab: unionSymtab,*/ constraintItem: createFlowConstraintAlways() };
+    return { constraintItem: createFlowConstraintAlways() };
 }
 
 export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, type: typeIn, sc, mrNarrow, getDeclaredType: _ }: Readonly<{
@@ -503,7 +501,6 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
         IDebug.ilogGroup(()=>`andSymbolTypeIntoSymtabConstraint[in] symbol:${IDebug.dbgs.symbolToString(symbol)}, isconst:${isconst}, isAssigned: ${isAssign}}`,loggerLevel);
         floughTypeModule.dbgRefTypesTypeToStrings(typeIn).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[begin], typeIn: ${s}`,loggerLevel));
         dbgRefTypesSymtabConstrinatItemToStrings(sc).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[begin] sc: ${s}`,loggerLevel));
-        // +`symbol:${IDebug.dbgs.symbolToString(symbol)}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(typeIn)}, isAssigned: ${isAssign}}`);
     }
     if (isRefTypesSymtabConstraintItemNever(sc)) {
         if (IDebug.isActive(loggerLevel)) {
@@ -514,9 +511,8 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
 
     const constraintItem = sc.constraintItem;
     Debug.assert(!isRefTypesSymtabConstraintItemNever(sc));
-    //let symtab = sc.symtab;
+    Debug.assert(sc.fsymtab);
     let fsymtab = sc.fsymtab;
-    if (enablePerBlockSymtabs) Debug.assert(fsymtab);
     let typeOut = typeIn;
     // let scOut = sc;
     if (symbol.flags & (SymbolFlags.ConstEnum | SymbolFlags.RegularEnum)) {
@@ -528,42 +524,18 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
     else {
         if (isAssign) {
             //symtab = mrNarrow.copyRefTypesSymtab(symtab).setAsAssigned(symbol, typeIn);
-            if (enablePerBlockSymtabs) {
-                fsymtab = fsymtab!.branch().setAsAssigned(symbol, typeIn);
-            }
+            fsymtab = fsymtab!.branch().setAsAssigned(symbol, typeIn);
         }
         else {
             let type = fsymtab.get(symbol);
-            if (enablePerBlockSymtabs) {
-                const t = fsymtab!.get(symbol);
-                if (type && t!==type) {
-                    const tTsType = floughTypeModule.getTsTypeFromFloughType(t!);
-                    const typeTsType = floughTypeModule.getTsTypeFromFloughType(type!);
-                    const eql = mrNarrow.checker.isTypeRelatedTo(tTsType, typeTsType, mrNarrow.checker.getRelations().identityRelation);
-                    if (!enableSupressFSymtabEqualAsserts) {
-                        Debug.assert(eql, undefined, ()=>`assert fail fsymtab: symbol ${IDebug.dbgs.symbolToString(symbol)}: ${IDebug.dbgs.typeToString(tTsType)} !== ${IDebug.dbgs.typeToString(typeTsType)} (fsymtab!==symtab)`);
-                    }
-                }
-                type = t;
-
-                //Debug.assert(!type || t===type || t && floughTypeModule.equalRefTypesTypes(t!,type!));
-                //Debug.assert(t===type || t && type && floughTypeModule.equalRefTypesTypes(t!,type!));
-            }
             if (type) {
                 typeOut = floughTypeModule.intersectionWithFloughTypeSpecial(type, typeIn);
-                // typeOut = floughTypeModule.intersectionOfRefTypesType(type, typeIn);
                 if (!floughTypeModule.equalRefTypesTypes(typeOut, type)) {
-                    //symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol, typeOut);
-                    if (enablePerBlockSymtabs) {
-                        fsymtab = fsymtab!.branch().set(symbol, typeOut);
-                    }
+                    fsymtab = fsymtab!.branch().set(symbol, typeOut);
                 }
             }
             else {
-                //symtab = mrNarrow.copyRefTypesSymtab(symtab).set(symbol, typeIn);
-                if (enablePerBlockSymtabs) {
-                    fsymtab = fsymtab!.branch().set(symbol, typeIn);
-                }
+                fsymtab = fsymtab!.branch().set(symbol, typeIn);
             }
         }
     }
@@ -571,19 +543,7 @@ export function andSymbolTypeIntoSymtabConstraint({ symbol, isconst, isAssign, t
         let str = "andSymbolTypeIntoSymtabConstraint[end] symtab:";
         if (!fsymtab) str += "<undef>";
         else {
-            //dbgRefTypesSymtabToStrings(symtab).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[end] symtab: ${s}`,loggerLevel));
-            if (enablePerBlockSymtabs) {
-                dbgFloughSymtabToStrings(fsymtab!).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[end] fsymtab: ${s}`,loggerLevel));
-            }
-            // symtab.forEach((type,symbol)=>{
-            //     const symbolFlowInfo = mrNarrow.mrState.symbolFlowInfoMap.get(symbol);
-            //     if (!symbolFlowInfo) {
-            //         str+= ` {symbol:${symbol.escapedName}, isconst: <symbolFlowInfo not found>, type:${floughTypeModule.dbgRefTypesTypeToString(type)}},`;
-            //         return;
-            //     }
-            //     const isconst = mrNarrow.mrState.symbolFlowInfoMap.get(symbol)!.isconst;
-            //     str += ` {symbol:${symbol.escapedName}, isconst:${isconst}, type:${floughTypeModule.dbgRefTypesTypeToString(type)}},`;
-            // });
+            dbgFloughSymtabToStrings(fsymtab!).forEach(s => IDebug.ilog(()=>`andSymbolTypeIntoSymtabConstraint[end] fsymtab: ${s}`,loggerLevel));
         }
         IDebug.ilog(()=>str,loggerLevel);
         mrNarrow.dbgConstraintItem(constraintItem).forEach(s => {

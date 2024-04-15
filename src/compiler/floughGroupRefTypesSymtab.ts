@@ -20,19 +20,16 @@ import {
     RefTypesSymtabConstraintItem,
     RefTypesSymtabConstraintItemNever,
     assertCastType,
-    RefTypesSymtabConstraintItemNotNever,
 } from "./floughTypedefs";
 import {
     isNeverConstraint,
     createFlowConstraintNever,
-    createFlowConstraintAlways,
 } from "./floughConstraints";
 import {
     SymbolFlowInfoMap,
     ProcessLoopState,
     GroupForFlow,
     extraAsserts,
-    //enablePerBlockSymtabs,
 } from "./floughGroup";
 import {
     MrNarrow,
@@ -233,15 +230,6 @@ function createSuperloopRefTypesSymtab(stin: Readonly<RefTypesSymtab>): RefTypes
     }
     return stout;
 }
-export function createSuperloopRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
-    if (isRefTypesSymtabConstraintItemNever(sc)) return sc; // as RefTypesSymtabConstraintItemNever;
-    IDebug.ilog(()=>`createSuperloopRefTypesSymtabConstraintItem: enablePerBlockSymtabs: true, not using branch() ok ?`, 1);
-    return {
-        //symtab: createSuperloopRefTypesSymtab(sc.symtab!),
-        fsymtab: sc.fsymtab,
-        constraintItem: sc.constraintItem,
-    };
-}
 
 export function getSymbolsAssignedRange(that: Readonly<RefTypesSymtab>): WeakMap<Symbol, RefTypesType> | undefined {
     assertCastType<Readonly<RefTypesSymtabProxy>>(that);
@@ -260,13 +248,6 @@ export function createRefTypesSymtabWithEmptyInnerSymtab(templateSymtab: Readonl
     assertCastType<Readonly<RefTypesSymtabProxy>>(templateSymtab);
     return new RefTypesSymtabProxy(templateSymtab.symtabOuter, undefined, templateSymtab.isSubloop, templateSymtab.loopState, templateSymtab.loopGroup);
 }
-export function createRefTypesSymtabConstraintWithEmptyInnerSymtab(templatesc: Readonly<RefTypesSymtabConstraintItem>): RefTypesSymtabConstraintItem {
-    Debug.assert(!isRefTypesSymtabConstraintItemNever(templatesc));
-    Debug.assert(false);
-    return {
-        constraintItem: { ...templatesc.constraintItem },
-    };
-}
 
 export function copyRefTypesSymtab(symtab: Readonly<RefTypesSymtab>): RefTypesSymtab {
     Debug.assert(symtab instanceof RefTypesSymtabProxy);
@@ -284,18 +265,13 @@ export function copyRefTypesSymtabConstraintItem(sc: Readonly<RefTypesSymtabCons
 export function createRefTypesSymtabConstraintItemNever(): RefTypesSymtabConstraintItemNever {
     return { constraintItem: createFlowConstraintNever() };
 }
-export function createRefTypesSymtabConstraintItemAlways(): RefTypesSymtabConstraintItemNotNever {
-    Debug.assert(false, "TODO");
-    return {
-        //symtab: new RefTypesSymtabProxy(),
-        constraintItem: createFlowConstraintAlways()
-    };
-}
 /**
  * unionArrRefTypesSymtabV2
  * @param arr
  * Similar to unionArrRefTypesSymtab, but logicalObjects are split and shallow or'd (delayed evaluation),
  * while nobj types are still or'd immediately, but without computing via Type.
+ *
+ * DO NOT ERASE THIS YET - might need for reference documentation per unionFloughSymtab
  */
 export function unionArrRefTypesSymtab(arr: Readonly<RefTypesSymtab>[]): RefTypesSymtab {
     const loggerLevel = 2;
