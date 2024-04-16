@@ -1,0 +1,29 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-statements-0002.ts] ////
+
+=== _caxnc-statements-0002.ts ===
+declare function f(...args: any[]): void;
+>f : Symbol(f, Decl(_caxnc-statements-0002.ts, 0, 0))
+>args : Symbol(args, Decl(_caxnc-statements-0002.ts, 0, 19))
+
+function statements0002() {
+>statements0002 : Symbol(statements0002, Decl(_caxnc-statements-0002.ts, 0, 41))
+
+    let a: number = 0;
+>a : Symbol(a, Decl(_caxnc-statements-0002.ts, 2, 7))
+
+    f(a);
+>f : Symbol(f, Decl(_caxnc-statements-0002.ts, 0, 0))
+>a : Symbol(a, Decl(_caxnc-statements-0002.ts, 2, 7))
+
+    f(a);
+>f : Symbol(f, Decl(_caxnc-statements-0002.ts, 0, 0))
+>a : Symbol(a, Decl(_caxnc-statements-0002.ts, 2, 7))
+
+    f(a);
+>f : Symbol(f, Decl(_caxnc-statements-0002.ts, 0, 0))
+>a : Symbol(a, Decl(_caxnc-statements-0002.ts, 2, 7))
+
+    f(a);
+>f : Symbol(f, Decl(_caxnc-statements-0002.ts, 0, 0))
+>a : Symbol(a, Decl(_caxnc-statements-0002.ts, 2, 7))
+}

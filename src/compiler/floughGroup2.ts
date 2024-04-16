@@ -2220,21 +2220,8 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                         if (extraAsserts && compilerOptions.enableTSDevExpectString) {
                             debugDevExpectEffectiveDeclaredType(leftExpr.parent, symbolFlowInfo);
                         }
-                        // const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
-                        let enableImmediateAssignSymbol = !!Number(process.env.ias ?? 0);
-                        if (enableImmediateAssignSymbol){
-                            passing.sci.fsymtab!.setAsAssigned(symbol, passing.type);
-                            return {unmerged:[passing]};
-                        }
-
-                        return {
-                            unmerged: [{
-                                ...passing,
-                                // type: rhsType,
-                                symbol,
-                                isAssign: true,
-                            }],
-                        };
+                        passing.sci.fsymtab!.setAsAssigned(symbol, passing.type);
+                        return {unmerged:[passing]};
                     }
                     else if (leftExpr.kind === SyntaxKind.PropertyAccessExpression || leftExpr.kind === SyntaxKind.ElementAccessExpression) {
                         const unmerged: RefTypesTableReturn[] = [];

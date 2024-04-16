@@ -1,0 +1,22 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-statements-0001.ts] ////
+
+=== _caxnc-statements-0001.ts ===
+function statements0001() {
+>statements0001 : () => void
+
+    let a: number = 0;
+>a : number
+>0 : 0
+
+    a;
+>a : number
+
+    a;
+>a : number
+
+    a;
+>a : number
+
+    a;
+>a : number
+}
