@@ -356,19 +356,12 @@ export interface ProcessLoopState {
     loopCountWithoutFinals: number;
     invocations: number;
     groupToInvolvedSymbolTypeCache: WeakMap<GroupForFlow, InvolvedSymbolTypeCache>;
-    // symbolsReadNotAssigned?: Set<Symbol>;
-    symbolsAssigned?: Set<Symbol>;
-    symbolsNarrowed?: Set<Symbol>;
-    symbolsAssignedRange?: WeakMap<Symbol, RefTypesType>;
     scForLoop0?: RefTypesSymtabConstraintItem;
-    /* enableProcessLoopSaveScConditionContinue */
     shadowMapContinue?: Map<Symbol,FloughSymtabEntry>; // loopDepth >1 only
     fsymtabUnionInAndContinue?: FloughSymtab; // loopDepth === 1 only
-    //loopConditionCall?: "initial" | "final";
 }
 export type SymbolFlowInfo = {
     passCount: number;
-    // initializedInAssignment?: boolean;  -- not used
     isconst: boolean;
     replayableItem?: ReplayableItem;
     typeNodeTsType?: Type;
@@ -1088,7 +1081,7 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
                 let shadowMapContinue: Map<Symbol,FloughSymtabEntry> | undefined = shadowMapOfAffected(
                     arrFloughSymtabForLoopContinue,
                     outerSCForLoopConditionIn.fsymtab!,
-                    loopState.symbolsAssigned!, loopState.invocations===0 ? undefined : loopState.symbolsNarrowed!);
+                    loopState.invocations===0 ? 0 : 1!);
                 if (IDebug.isActive(loggerLevel)) {
                     if (!shadowMapContinue) IDebug.ilog(()=>`processLoop[dbg] shadowMapContinue: <undef>` , loggerLevel);
                     else {
@@ -1097,15 +1090,6 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
                         });
                     }
                 }
-
-                // if (loopState.invocations === 0) {
-                //     loopState.scShadowMapContinue = shadowMapContinue;
-                // }
-                // else {
-                //     loopState.scShadowMapContinue = undefined;
-                // }
-                loopState.symbolsAssigned = undefined;
-                loopState.symbolsNarrowed = undefined;
 
                 let fsymtabUnionInAndContinue: FloughSymtab;
                 if (shadowMapContinue){
@@ -1139,9 +1123,9 @@ function processLoop(loopGroup: GroupForFlow, sourceFileMrState: SourceFileFloug
                     constraintItem: scForConditionContinue.constraintItem
                 }
             }
-            if (loopState.invocations === 1) {
-                loopState.symbolsAssignedRange = undefined;
-            }
+            // if (loopState.invocations === 1) {
+            //     loopState.symbolsAssignedRange = undefined;
+            // }
             // const subloopSCForLoopConditionIn = createSubLoopRefTypesSymtabConstraint(outerSCForLoopConditionIn, loopState, loopGroup);
             // const scForConditionUnionOfInAndContinue = orSymtabConstraints([subloopSCForLoopConditionIn, ...arrSCForLoopContinue], mrNarrow);
             // at this point, can we set loopState.symbolsAssignedRange

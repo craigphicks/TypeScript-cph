@@ -127,8 +127,6 @@ class FloughSymtabImpl implements FloughSymtab {
             const got = this.getWithAssigned(symbol);
             // assigned type gets set to narrowed previous assigned type if it exists, otherwise undefined
             this.shadowMap.set(symbol, { type, assignedType: got?.assignedType ? type : undefined });
-            const loopState = mrNarrow.mrState.getCurrentLoopState();
-            loopState?.symbolsNarrowed?.add(symbol);
        }
         return this;
     }
@@ -136,8 +134,6 @@ class FloughSymtabImpl implements FloughSymtab {
         if (this.locals?.has(symbol.escapedName)) this.localMap.set(symbol, { type, assignedType: type, wasAssigned: true});
         else {
             this.shadowMap.set(symbol, { type, assignedType: type, wasAssigned: true});
-            const loopState = mrNarrow.mrState.getCurrentLoopState();
-            loopState?.symbolsAssigned?.add(symbol);
         }
         this.assignmentCount = (this.assignmentCount ?? 0) + 1;
         return this;
@@ -416,12 +412,11 @@ return ret;
  * @param fsTop : common ancestor of all branches in arrFsContinue
  * @returns shadowMap with unionized types of assignedSymbols
  */
-export function shadowMapOfAffected(arrFsContinue: Readonly<FloughSymtab>[], fsTop:Readonly<FloughSymtab>, assignedSymbols: Set<Symbol>, narrowedSymbols?: Set<Symbol> ): InnerMap | undefined {
+export function shadowMapOfAffected(arrFsContinue: Readonly<FloughSymtab>[], fsTop:Readonly<FloughSymtab>, loopInvocation: 0 | 1 ): InnerMap | undefined {
     assertCastType<Readonly<FloughSymtabImpl>[]>(arrFsContinue);
     assertCastType<Readonly<FloughSymtabImpl>>(fsTop);
-    //for (const symbol of assignedSymbols) {
     const symbolToAssignedTypeSet = new Map<Symbol,Set<FloughType>>();
-    const symbolToNarrowedTypeSet = narrowedSymbols && new Map<Symbol,Set<FloughType>>();
+    const symbolToNarrowedTypeSet = (loopInvocation===1) ? new Map<Symbol,Set<FloughType>>() : undefined;
 
     const localSymbols = new Set<Symbol>();
     arrFsContinue.forEach(fs => {
@@ -429,8 +424,6 @@ export function shadowMapOfAffected(arrFsContinue: Readonly<FloughSymtab>[], fsT
             if (fs.localMap) {
                 fs.localMap.forEach((entry, symbol) => {
                     localSymbols.add(symbol);
-                    if (assignedSymbols.has(symbol)) assignedSymbols.delete(symbol);
-                    if (narrowedSymbols?.has(symbol)) narrowedSymbols.delete(symbol);
                 });
             }
         }
@@ -485,24 +478,6 @@ export function shadowMapOfAffected(arrFsContinue: Readonly<FloughSymtab>[], fsT
         shadowMap.set(symbol, { type: utype });
     });
 
-
-    // assignedSymbols.forEach(symbol => {
-    //     //const entries: FloughSymtabEntry[] = [];
-    //     const types: FloughType[] = [];
-    //     arrFsContinue.forEach(fs => {
-
-    //         for (;fs !== fsTop; fs = fs.outer!) {
-    //             const got = fs.shadowMap.get(symbol);
-    //             if (got?.assignedType) {
-    //                 types.push(got);
-    //                 break;
-    //             }
-    //         }
-    //     });
-    //     Debug.assert(types.length); // otherwise symbol should not be in assignedSymbols
-    //     const utype = floughTypeModule.unionOfRefTypesType(types);
-    //     shadowMap.set(symbol, { type: utype, assignedType: utype});
-    // });
     if (shadowMap.size === 0) return undefined;
     return shadowMap;
 }
