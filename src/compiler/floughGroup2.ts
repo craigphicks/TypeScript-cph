@@ -2221,6 +2221,12 @@ export function createMrNarrow(checker: FloughTypeChecker, sourceFile: Readonly<
                             debugDevExpectEffectiveDeclaredType(leftExpr.parent, symbolFlowInfo);
                         }
                         // const rhsType = widenDeclarationOrAssignmentRhs(passing.type,symbolFlowInfo);
+                        let enableImmediateAssignSymbol = !!Number(process.env.ias ?? 0);
+                        if (enableImmediateAssignSymbol){
+                            passing.sci.fsymtab!.setAsAssigned(symbol, passing.type);
+                            return {unmerged:[passing]};
+                        }
+
                         return {
                             unmerged: [{
                                 ...passing,

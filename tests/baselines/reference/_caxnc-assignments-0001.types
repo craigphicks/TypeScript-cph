@@ -1,0 +1,28 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-assignments-0001.ts] ////
+
+=== _caxnc-assignments-0001.ts ===
+function assignments0001() {
+>assignments0001 : () => void
+
+    let a: number = 0;
+>a : number
+>0 : 0
+
+    a;
+>a : number
+
+    a = 1;
+>a = 1 : 1
+>a : number
+>1 : 1
+
+    a = 2;
+>a = 2 : 2
+>a : number
+>2 : 2
+
+    a = 3;
+>a = 3 : 3
+>a : number
+>3 : 3
+}

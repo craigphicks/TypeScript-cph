@@ -47,20 +47,27 @@ class FloughSymtabImpl implements FloughSymtab {
     };
     loopState?: { invocations: number, loopGroup: { groupIdx: number /* only used for debug */} };
     assignmentCount?: number;
+    referencedCount: number = 0;
     constructor(localsContainer?: LocalsContainer, outer?: Readonly<FloughSymtab>, localMap?: InnerMap, shadowMap?: InnerMap, loopStatus?:FloughSymtabLoopStatus, loopState?: ProcessLoopState) {
         if (IDebug.isActive(0)) this.dbgid = FloughSymtabImpl.nextdbgid++;
         this.localsContainer = localsContainer
         Debug.assert(!localsContainer || localsContainer.locals?.size,undefined,()=>`FloughSymtabImpl.constructor(): localsContainer has no locals`);
-        if (localsContainer) this.locals = localsContainer.locals;
         if (outer) {
             this.outer = outer as FloughSymtabImpl;
             this.tableDepth = this.outer.tableDepth + 1;
+            (outer as FloughSymtabImpl).referencedCount += 1;
         }
         else this.tableDepth = 0;
-        if (localMap) this.localMap = localMap;
-        if (shadowMap) this.shadowMap = shadowMap;
         if (loopStatus) this.loopStatus = loopStatus;
         if (loopState) this.loopState = loopState;
+        if (localsContainer) {
+            //Debug.assert(!loopStatus && !loopState);
+            this.locals = localsContainer.locals;
+            if (localMap) this.localMap = localMap;
+            return new FloughSymtabImpl(undefined, this, undefined, shadowMap, undefined, undefined);
+        }
+        Debug.assert(!localMap);
+        if (shadowMap) this.shadowMap = shadowMap;
     }
     /**
      * For now we always create a new FloughSymtab when branching.
@@ -491,6 +498,8 @@ export function dbgFloughSymtabToStringsOne(fsIn: Readonly<FloughSymtab>): strin
     assertCastType<FloughSymtabImpl>(fsIn);
     const arr: string[] = [];
     if (fsIn.dbgid) arr.push(`dbgid: ${fsIn.dbgid}`);
+    arr.push(`referencedCount: ${fsIn.referencedCount}`);
+    arr.push(`assignmentCount: ${fsIn.assignmentCount ?? 0}`);
     arr.push(`tableDepth: ${fsIn.tableDepth}`);
 
     if (fsIn.loopStatus) arr.push(`loopStatus: {widening:${fsIn.loopStatus.widening}, loopGroupIdx:${fsIn.loopStatus.loopGroupIdx}}`);

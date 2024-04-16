@@ -1,0 +1,21 @@
+//// [tests/cases/conformance/_caxnc/_caxnc-assignments-0001.ts] ////
+
+=== _caxnc-assignments-0001.ts ===
+function assignments0001() {
+>assignments0001 : Symbol(assignments0001, Decl(_caxnc-assignments-0001.ts, 0, 0))
+
+    let a: number = 0;
+>a : Symbol(a, Decl(_caxnc-assignments-0001.ts, 1, 7))
+
+    a;
+>a : Symbol(a, Decl(_caxnc-assignments-0001.ts, 1, 7))
+
+    a = 1;
+>a : Symbol(a, Decl(_caxnc-assignments-0001.ts, 1, 7))
+
+    a = 2;
+>a : Symbol(a, Decl(_caxnc-assignments-0001.ts, 1, 7))
+
+    a = 3;
+>a : Symbol(a, Decl(_caxnc-assignments-0001.ts, 1, 7))
+}
