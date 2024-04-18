@@ -251,6 +251,7 @@ export const enum SyntaxKind {
     FunctionType,
     ConstructorType,
     TypeQuery,
+    InstanceQuery,
     TypeLiteral,
     ArrayType,
     TupleType,
@@ -701,6 +702,7 @@ export type TypeNodeSyntaxKind =
     | SyntaxKind.FunctionType
     | SyntaxKind.ConstructorType
     | SyntaxKind.TypeQuery
+    | SyntaxKind.InstanceQuery
     | SyntaxKind.TypeLiteral
     | SyntaxKind.ArrayType
     | SyntaxKind.TupleType
@@ -1065,6 +1067,7 @@ export type HasChildren =
     | FunctionTypeNode
     | ConstructorTypeNode
     | TypeQueryNode
+    | InstanceQueryNode
     | TypeLiteralNode
     | ArrayTypeNode
     | TupleTypeNode
@@ -2226,6 +2229,11 @@ export interface TypePredicateNode extends TypeNode {
 
 export interface TypeQueryNode extends NodeWithTypeArguments {
     readonly kind: SyntaxKind.TypeQuery;
+    readonly exprName: EntityName;
+}
+
+export interface InstanceQueryNode extends NodeWithTypeArguments {
+    readonly kind: SyntaxKind.InstanceQuery;
     readonly exprName: EntityName;
 }
 
@@ -6383,6 +6391,8 @@ export const enum ObjectFlags {
     IsNeverIntersection = 1 << 25, // Intersection reduces to never
     /** @internal */
     IsConstrainedTypeVariable = 1 << 26, // T & C, where T's constraint and C are primitives, object, or {}
+    /** @internal */
+    Instanceof = 1 << 27, // type known to be an instance corrresponding to the constructor with symbol (type as ObjectType).instanceof
 }
 
 /** @internal */
@@ -6392,6 +6402,7 @@ export type ObjectFlagsType = NullableType | ObjectType | UnionType | Intersecti
 // dprint-ignore
 export interface ObjectType extends Type {
     objectFlags: ObjectFlags;
+    instanceof?: Symbol | undefined;  // Constructor symbol, defined <=> ObjectFlags.Instanceof flag set
     /** @internal */ members?: SymbolTable;             // Properties by name
     /** @internal */ properties?: Symbol[];             // Properties
     /** @internal */ callSignatures?: readonly Signature[];      // Call signatures of type
@@ -8604,6 +8615,8 @@ export interface NodeFactory {
     updateConstructorTypeNode(node: ConstructorTypeNode, modifiers: readonly Modifier[] | undefined, typeParameters: NodeArray<TypeParameterDeclaration> | undefined, parameters: NodeArray<ParameterDeclaration>, type: TypeNode): ConstructorTypeNode;
     createTypeQueryNode(exprName: EntityName, typeArguments?: readonly TypeNode[]): TypeQueryNode;
     updateTypeQueryNode(node: TypeQueryNode, exprName: EntityName, typeArguments?: readonly TypeNode[]): TypeQueryNode;
+    createInstanceQueryNode(exprName: EntityName, typeArguments?: readonly TypeNode[]): InstanceQueryNode;
+    updateInstanceQueryNode(node: InstanceQueryNode, exprName: EntityName, typeArguments?: readonly TypeNode[]): InstanceQueryNode;
     createTypeLiteralNode(members: readonly TypeElement[] | undefined): TypeLiteralNode;
     updateTypeLiteralNode(node: TypeLiteralNode, members: NodeArray<TypeElement>): TypeLiteralNode;
     createArrayTypeNode(elementType: TypeNode): ArrayTypeNode;

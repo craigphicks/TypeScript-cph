@@ -203,6 +203,7 @@ import {
     isParameterDeclaration,
     isParameterPropertyDeclaration,
     isParenthesizedExpression,
+    isPartOfInstanceQuery,
     isPartOfTypeQuery,
     isPrefixUnaryExpression,
     isPrivateIdentifier,
@@ -2855,6 +2856,9 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
                 return checkContextualIdentifier(node as Identifier);
             case SyntaxKind.QualifiedName:
                 if (currentFlow && isPartOfTypeQuery(node)) {
+                    (node as QualifiedName).flowNode = currentFlow;
+                }
+                if (currentFlow && isPartOfInstanceQuery(node)) {
                     (node as QualifiedName).flowNode = currentFlow;
                 }
                 break;

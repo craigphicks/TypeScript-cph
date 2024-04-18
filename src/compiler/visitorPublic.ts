@@ -825,6 +825,14 @@ const visitEachChildTable: VisitEachChildTable = {
         );
     },
 
+    [SyntaxKind.InstanceQuery]: function visitEachChildOfInstanceQueryNode(node, visitor, context, nodesVisitor, nodeVisitor, _tokenVisitor) {
+        return context.factory.updateInstanceQueryNode(
+            node,
+            Debug.checkDefined(nodeVisitor(node.exprName, visitor, isEntityName)),
+            nodesVisitor(node.typeArguments, visitor, isTypeNode),
+        );
+    },
+
     [SyntaxKind.TypeLiteral]: function visitEachChildOfTypeLiteralNode(node, visitor, context, nodesVisitor, _nodeVisitor, _tokenVisitor) {
         return context.factory.updateTypeLiteralNode(
             node,

@@ -437,6 +437,7 @@ import {
     InferencePriority,
     InferTypeNode,
     InstanceofExpression,
+    InstanceQueryNode,
     InstantiableType,
     InstantiationExpressionType,
     InterfaceDeclaration,
@@ -6327,6 +6328,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
             const objectFlags = getObjectFlags(type);
+
+            if (objectFlags & ObjectFlags.Instanceof){
+                Debug.assert((type as ObjectType).instanceof);
+                const entity = symbolToNode((type as ObjectType).instanceof!, context, SymbolFlags.Constructor);
+                Debug.assert(entity.kind === SyntaxKind.Identifier, "Expected an identifier for instanceof symbol");
+                const ret = factory.createInstanceQueryNode(entity as Identifier);
+                return ret;
+            }
 
             if (objectFlags & ObjectFlags.Reference) {
                 Debug.assert(!!(type.flags & TypeFlags.Object));
@@ -16293,6 +16302,30 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return links.resolvedType;
     }
 
+    function getTypeFromInstanceQueryNode(node: InstanceQueryNode): Type {
+        const links = getNodeLinks(node);
+        if (!links.resolvedType) {
+            if (node.exprName.kind===SyntaxKind.Identifier) {
+                const type = checkExpression(node.exprName);
+                if (!isConstructorType(type)){
+                    Debug.assert(false, "!isConstructorType(type)");
+                }
+                const constructorVariableSymbol = getResolvedSymbol(node.exprName);
+                if (!constructorVariableSymbol){
+                    Debug.assert(false, "!constructorSymbol");
+                }
+                const typeInstanceofConstructor = createObjectType(ObjectFlags.Instanceof | ObjectFlags.Anonymous);
+                typeInstanceofConstructor.instanceof = constructorVariableSymbol;
+                links.resolvedType = typeInstanceofConstructor;
+            }
+            else {
+                Debug.assert(false, "node.exprName.kind!==SyntaxKind.Identifier, not yet implemented");
+            }
+        }
+        return links.resolvedType;
+    }
+
+
     function getTypeOfGlobalSymbol(symbol: Symbol | undefined, arity: number): ObjectType {
         function getTypeDeclaration(symbol: Symbol): Declaration | undefined {
             const declarations = symbol.declarations;
@@ -19319,6 +19352,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return getTypeFromTypeReference(node as ExpressionWithTypeArguments);
             case SyntaxKind.TypeQuery:
                 return getTypeFromTypeQueryNode(node as TypeQueryNode);
+            case SyntaxKind.InstanceQuery:
+                return getTypeFromInstanceQueryNode(node as InstanceQueryNode);
             case SyntaxKind.ArrayType:
             case SyntaxKind.TupleType:
                 return getTypeFromArrayOrTupleTypeNode(node as ArrayTypeNode | TupleTypeNode);
@@ -40862,6 +40897,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function checkTypeQuery(node: TypeQueryNode) {
         getTypeFromTypeQueryNode(node);
     }
+    function checkInstanceQuery(node: InstanceQueryNode) {
+        getTypeFromInstanceQueryNode(node);
+    }
 
     function checkTypeLiteral(node: TypeLiteralNode) {
         forEach(node.members, checkSourceElement);
@@ -47009,6 +47047,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return checkTypePredicate(node as TypePredicateNode);
             case SyntaxKind.TypeQuery:
                 return checkTypeQuery(node as TypeQueryNode);
+            case SyntaxKind.InstanceQuery:
+                return checkInstanceQuery(node as InstanceQueryNode);
             case SyntaxKind.TypeLiteral:
                 return checkTypeLiteral(node as TypeLiteralNode);
             case SyntaxKind.ArrayType:

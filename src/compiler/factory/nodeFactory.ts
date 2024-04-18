@@ -141,6 +141,7 @@ import {
     IndexedAccessTypeNode,
     IndexSignatureDeclaration,
     InferTypeNode,
+    InstanceQueryNode,
     InterfaceDeclaration,
     InternalEmitFlags,
     IntersectionTypeNode,
@@ -585,6 +586,8 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
         updateConstructorTypeNode,
         createTypeQueryNode,
         updateTypeQueryNode,
+        createInstanceQueryNode,
+        updateInstanceQueryNode,
         createTypeLiteralNode,
         updateTypeLiteralNode,
         createArrayTypeNode,
@@ -2433,6 +2436,23 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
         return node.exprName !== exprName
                 || node.typeArguments !== typeArguments
             ? update(createTypeQueryNode(exprName, typeArguments), node)
+            : node;
+    }
+
+    // @api
+    function createInstanceQueryNode(exprName: EntityName, typeArguments?: readonly TypeNode[]) {
+        const node = createBaseNode<InstanceQueryNode>(SyntaxKind.InstanceQuery);
+        node.exprName = exprName;
+        node.typeArguments = typeArguments && parenthesizerRules().parenthesizeTypeArguments(typeArguments);
+        node.transformFlags = TransformFlags.ContainsTypeScript;
+        return node;
+    }
+
+    // @api
+    function updateInstanceQueryNode(node: InstanceQueryNode, exprName: EntityName, typeArguments?: readonly TypeNode[]) {
+        return node.exprName !== exprName
+                || node.typeArguments !== typeArguments
+            ? update(createInstanceQueryNode(exprName, typeArguments), node)
             : node;
     }
 

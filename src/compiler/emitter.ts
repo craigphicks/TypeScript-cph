@@ -186,6 +186,7 @@ import {
     IndexedAccessTypeNode,
     IndexSignatureDeclaration,
     InferTypeNode,
+    InstanceQueryNode,
     InterfaceDeclaration,
     InternalEmitFlags,
     IntersectionTypeNode,
@@ -1567,6 +1568,8 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
                     return emitConstructorType(node as ConstructorTypeNode);
                 case SyntaxKind.TypeQuery:
                     return emitTypeQuery(node as TypeQueryNode);
+                case SyntaxKind.InstanceQuery:
+                    return emitInstanceQuery(node as InstanceQueryNode);
                 case SyntaxKind.TypeLiteral:
                     return emitTypeLiteral(node as TypeLiteralNode);
                 case SyntaxKind.ArrayType:
@@ -2344,6 +2347,13 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
 
     function emitTypeQuery(node: TypeQueryNode) {
         writeKeyword("typeof");
+        writeSpace();
+        emit(node.exprName);
+        emitTypeArguments(node, node.typeArguments);
+    }
+
+    function emitInstanceQuery(node: InstanceQueryNode) {
+        writeKeyword("instanceof");
         writeSpace();
         emit(node.exprName);
         emitTypeArguments(node, node.typeArguments);

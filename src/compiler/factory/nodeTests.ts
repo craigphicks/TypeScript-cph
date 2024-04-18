@@ -79,6 +79,7 @@ import {
     IndexedAccessTypeNode,
     IndexSignatureDeclaration,
     InferTypeNode,
+    InstanceQueryNode,
     InterfaceDeclaration,
     IntersectionTypeNode,
     JSDoc,
@@ -478,6 +479,10 @@ export function isConstructorTypeNode(node: Node): node is ConstructorTypeNode {
 
 export function isTypeQueryNode(node: Node): node is TypeQueryNode {
     return node.kind === SyntaxKind.TypeQuery;
+}
+
+export function isInstanceQueryNode(node: Node): node is InstanceQueryNode {
+    return node.kind === SyntaxKind.InstanceQuery;
 }
 
 export function isTypeLiteralNode(node: Node): node is TypeLiteralNode {

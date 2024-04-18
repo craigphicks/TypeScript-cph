@@ -3461,6 +3461,15 @@ export function isPartOfTypeQuery(node: Node) {
 }
 
 /** @internal */
+export function isPartOfInstanceQuery(node: Node) {
+    while (node.kind === SyntaxKind.QualifiedName || node.kind === SyntaxKind.Identifier) {
+        node = node.parent;
+    }
+    return node.kind === SyntaxKind.InstanceQuery;
+}
+
+
+/** @internal */
 export function isNamespaceReexportDeclaration(node: Node): boolean {
     return isNamespaceExport(node) && !!node.parent.moduleSpecifier;
 }

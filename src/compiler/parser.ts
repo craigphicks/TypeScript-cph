@@ -127,6 +127,7 @@ import {
     IndexedAccessTypeNode,
     IndexSignatureDeclaration,
     InferTypeNode,
+    InstanceQueryNode,
     InterfaceDeclaration,
     IntersectionTypeNode,
     isArray,
@@ -666,6 +667,10 @@ const forEachChildTable: ForEachChildTable = {
             visitNode(cbNode, node.type);
     },
     [SyntaxKind.TypeQuery]: function forEachChildInTypeQuery<T>(node: TypeQueryNode, cbNode: (node: Node) => T | undefined, cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
+        return visitNode(cbNode, node.exprName) ||
+            visitNodes(cbNode, cbNodes, node.typeArguments);
+    },
+    [SyntaxKind.InstanceQuery]: function forEachChildInInstanceQuery<T>(node: InstanceQueryNode, cbNode: (node: Node) => T | undefined, cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
         return visitNode(cbNode, node.exprName) ||
             visitNodes(cbNode, cbNodes, node.typeArguments);
     },
@@ -3930,6 +3935,16 @@ namespace Parser {
         return finishNode(factory.createTypeQueryNode(entityName, typeArguments), pos);
     }
 
+    function parseInstanceQuery(): InstanceQueryNode {
+        const pos = getNodePos();
+        parseExpected(SyntaxKind.InstanceOfKeyword);
+        const entityName = parseEntityName(/*allowReservedWords*/ true);
+        // Make sure we perform ASI to prevent parsing the next line's type arguments as part of an instantiation expression.
+        const typeArguments = !scanner.hasPrecedingLineBreak() ? tryParseTypeArguments() : undefined;
+        // A constructor variable should not have type arguments, so we should report an error if they are present.
+        return finishNode(factory.createInstanceQueryNode(entityName, typeArguments), pos);
+    }
+
     function parseTypeParameter(): TypeParameterDeclaration {
         const pos = getNodePos();
         const modifiers = parseModifiers(/*allowDecorators*/ false, /*permitConstAsModifier*/ true);
@@ -4616,6 +4631,8 @@ namespace Parser {
             }
             case SyntaxKind.TypeOfKeyword:
                 return lookAhead(isStartOfTypeOfImportType) ? parseImportType() : parseTypeQuery();
+            case SyntaxKind.InstanceOfKeyword:
+                return parseInstanceQuery();
             case SyntaxKind.OpenBraceToken:
                 return lookAhead(isStartOfMappedType) ? parseMappedType() : parseTypeLiteral();
             case SyntaxKind.OpenBracketToken:
