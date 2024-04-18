@@ -380,7 +380,6 @@ export namespace Compiler {
         symlinks?: vfs.FileSet,
     ): compiler.CompilationResult {
         const options: ts.CompilerOptions & HarnessOptions = compilerOptions ? ts.cloneCompilerOptions(compilerOptions) : { noResolve: false };
-        options.target = ts.getEmitScriptTarget(options);
         options.newLine = options.newLine || ts.NewLineKind.CarriageReturnLineFeed;
         options.noErrorTruncation = true;
         options.skipDefaultLibCheck = typeof options.skipDefaultLibCheck === "undefined" ? true : options.skipDefaultLibCheck;
@@ -489,7 +488,7 @@ export namespace Compiler {
             assert(sourceFile, "Program has no source file with name '" + fileName + "'");
             // Is this file going to be emitted separately
             let sourceFileName: string;
-            const outFile = options.outFile || options.out;
+            const outFile = options.outFile;
             if (!outFile) {
                 if (options.outDir) {
                     let sourceFilePath = ts.getNormalizedAbsolutePath(sourceFile.fileName, result.vfs.cwd());
@@ -777,12 +776,77 @@ export namespace Compiler {
 
         function generateBaseLine(isSymbolBaseline: boolean, skipBaseline?: boolean): string | null {
             let result = "";
+            const perfLines: string[] = [];
+            const prePerformanceValues = getPerformanceBaselineValues();
             const gen = iterateBaseLine(isSymbolBaseline, skipBaseline);
             for (const value of gen) {
                 const [, content] = value;
                 result += content;
             }
-            return result ? (`//// [${header}] ////\r\n\r\n` + result) : null; // eslint-disable-line no-null/no-null
+            const postPerformanceValues = getPerformanceBaselineValues();
+
+            if (!isSymbolBaseline) {
+                const perfStats: [name: string, reportThreshold: number, beforeValue: number, afterValue: number][] = [];
+                perfStats.push(["Strict subtype cache", 1000, prePerformanceValues.strictSubtype, postPerformanceValues.strictSubtype]);
+                perfStats.push(["Subtype cache", 1000, prePerformanceValues.subtype, postPerformanceValues.subtype]);
+                perfStats.push(["Identity cache", 1000, prePerformanceValues.identity, postPerformanceValues.identity]);
+                perfStats.push(["Assignability cache", 1000, prePerformanceValues.assignability, postPerformanceValues.assignability]);
+                perfStats.push(["Type Count", 1000, prePerformanceValues.typeCount, postPerformanceValues.typeCount]);
+                perfStats.push(["Instantiation count", 1500, prePerformanceValues.instantiation, postPerformanceValues.instantiation]);
+                perfStats.push(["Symbol count", 45000, prePerformanceValues.symbol, postPerformanceValues.symbol]);
+
+                if (perfStats.some(([, threshold, , postValue]) => postValue >= threshold)) {
+                    perfLines.push(`=== Performance Stats ===`);
+                    for (const [name, threshold, preValue, postValue] of perfStats) {
+                        if (postValue >= threshold) {
+                            const preString = valueToString(preValue);
+                            const postString = valueToString(postValue);
+                            if (preString === postString) {
+                                perfLines.push(`${name}: ${preString}`);
+                            }
+                            else {
+                                perfLines.push(`${name}: ${preString} -> ${postString}`);
+                            }
+                        }
+                    }
+                    perfLines.push("");
+                    perfLines.push("");
+                }
+            }
+
+            return result ? (`//// [${header}] ////\r\n\r\n${perfLines.join("\n")}${result}`) : null; // eslint-disable-line no-null/no-null
+
+            function valueToString(value: number) {
+                return roundToHumanLogarithm(value).toLocaleString("en-US");
+            }
+        }
+
+        /**
+         * Rounds to a number like 10, 25, 50, 100, 250, 500, 1000, etc
+         */
+        function roundToHumanLogarithm(n: number) {
+            if (n < 10) return 0;
+            const powerOfTen = Math.floor(Math.log10(n));
+            const basePowerOfTen = Math.pow(10, powerOfTen);
+            const multipliers = [1, 2.5, 5, 10];
+            const closestMultiplier = multipliers.reduce((prev, curr) => {
+                return Math.abs(curr * basePowerOfTen - n) < Math.abs(prev * basePowerOfTen - n) ? curr : prev;
+            });
+            return closestMultiplier * basePowerOfTen;
+        }
+
+        function getPerformanceBaselineValues() {
+            const checker = program.getTypeChecker();
+            const caches = checker.getRelationCacheSizes();
+            return {
+                strictSubtype: caches.strictSubtype,
+                subtype: caches.subtype,
+                identity: caches.identity,
+                assignability: caches.assignable,
+                typeCount: checker.getTypeCount(),
+                instantiation: checker.getInstantiationCount(),
+                symbol: checker.getSymbolCount(),
+            };
         }
 
         function* iterateBaseLine(isSymbolBaseline: boolean, skipBaseline?: boolean): IterableIterator<[string, string]> {
@@ -812,8 +876,12 @@ export namespace Compiler {
                     }
                     lastIndexWritten = result.line;
                     const typeOrSymbolString = isSymbolBaseline ? result.symbol : result.type;
-                    const formattedLine = result.sourceText.replace(/\r?\n/g, "") + " : " + typeOrSymbolString;
+                    const lineText = result.sourceText.replace(/\r?\n/g, "");
+                    const formattedLine = lineText + " : " + typeOrSymbolString;
                     typeLines += ">" + formattedLine + "\r\n";
+                    if (result.underline) {
+                        typeLines += ">" + " ".repeat(lineText.length) + " : " + result.underline + "\r\n";
+                    }
                 }
 
                 lastIndexWritten ??= -1;
@@ -1233,6 +1301,10 @@ export namespace TestCaseParser {
                 else {
                     // First metadata marker in the file
                     currentFileName = testMetaData[2].trim();
+                    if (currentFileContent && ts.skipTrivia(currentFileContent, 0, /*stopAfterLineBreak*/ false, /*stopAtComments*/ false) !== currentFileContent.length) {
+                        throw new Error("Non-comment test content appears before the first '// @Filename' directive");
+                    }
+                    currentFileContent = "";
                 }
             }
             else {
