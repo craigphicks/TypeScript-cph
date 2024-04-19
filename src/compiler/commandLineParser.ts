@@ -1577,6 +1577,13 @@ const commandOptionsWithoutBuild: CommandLineOption[] = [
         type: "string",
         defaultValueDescription: undefined,
     },
+    {
+        name: "returnInstanceofFromNew",
+        type: "boolean",
+        defaultValueDescription: undefined,
+        affectsSemanticDiagnostics: true,
+        affectsBuildInfo: true,
+    }
 ];
 
 /** @internal */

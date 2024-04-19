@@ -6329,8 +6329,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             const objectFlags = getObjectFlags(type);
 
-            if (objectFlags & ObjectFlags.Instanceof){
-                Debug.assert((type as ObjectType).instanceof);
+            if ((type as ObjectType).instanceof){
                 const entity = symbolToNode((type as ObjectType).instanceof!, context, SymbolFlags.Constructor);
                 Debug.assert(entity.kind === SyntaxKind.Identifier, "Expected an identifier for instanceof symbol");
                 const ret = factory.createInstanceQueryNode(entity as Identifier);
@@ -14808,6 +14807,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * @param name a name of property to look up in a given type
      */
     function getPropertyOfType(type: Type, name: __String, skipObjectFunctionPropertyAugment?: boolean, includeTypeOnlyMembers?: boolean): Symbol | undefined {
+        if ((type as ObjecttType).instanceof) {
+            // IWOZERE
+        }
         type = getReducedApparentType(type);
         if (type.flags & TypeFlags.Object) {
             const resolved = resolveStructuredTypeMembers(type as ObjectType);
@@ -16307,7 +16309,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (!constructorVariableSymbol){
             Debug.assert(false, "!constructorSymbol");
         }
-        const typeInstanceofConstructor = createObjectType(ObjectFlags.Instanceof);
+        const typeInstanceofConstructor = createObjectType(ObjectFlags.None);
         typeInstanceofConstructor.instanceof = constructorVariableSymbol;
         return typeInstanceofConstructor;
     }
@@ -16330,6 +16332,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         return links.resolvedType;
     }
+    
 
 
     function getTypeOfGlobalSymbol(symbol: Symbol | undefined, arity: number): ObjectType {
@@ -21232,6 +21235,39 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // TODO: check if targetInstanceof is in the proto chain of sourceInstanceof
         return false;
     }
+    function hasSomeInstanceOf(type : Type): boolean {
+        if ((type as ObjectType).instanceof) return true;
+        if (type.flags & TypeFlags.Intersection) {
+            return (type as IntersectionType).types.some(t=>(t as ObjectType).instanceof);
+        }
+        return false;
+    }
+    function getProtoypeOfInstanceof(obj: ObjectType | IntersectionType): ObjectType | IntersectionType {
+        // TODO: getInstanceType is copied from inner scope of getFlowTypeOfReference, move it up so both can share.
+        function getInstanceType(constructorType: Type) {
+            const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
+            if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
+                return prototypePropertyType;
+            }
+            const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
+            if (constructSignatures.length) {
+                return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature))));
+            }
+            // We use the empty object type to indicate we don't know the type of objects created by
+            // this constructor function.
+            return emptyObjectType;
+        }
+        function getProtoypeOfInstanceofOne(obj: ObjectType): ObjectType {
+            if (obj.instanceof) {
+                const constructorType = getTypeOfSymbol(obj.instanceof);
+                return getInstanceType(constructorType) as ObjectType;
+            }
+            return obj;
+        }
+        if (!(obj as IntersectionType).types) return getProtoypeOfInstanceofOne(obj);
+        Debug.assert(obj.flags & TypeFlags.Intersection);
+        return getIntersectionType(map(((obj as IntersectionType).types as ObjectType[]), getProtoypeOfInstanceofOne)) as IntersectionType;
+    }
 
     /**
      * Checks if 'source' is related to 'target' (e.g.: is a assignable to).
@@ -22940,6 +22976,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
 
                 if (targetFlags & TypeFlags.Object && (target as ObjectType).instanceof){
+                    IDebug.ilog(()=>`structuredTypeRelatedToWork: target has instanceof, tests source(s) for valid instanceof`)
                     if (sourceFlags & TypeFlags.Object && sourceFlags & TypeFlags.Intersection) {
                         if ((source as IntersectionType).types.every(s=> isInstanceofAssignable((s as ObjectType).instanceof, (target as ObjectType).instanceof!)))
                             return Ternary.True;
@@ -22948,6 +22985,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                     else {
                         return isInstanceofAssignable((source as ObjectType).instanceof, (target as ObjectType).instanceof!) ? Ternary.True : Ternary.False;
+                    }
+                } else {
+                    IDebug.ilog(()=>`structuredTypeRelatedToWork: target has no instanceof, downgrade testing for source(s) with instanceof`);
+                    if (sourceFlags & TypeFlags.Object && hasSomeInstanceOf(source as ObjectType)) {
+                        return isRelatedTo(getProtoypeOfInstanceof(source as ObjectType), target, RecursionFlags.Both, /*reportErrors*/ !!errorNode, headMessage);
                     }
                 }
 
@@ -23371,9 +23413,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         })() : ""}, optionalsOnly: ${optionalsOnly}, intersectionState: ${intersectionState}, reportErrors: ${reportErrors}`,loggerLevel);
         const ret = (()=>{
             if ((target as ObjectType).instanceof) {
-                if (!(source as ObjectType).instanceof) return Ternary.False;
-                if (isInstanceofAssignable((source as ObjectType).instanceof!, (target as ObjectType).instanceof!)) return Ternary.True;
-                return Ternary.False;
+                Debug.assert(false, "propertiesRelatedTo: unexpected that target has instanceof");
+                // if (!(source as ObjectType).instanceof) return Ternary.False;
+                // if (isInstanceofAssignable((source as ObjectType).instanceof!, (target as ObjectType).instanceof!)) return Ternary.True;
+                // return Ternary.False;
             }
 
             if (relation === identityRelation) {
@@ -36237,7 +36280,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
 
-        if (node.kind === SyntaxKind.NewExpression && node.expression.kind===SyntaxKind.Identifier){
+        if (compilerOptions.returnInstanceofFromNew && node.kind === SyntaxKind.NewExpression && node.expression.kind===SyntaxKind.Identifier){
             return createInstanceofTypeFromConstructorIdentifier(node.expression as Identifier);
         }
 

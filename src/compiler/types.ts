@@ -6391,8 +6391,6 @@ export const enum ObjectFlags {
     IsNeverIntersection = 1 << 25, // Intersection reduces to never
     /** @internal */
     IsConstrainedTypeVariable = 1 << 26, // T & C, where T's constraint and C are primitives, object, or {}
-    /** @internal */
-    Instanceof = 1 << 27, // type known to be an instance corrresponding to the constructor with symbol (type as ObjectType).instanceof
 }
 
 /** @internal */
@@ -7334,7 +7332,7 @@ export interface CompilerOptions {
     esModuleInterop?: boolean;
     /** @internal */ showConfig?: boolean;
     useDefineForClassFields?: boolean;
-
+    returnInstanceofFromNew?: boolean;
     [option: string]: CompilerOptionsValue | TsConfigSourceFile | undefined;
 }
 

@@ -1,0 +1,34 @@
+instanceQuery-0001.ts(18,5): error TS2322: Type 'ArrayBuffer' is not assignable to type 'instanceof ArrayBuffer'.
+
+
+==== instanceQuery-0001.ts (1 errors) ====
+    namespace instof000 {}
+    
+    namespace instof0002 {
+        let a: instanceof ArrayBuffer | undefined;
+        let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+        a;b;
+        a = b;
+    }
+    namespace instof0003 {
+        let a: ArrayBuffer | undefined;
+        let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+        a;b;
+        a = b;
+    }
+    namespace instof0003 {
+        declare let a: ArrayBuffer;
+        let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+        b = a ; // should Error
+        ~
+!!! error TS2322: Type 'ArrayBuffer' is not assignable to type 'instanceof ArrayBuffer'.
+    }
+    namespace instof005 {
+        declare let a: ArrayBuffer;
+        let b: ArrayBuffer = new ArrayBuffer(0);
+        b = a ; // should not Error
+    }
+    
+    
+    
+    

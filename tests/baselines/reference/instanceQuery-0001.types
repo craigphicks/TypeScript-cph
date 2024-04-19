@@ -1,0 +1,125 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0001.ts] ////
+
+=== instanceQuery-0001.ts ===
+namespace instof000 {}
+
+namespace instof0002 {
+>instof0002 : typeof instof0002
+>           : ^^^^^^^^^^^^^^^^^
+
+    let a: instanceof ArrayBuffer | undefined;
+>a : instanceof ArrayBuffer | undefined
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+>b : instanceof ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) : instanceof ArrayBuffer
+>                   : ^^^^^^^^^^^^^^^^^^^^^^
+>ArrayBuffer : ArrayBufferConstructor
+>            : ^^^^^^^^^^^^^^^^^^^^^^
+>0 : 0
+>  : ^
+
+    a;b;
+>a : instanceof ArrayBuffer | undefined
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>b : instanceof ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^
+
+    a = b;
+>a = b : instanceof ArrayBuffer
+>      : ^^^^^^^^^^^^^^^^^^^^^^
+>a : instanceof ArrayBuffer | undefined
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>b : instanceof ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^
+}
+namespace instof0003 {
+>instof0003 : typeof instof0003
+>           : ^^^^^^^^^^^^^^^^^
+
+    let a: ArrayBuffer | undefined;
+>a : ArrayBuffer | undefined
+>  : ^^^^^^^^^^^^^^^^^^^^^^^
+
+    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+>b : instanceof ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) : instanceof ArrayBuffer
+>                   : ^^^^^^^^^^^^^^^^^^^^^^
+>ArrayBuffer : ArrayBufferConstructor
+>            : ^^^^^^^^^^^^^^^^^^^^^^
+>0 : 0
+>  : ^
+
+    a;b;
+>a : ArrayBuffer | undefined
+>  : ^^^^^^^^^^^^^^^^^^^^^^^
+>b : instanceof ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^
+
+    a = b;
+>a = b : instanceof ArrayBuffer
+>      : ^^^^^^^^^^^^^^^^^^^^^^
+>a : ArrayBuffer | undefined
+>  : ^^^^^^^^^^^^^^^^^^^^^^^
+>b : instanceof ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^
+}
+namespace instof0003 {
+>instof0003 : typeof instof0003
+>           : ^^^^^^^^^^^^^^^^^
+
+    declare let a: ArrayBuffer;
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
+
+    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+>b : instanceof ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) : instanceof ArrayBuffer
+>                   : ^^^^^^^^^^^^^^^^^^^^^^
+>ArrayBuffer : ArrayBufferConstructor
+>            : ^^^^^^^^^^^^^^^^^^^^^^
+>0 : 0
+>  : ^
+
+    b = a ; // should Error
+>b = a : ArrayBuffer
+>      : ^^^^^^^^^^^
+>b : instanceof ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
+}
+namespace instof005 {
+>instof005 : typeof instof005
+>          : ^^^^^^^^^^^^^^^^
+
+    declare let a: ArrayBuffer;
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
+
+    let b: ArrayBuffer = new ArrayBuffer(0);
+>b : ArrayBuffer
+>  : ^^^^^^^^^^^
+>new ArrayBuffer(0) : instanceof ArrayBuffer
+>                   : ^^^^^^^^^^^^^^^^^^^^^^
+>ArrayBuffer : ArrayBufferConstructor
+>            : ^^^^^^^^^^^^^^^^^^^^^^
+>0 : 0
+>  : ^
+
+    b = a ; // should not Error
+>b = a : ArrayBuffer
+>      : ^^^^^^^^^^^
+>b : ArrayBuffer
+>  : ^^^^^^^^^^^
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
+}
+
+
+
+
