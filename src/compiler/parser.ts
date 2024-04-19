@@ -3941,7 +3941,7 @@ namespace Parser {
         const entityName = parseEntityName(/*allowReservedWords*/ true);
         // Make sure we perform ASI to prevent parsing the next line's type arguments as part of an instantiation expression.
         const typeArguments = !scanner.hasPrecedingLineBreak() ? tryParseTypeArguments() : undefined;
-        // A constructor variable should not have type arguments, so we should report an error if they are present.
+        // TODO: test code for this case 
         return finishNode(factory.createInstanceQueryNode(entityName, typeArguments), pos);
     }
 

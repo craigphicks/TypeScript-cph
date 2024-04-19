@@ -1,5 +1,5 @@
 // @strict: true
-// @returnInstanceofFromNew: true
+// @instanceQueryEnableFromNew: true
 
 namespace instof000 {}
 

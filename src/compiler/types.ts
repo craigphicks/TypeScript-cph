@@ -7332,7 +7332,7 @@ export interface CompilerOptions {
     esModuleInterop?: boolean;
     /** @internal */ showConfig?: boolean;
     useDefineForClassFields?: boolean;
-    returnInstanceofFromNew?: boolean;
+    instanceQueryEnableFromNew?: boolean;
     [option: string]: CompilerOptionsValue | TsConfigSourceFile | undefined;
 }
 

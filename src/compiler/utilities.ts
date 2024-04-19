@@ -3468,7 +3468,6 @@ export function isPartOfInstanceQuery(node: Node) {
     return node.kind === SyntaxKind.InstanceQuery;
 }
 
-
 /** @internal */
 export function isNamespaceReexportDeclaration(node: Node): boolean {
     return isNamespaceExport(node) && !!node.parent.moduleSpecifier;

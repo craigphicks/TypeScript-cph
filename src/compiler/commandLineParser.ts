@@ -1578,7 +1578,7 @@ const commandOptionsWithoutBuild: CommandLineOption[] = [
         defaultValueDescription: undefined,
     },
     {
-        name: "returnInstanceofFromNew",
+        name: "instanceQueryEnableFromNew",
         type: "boolean",
         defaultValueDescription: undefined,
         affectsSemanticDiagnostics: true,

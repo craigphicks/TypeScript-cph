@@ -2353,7 +2353,7 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
     }
 
     function emitInstanceQuery(node: InstanceQueryNode) {
-        writeKeyword("instanceof");
+        writeKeyword("instanceof"); //-- TODO IWOZERE -- this line commented for test purposes temporarily
         writeSpace();
         emit(node.exprName);
         emitTypeArguments(node, node.typeArguments);
