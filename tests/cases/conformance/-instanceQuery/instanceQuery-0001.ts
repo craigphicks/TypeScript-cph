@@ -26,5 +26,12 @@ namespace instof005 {
     b = a ; // should not Error
 }
 
+namespace instof006 {
 
+    declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+    safeDataView(new ArrayBuffer(0)); // no error expected
 
+    declare let a: ArrayBuffer;
+    safeDataView(a); // error expected
+
+}

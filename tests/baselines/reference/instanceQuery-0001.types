@@ -120,6 +120,38 @@ namespace instof005 {
 >  : ^^^^^^^^^^^
 }
 
+namespace instof006 {
+>instof006 : typeof instof006
+>          : ^^^^^^^^^^^^^^^^
 
+    declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+>safeDataView : (buffer: instanceof ArrayBuffer) => DataView
+>             : ^      ^^                      ^^^^^        
+>buffer : instanceof ArrayBuffer
+>       : ^^^^^^^^^^^^^^^^^^^^^^
 
+    safeDataView(new ArrayBuffer(0)); // no error expected
+>safeDataView(new ArrayBuffer(0)) : DataView
+>                                 : ^^^^^^^^
+>safeDataView : (buffer: instanceof ArrayBuffer) => DataView
+>             : ^      ^^                      ^^^^^^^^^^^^^
+>new ArrayBuffer(0) : instanceof ArrayBuffer
+>                   : ^^^^^^^^^^^^^^^^^^^^^^
+>ArrayBuffer : ArrayBufferConstructor
+>            : ^^^^^^^^^^^^^^^^^^^^^^
+>0 : 0
+>  : ^
 
+    declare let a: ArrayBuffer;
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
+
+    safeDataView(a); // error expected
+>safeDataView(a) : DataView
+>                : ^^^^^^^^
+>safeDataView : (buffer: instanceof ArrayBuffer) => DataView
+>             : ^      ^^                      ^^^^^^^^^^^^^
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
+
+}

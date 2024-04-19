@@ -26,9 +26,15 @@ namespace instof005 {
     b = a ; // should not Error
 }
 
+namespace instof006 {
 
+    declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+    safeDataView(new ArrayBuffer(0)); // no error expected
 
+    declare let a: ArrayBuffer;
+    safeDataView(a); // error expected
 
+}
 
 //// [instanceQuery-0001.js]
 "use strict";
@@ -57,3 +63,8 @@ var instof005;
     var b = new ArrayBuffer(0);
     b = a; // should not Error
 })(instof005 || (instof005 = {}));
+var instof006;
+(function (instof006) {
+    safeDataView(new ArrayBuffer(0)); // no error expected
+    safeDataView(a); // error expected
+})(instof006 || (instof006 = {}));

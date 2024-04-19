@@ -73,6 +73,24 @@ namespace instof005 {
 >a : Symbol(a, Decl(instanceQuery-0001.ts, 20, 15))
 }
 
+namespace instof006 {
+>instof006 : Symbol(instof006, Decl(instanceQuery-0001.ts, 23, 1))
 
+    declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 25, 21))
+>buffer : Symbol(buffer, Decl(instanceQuery-0001.ts, 27, 34))
+>DataView : Symbol(DataView, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
 
+    safeDataView(new ArrayBuffer(0)); // no error expected
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 25, 21))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
 
+    declare let a: ArrayBuffer;
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 30, 15))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+    safeDataView(a); // error expected
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 25, 21))
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 30, 15))
+
+}

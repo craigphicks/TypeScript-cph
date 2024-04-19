@@ -1,7 +1,8 @@
 instanceQuery-0001.ts(18,5): error TS2322: Type 'ArrayBuffer' is not assignable to type 'instanceof ArrayBuffer'.
+instanceQuery-0001.ts(32,18): error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type 'instanceof ArrayBuffer'.
 
 
-==== instanceQuery-0001.ts (1 errors) ====
+==== instanceQuery-0001.ts (2 errors) ====
     namespace instof000 {}
     
     namespace instof0002 {
@@ -29,6 +30,14 @@ instanceQuery-0001.ts(18,5): error TS2322: Type 'ArrayBuffer' is not assignable 
         b = a ; // should not Error
     }
     
+    namespace instof006 {
     
+        declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+        safeDataView(new ArrayBuffer(0)); // no error expected
     
+        declare let a: ArrayBuffer;
+        safeDataView(a); // error expected
+                     ~
+!!! error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type 'instanceof ArrayBuffer'.
     
+    }

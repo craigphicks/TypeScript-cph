@@ -14807,8 +14807,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * @param name a name of property to look up in a given type
      */
     function getPropertyOfType(type: Type, name: __String, skipObjectFunctionPropertyAugment?: boolean, includeTypeOnlyMembers?: boolean): Symbol | undefined {
-        if ((type as ObjecttType).instanceof) {
-            // IWOZERE
+        if ((type as ObjectType).instanceof) {
+            return getPropertyOfType(instanceQuery().getProtoypeOfInstanceof(type as ObjectType),name,skipObjectFunctionPropertyAugment,includeTypeOnlyMembers);
         }
         type = getReducedApparentType(type);
         if (type.flags & TypeFlags.Object) {
@@ -16291,6 +16291,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return map(node.typeArguments, getTypeFromTypeNode);
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////
     function getTypeFromTypeQueryNode(node: TypeQueryNode): Type {
         const links = getNodeLinks(node);
         if (!links.resolvedType) {
@@ -16332,7 +16333,61 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         return links.resolvedType;
     }
-    
+
+    function isInstanceofAssignable(sourceInstanceof: Symbol | undefined, targetInstanceof: Symbol): boolean {
+        if (!sourceInstanceof) return false;
+        if (sourceInstanceof === targetInstanceof) {
+            return true;
+        }
+        // TODO: check if targetInstanceof is in the proto chain of sourceInstanceof
+        return false;
+    }
+    function hasSomeInstanceOf(type : Type): boolean {
+        if ((type as ObjectType).instanceof) return true;
+        if (type.flags & TypeFlags.Intersection) {
+            return (type as IntersectionType).types.some(t=>(t as ObjectType).instanceof);
+        }
+        return false;
+    }
+    function getProtoypeOfInstanceof(obj: ObjectType | IntersectionType): ObjectType | IntersectionType {
+        // TODO: getInstanceType is copied from inner scope of getFlowTypeOfReference, move it up so both can share.
+        function getInstanceType(constructorType: Type) {
+            const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
+            if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
+                return prototypePropertyType;
+            }
+            const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
+            if (constructSignatures.length) {
+                return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature))));
+            }
+            // We use the empty object type to indicate we don't know the type of objects created by
+            // this constructor function.
+            return emptyObjectType;
+        }
+        function getProtoypeOfInstanceofOne(obj: ObjectType): ObjectType {
+            if (obj.instanceof) {
+                const constructorType = getTypeOfSymbol(obj.instanceof);
+                return getInstanceType(constructorType) as ObjectType;
+            }
+            return obj;
+        }
+        if (!(obj as IntersectionType).types) return getProtoypeOfInstanceofOne(obj);
+        Debug.assert(obj.flags & TypeFlags.Intersection);
+        return getIntersectionType(map(((obj as IntersectionType).types as ObjectType[]), getProtoypeOfInstanceofOne)) as IntersectionType;
+    }
+    function instanceQuery() {
+        return {
+            getTypeFromTypeQueryNode,
+            createInstanceofTypeFromConstructorIdentifier,
+            getTypeFromInstanceQueryNode,
+            isInstanceofAssignable,
+            hasSomeInstanceOf,
+            getProtoypeOfInstanceof,
+        };
+    }
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+
 
 
     function getTypeOfGlobalSymbol(symbol: Symbol | undefined, arity: number): ObjectType {
@@ -21227,47 +21282,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return elements !== normalizedElements ? createNormalizedTupleType(type.target, normalizedElements) : type;
     }
 
-    function isInstanceofAssignable(sourceInstanceof: Symbol | undefined, targetInstanceof: Symbol): boolean {
-        if (!sourceInstanceof) return false;
-        if (sourceInstanceof === targetInstanceof) {
-            return true;
-        }
-        // TODO: check if targetInstanceof is in the proto chain of sourceInstanceof
-        return false;
-    }
-    function hasSomeInstanceOf(type : Type): boolean {
-        if ((type as ObjectType).instanceof) return true;
-        if (type.flags & TypeFlags.Intersection) {
-            return (type as IntersectionType).types.some(t=>(t as ObjectType).instanceof);
-        }
-        return false;
-    }
-    function getProtoypeOfInstanceof(obj: ObjectType | IntersectionType): ObjectType | IntersectionType {
-        // TODO: getInstanceType is copied from inner scope of getFlowTypeOfReference, move it up so both can share.
-        function getInstanceType(constructorType: Type) {
-            const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
-            if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
-                return prototypePropertyType;
-            }
-            const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
-            if (constructSignatures.length) {
-                return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature))));
-            }
-            // We use the empty object type to indicate we don't know the type of objects created by
-            // this constructor function.
-            return emptyObjectType;
-        }
-        function getProtoypeOfInstanceofOne(obj: ObjectType): ObjectType {
-            if (obj.instanceof) {
-                const constructorType = getTypeOfSymbol(obj.instanceof);
-                return getInstanceType(constructorType) as ObjectType;
-            }
-            return obj;
-        }
-        if (!(obj as IntersectionType).types) return getProtoypeOfInstanceofOne(obj);
-        Debug.assert(obj.flags & TypeFlags.Intersection);
-        return getIntersectionType(map(((obj as IntersectionType).types as ObjectType[]), getProtoypeOfInstanceofOne)) as IntersectionType;
-    }
 
     /**
      * Checks if 'source' is related to 'target' (e.g.: is a assignable to).
