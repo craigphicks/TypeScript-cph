@@ -16302,6 +16302,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return links.resolvedType;
     }
 
+    function createInstanceofTypeFromConstructorIdentifier(node: Identifier): ObjectType {
+        const constructorVariableSymbol = getResolvedSymbol(node);
+        if (!constructorVariableSymbol){
+            Debug.assert(false, "!constructorSymbol");
+        }
+        const typeInstanceofConstructor = createObjectType(ObjectFlags.Instanceof);
+        typeInstanceofConstructor.instanceof = constructorVariableSymbol;
+        return typeInstanceofConstructor;
+    }
+
+
     function getTypeFromInstanceQueryNode(node: InstanceQueryNode): Type {
         const links = getNodeLinks(node);
         if (!links.resolvedType) {
@@ -16310,12 +16321,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 if (!isConstructorType(type)){
                     Debug.assert(false, "!isConstructorType(type)");
                 }
-                const constructorVariableSymbol = getResolvedSymbol(node.exprName);
-                if (!constructorVariableSymbol){
-                    Debug.assert(false, "!constructorSymbol");
-                }
-                const typeInstanceofConstructor = createObjectType(ObjectFlags.Instanceof | ObjectFlags.Anonymous);
-                typeInstanceofConstructor.instanceof = constructorVariableSymbol;
+                const typeInstanceofConstructor = createInstanceofTypeFromConstructorIdentifier(node .exprName as Identifier);
                 links.resolvedType = typeInstanceofConstructor;
             }
             else {
@@ -21218,6 +21224,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return elements !== normalizedElements ? createNormalizedTupleType(type.target, normalizedElements) : type;
     }
 
+    function isInstanceofAssignable(sourceInstanceof: Symbol | undefined, targetInstanceof: Symbol): boolean {
+        if (!sourceInstanceof) return false;
+        if (sourceInstanceof === targetInstanceof) {
+            return true;
+        }
+        // TODO: check if targetInstanceof is in the proto chain of sourceInstanceof
+        return false;
+    }
+
     /**
      * Checks if 'source' is related to 'target' (e.g.: is a assignable to).
      * @param source The left-hand-side of the relation.
@@ -21728,6 +21743,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             ) return Ternary.True;
 
             if (source.flags & TypeFlags.StructuredOrInstantiable || target.flags & TypeFlags.StructuredOrInstantiable) {
+
                 const isPerformingExcessPropertyChecks = !(intersectionState & IntersectionState.Target) && (isObjectLiteralType(source) && getObjectFlags(source) & ObjectFlags.FreshLiteral);
                 if (isPerformingExcessPropertyChecks) {
                     if (hasExcessProperties(source as FreshObjectLiteralType, target, reportErrors)) {
@@ -22922,6 +22938,19 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 else if (isGenericMappedType(source)) {
                     return Ternary.False;
                 }
+
+                if (targetFlags & TypeFlags.Object && (target as ObjectType).instanceof){
+                    if (sourceFlags & TypeFlags.Object && sourceFlags & TypeFlags.Intersection) {
+                        if ((source as IntersectionType).types.every(s=> isInstanceofAssignable((s as ObjectType).instanceof, (target as ObjectType).instanceof!)))
+                            return Ternary.True;
+                        else
+                            return Ternary.False;
+                    }
+                    else {
+                        return isInstanceofAssignable((source as ObjectType).instanceof, (target as ObjectType).instanceof!) ? Ternary.True : Ternary.False;
+                    }
+                }
+
                 if (
                     getObjectFlags(source) & ObjectFlags.Reference && getObjectFlags(target) & ObjectFlags.Reference && (source as TypeReference).target === (target as TypeReference).target &&
                     !isTupleType(source) && !(isMarkerType(source) || isMarkerType(target))
@@ -22972,7 +23001,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 // In a check of the form X = A & B, we will have previously checked if A relates to X or B relates
                 // to X. Failing both of those we want to check if the aggregation of A and B's members structurally
                 // relates to X. Thus, we include intersection types on the source side here.
-                if (sourceFlags & (TypeFlags.Object | TypeFlags.Intersection) && targetFlags & TypeFlags.Object) {
+                if (sourceFlags & (TypeFlags.Object | TypeFlags.Intersection) && targetFlags & TypeFlags.Object /*&& !(target as ObjectType).instanceof */) {
                     // Report structural errors only if we haven't reported any errors yet
                     const reportStructuralErrors = reportErrors && errorInfo === saveErrorInfo.errorInfo && !sourceIsPrimitive;
                     result = propertiesRelatedTo(source, target, reportStructuralErrors, /*excludedProperties*/ undefined, /*optionalsOnly*/ false, intersectionState);
@@ -23341,6 +23370,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return a.join(",");
         })() : ""}, optionalsOnly: ${optionalsOnly}, intersectionState: ${intersectionState}, reportErrors: ${reportErrors}`,loggerLevel);
         const ret = (()=>{
+            if ((target as ObjectType).instanceof) {
+                if (!(source as ObjectType).instanceof) return Ternary.False;
+                if (isInstanceofAssignable((source as ObjectType).instanceof!, (target as ObjectType).instanceof!)) return Ternary.True;
+                return Ternary.False;
+            }
+
             if (relation === identityRelation) {
                 return propertiesIdenticalTo(source, target, excludedProperties);
             }
@@ -23892,6 +23927,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      */
     function isWeakType(type: Type): boolean {
         if (type.flags & TypeFlags.Object) {
+            if ((type as ObjectType).instanceof) return false;
             const resolved = resolveStructuredTypeMembers(type as ObjectType);
             return resolved.callSignatures.length === 0 && resolved.constructSignatures.length === 0 && resolved.indexInfos.length === 0 &&
                 resolved.properties.length > 0 && every(resolved.properties, p => !!(p.flags & SymbolFlags.Optional));
@@ -36165,6 +36201,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
                 return anyType;
             }
+
         }
 
         // In JavaScript files, calls to any identifier 'require' are treated as external module imports
@@ -36200,14 +36237,19 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
 
+        if (node.kind === SyntaxKind.NewExpression && node.expression.kind===SyntaxKind.Identifier){
+            return createInstanceofTypeFromConstructorIdentifier(node.expression as Identifier);
+        }
+
+
         return returnType;
     })();
-    if (IDebug.isActive(loggerLevel)){
-        const callsigs = getSignaturesOfType(ret, SignatureKind.Call);
-        callsigs.forEach((sig,isig)=>{
-            IDebug.ilog(()=>`checkCallExpression[ret.callSignatures[${isig}]]: ${IDebug.dbgs.dbgSignatureToString(sig)}`, loggerLevel);
-        });
-    }
+    // if (IDebug.isActive(loggerLevel)){
+    //     const callsigs = getSignaturesOfType(ret, SignatureKind.Call);
+    //     callsigs.forEach((sig,isig)=>{
+    //         IDebug.ilog(()=>`checkCallExpression[ret.callSignatures[${isig}]]: ${IDebug.dbgs.dbgSignatureToString(sig)}`, loggerLevel);
+    //     });
+    // }
     IDebug.ilogGroupEnd(()=>`checkCallExpression[out]: returns :${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel);
     return ret;
     }
