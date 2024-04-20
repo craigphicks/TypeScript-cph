@@ -1,0 +1,20 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0002.ts] ////
+
+=== instanceQuery-0002.ts ===
+// exported class symbol also works using instanceof (via getExportSymbolOfSymbol in createInstanceofTypeFromConstructorIdentifier)
+
+export class A {
+>A : Symbol(A, Decl(instanceQuery-0002.ts, 0, 0))
+
+    b = 12;
+>b : Symbol(A.b, Decl(instanceQuery-0002.ts, 2, 16))
+}
+function main() {
+>main : Symbol(main, Decl(instanceQuery-0002.ts, 4, 1))
+
+    (0 as any as instanceof A).b;
+>(0 as any as instanceof A).b : Symbol(A.b, Decl(instanceQuery-0002.ts, 2, 16))
+>b : Symbol(A.b, Decl(instanceQuery-0002.ts, 2, 16))
+}
+
+

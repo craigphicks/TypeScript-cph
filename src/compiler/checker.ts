@@ -16328,21 +16328,49 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
-    function createInstanceofTypeFromConstructorIdentifier(node: Identifier): ObjectType {
+    function createInstanceofTypeFromConstructorIdentifier(node: Identifier, nodeHasTypeArguments: boolean): ObjectType {
         // copied from TypeChecker
         function getExportSymbolOfSymbol(symbol: Symbol) {
             return getMergedSymbol(symbol.exportSymbol || symbol);
         }
 
-        const constructorVariableSymbol = getExportSymbolOfSymbol(getResolvedSymbol(node));
+        const constructorVariableSymbol = getExportSymbolOfSymbol(getResolvedSymbol(node))
         if (!constructorVariableSymbol){
             Debug.assert(false, "!constructorSymbol");
         }
+        /**
+         * If the constructor type has type paramaeters then returh the prototype menber of the constructor type
+         */
+        const constructorType = getTypeOfSymbol(constructorVariableSymbol);
+        if (nodeHasTypeArguments) {
+            return getInstanceType(constructorType);
+        }
+        if ((constructorVariableSymbol.declarations?.[0] as ClassLikeDeclaration | undefined)?.typeParameters) {
+            return getInstanceType(constructorType);
+        }
+        if (constructorType.flags & TypeFlags.TypeParameter) { // not reliable
+            return getInstanceType(constructorType);
+        }
+
         const typeInstanceofConstructor = createObjectType(ObjectFlags.None);
         typeInstanceofConstructor.instanceof = constructorVariableSymbol;
         return typeInstanceofConstructor;
     }
 
+    // TODO: getInstanceType is copied from inner scope of getFlowTypeOfReference, move it up so both can share (assuming they dont diverge)
+    function getInstanceType(constructorType: Type): ObjectType {
+        const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
+        if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
+            return prototypePropertyType as StructuredType;
+        }
+        const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
+        if (constructSignatures.length) {
+            return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType;
+        }
+        // We use the empty object type to indicate we don't know the type of objects created by
+        // this constructor function.
+        return emptyObjectType;
+    }
 
     function getTypeFromInstanceQueryNode(node: InstanceQueryNode): Type {
         const links = getNodeLinks(node);
@@ -16352,7 +16380,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 if (!isConstructorType(type)){
                     Debug.assert(false, "!isConstructorType(type)");
                 }
-                const typeInstanceofConstructor = createInstanceofTypeFromConstructorIdentifier(node .exprName as Identifier);
+                const typeInstanceofConstructor = createInstanceofTypeFromConstructorIdentifier(node .exprName as Identifier, !!node.typeArguments);
                 links.resolvedType = typeInstanceofConstructor;
             }
             else {
@@ -16378,20 +16406,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return false;
     }
     function getProtoypeOfInstanceof(obj: StructuredType): StructuredType {
-        // TODO: getInstanceType is copied from inner scope of getFlowTypeOfReference, move it up so both can share. (if appropriate to do so)
-        function getInstanceType(constructorType: Type): ObjectType {
-            const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
-            if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
-                return prototypePropertyType as StructuredType;
-            }
-            const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
-            if (constructSignatures.length) {
-                return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType;
-            }
-            // We use the empty object type to indicate we don't know the type of objects created by
-            // this constructor function.
-            return emptyObjectType;
-        }
         function getProtoypeOfInstanceofOne(obj: StructuredType): StructuredType {
             if ((obj as ObjectType).instanceof) {
                 const constructorType = getTypeOfSymbol((obj as ObjectType).instanceof!);
@@ -16405,7 +16419,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
     function instanceQuery() {
         return {
-            getTypeFromTypeQueryNode,
             createInstanceofTypeFromConstructorIdentifier,
             getTypeFromInstanceQueryNode,
             isInstanceofAssignable,
@@ -36314,8 +36327,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return getIntersectionType([returnType, jsAssignmentType]);
             }
         }
-        if (/*compilerOptions.*/instanceQueryEnableFromNew && node.kind === SyntaxKind.NewExpression && node.expression.kind===SyntaxKind.Identifier){
-            return createInstanceofTypeFromConstructorIdentifier(node.expression as Identifier);
+        if (/*compilerOptions.*/instanceQueryEnableFromNew && node.kind === SyntaxKind.NewExpression && node.expression.kind===SyntaxKind.Identifier && !node.typeArguments){
+            // passing !!nodeType arguments is reduntand here
+            return createInstanceofTypeFromConstructorIdentifier(node.expression as Identifier, !!node.typeArguments);
         }
 
 

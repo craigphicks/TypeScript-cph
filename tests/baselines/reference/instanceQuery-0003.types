@@ -1,0 +1,38 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0003.ts] ////
+
+=== instanceQuery-0003.ts ===
+namespace insto0003 {
+>insto0003 : typeof insto0003
+>          : ^^^^^^^^^^^^^^^^
+
+    class C<T> {
+>C : C<T>
+>  : ^^^^
+
+      foo(x: T) { }
+>foo : (x: T) => void
+>    : ^ ^^ ^^^^^^^^^
+>x : T
+>  : ^
+    }
+    var x = new C<any>(); // Quick Info for x is C<any>
+>x : C<any>
+>  : ^^^^^^
+>new C<any>() : C<any>
+>             : ^^^^^^
+>C : typeof C
+>  : ^^^^^^^^
+
+    var y = C.prototype; // Originally C<{}>, but with the new instanceQueryEnableFromNew flag, it is C<any> (no problem)
+>y : C<any>
+>  : ^^^^^^
+>C.prototype : C<any>
+>            : ^^^^^^
+>C : typeof C
+>  : ^^^^^^^^
+>prototype : C<any>
+>          : ^^^^^^
+}
+
+
+
