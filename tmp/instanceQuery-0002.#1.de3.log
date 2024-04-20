@@ -1,0 +1,34 @@
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n166] 12, [157,160], NumericLiteral, forceTuple:undefined
+  checkExpression: uninstantiatedType: [t90] 12
+  checkExpression: type: [t90] 12
+checkExpression[out]: return: [t90] 12
+checkExpressionCached[in]: node:[n166] 12, [157,160], NumericLiteral, checkMode:CheckMode: Normal)
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n166] 12, [157,160], NumericLiteral, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t90] 12
+    checkExpression: type: [t90] 12
+  checkExpression[out]: return: [t90] 12
+checkExpressionCached[out]: [t90] 12
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n167] (0 as any as instanceof A).b, [181,214], PropertyAccessExpression, forceTuple:undefined
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n168] (0 as any as instanceof A), [181,212], ParenthesizedExpression, forceTuple:undefined
+    checkExpression[in]: checkMode:CheckMode: Normal, node:[n169] 0 as any as instanceof A, [187,211], AsExpression, forceTuple:undefined
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n170] 0 as any, [187,195], AsExpression, forceTuple:undefined
+        checkExpression[in]: checkMode:CheckMode: Normal, node:[n171] 0, [187,188], NumericLiteral, forceTuple:undefined
+          checkExpression: uninstantiatedType: [t91] 0
+          checkExpression: type: [t91] 0
+        checkExpression[out]: return: [t91] 0
+        checkExpression: uninstantiatedType: [t1] any
+        checkExpression: type: [t1] any
+      checkExpression[out]: return: [t1] any
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n173] A, [209,211], Identifier, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t88] typeof A
+        checkExpression: type: [t88] typeof A
+      checkExpression[out]: return: [t88] typeof A
+      checkExpression: uninstantiatedType: [t92] instanceof A
+      checkExpression: type: [t92] instanceof A
+    checkExpression[out]: return: [t92] instanceof A
+    checkExpression: uninstantiatedType: [t92] instanceof A
+    checkExpression: type: [t92] instanceof A
+  checkExpression[out]: return: [t92] instanceof A
+  checkExpression: uninstantiatedType: [t15] number
+  checkExpression: type: [t15] number
+checkExpression[out]: return: [t15] number

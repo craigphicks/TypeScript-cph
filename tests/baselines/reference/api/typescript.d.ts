@@ -6987,7 +6987,7 @@ declare namespace ts {
         verbatimModuleSyntax?: boolean;
         esModuleInterop?: boolean;
         useDefineForClassFields?: boolean;
-        returnInstanceofFromNew?: boolean;
+        instanceQueryEnableFromNew?: boolean;
         [option: string]: CompilerOptionsValue | TsConfigSourceFile | undefined;
     }
     interface WatchOptions {

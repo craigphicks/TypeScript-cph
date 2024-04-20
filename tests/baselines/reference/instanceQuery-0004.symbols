@@ -1,0 +1,85 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0004.ts] ////
+
+=== file1.ts ===
+export class A {
+>A : Symbol(A, Decl(file1.ts, 0, 0))
+
+    a = 12;
+>a : Symbol(A.a, Decl(file1.ts, 0, 16))
+}
+export class B<T> {
+>B : Symbol(B, Decl(file1.ts, 2, 1))
+>T : Symbol(T, Decl(file1.ts, 3, 15))
+
+    b: T;
+>b : Symbol(B.b, Decl(file1.ts, 3, 19))
+>T : Symbol(T, Decl(file1.ts, 3, 15))
+
+    constructor(b: T) {
+>b : Symbol(b, Decl(file1.ts, 5, 16))
+>T : Symbol(T, Decl(file1.ts, 3, 15))
+
+        this.b = b;
+>this.b : Symbol(B.b, Decl(file1.ts, 3, 19))
+>this : Symbol(B, Decl(file1.ts, 2, 1))
+>b : Symbol(B.b, Decl(file1.ts, 3, 19))
+>b : Symbol(b, Decl(file1.ts, 5, 16))
+    }
+}
+
+const a1 = new A();
+>a1 : Symbol(a1, Decl(file1.ts, 10, 5))
+>A : Symbol(A, Decl(file1.ts, 0, 0))
+
+const b1 = new B(12);
+>b1 : Symbol(b1, Decl(file1.ts, 12, 5))
+>B : Symbol(B, Decl(file1.ts, 2, 1))
+
+=== file2.ts ===
+import { A, B } from "./file1";
+>A : Symbol(A, Decl(file2.ts, 0, 8))
+>B : Symbol(B, Decl(file2.ts, 0, 11))
+
+function main() {
+>main : Symbol(main, Decl(file2.ts, 0, 31))
+
+    const a1 = new A();
+>a1 : Symbol(a1, Decl(file2.ts, 3, 9))
+>A : Symbol(A, Decl(file2.ts, 0, 8))
+
+    const B10 = B;
+>B10 : Symbol(B10, Decl(file2.ts, 5, 9))
+>B : Symbol(B, Decl(file2.ts, 0, 11))
+
+    const B11 = B<any>;
+>B11 : Symbol(B11, Decl(file2.ts, 6, 9))
+>B : Symbol(B, Decl(file2.ts, 0, 11))
+
+    const B20 = B<number>;
+>B20 : Symbol(B20, Decl(file2.ts, 7, 9))
+>B : Symbol(B, Decl(file2.ts, 0, 11))
+
+    const b1 = new B(12);
+>b1 : Symbol(b1, Decl(file2.ts, 9, 9))
+>B : Symbol(B, Decl(file2.ts, 0, 11))
+
+    const b2 = new B<number>(12);
+>b2 : Symbol(b2, Decl(file2.ts, 10, 9))
+>B : Symbol(B, Decl(file2.ts, 0, 11))
+
+    const b10 = new B10(12);
+>b10 : Symbol(b10, Decl(file2.ts, 11, 9))
+>B10 : Symbol(B10, Decl(file2.ts, 5, 9))
+
+    const b11 = new B11(12);
+>b11 : Symbol(b11, Decl(file2.ts, 12, 9))
+>B11 : Symbol(B11, Decl(file2.ts, 6, 9))
+
+    const b20 = new B20(12);
+>b20 : Symbol(b20, Decl(file2.ts, 13, 9))
+>B20 : Symbol(B20, Decl(file2.ts, 7, 9))
+
+
+}
+
+

@@ -1,0 +1,152 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0004.ts] ////
+
+=== file1.ts ===
+export class A {
+>A : A
+>  : ^
+
+    a = 12;
+>a : number
+>  : ^^^^^^
+>12 : 12
+>   : ^^
+}
+export class B<T> {
+>B : B<T>
+>  : ^^^^
+
+    b: T;
+>b : T
+>  : ^
+
+    constructor(b: T) {
+>b : T
+>  : ^
+
+        this.b = b;
+>this.b = b : T
+>           : ^
+>this.b : T
+>       : ^
+>this : this
+>     : ^^^^
+>b : T
+>  : ^
+>b : T
+>  : ^
+    }
+}
+
+const a1 = new A();
+>a1 : instanceof A
+>   : ^^^^^^^^^^^^
+>new A() : instanceof A
+>        : ^^^^^^^^^^^^
+>A : typeof A
+>  : ^^^^^^^^
+
+const b1 = new B(12);
+>b1 : B<any>
+>   : ^^^^^^
+>new B(12) : B<any>
+>          : ^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+>12 : 12
+>   : ^^
+
+=== file2.ts ===
+import { A, B } from "./file1";
+>A : typeof A
+>  : ^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+
+function main() {
+>main : () => void
+>     : ^^^^^^^^^^
+
+    const a1 = new A();
+>a1 : instanceof A
+>   : ^^^^^^^^^^^^
+>new A() : instanceof A
+>        : ^^^^^^^^^^^^
+>A : typeof A
+>  : ^^^^^^^^
+
+    const B10 = B;
+>B10 : typeof B
+>    : ^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+
+    const B11 = B<any>;
+>B11 : { new (b: any): B<any>; prototype: B<any>; }
+>    : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>B<any> : { new (b: any): B<any>; prototype: B<any>; }
+>       : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+
+    const B20 = B<number>;
+>B20 : { new (b: number): B<number>; prototype: B<any>; }
+>    : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>B<number> : { new (b: number): B<number>; prototype: B<any>; }
+>          : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+
+    const b1 = new B(12);
+>b1 : instanceof B
+>   : ^^^^^^^^^^^^
+>new B(12) : instanceof B
+>          : ^^^^^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+>12 : 12
+>   : ^^
+
+    const b2 = new B<number>(12);
+>b2 : B<number>
+>   : ^^^^^^^^^
+>new B<number>(12) : B<number>
+>                  : ^^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+>12 : 12
+>   : ^^
+
+    const b10 = new B10(12);
+>b10 : instanceof B10
+>    : ^^^^^^^^^^^^^^
+>new B10(12) : instanceof B10
+>            : ^^^^^^^^^^^^^^
+>B10 : typeof B
+>    : ^^^^^^^^
+>12 : 12
+>   : ^^
+
+    const b11 = new B11(12);
+>b11 : instanceof B11
+>    : ^^^^^^^^^^^^^^
+>new B11(12) : instanceof B11
+>            : ^^^^^^^^^^^^^^
+>B11 : { new (b: any): B<any>; prototype: B<any>; }
+>    : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>12 : 12
+>   : ^^
+
+    const b20 = new B20(12);
+>b20 : instanceof B20
+>    : ^^^^^^^^^^^^^^
+>new B20(12) : instanceof B20
+>            : ^^^^^^^^^^^^^^
+>B20 : { new (b: number): B<number>; prototype: B<any>; }
+>    : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>12 : 12
+>   : ^^
+
+
+}
+
+

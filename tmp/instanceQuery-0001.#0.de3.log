@@ -1,0 +1,431 @@
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n25] ArrayBuffer, [68,80], Identifier, forceTuple:undefined
+  checkExpression: uninstantiatedType: [t85] ArrayBufferConstructor
+  checkExpression: type: [t85] ArrayBufferConstructor
+checkExpression[out]: return: [t85] ArrayBufferConstructor
+checkExpressionCached[in]: node:[n29] new ArrayBuffer(0), [105,124], NewExpression, checkMode:CheckMode: Normal)
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n29] new ArrayBuffer(0), [105,124], NewExpression, forceTuple:undefined
+    checkCallExpression[in]:[n29] new ArrayBuffer(0), [105,124], NewExpression, checkMode:CheckMode: Normal
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n30] ArrayBuffer, [109,121], Identifier, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t85] ArrayBufferConstructor
+        checkExpression: type: [t85] ArrayBufferConstructor
+      checkExpression[out]: return: [t85] ArrayBufferConstructor
+      chooseOverload()[in]:
+        candidate[0]: [sg:1] ([t15] number) => <no resolved type>
+        checkExpressionWithContextualType[in]: (node:[n31] 0, [122,123], NumericLiteral, contextualType:[t15] number, checkMode:CheckMode: Normal)
+          checkExpression[in]: checkMode:CheckMode: Contextual, node:[n31] 0, [122,123], NumericLiteral, forceTuple:undefined
+            checkExpression: uninstantiatedType: [t88] 0
+            checkExpression: type: [t88] 0
+          checkExpression[out]: return: [t88] 0
+        checkExpressionWithContextualType[out]: returns [t88] 0
+        chooseOverload()[returns]: [sg:1] ([t15] number) => <no resolved type>
+      chooseOverload()[out]: returns [sg:1] ([t15] number) => <no resolved type>
+    checkCallExpression[out]: returns :[t90] instanceof ArrayBuffer
+    checkExpression: uninstantiatedType: [t90] instanceof ArrayBuffer
+    checkExpression: type: [t90] instanceof ArrayBuffer
+  checkExpression[out]: return: [t90] instanceof ArrayBuffer
+checkExpressionCached[out]: [t90] instanceof ArrayBuffer
+checkExpressionCached[in]: node:[n29] new ArrayBuffer(0), [105,124], NewExpression, checkMode:CheckMode: Normal)
+  checkExpressionCached: cache hit: [t90] instanceof ArrayBuffer
+checkExpressionCached[out]: [t90] instanceof ArrayBuffer
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n33] a, [125,174], Identifier, forceTuple:undefined
+  checkExpression: uninstantiatedType: [t87] instanceof ArrayBuffer | undefined
+  checkExpression: type: [t87] instanceof ArrayBuffer | undefined
+checkExpression[out]: return: [t87] instanceof ArrayBuffer | undefined
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n34] b, [175,176], Identifier, forceTuple:undefined
+  checkExpression: uninstantiatedType: [t90] instanceof ArrayBuffer
+  checkExpression: type: [t90] instanceof ArrayBuffer
+checkExpression[out]: return: [t90] instanceof ArrayBuffer
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n35] a = b, [177,187], BinaryExpression, forceTuple:undefined
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n36] a, [177,183], Identifier, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t87] instanceof ArrayBuffer | undefined
+    checkExpression: type: [t87] instanceof ArrayBuffer | undefined
+  checkExpression[out]: return: [t87] instanceof ArrayBuffer | undefined
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n37] b, [185,187], Identifier, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t90] instanceof ArrayBuffer
+    checkExpression: type: [t90] instanceof ArrayBuffer
+  checkExpression[out]: return: [t90] instanceof ArrayBuffer
+  checkTypeRelatedTo[in]: source: [t90] instanceof ArrayBuffer, target: [t87] instanceof ArrayBuffer | undefined relation:assignableRelation, !!errorNode:false, headMessage: false
+    isRelatedTo[in]: originalSource:[t90] instanceof ArrayBuffer, originalTarget:[t87] instanceof ArrayBuffer | undefined, recursionFlags:Both, intersectionState:, None
+      recursiveTypeRelatedTo[in]: source:[t90] instanceof ArrayBuffer, target:[t86] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+        structuredTypeRelatedTo[in]: source: [t90] instanceof ArrayBuffer, target: [t86] instanceof ArrayBuffer, reportErrors: false, intersectionState: 0
+          structuredTypeRelatedToWorker[in]: source: [t90] instanceof ArrayBuffer, target: [t86] instanceof ArrayBuffer, reportErrors: false, intersectionState: 0
+          structuredTypeRelatedToWorker[out]: return True
+        structuredTypeRelatedTo[out]: True
+      recursiveTypeRelatedTo[out]: True
+    isRelatedTo[out]: True
+  checkTypeRelatedTo[out]: returns true
+  checkExpression: uninstantiatedType: [t90] instanceof ArrayBuffer
+  checkExpression: type: [t90] instanceof ArrayBuffer
+checkExpression[out]: return: [t90] instanceof ArrayBuffer
+checkExpressionCached[in]: node:[n40] new ArrayBuffer(0), [261,280], NewExpression, checkMode:CheckMode: Normal)
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n40] new ArrayBuffer(0), [261,280], NewExpression, forceTuple:undefined
+    checkCallExpression[in]:[n40] new ArrayBuffer(0), [261,280], NewExpression, checkMode:CheckMode: Normal
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n41] ArrayBuffer, [265,277], Identifier, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t85] ArrayBufferConstructor
+        checkExpression: type: [t85] ArrayBufferConstructor
+      checkExpression[out]: return: [t85] ArrayBufferConstructor
+      chooseOverload()[in]:
+        candidate[0]: [sg:1] ([t15] number) => [t89] ArrayBuffer
+        checkExpressionWithContextualType[in]: (node:[n42] 0, [278,279], NumericLiteral, contextualType:[t15] number, checkMode:CheckMode: Normal)
+          checkExpression[in]: checkMode:CheckMode: Contextual, node:[n42] 0, [278,279], NumericLiteral, forceTuple:undefined
+            checkExpression: uninstantiatedType: [t88] 0
+            checkExpression: type: [t88] 0
+          checkExpression[out]: return: [t88] 0
+        checkExpressionWithContextualType[out]: returns [t88] 0
+        chooseOverload()[returns]: [sg:1] ([t15] number) => [t89] ArrayBuffer
+      chooseOverload()[out]: returns [sg:1] ([t15] number) => [t89] ArrayBuffer
+    checkCallExpression[out]: returns :[t93] instanceof ArrayBuffer
+    checkExpression: uninstantiatedType: [t93] instanceof ArrayBuffer
+    checkExpression: type: [t93] instanceof ArrayBuffer
+  checkExpression[out]: return: [t93] instanceof ArrayBuffer
+checkExpressionCached[out]: [t93] instanceof ArrayBuffer
+checkExpressionCached[in]: node:[n40] new ArrayBuffer(0), [261,280], NewExpression, checkMode:CheckMode: Normal)
+  checkExpressionCached: cache hit: [t93] instanceof ArrayBuffer
+checkExpressionCached[out]: [t93] instanceof ArrayBuffer
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n43] a, [281,330], Identifier, forceTuple:undefined
+  checkExpression: uninstantiatedType: [t92] ArrayBuffer | undefined
+  checkExpression: type: [t92] ArrayBuffer | undefined
+checkExpression[out]: return: [t92] ArrayBuffer | undefined
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n44] b, [331,332], Identifier, forceTuple:undefined
+  checkExpression: uninstantiatedType: [t93] instanceof ArrayBuffer
+  checkExpression: type: [t93] instanceof ArrayBuffer
+checkExpression[out]: return: [t93] instanceof ArrayBuffer
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n45] a = b, [333,343], BinaryExpression, forceTuple:undefined
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n46] a, [333,339], Identifier, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t92] ArrayBuffer | undefined
+    checkExpression: type: [t92] ArrayBuffer | undefined
+  checkExpression[out]: return: [t92] ArrayBuffer | undefined
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n47] b, [341,343], Identifier, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t93] instanceof ArrayBuffer
+    checkExpression: type: [t93] instanceof ArrayBuffer
+  checkExpression[out]: return: [t93] instanceof ArrayBuffer
+  checkTypeRelatedTo[in]: source: [t93] instanceof ArrayBuffer, target: [t92] ArrayBuffer | undefined relation:assignableRelation, !!errorNode:false, headMessage: false
+    isRelatedTo[in]: originalSource:[t93] instanceof ArrayBuffer, originalTarget:[t92] ArrayBuffer | undefined, recursionFlags:Both, intersectionState:, None
+      recursiveTypeRelatedTo[in]: source:[t93] instanceof ArrayBuffer, target:[t89] ArrayBuffer, intersectionState:None, recursionFlags:Both
+        structuredTypeRelatedTo[in]: source: [t93] instanceof ArrayBuffer, target: [t89] ArrayBuffer, reportErrors: false, intersectionState: 0
+          structuredTypeRelatedToWorker[in]: source: [t93] instanceof ArrayBuffer, target: [t89] ArrayBuffer, reportErrors: false, intersectionState: 0
+            isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t89] ArrayBuffer, recursionFlags:Both, intersectionState:, None
+            isRelatedTo[out]: True
+          structuredTypeRelatedToWorker[out]: return True
+        structuredTypeRelatedTo[out]: True
+      recursiveTypeRelatedTo[out]: True
+    isRelatedTo[out]: True
+  checkTypeRelatedTo[out]: returns true
+  checkExpression: uninstantiatedType: [t93] instanceof ArrayBuffer
+  checkExpression: type: [t93] instanceof ArrayBuffer
+checkExpression[out]: return: [t93] instanceof ArrayBuffer
+checkExpressionCached[in]: node:[n50] new ArrayBuffer(0), [413,432], NewExpression, checkMode:CheckMode: Normal)
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n50] new ArrayBuffer(0), [413,432], NewExpression, forceTuple:undefined
+    checkCallExpression[in]:[n50] new ArrayBuffer(0), [413,432], NewExpression, checkMode:CheckMode: Normal
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n51] ArrayBuffer, [417,429], Identifier, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t85] ArrayBufferConstructor
+        checkExpression: type: [t85] ArrayBufferConstructor
+      checkExpression[out]: return: [t85] ArrayBufferConstructor
+      chooseOverload()[in]:
+        candidate[0]: [sg:1] ([t15] number) => [t89] ArrayBuffer
+        checkExpressionWithContextualType[in]: (node:[n52] 0, [430,431], NumericLiteral, contextualType:[t15] number, checkMode:CheckMode: Normal)
+          checkExpression[in]: checkMode:CheckMode: Contextual, node:[n52] 0, [430,431], NumericLiteral, forceTuple:undefined
+            checkExpression: uninstantiatedType: [t88] 0
+            checkExpression: type: [t88] 0
+          checkExpression[out]: return: [t88] 0
+        checkExpressionWithContextualType[out]: returns [t88] 0
+        chooseOverload()[returns]: [sg:1] ([t15] number) => [t89] ArrayBuffer
+      chooseOverload()[out]: returns [sg:1] ([t15] number) => [t89] ArrayBuffer
+    checkCallExpression[out]: returns :[t95] instanceof ArrayBuffer
+    checkExpression: uninstantiatedType: [t95] instanceof ArrayBuffer
+    checkExpression: type: [t95] instanceof ArrayBuffer
+  checkExpression[out]: return: [t95] instanceof ArrayBuffer
+checkExpressionCached[out]: [t95] instanceof ArrayBuffer
+checkExpressionCached[in]: node:[n50] new ArrayBuffer(0), [413,432], NewExpression, checkMode:CheckMode: Normal)
+  checkExpressionCached: cache hit: [t95] instanceof ArrayBuffer
+checkExpressionCached[out]: [t95] instanceof ArrayBuffer
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n53] b = a, [433,486], BinaryExpression, forceTuple:undefined
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n54] b, [433,482], Identifier, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t95] instanceof ArrayBuffer
+    checkExpression: type: [t95] instanceof ArrayBuffer
+  checkExpression[out]: return: [t95] instanceof ArrayBuffer
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n55] a, [484,486], Identifier, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t89] ArrayBuffer
+    checkExpression: type: [t89] ArrayBuffer
+  checkExpression[out]: return: [t89] ArrayBuffer
+  checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t95] instanceof ArrayBuffer relation:assignableRelation, !!errorNode:false, headMessage: false
+    isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t95] instanceof ArrayBuffer, recursionFlags:Both, intersectionState:, None
+      recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t95] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+        structuredTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t95] instanceof ArrayBuffer, reportErrors: false, intersectionState: 0
+          structuredTypeRelatedToWorker[in]: source: [t89] ArrayBuffer, target: [t95] instanceof ArrayBuffer, reportErrors: false, intersectionState: 0
+          structuredTypeRelatedToWorker[out]: return False
+        structuredTypeRelatedTo[out]: False
+      recursiveTypeRelatedTo[out]: False
+    isRelatedTo[out]: False
+  checkTypeRelatedTo[out]: returns false
+  checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t95] instanceof ArrayBuffer relation:assignableRelation, !!errorNode:false, headMessage: false
+    isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t95] instanceof ArrayBuffer, recursionFlags:Both, intersectionState:, None
+      recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t95] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+      recursiveTypeRelatedTo[out]: False
+    isRelatedTo[out]: False
+  checkTypeRelatedTo[out]: returns false
+  checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t95] instanceof ArrayBuffer relation:assignableRelation, !!errorNode:true, headMessage: false
+    isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t95] instanceof ArrayBuffer, recursionFlags:Both, intersectionState:, None
+      recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t95] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+        structuredTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t95] instanceof ArrayBuffer, reportErrors: true, intersectionState: 0
+          structuredTypeRelatedToWorker[in]: source: [t89] ArrayBuffer, target: [t95] instanceof ArrayBuffer, reportErrors: true, intersectionState: 0
+          structuredTypeRelatedToWorker[out]: return False
+        structuredTypeRelatedTo[out]: False
+      recursiveTypeRelatedTo[out]: False
+    isRelatedTo[out]: False
+  checkTypeRelatedTo[out]: returns false
+  checkExpression: uninstantiatedType: [t89] ArrayBuffer
+  checkExpression: type: [t89] ArrayBuffer
+checkExpression[out]: return: [t89] ArrayBuffer
+checkExpressionCached[in]: node:[n58] new ArrayBuffer(0), [585,604], NewExpression, checkMode:CheckMode: Normal)
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n58] new ArrayBuffer(0), [585,604], NewExpression, forceTuple:undefined
+    checkCallExpression[in]:[n58] new ArrayBuffer(0), [585,604], NewExpression, checkMode:CheckMode: Normal
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n59] ArrayBuffer, [589,601], Identifier, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t85] ArrayBufferConstructor
+        checkExpression: type: [t85] ArrayBufferConstructor
+      checkExpression[out]: return: [t85] ArrayBufferConstructor
+      chooseOverload()[in]:
+        candidate[0]: [sg:1] ([t15] number) => [t89] ArrayBuffer
+        checkExpressionWithContextualType[in]: (node:[n60] 0, [602,603], NumericLiteral, contextualType:[t15] number, checkMode:CheckMode: Normal)
+          checkExpression[in]: checkMode:CheckMode: Contextual, node:[n60] 0, [602,603], NumericLiteral, forceTuple:undefined
+            checkExpression: uninstantiatedType: [t88] 0
+            checkExpression: type: [t88] 0
+          checkExpression[out]: return: [t88] 0
+        checkExpressionWithContextualType[out]: returns [t88] 0
+        chooseOverload()[returns]: [sg:1] ([t15] number) => [t89] ArrayBuffer
+      chooseOverload()[out]: returns [sg:1] ([t15] number) => [t89] ArrayBuffer
+    checkCallExpression[out]: returns :[t96] instanceof ArrayBuffer
+    checkExpression: uninstantiatedType: [t96] instanceof ArrayBuffer
+    checkExpression: type: [t96] instanceof ArrayBuffer
+  checkExpression[out]: return: [t96] instanceof ArrayBuffer
+checkExpressionCached[out]: [t96] instanceof ArrayBuffer
+checkTypeRelatedTo[in]: source: [t96] instanceof ArrayBuffer, target: [t89] ArrayBuffer relation:assignableRelation, !!errorNode:false, headMessage: false
+  isRelatedTo[in]: originalSource:[t96] instanceof ArrayBuffer, originalTarget:[t89] ArrayBuffer, recursionFlags:Both, intersectionState:, None
+    recursiveTypeRelatedTo[in]: source:[t96] instanceof ArrayBuffer, target:[t89] ArrayBuffer, intersectionState:None, recursionFlags:Both
+      structuredTypeRelatedTo[in]: source: [t96] instanceof ArrayBuffer, target: [t89] ArrayBuffer, reportErrors: false, intersectionState: 0
+        structuredTypeRelatedToWorker[in]: source: [t96] instanceof ArrayBuffer, target: [t89] ArrayBuffer, reportErrors: false, intersectionState: 0
+          isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t89] ArrayBuffer, recursionFlags:Both, intersectionState:, None
+          isRelatedTo[out]: True
+        structuredTypeRelatedToWorker[out]: return True
+      structuredTypeRelatedTo[out]: True
+    recursiveTypeRelatedTo[out]: True
+  isRelatedTo[out]: True
+checkTypeRelatedTo[out]: returns true
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n61] b = a, [605,615], BinaryExpression, forceTuple:undefined
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n62] b, [605,611], Identifier, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t89] ArrayBuffer
+    checkExpression: type: [t89] ArrayBuffer
+  checkExpression[out]: return: [t89] ArrayBuffer
+  checkExpression[in]: checkMode:CheckMode: Normal, node:[n63] a, [613,615], Identifier, forceTuple:undefined
+    checkExpression: uninstantiatedType: [t89] ArrayBuffer
+    checkExpression: type: [t89] ArrayBuffer
+  checkExpression[out]: return: [t89] ArrayBuffer
+  checkExpression: uninstantiatedType: [t89] ArrayBuffer
+  checkExpression: type: [t89] ArrayBuffer
+checkExpression[out]: return: [t89] ArrayBuffer
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n65] ArrayBuffer, [716,728], Identifier, forceTuple:undefined
+  checkExpression: uninstantiatedType: [t85] ArrayBufferConstructor
+  checkExpression: type: [t85] ArrayBufferConstructor
+checkExpression[out]: return: [t85] ArrayBufferConstructor
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n67] safeDataView(new ArrayBuffer(0)), [740,777], CallExpression, forceTuple:undefined
+  checkCallExpression[in]:[n67] safeDataView(new ArrayBuffer(0)), [740,777], CallExpression, checkMode:CheckMode: Normal
+    resolveCallExpression[in]:[n67] safeDataView(new ArrayBuffer(0)), [740,777], CallExpression, checkMode:CheckMode: Normal
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n68] safeDataView, [740,757], Identifier, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t99] (buffer: instanceof ArrayBuffer) => DataView
+        checkExpression: type: [t99] (buffer: instanceof ArrayBuffer) => DataView
+      checkExpression[out]: return: [t99] (buffer: instanceof ArrayBuffer) => DataView
+      chooseOverload()[in]:
+        candidate[0]: [sg:2] ([t97] instanceof ArrayBuffer) => [t98] DataView
+        checkExpressionWithContextualType[in]: (node:[n69] new ArrayBuffer(0), [758,776], NewExpression, contextualType:[t97] instanceof ArrayBuffer, checkMode:CheckMode: Normal)
+          checkExpression[in]: checkMode:CheckMode: Contextual, node:[n69] new ArrayBuffer(0), [758,776], NewExpression, forceTuple:undefined
+            checkCallExpression[in]:[n69] new ArrayBuffer(0), [758,776], NewExpression, checkMode:CheckMode: Contextual
+              checkExpression[in]: checkMode:CheckMode: Normal, node:[n70] ArrayBuffer, [761,773], Identifier, forceTuple:undefined
+                checkExpression: uninstantiatedType: [t85] ArrayBufferConstructor
+                checkExpression: type: [t85] ArrayBufferConstructor
+              checkExpression[out]: return: [t85] ArrayBufferConstructor
+              chooseOverload()[in]:
+                candidate[0]: [sg:1] ([t15] number) => [t89] ArrayBuffer
+                checkExpressionWithContextualType[in]: (node:[n71] 0, [774,775], NumericLiteral, contextualType:[t15] number, checkMode:CheckMode: Normal)
+                  checkExpression[in]: checkMode:CheckMode: Contextual, node:[n71] 0, [774,775], NumericLiteral, forceTuple:undefined
+                    checkExpression: uninstantiatedType: [t88] 0
+                    checkExpression: type: [t88] 0
+                  checkExpression[out]: return: [t88] 0
+                checkExpressionWithContextualType[out]: returns [t88] 0
+                chooseOverload()[returns]: [sg:1] ([t15] number) => [t89] ArrayBuffer
+              chooseOverload()[out]: returns [sg:1] ([t15] number) => [t89] ArrayBuffer
+            checkCallExpression[out]: returns :[t100] instanceof ArrayBuffer
+            checkExpression: uninstantiatedType: [t100] instanceof ArrayBuffer
+            checkExpression: type: [t100] instanceof ArrayBuffer
+          checkExpression[out]: return: [t100] instanceof ArrayBuffer
+        checkExpressionWithContextualType[out]: returns [t100] instanceof ArrayBuffer
+        checkTypeRelatedTo[in]: source: [t100] instanceof ArrayBuffer, target: [t97] instanceof ArrayBuffer relation:assignableRelation, !!errorNode:false, headMessage: false
+          isRelatedTo[in]: originalSource:[t100] instanceof ArrayBuffer, originalTarget:[t97] instanceof ArrayBuffer, recursionFlags:Both, intersectionState:, None
+            recursiveTypeRelatedTo[in]: source:[t100] instanceof ArrayBuffer, target:[t97] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+              structuredTypeRelatedTo[in]: source: [t100] instanceof ArrayBuffer, target: [t97] instanceof ArrayBuffer, reportErrors: false, intersectionState: 0
+                structuredTypeRelatedToWorker[in]: source: [t100] instanceof ArrayBuffer, target: [t97] instanceof ArrayBuffer, reportErrors: false, intersectionState: 0
+                structuredTypeRelatedToWorker[out]: return True
+              structuredTypeRelatedTo[out]: True
+            recursiveTypeRelatedTo[out]: True
+          isRelatedTo[out]: True
+        checkTypeRelatedTo[out]: returns true
+        chooseOverload()[returns]: [sg:2] ([t97] instanceof ArrayBuffer) => [t98] DataView
+      chooseOverload()[out]: returns [sg:2] ([t97] instanceof ArrayBuffer) => [t98] DataView
+      resolveCallExpression[ret]: returns [sg:2] ([t97] instanceof ArrayBuffer) => [t98] DataView
+    resolveCallExpression[out]: returns [sg:2] ([t97] instanceof ArrayBuffer) => [t98] DataView
+  checkCallExpression[out]: returns :[t98] DataView
+  checkExpression: uninstantiatedType: [t98] DataView
+  checkExpression: type: [t98] DataView
+checkExpression[out]: return: [t98] DataView
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n73] safeDataView(a), [832,852], CallExpression, forceTuple:undefined
+  checkCallExpression[in]:[n73] safeDataView(a), [832,852], CallExpression, checkMode:CheckMode: Normal
+    resolveCallExpression[in]:[n73] safeDataView(a), [832,852], CallExpression, checkMode:CheckMode: Normal
+      checkExpression[in]: checkMode:CheckMode: Normal, node:[n74] safeDataView, [832,849], Identifier, forceTuple:undefined
+        checkExpression: uninstantiatedType: [t99] (buffer: instanceof ArrayBuffer) => DataView
+        checkExpression: type: [t99] (buffer: instanceof ArrayBuffer) => DataView
+      checkExpression[out]: return: [t99] (buffer: instanceof ArrayBuffer) => DataView
+      chooseOverload()[in]:
+        candidate[0]: [sg:2] ([t97] instanceof ArrayBuffer) => [t98] DataView
+        checkExpressionWithContextualType[in]: (node:[n75] a, [850,851], Identifier, contextualType:[t97] instanceof ArrayBuffer, checkMode:CheckMode: Normal)
+          checkExpression[in]: checkMode:CheckMode: Contextual, node:[n75] a, [850,851], Identifier, forceTuple:undefined
+            checkExpression: uninstantiatedType: [t89] ArrayBuffer
+            checkExpression: type: [t89] ArrayBuffer
+          checkExpression[out]: return: [t89] ArrayBuffer
+        checkExpressionWithContextualType[out]: returns [t89] ArrayBuffer
+        checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t97] instanceof ArrayBuffer relation:assignableRelation, !!errorNode:false, headMessage: false
+          isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t97] instanceof ArrayBuffer, recursionFlags:Both, intersectionState:, None
+            recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t97] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+              structuredTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t97] instanceof ArrayBuffer, reportErrors: false, intersectionState: 0
+                structuredTypeRelatedToWorker[in]: source: [t89] ArrayBuffer, target: [t97] instanceof ArrayBuffer, reportErrors: false, intersectionState: 0
+                structuredTypeRelatedToWorker[out]: return False
+              structuredTypeRelatedTo[out]: False
+            recursiveTypeRelatedTo[out]: False
+          isRelatedTo[out]: False
+        checkTypeRelatedTo[out]: returns false
+        checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t97] instanceof ArrayBuffer relation:assignableRelation, !!errorNode:false, headMessage: true
+          isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t97] instanceof ArrayBuffer, recursionFlags:Both, intersectionState:, None
+            recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t97] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+            recursiveTypeRelatedTo[out]: False
+          isRelatedTo[out]: False
+        checkTypeRelatedTo[out]: returns false
+        chooseOverload()[returns]: <undef>
+      chooseOverload()[out]: returns <undef>
+      checkExpressionWithContextualType[in]: (node:[n75] a, [850,851], Identifier, contextualType:[t97] instanceof ArrayBuffer, checkMode:CheckMode: Normal)
+        checkExpression[in]: checkMode:CheckMode: Contextual, node:[n75] a, [850,851], Identifier, forceTuple:undefined
+          checkExpression: uninstantiatedType: [t89] ArrayBuffer
+          checkExpression: type: [t89] ArrayBuffer
+        checkExpression[out]: return: [t89] ArrayBuffer
+      checkExpressionWithContextualType[out]: returns [t89] ArrayBuffer
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t97] instanceof ArrayBuffer relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t97] instanceof ArrayBuffer, recursionFlags:Both, intersectionState:, None
+          recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t97] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+          recursiveTypeRelatedTo[out]: False
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t97] instanceof ArrayBuffer relation:assignableRelation, !!errorNode:true, headMessage: true
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t97] instanceof ArrayBuffer, recursionFlags:Both, intersectionState:, None
+          recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t97] instanceof ArrayBuffer, intersectionState:None, recursionFlags:Both
+            structuredTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t97] instanceof ArrayBuffer, reportErrors: true, intersectionState: 0
+              structuredTypeRelatedToWorker[in]: source: [t89] ArrayBuffer, target: [t97] instanceof ArrayBuffer, reportErrors: true, intersectionState: 0
+              structuredTypeRelatedToWorker[out]: return False
+            structuredTypeRelatedTo[out]: False
+          recursiveTypeRelatedTo[out]: False
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t15] number relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t15] number, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t16] bigint relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t16] bigint, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t14] string relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t14] string, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t21] boolean relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t21] boolean, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t23] void relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t23] void, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t24] neverType relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t24] neverType, recursionFlags:Both, intersectionState:, None
+          recursiveTypeRelatedTo[in]: source:[t97] instanceof ArrayBuffer, target:[t24] neverType, intersectionState:None, recursionFlags:Both
+            structuredTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t24] neverType, reportErrors: false, intersectionState: 0
+              structuredTypeRelatedToWorker[in]: source: [t97] instanceof ArrayBuffer, target: [t24] neverType, reportErrors: false, intersectionState: 0
+                isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t24] neverType, recursionFlags:Both, intersectionState:, None
+                  recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t24] neverType, intersectionState:None, recursionFlags:Both
+                    structuredTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t24] neverType, reportErrors: false, intersectionState: 0
+                      structuredTypeRelatedToWorker[in]: source: [t89] ArrayBuffer, target: [t24] neverType, reportErrors: false, intersectionState: 0
+                      structuredTypeRelatedToWorker[out]: return False
+                    structuredTypeRelatedTo[out]: False
+                  recursiveTypeRelatedTo[out]: False
+                isRelatedTo[out]: False
+              structuredTypeRelatedToWorker[out]: return False
+            structuredTypeRelatedTo[out]: False
+          recursiveTypeRelatedTo[out]: False
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t13] null relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t13] null, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t10] undefined relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t10] undefined, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t97] instanceof ArrayBuffer, target: [t22] symbol relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t97] instanceof ArrayBuffer, originalTarget:[t22] symbol, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t15] number relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t15] number, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t16] bigint relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t16] bigint, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t14] string relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t14] string, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t21] boolean relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t21] boolean, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t23] void relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t23] void, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t24] neverType relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t24] neverType, recursionFlags:Both, intersectionState:, None
+          recursiveTypeRelatedTo[in]: source:[t89] ArrayBuffer, target:[t24] neverType, intersectionState:None, recursionFlags:Both
+          recursiveTypeRelatedTo[out]: False
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t13] null relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t13] null, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t10] undefined relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t10] undefined, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      checkTypeRelatedTo[in]: source: [t89] ArrayBuffer, target: [t22] symbol relation:assignableRelation, !!errorNode:false, headMessage: false
+        isRelatedTo[in]: originalSource:[t89] ArrayBuffer, originalTarget:[t22] symbol, recursionFlags:Both, intersectionState:, None
+        isRelatedTo[out]: False
+      checkTypeRelatedTo[out]: returns false
+      resolveCallExpression[ret]: returns [sg:2] ([t97] instanceof ArrayBuffer) => [t98] DataView
+    resolveCallExpression[out]: returns [sg:2] ([t97] instanceof ArrayBuffer) => [t98] DataView
+  checkCallExpression[out]: returns :[t98] DataView
+  checkExpression: uninstantiatedType: [t98] DataView
+  checkExpression: type: [t98] DataView
+checkExpression[out]: return: [t98] DataView
+checkExpression[in]: checkMode:CheckMode: Normal, node:[n75] a, [850,851], Identifier, forceTuple:undefined
+  checkExpression: uninstantiatedType: [t89] ArrayBuffer
+  checkExpression: type: [t89] ArrayBuffer
+checkExpression[out]: return: [t89] ArrayBuffer
