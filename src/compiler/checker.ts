@@ -13943,11 +13943,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function resolveStructuredTypeMembers(type: StructuredType): ResolvedType {
         if (!(type as ResolvedType).members) {
             if ((type as ObjectType).instanceof){
+                Debug.assert(false, "unexpected");
                 /**
                  * call resolveStructuredTypeMembers on the constructor return type.
                  * C.f. tests cases "unittests:: evaluation:: asyncArrowEvaluation", "unittests:: Reuse program structure:: General"
                  */
-                return resolveStructuredTypeMembers(instanceQuery().getProtoypeOfInstanceof(type));
+                // return resolveStructuredTypeMembers(instanceQuery().getProtoypeOfInstanceof(type));
             }
             if (type.flags & TypeFlags.Object) {
                 if ((type as ObjectType).objectFlags & ObjectFlags.Reference) {
@@ -16328,7 +16329,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
-    function createInstanceofTypeFromConstructorIdentifier(node: Identifier, nodeHasTypeArguments: boolean): ObjectType {
+    function createInstanceofTypeFromConstructorIdentifier(node: Identifier): ObjectType {
         // copied from TypeChecker
         function getExportSymbolOfSymbol(symbol: Symbol) {
             return getMergedSymbol(symbol.exportSymbol || symbol);
@@ -16338,19 +16339,23 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (!constructorVariableSymbol){
             Debug.assert(false, "!constructorSymbol");
         }
-        /**
-         * If the constructor type has type paramaeters then returh the prototype menber of the constructor type
-         */
         const constructorType = getTypeOfSymbol(constructorVariableSymbol);
-        if (nodeHasTypeArguments) {
-            return getInstanceType(constructorType);
-        }
-        if ((constructorVariableSymbol.declarations?.[0] as ClassLikeDeclaration | undefined)?.typeParameters) {
-            return getInstanceType(constructorType);
-        }
-        if (constructorType.flags & TypeFlags.TypeParameter) { // not reliable
-            return getInstanceType(constructorType);
-        }
+        const structuredType = getInstanceType(constructorType);
+
+
+        // /**
+        //  * If the constructor type has type paramaeters then returh the prototype menber of the constructor type
+        //  */
+        // const constructorType = getTypeOfSymbol(constructorVariableSymbol);
+        // if (nodeHasTypeArguments) {
+        //     return getInstanceType(constructorType);
+        // }
+        // if ((constructorVariableSymbol.declarations?.[0] as ClassLikeDeclaration | undefined)?.typeParameters) {
+        //     return getInstanceType(constructorType);
+        // }
+        // if (constructorType.flags & TypeFlags.TypeParameter) { // not reliable
+        //     return getInstanceType(constructorType);
+        // }
 
         const typeInstanceofConstructor = createObjectType(ObjectFlags.None);
         typeInstanceofConstructor.instanceof = constructorVariableSymbol;
@@ -16359,13 +16364,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     // TODO: getInstanceType is copied from inner scope of getFlowTypeOfReference, move it up so both can share (assuming they dont diverge)
     function getInstanceType(constructorType: Type): ObjectType {
-        const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
-        if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
-            return prototypePropertyType as StructuredType;
-        }
         const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
         if (constructSignatures.length) {
             return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType;
+        }
+        const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
+        if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
+            return prototypePropertyType as StructuredType;
         }
         // We use the empty object type to indicate we don't know the type of objects created by
         // this constructor function.
@@ -16373,20 +16378,34 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getTypeFromInstanceQueryNode(node: InstanceQueryNode): Type {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`getTypeFromInstanceQueryNode[in]: ${IDebug.dbgs.dbgNodeToString(node)}`, loggerLevel);
         const links = getNodeLinks(node);
         if (!links.resolvedType) {
             if (node.exprName.kind===SyntaxKind.Identifier) {
-                const type = checkExpression(node.exprName);
-                if (!isConstructorType(type)){
-                    Debug.assert(false, "!isConstructorType(type)");
+                const genericConstructorType = checkExpression(node.exprName);
+                if (!isConstructorType(genericConstructorType)){
+                    Debug.assert(false, "!isConstructorType(genericConstructorType)");
                 }
-                const typeInstanceofConstructor = createInstanceofTypeFromConstructorIdentifier(node .exprName as Identifier, !!node.typeArguments);
-                links.resolvedType = typeInstanceofConstructor;
+                const instanceQueryOfGenericConstructor = createInstanceofTypeFromConstructorIdentifier(node .exprName as Identifier);
+                IDebug.ilogGroup(()=>`getTypeFromInstanceQueryNode[dbg] instanceQueryOfGenericConstructor: ${IDebug.dbgs.dbgTypeToString(instanceQueryOfGenericConstructor)}`, loggerLevel);
+
+                const instantiatedConstructorType = checkExpressionWithTypeArguments(node);
+                IDebug.ilogGroup(()=>`getTypeFromInstanceQueryNode[dbg] instantiatedConstructorType: ${IDebug.dbgs.dbgTypeToString(instantiatedConstructorType)}`, loggerLevel);
+
+                if (!isConstructorType(instantiatedConstructorType)){
+                    Debug.assert(false, "!isConstructorType(instantiatedConstructorType)");
+                }
+                const constructedTypeOfInstantiatedConstructor = getInstanceType(instantiatedConstructorType);
+                IDebug.ilogGroup(()=>`getTypeFromInstanceQueryNode[dbg] constructedTypeOfInstantiatedConstructor: ${IDebug.dbgs.dbgTypeToString(constructedTypeOfInstantiatedConstructor)}`, loggerLevel);
+
+                links.resolvedType = getIntersectionType([instanceQueryOfGenericConstructor, constructedTypeOfInstantiatedConstructor]);
             }
             else {
                 Debug.assert(false, "node.exprName.kind!==SyntaxKind.Identifier, not yet implemented");
             }
         }
+        IDebug.ilogGroupEnd(()=>`getTypeFromInstanceQueryNode[out]: ${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`, loggerLevel);
         return links.resolvedType;
     }
 
@@ -36327,10 +36346,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return getIntersectionType([returnType, jsAssignmentType]);
             }
         }
-        if (/*compilerOptions.*/instanceQueryEnableFromNew && node.kind === SyntaxKind.NewExpression && node.expression.kind===SyntaxKind.Identifier && !node.typeArguments){
-            // passing !!nodeType arguments is reduntand here
-            return createInstanceofTypeFromConstructorIdentifier(node.expression as Identifier, !!node.typeArguments);
-        }
+        // TODO: come back to this after implementing instanceQuery using intersection of instanceof Object and structured Object
+        // if (instanceQueryEnableFromNew && node.kind === SyntaxKind.NewExpression && node.expression.kind===SyntaxKind.Identifier /*&& !node.typeArguments*/){
+        //     // passing !!nodeType arguments is reduntand here
+        //     return createInstanceofTypeFromConstructorIdentifier(node.expression as Identifier, !!node.typeArguments);
+        // }
 
 
         return returnType;
@@ -36622,7 +36642,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             getNonNullableType(checkExpression(node.expression));
     }
 
-    function checkExpressionWithTypeArguments(node: ExpressionWithTypeArguments | TypeQueryNode) {
+    function checkExpressionWithTypeArguments(node: ExpressionWithTypeArguments | TypeQueryNode | InstanceQueryNode) {
         checkGrammarExpressionWithTypeArguments(node);
         forEach(node.typeArguments, checkSourceElement);
         if (node.kind === SyntaxKind.ExpressionWithTypeArguments) {
@@ -36631,9 +36651,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 error(node, Diagnostics.The_right_hand_side_of_an_instanceof_expression_must_not_be_an_instantiation_expression);
             }
         }
-        const exprType = node.kind === SyntaxKind.ExpressionWithTypeArguments ? checkExpression(node.expression) :
-            isThisIdentifier(node.exprName) ? checkThisExpression(node.exprName) :
-            checkExpression(node.exprName);
+        let exprType: Type;
+        if (node.kind===SyntaxKind.InstanceQuery){
+            exprType = checkExpression(node.exprName);
+        }
+        else {
+            exprType = node.kind === SyntaxKind.ExpressionWithTypeArguments ? checkExpression(node.expression) :
+                isThisIdentifier(node.exprName) ? checkThisExpression(node.exprName) :
+                checkExpression(node.exprName);
+        }
         return getInstantiationExpressionType(exprType, node);
     }
 
@@ -50251,7 +50277,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return some(types, checkGrammarExpressionWithTypeArguments);
     }
 
-    function checkGrammarExpressionWithTypeArguments(node: ExpressionWithTypeArguments | TypeQueryNode) {
+    function checkGrammarExpressionWithTypeArguments(node: ExpressionWithTypeArguments | TypeQueryNode | InstanceQueryNode) {
         if (isExpressionWithTypeArguments(node) && isImportKeyword(node.expression) && node.typeArguments) {
             return grammarErrorOnNode(node, Diagnostics.This_use_of_import_is_invalid_import_calls_can_be_written_but_they_must_have_parentheses_and_cannot_have_type_arguments);
         }
