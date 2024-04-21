@@ -7782,6 +7782,13 @@ export function getCheckFlags(symbol: Symbol): CheckFlags {
 }
 
 /** @internal */
+export function addCheckFlags(symbol: Symbol, value: CheckFlags): void {
+    Debug.assert(symbol.flags & SymbolFlags.Transient);
+    (symbol as TransientSymbol).links.checkFlags |= value;
+}
+
+
+/** @internal */
 export function getDeclarationModifierFlagsFromSymbol(s: Symbol, isWrite = false): ModifierFlags {
     if (s.valueDeclaration) {
         const declaration = (isWrite && s.declarations && find(s.declarations, isSetAccessorDeclaration))

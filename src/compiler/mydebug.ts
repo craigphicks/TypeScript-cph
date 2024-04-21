@@ -22,6 +22,7 @@ export namespace IDebug {
     export let loggingHost: ILoggingHost | undefined;
     export let dbgs: Dbgs = 0 as any as Dbgs;
     export let checker: TypeChecker | undefined;
+
     export function isActive(loggerLevel: number) { return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile(); }
     export function ilog(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
@@ -73,12 +74,14 @@ export class ILoggingClass implements ILoggingHost {
     maxNumOutLines: number = 300000;
     nodeFs: any;
     nodePath: any;
+    suppress: boolean = false;
     constructor(){
         this.nodeFs = require("fs");
         this.nodePath = require("path");
     }
     isActiveFile() { return !!this.logFileFd; }
     log(level: LogLevel, messagef: (() => string)) {
+        if (this.suppress) return;
         if (!this.logFileFd) return;
         if (level > IDebug.logLevel) return;
         if (level<0) Debug.fail("ilog: Negative log level");
@@ -243,7 +246,12 @@ export class DbgsClass implements Dbgs{
 
     dbgTypeToString = (type: Type | undefined): string => {
         if (!type) return "<undef>";
-        return `[t${type.id}] ${this.getSafeCheckerTypeToString(type)}`;
+        const cachedSuppress = (IDebug.loggingHost as ILoggingClass).suppress;
+        (IDebug.loggingHost as ILoggingClass).suppress = true;
+        const ret = `[t${type.id}] ${this.getSafeCheckerTypeToString(type)}`;
+        (IDebug.loggingHost as ILoggingClass).suppress = cachedSuppress;
+
+        return ret;
     };
     dbgNodeToString(node: Node | undefined): string {
         if (!node) return "<undef>";

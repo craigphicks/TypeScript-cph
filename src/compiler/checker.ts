@@ -3,6 +3,7 @@ import {
     AccessExpression,
     AccessFlags,
     AccessorDeclaration,
+    addCheckFlags,
     addRange,
     addRelatedInfo,
     addSyntheticLeadingComment,
@@ -2589,7 +2590,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         mergedSymbols[source.mergeId] = target;
     }
 
-    function cloneSymbol(symbol: Symbol): TransientSymbol {
+    function cloneSymbol(symbol: Symbol, dontMerge?: boolean): TransientSymbol {
         const result = createSymbol(symbol.flags, symbol.escapedName);
         result.declarations = symbol.declarations ? symbol.declarations.slice() : [];
         result.parent = symbol.parent;
@@ -2597,7 +2598,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (symbol.constEnumOnlyModule) result.constEnumOnlyModule = true;
         if (symbol.members) result.members = new Map(symbol.members);
         if (symbol.exports) result.exports = new Map(symbol.exports);
-        recordMergedSymbol(result, symbol);
+        if (!dontMerge) recordMergedSymbol(result, symbol);
+        (result as any).clonedFrom = symbol; // debug use only
         return result;
     }
 
@@ -11909,12 +11911,26 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return anyType;
     }
 
+    function setTypeOfSymbolDeferredPrototype(symbol: Symbol, typeWithInstantiatedConstructors: Type): void {
+        addCheckFlags(symbol, CheckFlags.DeferredType)
+        const links = getSymbolLinks(symbol);
+        Debug.assert(!links.type);
+        (links as any).deferralPrototypeConstructorType = typeWithInstantiatedConstructors;
+    }
+
     function getTypeOfSymbolWithDeferredType(symbol: Symbol) {
         const links = getSymbolLinks(symbol);
         if (!links.type) {
-            Debug.assertIsDefined(links.deferralParent);
-            Debug.assertIsDefined(links.deferralConstituents);
-            links.type = links.deferralParent.flags & TypeFlags.Union ? getUnionType(links.deferralConstituents) : getIntersectionType(links.deferralConstituents);
+            if ((links as any).deferralPrototypeConstructorType) {
+                const constructorType = (links as any).deferralPrototypeConstructorType as Type;
+                const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
+                Debug.assert(constructSignatures.length);
+                links.type = getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType;
+            } else {
+                Debug.assertIsDefined(links.deferralParent);
+                Debug.assertIsDefined(links.deferralConstituents);
+                links.type = links.deferralParent.flags & TypeFlags.Union ? getUnionType(links.deferralConstituents) : getIntersectionType(links.deferralConstituents);
+            }
         }
         return links.type;
     }
@@ -11953,6 +11969,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getTypeOfSymbol(symbol: Symbol, checkMode?: CheckMode): Type {
+    const loggerLevel = 4;
+    IDebug.ilogGroup(()=>`getTypeOfSymbol[in]: ${IDebug.dbgs.dbgSymbolToString(symbol)}, ${IDebug.dbgs.dbgCheckModeToString(checkMode)}`, loggerLevel);
+    const ret = (()=>{
         const checkFlags = getCheckFlags(symbol);
         if (checkFlags & CheckFlags.DeferredType) {
             return getTypeOfSymbolWithDeferredType(symbol);
@@ -11982,6 +12001,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return getTypeOfAlias(symbol);
         }
         return errorType;
+    })();
+    IDebug.ilogGroupEnd(()=>`getTypeOfSymbol[out]: ${IDebug.dbgs.dbgSymbolToString(symbol)}, ${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function getNonMissingTypeOfSymbol(symbol: Symbol) {
@@ -16340,7 +16362,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             Debug.assert(false, "!constructorSymbol");
         }
         const constructorType = getTypeOfSymbol(constructorVariableSymbol);
-        const structuredType = getInstanceType(constructorType);
+        //const structuredType = getInstanceType(constructorType);
 
 
         // /**
@@ -16364,13 +16386,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     // TODO: getInstanceType is copied from inner scope of getFlowTypeOfReference, move it up so both can share (assuming they dont diverge)
     function getInstanceType(constructorType: Type): ObjectType {
-        const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
-        if (constructSignatures.length) {
-            return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType;
-        }
         const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
         if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
             return prototypePropertyType as StructuredType;
+        }
+        const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
+        if (constructSignatures.length) {
+            return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType;
         }
         // We use the empty object type to indicate we don't know the type of objects created by
         // this constructor function.
@@ -36664,6 +36686,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getInstantiationExpressionType(exprType: Type, node: NodeWithTypeArguments) {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getInstantiationExpressionType[in]: exprType:${IDebug.dbgs.dbgTypeToString(exprType)}, node:${IDebug.dbgs.dbgNodeToString(node)}`,loggerLevel)
+    const ret = (() => {
         const typeArguments = node.typeArguments;
         if (exprType === silentNeverType || isErrorType(exprType) || !some(typeArguments)) {
             return exprType;
@@ -36695,7 +36720,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     hasSignatures ||= resolved.callSignatures.length !== 0 || resolved.constructSignatures.length !== 0;
                     hasApplicableSignature ||= callSignatures.length !== 0 || constructSignatures.length !== 0;
                     if (callSignatures !== resolved.callSignatures || constructSignatures !== resolved.constructSignatures) {
-                        const result = createAnonymousType(createSymbol(SymbolFlags.None, InternalSymbolName.InstantiationExpression), resolved.members, callSignatures, constructSignatures, resolved.indexInfos) as ResolvedType & InstantiationExpressionType;
+                        let members = resolved.members;
+                        let prototypePropNeedsInstantiation: Symbol | undefined;
+                        if (constructSignatures !== resolved.constructSignatures && members.has("prototype" as __String)){
+                            prototypePropNeedsInstantiation = cloneSymbol(members.get("prototype" as __String)!, /*doNotMerge*/true);
+                            members = new Map(members);
+                            members.set("prototype" as __String, prototypePropNeedsInstantiation);
+                        }
+                        const result = createAnonymousType(createSymbol(SymbolFlags.None, InternalSymbolName.InstantiationExpression), members, callSignatures, constructSignatures, resolved.indexInfos) as ResolvedType & InstantiationExpressionType;
+                        if (prototypePropNeedsInstantiation){
+                            const resultSymbolLinks = getSymbolLinks(result.symbol);
+                            resultSymbolLinks.type = result;
+                            Debug.assert(members.get("prototype" as __String) === prototypePropNeedsInstantiation);
+                            prototypePropNeedsInstantiation.parent = result.symbol;
+                            setTypeOfSymbolDeferredPrototype(prototypePropNeedsInstantiation, result);
+                        }
                         result.objectFlags |= ObjectFlags.InstantiationExpressionType;
                         result.node = node;
                         return result;
@@ -36727,6 +36766,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return typeArgumentTypes ? getSignatureInstantiation(sig, typeArgumentTypes, isInJSFile(sig.declaration)) : sig;
             });
         }
+    })();
+    IDebug.ilogGroupEnd(()=>`getInstantiationExpressionType[out]: returns:${IDebug.dbgs.dbgTypeToString(ret)}`,loggerLevel);
+    return ret;
     }
 
     function checkSatisfiesExpression(node: SatisfiesExpression) {

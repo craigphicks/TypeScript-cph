@@ -111,6 +111,7 @@ import {
     getSourceTextOfNodeFromSourceFile,
     getSpanOfTokenAtPosition,
     getStrictOptionValue,
+    getSymbolId, // for debugging
     getSymbolNameForPrivateIdentifier,
     getTextOfIdentifierOrLiteral,
     getThisContainer,
@@ -640,7 +641,9 @@ function createBinder(): (file: SourceFile, options: CompilerOptions) => void {
 
     function createSymbol(flags: SymbolFlags, name: __String): Symbol {
         symbolCount++;
-        return new Symbol(flags, name);
+        const symbol = new Symbol(flags, name);
+        getSymbolId(symbol); // for debugging
+        return symbol;
     }
 
     function addDeclarationToSymbol(symbol: Symbol, node: Declaration, symbolFlags: SymbolFlags) {
