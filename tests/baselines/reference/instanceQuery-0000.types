@@ -1,0 +1,247 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0000.ts] ////
+
+=== instanceQuery-0000.ts ===
+namespace iq0000A {
+>iq0000A : typeof iq0000A
+>        : ^^^^^^^^^^^^^^
+
+    declare class A {
+>A : A
+>  : ^
+
+        x: number;
+>x : number
+>  : ^^^^^^
+
+        constructor(x: number);
+>x : number
+>  : ^^^^^^
+    }
+
+    // The constructor as a variable.
+    A; // displayed as "typeof A"
+>A : typeof A
+>  : ^^^^^^^^
+
+    type AInstanceType = InstanceType<typeof A>; // displayed as "A"
+>AInstanceType : A
+>              : ^
+>A : typeof A
+>  : ^^^^^^^^
+
+    A.prototype; // displayed as "A";
+>A.prototype : A
+>            : ^
+>A : typeof A
+>  : ^^^^^^^^
+>prototype : A
+>          : ^
+
+    type APrototype = (typeof A)["prototype"]; // displayed as "A"
+>APrototype : A
+>           : ^
+>A : typeof A
+>  : ^^^^^^^^
+
+    // When the r.h.s. of "instanceof" is not a generic class, we can write:
+    type AInstanceQueryType = instanceof A; // displayed as "instanceof A & A"
+>AInstanceQueryType : instanceof A & A
+>                   : ^^^^^^^^^^^^^^^^
+
+    A.prototype.x; // displayed as "number" (existing TS behavior, inconsistent with "B.prototype.x : any" below )
+>A.prototype.x : number
+>              : ^^^^^^
+>A.prototype : A
+>            : ^
+>A : typeof A
+>  : ^^^^^^^^
+>prototype : A
+>          : ^
+>x : number
+>  : ^^^^^^
+
+}
+
+namespace iq0000B {
+>iq0000B : typeof iq0000B
+>        : ^^^^^^^^^^^^^^
+
+    declare class B<T extends number | string = string> {
+>B : B<T>
+>  : ^^^^
+
+        x: T;
+>x : T
+>  : ^
+
+        constructor(x: T);
+>x : T
+>  : ^
+    }
+    // When the r.h.s. of "instanceof" is the instantiation of a generic class, an error is reported:
+    instanceof B<number>; // error
+>instanceof B<number> : boolean
+>                     : ^^^^^^^
+> : any
+> : ^^^
+>B<number> : { new (x: number): B<number>; prototype: B<any>; }
+>          : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+
+    // The right-hand side of an 'instanceof' expression must not be an instantiation expression.ts(2848)
+
+    // It might not be necessary to have that error, but it is consistent with the existing TS spec.
+    // The next example shows a workaround for this error.
+
+    type BInstanceType = InstanceType<typeof B>; // displayed as "B"
+>BInstanceType : B<string | number>
+>              : ^^^^^^^^^^^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+
+    B.prototype; // displayed as "B";
+>B.prototype : B<any>
+>            : ^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+>prototype : B<any>
+>          : ^^^^^^
+
+    type BPrototype = (typeof B)["prototype"]; // displayed as "B"
+>BPrototype : B<any>
+>           : ^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+
+    // When the r.h.s. of "instanceof" is not a generic class, we can write:
+    type BInstanceQueryType = instanceof B; // displayed as "instanceof B & B"
+>BInstanceQueryType : instanceof B & B<any>
+>                   : ^^^^^^^^^^^^^^^^^^^^^
+
+    B.prototype.x; // displayed as "any" (existing TS behavior, inconsistent with "A.prototype.x : number" above)
+>B.prototype.x : any
+>              : ^^^
+>B.prototype : B<any>
+>            : ^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+>prototype : B<any>
+>          : ^^^^^^
+>x : any
+>  : ^^^
+
+    type BinstanceXType = BInstanceType["x"] // displayed as "string | number"
+>BinstanceXType : string | number
+>               : ^^^^^^^^^^^^^^^
+
+}
+
+
+namespace iq0000C {
+>iq0000C : typeof iq0000C
+>        : ^^^^^^^^^^^^^^
+
+    declare class C<T extends number | string = string> {
+>C : C<T>
+>  : ^^^^
+
+        x: T;
+>x : T
+>  : ^
+
+        constructor(x: T);
+>x : T
+>  : ^
+    }
+
+    C.prototype; // C<any>; this is correct according to the existing TS spec
+>C.prototype : C<any>
+>            : ^^^^^^
+>C : typeof C
+>  : ^^^^^^^^
+>prototype : C<any>
+>          : ^^^^^^
+
+    const CNumberConstructor = C<number>; // the variable CNumberConstructor should have type { c:number, constructor(c:number): C<number>, prototype: C<any> }
+>CNumberConstructor : { new (x: number): C<number>; prototype: C<any>; }
+>                   : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>C<number> : { new (x: number): C<number>; prototype: C<any>; }
+>          : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>C : typeof C
+>  : ^^^^^^^^
+
+    type CNumberConstructor = typeof CNumberConstructor; // we can declare the type of CNumberConstructor with the same name.
+>CNumberConstructor : { new (x: number): C<number>; prototype: C<any>; }
+>                   : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>CNumberConstructor : { new (x: number): C<number>; prototype: C<any>; }
+>                   : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    type CnumberPrototype = CNumberConstructor["prototype"]; // C<any> ; correct according to the existing TS spec
+>CnumberPrototype : C<any>
+>                 : ^^^^^^
+
+    type CNumberConstructorInstanceQueryType = instanceof CNumberConstructor; // should display as "instanceof C & C<number>"
+>CNumberConstructorInstanceQueryType : instanceof C & C<number>
+>                                    : ^^^^^^^^^^^^^^^^^^^^^^^^
+
+    C.prototype.x; // displayed as "any"
+>C.prototype.x : any
+>              : ^^^
+>C.prototype : C<any>
+>            : ^^^^^^
+>C : typeof C
+>  : ^^^^^^^^
+>prototype : C<any>
+>          : ^^^^^^
+>x : any
+>  : ^^^
+
+}
+
+namespace iq0000D {
+>iq0000D : typeof iq0000D
+>        : ^^^^^^^^^^^^^^
+
+    declare class D {
+>D : D
+>  : ^
+
+        x: number;
+>x : number
+>  : ^^^^^^
+
+        // no explicit constructor, TS considers constructor to implicity exist
+    }
+
+    // The constructor as a variable.
+    D; // displayed as "typeof D"
+>D : typeof D
+>  : ^^^^^^^^
+
+    type AInstanceType = InstanceType<typeof D>; // displayed as "D"
+>AInstanceType : D
+>              : ^
+>D : typeof D
+>  : ^^^^^^^^
+
+    D.prototype; // displayed as "D";
+>D.prototype : D
+>            : ^
+>D : typeof D
+>  : ^^^^^^^^
+>prototype : D
+>          : ^
+
+    type APrototype = (typeof D)["prototype"]; // displayed as "D"
+>APrototype : D
+>           : ^
+>D : typeof D
+>  : ^^^^^^^^
+
+    // When the r.h.s. of "instanceof" is not a generic class, we can write:
+    type DInstanceQueryType = instanceof D; // displayed as "instanceof D & D"
+>DInstanceQueryType : instanceof D & D
+>                   : ^^^^^^^^^^^^^^^^
+
+}

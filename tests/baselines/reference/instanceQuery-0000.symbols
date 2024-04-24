@@ -1,0 +1,183 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0000.ts] ////
+
+=== instanceQuery-0000.ts ===
+namespace iq0000A {
+>iq0000A : Symbol(iq0000A, Decl(instanceQuery-0000.ts, 0, 0))
+
+    declare class A {
+>A : Symbol(A, Decl(instanceQuery-0000.ts, 0, 19))
+
+        x: number;
+>x : Symbol(A.x, Decl(instanceQuery-0000.ts, 2, 21))
+
+        constructor(x: number);
+>x : Symbol(x, Decl(instanceQuery-0000.ts, 4, 20))
+    }
+
+    // The constructor as a variable.
+    A; // displayed as "typeof A"
+>A : Symbol(A, Decl(instanceQuery-0000.ts, 0, 19))
+
+    type AInstanceType = InstanceType<typeof A>; // displayed as "A"
+>AInstanceType : Symbol(AInstanceType, Decl(instanceQuery-0000.ts, 8, 6))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(instanceQuery-0000.ts, 0, 19))
+
+    A.prototype; // displayed as "A";
+>A.prototype : Symbol(A.prototype)
+>A : Symbol(A, Decl(instanceQuery-0000.ts, 0, 19))
+>prototype : Symbol(A.prototype)
+
+    type APrototype = (typeof A)["prototype"]; // displayed as "A"
+>APrototype : Symbol(APrototype, Decl(instanceQuery-0000.ts, 11, 16))
+>A : Symbol(A, Decl(instanceQuery-0000.ts, 0, 19))
+
+    // When the r.h.s. of "instanceof" is not a generic class, we can write:
+    type AInstanceQueryType = instanceof A; // displayed as "instanceof A & A"
+>AInstanceQueryType : Symbol(AInstanceQueryType, Decl(instanceQuery-0000.ts, 12, 46))
+
+    A.prototype.x; // displayed as "number" (existing TS behavior, inconsistent with "B.prototype.x : any" below )
+>A.prototype.x : Symbol(A.x, Decl(instanceQuery-0000.ts, 2, 21))
+>A.prototype : Symbol(A.prototype)
+>A : Symbol(A, Decl(instanceQuery-0000.ts, 0, 19))
+>prototype : Symbol(A.prototype)
+>x : Symbol(A.x, Decl(instanceQuery-0000.ts, 2, 21))
+
+}
+
+namespace iq0000B {
+>iq0000B : Symbol(iq0000B, Decl(instanceQuery-0000.ts, 19, 1))
+
+    declare class B<T extends number | string = string> {
+>B : Symbol(B, Decl(instanceQuery-0000.ts, 21, 19))
+>T : Symbol(T, Decl(instanceQuery-0000.ts, 23, 20))
+
+        x: T;
+>x : Symbol(B.x, Decl(instanceQuery-0000.ts, 23, 57))
+>T : Symbol(T, Decl(instanceQuery-0000.ts, 23, 20))
+
+        constructor(x: T);
+>x : Symbol(x, Decl(instanceQuery-0000.ts, 25, 20))
+>T : Symbol(T, Decl(instanceQuery-0000.ts, 23, 20))
+    }
+    // When the r.h.s. of "instanceof" is the instantiation of a generic class, an error is reported:
+    instanceof B<number>; // error
+>B : Symbol(B, Decl(instanceQuery-0000.ts, 21, 19))
+
+    // The right-hand side of an 'instanceof' expression must not be an instantiation expression.ts(2848)
+
+    // It might not be necessary to have that error, but it is consistent with the existing TS spec.
+    // The next example shows a workaround for this error.
+
+    type BInstanceType = InstanceType<typeof B>; // displayed as "B"
+>BInstanceType : Symbol(BInstanceType, Decl(instanceQuery-0000.ts, 28, 25))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>B : Symbol(B, Decl(instanceQuery-0000.ts, 21, 19))
+
+    B.prototype; // displayed as "B";
+>B.prototype : Symbol(B.prototype)
+>B : Symbol(B, Decl(instanceQuery-0000.ts, 21, 19))
+>prototype : Symbol(B.prototype)
+
+    type BPrototype = (typeof B)["prototype"]; // displayed as "B"
+>BPrototype : Symbol(BPrototype, Decl(instanceQuery-0000.ts, 35, 16))
+>B : Symbol(B, Decl(instanceQuery-0000.ts, 21, 19))
+
+    // When the r.h.s. of "instanceof" is not a generic class, we can write:
+    type BInstanceQueryType = instanceof B; // displayed as "instanceof B & B"
+>BInstanceQueryType : Symbol(BInstanceQueryType, Decl(instanceQuery-0000.ts, 36, 46))
+
+    B.prototype.x; // displayed as "any" (existing TS behavior, inconsistent with "A.prototype.x : number" above)
+>B.prototype.x : Symbol(B.x, Decl(instanceQuery-0000.ts, 23, 57))
+>B.prototype : Symbol(B.prototype)
+>B : Symbol(B, Decl(instanceQuery-0000.ts, 21, 19))
+>prototype : Symbol(B.prototype)
+>x : Symbol(B.x, Decl(instanceQuery-0000.ts, 23, 57))
+
+    type BinstanceXType = BInstanceType["x"] // displayed as "string | number"
+>BinstanceXType : Symbol(BinstanceXType, Decl(instanceQuery-0000.ts, 41, 18))
+>BInstanceType : Symbol(BInstanceType, Decl(instanceQuery-0000.ts, 28, 25))
+
+}
+
+
+namespace iq0000C {
+>iq0000C : Symbol(iq0000C, Decl(instanceQuery-0000.ts, 44, 1))
+
+    declare class C<T extends number | string = string> {
+>C : Symbol(C, Decl(instanceQuery-0000.ts, 47, 19))
+>T : Symbol(T, Decl(instanceQuery-0000.ts, 49, 20))
+
+        x: T;
+>x : Symbol(C.x, Decl(instanceQuery-0000.ts, 49, 57))
+>T : Symbol(T, Decl(instanceQuery-0000.ts, 49, 20))
+
+        constructor(x: T);
+>x : Symbol(x, Decl(instanceQuery-0000.ts, 51, 20))
+>T : Symbol(T, Decl(instanceQuery-0000.ts, 49, 20))
+    }
+
+    C.prototype; // C<any>; this is correct according to the existing TS spec
+>C.prototype : Symbol(C.prototype)
+>C : Symbol(C, Decl(instanceQuery-0000.ts, 47, 19))
+>prototype : Symbol(C.prototype)
+
+    const CNumberConstructor = C<number>; // the variable CNumberConstructor should have type { c:number, constructor(c:number): C<number>, prototype: C<any> }
+>CNumberConstructor : Symbol(CNumberConstructor, Decl(instanceQuery-0000.ts, 56, 9), Decl(instanceQuery-0000.ts, 56, 41))
+>C : Symbol(C, Decl(instanceQuery-0000.ts, 47, 19))
+
+    type CNumberConstructor = typeof CNumberConstructor; // we can declare the type of CNumberConstructor with the same name.
+>CNumberConstructor : Symbol(CNumberConstructor, Decl(instanceQuery-0000.ts, 56, 9), Decl(instanceQuery-0000.ts, 56, 41))
+>CNumberConstructor : Symbol(CNumberConstructor, Decl(instanceQuery-0000.ts, 56, 9), Decl(instanceQuery-0000.ts, 56, 41))
+
+    type CnumberPrototype = CNumberConstructor["prototype"]; // C<any> ; correct according to the existing TS spec
+>CnumberPrototype : Symbol(CnumberPrototype, Decl(instanceQuery-0000.ts, 57, 56))
+>CNumberConstructor : Symbol(CNumberConstructor, Decl(instanceQuery-0000.ts, 56, 9), Decl(instanceQuery-0000.ts, 56, 41))
+
+    type CNumberConstructorInstanceQueryType = instanceof CNumberConstructor; // should display as "instanceof C & C<number>"
+>CNumberConstructorInstanceQueryType : Symbol(CNumberConstructorInstanceQueryType, Decl(instanceQuery-0000.ts, 58, 60))
+
+    C.prototype.x; // displayed as "any"
+>C.prototype.x : Symbol(C.x, Decl(instanceQuery-0000.ts, 49, 57))
+>C.prototype : Symbol(C.prototype)
+>C : Symbol(C, Decl(instanceQuery-0000.ts, 47, 19))
+>prototype : Symbol(C.prototype)
+>x : Symbol(C.x, Decl(instanceQuery-0000.ts, 49, 57))
+
+}
+
+namespace iq0000D {
+>iq0000D : Symbol(iq0000D, Decl(instanceQuery-0000.ts, 64, 1))
+
+    declare class D {
+>D : Symbol(D, Decl(instanceQuery-0000.ts, 66, 19))
+
+        x: number;
+>x : Symbol(D.x, Decl(instanceQuery-0000.ts, 68, 21))
+
+        // no explicit constructor, TS considers constructor to implicity exist
+    }
+
+    // The constructor as a variable.
+    D; // displayed as "typeof D"
+>D : Symbol(D, Decl(instanceQuery-0000.ts, 66, 19))
+
+    type AInstanceType = InstanceType<typeof D>; // displayed as "D"
+>AInstanceType : Symbol(AInstanceType, Decl(instanceQuery-0000.ts, 74, 6))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(instanceQuery-0000.ts, 66, 19))
+
+    D.prototype; // displayed as "D";
+>D.prototype : Symbol(D.prototype)
+>D : Symbol(D, Decl(instanceQuery-0000.ts, 66, 19))
+>prototype : Symbol(D.prototype)
+
+    type APrototype = (typeof D)["prototype"]; // displayed as "D"
+>APrototype : Symbol(APrototype, Decl(instanceQuery-0000.ts, 77, 16))
+>D : Symbol(D, Decl(instanceQuery-0000.ts, 66, 19))
+
+    // When the r.h.s. of "instanceof" is not a generic class, we can write:
+    type DInstanceQueryType = instanceof D; // displayed as "instanceof D & D"
+>DInstanceQueryType : Symbol(DInstanceQueryType, Decl(instanceQuery-0000.ts, 78, 46))
+
+}

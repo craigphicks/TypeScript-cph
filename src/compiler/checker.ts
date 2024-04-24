@@ -14008,7 +14008,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     /** Return properties of an object type or an empty array for other types */
     function getPropertiesOfObjectType(type: Type): Symbol[] {
         if ((type as ObjectType).instanceof){
-            return getPropertiesOfObjectType(instanceQuery().getProtoypeOfInstanceof(type as StructuredType));
+            Debug.assert(false, "unexpected instanceof");
         }
         if (type.flags & TypeFlags.Object) {
             return resolveStructuredTypeMembers(type as ObjectType).properties;
@@ -14021,7 +14021,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      */
     function getPropertyOfObjectType(type: Type, name: __String): Symbol | undefined {
         if ((type as ObjectType).instanceof){
-            return getPropertyOfObjectType(instanceQuery().getProtoypeOfInstanceof(type as StructuredType), name);
+            Debug.assert(false, "unexpected instanceof");
         }
         if (type.flags & TypeFlags.Object) {
             const resolved = resolveStructuredTypeMembers(type as ObjectType);
@@ -14033,6 +14033,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getPropertiesOfUnionOrIntersectionType(type: UnionOrIntersectionType): Symbol[] {
+        {
+
+        }
         if ((type as ObjectType).instanceof && type.flags & TypeFlags.UnionOrIntersection){
             Debug.assert(false,"getPropertiesOfUnionOrIntersectionType: union or intersection type unexpectedly has instanceof member");
         }
@@ -14769,6 +14772,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return (type as UnionType).resolvedReducedType || ((type as UnionType).resolvedReducedType = getReducedUnionType(type as UnionType));
         }
         else if (type.flags & TypeFlags.Intersection) {
+            if (hasInstanceofsInIntersection(type as IntersectionType)){
+                const {instanceofNominalType,others} = partitionReduceInstanceofsIntersection(type as IntersectionType);
+                const otherIntersection = getReducedType(getIntersectionType(others));
+                if (!instanceofNominalType) return otherIntersection;
+                if (otherIntersection === neverType) return neverType;
+                return getIntersectionType([instanceofNominalType, otherIntersection]);
+            }
             if (!((type as IntersectionType).objectFlags & ObjectFlags.IsNeverIntersectionComputed)) {
                 (type as IntersectionType).objectFlags |= ObjectFlags.IsNeverIntersectionComputed |
                     (some(getPropertiesOfUnionOrIntersectionType(type as IntersectionType), isNeverReducedProperty) ? ObjectFlags.IsNeverIntersection : 0);
@@ -14848,7 +14858,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      */
     function getPropertyOfType(type: Type, name: __String, skipObjectFunctionPropertyAugment?: boolean, includeTypeOnlyMembers?: boolean): Symbol | undefined {
         if ((type as ObjectType).instanceof) {
-            return getPropertyOfType(instanceQuery().getProtoypeOfInstanceof(type as ObjectType),name,skipObjectFunctionPropertyAugment,includeTypeOnlyMembers);
+            Debug.assert(false, "unexpected instanceof");
         }
         type = getReducedApparentType(type);
         if (type.flags & TypeFlags.Object) {
@@ -14894,7 +14904,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function getSignaturesOfStructuredType(type: Type, kind: SignatureKind): readonly Signature[] {
         if ((type as ObjectType).instanceof) {
-            return getSignaturesOfStructuredType(instanceQuery().getProtoypeOfInstanceof(type as ObjectType),kind);
+            Debug.assert(false, "unexpected instanceof");
         }
         if (type.flags & TypeFlags.StructuredType) {
             const resolved = resolveStructuredTypeMembers(type as ObjectType);
@@ -14981,7 +14991,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function getIndexInfosOfStructuredType(type: Type): readonly IndexInfo[] {
         if ((type as ObjectType).instanceof) {
-            return getIndexInfosOfStructuredType(instanceQuery().getProtoypeOfInstanceof(type as ObjectType));
+            Debug.assert(false, "unexpected instanceof");
         }
         if (type.flags & TypeFlags.StructuredType) {
             const resolved = resolveStructuredTypeMembers(type as ObjectType);
@@ -16349,53 +16359,46 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         return links.resolvedType;
     }
-
     ///////////////////////////////////////////////////////////////////////////////////////
     function createInstanceofTypeFromConstructorIdentifier(node: Identifier): ObjectType {
-        // copied from TypeChecker
+        // copied from TypeChecker exports but not available internally
+        return createInstanceofTypeFromConstructorSymbol(getResolvedSymbol(node));
+    }
+    function createInstanceofTypeFromConstructorSymbol(constructorVariableSymbol: Symbol): ObjectType {
         function getExportSymbolOfSymbol(symbol: Symbol) {
             return getMergedSymbol(symbol.exportSymbol || symbol);
         }
-
-        const constructorVariableSymbol = getExportSymbolOfSymbol(getResolvedSymbol(node))
+        constructorVariableSymbol = getExportSymbolOfSymbol(constructorVariableSymbol);
         if (!constructorVariableSymbol){
             Debug.assert(false, "!constructorSymbol");
         }
-        const constructorType = getTypeOfSymbol(constructorVariableSymbol);
-        //const structuredType = getInstanceType(constructorType);
-
-
-        // /**
-        //  * If the constructor type has type paramaeters then returh the prototype menber of the constructor type
-        //  */
-        // const constructorType = getTypeOfSymbol(constructorVariableSymbol);
-        // if (nodeHasTypeArguments) {
-        //     return getInstanceType(constructorType);
-        // }
-        // if ((constructorVariableSymbol.declarations?.[0] as ClassLikeDeclaration | undefined)?.typeParameters) {
-        //     return getInstanceType(constructorType);
-        // }
-        // if (constructorType.flags & TypeFlags.TypeParameter) { // not reliable
-        //     return getInstanceType(constructorType);
-        // }
-
         const typeInstanceofConstructor = createObjectType(ObjectFlags.None);
         typeInstanceofConstructor.instanceof = constructorVariableSymbol;
         return typeInstanceofConstructor;
     }
 
-    // TODO: getInstanceType is copied from inner scope of getFlowTypeOfReference, move it up so both can share (assuming they dont diverge)
-    function getInstanceType(constructorType: Type): ObjectType {
-        const prototypePropertyType = getTypeOfPropertyOfType(constructorType, "prototype" as __String);
-        if (prototypePropertyType && !isTypeAny(prototypePropertyType)) {
-            return prototypePropertyType as StructuredType;
+    // Note: getInstanceTypeForInstanceQuery differs from getInstanceType under inner scope of getFlowTypeOfReference.
+    function getInstanceQueryType(constructorType: Type): Type {
+        const prototypeProp = getPropertyOfType(constructorType, "prototype" as __String);
+        const constructSignatures = (constructorType as ResolvedType).constructSignatures;
+        if (prototypeProp && constructSignatures) {
+            // {
+            //     if ((prototypeProp as any).constructorType) Debug.assert((prototypeProp as any).constructorType === constructorType, "prototypeProp.constructorType !== constructorType");
+            //     else Debug.assert((prototypeProp as any).parent === constructorType, "prototypeProp.parent !== constructorType");
+            // }
+            const links = getSymbolLinks(prototypeProp!);
+            if ((links as any).instanceQueryType) {
+                return (links as any).instanceQueryType;
+            }
+            const structuredType = constructSignatures.length
+                ? getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType
+                : emptyObjectType; // not expected but not an error
+            Debug.assert(prototypeProp.parent);
+            const instanceofType = createInstanceofTypeFromConstructorSymbol(prototypeProp.parent!);
+            const instanceQueryType = getIntersectionType([instanceofType, structuredType]);
+            return (links as any).instanceQueryType = instanceQueryType;
         }
-        const constructSignatures = getSignaturesOfType(constructorType, SignatureKind.Construct);
-        if (constructSignatures.length) {
-            return getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType;
-        }
-        // We use the empty object type to indicate we don't know the type of objects created by
-        // this constructor function.
+        // We use the empty object type to indicate we don't know the type of objects created by this constructor function.
         return emptyObjectType;
     }
 
@@ -16405,23 +16408,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const links = getNodeLinks(node);
         if (!links.resolvedType) {
             if (node.exprName.kind===SyntaxKind.Identifier) {
-                const genericConstructorType = checkExpression(node.exprName);
-                if (!isConstructorType(genericConstructorType)){
-                    Debug.assert(false, "!isConstructorType(genericConstructorType)");
-                }
-                const instanceQueryOfGenericConstructor = createInstanceofTypeFromConstructorIdentifier(node .exprName as Identifier);
-                IDebug.ilogGroup(()=>`getTypeFromInstanceQueryNode[dbg] instanceQueryOfGenericConstructor: ${IDebug.dbgs.dbgTypeToString(instanceQueryOfGenericConstructor)}`, loggerLevel);
 
+                let instanceQueryType: Type;
                 const instantiatedConstructorType = checkExpressionWithTypeArguments(node);
-                IDebug.ilogGroup(()=>`getTypeFromInstanceQueryNode[dbg] instantiatedConstructorType: ${IDebug.dbgs.dbgTypeToString(instantiatedConstructorType)}`, loggerLevel);
+                IDebug.ilog(()=>`getTypeFromInstanceQueryNode[dbg] instantiatedConstructorType: ${IDebug.dbgs.dbgTypeToString(instantiatedConstructorType)}`, loggerLevel);
 
                 if (!isConstructorType(instantiatedConstructorType)){
                     Debug.assert(false, "!isConstructorType(instantiatedConstructorType)");
                 }
-                const constructedTypeOfInstantiatedConstructor = getInstanceType(instantiatedConstructorType);
-                IDebug.ilogGroup(()=>`getTypeFromInstanceQueryNode[dbg] constructedTypeOfInstantiatedConstructor: ${IDebug.dbgs.dbgTypeToString(constructedTypeOfInstantiatedConstructor)}`, loggerLevel);
-
-                links.resolvedType = getIntersectionType([instanceQueryOfGenericConstructor, constructedTypeOfInstantiatedConstructor]);
+                instanceQueryType = getInstanceQueryType(instantiatedConstructorType);
+                IDebug.ilog(()=>`getTypeFromInstanceQueryNode[dbg] instanceQueryType: ${IDebug.dbgs.dbgTypeToString(instanceQueryType)}`, loggerLevel);
+                links.resolvedType = instanceQueryType;
             }
             else {
                 Debug.assert(false, "node.exprName.kind!==SyntaxKind.Identifier, not yet implemented");
@@ -16431,7 +16428,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return links.resolvedType;
     }
 
-    function isInstanceofAssignable(sourceInstanceof: Symbol | undefined, targetInstanceof: Symbol): boolean {
+    function isInstanceofAssignable(sourceInstanceof: Symbol, targetInstanceof: Symbol): boolean {
         if (!sourceInstanceof) return false;
         if (sourceInstanceof === targetInstanceof) {
             return true;
@@ -16439,34 +16436,84 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // TODO: check if targetInstanceof is in the proto chain of sourceInstanceof
         return false;
     }
-    function hasSomeInstanceOf(type : Type): boolean {
-        if ((type as ObjectType).instanceof) return true;
-        if (type.flags & TypeFlags.Intersection) {
-            return (type as IntersectionType).types.some(t=>(t as ObjectType).instanceof);
-        }
-        return false;
-    }
-    function getProtoypeOfInstanceof(obj: StructuredType): StructuredType {
-        function getProtoypeOfInstanceofOne(obj: StructuredType): StructuredType {
-            if ((obj as ObjectType).instanceof) {
-                const constructorType = getTypeOfSymbol((obj as ObjectType).instanceof!);
-                return getInstanceType(constructorType) as StructuredType;
+    function typeRelatedToEachTypeInstanceofs(sourceArrs: ObjectType[][], targetArr: ObjectType[], reportErrors: boolean): boolean {
+        Debug.assert(targetArr.length===1, "case targetArr.lenghth!==1, not yet implemented");
+        Debug.assert(targetArr[0].instanceof, "!targetArr[0].instanceof unexpected");
+        forEach(sourceArrs, sourceArr=>Debug.assert(sourceArr.length===1, "case some sourceArr.lenghth!==1 not yet implemented"));
+        let pass = true;
+        for (let i=0; i<sourceArrs.length; i++) {
+            Debug.assert(sourceArrs[i].length===1, undefined, "case sourceArr[].lenghth!==1, not yet implemented");
+            Debug.assert(sourceArrs[i][0].instanceof, "!sourceArrs[][0].instanceof unexpected");
+
+            if (!isInstanceofAssignable(sourceArrs[i][0].instanceof!, targetArr[0].instanceof!)) {
+                pass = false;
             }
-            return obj;
         }
-        if (!(obj as IntersectionType).types) return getProtoypeOfInstanceofOne(obj);
-        Debug.assert(obj.flags & TypeFlags.Intersection);
-        return getIntersectionType(map(((obj as IntersectionType).types as ObjectType[]), getProtoypeOfInstanceofOne)) as IntersectionType;
+        return pass;
+    };
+    function hasInstanceofsInIntersection(type: IntersectionType): boolean {
+        return some(type.types, t=>!!(t as ObjectType).instanceof);
     }
-    function instanceQuery() {
-        return {
-            createInstanceofTypeFromConstructorIdentifier,
-            getTypeFromInstanceQueryNode,
-            isInstanceofAssignable,
-            hasSomeInstanceOf,
-            getProtoypeOfInstanceof,
-        };
+
+    /**
+     *
+     * @param type
+     * @returns
+     */
+    function partitionReduceInstanceofsIntersection(type: IntersectionType): { instanceofNominalType: ObjectType | undefined, others: ObjectType[] } {
+        let instanceofs: ObjectType[] = [];
+        let others: ObjectType[] = [];
+        for (let t of type.types) {
+            if ((t as ObjectType).instanceof) instanceofs.push(t as ObjectType);
+            else others.push(t as ObjectType);
+        }
+        return {instanceofNominalType: reduceInstanceofsNominalIntersection(instanceofs) , others};
     }
+    /**
+     * Reduces an intersection of instanceof types to a single instanceof type.
+     * returns undefined if the common instance of is just "instanceof Object"
+     * TODO: figure out how to identity/create "instanceof Object"
+     */
+    function reduceInstanceofsNominalIntersection(types: ObjectType[]): ObjectType | undefined {
+        if (types.length===0) return undefined; // theoretically instanceof Object, but ptractically speaking that adds no constraint to an object type.
+        if (types.length===1) return types[0];
+        Debug.assert(false, "reduceInstanceofsIntersection: case types.length>1 not yet implemented");
+    }
+
+    // function isInstanceofType(type : Type): boolean {
+    //     if ((type as ObjectType).instanceof) return true;
+    //     return false;
+    // }
+    // function hasSomeInstanceofType(type : Type): boolean {
+    //     if ((type as ObjectType).instanceof) return true;
+    //     if (type.flags & TypeFlags.Intersection) {
+    //         return (type as IntersectionType).types.some(t=>(t as ObjectType).instanceof);
+    //     }
+    //     return false;
+    // }
+    // function getProtoypeOfInstanceof(obj: StructuredType): StructuredType {
+    //     function getProtoypeOfInstanceofOne(obj: StructuredType): StructuredType {
+    //         if ((obj as ObjectType).instanceof) {
+    //             const constructorType = getTypeOfSymbol((obj as ObjectType).instanceof!);
+    //             return getInstanceQueryType(constructorType) as StructuredType;
+    //         }
+    //         return obj;
+    //     }
+    //     if (!(obj as IntersectionType).types) return getProtoypeOfInstanceofOne(obj);
+    //     Debug.assert(obj.flags & TypeFlags.Intersection);
+    //     return getIntersectionType(map(((obj as IntersectionType).types as ObjectType[]), getProtoypeOfInstanceofOne)) as IntersectionType;
+    // }
+    // function instanceQuery() {
+    //     return {
+    //         createInstanceofTypeFromConstructorIdentifier,
+    //         getTypeFromInstanceQueryNode,
+    //         isInstanceofAssignable,
+    //         typeRelatedToEachTypeInstanceofs,
+    //         partitionInstanceofs,
+    //         // hasSomeInstanceOf,
+    //         // getProtoypeOfInstanceof,
+    //     };
+    // }
     ///////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -21815,6 +21862,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const ret = (()=>{
             if (originalSource === originalTarget) return Ternary.True;
 
+            if ((originalSource as ObjectType).instanceof) Debug.assert(false, "isRelatedTo: unexpected .instanceof on originalSource");
+            if ((originalTarget as ObjectType).instanceof) Debug.assert(false, "isRelatedTo: unexpected .instanceof on originalTarget");
             // Before normalization: if `source` is type an object type, and `target` is primitive,
             // skip all the checks we don't need and just return `isSimpleTypeRelatedTo` result
             if (originalSource.flags & TypeFlags.Object && originalTarget.flags & TypeFlags.Primitive) {
@@ -22114,6 +22163,33 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const logLevel = 2;
         IDebug.ilogGroup(()=>`unionOrIntersectionRelatedTo[in]: source:${IDebug.dbgs.dbgTypeToString(source)}, target:${IDebug.dbgs.dbgTypeToString(target)}, intersectionState:${IDebug.dbgs.dbgIntersectionState(intersectionState)}`, logLevel);
         const ret = (()=>{
+            // function partitionInstanceofs(type: IntersectionType): { instanceofs: ObjectType[], others: ObjectType[] } {
+            //     let instanceofs: ObjectType[] = [];
+            //     let others: ObjectType[] = [];
+            //     for (let t of type.types) {
+            //         if ((t as ObjectType).instanceof) instanceofs.push(t as ObjectType);
+            //         else others.push(t as ObjectType);
+            //     }
+            //     return {instanceofs,others};
+            // }
+
+            {
+                // We wish to have never distributed x.instanceof in (x.instanceof & (some union)) over the union. Debug check here that is true.
+                // if (source.flags & TypeFlags.Union) {
+                //     const sourceOrigin = (source as UnionType).origin;
+                //     if (sourceOrigin && sourceOrigin.flags & TypeFlags.Intersection) {
+                //         const {instanceofs, others} = /*instanceQuery().*/partitionInstanceofs(sourceOrigin as IntersectionType);
+                //         Debug.assert(instanceofs.length===0, "instanceofs unexpectedly distributed from sourceOrigin");
+                //     }
+                // }
+                // if (target.flags & TypeFlags.Union) {
+                //     const targetOrigin = (target as UnionType).origin;
+                //     if (targetOrigin && targetOrigin.flags & TypeFlags.Intersection) {
+                //         const {instanceofs, others} = /*instanceQuery().*/partitionInstanceofs(targetOrigin as IntersectionType);
+                //         Debug.assert(instanceofs.length===0, "instanceofs unexpectedly distributed from sourceOrigin");
+                //     }
+                // }
+            }
             // Note that these checks are specifically ordered to produce correct results. In particular,
             // we need to deconstruct unions before intersections (because unions are always at the top),
             // and we need to handle "each" relations before "some" relations for the same kind of type.
@@ -22142,8 +22218,71 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return typeRelatedToSomeType(getRegularTypeOfObjectLiteral(source), target as UnionType, reportErrors && !(source.flags & TypeFlags.Primitive) && !(target.flags & TypeFlags.Primitive), intersectionState);
             }
             if (target.flags & TypeFlags.Intersection) {
+                if (hasInstanceofsInIntersection(target as IntersectionType)){
+                    IDebug.ilog(()=>`unionOrIntersectionRelatedTo[dbg]: hasInstanceofsInIntersection(target as IntersectionType) is true`,logLevel);
+                    // IWOZERE TODO: optimize by using TypeFlags.Instanceof
+                    let {instanceofNominalType: targetInstanceofNominalType, others: targetOthers} = partitionReduceInstanceofsIntersection(target as IntersectionType);
+                    if (targetOthers.length===0) Debug.assert(false, "case no non-instanceof type unexpected or not yet implemented");
+                    if (!targetInstanceofNominalType){
+                        return typeRelatedToEachType(source, getIntersectionType(targetOthers) as IntersectionType, reportErrors, IntersectionState.Target);
+                    }
+                    const sourceOthers: Type[] = [];
+                    let fail = forEachType(source, s=> {
+                        Debug.assert(!(s as ObjectType).instanceof);
+                        if (!(s.flags & TypeFlags.Intersection) || !hasInstanceofsInIntersection(s as IntersectionType)){
+                            return true;
+                        }
+                        const {instanceofNominalType,others} = partitionReduceInstanceofsIntersection(s as IntersectionType);
+
+                        if (!instanceofNominalType) return true;
+
+                        if (!isInstanceofAssignable(instanceofNominalType.instanceof!, targetInstanceofNominalType.instanceof!)) return true;
+
+                        // Buffer these because the instanceofNominalTypes failures are easier for the user to understand.
+                        sourceOthers.push(getIntersectionType(others));
+
+
+                    });
+                    if (fail) return Ternary.False;
+                    return typeRelatedToEachType(getUnionType(sourceOthers), getIntersectionType(targetOthers) as IntersectionType, reportErrors, IntersectionState.Target);
+                }
+
                 return typeRelatedToEachType(source, target as IntersectionType, reportErrors, IntersectionState.Target);
             }
+            Debug.assert(source.flags & TypeFlags.Intersection);
+            {
+                // IWOZERE TODO: optimize by using TypeFlags.Instanceof
+                if (hasInstanceofsInIntersection(source as IntersectionType)){
+                    IDebug.ilog(()=>`unionOrIntersectionRelatedTo[dbg]: source hasInstanceofsInIntersection(source as IntersectionType) is true`,logLevel);
+                    let {instanceofNominalType: sourceInstanceofNominalType, others: sourceOthers} = partitionReduceInstanceofsIntersection(source as IntersectionType);
+                    if (sourceOthers.length===0) Debug.assert(false, "case no non-instanceof type unexpected or not yet implemented");
+                    if (!sourceInstanceofNominalType){
+                        return typeRelatedToSomeType(getIntersectionType(sourceOthers), target as UnionOrIntersectionType, reportErrors, IntersectionState.Source);
+                    }
+                    const targetOthers: Type[] = [];
+                    forEachType(target, t=> {
+                        Debug.assert(!(t as ObjectType).instanceof);
+                        if (!(t.flags & TypeFlags.Intersection) || !hasInstanceofsInIntersection(t as IntersectionType)){
+                            return; // t is not a valid target
+                        }
+                        const {instanceofNominalType,others} = partitionReduceInstanceofsIntersection(t as IntersectionType);
+
+                        if (!instanceofNominalType) return; // t is not a valid target
+
+                        if (!isInstanceofAssignable(sourceInstanceofNominalType.instanceof!, instanceofNominalType.instanceof!)) return; // not a valid target
+
+                        // Buffer these because the instanceofNominalTypes failures are easier for the user to understand.
+                        targetOthers.push(getIntersectionType(others));
+                    });
+                    if (targetOthers.length===0) return Ternary.False;
+                    return typeRelatedToSomeType(
+                        getIntersectionType(sourceOthers),
+                        getUnionType(targetOthers) as UnionType,
+                        reportErrors, IntersectionState.Source);
+                }
+            }
+
+
             // Source is an intersection. For the comparable relation, if the target is a primitive type we hoist the
             // constraints of all non-primitive types in the source into a new intersection. We do this because the
             // intersection may further constrain the constraints of the non-primitive types. For example, given a type
@@ -22650,6 +22789,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 if (result = unionOrIntersectionRelatedTo(source, target, reportErrors, intersectionState)) {
                     return result;
                 }
+                if (
+                    sourceFlags & TypeFlags.Intersection && hasInstanceofsInIntersection(source as IntersectionType) ||
+                    targetFlags & TypeFlags.Intersection && hasInstanceofsInIntersection(target as IntersectionType)
+                ) {
+                    return Ternary.False;
+                }
                 // The ordered decomposition above doesn't handle all cases. Specifically, we also need to handle:
                 // Source is instantiable (e.g. source has union or intersection constraint).
                 // Source is an object, target is a union (e.g. { a, b: boolean } <=> { a, b: true } | { a, b: false }).
@@ -23070,21 +23215,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
 
                 if (targetFlags & TypeFlags.Object && (target as ObjectType).instanceof){
-                    IDebug.ilog(()=>`structuredTypeRelatedToWork: target has instanceof, tests source(s) for valid instanceof`)
-                    if (sourceFlags & TypeFlags.Object && sourceFlags & TypeFlags.Intersection) {
-                        if ((source as IntersectionType).types.every(s=> isInstanceofAssignable((s as ObjectType).instanceof, (target as ObjectType).instanceof!)))
-                            return Ternary.True;
-                        else
-                            return Ternary.False;
-                    }
-                    else {
-                        return isInstanceofAssignable((source as ObjectType).instanceof, (target as ObjectType).instanceof!) ? Ternary.True : Ternary.False;
-                    }
-                } else {
-                    IDebug.ilog(()=>`structuredTypeRelatedToWork: target has no instanceof, downgrade testing for source(s) with instanceof`);
-                    if (sourceFlags & TypeFlags.Object && hasSomeInstanceOf(source as ObjectType)) {
-                        return isRelatedTo(getProtoypeOfInstanceof(source as ObjectType), target, RecursionFlags.Both, /*reportErrors*/ !!errorNode, headMessage);
-                    }
+                    Debug.assert(false, "unexpected instanceof");
                 }
 
                 if (
@@ -36720,21 +36851,32 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     hasSignatures ||= resolved.callSignatures.length !== 0 || resolved.constructSignatures.length !== 0;
                     hasApplicableSignature ||= callSignatures.length !== 0 || constructSignatures.length !== 0;
                     if (callSignatures !== resolved.callSignatures || constructSignatures !== resolved.constructSignatures) {
-                        let members = resolved.members;
-                        let prototypePropNeedsInstantiation: Symbol | undefined;
-                        if (constructSignatures !== resolved.constructSignatures && members.has("prototype" as __String)){
-                            prototypePropNeedsInstantiation = cloneSymbol(members.get("prototype" as __String)!, /*doNotMerge*/true);
-                            members = new Map(members);
-                            members.set("prototype" as __String, prototypePropNeedsInstantiation);
+                        // let members = resolved.members;
+                        // let prototypeProp: Symbol | undefined;
+                        // let originalPrototypeProp: Symbol | undefined;
+                        // if (resolved.constructSignatures.length && constructSignatures !== resolved.constructSignatures && members.has("prototype" as __String)){
+                        //     originalPrototypeProp = members.get("prototype" as __String)!;
+                        //     prototypeProp = cloneSymbol(originalPrototypeProp, /*doNotMerge*/true);
+                        //     prototypeProp.parent = originalPrototypeProp.parent; // vs. prototypeProp.parent = result.symbol;
+                        //     members = new Map(members);
+                        //     members.set("prototype" as __String, prototypeProp);
+                        // }
+                        const result = createAnonymousType(createSymbol(SymbolFlags.None, InternalSymbolName.InstantiationExpression), resolved.members, callSignatures, constructSignatures, resolved.indexInfos) as ResolvedType & InstantiationExpressionType;
+                        if (resolved.constructSignatures.length && constructSignatures !== resolved.constructSignatures && result.members.has("prototype" as __String)){
+                            const originalPrototypeProp = result.members.get("prototype" as __String)!;
+                            const prototypeProp = cloneSymbol(originalPrototypeProp, /*doNotMerge*/true);
+                            prototypeProp.parent = originalPrototypeProp.parent; // vs. prototypeProp.parent = result.symbol; which would show "__instantiationExpression"
+                            resolved.members.set("prototype" as __String, prototypeProp);
                         }
-                        const result = createAnonymousType(createSymbol(SymbolFlags.None, InternalSymbolName.InstantiationExpression), members, callSignatures, constructSignatures, resolved.indexInfos) as ResolvedType & InstantiationExpressionType;
-                        if (prototypePropNeedsInstantiation){
-                            const resultSymbolLinks = getSymbolLinks(result.symbol);
-                            resultSymbolLinks.type = result;
-                            Debug.assert(members.get("prototype" as __String) === prototypePropNeedsInstantiation);
-                            prototypePropNeedsInstantiation.parent = result.symbol;
-                            setTypeOfSymbolDeferredPrototype(prototypePropNeedsInstantiation, result);
-                        }
+
+                        // if (prototypeProp){
+                        //     const resultSymbolLinks = getSymbolLinks(result.symbol);
+                        //     resultSymbolLinks.type = result; not needed ?
+                        //     Debug.assert(members.get("prototype" as __String) === prototypeProp);
+                        //     const prototypeLinks = getSymbolLinks(prototypeProp);
+                        //     (prototypeLinks as any).constructorType = result; // Used in ...
+                        //     setTypeOfSymbolDeferredPrototype(prototypeProp, result);
+                        // }
                         result.objectFlags |= ObjectFlags.InstantiationExpressionType;
                         result.node = node;
                         return result;
