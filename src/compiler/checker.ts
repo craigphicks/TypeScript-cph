@@ -6333,19 +6333,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const objectFlags = getObjectFlags(type);
 
             if ((type as ObjectType).instanceof){
-                // const entity = symbolToNode((type as ObjectType).instanceof!, context, SymbolFlags.Constructor);
-                // Debug.assert(entity.kind === SyntaxKind.Identifier, "Expected an identifier for instanceof symbol");
-                // const ret = factory.createInstanceQueryNode(entity as Identifier);
-                // return ret;
-
-                // IWOZERE TODO: factory.createInstanceQueryNode with symbol and typearg so it looks like "instance C<typearg>"
-                // instead of "instanceof C & C<typearg>
-
+                // Note that in "instanceof C & StructuredType", StructuredType might not be expressed in terms of C.
+                // Therefore we cannot reliably write "instanceof C<some type argument of C>".
                 const entity = symbolToNode((type as ObjectType).instanceof!.symbol, context, SymbolFlags.Constructor);
                 Debug.assert(entity.kind === SyntaxKind.Identifier, "Expected an identifier for instanceof symbol");
-                const t1 = factory.createInstanceQueryNode(entity as Identifier);
-                const t2 = typeToTypeNodeWorker((type as ObjectType).instanceof!.structuredType, context);
-                const ret = factory.createIntersectionTypeNode([t1,t2]);
+                const tn1 = factory.createInstanceQueryNode(entity as Identifier);
+                const tn2 = typeToTypeNodeWorker((type as ObjectType).instanceof!.structuredType, context);
+                const ret = factory.createIntersectionTypeNode([tn1,tn2]); // Is there a way to paranthesize this?  
                 return ret;
             }
 
