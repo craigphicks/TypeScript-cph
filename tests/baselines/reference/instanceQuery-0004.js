@@ -13,7 +13,18 @@ export class B<T> {
 
 const a1 = new A();
 
+
+const B10 = B;
+const B11 = B<any>;
+const B20 = B<number>;
+
 const b1 = new B(12);
+const b2 = new B<number>(12);
+const b10 = new B10(12);
+const b11 = new B11(12);
+const b20 = new B20(12);
+
+
 
 //// [file2.ts]
 import { A, B } from "./file1";
@@ -47,7 +58,14 @@ export class B {
     }
 }
 const a1 = new A();
+const B10 = B;
+const B11 = (B);
+const B20 = (B);
 const b1 = new B(12);
+const b2 = new B(12);
+const b10 = new B10(12);
+const b11 = new B11(12);
+const b20 = new B20(12);
 //// [file2.js]
 import { A, B } from "./file1";
 function main() {
@@ -61,3 +79,15 @@ function main() {
     const b11 = new B11(12);
     const b20 = new B20(12);
 }
+
+
+//// [file1.d.ts]
+export declare class A {
+    a: number;
+}
+export declare class B<T> {
+    b: T;
+    constructor(b: T);
+}
+//// [file2.d.ts]
+export {};

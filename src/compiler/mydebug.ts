@@ -23,7 +23,9 @@ export namespace IDebug {
     export let dbgs: Dbgs = 0 as any as Dbgs;
     export let checker: TypeChecker | undefined;
 
-    export function isActive(loggerLevel: number) { return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile(); }
+    export function isActive(loggerLevel: number) { 
+        return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile();     
+    }
     export function ilog(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
     }

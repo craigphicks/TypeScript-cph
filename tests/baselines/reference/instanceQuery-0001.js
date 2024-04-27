@@ -4,35 +4,42 @@
 namespace instof000 {}
 
 namespace instof0002 {
-    let a: instanceof ArrayBuffer | undefined;
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
-    a;b;
-    a = b;
+    declare let a: ArrayBuffer;
+    declare let b: instanceof ArrayBuffer;
+    a = b; // should not Error
+    b = a; // should Error
+
 }
 namespace instof0003 {
     let a: ArrayBuffer | undefined;
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
-    a;b;
-    a = b;
+    let b = new ArrayBuffer(0);
+    a = b; // should not error
 }
 namespace instof0003 {
     declare let a: ArrayBuffer;
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+    let b = new ArrayBuffer(0) as instanceof ArrayBuffer;
     b = a ; // should Error
 }
 namespace instof005 {
-    declare let a: ArrayBuffer;
-    let b: ArrayBuffer = new ArrayBuffer(0);
+    declare let a: instanceof ArrayBuffer;
+    let b = new ArrayBuffer(0) as instanceof ArrayBuffer;
     b = a ; // should not Error
+    a = b ; // should not Error
 }
 
 namespace instof006 {
 
     declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
-    safeDataView(new ArrayBuffer(0)); // no error expected
+
+    safeDataView(new ArrayBuffer(0)); // should error
+
+    safeDataView(new ArrayBuffer(0) as instanceof ArrayBuffer); // should not error
 
     declare let a: ArrayBuffer;
-    safeDataView(a); // error expected
+    safeDataView(a); // should error
+
+    declare let b: instanceof ArrayBuffer;
+    safeDataView(b); // should not error
 
 }
 
@@ -40,31 +47,29 @@ namespace instof006 {
 "use strict";
 var instof0002;
 (function (instof0002) {
-    var a;
-    var b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
-    a;
-    b;
-    a = b;
+    a = b; // should not Error
+    b = a; // should Error
 })(instof0002 || (instof0002 = {}));
 var instof0003;
 (function (instof0003) {
-    var a;
-    var b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
-    a;
-    b;
-    a = b;
+    let a;
+    let b = new ArrayBuffer(0);
+    a = b; // should not error
 })(instof0003 || (instof0003 = {}));
 (function (instof0003) {
-    var b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+    let b = new ArrayBuffer(0);
     b = a; // should Error
 })(instof0003 || (instof0003 = {}));
 var instof005;
 (function (instof005) {
-    var b = new ArrayBuffer(0);
+    let b = new ArrayBuffer(0);
     b = a; // should not Error
+    a = b; // should not Error
 })(instof005 || (instof005 = {}));
 var instof006;
 (function (instof006) {
-    safeDataView(new ArrayBuffer(0)); // no error expected
-    safeDataView(a); // error expected
+    safeDataView(new ArrayBuffer(0)); // should error
+    safeDataView(new ArrayBuffer(0)); // should not error
+    safeDataView(a); // should error
+    safeDataView(b); // should not error
 })(instof006 || (instof006 = {}));

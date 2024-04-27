@@ -20,10 +20,10 @@ function main() {
     (0 as any as instanceof A).b;
 >(0 as any as instanceof A).b : number
 >                             : ^^^^^^
->(0 as any as instanceof A) : instanceof A
->                           : ^^^^^^^^^^^^
->0 as any as instanceof A : instanceof A
->                         : ^^^^^^^^^^^^
+>(0 as any as instanceof A) : instanceof A & A
+>                           : ^^^^^^^^^^^^^^^^
+>0 as any as instanceof A : instanceof A & A
+>                         : ^^^^^^^^^^^^^^^^
 >0 as any : any
 >0 : 0
 >  : ^

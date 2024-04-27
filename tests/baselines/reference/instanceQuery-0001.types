@@ -7,33 +7,30 @@ namespace instof0002 {
 >instof0002 : typeof instof0002
 >           : ^^^^^^^^^^^^^^^^^
 
-    let a: instanceof ArrayBuffer | undefined;
->a : instanceof ArrayBuffer | undefined
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    declare let a: ArrayBuffer;
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
 
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
->b : instanceof ArrayBuffer
->  : ^^^^^^^^^^^^^^^^^^^^^^
->new ArrayBuffer(0) : instanceof ArrayBuffer
->                   : ^^^^^^^^^^^^^^^^^^^^^^
->ArrayBuffer : ArrayBufferConstructor
->            : ^^^^^^^^^^^^^^^^^^^^^^
->0 : 0
->  : ^
+    declare let b: instanceof ArrayBuffer;
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    a;b;
->a : instanceof ArrayBuffer | undefined
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->b : instanceof ArrayBuffer
->  : ^^^^^^^^^^^^^^^^^^^^^^
+    a = b; // should not Error
+>a = b : instanceof ArrayBufferConstructor & ArrayBuffer
+>      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    a = b;
->a = b : instanceof ArrayBuffer
->      : ^^^^^^^^^^^^^^^^^^^^^^
->a : instanceof ArrayBuffer | undefined
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->b : instanceof ArrayBuffer
->  : ^^^^^^^^^^^^^^^^^^^^^^
+    b = a; // should Error
+>b = a : ArrayBuffer
+>      : ^^^^^^^^^^^
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ArrayBuffer
+>  : ^^^^^^^^^^^
+
 }
 namespace instof0003 {
 >instof0003 : typeof instof0003
@@ -43,29 +40,23 @@ namespace instof0003 {
 >a : ArrayBuffer | undefined
 >  : ^^^^^^^^^^^^^^^^^^^^^^^
 
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
->b : instanceof ArrayBuffer
->  : ^^^^^^^^^^^^^^^^^^^^^^
->new ArrayBuffer(0) : instanceof ArrayBuffer
->                   : ^^^^^^^^^^^^^^^^^^^^^^
+    let b = new ArrayBuffer(0);
+>b : ArrayBuffer
+>  : ^^^^^^^^^^^
+>new ArrayBuffer(0) : ArrayBuffer
+>                   : ^^^^^^^^^^^
 >ArrayBuffer : ArrayBufferConstructor
 >            : ^^^^^^^^^^^^^^^^^^^^^^
 >0 : 0
 >  : ^
 
-    a;b;
+    a = b; // should not error
+>a = b : ArrayBuffer
+>      : ^^^^^^^^^^^
 >a : ArrayBuffer | undefined
 >  : ^^^^^^^^^^^^^^^^^^^^^^^
->b : instanceof ArrayBuffer
->  : ^^^^^^^^^^^^^^^^^^^^^^
-
-    a = b;
->a = b : instanceof ArrayBuffer
->      : ^^^^^^^^^^^^^^^^^^^^^^
->a : ArrayBuffer | undefined
->  : ^^^^^^^^^^^^^^^^^^^^^^^
->b : instanceof ArrayBuffer
->  : ^^^^^^^^^^^^^^^^^^^^^^
+>b : ArrayBuffer
+>  : ^^^^^^^^^^^
 }
 namespace instof0003 {
 >instof0003 : typeof instof0003
@@ -75,11 +66,13 @@ namespace instof0003 {
 >a : ArrayBuffer
 >  : ^^^^^^^^^^^
 
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
->b : instanceof ArrayBuffer
->  : ^^^^^^^^^^^^^^^^^^^^^^
->new ArrayBuffer(0) : instanceof ArrayBuffer
->                   : ^^^^^^^^^^^^^^^^^^^^^^
+    let b = new ArrayBuffer(0) as instanceof ArrayBuffer;
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) as instanceof ArrayBuffer : instanceof ArrayBufferConstructor & ArrayBuffer
+>                                             : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) : ArrayBuffer
+>                   : ^^^^^^^^^^^
 >ArrayBuffer : ArrayBufferConstructor
 >            : ^^^^^^^^^^^^^^^^^^^^^^
 >0 : 0
@@ -88,8 +81,8 @@ namespace instof0003 {
     b = a ; // should Error
 >b = a : ArrayBuffer
 >      : ^^^^^^^^^^^
->b : instanceof ArrayBuffer
->  : ^^^^^^^^^^^^^^^^^^^^^^
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : ArrayBuffer
 >  : ^^^^^^^^^^^
 }
@@ -97,27 +90,37 @@ namespace instof005 {
 >instof005 : typeof instof005
 >          : ^^^^^^^^^^^^^^^^
 
-    declare let a: ArrayBuffer;
->a : ArrayBuffer
->  : ^^^^^^^^^^^
+    declare let a: instanceof ArrayBuffer;
+>a : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    let b: ArrayBuffer = new ArrayBuffer(0);
->b : ArrayBuffer
->  : ^^^^^^^^^^^
->new ArrayBuffer(0) : instanceof ArrayBuffer
->                   : ^^^^^^^^^^^^^^^^^^^^^^
+    let b = new ArrayBuffer(0) as instanceof ArrayBuffer;
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) as instanceof ArrayBuffer : instanceof ArrayBufferConstructor & ArrayBuffer
+>                                             : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) : ArrayBuffer
+>                   : ^^^^^^^^^^^
 >ArrayBuffer : ArrayBufferConstructor
 >            : ^^^^^^^^^^^^^^^^^^^^^^
 >0 : 0
 >  : ^
 
     b = a ; // should not Error
->b = a : ArrayBuffer
->      : ^^^^^^^^^^^
->b : ArrayBuffer
->  : ^^^^^^^^^^^
->a : ArrayBuffer
->  : ^^^^^^^^^^^
+>b = a : instanceof ArrayBufferConstructor & ArrayBuffer
+>      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    a = b ; // should not Error
+>a = b : instanceof ArrayBufferConstructor & ArrayBuffer
+>      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 }
 
 namespace instof006 {
@@ -127,16 +130,30 @@ namespace instof006 {
     declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
 >safeDataView : (buffer: instanceof ArrayBuffer) => DataView
 >             : ^      ^^                      ^^^^^        
->buffer : instanceof ArrayBuffer
->       : ^^^^^^^^^^^^^^^^^^^^^^
+>buffer : instanceof ArrayBufferConstructor & ArrayBuffer
+>       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    safeDataView(new ArrayBuffer(0)); // no error expected
+    safeDataView(new ArrayBuffer(0)); // should error
 >safeDataView(new ArrayBuffer(0)) : DataView
 >                                 : ^^^^^^^^
 >safeDataView : (buffer: instanceof ArrayBuffer) => DataView
 >             : ^      ^^                      ^^^^^^^^^^^^^
->new ArrayBuffer(0) : instanceof ArrayBuffer
->                   : ^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) : ArrayBuffer
+>                   : ^^^^^^^^^^^
+>ArrayBuffer : ArrayBufferConstructor
+>            : ^^^^^^^^^^^^^^^^^^^^^^
+>0 : 0
+>  : ^
+
+    safeDataView(new ArrayBuffer(0) as instanceof ArrayBuffer); // should not error
+>safeDataView(new ArrayBuffer(0) as instanceof ArrayBuffer) : DataView
+>                                                           : ^^^^^^^^
+>safeDataView : (buffer: instanceof ArrayBuffer) => DataView
+>             : ^      ^^                      ^^^^^^^^^^^^^
+>new ArrayBuffer(0) as instanceof ArrayBuffer : instanceof ArrayBufferConstructor & ArrayBuffer
+>                                             : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new ArrayBuffer(0) : ArrayBuffer
+>                   : ^^^^^^^^^^^
 >ArrayBuffer : ArrayBufferConstructor
 >            : ^^^^^^^^^^^^^^^^^^^^^^
 >0 : 0
@@ -146,12 +163,24 @@ namespace instof006 {
 >a : ArrayBuffer
 >  : ^^^^^^^^^^^
 
-    safeDataView(a); // error expected
+    safeDataView(a); // should error
 >safeDataView(a) : DataView
 >                : ^^^^^^^^
 >safeDataView : (buffer: instanceof ArrayBuffer) => DataView
 >             : ^      ^^                      ^^^^^^^^^^^^^
 >a : ArrayBuffer
 >  : ^^^^^^^^^^^
+
+    declare let b: instanceof ArrayBuffer;
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    safeDataView(b); // should not error
+>safeDataView(b) : DataView
+>                : ^^^^^^^^
+>safeDataView : (buffer: instanceof ArrayBuffer) => DataView
+>             : ^      ^^                      ^^^^^^^^^^^^^
+>b : instanceof ArrayBufferConstructor & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 }

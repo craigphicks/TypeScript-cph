@@ -7,50 +7,47 @@ namespace instof000 {}
 namespace instof0002 {
 >instof0002 : Symbol(instof0002, Decl(instanceQuery-0001.ts, 0, 22))
 
-    let a: instanceof ArrayBuffer | undefined;
->a : Symbol(a, Decl(instanceQuery-0001.ts, 3, 7))
+    declare let a: ArrayBuffer;
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 3, 15))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
->b : Symbol(b, Decl(instanceQuery-0001.ts, 4, 7))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+    declare let b: instanceof ArrayBuffer;
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 4, 15))
 
-    a;b;
->a : Symbol(a, Decl(instanceQuery-0001.ts, 3, 7))
->b : Symbol(b, Decl(instanceQuery-0001.ts, 4, 7))
+    a = b; // should not Error
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 3, 15))
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 4, 15))
 
-    a = b;
->a : Symbol(a, Decl(instanceQuery-0001.ts, 3, 7))
->b : Symbol(b, Decl(instanceQuery-0001.ts, 4, 7))
+    b = a; // should Error
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 4, 15))
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 3, 15))
+
 }
 namespace instof0003 {
->instof0003 : Symbol(instof0003, Decl(instanceQuery-0001.ts, 7, 1), Decl(instanceQuery-0001.ts, 13, 1))
+>instof0003 : Symbol(instof0003, Decl(instanceQuery-0001.ts, 8, 1), Decl(instanceQuery-0001.ts, 13, 1))
 
     let a: ArrayBuffer | undefined;
->a : Symbol(a, Decl(instanceQuery-0001.ts, 9, 7))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 10, 7))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
->b : Symbol(b, Decl(instanceQuery-0001.ts, 10, 7))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+    let b = new ArrayBuffer(0);
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 11, 7))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
-    a;b;
->a : Symbol(a, Decl(instanceQuery-0001.ts, 9, 7))
->b : Symbol(b, Decl(instanceQuery-0001.ts, 10, 7))
-
-    a = b;
->a : Symbol(a, Decl(instanceQuery-0001.ts, 9, 7))
->b : Symbol(b, Decl(instanceQuery-0001.ts, 10, 7))
+    a = b; // should not error
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 10, 7))
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 11, 7))
 }
 namespace instof0003 {
->instof0003 : Symbol(instof0003, Decl(instanceQuery-0001.ts, 7, 1), Decl(instanceQuery-0001.ts, 13, 1))
+>instof0003 : Symbol(instof0003, Decl(instanceQuery-0001.ts, 8, 1), Decl(instanceQuery-0001.ts, 13, 1))
 
     declare let a: ArrayBuffer;
 >a : Symbol(a, Decl(instanceQuery-0001.ts, 15, 15))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
-    let b = new ArrayBuffer(0); // should have type instanceof ArrayBuffer
+    let b = new ArrayBuffer(0) as instanceof ArrayBuffer;
 >b : Symbol(b, Decl(instanceQuery-0001.ts, 16, 7))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
     b = a ; // should Error
 >b : Symbol(b, Decl(instanceQuery-0001.ts, 16, 7))
@@ -59,38 +56,51 @@ namespace instof0003 {
 namespace instof005 {
 >instof005 : Symbol(instof005, Decl(instanceQuery-0001.ts, 18, 1))
 
-    declare let a: ArrayBuffer;
+    declare let a: instanceof ArrayBuffer;
 >a : Symbol(a, Decl(instanceQuery-0001.ts, 20, 15))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
 
-    let b: ArrayBuffer = new ArrayBuffer(0);
+    let b = new ArrayBuffer(0) as instanceof ArrayBuffer;
 >b : Symbol(b, Decl(instanceQuery-0001.ts, 21, 7))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
     b = a ; // should not Error
 >b : Symbol(b, Decl(instanceQuery-0001.ts, 21, 7))
 >a : Symbol(a, Decl(instanceQuery-0001.ts, 20, 15))
+
+    a = b ; // should not Error
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 20, 15))
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 21, 7))
 }
 
 namespace instof006 {
->instof006 : Symbol(instof006, Decl(instanceQuery-0001.ts, 23, 1))
+>instof006 : Symbol(instof006, Decl(instanceQuery-0001.ts, 24, 1))
 
     declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
->safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 25, 21))
->buffer : Symbol(buffer, Decl(instanceQuery-0001.ts, 27, 34))
->DataView : Symbol(DataView, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 26, 21))
+>buffer : Symbol(buffer, Decl(instanceQuery-0001.ts, 28, 34))
+>DataView : Symbol(DataView, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
-    safeDataView(new ArrayBuffer(0)); // no error expected
->safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 25, 21))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+    safeDataView(new ArrayBuffer(0)); // should error
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 26, 21))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+    safeDataView(new ArrayBuffer(0) as instanceof ArrayBuffer); // should not error
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 26, 21))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
     declare let a: ArrayBuffer;
->a : Symbol(a, Decl(instanceQuery-0001.ts, 30, 15))
->ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 34, 15))
+>ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
-    safeDataView(a); // error expected
->safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 25, 21))
->a : Symbol(a, Decl(instanceQuery-0001.ts, 30, 15))
+    safeDataView(a); // should error
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 26, 21))
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 34, 15))
+
+    declare let b: instanceof ArrayBuffer;
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 37, 15))
+
+    safeDataView(b); // should not error
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 26, 21))
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 37, 15))
 
 }

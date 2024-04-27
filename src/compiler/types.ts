@@ -6400,7 +6400,7 @@ export type ObjectFlagsType = NullableType | ObjectType | UnionType | Intersecti
 // dprint-ignore
 export interface ObjectType extends Type {
     objectFlags: ObjectFlags;
-    instanceof?: Symbol | undefined;  // Constructor symbol, defined <=> ObjectFlags.Instanceof flag set
+    instanceof?: { symbol: Symbol, structuredType: StructuredType };  // Constructor symbol, defined <=> ObjectFlags.Instanceof flag set
     /** @internal */ members?: SymbolTable;             // Properties by name
     /** @internal */ properties?: Symbol[];             // Properties
     /** @internal */ callSignatures?: readonly Signature[];      // Call signatures of type
