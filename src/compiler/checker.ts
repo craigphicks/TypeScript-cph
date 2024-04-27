@@ -6339,7 +6339,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 Debug.assert(entity.kind === SyntaxKind.Identifier, "Expected an identifier for instanceof symbol");
                 const tn1 = factory.createInstanceQueryNode(entity as Identifier);
                 const tn2 = typeToTypeNodeWorker((type as ObjectType).instanceof!.structuredType, context);
-                const ret = factory.createIntersectionTypeNode([tn1,tn2]); // Is there a way to paranthesize this?  
+                const ret = factory.createIntersectionTypeNode([tn1,tn2]); // Is there a way to paranthesize this?
                 return ret;
             }
 
@@ -14764,6 +14764,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return (type as UnionType).resolvedReducedType || ((type as UnionType).resolvedReducedType = getReducedUnionType(type as UnionType));
         }
         else if (type.flags & TypeFlags.Intersection) {
+            // IWOZERE TODO: test for presence of instanceof
+            if (structuredTypeContainsInstanceof(type as IntersectionType)){
+                const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
+                // TODO: Should this be getReducedApparentType?
+                const reducedInstersectionType = getReducedType(getIntersectionType(intersectionTypeElements));
+                return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
+                //return reduceIntersectionContainingInstanceofs(type as IntersectionType);
+            }
             if (!((type as IntersectionType).objectFlags & ObjectFlags.IsNeverIntersectionComputed)) {
                 (type as IntersectionType).objectFlags |= ObjectFlags.IsNeverIntersectionComputed |
                     (some(getPropertiesOfUnionOrIntersectionType(type as IntersectionType), isNeverReducedProperty) ? ObjectFlags.IsNeverIntersection : 0);
@@ -16371,6 +16379,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         //constructorStructuredType = getReducedApparentType(constructorStructuredType);
         const typeInstanceofConstructor = createObjectType(constructorStructuredType.objectFlags); // TODO set flags .typeFlags |= TypeFlags.Instanceof;
+        // if (constructorStructuredType.flags & (TypeFlags.Union | TypeFlags.Intersection)){
+        //     Debug.assert(false, "let's take a look at this");
+        // }
         typeInstanceofConstructor.instanceof = {symbol:constructorVariableSymbol, structuredType: constructorStructuredType};
         return typeInstanceofConstructor;
     }
@@ -16453,6 +16464,38 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return createInstanceofType(instanceOfSymbol1,type1 as StructuredType);
     }
 
+    function getConstructorSymbolChain(constructorSymbol: Symbol): Symbol[] {
+        const arrs = [constructorSymbol];
+        let constructorType: Type | undefined = getTypeOfSymbol(constructorSymbol);
+        while (constructorType && constructorType !== undefinedType) {
+            const protoProp = getPropertyOfType(constructorType, "prototype" as __String);
+            Debug.assert(protoProp);
+            const type = getTypeOfSymbol(protoProp);
+            if ((constructorType = (type as InterfaceType).resolvedBaseConstructorType) && constructorType !== undefinedType){
+                Debug.assert(constructorType.symbol);
+                arrs.push(constructorType.symbol!);
+            }
+        }
+        return arrs;
+    }
+    /**
+     *
+     * const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type);
+     */
+    function decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type: IntersectionType): {constructorSymbol: Symbol, intersectionTypeElements: Type[] } {
+        const instanceofSymbols: Symbol[] = [];
+        const intersectionTypeElements: Type[] = [];
+        for (const t of type.types) {
+            if (t.flags & TypeFlags.Object && (t as ObjectType).instanceof) {
+                instanceofSymbols.push((t as ObjectType).instanceof!.symbol);
+                intersectionTypeElements.push((t as ObjectType).instanceof!.structuredType);
+            }
+            else intersectionTypeElements.push(t);
+        }
+        const instanceOfSymbol1 = reduceInstanceofNominalSymbols(instanceofSymbols);
+        return {constructorSymbol: instanceOfSymbol1!, intersectionTypeElements};
+    }
+
     /**
      * Reduces an intersection of instanceof types to a single instanceof type.
      * returns undefined if the common instance of is just "instanceof Object"
@@ -16461,13 +16504,22 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function reduceInstanceofNominalSymbols(symbols: Symbol[]): Symbol | undefined {
         if (symbols.length===0) return undefined;
         if (symbols.length===1) return symbols[0];
-        if (!every(symbols, s=>s===symbols[0])) Debug.assert(false, "reduceInstanceofNominalSymbols: case !every(symbols, s=>s===symbols[0]) not yet implemented");
-        return symbols[0];
-    }
-    function reduceInstanceofsNominalIntersection(types: ObjectType[]): ObjectType | undefined {
-        if (types.length===0) return undefined; // theoretically instanceof Object, but ptractically speaking that adds no constraint to an object type.
-        if (types.length===1) return types[0];
-        Debug.assert(false, "reduceInstanceofsIntersection: case types.length>1 not yet implemented");
+        if (every(symbols, s=>s===symbols[0])) return symbols[0];
+        const allsym = new Set(symbols);
+        //let commonAncestor: Symbol | undefined;
+        const chains: Symbol[][] = [];
+        for (const s of allsym) {
+            chains.push(getConstructorSymbolChain(s));
+        }
+        let lastGoodIndex = 0;
+        for (let index = -1; index >= -chains.length; index--) {
+            if (every(chains.slice(1), chain=>chain[chain.length+index]===chains[0][chains[0].length+index])){
+                lastGoodIndex = index;
+            }
+            else break;
+        }
+        if (lastGoodIndex===0) return undefined;
+        return chains[0][chains[0].length+lastGoodIndex];
     }
     ///////////////////////////////////////////////////////////////////////////////////////
 

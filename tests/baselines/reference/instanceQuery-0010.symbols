@@ -1,0 +1,47 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0010.ts] ////
+
+=== instanceQuery-0010.ts ===
+namespace iq0010 {
+>iq0010 : Symbol(iq0010, Decl(instanceQuery-0010.ts, 0, 0))
+
+    class EmptyBase {}
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0010.ts, 0, 18))
+
+    class APre  extends EmptyBase{
+>APre : Symbol(APre, Decl(instanceQuery-0010.ts, 2, 22))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0010.ts, 0, 18))
+    }
+    class A  extends APre {
+>A : Symbol(A, Decl(instanceQuery-0010.ts, 5, 5))
+>APre : Symbol(APre, Decl(instanceQuery-0010.ts, 2, 22))
+
+        a: number = 0;
+>a : Symbol(A.a, Decl(instanceQuery-0010.ts, 6, 27))
+    }
+
+    class BPre  extends EmptyBase{
+>BPre : Symbol(BPre, Decl(instanceQuery-0010.ts, 8, 5))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0010.ts, 0, 18))
+    }
+    class B extends BPre {
+>B : Symbol(B, Decl(instanceQuery-0010.ts, 11, 5))
+>BPre : Symbol(BPre, Decl(instanceQuery-0010.ts, 8, 5))
+
+        b: number = 0;
+>b : Symbol(B.b, Decl(instanceQuery-0010.ts, 12, 26))
+    }
+
+    declare const x: instanceof A & instanceof B;
+>x : Symbol(x, Decl(instanceQuery-0010.ts, 16, 17))
+
+    x satisfies EmptyBase; // no error
+>x : Symbol(x, Decl(instanceQuery-0010.ts, 16, 17))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0010.ts, 0, 18))
+
+    declare const y: EmptyBase;
+>y : Symbol(y, Decl(instanceQuery-0010.ts, 20, 17))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0010.ts, 0, 18))
+
+    y satisfies instanceof A & instanceof B; // should error
+>y : Symbol(y, Decl(instanceQuery-0010.ts, 20, 17))
+}

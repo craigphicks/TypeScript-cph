@@ -1,0 +1,69 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0010.ts] ////
+
+=== instanceQuery-0010.ts ===
+namespace iq0010 {
+>iq0010 : typeof iq0010
+>       : ^^^^^^^^^^^^^
+
+    class EmptyBase {}
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+    class APre  extends EmptyBase{
+>APre : APre
+>     : ^^^^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+    }
+    class A  extends APre {
+>A : A
+>  : ^
+>APre : APre
+>     : ^^^^
+
+        a: number = 0;
+>a : number
+>  : ^^^^^^
+>0 : 0
+>  : ^
+    }
+
+    class BPre  extends EmptyBase{
+>BPre : BPre
+>     : ^^^^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+    }
+    class B extends BPre {
+>B : B
+>  : ^
+>BPre : BPre
+>     : ^^^^
+
+        b: number = 0;
+>b : number
+>  : ^^^^^^
+>0 : 0
+>  : ^
+    }
+
+    declare const x: instanceof A & instanceof B;
+>x : instanceof EmptyBase & (A & B)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    x satisfies EmptyBase; // no error
+>x satisfies EmptyBase : instanceof EmptyBase & (A & B)
+>                      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : instanceof EmptyBase & (A & B)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    declare const y: EmptyBase;
+>y : EmptyBase
+>  : ^^^^^^^^^
+
+    y satisfies instanceof A & instanceof B; // should error
+>y satisfies instanceof A & instanceof B : EmptyBase
+>                                        : ^^^^^^^^^
+>y : EmptyBase
+>  : ^^^^^^^^^
+}
