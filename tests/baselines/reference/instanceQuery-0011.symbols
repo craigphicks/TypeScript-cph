@@ -50,7 +50,7 @@ namespace iq0010b {
     declare let b3: instanceof B3;
 >b3 : Symbol(b3, Decl(instanceQuery-0011.ts, 18, 15))
 
-    a1 satisfies AQ; // error
+    a1 satisfies AQ; // error (because (typeof A1).constructor < (typeof A2).constructor)
 >a1 : Symbol(a1, Decl(instanceQuery-0011.ts, 15, 15))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
@@ -75,6 +75,20 @@ namespace iq0010b {
 
     };
 
-    // new AP() as instanceof AP satisfies AQ; // no error
-    // new AP() as instanceof AQ satisfies AP; // no error
+    new AP() as instanceof AP satisfies AQ; // no error
+>AP : Symbol(AP, Decl(instanceQuery-0011.ts, 23, 20))
+>AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
+
+    declare const aq: AQ;
+>aq : Symbol(aq, Decl(instanceQuery-0011.ts, 31, 17))
+>AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
+
+    aq satisfies AP; // no error
+>aq : Symbol(aq, Decl(instanceQuery-0011.ts, 31, 17))
+>AP : Symbol(AP, Decl(instanceQuery-0011.ts, 23, 20))
+
+    aq as instanceof AP satisfies AQ; // no error
+>aq : Symbol(aq, Decl(instanceQuery-0011.ts, 31, 17))
+>AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
+
 }

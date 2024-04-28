@@ -16352,20 +16352,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return links.resolvedType;
     }
     ///////////////////////////////////////////////////////////////////////////////////////
-    // function createInstanceofTypeFromConstructorIdentifier(node: Identifier): ObjectType {
-    //     // copied from TypeChecker exports but not available internally
-    //     return createInstanceofTypeFromConstructorSymbol(getResolvedSymbol(node));
-    // }
     function getInstanceofStructuredType(type: ObjectType): StructuredType {
         return type.instanceof!.structuredType;
     }
-    function getInstanceofConstructorSymbol(type: ObjectType): Symbol {
-        return type.instanceof!.symbol;
-    }
-    // function createInstanceofType(constructorVariableSymbol: Symbol, structuredType: StructuredType): ObjectType {
-    //     const instanceQueryType = createObjectType(structuredType.objectFlags); // TODO set flags .typeFlags |= TypeFlags.Instanceof;
-    //     instanceQueryType.instanceof = {symbol:constructorVariableSymbol, structuredType};
-    //     return instanceQueryType;
+    // function getInstanceofConstructorSymbol(type: ObjectType): Symbol {
+    //     return type.instanceof!.symbol;
     // }
 
     function createInstanceofTypeFromConstructorSymbol(constructorVariableSymbol: Symbol, constructorStructuredType: StructuredType): ObjectType {
@@ -16390,10 +16381,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const prototypeProp = getPropertyOfType(constructorType, "prototype" as __String);
         const constructSignatures = (constructorType as ResolvedType).constructSignatures;
         if (prototypeProp && constructSignatures) {
-            // {
-            //     if ((prototypeProp as any).constructorType) Debug.assert((prototypeProp as any).constructorType === constructorType, "prototypeProp.constructorType !== constructorType");
-            //     else Debug.assert((prototypeProp as any).parent === constructorType, "prototypeProp.parent !== constructorType");
-            // }
             const links = getSymbolLinks(prototypeProp!);
             if ((links as any).instanceQueryType) {
                 return (links as any).instanceQueryType;
@@ -16440,8 +16427,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (sourceInstanceof === targetInstanceof) {
             return true;
         }
-        // TODO: check if targetInstanceof is in the proto chain of sourceInstanceof
-        return false;
+        const sourceChain = getConstructorSymbolChain(sourceInstanceof);
+        return sourceChain.includes(targetInstanceof);
     }
     function structuredTypeContainsInstanceof(type: Type): boolean {
         // TODO: would prefer to use flags forwarded to Structured Type

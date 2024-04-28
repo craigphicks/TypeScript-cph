@@ -77,7 +77,7 @@ namespace iq0010b {
 >b3 : instanceof B3 & B3
 >   : ^^^^^^^^^^^^^^^^^^
 
-    a1 satisfies AQ; // error
+    a1 satisfies AQ; // error (because (typeof A1).constructor < (typeof A2).constructor)
 >a1 satisfies AQ : instanceof A1 & A1
 >                : ^^^^^^^^^^^^^^^^^^
 >a1 : instanceof A1 & A1
@@ -115,6 +115,32 @@ namespace iq0010b {
 
     };
 
-    // new AP() as instanceof AP satisfies AQ; // no error
-    // new AP() as instanceof AQ satisfies AP; // no error
+    new AP() as instanceof AP satisfies AQ; // no error
+>new AP() as instanceof AP satisfies AQ : instanceof AP & AP
+>                                       : ^^^^^^^^^^^^^^^^^^
+>new AP() as instanceof AP : instanceof AP & AP
+>                          : ^^^^^^^^^^^^^^^^^^
+>new AP() : AP
+>         : ^^
+>AP : typeof AP
+>   : ^^^^^^^^^
+
+    declare const aq: AQ;
+>aq : instanceof A2 & (A1 & A2 & A3 & B3)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    aq satisfies AP; // no error
+>aq satisfies AP : instanceof A2 & (A1 & A2 & A3 & B3)
+>                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>aq : instanceof A2 & (A1 & A2 & A3 & B3)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    aq as instanceof AP satisfies AQ; // no error
+>aq as instanceof AP satisfies AQ : instanceof AP & AP
+>                                 : ^^^^^^^^^^^^^^^^^^
+>aq as instanceof AP : instanceof AP & AP
+>                    : ^^^^^^^^^^^^^^^^^^
+>aq : instanceof A2 & (A1 & A2 & A3 & B3)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 }

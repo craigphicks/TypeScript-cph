@@ -5,7 +5,17 @@ instanceQuery-0011.ts(22,8): error TS1360: Type 'instanceof A2 & A2' does not sa
       Types of property 'a' are incompatible.
         Type 'number' is not assignable to type '0 | 1'.
 instanceQuery-0011.ts(23,8): error TS1360: Type 'instanceof A3 & A3' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.
+  Type 'A3' is not assignable to type 'A1 & A2 & A3 & B3'.
+    Type 'A3' is not assignable to type 'B3'.
+      Types of property 'a' are incompatible.
+        Type '0 | 1' is not assignable to type '1 | 2'.
+          Type '0' is not assignable to type '1 | 2'.
 instanceQuery-0011.ts(24,8): error TS1360: Type 'instanceof B3 & B3' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.
+  Type 'B3' is not assignable to type 'A1 & A2 & A3 & B3'.
+    Type 'B3' is not assignable to type 'A3'.
+      Types of property 'a' are incompatible.
+        Type '1 | 2' is not assignable to type '0 | 1'.
+          Type '2' is not assignable to type '0 | 1'.
 
 
 ==== instanceQuery-0011.ts (4 errors) ====
@@ -29,7 +39,7 @@ instanceQuery-0011.ts(24,8): error TS1360: Type 'instanceof B3 & B3' does not sa
         declare let a3: instanceof A3;
         declare let b3: instanceof B3;
     
-        a1 satisfies AQ; // error
+        a1 satisfies AQ; // error (because (typeof A1).constructor < (typeof A2).constructor)
            ~~~~~~~~~
 !!! error TS1360: Type 'instanceof A1 & A1' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.
         a2 satisfies AQ; // error
@@ -42,14 +52,29 @@ instanceQuery-0011.ts(24,8): error TS1360: Type 'instanceof B3 & B3' does not sa
         a3 satisfies AQ; // error
            ~~~~~~~~~
 !!! error TS1360: Type 'instanceof A3 & A3' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.
+!!! error TS1360:   Type 'A3' is not assignable to type 'A1 & A2 & A3 & B3'.
+!!! error TS1360:     Type 'A3' is not assignable to type 'B3'.
+!!! error TS1360:       Types of property 'a' are incompatible.
+!!! error TS1360:         Type '0 | 1' is not assignable to type '1 | 2'.
+!!! error TS1360:           Type '0' is not assignable to type '1 | 2'.
         b3 satisfies AQ; // error
            ~~~~~~~~~
 !!! error TS1360: Type 'instanceof B3 & B3' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.
+!!! error TS1360:   Type 'B3' is not assignable to type 'A1 & A2 & A3 & B3'.
+!!! error TS1360:     Type 'B3' is not assignable to type 'A3'.
+!!! error TS1360:       Types of property 'a' are incompatible.
+!!! error TS1360:         Type '1 | 2' is not assignable to type '0 | 1'.
+!!! error TS1360:           Type '2' is not assignable to type '0 | 1'.
     
         class AP  extends A2 {
             a: 1 = 1;
         };
     
-        // new AP() as instanceof AP satisfies AQ; // no error
-        // new AP() as instanceof AQ satisfies AP; // no error
+        new AP() as instanceof AP satisfies AQ; // no error
+    
+        declare const aq: AQ;
+        aq satisfies AP; // no error
+    
+        aq as instanceof AP satisfies AQ; // no error
+    
     }

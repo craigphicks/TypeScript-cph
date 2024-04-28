@@ -21,7 +21,7 @@ namespace iq0010b {
     declare let a3: instanceof A3;
     declare let b3: instanceof B3;
 
-    a1 satisfies AQ; // error
+    a1 satisfies AQ; // error (because (typeof A1).constructor < (typeof A2).constructor)
     a2 satisfies AQ; // error
     a3 satisfies AQ; // error
     b3 satisfies AQ; // error
@@ -30,8 +30,13 @@ namespace iq0010b {
         a: 1 = 1;
     };
 
-    // new AP() as instanceof AP satisfies AQ; // no error
-    // new AP() as instanceof AQ satisfies AP; // no error
+    new AP() as instanceof AP satisfies AQ; // no error
+
+    declare const aq: AQ;
+    aq satisfies AP; // no error
+
+    aq as instanceof AP satisfies AQ; // no error
+
 }
 
 //// [instanceQuery-0011.js]
@@ -52,7 +57,7 @@ var iq0010b;
     class B3 extends A2 {
         a = 2;
     }
-    a1; // error
+    a1; // error (because (typeof A1).constructor < (typeof A2).constructor)
     a2; // error
     a3; // error
     b3; // error
@@ -60,8 +65,9 @@ var iq0010b;
         a = 1;
     }
     ;
-    // new AP() as instanceof AP satisfies AQ; // no error
-    // new AP() as instanceof AQ satisfies AP; // no error
+    new AP(); // no error
+    aq; // no error
+    aq; // no error
 })(iq0010b || (iq0010b = {}));
 
 
