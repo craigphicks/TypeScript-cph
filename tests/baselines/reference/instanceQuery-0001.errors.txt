@@ -1,4 +1,5 @@
 instanceQuery-0001.ts(7,5): error TS2322: Type 'ArrayBuffer' is not assignable to type 'instanceof ArrayBufferConstructor & ArrayBuffer'.
+  Object type ArrayBuffer has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof ArrayBufferConstructor
 instanceQuery-0001.ts(18,5): error TS2322: Type 'ArrayBuffer' is not assignable to type 'instanceof ArrayBufferConstructor & ArrayBuffer'.
 instanceQuery-0001.ts(31,18): error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type 'instanceof ArrayBufferConstructor & ArrayBuffer'.
 instanceQuery-0001.ts(36,18): error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type 'instanceof ArrayBufferConstructor & ArrayBuffer'.
@@ -14,6 +15,7 @@ instanceQuery-0001.ts(36,18): error TS2345: Argument of type 'ArrayBuffer' is no
         b = a; // should Error
         ~
 !!! error TS2322: Type 'ArrayBuffer' is not assignable to type 'instanceof ArrayBufferConstructor & ArrayBuffer'.
+!!! error TS2322:   Object type ArrayBuffer has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof ArrayBufferConstructor
     
     }
     namespace instof0003 {

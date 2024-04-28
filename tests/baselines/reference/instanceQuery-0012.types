@@ -1,0 +1,130 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0012.ts] ////
+
+=== instanceQuery-0012.ts ===
+// namespace iq0012a {
+
+//     class EmptyBase {}
+//     class B1  extends EmptyBase{ a = 0; }
+//     class B2  extends B1 { b = 0; }
+//     declare let b1: B1;
+
+//     b1 satisfies B2; // should be error, needs message
+
+// }
+
+
+namespace iq0012b {
+>iq0012b : typeof iq0012b
+>        : ^^^^^^^^^^^^^^
+
+    class EmptyBase {}
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+    class A1  extends EmptyBase{ a = 0; }
+>A1 : A1
+>   : ^^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+>a : number
+>  : ^^^^^^
+>0 : 0
+>  : ^
+
+    class A2  extends A1 {}
+>A2 : A2
+>   : ^^
+>A1 : A1
+>   : ^^
+
+    declare let a1: instanceof A1;
+>a1 : instanceof A1 & A1
+>   : ^^^^^^^^^^^^^^^^^^
+
+    const one = 1 as const;
+>one : 1
+>    : ^
+>1 as const : 1
+>           : ^
+>1 : 1
+>  : ^
+
+    const sym = Symbol();
+>sym : unique symbol
+>    : ^^^^^^^^^^^^^
+>Symbol() : unique symbol
+>         : ^^^^^^^^^^^^^
+>Symbol : SymbolConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+    a1 satisfies instanceof A2; // should be error
+>a1 satisfies instanceof A2 : instanceof A1 & A1
+>                           : ^^^^^^^^^^^^^^^^^^
+>a1 : instanceof A1 & A1
+>   : ^^^^^^^^^^^^^^^^^^
+
+    ({}) satisfies instanceof EmptyBase; // should be error
+>({}) satisfies instanceof EmptyBase : {}
+>                                    : ^^
+>({}) : {}
+>     : ^^
+>{} : {}
+>   : ^^
+
+    // Note: all the primitives below get promoted to object types so the primitive error message is never triggered.  Is that OK?
+
+    one satisfies instanceof EmptyBase; // should be error
+>one satisfies instanceof EmptyBase : 1
+>                                   : ^
+>one : 1
+>    : ^
+
+    1n satisfies instanceof EmptyBase; // should be error
+>1n satisfies instanceof EmptyBase : 1n
+>                                  : ^^
+>1n : 1n
+>   : ^^
+
+    sym satisfies instanceof EmptyBase; // should be error
+>sym satisfies instanceof EmptyBase : unique symbol
+>                                   : ^^^^^^^^^^^^^
+>sym : unique symbol
+>    : ^^^^^^^^^^^^^
+
+
+    ////////////////////////////////////////////////////////////////////
+    // compare to rhs without instanceof -- none of these are errors, which might not be desirable.
+
+    a1 satisfies A2; // not an error
+>a1 satisfies A2 : instanceof A1 & A1
+>                : ^^^^^^^^^^^^^^^^^^
+>a1 : instanceof A1 & A1
+>   : ^^^^^^^^^^^^^^^^^^
+
+    ({}) satisfies EmptyBase; // not an error
+>({}) satisfies EmptyBase : {}
+>                         : ^^
+>({}) : {}
+>     : ^^
+>{} : {}
+>   : ^^
+
+    one satisfies EmptyBase; // not an error
+>one satisfies EmptyBase : 1
+>                        : ^
+>one : 1
+>    : ^
+
+    1n satisfies EmptyBase; // not an error
+>1n satisfies EmptyBase : 1n
+>                       : ^^
+>1n : 1n
+>   : ^^
+
+    sym satisfies EmptyBase; // not an error
+>sym satisfies EmptyBase : unique symbol
+>                        : ^^^^^^^^^^^^^
+>sym : unique symbol
+>    : ^^^^^^^^^^^^^
+
+}

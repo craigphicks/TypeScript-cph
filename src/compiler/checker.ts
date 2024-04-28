@@ -2459,8 +2459,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function error(location: Node | undefined, message: DiagnosticMessage, ...args: DiagnosticArguments): Diagnostic {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`error[in]: location: ${IDebug.dbgs.dbgNodeToString(location)}, ${message.message}`, loggerLevel);
         const diagnostic = createError(location, message, ...args);
+        if (IDebug.isActive(loggerLevel)) IDebug.dbgs.dbgDiagnosticsToStrings(diagnostic).forEach(s => IDebug.ilog(()=>s,loggerLevel));
         diagnostics.add(diagnostic);
+        IDebug.ilogGroupEnd(()=>`error[out]`,loggerLevel);
         return diagnostic;
     }
 
@@ -23162,10 +23166,36 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
                 if (targetFlags & TypeFlags.Object && (target as ObjectType).instanceof){
                     IDebug.ilog(()=>`structuredTypeRelatedToWork: target has instanceof, test source`, loggerLevel);
-                    if (!(sourceFlags & TypeFlags.Object)) return Ternary.False;
+                    if (!(sourceFlags & TypeFlags.Object)) {
+                        if (reportErrors){
+                            // Non_object_type_0_cannot_be_instanceof_constructor_of_typeof_1
+                            if (relation!==assignableRelation) TSDebug.assert(false, "error cases other than assignble not yet implemented");
+                            reportError(Diagnostics.Type_0_is_not_an_object_therefore_is_not_assignable_to_constructor_typeof_1,
+                                typeToString(source),
+                                (target as ObjectType).instanceof!.symbol.escapedName as string);
+                        }
+                        return Ternary.False;
+                    }
                     TSDebug.assert(!(sourceFlags & TypeFlags.UnionOrIntersection), "source Union/Intersection types should have been handled above");
-                    if (!(source as ObjectType).instanceof) return Ternary.False;
-                    if (!isInstanceofAssignable((source as ObjectType).instanceof!.symbol, (target as ObjectType).instanceof!.symbol)) return Ternary.False;
+                    if (!(source as ObjectType).instanceof) {
+                        if (reportErrors){
+                            // Object_0_has_no_constructor_so_cannot_be_instanceof_constructor_of_typeof_1
+                            if (relation!==assignableRelation) TSDebug.assert(false, "error cases other than assignble not yet implemented");
+                            reportError(Diagnostics.Object_type_0_has_no_constructor_declared_via_instanceof_therefore_is_not_assignable_to_constructor_typeof_1,
+                                typeToString(source),
+                                (target as ObjectType).instanceof!.symbol.escapedName as string);
+                        }
+                        return Ternary.False;
+                    }
+                    if (!isInstanceofAssignable((source as ObjectType).instanceof!.symbol, (target as ObjectType).instanceof!.symbol)) {
+                        if (reportErrors){
+                            if (relation!==assignableRelation) TSDebug.assert(false, "error cases other than assignble not yet implemented");
+                            reportError(Diagnostics.Constructor_typeof_0_is_not_assignable_to_constructor_typeof_1,
+                                (source as ObjectType).instanceof!.symbol.escapedName as string,
+                                (target as ObjectType).instanceof!.symbol.escapedName as string);
+                        }
+                        return Ternary.False;
+                    }
                     return isRelatedTo((source as ObjectType).instanceof!.structuredType,(target as ObjectType).instanceof!.structuredType, RecursionFlags.Both, reportErrors);
                 }
                 if (sourceFlags & TypeFlags.Object && (source as ObjectType).instanceof){

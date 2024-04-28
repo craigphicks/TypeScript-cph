@@ -1,4 +1,5 @@
 instanceQuery-0011.ts(21,8): error TS1360: Type 'instanceof A1 & A1' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.
+  Constructor typeof A1 is not assignable to constructor typeof A2
 instanceQuery-0011.ts(22,8): error TS1360: Type 'instanceof A2 & A2' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.
   Type 'A2' is not assignable to type 'A1 & A2 & A3 & B3'.
     Type 'A2' is not assignable to type 'A3'.
@@ -42,6 +43,7 @@ instanceQuery-0011.ts(24,8): error TS1360: Type 'instanceof B3 & B3' does not sa
         a1 satisfies AQ; // error (because (typeof A1).constructor < (typeof A2).constructor)
            ~~~~~~~~~
 !!! error TS1360: Type 'instanceof A1 & A1' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.
+!!! error TS1360:   Constructor typeof A1 is not assignable to constructor typeof A2
         a2 satisfies AQ; // error
            ~~~~~~~~~
 !!! error TS1360: Type 'instanceof A2 & A2' does not satisfy the expected type 'instanceof A2 & (A1 & A2 & A3 & B3)'.

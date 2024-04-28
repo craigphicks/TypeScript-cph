@@ -1,4 +1,5 @@
 instanceQuery-0010.ts(23,7): error TS1360: Type 'EmptyBase' does not satisfy the expected type 'instanceof EmptyBase & (A & B)'.
+  Object type EmptyBase has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof EmptyBase
 
 
 ==== instanceQuery-0010.ts (1 errors) ====
@@ -27,4 +28,5 @@ instanceQuery-0010.ts(23,7): error TS1360: Type 'EmptyBase' does not satisfy the
         y satisfies instanceof A & instanceof B; // should error
           ~~~~~~~~~
 !!! error TS1360: Type 'EmptyBase' does not satisfy the expected type 'instanceof EmptyBase & (A & B)'.
+!!! error TS1360:   Object type EmptyBase has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof EmptyBase
     }

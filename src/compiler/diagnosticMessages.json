@@ -7996,5 +7996,17 @@
     "Enum member following a non-literal numeric member must have an initializer when 'isolatedModules' is enabled.": {
         "category": "Error",
         "code": 18056
+    },
+    "Type {0} is not an object therefore is not assignable to constructor typeof {1}": {
+        "category": "Error",
+        "code": 18057
+    },
+    "Object type {0} has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof {1}": {
+        "category": "Error",
+        "code": 18058
+    },
+    "Constructor typeof {0} is not assignable to constructor typeof {1}": {
+        "category": "Error",
+        "code": 18059
     }
 }

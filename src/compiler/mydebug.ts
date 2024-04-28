@@ -1,6 +1,6 @@
 import * as ts from "./_namespaces/ts";
 import { Debug, LogLevel } from "./debug";
-import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite, TypeFlags, UnionOrIntersectionType, Ternary, ObjectType } from "./types";
+import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite, TypeFlags, UnionOrIntersectionType, Ternary, ObjectType, DiagnosticMessage } from "./types";
 import { getNodeId, CheckMode, SignatureCheckMode } from "./checker";
 //import { castHereafter } from "./core";
 
@@ -23,8 +23,8 @@ export namespace IDebug {
     export let dbgs: Dbgs = 0 as any as Dbgs;
     export let checker: TypeChecker | undefined;
 
-    export function isActive(loggerLevel: number) { 
-        return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile();     
+    export function isActive(loggerLevel: number) {
+        return checker && logLevel >= loggerLevel && loggingHost && loggingHost.isActiveFile();
     }
     export function ilog(message: (()=>string), level?: LogLevel) {
         if (loggingHost) loggingHost.ilog(message, level);
@@ -164,6 +164,7 @@ export interface Dbgs {
     // dbgWriteSignatureArray: (sa: readonly Signature[], write?: (s: string) => void) => void;
     dbgSymbolToString(s: Readonly<Symbol | undefined>): string;
     dbgDiagnosticsToStrings(diagnostic: Diagnostic | undefined): string[];
+    dbgDiagnosticMessageToStrings(dm: DiagnosticMessage): string[];
     dbgMapperToString(mapper: TypeMapper | undefined): string;
     dbgInferenceInfoToStrings(info: InferenceInfo): string[];
     dbgInferenceContextToStrings(ic: InferenceContext): string[];
@@ -321,6 +322,28 @@ export class DbgsClass implements Dbgs{
         }
         return astr;
     }
+    // export interface DiagnosticMessage {
+    //     key: string;
+    //     category: DiagnosticCategory;
+    //     code: number;
+    //     message: string;
+    //     reportsUnnecessary?: {};
+    //     reportsDeprecated?: {};
+    //     /** @internal */
+    //     elidedInCompatabilityPyramid?: boolean;
+    // }
+    dbgDiagnosticMessageToStrings(dm: DiagnosticMessage): string[] {
+        const astr: string[] = [];
+        astr.push(`key: ${dm.key}`);
+        astr.push(`category: ${Debug.formatEnum(dm.category, (ts as any).DiagnosticCategory, /*isFlags*/ true)}`);
+        astr.push(`code: ${dm.code}`);
+        astr.push(`message: ${dm.message}`);
+        if (dm.reportsUnnecessary) astr.push("reportsUnnecessary: true");
+        if (dm.reportsDeprecated) astr.push("reportsDeprecated: true");
+        if (dm.elidedInCompatabilityPyramid) astr.push("elidedInCompatabilityPyramid: true");
+        return astr;
+    }
+
     dbgMapperToString(mapper: TypeMapper | undefined): string {
         if (!mapper) return "<#undef>";
         return "CANNOT DO - using Debug.DebugTypeMapper.__debugToString() may change inference results"
