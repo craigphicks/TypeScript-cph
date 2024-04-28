@@ -14764,7 +14764,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return (type as UnionType).resolvedReducedType || ((type as UnionType).resolvedReducedType = getReducedUnionType(type as UnionType));
         }
         else if (type.flags & TypeFlags.Intersection) {
-            // IWOZERE TODO: test for presence of instanceof
             if (structuredTypeContainsInstanceof(type as IntersectionType)){
                 const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
                 // TODO: Should this be getReducedApparentType?
@@ -16363,13 +16362,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getInstanceofConstructorSymbol(type: ObjectType): Symbol {
         return type.instanceof!.symbol;
     }
-    function createInstanceofType(constructorVariableSymbol: Symbol, structuredType: StructuredType): ObjectType {
-        const instanceQueryType = createObjectType(structuredType.objectFlags); // TODO set flags .typeFlags |= TypeFlags.Instanceof;
-        instanceQueryType.instanceof = {symbol:constructorVariableSymbol, structuredType};
-        return instanceQueryType;
-    }
+    // function createInstanceofType(constructorVariableSymbol: Symbol, structuredType: StructuredType): ObjectType {
+    //     const instanceQueryType = createObjectType(structuredType.objectFlags); // TODO set flags .typeFlags |= TypeFlags.Instanceof;
+    //     instanceQueryType.instanceof = {symbol:constructorVariableSymbol, structuredType};
+    //     return instanceQueryType;
+    // }
 
-    function createInstanceofTypeFromConstructorSymbol(constructorVariableSymbol: Symbol, constructorStructuredType: ObjectType): ObjectType {
+    function createInstanceofTypeFromConstructorSymbol(constructorVariableSymbol: Symbol, constructorStructuredType: StructuredType): ObjectType {
         function getExportSymbolOfSymbol(symbol: Symbol) {
             return getMergedSymbol(symbol.exportSymbol || symbol);
         }
@@ -16444,24 +16443,15 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // TODO: check if targetInstanceof is in the proto chain of sourceInstanceof
         return false;
     }
-    function structuredTypeContainsInstanceof(type: StructuredType): boolean {
+    function structuredTypeContainsInstanceof(type: Type): boolean {
         // TODO: would prefer to use flags forwarded to Structured Type
         return !everyContainedType(type, t=>!(t as ObjectType).instanceof);
     }
-    function reduceIntersectionContainingInstanceofs(type: IntersectionType): Type {
-        const instanceofSymbols: Symbol[] = [];
-        const intersectionTypeElements: Type[] = [];
-        for (const t of type.types) {
-            if (t.flags & TypeFlags.Object && (t as ObjectType).instanceof) {
-                instanceofSymbols.push((t as ObjectType).instanceof!.symbol);
-                intersectionTypeElements.push((t as ObjectType).instanceof!.structuredType);
-            }
-            else intersectionTypeElements.push(t);
-        }
-        const instanceOfSymbol1 = reduceInstanceofNominalSymbols(instanceofSymbols);
-        const type1 = getReducedApparentType(getIntersectionType(intersectionTypeElements));
-        if (!instanceOfSymbol1) return type1;
-        return createInstanceofType(instanceOfSymbol1,type1 as StructuredType);
+    function applyToInstanceofStructuredType(type: ObjectType, f: (type: StructuredType) => StructuredType): ObjectType {
+        TSDebug.assert(type.instanceof);
+        const newType = f(type.instanceof.structuredType);
+        if (newType===type.instanceof.structuredType) return type;
+        return createInstanceofTypeFromConstructorSymbol(type.instanceof.symbol, newType);
     }
 
     function getConstructorSymbolChain(constructorSymbol: Symbol): Symbol[] {
@@ -16507,19 +16497,25 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (every(symbols, s=>s===symbols[0])) return symbols[0];
         const allsym = new Set(symbols);
         //let commonAncestor: Symbol | undefined;
-        const chains: Symbol[][] = [];
+        let chains: Symbol[][] = [];
         for (const s of allsym) {
             chains.push(getConstructorSymbolChain(s));
         }
-        let lastGoodIndex = 0;
-        for (let index = -1; index >= -chains.length; index--) {
-            if (every(chains.slice(1), chain=>chain[chain.length+index]===chains[0][chains[0].length+index])){
-                lastGoodIndex = index;
+        let lastCommonSymbol: Symbol | undefined;
+        for (let index = -1;; index--) {
+            let commonSymbol: Symbol | undefined;
+            if (every(chains, chain => {
+                if (index >= -chain.length) {
+                    if (!commonSymbol) commonSymbol = chain[chain.length+index];
+                    else if (commonSymbol !== chain[chain.length+index]) return false;
+                }
+                return true;
+            })) {
+                if (commonSymbol) lastCommonSymbol = commonSymbol;
+                else break;
             }
-            else break;
         }
-        if (lastGoodIndex===0) return undefined;
-        return chains[0][chains[0].length+lastGoodIndex];
+        return lastCommonSymbol;
     }
     ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -21368,6 +21364,25 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getNormalizedType(type: Type, writing: boolean): Type {
+
+        if (structuredTypeContainsInstanceof(type as IntersectionType)) {
+            if (!(type.flags & (TypeFlags.Union | TypeFlags.Intersection))) {
+                return applyToInstanceofStructuredType(type as ObjectType, (x: StructuredType)=>getNormalizedType(x, writing) as StructuredType);
+            }
+            else if (type.flags & TypeFlags.Union) {
+                return getUnionType(map((type as UnionType).types, t => applyToInstanceofStructuredType(t as ObjectType, (x: StructuredType)=>getNormalizedType(x, writing) as StructuredType)));
+            }
+            else if (type.flags & TypeFlags.Intersection) {
+                const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
+                // TODO: Should this be getReducedApparentType?
+                const reducedInstersectionType = getNormalizedType(getIntersectionType(intersectionTypeElements), writing);
+                return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
+            }
+            else {
+                TSDebug.assert(false, "unexpected");
+            }
+        }
+
         while (true) {
             const t = isFreshLiteralType(type) ? (type as FreshableType).regularType :
                 isGenericTupleType(type) ? getNormalizedTupleType(type, writing) :
@@ -21718,6 +21733,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function reportRelationError(message: DiagnosticMessage | undefined, source: Type, target: Type) {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`reportRelationError[in]: message: ${IDebug.dbgs.dbgDiagnosticsToStrings(message as any as Diagnostic)}, source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)}`,loggerLevel);
+        (()=>{
             if (incompatibleStack) reportIncompatibleStack();
             const [sourceType, targetType] = getTypeNamesForErrorDisplay(source, target);
             let generalizedSource = source;
@@ -21785,6 +21803,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
             reportError(message, generalizedSourceType, targetType);
+        })();
+        IDebug.ilogGroupEnd(()=>`reportRelationError[out]: message: ${IDebug.dbgs.dbgDiagnosticsToStrings(message as any as Diagnostic)}`,loggerLevel);
         }
 
         function tryElaborateErrorsForPrimitivesAndObjects(source: Type, target: Type) {
@@ -21990,6 +22010,19 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
 
         function reportErrorResults(originalSource: Type, originalTarget: Type, source: Type, target: Type, headMessage: DiagnosticMessage | undefined) {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`reportErrorResults[in]: originalSource: ${IDebug.dbgs.dbgTypeToString(originalSource)}, originalTarget: ${IDebug.dbgs.dbgTypeToString(originalTarget)
+        }, source: ${IDebug.dbgs.dbgTypeToString(source)}, target: ${IDebug.dbgs.dbgTypeToString(target)
+        }, headMessage: ${headMessage?.message}`,loggerLevel);
+        (()=>{
+
+            // if (structuredTypeContainsInstanceof(target)) {
+            //     if ((target as ObjectType).instanceof) {
+
+            //     }
+
+            // }
+
             const sourceHasBase = !!getSingleBaseForNonAugmentingSubtype(originalSource);
             const targetHasBase = !!getSingleBaseForNonAugmentingSubtype(originalTarget);
             source = (originalSource.aliasSymbol || sourceHasBase) ? originalSource : source;
@@ -22040,6 +22073,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     associateRelatedInfo(createDiagnosticForNode(source.symbol.declarations[0], Diagnostics.This_type_parameter_might_need_an_extends_0_constraint, targetConstraintString));
                 }
             }
+        })()
+        IDebug.ilogGroupEnd(()=>`reportErrorResults[out]`,loggerLevel);
         }
 
         function traceUnionsOrIntersectionsTooLarge(source: Type, target: Type): void {
@@ -24702,6 +24737,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getSingleBaseForNonAugmentingSubtype(type: Type) {
+        if (structuredTypeContainsInstanceof(type)) return undefined;
         if (!(getObjectFlags(type) & ObjectFlags.Reference) || !(getObjectFlags((type as TypeReference).target) & ObjectFlags.ClassOrInterface)) {
             return undefined;
         }
@@ -24862,6 +24898,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * Prefer using isTupleLikeType() unless the use of `elementTypes`/`getTypeArguments` is required.
      */
     function isTupleType(type: Type): type is TupleTypeReference {
+        if (type.flags & TypeFlags.Object && (type as ObjectType).instanceof) {
+            return false; // Boxed into a corner due to structural representation.
+        }
         return !!(getObjectFlags(type) & ObjectFlags.Reference && (type as TypeReference).target.objectFlags & ObjectFlags.Tuple);
     }
 

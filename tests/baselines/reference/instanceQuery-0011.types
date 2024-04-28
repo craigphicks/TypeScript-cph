@@ -1,0 +1,120 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0011.ts] ////
+
+=== instanceQuery-0011.ts ===
+namespace iq0010b {
+>iq0010b : typeof iq0010b
+>        : ^^^^^^^^^^^^^^
+
+    class EmptyBase {}
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+    class A1  extends EmptyBase{
+>A1 : A1
+>   : ^^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+        a: number|string = "";
+>a : string | number
+>  : ^^^^^^^^^^^^^^^
+>"" : ""
+>   : ^^
+    }
+    class A2  extends A1 {
+>A2 : A2
+>   : ^^
+>A1 : A1
+>   : ^^
+
+        a: number = 0;
+>a : number
+>  : ^^^^^^
+>0 : 0
+>  : ^
+    }
+    class A3  extends A2 {
+>A3 : A3
+>   : ^^
+>A2 : A2
+>   : ^^
+
+        a: 0 | 1 = 0;
+>a : 0 | 1
+>  : ^^^^^
+>0 : 0
+>  : ^
+    }
+    class B3  extends A2 {
+>B3 : B3
+>   : ^^
+>A2 : A2
+>   : ^^
+
+        a: 1 | 2 = 2;
+>a : 1 | 2
+>  : ^^^^^
+>2 : 2
+>  : ^
+    }
+    type AQ = instanceof A1 & instanceof A2 & instanceof A3 & instanceof B3;
+>AQ : instanceof A2 & (A1 & A2 & A3 & B3)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    declare let a1: instanceof A1;
+>a1 : instanceof A1 & A1
+>   : ^^^^^^^^^^^^^^^^^^
+
+    declare let a2: instanceof A2;
+>a2 : instanceof A2 & A2
+>   : ^^^^^^^^^^^^^^^^^^
+
+    declare let a3: instanceof A3;
+>a3 : instanceof A3 & A3
+>   : ^^^^^^^^^^^^^^^^^^
+
+    declare let b3: instanceof B3;
+>b3 : instanceof B3 & B3
+>   : ^^^^^^^^^^^^^^^^^^
+
+    a1 satisfies AQ; // error
+>a1 satisfies AQ : instanceof A1 & A1
+>                : ^^^^^^^^^^^^^^^^^^
+>a1 : instanceof A1 & A1
+>   : ^^^^^^^^^^^^^^^^^^
+
+    a2 satisfies AQ; // error
+>a2 satisfies AQ : instanceof A2 & A2
+>                : ^^^^^^^^^^^^^^^^^^
+>a2 : instanceof A2 & A2
+>   : ^^^^^^^^^^^^^^^^^^
+
+    a3 satisfies AQ; // error
+>a3 satisfies AQ : instanceof A3 & A3
+>                : ^^^^^^^^^^^^^^^^^^
+>a3 : instanceof A3 & A3
+>   : ^^^^^^^^^^^^^^^^^^
+
+    b3 satisfies AQ; // error
+>b3 satisfies AQ : instanceof B3 & B3
+>                : ^^^^^^^^^^^^^^^^^^
+>b3 : instanceof B3 & B3
+>   : ^^^^^^^^^^^^^^^^^^
+
+    class AP  extends A2 {
+>AP : AP
+>   : ^^
+>A2 : A2
+>   : ^^
+
+        a: 1 = 1;
+>a : 1
+>  : ^
+>1 : 1
+>  : ^
+
+    };
+
+    // new AP() as instanceof AP satisfies AQ; // no error
+    // new AP() as instanceof AQ satisfies AP; // no error
+}
