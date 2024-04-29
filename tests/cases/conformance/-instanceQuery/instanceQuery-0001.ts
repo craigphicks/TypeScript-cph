@@ -1,5 +1,5 @@
 // @strict: true
-// @target: es2015
+// @target: es2017
 
 namespace instof000 {}
 
@@ -35,10 +35,17 @@ namespace instof006 {
 
     safeDataView(new ArrayBuffer(0) as instanceof ArrayBuffer); // should not error
 
-    declare let a: ArrayBuffer;
+}
+
+namespace instof007 {
+
+    declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+    let a: ArrayBuffer = new Uint8Array()
     safeDataView(a); // should error
 
-    declare let b: instanceof ArrayBuffer;
+    let b: instanceof ArrayBuffer = new Uint8Array(); // now the error is here
     safeDataView(b); // should not error
 
+    let c: instanceof ArrayBuffer = new Uint8Array() as instanceof Uint8Array; // still error, but better error explanation
+    safeDataView(c); // should not error
 }

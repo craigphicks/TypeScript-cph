@@ -23231,7 +23231,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     if (!isInstanceofAssignable((source as ObjectType).instanceof!.symbol, (target as ObjectType).instanceof!.symbol)) {
                         if (reportErrors){
                             if (relation!==assignableRelation) TSDebug.assert(false, "error cases other than assignble not yet implemented");
-                            reportError(Diagnostics.Constructor_typeof_0_is_not_assignable_to_constructor_typeof_1,
+                            reportError(Diagnostics.new_0_instanceof_1_would_evaluate_as_false,
                                 (source as ObjectType).instanceof!.symbol.escapedName as string,
                                 (target as ObjectType).instanceof!.symbol.escapedName as string);
                         }

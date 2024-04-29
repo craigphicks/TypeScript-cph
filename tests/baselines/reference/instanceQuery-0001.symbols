@@ -88,19 +88,38 @@ namespace instof006 {
 >safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 26, 21))
 >ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
 
-    declare let a: ArrayBuffer;
->a : Symbol(a, Decl(instanceQuery-0001.ts, 34, 15))
+}
+
+namespace instof007 {
+>instof007 : Symbol(instof007, Decl(instanceQuery-0001.ts, 34, 1))
+
+    declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 36, 21))
+>buffer : Symbol(buffer, Decl(instanceQuery-0001.ts, 38, 34))
+>DataView : Symbol(DataView, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+    let a: ArrayBuffer = new Uint8Array()
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 39, 7))
 >ArrayBuffer : Symbol(ArrayBuffer, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>Uint8Array : Symbol(Uint8Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 1 more)
 
     safeDataView(a); // should error
->safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 26, 21))
->a : Symbol(a, Decl(instanceQuery-0001.ts, 34, 15))
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 36, 21))
+>a : Symbol(a, Decl(instanceQuery-0001.ts, 39, 7))
 
-    declare let b: instanceof ArrayBuffer;
->b : Symbol(b, Decl(instanceQuery-0001.ts, 37, 15))
+    let b: instanceof ArrayBuffer = new Uint8Array(); // now the error is here
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 42, 7))
+>Uint8Array : Symbol(Uint8Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 1 more)
 
     safeDataView(b); // should not error
->safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 26, 21))
->b : Symbol(b, Decl(instanceQuery-0001.ts, 37, 15))
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 36, 21))
+>b : Symbol(b, Decl(instanceQuery-0001.ts, 42, 7))
 
+    let c: instanceof ArrayBuffer = new Uint8Array() as instanceof Uint8Array; // still error, but better error explanation
+>c : Symbol(c, Decl(instanceQuery-0001.ts, 45, 7))
+>Uint8Array : Symbol(Uint8Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 1 more)
+
+    safeDataView(c); // should not error
+>safeDataView : Symbol(safeDataView, Decl(instanceQuery-0001.ts, 36, 21))
+>c : Symbol(c, Decl(instanceQuery-0001.ts, 45, 7))
 }

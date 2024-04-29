@@ -159,9 +159,25 @@ namespace instof006 {
 >0 : 0
 >  : ^
 
-    declare let a: ArrayBuffer;
+}
+
+namespace instof007 {
+>instof007 : typeof instof007
+>          : ^^^^^^^^^^^^^^^^
+
+    declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+>safeDataView : (buffer: instanceof ArrayBuffer) => DataView
+>             : ^      ^^                      ^^^^^        
+>buffer : instanceof ArrayBuffer & ArrayBuffer
+>       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    let a: ArrayBuffer = new Uint8Array()
 >a : ArrayBuffer
 >  : ^^^^^^^^^^^
+>new Uint8Array() : Uint8Array
+>                 : ^^^^^^^^^^
+>Uint8Array : Uint8ArrayConstructor
+>           : ^^^^^^^^^^^^^^^^^^^^^
 
     safeDataView(a); // should error
 >safeDataView(a) : DataView
@@ -171,9 +187,13 @@ namespace instof006 {
 >a : ArrayBuffer
 >  : ^^^^^^^^^^^
 
-    declare let b: instanceof ArrayBuffer;
+    let b: instanceof ArrayBuffer = new Uint8Array(); // now the error is here
 >b : instanceof ArrayBuffer & ArrayBuffer
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new Uint8Array() : Uint8Array
+>                 : ^^^^^^^^^^
+>Uint8Array : Uint8ArrayConstructor
+>           : ^^^^^^^^^^^^^^^^^^^^^
 
     safeDataView(b); // should not error
 >safeDataView(b) : DataView
@@ -183,4 +203,21 @@ namespace instof006 {
 >b : instanceof ArrayBuffer & ArrayBuffer
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+    let c: instanceof ArrayBuffer = new Uint8Array() as instanceof Uint8Array; // still error, but better error explanation
+>c : instanceof ArrayBuffer & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new Uint8Array() as instanceof Uint8Array : instanceof Uint8Array & Uint8Array
+>                                          : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new Uint8Array() : Uint8Array
+>                 : ^^^^^^^^^^
+>Uint8Array : Uint8ArrayConstructor
+>           : ^^^^^^^^^^^^^^^^^^^^^
+
+    safeDataView(c); // should not error
+>safeDataView(c) : DataView
+>                : ^^^^^^^^
+>safeDataView : (buffer: instanceof ArrayBuffer) => DataView
+>             : ^      ^^                      ^^^^^^^^^^^^^
+>c : instanceof ArrayBuffer & ArrayBuffer
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 }

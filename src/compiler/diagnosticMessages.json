@@ -8005,7 +8005,7 @@
         "category": "Error",
         "code": 18058
     },
-    "Constructor typeof {0} is not assignable to constructor typeof {1}": {
+    "'new {0}() instanceof {1}' would evaluate as 'false'": {
         "category": "Error",
         "code": 18059
     },

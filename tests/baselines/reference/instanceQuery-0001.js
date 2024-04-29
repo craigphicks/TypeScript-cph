@@ -35,12 +35,19 @@ namespace instof006 {
 
     safeDataView(new ArrayBuffer(0) as instanceof ArrayBuffer); // should not error
 
-    declare let a: ArrayBuffer;
+}
+
+namespace instof007 {
+
+    declare function safeDataView(buffer: instanceof ArrayBuffer): DataView;
+    let a: ArrayBuffer = new Uint8Array()
     safeDataView(a); // should error
 
-    declare let b: instanceof ArrayBuffer;
+    let b: instanceof ArrayBuffer = new Uint8Array(); // now the error is here
     safeDataView(b); // should not error
 
+    let c: instanceof ArrayBuffer = new Uint8Array() as instanceof Uint8Array; // still error, but better error explanation
+    safeDataView(c); // should not error
 }
 
 //// [instanceQuery-0001.js]
@@ -70,6 +77,13 @@ var instof006;
 (function (instof006) {
     safeDataView(new ArrayBuffer(0)); // should error
     safeDataView(new ArrayBuffer(0)); // should not error
-    safeDataView(a); // should error
-    safeDataView(b); // should not error
 })(instof006 || (instof006 = {}));
+var instof007;
+(function (instof007) {
+    let a = new Uint8Array();
+    safeDataView(a); // should error
+    let b = new Uint8Array(); // now the error is here
+    safeDataView(b); // should not error
+    let c = new Uint8Array(); // still error, but better error explanation
+    safeDataView(c); // should not error
+})(instof007 || (instof007 = {}));
