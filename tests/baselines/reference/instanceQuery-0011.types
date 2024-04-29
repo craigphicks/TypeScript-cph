@@ -57,9 +57,9 @@ namespace iq0010b {
 >2 : 2
 >  : ^
     }
-    type AQ = instanceof A1 & instanceof A2 & instanceof A3 & instanceof B3;
->AQ : instanceof A2 & (A1 & A2 & A3 & B3)
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    type AQ = instanceof A1 & instanceof A2;
+>AQ : instanceof A2 & (A1 & A2)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^
 
     declare let a1: instanceof A1;
 >a1 : instanceof A1 & A1
@@ -83,19 +83,19 @@ namespace iq0010b {
 >a1 : instanceof A1 & A1
 >   : ^^^^^^^^^^^^^^^^^^
 
-    a2 satisfies AQ; // error
+    a2 satisfies AQ; // no error
 >a2 satisfies AQ : instanceof A2 & A2
 >                : ^^^^^^^^^^^^^^^^^^
 >a2 : instanceof A2 & A2
 >   : ^^^^^^^^^^^^^^^^^^
 
-    a3 satisfies AQ; // error
+    a3 satisfies AQ; // no error
 >a3 satisfies AQ : instanceof A3 & A3
 >                : ^^^^^^^^^^^^^^^^^^
 >a3 : instanceof A3 & A3
 >   : ^^^^^^^^^^^^^^^^^^
 
-    b3 satisfies AQ; // error
+    b3 satisfies AQ; // no error
 >b3 satisfies AQ : instanceof B3 & B3
 >                : ^^^^^^^^^^^^^^^^^^
 >b3 : instanceof B3 & B3
@@ -126,21 +126,23 @@ namespace iq0010b {
 >   : ^^^^^^^^^
 
     declare const aq: AQ;
->aq : instanceof A2 & (A1 & A2 & A3 & B3)
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>aq : instanceof A2 & (A1 & A2)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    aq satisfies AP; // no error
->aq satisfies AP : instanceof A2 & (A1 & A2 & A3 & B3)
->                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->aq : instanceof A2 & (A1 & A2 & A3 & B3)
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    aq satisfies AP; // structure error
+>aq satisfies AP : instanceof A2 & (A1 & A2)
+>                : ^^^^^^^^^^^^^^^^^^^^^^^^^
+>aq : instanceof A2 & (A1 & A2)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    aq as instanceof AP satisfies AQ; // no error
->aq as instanceof AP satisfies AQ : instanceof AP & AP
->                                 : ^^^^^^^^^^^^^^^^^^
->aq as instanceof AP : instanceof AP & AP
->                    : ^^^^^^^^^^^^^^^^^^
->aq : instanceof A2 & (A1 & A2 & A3 & B3)
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    declare const ap: instanceof AP;
+>ap : instanceof AP & AP
+>   : ^^^^^^^^^^^^^^^^^^
+
+    ap satisfies AQ; // no error
+>ap satisfies AQ : instanceof AP & AP
+>                : ^^^^^^^^^^^^^^^^^^
+>ap : instanceof AP & AP
+>   : ^^^^^^^^^^^^^^^^^^
 
 }

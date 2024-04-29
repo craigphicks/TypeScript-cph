@@ -31,10 +31,10 @@ namespace iq0010 {
 >b : Symbol(B.b, Decl(instanceQuery-0010.ts, 12, 26))
     }
 
-    declare const x: instanceof A & instanceof B;
+    declare const x: instanceof A & instanceof B; // should be never
 >x : Symbol(x, Decl(instanceQuery-0010.ts, 16, 17))
 
-    x satisfies EmptyBase; // no error
+    x satisfies EmptyBase; // no error, (never satisfies EmptyBase does not trigger an error)
 >x : Symbol(x, Decl(instanceQuery-0010.ts, 16, 17))
 >EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0010.ts, 0, 18))
 
@@ -42,6 +42,6 @@ namespace iq0010 {
 >y : Symbol(y, Decl(instanceQuery-0010.ts, 20, 17))
 >EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0010.ts, 0, 18))
 
-    y satisfies instanceof A & instanceof B; // should error
+    y satisfies instanceof A & instanceof B; // should error (EmptyBase does not satisfy never)
 >y : Symbol(y, Decl(instanceQuery-0010.ts, 20, 17))
 }

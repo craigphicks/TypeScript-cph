@@ -1,5 +1,4 @@
-instanceQuery-0010.ts(23,7): error TS1360: Type 'EmptyBase' does not satisfy the expected type 'instanceof EmptyBase & (A & B)'.
-  Object type EmptyBase has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof EmptyBase
+instanceQuery-0010.ts(23,7): error TS1360: Type 'EmptyBase' does not satisfy the expected type 'never'.
 
 
 ==== instanceQuery-0010.ts (1 errors) ====
@@ -19,14 +18,13 @@ instanceQuery-0010.ts(23,7): error TS1360: Type 'EmptyBase' does not satisfy the
             b: number = 0;
         }
     
-        declare const x: instanceof A & instanceof B;
+        declare const x: instanceof A & instanceof B; // should be never
     
-        x satisfies EmptyBase; // no error
+        x satisfies EmptyBase; // no error, (never satisfies EmptyBase does not trigger an error)
     
         declare const y: EmptyBase;
     
-        y satisfies instanceof A & instanceof B; // should error
+        y satisfies instanceof A & instanceof B; // should error (EmptyBase does not satisfy never)
           ~~~~~~~~~
-!!! error TS1360: Type 'EmptyBase' does not satisfy the expected type 'instanceof EmptyBase & (A & B)'.
-!!! error TS1360:   Object type EmptyBase has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof EmptyBase
+!!! error TS1360: Type 'EmptyBase' does not satisfy the expected type 'never'.
     }

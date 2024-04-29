@@ -15,16 +15,16 @@ namespace iq0010b {
     class B3  extends A2 {
         a: 1 | 2 = 2;
     }
-    type AQ = instanceof A1 & instanceof A2 & instanceof A3 & instanceof B3;
+    type AQ = instanceof A1 & instanceof A2;
     declare let a1: instanceof A1;
     declare let a2: instanceof A2;
     declare let a3: instanceof A3;
     declare let b3: instanceof B3;
 
     a1 satisfies AQ; // error (because (typeof A1).constructor < (typeof A2).constructor)
-    a2 satisfies AQ; // error
-    a3 satisfies AQ; // error
-    b3 satisfies AQ; // error
+    a2 satisfies AQ; // no error
+    a3 satisfies AQ; // no error
+    b3 satisfies AQ; // no error
 
     class AP  extends A2 {
         a: 1 = 1;
@@ -33,9 +33,10 @@ namespace iq0010b {
     new AP() as instanceof AP satisfies AQ; // no error
 
     declare const aq: AQ;
-    aq satisfies AP; // no error
+    aq satisfies AP; // structure error
 
-    aq as instanceof AP satisfies AQ; // no error
+    declare const ap: instanceof AP;
+    ap satisfies AQ; // no error
 
 }
 
@@ -58,16 +59,16 @@ var iq0010b;
         a = 2;
     }
     a1; // error (because (typeof A1).constructor < (typeof A2).constructor)
-    a2; // error
-    a3; // error
-    b3; // error
+    a2; // no error
+    a3; // no error
+    b3; // no error
     class AP extends A2 {
         a = 1;
     }
     ;
     new AP(); // no error
-    aq; // no error
-    aq; // no error
+    aq; // structure error
+    ap; // no error
 })(iq0010b || (iq0010b = {}));
 
 

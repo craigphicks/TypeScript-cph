@@ -17,13 +17,13 @@ namespace iq0010 {
         b: number = 0;
     }
 
-    declare const x: instanceof A & instanceof B;
+    declare const x: instanceof A & instanceof B; // should be never
 
-    x satisfies EmptyBase; // no error
+    x satisfies EmptyBase; // no error, (never satisfies EmptyBase does not trigger an error)
 
     declare const y: EmptyBase;
 
-    y satisfies instanceof A & instanceof B; // should error
+    y satisfies instanceof A & instanceof B; // should error (EmptyBase does not satisfy never)
 }
 
 //// [instanceQuery-0010.js]
@@ -42,8 +42,8 @@ var iq0010;
     class B extends BPre {
         b = 0;
     }
-    x; // no error
-    y; // should error
+    x; // no error, (never satisfies EmptyBase does not trigger an error)
+    y; // should error (EmptyBase does not satisfy never)
 })(iq0010 || (iq0010 = {}));
 
 

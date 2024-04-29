@@ -14772,6 +14772,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
                 // TODO: Should this be getReducedApparentType?
                 const reducedInstersectionType = getReducedType(getIntersectionType(intersectionTypeElements));
+                if (!constructorSymbol) return neverType;
                 return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
                 //return reduceIntersectionContainingInstanceofs(type as IntersectionType);
             }
@@ -16381,7 +16382,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     // Note: getInstanceTypeForInstanceQuery differs from getInstanceType under inner scope of getFlowTypeOfReference.
-    function getInstanceQueryType(constructorType: Type): Type {
+    function getInstanceQueryType(constructorVariableSymbol: Symbol, constructorType: Type): Type {
         const prototypeProp = getPropertyOfType(constructorType, "prototype" as __String);
         const constructSignatures = (constructorType as ResolvedType).constructSignatures;
         if (prototypeProp && constructSignatures) {
@@ -16392,8 +16393,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const structuredType = constructSignatures.length
                 ? getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType
                 : emptyObjectType; // not expected but not an error
-            TSDebug.assert(prototypeProp.parent);
-            const instanceQueryType = createInstanceofTypeFromConstructorSymbol(prototypeProp.parent, structuredType);
+            //TSDebug.assert(prototypeProp.parent);
+            const instanceQueryType = createInstanceofTypeFromConstructorSymbol(constructorVariableSymbol, structuredType);
             return (links as any).instanceQueryType = instanceQueryType;
         }
         // We use the empty object type to indicate we don't know the type of objects created by this constructor function.
@@ -16406,7 +16407,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const links = getNodeLinks(node);
         if (!links.resolvedType) {
             if (node.exprName.kind===SyntaxKind.Identifier) {
-
+                let constructorVariableSymbol = getResolvedSymbol(node.exprName);
+                IDebug.ilog(()=>`getTypeFromInstanceQueryNode: constructorVariableSymbol@0: ${IDebug.dbgs.dbgSymbolToString(constructorVariableSymbol)}`, loggerLevel);
+                let aliasIdentifier: Identifier | undefined;
+                if ((aliasIdentifier =((constructorVariableSymbol.valueDeclaration as VariableDeclaration)?.initializer as ExpressionWithTypeArguments)?.expression as Identifier)?.kind===SyntaxKind.Identifier) {
+                    let tmpSymbol = getResolvedSymbol(aliasIdentifier);
+                    let tmpType = getTypeOfSymbol(tmpSymbol);
+                    if (isConstructorType(tmpType)) {
+                        constructorVariableSymbol = tmpSymbol;
+                        IDebug.ilog(()=>`getTypeFromInstanceQueryNode: constructorVariableSymbol@1: ${IDebug.dbgs.dbgSymbolToString(constructorVariableSymbol)}`, loggerLevel);
+                    }
+                }
                 let instanceQueryType: Type;
                 const instantiatedConstructorType = checkExpressionWithTypeArguments(node);
                 IDebug.ilog(()=>`getTypeFromInstanceQueryNode[dbg] instantiatedConstructorType: ${IDebug.dbgs.dbgTypeToString(instantiatedConstructorType)}`, loggerLevel);
@@ -16414,7 +16425,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 if (!isConstructorType(instantiatedConstructorType)){
                     TSDebug.assert(false, "!isConstructorType(instantiatedConstructorType)");
                 }
-                instanceQueryType = getInstanceQueryType(instantiatedConstructorType);
+                instanceQueryType = getInstanceQueryType(constructorVariableSymbol, instantiatedConstructorType);
                 IDebug.ilog(()=>`getTypeFromInstanceQueryNode[dbg] instanceQueryType: ${IDebug.dbgs.dbgTypeToString(instanceQueryType)}`, loggerLevel);
                 links.resolvedType = instanceQueryType;
             }
@@ -16446,24 +16457,31 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getConstructorSymbolChain(constructorSymbol: Symbol): Symbol[] {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`getConstructorSymbolChain[in]: ${IDebug.dbgs.dbgSymbolToString(constructorSymbol)}`,loggerLevel);
         const arrs = [constructorSymbol];
         let constructorType: Type | undefined = getTypeOfSymbol(constructorSymbol);
         while (constructorType && constructorType !== undefinedType) {
             const protoProp = getPropertyOfType(constructorType, "prototype" as __String);
-            TSDebug.assert(protoProp);
+
+            IDebug.ilog(()=>`getConstructorSymbolChain: constructorType:${IDebug.dbgs.dbgTypeToString(constructorType)
+            }, prototype: ${IDebug.dbgs.dbgSymbolToString(protoProp)}`,loggerLevel);
+
+            TSDebug.assert(protoProp, "constructorType does not have prototype", ()=>`${IDebug.dbgs.dbgTypeToString(constructorType)}`);
             const type = getTypeOfSymbol(protoProp);
             if ((constructorType = (type as InterfaceType).resolvedBaseConstructorType) && constructorType !== undefinedType){
                 TSDebug.assert(constructorType.symbol);
                 arrs.push(constructorType.symbol!);
             }
         }
+        IDebug.ilogGroupEnd(()=>`getConstructorSymbolChain[out]`,loggerLevel);
         return arrs;
     }
     /**
      *
      * const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type);
      */
-    function decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type: IntersectionType): {constructorSymbol: Symbol, intersectionTypeElements: Type[] } {
+    function decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type: IntersectionType): {constructorSymbol: Symbol | undefined, intersectionTypeElements: Type[] } {
         const instanceofSymbols: Symbol[] = [];
         const intersectionTypeElements: Type[] = [];
         for (const t of type.types) {
@@ -16474,7 +16492,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             else intersectionTypeElements.push(t);
         }
         const instanceOfSymbol1 = reduceInstanceofNominalSymbols(instanceofSymbols);
-        return {constructorSymbol: instanceOfSymbol1!, intersectionTypeElements};
+        return {constructorSymbol: instanceOfSymbol1, intersectionTypeElements};
     }
 
     /**
@@ -16489,21 +16507,32 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const allsym = new Set(symbols);
         //let commonAncestor: Symbol | undefined;
         let chains: Symbol[][] = [];
+        let maxlen = 0
         for (const s of allsym) {
-            chains.push(getConstructorSymbolChain(s));
+            let chain = getConstructorSymbolChain(s);
+            chains.push(chain);
+            maxlen = Math.max(maxlen, chain.length);
         }
         let lastCommonSymbol: Symbol | undefined;
-        for (let index = -1;; index--) {
+        for (let index = -1; index >= -maxlen; index--) {
             let commonSymbol: Symbol | undefined;
             if (every(chains, chain => {
                 if (index >= -chain.length) {
                     if (!commonSymbol) commonSymbol = chain[chain.length+index];
-                    else if (commonSymbol !== chain[chain.length+index]) return false;
+                    else if (commonSymbol !== chain[chain.length+index]) {
+                        // two differing symbols at the same index indicates no common ancestor
+                        return false;
+                    }
                 }
                 return true;
             })) {
-                if (commonSymbol) lastCommonSymbol = commonSymbol;
-                else break;
+                // common ancestor for this index
+                TSDebug.assert(commonSymbol, "unexpected");
+                lastCommonSymbol = commonSymbol;
+            }
+            else {
+                // no common ancestor for this index
+                return undefined;
             }
         }
         return lastCommonSymbol;
@@ -21367,6 +21396,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
                 // TODO: Should this be getReducedApparentType?
                 const reducedInstersectionType = getNormalizedType(getIntersectionType(intersectionTypeElements), writing);
+                if (!constructorSymbol) return neverType;
                 return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
             }
             else {

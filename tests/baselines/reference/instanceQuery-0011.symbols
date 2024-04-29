@@ -35,7 +35,7 @@ namespace iq0010b {
         a: 1 | 2 = 2;
 >a : Symbol(B3.a, Decl(instanceQuery-0011.ts, 11, 26))
     }
-    type AQ = instanceof A1 & instanceof A2 & instanceof A3 & instanceof B3;
+    type AQ = instanceof A1 & instanceof A2;
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
     declare let a1: instanceof A1;
@@ -54,15 +54,15 @@ namespace iq0010b {
 >a1 : Symbol(a1, Decl(instanceQuery-0011.ts, 15, 15))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
-    a2 satisfies AQ; // error
+    a2 satisfies AQ; // no error
 >a2 : Symbol(a2, Decl(instanceQuery-0011.ts, 16, 15))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
-    a3 satisfies AQ; // error
+    a3 satisfies AQ; // no error
 >a3 : Symbol(a3, Decl(instanceQuery-0011.ts, 17, 15))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
-    b3 satisfies AQ; // error
+    b3 satisfies AQ; // no error
 >b3 : Symbol(b3, Decl(instanceQuery-0011.ts, 18, 15))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
@@ -83,12 +83,15 @@ namespace iq0010b {
 >aq : Symbol(aq, Decl(instanceQuery-0011.ts, 31, 17))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
-    aq satisfies AP; // no error
+    aq satisfies AP; // structure error
 >aq : Symbol(aq, Decl(instanceQuery-0011.ts, 31, 17))
 >AP : Symbol(AP, Decl(instanceQuery-0011.ts, 23, 20))
 
-    aq as instanceof AP satisfies AQ; // no error
->aq : Symbol(aq, Decl(instanceQuery-0011.ts, 31, 17))
+    declare const ap: instanceof AP;
+>ap : Symbol(ap, Decl(instanceQuery-0011.ts, 34, 17))
+
+    ap satisfies AQ; // no error
+>ap : Symbol(ap, Decl(instanceQuery-0011.ts, 34, 17))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
 }

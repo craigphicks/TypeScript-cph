@@ -19,11 +19,11 @@ namespace iq0010 {
         b: number = 0;
     }
 
-    declare const x: instanceof A & instanceof B;
+    declare const x: instanceof A & instanceof B; // should be never
 
-    x satisfies EmptyBase; // no error
+    x satisfies EmptyBase; // no error, (never satisfies EmptyBase does not trigger an error)
 
     declare const y: EmptyBase;
 
-    y satisfies instanceof A & instanceof B; // should error
+    y satisfies instanceof A & instanceof B; // should error (EmptyBase does not satisfy never)
 }
