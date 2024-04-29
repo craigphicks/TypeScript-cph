@@ -1,0 +1,131 @@
+instanceQuery-0013.ts(3,29): error TS18060: The operand of an instanceof query must be an identifier representing a constructor variable
+instanceQuery-0013.ts(29,8): error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+  Type 'A1<string>' is not assignable to type 'A1<number>'.
+    Type 'string' is not assignable to type 'number'.
+instanceQuery-0013.ts(30,8): error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+  Type 'A1<string>' is not assignable to type 'A1<number>'.
+instanceQuery-0013.ts(59,8): error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+  Type 'A1<string>' is not assignable to type 'A1<number>'.
+    Type 'string' is not assignable to type 'number'.
+instanceQuery-0013.ts(60,8): error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+  Type 'A1<string>' is not assignable to type 'A1<number>'.
+instanceQuery-0013.ts(86,8): error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+  Type 'A1<string>' is not assignable to type 'A1<number>'.
+    Type 'string' is not assignable to type 'number'.
+instanceQuery-0013.ts(87,8): error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+  Type 'A1<string>' is not assignable to type 'A1<number>'.
+
+
+==== instanceQuery-0013.ts (7 errors) ====
+    namespace iq0013z {
+        declare const WrongInstanceofOpenrand: {};
+        declare const asWrong : instanceof WrongInstanceofOpenrand; // error
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS18060: The operand of an instanceof query must be an identifier representing a constructor variable
+    }
+    
+    namespace iq0013a {
+        class EmptyBase {}
+        class A1<T extends string|number>  extends EmptyBase{
+            a: T;
+            constructor(a: T) {
+                super();
+                this.a = a;
+            }
+        }
+        const ANumVar = A1<number>;
+        const AStrVar = A1<string>;
+    
+        declare const an: instanceof ANumVar;
+        declare const as: instanceof AStrVar;
+    
+    
+        an satisfies EmptyBase; // no error
+        an satisfies instanceof A1; // no error
+        an satisfies instanceof A1<number>; // no error
+        an satisfies instanceof ANumVar; // no error
+    
+        as satisfies EmptyBase; // no error
+        as satisfies instanceof A1; // no error
+        as satisfies instanceof A1<number>; // error
+           ~~~~~~~~~
+!!! error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+!!! error TS1360:     Type 'string' is not assignable to type 'number'.
+        as satisfies instanceof ANumVar; // error
+           ~~~~~~~~~
+!!! error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+    
+    }
+    
+    namespace iq0013b {
+        class EmptyBase {}
+        class A1<T extends string|number>  extends EmptyBase{
+            a: T;
+            constructor(a: T) {
+                super();
+                this.a = a;
+            }
+        }
+        const ANumVar = A1<number>;
+        const AStrVar = A1<string>;
+    
+        declare const an: instanceof A1<number>;
+        declare const as: instanceof A1<string>;
+    
+        // const an = new ANumVar(1) as instanceof ANumVar;
+        // const as = new ANumStr("one") as instanceof ANumStr;
+    
+        an satisfies EmptyBase; // no error
+        an satisfies instanceof A1; // no error
+        an satisfies instanceof A1<number>; // no error
+        an satisfies instanceof ANumVar; // no error
+    
+        as satisfies EmptyBase; // no error
+        as satisfies instanceof A1; // no error
+        as satisfies instanceof A1<number>; // error
+           ~~~~~~~~~
+!!! error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+!!! error TS1360:     Type 'string' is not assignable to type 'number'.
+        as satisfies instanceof ANumVar; // error
+           ~~~~~~~~~
+!!! error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+    
+    }
+    
+    namespace iq0013c {
+        class EmptyBase {}
+        class A1<T extends string|number>  extends EmptyBase{
+            a: T;
+            constructor(a: T) {
+                super();
+                this.a = a;
+            }
+        }
+        const ANumVar = A1<number>;
+        const AStrVar = A1<string>;
+    
+        const an = new A1<number>(1) as instanceof A1<number>;
+        const as = new A1<string>("one") as instanceof A1<string>;
+    
+        an satisfies EmptyBase; // no error
+        an satisfies instanceof A1; // no error
+        an satisfies instanceof A1<number>; // no error
+        an satisfies instanceof ANumVar; // no error
+    
+        as satisfies EmptyBase; // no error
+        as satisfies instanceof A1; // no error
+        as satisfies instanceof A1<number>; // error
+           ~~~~~~~~~
+!!! error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+!!! error TS1360:     Type 'string' is not assignable to type 'number'.
+        as satisfies instanceof ANumVar; // error
+           ~~~~~~~~~
+!!! error TS1360: Type 'instanceof A1 & A1<string>' does not satisfy the expected type 'instanceof A1 & A1<number>'.
+!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+    
+    }

@@ -16387,15 +16387,20 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         const constructSignatures = (constructorType as ResolvedType).constructSignatures;
         if (prototypeProp && constructSignatures) {
             const links = getSymbolLinks(prototypeProp!);
-            if ((links as any).instanceQueryType) {
-                return (links as any).instanceQueryType;
+            if ((links as any).instanceQueryTypeMap) {
+                let cached: ObjectType | undefined;
+                if (cached = ((links as any).instanceQueryTypeMap as any as Map<Type,ObjectType>).get(constructorType)){
+                    return cached;
+                }
+                //return (links as any).instanceQueryType;
             }
             const structuredType = constructSignatures.length
                 ? getUnionType(map(constructSignatures, signature => getReturnTypeOfSignature(getErasedSignature(signature)))) as StructuredType
                 : emptyObjectType; // not expected but not an error
             //TSDebug.assert(prototypeProp.parent);
             const instanceQueryType = createInstanceofTypeFromConstructorSymbol(constructorVariableSymbol, structuredType);
-            return (links as any).instanceQueryType = instanceQueryType;
+            ((links as any).instanceQueryTypeMap ??= new Map<Type,ObjectType>()).set(constructorType, instanceQueryType);
+            return instanceQueryType;
         }
         // We use the empty object type to indicate we don't know the type of objects created by this constructor function.
         return emptyObjectType;
@@ -16423,14 +16428,20 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 IDebug.ilog(()=>`getTypeFromInstanceQueryNode[dbg] instantiatedConstructorType: ${IDebug.dbgs.dbgTypeToString(instantiatedConstructorType)}`, loggerLevel);
 
                 if (!isConstructorType(instantiatedConstructorType)){
-                    TSDebug.assert(false, "!isConstructorType(instantiatedConstructorType)");
+                    error(node, Diagnostics.The_operand_of_an_instanceof_query_must_be_an_identifier_representing_a_constructor_variable);
+                    links.resolvedType = anyType;
+                    //TSDebug.assert(false, "!isConstructorType(instantiatedConstructorType)");
                 }
-                instanceQueryType = getInstanceQueryType(constructorVariableSymbol, instantiatedConstructorType);
-                IDebug.ilog(()=>`getTypeFromInstanceQueryNode[dbg] instanceQueryType: ${IDebug.dbgs.dbgTypeToString(instanceQueryType)}`, loggerLevel);
-                links.resolvedType = instanceQueryType;
+                else {
+                    instanceQueryType = getInstanceQueryType(constructorVariableSymbol, instantiatedConstructorType);
+                    IDebug.ilog(()=>`getTypeFromInstanceQueryNode[dbg] instanceQueryType: ${IDebug.dbgs.dbgTypeToString(instanceQueryType)}`, loggerLevel);
+                    links.resolvedType = instanceQueryType;
+                }
             }
             else {
-                TSDebug.assert(false, "node.exprName.kind!==SyntaxKind.Identifier, not yet implemented");
+                error(node, Diagnostics.The_operand_of_an_instanceof_query_must_be_an_identifier_representing_a_constructor_variable);
+                links.resolvedType = anyType;
+                // TSDebug.assert(false, "node.exprName.kind!==SyntaxKind.Identifier, not yet implemented");
             }
         }
         IDebug.ilogGroupEnd(()=>`getTypeFromInstanceQueryNode[out]: ${IDebug.dbgs.dbgTypeToString(links.resolvedType)}`, loggerLevel);

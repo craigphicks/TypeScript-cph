@@ -1,0 +1,380 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0013.ts] ////
+
+=== instanceQuery-0013.ts ===
+namespace iq0013z {
+>iq0013z : typeof iq0013z
+>        : ^^^^^^^^^^^^^^
+
+    declare const WrongInstanceofOpenrand: {};
+>WrongInstanceofOpenrand : {}
+>                        : ^^
+
+    declare const asWrong : instanceof WrongInstanceofOpenrand; // error
+>asWrong : any
+>        : ^^^
+}
+
+namespace iq0013a {
+>iq0013a : typeof iq0013a
+>        : ^^^^^^^^^^^^^^
+
+    class EmptyBase {}
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+    class A1<T extends string|number>  extends EmptyBase{
+>A1 : A1<T>
+>   : ^^^^^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+        a: T;
+>a : T
+>  : ^
+
+        constructor(a: T) {
+>a : T
+>  : ^
+
+            super();
+>super() : void
+>        : ^^^^
+>super : typeof EmptyBase
+>      : ^^^^^^^^^^^^^^^^
+
+            this.a = a;
+>this.a = a : T
+>           : ^
+>this.a : T
+>       : ^
+>this : this
+>     : ^^^^
+>a : T
+>  : ^
+>a : T
+>  : ^
+        }
+    }
+    const ANumVar = A1<number>;
+>ANumVar : { new (a: number): A1<number>; prototype: A1<any>; }
+>        : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1<number> : { new (a: number): A1<number>; prototype: A1<any>; }
+>           : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1 : typeof A1
+>   : ^^^^^^^^^
+
+    const AStrVar = A1<string>;
+>AStrVar : { new (a: string): A1<string>; prototype: A1<any>; }
+>        : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1<string> : { new (a: string): A1<string>; prototype: A1<any>; }
+>           : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1 : typeof A1
+>   : ^^^^^^^^^
+
+    declare const an: instanceof ANumVar;
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    declare const as: instanceof AStrVar;
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+    an satisfies EmptyBase; // no error
+>an satisfies EmptyBase : instanceof A1 & A1<number>
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof A1; // no error
+>an satisfies instanceof A1 : instanceof A1 & A1<number>
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof A1<number>; // no error
+>an satisfies instanceof A1<number> : instanceof A1 & A1<number>
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof ANumVar; // no error
+>an satisfies instanceof ANumVar : instanceof A1 & A1<number>
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies EmptyBase; // no error
+>as satisfies EmptyBase : instanceof A1 & A1<string>
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof A1; // no error
+>as satisfies instanceof A1 : instanceof A1 & A1<string>
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof A1<number>; // error
+>as satisfies instanceof A1<number> : instanceof A1 & A1<string>
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof ANumVar; // error
+>as satisfies instanceof ANumVar : instanceof A1 & A1<string>
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+}
+
+namespace iq0013b {
+>iq0013b : typeof iq0013b
+>        : ^^^^^^^^^^^^^^
+
+    class EmptyBase {}
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+    class A1<T extends string|number>  extends EmptyBase{
+>A1 : A1<T>
+>   : ^^^^^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+        a: T;
+>a : T
+>  : ^
+
+        constructor(a: T) {
+>a : T
+>  : ^
+
+            super();
+>super() : void
+>        : ^^^^
+>super : typeof EmptyBase
+>      : ^^^^^^^^^^^^^^^^
+
+            this.a = a;
+>this.a = a : T
+>           : ^
+>this.a : T
+>       : ^
+>this : this
+>     : ^^^^
+>a : T
+>  : ^
+>a : T
+>  : ^
+        }
+    }
+    const ANumVar = A1<number>;
+>ANumVar : { new (a: number): A1<number>; prototype: A1<any>; }
+>        : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1<number> : { new (a: number): A1<number>; prototype: A1<any>; }
+>           : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1 : typeof A1
+>   : ^^^^^^^^^
+
+    const AStrVar = A1<string>;
+>AStrVar : { new (a: string): A1<string>; prototype: A1<any>; }
+>        : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1<string> : { new (a: string): A1<string>; prototype: A1<any>; }
+>           : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1 : typeof A1
+>   : ^^^^^^^^^
+
+    declare const an: instanceof A1<number>;
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    declare const as: instanceof A1<string>;
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    // const an = new ANumVar(1) as instanceof ANumVar;
+    // const as = new ANumStr("one") as instanceof ANumStr;
+
+    an satisfies EmptyBase; // no error
+>an satisfies EmptyBase : instanceof A1 & A1<number>
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof A1; // no error
+>an satisfies instanceof A1 : instanceof A1 & A1<number>
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof A1<number>; // no error
+>an satisfies instanceof A1<number> : instanceof A1 & A1<number>
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof ANumVar; // no error
+>an satisfies instanceof ANumVar : instanceof A1 & A1<number>
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies EmptyBase; // no error
+>as satisfies EmptyBase : instanceof A1 & A1<string>
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof A1; // no error
+>as satisfies instanceof A1 : instanceof A1 & A1<string>
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof A1<number>; // error
+>as satisfies instanceof A1<number> : instanceof A1 & A1<string>
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof ANumVar; // error
+>as satisfies instanceof ANumVar : instanceof A1 & A1<string>
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+}
+
+namespace iq0013c {
+>iq0013c : typeof iq0013c
+>        : ^^^^^^^^^^^^^^
+
+    class EmptyBase {}
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+    class A1<T extends string|number>  extends EmptyBase{
+>A1 : A1<T>
+>   : ^^^^^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+        a: T;
+>a : T
+>  : ^
+
+        constructor(a: T) {
+>a : T
+>  : ^
+
+            super();
+>super() : void
+>        : ^^^^
+>super : typeof EmptyBase
+>      : ^^^^^^^^^^^^^^^^
+
+            this.a = a;
+>this.a = a : T
+>           : ^
+>this.a : T
+>       : ^
+>this : this
+>     : ^^^^
+>a : T
+>  : ^
+>a : T
+>  : ^
+        }
+    }
+    const ANumVar = A1<number>;
+>ANumVar : { new (a: number): A1<number>; prototype: A1<any>; }
+>        : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1<number> : { new (a: number): A1<number>; prototype: A1<any>; }
+>           : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1 : typeof A1
+>   : ^^^^^^^^^
+
+    const AStrVar = A1<string>;
+>AStrVar : { new (a: string): A1<string>; prototype: A1<any>; }
+>        : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1<string> : { new (a: string): A1<string>; prototype: A1<any>; }
+>           : ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>A1 : typeof A1
+>   : ^^^^^^^^^
+
+    const an = new A1<number>(1) as instanceof A1<number>;
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new A1<number>(1) as instanceof A1<number> : instanceof A1 & A1<number>
+>                                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new A1<number>(1) : A1<number>
+>                  : ^^^^^^^^^^
+>A1 : typeof A1
+>   : ^^^^^^^^^
+>1 : 1
+>  : ^
+
+    const as = new A1<string>("one") as instanceof A1<string>;
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new A1<string>("one") as instanceof A1<string> : instanceof A1 & A1<string>
+>                                               : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new A1<string>("one") : A1<string>
+>                      : ^^^^^^^^^^
+>A1 : typeof A1
+>   : ^^^^^^^^^
+>"one" : "one"
+>      : ^^^^^
+
+    an satisfies EmptyBase; // no error
+>an satisfies EmptyBase : instanceof A1 & A1<number>
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof A1; // no error
+>an satisfies instanceof A1 : instanceof A1 & A1<number>
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof A1<number>; // no error
+>an satisfies instanceof A1<number> : instanceof A1 & A1<number>
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    an satisfies instanceof ANumVar; // no error
+>an satisfies instanceof ANumVar : instanceof A1 & A1<number>
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : instanceof A1 & A1<number>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies EmptyBase; // no error
+>as satisfies EmptyBase : instanceof A1 & A1<string>
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof A1; // no error
+>as satisfies instanceof A1 : instanceof A1 & A1<string>
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof A1<number>; // error
+>as satisfies instanceof A1<number> : instanceof A1 & A1<string>
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    as satisfies instanceof ANumVar; // error
+>as satisfies instanceof ANumVar : instanceof A1 & A1<string>
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : instanceof A1 & A1<string>
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+}

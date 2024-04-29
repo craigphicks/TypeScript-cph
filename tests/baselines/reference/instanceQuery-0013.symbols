@@ -1,0 +1,231 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0013.ts] ////
+
+=== instanceQuery-0013.ts ===
+namespace iq0013z {
+>iq0013z : Symbol(iq0013z, Decl(instanceQuery-0013.ts, 0, 0))
+
+    declare const WrongInstanceofOpenrand: {};
+>WrongInstanceofOpenrand : Symbol(WrongInstanceofOpenrand, Decl(instanceQuery-0013.ts, 1, 17))
+
+    declare const asWrong : instanceof WrongInstanceofOpenrand; // error
+>asWrong : Symbol(asWrong, Decl(instanceQuery-0013.ts, 2, 17))
+}
+
+namespace iq0013a {
+>iq0013a : Symbol(iq0013a, Decl(instanceQuery-0013.ts, 3, 1))
+
+    class EmptyBase {}
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 5, 19))
+
+    class A1<T extends string|number>  extends EmptyBase{
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 6, 22))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 7, 13))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 5, 19))
+
+        a: T;
+>a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 7, 57))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 7, 13))
+
+        constructor(a: T) {
+>a : Symbol(a, Decl(instanceQuery-0013.ts, 9, 20))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 7, 13))
+
+            super();
+>super : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 5, 19))
+
+            this.a = a;
+>this.a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 7, 57))
+>this : Symbol(A1, Decl(instanceQuery-0013.ts, 6, 22))
+>a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 7, 57))
+>a : Symbol(a, Decl(instanceQuery-0013.ts, 9, 20))
+        }
+    }
+    const ANumVar = A1<number>;
+>ANumVar : Symbol(ANumVar, Decl(instanceQuery-0013.ts, 14, 9))
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 6, 22))
+
+    const AStrVar = A1<string>;
+>AStrVar : Symbol(AStrVar, Decl(instanceQuery-0013.ts, 15, 9))
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 6, 22))
+
+    declare const an: instanceof ANumVar;
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 17, 17))
+
+    declare const as: instanceof AStrVar;
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 18, 17))
+
+
+    an satisfies EmptyBase; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 17, 17))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 5, 19))
+
+    an satisfies instanceof A1; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 17, 17))
+
+    an satisfies instanceof A1<number>; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 17, 17))
+
+    an satisfies instanceof ANumVar; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 17, 17))
+
+    as satisfies EmptyBase; // no error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 18, 17))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 5, 19))
+
+    as satisfies instanceof A1; // no error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 18, 17))
+
+    as satisfies instanceof A1<number>; // error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 18, 17))
+
+    as satisfies instanceof ANumVar; // error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 18, 17))
+
+}
+
+namespace iq0013b {
+>iq0013b : Symbol(iq0013b, Decl(instanceQuery-0013.ts, 31, 1))
+
+    class EmptyBase {}
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 33, 19))
+
+    class A1<T extends string|number>  extends EmptyBase{
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 34, 22))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 35, 13))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 33, 19))
+
+        a: T;
+>a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 35, 57))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 35, 13))
+
+        constructor(a: T) {
+>a : Symbol(a, Decl(instanceQuery-0013.ts, 37, 20))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 35, 13))
+
+            super();
+>super : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 33, 19))
+
+            this.a = a;
+>this.a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 35, 57))
+>this : Symbol(A1, Decl(instanceQuery-0013.ts, 34, 22))
+>a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 35, 57))
+>a : Symbol(a, Decl(instanceQuery-0013.ts, 37, 20))
+        }
+    }
+    const ANumVar = A1<number>;
+>ANumVar : Symbol(ANumVar, Decl(instanceQuery-0013.ts, 42, 9))
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 34, 22))
+
+    const AStrVar = A1<string>;
+>AStrVar : Symbol(AStrVar, Decl(instanceQuery-0013.ts, 43, 9))
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 34, 22))
+
+    declare const an: instanceof A1<number>;
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 45, 17))
+
+    declare const as: instanceof A1<string>;
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 46, 17))
+
+    // const an = new ANumVar(1) as instanceof ANumVar;
+    // const as = new ANumStr("one") as instanceof ANumStr;
+
+    an satisfies EmptyBase; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 45, 17))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 33, 19))
+
+    an satisfies instanceof A1; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 45, 17))
+
+    an satisfies instanceof A1<number>; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 45, 17))
+
+    an satisfies instanceof ANumVar; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 45, 17))
+
+    as satisfies EmptyBase; // no error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 46, 17))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 33, 19))
+
+    as satisfies instanceof A1; // no error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 46, 17))
+
+    as satisfies instanceof A1<number>; // error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 46, 17))
+
+    as satisfies instanceof ANumVar; // error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 46, 17))
+
+}
+
+namespace iq0013c {
+>iq0013c : Symbol(iq0013c, Decl(instanceQuery-0013.ts, 61, 1))
+
+    class EmptyBase {}
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 63, 19))
+
+    class A1<T extends string|number>  extends EmptyBase{
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 64, 22))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 65, 13))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 63, 19))
+
+        a: T;
+>a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 65, 57))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 65, 13))
+
+        constructor(a: T) {
+>a : Symbol(a, Decl(instanceQuery-0013.ts, 67, 20))
+>T : Symbol(T, Decl(instanceQuery-0013.ts, 65, 13))
+
+            super();
+>super : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 63, 19))
+
+            this.a = a;
+>this.a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 65, 57))
+>this : Symbol(A1, Decl(instanceQuery-0013.ts, 64, 22))
+>a : Symbol(A1.a, Decl(instanceQuery-0013.ts, 65, 57))
+>a : Symbol(a, Decl(instanceQuery-0013.ts, 67, 20))
+        }
+    }
+    const ANumVar = A1<number>;
+>ANumVar : Symbol(ANumVar, Decl(instanceQuery-0013.ts, 72, 9))
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 64, 22))
+
+    const AStrVar = A1<string>;
+>AStrVar : Symbol(AStrVar, Decl(instanceQuery-0013.ts, 73, 9))
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 64, 22))
+
+    const an = new A1<number>(1) as instanceof A1<number>;
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 75, 9))
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 64, 22))
+
+    const as = new A1<string>("one") as instanceof A1<string>;
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 76, 9))
+>A1 : Symbol(A1, Decl(instanceQuery-0013.ts, 64, 22))
+
+    an satisfies EmptyBase; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 75, 9))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 63, 19))
+
+    an satisfies instanceof A1; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 75, 9))
+
+    an satisfies instanceof A1<number>; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 75, 9))
+
+    an satisfies instanceof ANumVar; // no error
+>an : Symbol(an, Decl(instanceQuery-0013.ts, 75, 9))
+
+    as satisfies EmptyBase; // no error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 76, 9))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0013.ts, 63, 19))
+
+    as satisfies instanceof A1; // no error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 76, 9))
+
+    as satisfies instanceof A1<number>; // error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 76, 9))
+
+    as satisfies instanceof ANumVar; // error
+>as : Symbol(as, Decl(instanceQuery-0013.ts, 76, 9))
+
+}

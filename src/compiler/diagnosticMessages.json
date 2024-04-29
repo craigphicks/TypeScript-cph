@@ -8008,5 +8008,9 @@
     "Constructor typeof {0} is not assignable to constructor typeof {1}": {
         "category": "Error",
         "code": 18059
+    },
+    "The operand of an instanceof query must be an identifier representing a constructor variable": {
+        "category": "Error",
+        "code": 18060
     }
 }
