@@ -1,16 +1,19 @@
 // @strict: true
 // @target: esnext
 
-namespace iq0000 {
+namespace iq00 {
+    declare class C<T> {
+        c: T;
+        constructor(c: T);
+    }
 
-declare class C<T> {
-    c: T;
-    constructor(c: T);
-}
+    function isInstanceofC<T>(x: C<T>): x is (instanceof C) & C<T> {
+        return x instanceof C;
+    }
 
-const CNumber = C<number>; // the variable CNumberConstructor should have type { c:number, constructor(c:number): C<number>, prototype: C<any> }
+    // const c1 = new C(12);
 
-
-declare const c1: instanceof CNumber;
-
+    // if (isInstanceofC(c1)) {
+    //     c1.c;
+    // }
 }

@@ -72,61 +72,61 @@ namespace iq0013a {
 >   : ^^^^^^^^^
 
     declare const an: instanceof ANumVar;
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     declare const as: instanceof AStrVar;
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
     an satisfies EmptyBase; // no error
->an satisfies EmptyBase : instanceof A1 & A1<number>
->                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies EmptyBase : (instanceof A1 & A1<number>)
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof A1; // no error
->an satisfies instanceof A1 : instanceof A1 & A1<number>
->                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof A1 : (instanceof A1 & A1<number>)
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof A1<number>; // no error
->an satisfies instanceof A1<number> : instanceof A1 & A1<number>
->                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof A1<number> : (instanceof A1 & A1<number>)
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof ANumVar; // no error
->an satisfies instanceof ANumVar : instanceof A1 & A1<number>
->                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof ANumVar : (instanceof A1 & A1<number>)
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies EmptyBase; // no error
->as satisfies EmptyBase : instanceof A1 & A1<string>
->                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies EmptyBase : (instanceof A1 & A1<string>)
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof A1; // no error
->as satisfies instanceof A1 : instanceof A1 & A1<string>
->                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof A1 : (instanceof A1 & A1<string>)
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof A1<number>; // error
->as satisfies instanceof A1<number> : instanceof A1 & A1<string>
->                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof A1<number> : (instanceof A1 & A1<string>)
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof ANumVar; // error
->as satisfies instanceof ANumVar : instanceof A1 & A1<string>
->                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof ANumVar : (instanceof A1 & A1<string>)
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 }
 
@@ -188,63 +188,63 @@ namespace iq0013b {
 >   : ^^^^^^^^^
 
     declare const an: instanceof A1<number>;
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     declare const as: instanceof A1<string>;
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     // const an = new ANumVar(1) as instanceof ANumVar;
     // const as = new ANumStr("one") as instanceof ANumStr;
 
     an satisfies EmptyBase; // no error
->an satisfies EmptyBase : instanceof A1 & A1<number>
->                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies EmptyBase : (instanceof A1 & A1<number>)
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof A1; // no error
->an satisfies instanceof A1 : instanceof A1 & A1<number>
->                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof A1 : (instanceof A1 & A1<number>)
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof A1<number>; // no error
->an satisfies instanceof A1<number> : instanceof A1 & A1<number>
->                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof A1<number> : (instanceof A1 & A1<number>)
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof ANumVar; // no error
->an satisfies instanceof ANumVar : instanceof A1 & A1<number>
->                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof ANumVar : (instanceof A1 & A1<number>)
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies EmptyBase; // no error
->as satisfies EmptyBase : instanceof A1 & A1<string>
->                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies EmptyBase : (instanceof A1 & A1<string>)
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof A1; // no error
->as satisfies instanceof A1 : instanceof A1 & A1<string>
->                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof A1 : (instanceof A1 & A1<string>)
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof A1<number>; // error
->as satisfies instanceof A1<number> : instanceof A1 & A1<string>
->                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof A1<number> : (instanceof A1 & A1<string>)
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof ANumVar; // error
->as satisfies instanceof ANumVar : instanceof A1 & A1<string>
->                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof ANumVar : (instanceof A1 & A1<string>)
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 }
 
@@ -306,10 +306,10 @@ namespace iq0013c {
 >   : ^^^^^^^^^
 
     const an = new A1<number>(1) as instanceof A1<number>;
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->new A1<number>(1) as instanceof A1<number> : instanceof A1 & A1<number>
->                                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new A1<number>(1) as instanceof A1<number> : (instanceof A1 & A1<number>)
+>                                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >new A1<number>(1) : A1<number>
 >                  : ^^^^^^^^^^
 >A1 : typeof A1
@@ -318,10 +318,10 @@ namespace iq0013c {
 >  : ^
 
     const as = new A1<string>("one") as instanceof A1<string>;
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->new A1<string>("one") as instanceof A1<string> : instanceof A1 & A1<string>
->                                               : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new A1<string>("one") as instanceof A1<string> : (instanceof A1 & A1<string>)
+>                                               : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >new A1<string>("one") : A1<string>
 >                      : ^^^^^^^^^^
 >A1 : typeof A1
@@ -330,51 +330,51 @@ namespace iq0013c {
 >      : ^^^^^
 
     an satisfies EmptyBase; // no error
->an satisfies EmptyBase : instanceof A1 & A1<number>
->                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies EmptyBase : (instanceof A1 & A1<number>)
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof A1; // no error
->an satisfies instanceof A1 : instanceof A1 & A1<number>
->                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof A1 : (instanceof A1 & A1<number>)
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof A1<number>; // no error
->an satisfies instanceof A1<number> : instanceof A1 & A1<number>
->                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof A1<number> : (instanceof A1 & A1<number>)
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     an satisfies instanceof ANumVar; // no error
->an satisfies instanceof ANumVar : instanceof A1 & A1<number>
->                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->an : instanceof A1 & A1<number>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an satisfies instanceof ANumVar : (instanceof A1 & A1<number>)
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>an : (instanceof A1 & A1<number>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies EmptyBase; // no error
->as satisfies EmptyBase : instanceof A1 & A1<string>
->                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies EmptyBase : (instanceof A1 & A1<string>)
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof A1; // no error
->as satisfies instanceof A1 : instanceof A1 & A1<string>
->                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof A1 : (instanceof A1 & A1<string>)
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof A1<number>; // error
->as satisfies instanceof A1<number> : instanceof A1 & A1<string>
->                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof A1<number> : (instanceof A1 & A1<string>)
+>                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     as satisfies instanceof ANumVar; // error
->as satisfies instanceof ANumVar : instanceof A1 & A1<string>
->                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^
->as : instanceof A1 & A1<string>
->   : ^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as satisfies instanceof ANumVar : (instanceof A1 & A1<string>)
+>                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>as : (instanceof A1 & A1<string>)
+>   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 }

@@ -2409,7 +2409,11 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
     }
 
     function emitIntersectionType(node: IntersectionTypeNode) {
+
+        const isInstanceQueryTypeUnit = node.types[0].kind===SyntaxKind.InstanceQuery;
+        if (isInstanceQueryTypeUnit) writePunctuation("(");
         emitList(node, node.types, ListFormat.IntersectionTypeConstituents, parenthesizer.parenthesizeConstituentTypeOfIntersectionType);
+        if (isInstanceQueryTypeUnit) writePunctuation(")");
     }
 
     function emitConditionalType(node: ConditionalTypeNode) {

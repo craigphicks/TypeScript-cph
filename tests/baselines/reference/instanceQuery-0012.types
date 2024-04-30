@@ -30,12 +30,12 @@ namespace iq0012b {
 >   : ^^^^^^^^^^^^^
 
     declare let a1: instanceof A1;
->a1 : instanceof A1 & A1
->   : ^^^^^^^^^^^^^^^^^^
+>a1 : (instanceof A1 & A1)
+>   : ^^^^^^^^^^^^^^^^^^^^
 
     declare let a2: instanceof A2;
->a2 : instanceof A2 & A2
->   : ^^^^^^^^^^^^^^^^^^
+>a2 : (instanceof A2 & A2)
+>   : ^^^^^^^^^^^^^^^^^^^^
 
     const one = 1 as const;
 >one : 1
@@ -57,10 +57,10 @@ namespace iq0012b {
     // compare to rhs without instanceof -- none of these are errors, which might not be desirable.
 
     a1 satisfies A2; // not an error
->a1 satisfies A2 : instanceof A1 & A1
->                : ^^^^^^^^^^^^^^^^^^
->a1 : instanceof A1 & A1
->   : ^^^^^^^^^^^^^^^^^^
+>a1 satisfies A2 : (instanceof A1 & A1)
+>                : ^^^^^^^^^^^^^^^^^^^^
+>a1 : (instanceof A1 & A1)
+>   : ^^^^^^^^^^^^^^^^^^^^
 
     ({}) satisfies A2; // not an error
 >({}) satisfies A2 : {}
@@ -93,10 +93,10 @@ namespace iq0012b {
     // using instanceof queries these can no be discriminated
 
     a1 satisfies instanceof A2; // should be error
->a1 satisfies instanceof A2 : instanceof A1 & A1
->                           : ^^^^^^^^^^^^^^^^^^
->a1 : instanceof A1 & A1
->   : ^^^^^^^^^^^^^^^^^^
+>a1 satisfies instanceof A2 : (instanceof A1 & A1)
+>                           : ^^^^^^^^^^^^^^^^^^^^
+>a1 : (instanceof A1 & A1)
+>   : ^^^^^^^^^^^^^^^^^^^^
 
     ({}) satisfies instanceof A2; // should be error
 >({}) satisfies instanceof A2 : {}

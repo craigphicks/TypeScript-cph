@@ -45,8 +45,8 @@ namespace iq0000A {
 
     // When the r.h.s. of "instanceof" is not a generic class, we can write:
     type AInstanceQueryType = instanceof A; // displayed as "instanceof A & A"
->AInstanceQueryType : instanceof A & A
->                   : ^^^^^^^^^^^^^^^^
+>AInstanceQueryType : (instanceof A & A)
+>                   : ^^^^^^^^^^^^^^^^^^
 
     A.prototype.x; // displayed as "number" (existing TS behavior, inconsistent with "B.prototype.x : any" below )
 >A.prototype.x : number
@@ -116,8 +116,8 @@ namespace iq0000B {
 
     // When the r.h.s. of "instanceof" is not a generic class, we can write:
     type BInstanceQueryType = instanceof B; // displayed as "instanceof B & B"
->BInstanceQueryType : instanceof B & B<any>
->                   : ^^^^^^^^^^^^^^^^^^^^^
+>BInstanceQueryType : (instanceof B & B<any>)
+>                   : ^^^^^^^^^^^^^^^^^^^^^^^
 
     B.prototype.x; // displayed as "any" (existing TS behavior, inconsistent with "A.prototype.x : number" above)
 >B.prototype.x : any
@@ -182,8 +182,8 @@ namespace iq0000C {
 >                 : ^^^^^^
 
     type CNumberConstructorInstanceQueryType = instanceof CNumberConstructor; // should display as "instanceof C & C<number>"
->CNumberConstructorInstanceQueryType : instanceof C & C<number>
->                                    : ^^^^^^^^^^^^^^^^^^^^^^^^
+>CNumberConstructorInstanceQueryType : (instanceof C & C<number>)
+>                                    : ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     C.prototype.x; // displayed as "any"
 >C.prototype.x : any
@@ -241,7 +241,7 @@ namespace iq0000D {
 
     // When the r.h.s. of "instanceof" is not a generic class, we can write:
     type DInstanceQueryType = instanceof D; // displayed as "instanceof D & D"
->DInstanceQueryType : instanceof D & D
->                   : ^^^^^^^^^^^^^^^^
+>DInstanceQueryType : (instanceof D & D)
+>                   : ^^^^^^^^^^^^^^^^^^
 
 }

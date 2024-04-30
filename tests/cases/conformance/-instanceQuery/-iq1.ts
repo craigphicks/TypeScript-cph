@@ -1,21 +1,14 @@
 // @strict: true
 // @target: esnext
 
-namespace iq0000 {
-
-declare class A {
+class C {
     c: number;
-    constructor(c: number);
+    constructor(c: number){
+        this.c = c;
+    }
 }
 
-declare class C<T> {
-    c: T;
-    constructor(c: T);
-}
-
-const a1 = (new A(12)) as instanceof A;
+//declare const c1: instanceof C;
 
 
-const c1 = (new C(12)) as instanceof C<number>;
-
-}
+declare const c2: (instanceof C) & C;
