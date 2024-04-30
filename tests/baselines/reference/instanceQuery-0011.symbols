@@ -1,8 +1,8 @@
 //// [tests/cases/conformance/-instanceQuery/instanceQuery-0011.ts] ////
 
 === instanceQuery-0011.ts ===
-namespace iq0010b {
->iq0010b : Symbol(iq0010b, Decl(instanceQuery-0011.ts, 0, 0))
+namespace iq0011b {
+>iq0011b : Symbol(iq0011b, Decl(instanceQuery-0011.ts, 0, 0))
 
     class EmptyBase {}
 >EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0011.ts, 0, 19))
@@ -66,32 +66,44 @@ namespace iq0010b {
 >b3 : Symbol(b3, Decl(instanceQuery-0011.ts, 18, 15))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
+    type ANope = instanceof A3 & instanceof B3;
+>ANope : Symbol(ANope, Decl(instanceQuery-0011.ts, 23, 20))
+
+    a3 satisfies ANope; // error
+>a3 : Symbol(a3, Decl(instanceQuery-0011.ts, 17, 15))
+>ANope : Symbol(ANope, Decl(instanceQuery-0011.ts, 23, 20))
+
+    b3 satisfies ANope; // error
+>b3 : Symbol(b3, Decl(instanceQuery-0011.ts, 18, 15))
+>ANope : Symbol(ANope, Decl(instanceQuery-0011.ts, 23, 20))
+
+
     class AP  extends A2 {
->AP : Symbol(AP, Decl(instanceQuery-0011.ts, 23, 20))
+>AP : Symbol(AP, Decl(instanceQuery-0011.ts, 27, 23))
 >A2 : Symbol(A2, Decl(instanceQuery-0011.ts, 4, 5))
 
         a: 1 = 1;
->a : Symbol(AP.a, Decl(instanceQuery-0011.ts, 25, 26))
+>a : Symbol(AP.a, Decl(instanceQuery-0011.ts, 30, 26))
 
     };
 
     new AP() as instanceof AP satisfies AQ; // no error
->AP : Symbol(AP, Decl(instanceQuery-0011.ts, 23, 20))
+>AP : Symbol(AP, Decl(instanceQuery-0011.ts, 27, 23))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
     declare const aq: AQ;
->aq : Symbol(aq, Decl(instanceQuery-0011.ts, 31, 17))
+>aq : Symbol(aq, Decl(instanceQuery-0011.ts, 36, 17))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
     aq satisfies AP; // structure error
->aq : Symbol(aq, Decl(instanceQuery-0011.ts, 31, 17))
->AP : Symbol(AP, Decl(instanceQuery-0011.ts, 23, 20))
+>aq : Symbol(aq, Decl(instanceQuery-0011.ts, 36, 17))
+>AP : Symbol(AP, Decl(instanceQuery-0011.ts, 27, 23))
 
     declare const ap: instanceof AP;
->ap : Symbol(ap, Decl(instanceQuery-0011.ts, 34, 17))
+>ap : Symbol(ap, Decl(instanceQuery-0011.ts, 39, 17))
 
     ap satisfies AQ; // no error
->ap : Symbol(ap, Decl(instanceQuery-0011.ts, 34, 17))
+>ap : Symbol(ap, Decl(instanceQuery-0011.ts, 39, 17))
 >AQ : Symbol(AQ, Decl(instanceQuery-0011.ts, 13, 5))
 
 }

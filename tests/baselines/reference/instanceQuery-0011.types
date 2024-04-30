@@ -1,8 +1,8 @@
 //// [tests/cases/conformance/-instanceQuery/instanceQuery-0011.ts] ////
 
 === instanceQuery-0011.ts ===
-namespace iq0010b {
->iq0010b : typeof iq0010b
+namespace iq0011b {
+>iq0011b : typeof iq0011b
 >        : ^^^^^^^^^^^^^^
 
     class EmptyBase {}
@@ -100,6 +100,23 @@ namespace iq0010b {
 >                : ^^^^^^^^^^^^^^^^^^
 >b3 : instanceof B3 & B3
 >   : ^^^^^^^^^^^^^^^^^^
+
+    type ANope = instanceof A3 & instanceof B3;
+>ANope : never
+>      : ^^^^^
+
+    a3 satisfies ANope; // error
+>a3 satisfies ANope : instanceof A3 & A3
+>                   : ^^^^^^^^^^^^^^^^^^
+>a3 : instanceof A3 & A3
+>   : ^^^^^^^^^^^^^^^^^^
+
+    b3 satisfies ANope; // error
+>b3 satisfies ANope : instanceof B3 & B3
+>                   : ^^^^^^^^^^^^^^^^^^
+>b3 : instanceof B3 & B3
+>   : ^^^^^^^^^^^^^^^^^^
+
 
     class AP  extends A2 {
 >AP : AP

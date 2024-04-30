@@ -1,35 +1,49 @@
 //// [tests/cases/conformance/-instanceQuery/instanceQuery-0012.ts] ////
 
 === instanceQuery-0012.ts ===
-// namespace iq0012a {
-
-//     class EmptyBase {}
-//     class B1  extends EmptyBase{ a = 0; }
-//     class B2  extends B1 { b = 0; }
-//     declare let b1: B1;
-
-//     b1 satisfies B2; // should be error, needs message
-
-// }
-
-
 namespace iq0012b {
 >iq0012b : Symbol(iq0012b, Decl(instanceQuery-0012.ts, 0, 0))
 
-    class EmptyBase {}
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0012.ts, 12, 19))
+    interface A1 {}
+>A1 : Symbol(A1, Decl(instanceQuery-0012.ts, 0, 19), Decl(instanceQuery-0012.ts, 7, 17))
 
-    class A1  extends EmptyBase{ a = 0; }
->A1 : Symbol(A1, Decl(instanceQuery-0012.ts, 14, 22))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0012.ts, 12, 19))
->a : Symbol(A1.a, Decl(instanceQuery-0012.ts, 15, 32))
+    interface A1Constructor {
+>A1Constructor : Symbol(A1Constructor, Decl(instanceQuery-0012.ts, 2, 19))
 
-    class A2  extends A1 {}
->A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 15, 41))
->A1 : Symbol(A1, Decl(instanceQuery-0012.ts, 14, 22))
+        prototype: A1;
+>prototype : Symbol(A1Constructor.prototype, Decl(instanceQuery-0012.ts, 3, 29))
+>A1 : Symbol(A1, Decl(instanceQuery-0012.ts, 0, 19), Decl(instanceQuery-0012.ts, 7, 17))
+
+        new(): A1;
+>A1 : Symbol(A1, Decl(instanceQuery-0012.ts, 0, 19), Decl(instanceQuery-0012.ts, 7, 17))
+    }
+    declare const A1: A1Constructor;
+>A1 : Symbol(A1, Decl(instanceQuery-0012.ts, 0, 19), Decl(instanceQuery-0012.ts, 7, 17))
+>A1Constructor : Symbol(A1Constructor, Decl(instanceQuery-0012.ts, 2, 19))
+
+    interface A2  extends A1 {}
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
+>A1 : Symbol(A1, Decl(instanceQuery-0012.ts, 0, 19), Decl(instanceQuery-0012.ts, 7, 17))
+
+    interface A2Constructor {
+>A2Constructor : Symbol(A2Constructor, Decl(instanceQuery-0012.ts, 9, 31))
+
+        prototype: A2;
+>prototype : Symbol(A2Constructor.prototype, Decl(instanceQuery-0012.ts, 10, 29))
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
+
+        new(): A2;
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
+    }
+    declare const A2: A2Constructor;
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
+>A2Constructor : Symbol(A2Constructor, Decl(instanceQuery-0012.ts, 9, 31))
 
     declare let a1: instanceof A1;
->a1 : Symbol(a1, Decl(instanceQuery-0012.ts, 17, 15))
+>a1 : Symbol(a1, Decl(instanceQuery-0012.ts, 16, 15))
+
+    declare let a2: instanceof A2;
+>a2 : Symbol(a2, Decl(instanceQuery-0012.ts, 17, 15))
 
     const one = 1 as const;
 >one : Symbol(one, Decl(instanceQuery-0012.ts, 18, 9))
@@ -39,41 +53,42 @@ namespace iq0012b {
 >sym : Symbol(sym, Decl(instanceQuery-0012.ts, 19, 9))
 >Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
 
-    a1 satisfies instanceof A2; // should be error
->a1 : Symbol(a1, Decl(instanceQuery-0012.ts, 17, 15))
-
-    ({}) satisfies instanceof EmptyBase; // should be error
-
-    // Note: all the primitives below get promoted to object types so the primitive error message is never triggered.  Is that OK?
-
-    one satisfies instanceof EmptyBase; // should be error
->one : Symbol(one, Decl(instanceQuery-0012.ts, 18, 9))
-
-    1n satisfies instanceof EmptyBase; // should be error
-
-    sym satisfies instanceof EmptyBase; // should be error
->sym : Symbol(sym, Decl(instanceQuery-0012.ts, 19, 9))
-
-
     ////////////////////////////////////////////////////////////////////
     // compare to rhs without instanceof -- none of these are errors, which might not be desirable.
 
     a1 satisfies A2; // not an error
->a1 : Symbol(a1, Decl(instanceQuery-0012.ts, 17, 15))
->A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 15, 41))
+>a1 : Symbol(a1, Decl(instanceQuery-0012.ts, 16, 15))
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
 
-    ({}) satisfies EmptyBase; // not an error
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0012.ts, 12, 19))
+    ({}) satisfies A2; // not an error
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
 
-    one satisfies EmptyBase; // not an error
+    one satisfies A2; // not an error
 >one : Symbol(one, Decl(instanceQuery-0012.ts, 18, 9))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0012.ts, 12, 19))
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
 
-    1n satisfies EmptyBase; // not an error
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0012.ts, 12, 19))
+    1n satisfies A2; // not an error
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
 
-    sym satisfies EmptyBase; // not an error
+    sym satisfies A2; // not an error
 >sym : Symbol(sym, Decl(instanceQuery-0012.ts, 19, 9))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0012.ts, 12, 19))
+>A2 : Symbol(A2, Decl(instanceQuery-0012.ts, 7, 36), Decl(instanceQuery-0012.ts, 14, 17))
+
+
+    ////////////////////////////////////////////////////////////////////
+    // using instanceof queries these can no be discriminated
+
+    a1 satisfies instanceof A2; // should be error
+>a1 : Symbol(a1, Decl(instanceQuery-0012.ts, 16, 15))
+
+    ({}) satisfies instanceof A2; // should be error
+
+    one satisfies instanceof A2; // should be error
+>one : Symbol(one, Decl(instanceQuery-0012.ts, 18, 9))
+
+    1n satisfies instanceof A2; // should be error
+
+    sym satisfies instanceof A2; // should be error
+>sym : Symbol(sym, Decl(instanceQuery-0012.ts, 19, 9))
 
 }

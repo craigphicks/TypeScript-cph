@@ -3,7 +3,7 @@
 // @declaration: true
 // @instanceQueryEnableFromNew: true
 
-namespace iq0010b {
+namespace iq0011b {
     class EmptyBase {}
     class A1  extends EmptyBase{
         a: number|string = "";
@@ -27,6 +27,11 @@ namespace iq0010b {
     a2 satisfies AQ; // no error
     a3 satisfies AQ; // no error
     b3 satisfies AQ; // no error
+
+    type ANope = instanceof A3 & instanceof B3;
+    a3 satisfies ANope; // error
+    b3 satisfies ANope; // error
+
 
     class AP  extends A2 {
         a: 1 = 1;

@@ -1,7 +1,7 @@
 //// [tests/cases/conformance/-instanceQuery/instanceQuery-0011.ts] ////
 
 //// [instanceQuery-0011.ts]
-namespace iq0010b {
+namespace iq0011b {
     class EmptyBase {}
     class A1  extends EmptyBase{
         a: number|string = "";
@@ -26,6 +26,11 @@ namespace iq0010b {
     a3 satisfies AQ; // no error
     b3 satisfies AQ; // no error
 
+    type ANope = instanceof A3 & instanceof B3;
+    a3 satisfies ANope; // error
+    b3 satisfies ANope; // error
+
+
     class AP  extends A2 {
         a: 1 = 1;
     };
@@ -42,8 +47,8 @@ namespace iq0010b {
 
 //// [instanceQuery-0011.js]
 "use strict";
-var iq0010b;
-(function (iq0010b) {
+var iq0011b;
+(function (iq0011b) {
     class EmptyBase {
     }
     class A1 extends EmptyBase {
@@ -62,6 +67,8 @@ var iq0010b;
     a2; // no error
     a3; // no error
     b3; // no error
+    a3; // error
+    b3; // error
     class AP extends A2 {
         a = 1;
     }
@@ -69,9 +76,9 @@ var iq0010b;
     new AP(); // no error
     aq; // structure error
     ap; // no error
-})(iq0010b || (iq0010b = {}));
+})(iq0011b || (iq0011b = {}));
 
 
 //// [instanceQuery-0011.d.ts]
-declare namespace iq0010b {
+declare namespace iq0011b {
 }
