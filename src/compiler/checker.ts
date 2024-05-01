@@ -14033,7 +14033,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getPropertiesOfUnionOrIntersectionType(type: UnionOrIntersectionType): Symbol[] {
-        if (!everyContainedType(type, t=>!(t as ObjectType).instanceof)) TSDebug.assert(false,"getPropertiesOfUnionOrIntersectionType, instanceof not yet implemented");
+        //if (structuredTypeContainsInstanceof(type)) TSDebug.assert(false,"getPropertiesOfUnionOrIntersectionType, instanceof not yet implemented");
         if (!type.resolvedProperties) {
             const members = createSymbolTable();
             for (const current of type.types) {
@@ -14516,6 +14516,19 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     const loggerLevel = 2;
     IDebug.ilogGroup(()=>`createUnionOrIntersectionProperty[in]:${IDebug.dbgs.dbgTypeToString(containingType)}, ${name}, skipObjectFunctionPropertyAugment:${skipObjectFunctionPropertyAugment}`,loggerLevel);
     const ret = (()=>{
+        if (structuredTypeContainsInstanceof(containingType)){
+            const mapped = map(containingType.types, t=> (t as ObjectType).instanceof ? getInstanceofStructuredType(t as ObjectType) : t);
+            if (containingType.flags & TypeFlags.Union){
+                const unionType = getUnionType(mapped);
+                if (!(unionType as UnionType).types) return getPropertyOfType(unionType, name, skipObjectFunctionPropertyAugment);
+                return createUnionOrIntersectionProperty(unionType as UnionOrIntersectionType, name, skipObjectFunctionPropertyAugment);
+            }
+            else if (containingType.flags & TypeFlags.Intersection){
+                const intersectionType = getUnionType(mapped);
+                if (!(intersectionType as UnionType).types)  return getPropertyOfType(intersectionType, name, skipObjectFunctionPropertyAugment);
+                return createUnionOrIntersectionProperty(intersectionType as UnionOrIntersectionType, name, skipObjectFunctionPropertyAugment);
+            }
+        }
         let singleProp: Symbol | undefined;
         let propSet: Map<SymbolId, Symbol> | undefined;
         let indexTypes: Type[] | undefined;
@@ -14705,6 +14718,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     const loggerLevel = 2;
     IDebug.ilogGroup(()=>`getUnionOrIntersectionProperty[in]:${IDebug.dbgs.dbgTypeToString(type)}, ${name})`,loggerLevel);
     const ret = (()=>{
+        // if (structuredTypeContainsInstanceof(type)){
+        //     if (type.flags & TypeFlags.Union){
+        //         getUnionType(map(type.types, t=>getInstanceofStructuredType(t)))
+        //     }
+        // }
         let property = skipObjectFunctionPropertyAugment ?
             type.propertyCacheWithoutObjectFunctionPropertyAugment?.get(name) :
             type.propertyCache?.get(name);
@@ -14751,7 +14769,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getPropertyOfUnionOrIntersectionType(type: UnionOrIntersectionType, name: __String, skipObjectFunctionPropertyAugment?: boolean): Symbol | undefined {
-         if (!everyContainedType(type, t=>!(t as ObjectType).instanceof)) TSDebug.assert(false,"getPropertyOfUnionOrIntersectionType, instanceof not yet implemented");
+        // if (structuredTypeContainsInstanceof(type)) TSDebug.assert(false,"getPropertyOfUnionOrIntersectionType, instanceof not yet implemented");
         const property = getUnionOrIntersectionProperty(type, name, skipObjectFunctionPropertyAugment);
         // We need to filter out partial properties in union types
         return property && !(getCheckFlags(property) & CheckFlags.ReadPartial) ? property : undefined;
@@ -21401,7 +21419,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return applyToInstanceofStructuredType(type as ObjectType, (x: StructuredType)=>getNormalizedType(x, writing) as StructuredType);
             }
             else if (type.flags & TypeFlags.Union) {
-                return getUnionType(map((type as UnionType).types, t => applyToInstanceofStructuredType(t as ObjectType, (x: StructuredType)=>getNormalizedType(x, writing) as StructuredType)));
+                return getUnionType(map((type as UnionType).types, t => getNormalizedType(t, writing) as StructuredType));
             }
             else if (type.flags & TypeFlags.Intersection) {
                 const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
@@ -23241,7 +23259,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 }
                 if (sourceFlags & TypeFlags.Object && (source as ObjectType).instanceof){
                     IDebug.ilog(()=>`structuredTypeRelatedToWork: source is instanceofQueryType, tests target`,loggerLevel);
-                    if (!(targetFlags & TypeFlags.Object)) return Ternary.False;
+                    if (targetFlags & TypeFlags.TypeParameter && (target as TypeParameter).resolvedBaseConstraint) {
+                        return isRelatedTo(source, (target as TypeParameter).resolvedBaseConstraint!); // why is this not done already?
+                    }
+                    if (!(targetFlags & TypeFlags.Object)) {
+                        return Ternary.False;
+                    }
                     TSDebug.assert(!(targetFlags & TypeFlags.UnionOrIntersection), "target Union/Intersection types should have been handled above");
                     if ((target as ObjectType).instanceof) {
                         // Source symbol is ignored
