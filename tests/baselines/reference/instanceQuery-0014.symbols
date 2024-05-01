@@ -1,0 +1,247 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0014.ts] ////
+
+=== instanceQuery-0014.ts ===
+// namespace iq0014a {
+//     class EmptyBase {}
+//     class A { a = 0; }
+//     function extendsEmptyBase<T extends EmptyBase>(x: T): x is (EmptyBase & T) {
+//         // no problem/error here
+//         return true;
+//     }
+//     declare const a: A | EmptyBase | {};
+//     if (extendsEmptyBase(a)) {
+//         a;
+//     }
+//     else {
+//         a;
+//     }
+// }
+
+// namespace iq0014b {
+//     class EmptyBase {}
+//     function f<T extends EmptyBase>(t: T): void {
+//         const x = (0 as any as (instanceof EmptyBase) & T);
+//         t = x;
+//     }
+// }
+
+// namespace iq0014c {
+//     class EmptyBase {}
+//     class A { a = 0; }
+//     function extendsEmptyBaseInstance<T extends Object>(x: T): x is ((instanceof EmptyBase) & T) {
+//         return x instanceof EmptyBase;
+//     }
+//     declare const a: A | EmptyBase | {};
+//     if (extendsEmptyBaseInstance(a)) {
+//         a;
+//     }
+//     else {
+//         a;
+//     }
+// }
+
+// namespace iq0014c {
+//     class EmptyBase {}
+//     class A extends EmptyBase{ a = 0; }
+
+//     function extendsAInstance<T extends Object>(x: T): x is (instanceof A) & T {
+//         return x instanceof A;
+//     }
+//     declare const a: instanceof EmptyBase ; //| (instanceof EmptyBase & A);
+//     if (extendsAInstance(a)) {
+//         a;
+//     }
+//     else {
+//         a;
+//     }
+// }
+
+
+namespace iq0014d {
+>iq0014d : Symbol(iq0014d, Decl(instanceQuery-0014.ts, 0, 0))
+
+    class EmptyBase {}
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 56, 19))
+
+    class A extends EmptyBase { a = 0; }
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 57, 22))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 56, 19))
+>a : Symbol(A.a, Decl(instanceQuery-0014.ts, 58, 31))
+
+    class B { a = 0; } // does not extend EmptyBase
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 58, 40))
+>a : Symbol(B.a, Decl(instanceQuery-0014.ts, 59, 13))
+
+    function extendsEmptyBaseInstance<T extends Object>(x: T): x is (instanceof EmptyBase) & T {
+>extendsEmptyBaseInstance : Symbol(extendsEmptyBaseInstance, Decl(instanceQuery-0014.ts, 59, 22))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 60, 38))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 60, 56))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 60, 38))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 60, 56))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 60, 38))
+
+        return x instanceof EmptyBase;
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 60, 56))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 56, 19))
+    }
+    function extendsAInstance<T extends Object>(x: T): x is (instanceof A) & T {
+>extendsAInstance : Symbol(extendsAInstance, Decl(instanceQuery-0014.ts, 62, 5))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 63, 30))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 63, 48))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 63, 30))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 63, 48))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 63, 30))
+
+        return x instanceof A;
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 63, 48))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 57, 22))
+    }
+    function extendsBInstance<T extends Object>(x: T): x is (instanceof B) & T {
+>extendsBInstance : Symbol(extendsBInstance, Decl(instanceQuery-0014.ts, 65, 5))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 66, 30))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 66, 48))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 66, 30))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 66, 48))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 66, 30))
+
+        return x instanceof B;
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 66, 48))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 58, 40))
+    }
+    declare const a: A | EmptyBase | {};
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 57, 22))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 56, 19))
+
+    if (extendsEmptyBaseInstance(a)) {
+>extendsEmptyBaseInstance : Symbol(extendsEmptyBaseInstance, Decl(instanceQuery-0014.ts, 59, 22))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+
+        a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+
+        if (extendsAInstance(a)) {
+>extendsAInstance : Symbol(extendsAInstance, Decl(instanceQuery-0014.ts, 62, 5))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+
+            a; // (instanceof A & (A & EmptyBase))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+        }
+        else {
+            a;
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+        }
+        if (extendsBInstance(a)) {
+>extendsBInstance : Symbol(extendsBInstance, Decl(instanceQuery-0014.ts, 65, 5))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+
+            a; // never
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+        }
+        else {
+            a;
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+        }
+    }
+    else {
+        a;
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 69, 17))
+    }
+}
+
+namespace iq0014e {
+>iq0014e : Symbol(iq0014e, Decl(instanceQuery-0014.ts, 88, 1))
+
+    class EmptyBase {}
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 90, 19))
+
+    class A extends EmptyBase { a = 0; }
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 91, 22))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 90, 19))
+>a : Symbol(A.a, Decl(instanceQuery-0014.ts, 92, 31))
+
+    class B { a = 0; } // does not extend EmptyBase
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 92, 40))
+>a : Symbol(B.a, Decl(instanceQuery-0014.ts, 93, 13))
+
+    function extendsEmptyBaseInstance<T>(x: T): x is (instanceof EmptyBase) & T {
+>extendsEmptyBaseInstance : Symbol(extendsEmptyBaseInstance, Decl(instanceQuery-0014.ts, 93, 22))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 94, 38))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 94, 41))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 94, 38))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 94, 41))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 94, 38))
+
+        return x instanceof EmptyBase;
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 94, 41))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 90, 19))
+    }
+    function extendsAInstance<T>(x: T): x is (instanceof A) & T {
+>extendsAInstance : Symbol(extendsAInstance, Decl(instanceQuery-0014.ts, 96, 5))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 97, 30))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 97, 33))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 97, 30))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 97, 33))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 97, 30))
+
+        return x instanceof A;
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 97, 33))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 91, 22))
+    }
+    function extendsBInstance<T>(x: T): x is (instanceof B) & T {
+>extendsBInstance : Symbol(extendsBInstance, Decl(instanceQuery-0014.ts, 99, 5))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 100, 30))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 100, 33))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 100, 30))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 100, 33))
+>T : Symbol(T, Decl(instanceQuery-0014.ts, 100, 30))
+
+        return x instanceof B;
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 100, 33))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 92, 40))
+    }
+    declare const a: A | EmptyBase | {};
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 91, 22))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 90, 19))
+
+    if (extendsEmptyBaseInstance(a)) {
+>extendsEmptyBaseInstance : Symbol(extendsEmptyBaseInstance, Decl(instanceQuery-0014.ts, 93, 22))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+
+        a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+
+        if (extendsAInstance(a)) {
+>extendsAInstance : Symbol(extendsAInstance, Decl(instanceQuery-0014.ts, 96, 5))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+
+            a; // (instanceof A & (A & EmptyBase))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+        }
+        else {
+            a;
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+        }
+        if (extendsBInstance(a)) {
+>extendsBInstance : Symbol(extendsBInstance, Decl(instanceQuery-0014.ts, 99, 5))
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+
+            a; // never
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+        }
+        else {
+            a;
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+        }
+    }
+    else {
+        a;
+>a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
+    }
+}
+
+

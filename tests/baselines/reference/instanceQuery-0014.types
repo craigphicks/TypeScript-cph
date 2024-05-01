@@ -1,0 +1,312 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0014.ts] ////
+
+=== instanceQuery-0014.ts ===
+// namespace iq0014a {
+//     class EmptyBase {}
+//     class A { a = 0; }
+//     function extendsEmptyBase<T extends EmptyBase>(x: T): x is (EmptyBase & T) {
+//         // no problem/error here
+//         return true;
+//     }
+//     declare const a: A | EmptyBase | {};
+//     if (extendsEmptyBase(a)) {
+//         a;
+//     }
+//     else {
+//         a;
+//     }
+// }
+
+// namespace iq0014b {
+//     class EmptyBase {}
+//     function f<T extends EmptyBase>(t: T): void {
+//         const x = (0 as any as (instanceof EmptyBase) & T);
+//         t = x;
+//     }
+// }
+
+// namespace iq0014c {
+//     class EmptyBase {}
+//     class A { a = 0; }
+//     function extendsEmptyBaseInstance<T extends Object>(x: T): x is ((instanceof EmptyBase) & T) {
+//         return x instanceof EmptyBase;
+//     }
+//     declare const a: A | EmptyBase | {};
+//     if (extendsEmptyBaseInstance(a)) {
+//         a;
+//     }
+//     else {
+//         a;
+//     }
+// }
+
+// namespace iq0014c {
+//     class EmptyBase {}
+//     class A extends EmptyBase{ a = 0; }
+
+//     function extendsAInstance<T extends Object>(x: T): x is (instanceof A) & T {
+//         return x instanceof A;
+//     }
+//     declare const a: instanceof EmptyBase ; //| (instanceof EmptyBase & A);
+//     if (extendsAInstance(a)) {
+//         a;
+//     }
+//     else {
+//         a;
+//     }
+// }
+
+
+namespace iq0014d {
+>iq0014d : typeof iq0014d
+>        : ^^^^^^^^^^^^^^
+
+    class EmptyBase {}
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+    class A extends EmptyBase { a = 0; }
+>A : A
+>  : ^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+>a : number
+>  : ^^^^^^
+>0 : 0
+>  : ^
+
+    class B { a = 0; } // does not extend EmptyBase
+>B : B
+>  : ^
+>a : number
+>  : ^^^^^^
+>0 : 0
+>  : ^
+
+    function extendsEmptyBaseInstance<T extends Object>(x: T): x is (instanceof EmptyBase) & T {
+>extendsEmptyBaseInstance : <T extends Object>(x: T) => x is (instanceof EmptyBase) & T
+>                         : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^                               
+>x : T
+>  : ^
+
+        return x instanceof EmptyBase;
+>x instanceof EmptyBase : boolean
+>                       : ^^^^^^^
+>x : T
+>  : ^
+>EmptyBase : typeof EmptyBase
+>          : ^^^^^^^^^^^^^^^^
+    }
+    function extendsAInstance<T extends Object>(x: T): x is (instanceof A) & T {
+>extendsAInstance : <T extends Object>(x: T) => x is (instanceof A) & T
+>                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^                       
+>x : T
+>  : ^
+
+        return x instanceof A;
+>x instanceof A : boolean
+>               : ^^^^^^^
+>x : T
+>  : ^
+>A : typeof A
+>  : ^^^^^^^^
+    }
+    function extendsBInstance<T extends Object>(x: T): x is (instanceof B) & T {
+>extendsBInstance : <T extends Object>(x: T) => x is (instanceof B) & T
+>                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^                       
+>x : T
+>  : ^
+
+        return x instanceof B;
+>x instanceof B : boolean
+>               : ^^^^^^^
+>x : T
+>  : ^
+>B : typeof B
+>  : ^^^^^^^^
+    }
+    declare const a: A | EmptyBase | {};
+>a : {} | EmptyBase | A
+>  : ^^^^^^^^^^^^^^^^^^
+
+    if (extendsEmptyBaseInstance(a)) {
+>extendsEmptyBaseInstance(a) : boolean
+>                            : ^^^^^^^
+>extendsEmptyBaseInstance : <T extends Object>(x: T) => x is (instanceof EmptyBase & (EmptyBase & T))
+>                         : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : {} | EmptyBase | A
+>  : ^^^^^^^^^^^^^^^^^^
+
+        a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
+>a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        if (extendsAInstance(a)) {
+>extendsAInstance(a) : boolean
+>                    : ^^^^^^^
+>extendsAInstance : <T extends Object>(x: T) => x is (instanceof A & (A & T))
+>                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+            a; // (instanceof A & (A & EmptyBase))
+>a : ((instanceof A & (A & EmptyBase))) | ((instanceof A & (A & EmptyBase))) | ((instanceof A & (A & EmptyBase)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        }
+        else {
+            a;
+>a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        }
+        if (extendsBInstance(a)) {
+>extendsBInstance(a) : boolean
+>                    : ^^^^^^^
+>extendsBInstance : <T extends Object>(x: T) => x is (instanceof B & (B & T))
+>                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+            a; // never
+>a : never
+>  : ^^^^^
+        }
+        else {
+            a;
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        }
+    }
+    else {
+        a;
+>a : {} | EmptyBase | A
+>  : ^^^^^^^^^^^^^^^^^^
+    }
+}
+
+namespace iq0014e {
+>iq0014e : typeof iq0014e
+>        : ^^^^^^^^^^^^^^
+
+    class EmptyBase {}
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+
+    class A extends EmptyBase { a = 0; }
+>A : A
+>  : ^
+>EmptyBase : EmptyBase
+>          : ^^^^^^^^^
+>a : number
+>  : ^^^^^^
+>0 : 0
+>  : ^
+
+    class B { a = 0; } // does not extend EmptyBase
+>B : B
+>  : ^
+>a : number
+>  : ^^^^^^
+>0 : 0
+>  : ^
+
+    function extendsEmptyBaseInstance<T>(x: T): x is (instanceof EmptyBase) & T {
+>extendsEmptyBaseInstance : <T>(x: T) => x is (instanceof EmptyBase) & T
+>                         : ^ ^^ ^^ ^^^^^                               
+>x : T
+>  : ^
+
+        return x instanceof EmptyBase;
+>x instanceof EmptyBase : boolean
+>                       : ^^^^^^^
+>x : T
+>  : ^
+>EmptyBase : typeof EmptyBase
+>          : ^^^^^^^^^^^^^^^^
+    }
+    function extendsAInstance<T>(x: T): x is (instanceof A) & T {
+>extendsAInstance : <T>(x: T) => x is (instanceof A) & T
+>                 : ^ ^^ ^^ ^^^^^                       
+>x : T
+>  : ^
+
+        return x instanceof A;
+>x instanceof A : boolean
+>               : ^^^^^^^
+>x : T
+>  : ^
+>A : typeof A
+>  : ^^^^^^^^
+    }
+    function extendsBInstance<T>(x: T): x is (instanceof B) & T {
+>extendsBInstance : <T>(x: T) => x is (instanceof B) & T
+>                 : ^ ^^ ^^ ^^^^^                       
+>x : T
+>  : ^
+
+        return x instanceof B;
+>x instanceof B : boolean
+>               : ^^^^^^^
+>x : T
+>  : ^
+>B : typeof B
+>  : ^^^^^^^^
+    }
+    declare const a: A | EmptyBase | {};
+>a : {} | EmptyBase | A
+>  : ^^^^^^^^^^^^^^^^^^
+
+    if (extendsEmptyBaseInstance(a)) {
+>extendsEmptyBaseInstance(a) : boolean
+>                            : ^^^^^^^
+>extendsEmptyBaseInstance : <T>(x: T) => x is (instanceof EmptyBase & (EmptyBase & T))
+>                         : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : {} | EmptyBase | A
+>  : ^^^^^^^^^^^^^^^^^^
+
+        a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
+>a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        if (extendsAInstance(a)) {
+>extendsAInstance(a) : boolean
+>                    : ^^^^^^^
+>extendsAInstance : <T>(x: T) => x is (instanceof A & (A & T))
+>                 : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+            a; // (instanceof A & (A & EmptyBase))
+>a : ((instanceof A & (A & EmptyBase))) | ((instanceof A & (A & EmptyBase))) | ((instanceof A & (A & EmptyBase)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        }
+        else {
+            a;
+>a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        }
+        if (extendsBInstance(a)) {
+>extendsBInstance(a) : boolean
+>                    : ^^^^^^^
+>extendsBInstance : <T>(x: T) => x is (instanceof B & (B & T))
+>                 : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+            a; // never
+>a : never
+>  : ^^^^^
+        }
+        else {
+            a;
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        }
+    }
+    else {
+        a;
+>a : {} | EmptyBase | A
+>  : ^^^^^^^^^^^^^^^^^^
+    }
+}
+
+

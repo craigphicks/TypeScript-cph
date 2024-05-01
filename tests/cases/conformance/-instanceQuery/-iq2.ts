@@ -17,3 +17,16 @@ namespace iq00 {
     //     c1.c;
     // }
 }
+
+namespace iq2_2 {
+    class A {a: number}
+    class B extends A {b: number}
+    type TB = { [k in keyof B]: B[k] }; // {a: number, b: number}
+    const a = new A();
+    if (a instanceof A) {
+        a;  // B
+    }
+    else {
+        a;  // A
+    }
+}

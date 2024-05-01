@@ -8,7 +8,7 @@ class C {
     }
 }
 
-//declare const c1: instanceof C;
+declare const c1: instanceof C;
 
 
 declare const c2: (instanceof C) & C;

@@ -14782,18 +14782,43 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * no constituent property has type 'never', but the intersection of the constituent property types is 'never'.
      */
     function getReducedType(type: Type): Type {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getReducedType[in]:${IDebug.dbgs.dbgTypeToString(type)}`,loggerLevel);
+    const ret = (()=>{
+        if (structuredTypeContainsInstanceof(type)){
+            if (type.flags & TypeFlags.Union){
+                return ((type as UnionType).resolvedReducedType ??= (()=>{
+                    const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(type as UnionType);
+                    return getUnionType(map(arrdecomposed, ([constructorSymbol, typeSet])=>{
+                        if (!constructorSymbol) return getReducedType(getUnionType(Array.from(typeSet)));
+                        return createInstanceofTypeFromConstructorSymbol(constructorSymbol, getReducedType(getUnionType(Array.from(typeSet))) as StructuredType);
+                    }));
+                })());
+            }
+            else if (type.flags & TypeFlags.Intersection) {
+                const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
+                const reducedInstersectionType = getReducedType(getIntersectionType(intersectionTypeElements));
+                if (!constructorSymbol) return neverType;
+                return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
+            }
+            else {
+                const rt = getReducedType((type as ObjectType).instanceof!.structuredType);
+                if (rt===(type as ObjectType).instanceof!.structuredType) return type;
+                return createInstanceofTypeFromConstructorSymbol((type as ObjectType).instanceof!.symbol, rt as StructuredType);
+            }
+        }
         if (type.flags & TypeFlags.Union && (type as UnionType).objectFlags & ObjectFlags.ContainsIntersections) {
             return (type as UnionType).resolvedReducedType || ((type as UnionType).resolvedReducedType = getReducedUnionType(type as UnionType));
         }
         else if (type.flags & TypeFlags.Intersection) {
-            if (structuredTypeContainsInstanceof(type as IntersectionType)){
-                const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
-                // TODO: Should this be getReducedApparentType?
-                const reducedInstersectionType = getReducedType(getIntersectionType(intersectionTypeElements));
-                if (!constructorSymbol) return neverType;
-                return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
-                //return reduceIntersectionContainingInstanceofs(type as IntersectionType);
-            }
+            // if (structuredTypeContainsInstanceof(type as IntersectionType)){
+            //     const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
+            //     // TODO: Should this be getReducedApparentType?
+            //     const reducedInstersectionType = getReducedType(getIntersectionType(intersectionTypeElements));
+            //     if (!constructorSymbol) return neverType;
+            //     return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
+            //     //return reduceIntersectionContainingInstanceofs(type as IntersectionType);
+            // }
             if (!((type as IntersectionType).objectFlags & ObjectFlags.IsNeverIntersectionComputed)) {
                 (type as IntersectionType).objectFlags |= ObjectFlags.IsNeverIntersectionComputed |
                     (some(getPropertiesOfUnionOrIntersectionType(type as IntersectionType), isNeverReducedProperty) ? ObjectFlags.IsNeverIntersection : 0);
@@ -14801,6 +14826,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return (type as IntersectionType).objectFlags & ObjectFlags.IsNeverIntersection ? neverType : type;
         }
         return type;
+    })();
+    IDebug.ilogGroupEnd(()=>`getReducedType[out]:${IDebug.dbgs.dbgTypeToString(ret)}`,loggerLevel);
+    return ret;
     }
 
     function getReducedUnionType(unionType: UnionType) {
@@ -16522,6 +16550,28 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         const instanceOfSymbol1 = reduceInstanceofNominalSymbols(instanceofSymbols);
         return {constructorSymbol: instanceOfSymbol1, intersectionTypeElements};
+    }
+
+    function decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(type: UnionType): [constructorSymbol: Symbol | undefined, typeSet: Set<Type>][] {
+        let noSymbolSet: Set<Type> | undefined;
+        const bin = new Map<Symbol, Set<Type>>
+        for (const t of type.types){
+            if (!(t as ObjectType).instanceof) {
+                (noSymbolSet ??= new Set()).add(t);
+            }
+            else {
+                let typeset = bin.get((t as ObjectType).instanceof!.symbol) || bin.set((t as ObjectType).instanceof!.symbol, new Set()).get((t as ObjectType).instanceof!.symbol)!;
+                typeset.add((t as ObjectType).instanceof!.structuredType!);
+            }
+        }
+        const ret: [constructorSymbol: Symbol | undefined, typeSet: Set<Type>][] = [];
+        if (noSymbolSet) {
+            ret.push([undefined,noSymbolSet]);
+        }
+        for (const [symbol, typeset] of bin) {
+            ret.push([symbol, typeset]);
+        }
+        return ret;
     }
 
     /**
