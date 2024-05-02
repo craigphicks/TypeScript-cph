@@ -138,25 +138,25 @@ namespace iq0014d {
 >  : ^^^^^^^^^^^^^^^^^^
 
         a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
->a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         if (extendsAInstance(a)) {
 >extendsAInstance(a) : boolean
 >                    : ^^^^^^^
 >extendsAInstance : <T extends Object>(x: T) => x is (instanceof A & (A & T))
 >                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             a; // (instanceof A & (A & EmptyBase))
->a : ((instanceof A & (A & EmptyBase))) | ((instanceof A & (A & EmptyBase))) | ((instanceof A & (A & EmptyBase)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ((instanceof A & A)) | ((instanceof A & (A & EmptyBase))) | ((instanceof A & A))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
         else {
             a;
->a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
         if (extendsBInstance(a)) {
 >extendsBInstance(a) : boolean
@@ -264,25 +264,25 @@ namespace iq0014e {
 >  : ^^^^^^^^^^^^^^^^^^
 
         a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
->a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         if (extendsAInstance(a)) {
 >extendsAInstance(a) : boolean
 >                    : ^^^^^^^
 >extendsAInstance : <T>(x: T) => x is (instanceof A & (A & T))
 >                 : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             a; // (instanceof A & (A & EmptyBase))
->a : ((instanceof A & (A & EmptyBase))) | ((instanceof A & (A & EmptyBase))) | ((instanceof A & (A & EmptyBase)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ((instanceof A & A)) | ((instanceof A & (A & EmptyBase))) | ((instanceof A & A))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
         else {
             a;
->a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & (EmptyBase & A))) | ((instanceof EmptyBase & EmptyBase))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
         if (extendsBInstance(a)) {
 >extendsBInstance(a) : boolean
