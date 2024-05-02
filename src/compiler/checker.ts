@@ -12028,6 +12028,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function hasBaseType(type: Type, checkBase: Type | undefined) {
         return check(type);
         function check(type: Type): boolean {
+            if ((type as ObjectType).instanceof) {
+                return check(getInstanceofStructuredType(type as ObjectType));
+            }
             if (getObjectFlags(type) & (ObjectFlags.ClassOrInterface | ObjectFlags.Reference)) {
                 const target = getTargetType(type) as InterfaceType;
                 return target === checkBase || some(getBaseTypes(target), check);
@@ -13014,6 +13017,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function getTypeWithThisArgument(type: Type, thisArgument?: Type, needApparentType?: boolean): Type {
         if (getObjectFlags(type) & ObjectFlags.Reference) {
+            if ((type as ObjectType).instanceof) {
+                return getInstanceofStructuredType(type as ObjectType);
+            }
             const target = (type as TypeReference).target;
             const typeArguments = getTypeArguments(type as TypeReference);
             return length(target.typeParameters) === length(typeArguments) ? createTypeReference(target, concatenate(typeArguments, [thisArgument || target.thisType!])) : type;
@@ -16533,8 +16539,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             TSDebug.assert(protoProp, "constructorType does not have prototype", ()=>`${IDebug.dbgs.dbgTypeToString(constructorType)}`);
             const type = getTypeOfSymbol(protoProp);
-            //prototypesOut?.push(type);
-            if ((constructorType = (type as InterfaceType).resolvedBaseConstructorType) && constructorType !== undefinedType){
+            if ((constructorType = getBaseConstructorTypeOfClass(type as InterfaceType)) && constructorType!==nullType && constructorType!==undefinedType){
+                if (IDebug.isActive(loggerLevel)) {
+                    (type as InterfaceType).resolvedBaseTypes?.forEach((t,i)=>{
+                        IDebug.ilog(()=>`getConstructorSymbolChain: resolvedBaseTypes[${i}]: ${IDebug.dbgs.dbgTypeToString(t)}`,loggerLevel);
+                    });
+                }
+                // note: could be anyType
                 TSDebug.assert(constructorType.symbol);
                 arrs.push(constructorType.symbol!);
             }
@@ -23340,8 +23351,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     if (relation===assignableRelation || relation===strictSubtypeRelation || relation===subtypeRelation || relation===comparableRelation) {
                         if (!(sourceFlags & TypeFlags.Object)) {
                             if (reportErrors){
-                                // Non_object_type_0_cannot_be_instanceof_constructor_of_typeof_1
-                                if (relation!==assignableRelation) TSDebug.assert(false, "error cases other than assignble not yet implemented");
                                 reportError(Diagnostics.Type_0_is_not_an_object_therefore_is_not_assignable_to_constructor_typeof_1,
                                     typeToString(source),
                                     (target as ObjectType).instanceof!.symbol.escapedName as string);
@@ -23351,8 +23360,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         TSDebug.assert(!(sourceFlags & TypeFlags.UnionOrIntersection), "source Union/Intersection types should have been handled above");
                         if (!(source as ObjectType).instanceof) {
                             if (reportErrors){
-                                // Object_0_has_no_constructor_so_cannot_be_instanceof_constructor_of_typeof_1
-                                if (relation!==assignableRelation) TSDebug.assert(false, "error cases other than assignble not yet implemented");
                                 reportError(Diagnostics.Object_type_0_has_no_constructor_declared_via_instanceof_therefore_is_not_assignable_to_constructor_typeof_1,
                                     typeToString(source),
                                     (target as ObjectType).instanceof!.symbol.escapedName as string);
@@ -46376,6 +46383,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (!checkGrammarModifiers(node)) checkGrammarInterfaceDeclaration(node);
 
         checkTypeParameters(node.typeParameters);
+        let hadInstanceQueryError = false;
         addLazyDiagnostic(() => {
             checkTypeNameIsReserved(node.name, Diagnostics.Interface_name_cannot_be_0);
 
@@ -46389,6 +46397,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 const type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
                 const typeWithThis = getTypeWithThisArgument(type);
                 // run subsequent checks only if first set succeeded
+                if ((type as ObjectType).instanceof) {
+                    error(node, Diagnostics.An_interface_or_class_cannot_inherit_from_an_instanceQuery_type_Colon_0, typeToString(type));
+                    hadInstanceQueryError = true;
+                    return;
+                }
                 if (checkInheritedPropertiesAreIdentical(type, node.name)) {
                     for (const baseType of getBaseTypes(type)) {
                         checkTypeAssignableTo(typeWithThis, getTypeWithThisArgument(baseType, type.thisType), node.name, Diagnostics.Interface_0_incorrectly_extends_interface_1);
@@ -46398,6 +46411,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             checkObjectTypeForDuplicateDeclarations(node);
         });
+        if (hadInstanceQueryError) return;
         forEach(getInterfaceBaseTypeNodes(node), heritageElement => {
             if (!isEntityNameExpression(heritageElement.expression) || isOptionalChain(heritageElement.expression)) {
                 error(heritageElement.expression, Diagnostics.An_interface_can_only_extend_an_identifier_Slashqualified_name_with_optional_type_arguments);

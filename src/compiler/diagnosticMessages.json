@@ -8012,5 +8012,9 @@
     "The operand of an instanceof query must be an identifier representing a constructor variable": {
         "category": "Error",
         "code": 18060
+    },
+    "An interface or class cannot inherit from an instanceQuery type: {0}": {
+        "category": "Error",
+        "code": 18061
     }
 }
