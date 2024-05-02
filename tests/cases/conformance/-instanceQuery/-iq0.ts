@@ -3,24 +3,21 @@
 // @target: esnext
 
 
-namespace iq0 {
-
-declare class C<T extends number | string = string> {
-    c: T;
-    constructor(c: T);
-}
-
-C.prototype; // C<any>; this is correct according to the spec
-
-
-const CNumberConstructor = C<number>; // the variable CNumberConstructor should have type { c:number, constructor(c:number): C<number>, prototype: C<any> }
-type CNumberConstructor = typeof CNumberConstructor; // declare the type
-type CnumberPrototype = CNumberConstructor["prototype"]; // C<any> ; correct according to the TypeScript spec
-
-type CNumberConstructorInstanceQueryType = instanceof CNumberConstructor; // should be "instanceof C & C<number>"
-
-
-C.prototype; // make sure it hasn't changed
-
-
-}
+namespace iq0014d {
+    class EmptyBase {}
+    class A extends EmptyBase { a = 0; }
+    class B { a = 0; } // does not extend EmptyBase
+    function extendsEmptyBaseInstance<T extends Object>(x: T): x is (instanceof EmptyBase) & T {
+        return x instanceof EmptyBase;
+    }
+    // function extendsAInstance<T extends Object>(x: T): x is (instanceof A) & T {
+    //     return x instanceof A;
+    // }
+    // function extendsBInstance<T extends Object>(x: T): x is (instanceof B) & T {
+    //     return x instanceof B;
+    // }
+    declare const a: A | EmptyBase | {};
+    if (extendsEmptyBaseInstance(a)) {
+        a; // (instanceof EmptyBase & (EmptyBase | A))
+    }
+ }

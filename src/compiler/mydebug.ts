@@ -1,6 +1,6 @@
 import * as ts from "./_namespaces/ts";
 import { Debug, LogLevel } from "./debug";
-import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite, TypeFlags, UnionOrIntersectionType, Ternary, ObjectType, DiagnosticMessage } from "./types";
+import { SourceFile, TypeChecker, Type, Node, Symbol, Signature, Identifier, Diagnostic, DiagnosticMessageChain, TypeMapper, InferenceInfo, InferenceContext, IntraExpressionInferenceSite, TypeFlags, UnionOrIntersectionType, Ternary, ObjectType, DiagnosticMessage, RelationComparisonResult } from "./types";
 import { getNodeId, CheckMode, SignatureCheckMode } from "./checker";
 //import { castHereafter } from "./core";
 
@@ -62,6 +62,21 @@ export namespace IDebug {
         return undefined;
     }
 
+    export function printRelations(
+        relationMapToName: Map<Map<string, RelationComparisonResult>,string>,
+        dbgRelationsHumanMap: Map<Map<string, RelationComparisonResult>, Map<string, [Type, Type]>>): void {
+        ilog(()=>`printRelations: start`, 1);
+        for (const [map, mapname] of relationMapToName) {
+            ilog(()=>`  relation: ${mapname}`, 1);
+            for (const [key, result] of map) {
+                const sourceAndTargetTypes = dbgRelationsHumanMap.get(map)?.get(key);
+                const humanValue = sourceAndTargetTypes
+                    ? `source: ${IDebug.dbgs.dbgTypeToString(sourceAndTargetTypes[0])}, target: ${IDebug.dbgs.dbgTypeToString(sourceAndTargetTypes[1])}, key: ${key}`
+                    : `key: ${key}`;
+                ilog(()=>`    ${mapname}, ${humanValue}: ${Debug.formatRelationComparisonResult(result)}`, 1);
+            }
+        }
+    }
 }
 
 export class ILoggingClass implements ILoggingHost {
@@ -123,6 +138,10 @@ export class ILoggingClass implements ILoggingHost {
             this.logFileFd = this.nodeFs.openSync(this.logFilename, 'w');
             this.numOutLines = 0;
             IDebug.checker = typeChecker;
+        }
+        else {
+            this.logFilename = undefined;
+            this.logFileFd = 0;
         }
     }
     private dbgTestFilenameMatches(node: SourceFile): boolean {
