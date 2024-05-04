@@ -6,7 +6,7 @@ class B extends A { b=3; }
 class C { a:number|undefined; b:number|undefined; }
 
 // Basic examples of `instanceof ...` being used where you would use other types
-const a0: instanceof A = new A() // Error: This doesn't work because `new A()` is not an instanceQuery type.
+const a1x: instanceof A = new A() // Error: This doesn't work because `new A()` is not an instanceQuery type.
 // !!! error TS2322: Type 'A' is not assignable to type '(instanceof A & A)'.
 // !!! error TS2322:   Object type A has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A
 
@@ -19,35 +19,58 @@ const a2: typeof a1 = a1
 // >a2 : (instanceof A & A)
 // >   : ^^^^^^^^^^^^^^^^^^
 
+
 type InstanceOfA = instanceof A
 // >InstanceOfA : (instanceof A & A)
 // >            : ^^^^^^^^^^^^^^^^^^
 
-interface InstanceOfAConstructor {
-    new(): InstanceOfA
-}
+interface AlsoInstanceOfA extends InstanceOfA {}
+new A() as InstanceOfA satisfies AlsoInstanceOfA; // OK
 
-const InstanceOfA = function(){
-    return new A() as InstanceOfA
+interface NotInstanceOfA extends InstanceOfA { extra: number}
+function createNotInstanceOfA() {
+    const a = new A() as any as NotInstanceOfA;
+    a.extra = 1;
+    return a;
 }
+createNotInstanceOfA() satisfies AlsoInstanceOfA; // OK (extra property is OK)
+new A() as instanceof A satisifies NotInstanceOfA; // Error (missing property)`
 
-const a3 = new InstanceOfA()
+
+
+
 
 /**
- * Currently NotInstanceOfA does not inherit the "instanceof A" part of InstanceOfA, just the A part.
- * Even `class InheretedInstanceof extends InstanceOfA { also: number }` does not inherit.
- * This should be added.  However the inheritor must have a constructor (implicit or declared).
- * A class always does, an interface might not.
+ * In the current trial implementation (so far)
+ * `interface AlsoInstanceOfA extends InstanceOfA {}`
+ * is equivalent to `interface AlsoInstanceOfA extends A {}`,
+ * i.e., the `instanceof A` part is not inherited.
+ * There are two reasons for this:
+ * 1. The `instanceof` must correspond to JS constructor inheritance, and just declaring an
+ *    interface doesn't guarantee that correspondance.
+ * 2. Even in cases where JS correspondance to class inherticance can be proven, and inheriting `instanceof`
+ *    would be possible and prefereable, this trial version hasn't implemented it yet.
  */
-class NotInheritorOfInstanceOfA extends InstanceOfA { also: number }
 
-declare const notinstanceofa = new NotInheritorOfInstanceOfA() // no error, even though no cast.
+const a3: AlsoInstanceOfA = new A();  // This works but it is only doing structural type checking, not instanceof checking.
+// >a3 : AlsoInstanceOfA
+// >   : ^^^^^^^^^^^^^^^
+// >new A() : A
+// >        : ^
+// >A : typeof A
+// >  : ^^^^^^^^
 
-notinstanceofa satisfies A // no error;
 
-notinstanceofa satisfies InstanceofA // error
 
-// const a3: AlsoInstanceOfA = new A()
+/**
+ * However, at least we can alias the constructor
+ */
+const AliasOfA = A;
+
+/**
+ * As expected, this works - this `instanceof` of both sides is the same.
+ */
+const ax: instanceof AliasOfA = new A() as instanceof A;
 
 // // These accurately represent the runtime, so they probably should be allowed:
 

@@ -8001,7 +8001,7 @@
         "category": "Error",
         "code": 18057
     },
-    "Object type {0} has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof {1}": {
+    "Object type {0} is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type {1}": {
         "category": "Error",
         "code": 18058
     },
@@ -8013,7 +8013,7 @@
         "category": "Error",
         "code": 18060
     },
-    "An interface or class cannot inherit from an instanceQuery type: {0}": {
+    "An interface cannot inherit from an instanceQuery type: {0}": {
         "category": "Error",
         "code": 18061
     }

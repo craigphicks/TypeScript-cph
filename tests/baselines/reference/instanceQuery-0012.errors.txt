@@ -1,13 +1,13 @@
 instanceQuery-0012.ts(39,8): error TS1360: Type '(instanceof A1 & A1)' does not satisfy the expected type '(instanceof A2 & A2)'.
   'new A1() instanceof A2' would evaluate as 'false'
 instanceQuery-0012.ts(41,10): error TS1360: Type '{}' does not satisfy the expected type '(instanceof A2 & A2)'.
-  Object type {} has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A2
+  Object type {} is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A2 & A2)
 instanceQuery-0012.ts(43,9): error TS1360: Type 'number' does not satisfy the expected type '(instanceof A2 & A2)'.
-  Object type Number has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A2
+  Object type Number is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A2 & A2)
 instanceQuery-0012.ts(45,8): error TS1360: Type 'bigint' does not satisfy the expected type '(instanceof A2 & A2)'.
-  Object type BigInt has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A2
+  Object type BigInt is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A2 & A2)
 instanceQuery-0012.ts(47,9): error TS1360: Type 'typeof sym' does not satisfy the expected type '(instanceof A2 & A2)'.
-  Object type Symbol has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A2
+  Object type Symbol is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A2 & A2)
 
 
 ==== instanceQuery-0012.ts (5 errors) ====
@@ -57,21 +57,21 @@ instanceQuery-0012.ts(47,9): error TS1360: Type 'typeof sym' does not satisfy th
         ({}) satisfies instanceof A2; // should be error
              ~~~~~~~~~
 !!! error TS1360: Type '{}' does not satisfy the expected type '(instanceof A2 & A2)'.
-!!! error TS1360:   Object type {} has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A2
+!!! error TS1360:   Object type {} is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A2 & A2)
     
         one satisfies instanceof A2; // should be error
             ~~~~~~~~~
 !!! error TS1360: Type 'number' does not satisfy the expected type '(instanceof A2 & A2)'.
-!!! error TS1360:   Object type Number has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A2
+!!! error TS1360:   Object type Number is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A2 & A2)
     
         1n satisfies instanceof A2; // should be error
            ~~~~~~~~~
 !!! error TS1360: Type 'bigint' does not satisfy the expected type '(instanceof A2 & A2)'.
-!!! error TS1360:   Object type BigInt has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A2
+!!! error TS1360:   Object type BigInt is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A2 & A2)
     
         sym satisfies instanceof A2; // should be error
             ~~~~~~~~~
 !!! error TS1360: Type 'typeof sym' does not satisfy the expected type '(instanceof A2 & A2)'.
-!!! error TS1360:   Object type Symbol has no constructor declared via 'instanceof' therefore is not assignable to constructor typeof A2
+!!! error TS1360:   Object type Symbol is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A2 & A2)
     
     }

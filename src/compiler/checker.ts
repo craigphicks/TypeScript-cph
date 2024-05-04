@@ -16539,7 +16539,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             TSDebug.assert(protoProp, "constructorType does not have prototype", ()=>`${IDebug.dbgs.dbgTypeToString(constructorType)}`);
             const type = getTypeOfSymbol(protoProp);
-            if ((constructorType = getBaseConstructorTypeOfClass(type as InterfaceType)) && constructorType!==nullType && constructorType!==undefinedType){
+            /**
+             * ```
+             *
+             * ```
+             */
+            if (type===anyType) break;
+            if ((constructorType = getBaseConstructorTypeOfClass(type as InterfaceType)) && constructorType!==nullType && constructorType!==undefinedType && constructorType !==anyType){
                 if (IDebug.isActive(loggerLevel)) {
                     (type as InterfaceType).resolvedBaseTypes?.forEach((t,i)=>{
                         IDebug.ilog(()=>`getConstructorSymbolChain: resolvedBaseTypes[${i}]: ${IDebug.dbgs.dbgTypeToString(t)}`,loggerLevel);
@@ -16550,6 +16556,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 arrs.push(constructorType.symbol!);
             }
         }
+        const globalObjectConstructorSymbol = getGlobalObjectConstructorSymbol();
+        if (arrs.length===0 || arrs.at(-1) !== globalObjectConstructorSymbol) arrs.push(globalObjectConstructorSymbol);
         IDebug.ilogGroupEnd(()=>`getConstructorSymbolChain[out]`,loggerLevel);
         return arrs;
     }
@@ -16674,6 +16682,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         return { constructorSymbol: constructorSymbol!, constructorSymbolChain: constructorSymbolChain! };
+    }
+    function getGlobalObjectConstructorSymbol(): Symbol {
+        TSDebug.assert(globalObjectType.symbol?.valueDeclaration?.symbol, "could not find global object symbol");
+        return globalObjectType.symbol?.valueDeclaration?.symbol!;
     }
     ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -23360,9 +23372,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         TSDebug.assert(!(sourceFlags & TypeFlags.UnionOrIntersection), "source Union/Intersection types should have been handled above");
                         if (!(source as ObjectType).instanceof) {
                             if (reportErrors){
-                                reportError(Diagnostics.Object_type_0_has_no_constructor_declared_via_instanceof_therefore_is_not_assignable_to_constructor_typeof_1,
-                                    typeToString(source),
-                                    (target as ObjectType).instanceof!.symbol.escapedName as string);
+                                reportError(Diagnostics.Object_type_0_is_not_an_instanceQuery_type_i_e_has_no_instanceof_and_therefore_is_not_assignable_to_the_instanceQuery_type_1,
+                                    typeToString(source), typeToString(target));
+                                    //(target as ObjectType).instanceof!.symbol.escapedName as string);
                             }
                             return Ternary.False;
                         }
@@ -46395,13 +46407,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             const firstInterfaceDecl = getDeclarationOfKind<InterfaceDeclaration>(symbol, SyntaxKind.InterfaceDeclaration);
             if (node === firstInterfaceDecl) {
                 const type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
+                forEach(getBaseTypes(type), (t,heritageIndex)=>{
+                    if ((t as ObjectType).instanceof) {
+                        error(node.heritageClauses?.[Math.min(heritageIndex,node.heritageClauses?.length??0)]??node,
+                            Diagnostics.An_interface_cannot_inherit_from_an_instanceQuery_type_Colon_0, typeToString(t));
+                    }
+                });
                 const typeWithThis = getTypeWithThisArgument(type);
                 // run subsequent checks only if first set succeeded
-                if ((type as ObjectType).instanceof) {
-                    error(node, Diagnostics.An_interface_or_class_cannot_inherit_from_an_instanceQuery_type_Colon_0, typeToString(type));
-                    hadInstanceQueryError = true;
-                    return;
-                }
                 if (checkInheritedPropertiesAreIdentical(type, node.name)) {
                     for (const baseType of getBaseTypes(type)) {
                         checkTypeAssignableTo(typeWithThis, getTypeWithThisArgument(baseType, type.thisType), node.name, Diagnostics.Interface_0_incorrectly_extends_interface_1);

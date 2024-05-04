@@ -19,14 +19,45 @@ namespace iq00 {
 }
 
 namespace iq2_2 {
-    class A {a: number}
-    class B extends A {b: number}
-    type TB = { [k in keyof B]: B[k] }; // {a: number, b: number}
-    const a = new A();
-    if (a instanceof A) {
-        a;  // B
-    }
-    else {
-        a;  // A
-    }
+
+declare interface A { a: number; }
+declare interface AConstructor { new(): A; }
+declare const A: AConstructor;
+
+declare interface B extends A { b: number; }
+declare interface BConstructor { new(): B; }
+declare const B: BConstructor;
+
+const a = new A() as instanceof A;
+const b = new B() as instanceof B;
+
+a satisfies instanceof A;
+/**
+ * The following is an error because it is not known if BConstructor calls A's constructor.
+ */
+b satisfies instanceof A;
+
+
+
+/**
+ * Maybe a syntax like
+ * ```
+ * declare interface BConstructor { new(): B inherits A; }
+ * ```
+ * could be allowed to specify that B's constructor calls A's constructor.
+ */
+
+/**
+ * Work around:
+ */
+
+function isInstanceofA(x: A): x is instanceof A {
+    return x instanceof A;
+}
+
+if (isInstanceofA(b)) {
+    b satisfies instanceof A; // OK
+}
+
+
 }
