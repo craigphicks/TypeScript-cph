@@ -46490,6 +46490,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (!checkGrammarModifiers(node)) checkGrammarInterfaceDeclaration(node);
 
         checkTypeParameters(node.typeParameters);
+        let hadInstanceQueryInheritError = false;
         addLazyDiagnostic(() => {
             checkTypeNameIsReserved(node.name, Diagnostics.Interface_name_cannot_be_0);
 
@@ -46505,8 +46506,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     if ((t as ObjectType).instanceof) {
                         error(node.heritageClauses?.[Math.min(heritageIndex,node.heritageClauses?.length??0)]??node,
                             Diagnostics.An_interface_cannot_inherit_from_an_instanceQuery_type_Colon_0, typeToString(t));
+                        hadInstanceQueryInheritError = true;
                     }
                 });
+                if (hadInstanceQueryInheritError) return;
                 const typeWithThis = getTypeWithThisArgument(type);
                 // run subsequent checks only if first set succeeded
                 if (checkInheritedPropertiesAreIdentical(type, node.name)) {
