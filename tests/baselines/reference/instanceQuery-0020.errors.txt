@@ -1,9 +1,7 @@
-instanceQuery-0020.ts(23,11): error TS2430: Interface 'Ambiguous' incorrectly extends interface '(instanceof A & A)'.
-  Object type Ambiguous is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A & A)
 instanceQuery-0020.ts(23,21): error TS18061: An interface cannot inherit from an instanceQuery type: (instanceof A & A)
 
 
-==== instanceQuery-0020.ts (2 errors) ====
+==== instanceQuery-0020.ts (1 errors) ====
     namespace iq0020a {
     
     /**
@@ -27,9 +25,6 @@ instanceQuery-0020.ts(23,21): error TS18061: An interface cannot inherit from an
     class A {};
     type InstanceOfA = instanceof A;
     interface Ambiguous extends InstanceOfA { extra: number } // should be error
-              ~~~~~~~~~
-!!! error TS2430: Interface 'Ambiguous' incorrectly extends interface '(instanceof A & A)'.
-!!! error TS2430:   Object type Ambiguous is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof A & A)
                         ~~~~~~~~~~~~~~~~~~~
 !!! error TS18061: An interface cannot inherit from an instanceQuery type: (instanceof A & A)
     
