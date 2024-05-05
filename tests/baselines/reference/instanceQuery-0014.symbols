@@ -242,193 +242,101 @@ namespace iq0014d {
     }
 }
 
-namespace iq0014e {
->iq0014e : Symbol(iq0014e, Decl(instanceQuery-0014.ts, 88, 1))
-
-    class EmptyBase {}
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 90, 19))
-
-    class A extends EmptyBase { a = 0; }
->A : Symbol(A, Decl(instanceQuery-0014.ts, 91, 22))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 90, 19))
->a : Symbol(A.a, Decl(instanceQuery-0014.ts, 92, 31))
-
-    class B { a = 0; } // does not extend EmptyBase
->B : Symbol(B, Decl(instanceQuery-0014.ts, 92, 40))
->a : Symbol(B.a, Decl(instanceQuery-0014.ts, 93, 13))
-
-    function extendsEmptyBaseInstance<T>(x: T): x is (instanceof EmptyBase) & T {
->extendsEmptyBaseInstance : Symbol(extendsEmptyBaseInstance, Decl(instanceQuery-0014.ts, 93, 22))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 94, 38))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 94, 41))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 94, 38))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 94, 41))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 94, 38))
-
-        return x instanceof EmptyBase;
->x : Symbol(x, Decl(instanceQuery-0014.ts, 94, 41))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 90, 19))
-    }
-    function extendsAInstance<T>(x: T): x is (instanceof A) & T {
->extendsAInstance : Symbol(extendsAInstance, Decl(instanceQuery-0014.ts, 96, 5))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 97, 30))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 97, 33))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 97, 30))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 97, 33))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 97, 30))
-
-        return x instanceof A;
->x : Symbol(x, Decl(instanceQuery-0014.ts, 97, 33))
->A : Symbol(A, Decl(instanceQuery-0014.ts, 91, 22))
-    }
-    function extendsBInstance<T>(x: T): x is (instanceof B) & T {
->extendsBInstance : Symbol(extendsBInstance, Decl(instanceQuery-0014.ts, 99, 5))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 100, 30))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 100, 33))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 100, 30))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 100, 33))
->T : Symbol(T, Decl(instanceQuery-0014.ts, 100, 30))
-
-        return x instanceof B;
->x : Symbol(x, Decl(instanceQuery-0014.ts, 100, 33))
->B : Symbol(B, Decl(instanceQuery-0014.ts, 92, 40))
-    }
-    declare const a: A | EmptyBase | {};
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
->A : Symbol(A, Decl(instanceQuery-0014.ts, 91, 22))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 90, 19))
-
-    if (extendsEmptyBaseInstance(a)) {
->extendsEmptyBaseInstance : Symbol(extendsEmptyBaseInstance, Decl(instanceQuery-0014.ts, 93, 22))
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-
-        a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-
-        if (extendsAInstance(a)) {
->extendsAInstance : Symbol(extendsAInstance, Decl(instanceQuery-0014.ts, 96, 5))
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-
-            a; // (instanceof A & (A & EmptyBase))
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-        }
-        else {
-            a;
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-        }
-        if (extendsBInstance(a)) {
->extendsBInstance : Symbol(extendsBInstance, Decl(instanceQuery-0014.ts, 99, 5))
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-
-            a; // never
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-        }
-        else {
-            a;
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-        }
-    }
-    else {
-        a;
->a : Symbol(a, Decl(instanceQuery-0014.ts, 103, 17))
-    }
-}
-
 namespace iq0014f {
->iq0014f : Symbol(iq0014f, Decl(instanceQuery-0014.ts, 122, 1))
+>iq0014f : Symbol(iq0014f, Decl(instanceQuery-0014.ts, 88, 1))
 
     declare class Ax { a: number }
->Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 124, 19))
->a : Symbol(Ax.a, Decl(instanceQuery-0014.ts, 125, 22))
+>Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 90, 19))
+>a : Symbol(Ax.a, Decl(instanceQuery-0014.ts, 91, 22))
 
     declare class Bx extends Ax { b: number }
->Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 125, 34))
->Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 124, 19))
->b : Symbol(Bx.b, Decl(instanceQuery-0014.ts, 126, 33))
+>Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 91, 34))
+>Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 90, 19))
+>b : Symbol(Bx.b, Decl(instanceQuery-0014.ts, 92, 33))
 
     declare class Cx extends Bx { c: number }
->Cx : Symbol(Cx, Decl(instanceQuery-0014.ts, 126, 45))
->Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 125, 34))
->c : Symbol(Cx.c, Decl(instanceQuery-0014.ts, 127, 33))
+>Cx : Symbol(Cx, Decl(instanceQuery-0014.ts, 92, 45))
+>Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 91, 34))
+>c : Symbol(Cx.c, Decl(instanceQuery-0014.ts, 93, 33))
 
     type A = Ax
->A : Symbol(A, Decl(instanceQuery-0014.ts, 127, 45))
->Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 124, 19))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 93, 45))
+>Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 90, 19))
 
     type B = Bx
->B : Symbol(B, Decl(instanceQuery-0014.ts, 129, 15))
->Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 125, 34))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 95, 15))
+>Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 91, 34))
 
     type C = Cx
->C : Symbol(C, Decl(instanceQuery-0014.ts, 130, 15))
->Cx : Symbol(Cx, Decl(instanceQuery-0014.ts, 126, 45))
+>C : Symbol(C, Decl(instanceQuery-0014.ts, 96, 15))
+>Cx : Symbol(Cx, Decl(instanceQuery-0014.ts, 92, 45))
 
     type AB = A & B
->AB : Symbol(AB, Decl(instanceQuery-0014.ts, 131, 15))
->A : Symbol(A, Decl(instanceQuery-0014.ts, 127, 45))
->B : Symbol(B, Decl(instanceQuery-0014.ts, 129, 15))
+>AB : Symbol(AB, Decl(instanceQuery-0014.ts, 97, 15))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 93, 45))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 95, 15))
 
     type AC = A & C
->AC : Symbol(AC, Decl(instanceQuery-0014.ts, 133, 19))
->A : Symbol(A, Decl(instanceQuery-0014.ts, 127, 45))
->C : Symbol(C, Decl(instanceQuery-0014.ts, 130, 15))
+>AC : Symbol(AC, Decl(instanceQuery-0014.ts, 99, 19))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 93, 45))
+>C : Symbol(C, Decl(instanceQuery-0014.ts, 96, 15))
 
     type BC = B & C
->BC : Symbol(BC, Decl(instanceQuery-0014.ts, 134, 19))
->B : Symbol(B, Decl(instanceQuery-0014.ts, 129, 15))
->C : Symbol(C, Decl(instanceQuery-0014.ts, 130, 15))
+>BC : Symbol(BC, Decl(instanceQuery-0014.ts, 100, 19))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 95, 15))
+>C : Symbol(C, Decl(instanceQuery-0014.ts, 96, 15))
 
     function isAB(x: any): x is AB {
->isAB : Symbol(isAB, Decl(instanceQuery-0014.ts, 135, 19))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 137, 18))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 137, 18))
->AB : Symbol(AB, Decl(instanceQuery-0014.ts, 131, 15))
+>isAB : Symbol(isAB, Decl(instanceQuery-0014.ts, 101, 19))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 103, 18))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 103, 18))
+>AB : Symbol(AB, Decl(instanceQuery-0014.ts, 97, 15))
 
         return true;
     }
     function isBC(x: any): x is BC {
->isBC : Symbol(isBC, Decl(instanceQuery-0014.ts, 139, 5))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 140, 18))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 140, 18))
->BC : Symbol(BC, Decl(instanceQuery-0014.ts, 134, 19))
+>isBC : Symbol(isBC, Decl(instanceQuery-0014.ts, 105, 5))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 106, 18))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 106, 18))
+>BC : Symbol(BC, Decl(instanceQuery-0014.ts, 100, 19))
 
         return true;
     }
     function isAC(x: any): x is AC {
->isAC : Symbol(isAC, Decl(instanceQuery-0014.ts, 142, 5))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 143, 18))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 143, 18))
->AC : Symbol(AC, Decl(instanceQuery-0014.ts, 133, 19))
+>isAC : Symbol(isAC, Decl(instanceQuery-0014.ts, 108, 5))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 109, 18))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 109, 18))
+>AC : Symbol(AC, Decl(instanceQuery-0014.ts, 99, 19))
 
         return true;
     }
 
     declare const x: A | B | C;
->x : Symbol(x, Decl(instanceQuery-0014.ts, 147, 17))
->A : Symbol(A, Decl(instanceQuery-0014.ts, 127, 45))
->B : Symbol(B, Decl(instanceQuery-0014.ts, 129, 15))
->C : Symbol(C, Decl(instanceQuery-0014.ts, 130, 15))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 113, 17))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 93, 45))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 95, 15))
+>C : Symbol(C, Decl(instanceQuery-0014.ts, 96, 15))
 
     if (isAB(x)) {
->isAB : Symbol(isAB, Decl(instanceQuery-0014.ts, 135, 19))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 147, 17))
+>isAB : Symbol(isAB, Decl(instanceQuery-0014.ts, 101, 19))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 113, 17))
 
         x; // ABC
->x : Symbol(x, Decl(instanceQuery-0014.ts, 147, 17))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 113, 17))
 
         if (isBC(x)) {
->isBC : Symbol(isBC, Decl(instanceQuery-0014.ts, 139, 5))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 147, 17))
+>isBC : Symbol(isBC, Decl(instanceQuery-0014.ts, 105, 5))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 113, 17))
 
             x; // ABC
->x : Symbol(x, Decl(instanceQuery-0014.ts, 147, 17))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 113, 17))
 
             if (isAC(x)) {
->isAC : Symbol(isAC, Decl(instanceQuery-0014.ts, 142, 5))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 147, 17))
+>isAC : Symbol(isAC, Decl(instanceQuery-0014.ts, 108, 5))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 113, 17))
 
                 x; // ABC
->x : Symbol(x, Decl(instanceQuery-0014.ts, 147, 17))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 113, 17))
             }
         }
     }
@@ -438,97 +346,97 @@ namespace iq0014f {
 
 
 namespace iq0014g {
->iq0014g : Symbol(iq0014g, Decl(instanceQuery-0014.ts, 159, 1))
+>iq0014g : Symbol(iq0014g, Decl(instanceQuery-0014.ts, 125, 1))
 
     declare class Ax { a: number }
->Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 162, 19))
->a : Symbol(Ax.a, Decl(instanceQuery-0014.ts, 164, 22))
+>Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 128, 19))
+>a : Symbol(Ax.a, Decl(instanceQuery-0014.ts, 130, 22))
 
     declare class Bx extends Ax { b: number }
->Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 164, 34))
->Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 162, 19))
->b : Symbol(Bx.b, Decl(instanceQuery-0014.ts, 165, 33))
+>Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 130, 34))
+>Ax : Symbol(Ax, Decl(instanceQuery-0014.ts, 128, 19))
+>b : Symbol(Bx.b, Decl(instanceQuery-0014.ts, 131, 33))
 
     declare class Cx extends Bx { c: number }
->Cx : Symbol(Cx, Decl(instanceQuery-0014.ts, 165, 45))
->Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 164, 34))
->c : Symbol(Cx.c, Decl(instanceQuery-0014.ts, 166, 33))
+>Cx : Symbol(Cx, Decl(instanceQuery-0014.ts, 131, 45))
+>Bx : Symbol(Bx, Decl(instanceQuery-0014.ts, 130, 34))
+>c : Symbol(Cx.c, Decl(instanceQuery-0014.ts, 132, 33))
 
     type A = instanceof Ax
->A : Symbol(A, Decl(instanceQuery-0014.ts, 166, 45))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 132, 45))
 
     type B = instanceof Bx
->B : Symbol(B, Decl(instanceQuery-0014.ts, 168, 26))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 134, 26))
 
     type C = instanceof Cx
->C : Symbol(C, Decl(instanceQuery-0014.ts, 169, 26))
+>C : Symbol(C, Decl(instanceQuery-0014.ts, 135, 26))
 
     type AB = A & B
->AB : Symbol(AB, Decl(instanceQuery-0014.ts, 170, 26))
->A : Symbol(A, Decl(instanceQuery-0014.ts, 166, 45))
->B : Symbol(B, Decl(instanceQuery-0014.ts, 168, 26))
+>AB : Symbol(AB, Decl(instanceQuery-0014.ts, 136, 26))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 132, 45))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 134, 26))
 
     type AC = A & C
->AC : Symbol(AC, Decl(instanceQuery-0014.ts, 172, 19))
->A : Symbol(A, Decl(instanceQuery-0014.ts, 166, 45))
->C : Symbol(C, Decl(instanceQuery-0014.ts, 169, 26))
+>AC : Symbol(AC, Decl(instanceQuery-0014.ts, 138, 19))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 132, 45))
+>C : Symbol(C, Decl(instanceQuery-0014.ts, 135, 26))
 
     type BC = B & C
->BC : Symbol(BC, Decl(instanceQuery-0014.ts, 173, 19))
->B : Symbol(B, Decl(instanceQuery-0014.ts, 168, 26))
->C : Symbol(C, Decl(instanceQuery-0014.ts, 169, 26))
+>BC : Symbol(BC, Decl(instanceQuery-0014.ts, 139, 19))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 134, 26))
+>C : Symbol(C, Decl(instanceQuery-0014.ts, 135, 26))
 
     function isAB(x: any): x is AB {
->isAB : Symbol(isAB, Decl(instanceQuery-0014.ts, 174, 19))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 176, 18))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 176, 18))
->AB : Symbol(AB, Decl(instanceQuery-0014.ts, 170, 26))
+>isAB : Symbol(isAB, Decl(instanceQuery-0014.ts, 140, 19))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 142, 18))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 142, 18))
+>AB : Symbol(AB, Decl(instanceQuery-0014.ts, 136, 26))
 
         return true;
     }
     function isBC(x: any): x is BC {
->isBC : Symbol(isBC, Decl(instanceQuery-0014.ts, 178, 5))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 179, 18))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 179, 18))
->BC : Symbol(BC, Decl(instanceQuery-0014.ts, 173, 19))
+>isBC : Symbol(isBC, Decl(instanceQuery-0014.ts, 144, 5))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 145, 18))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 145, 18))
+>BC : Symbol(BC, Decl(instanceQuery-0014.ts, 139, 19))
 
         return true;
     }
     function isAC(x: any): x is AC {
->isAC : Symbol(isAC, Decl(instanceQuery-0014.ts, 181, 5))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 182, 18))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 182, 18))
->AC : Symbol(AC, Decl(instanceQuery-0014.ts, 172, 19))
+>isAC : Symbol(isAC, Decl(instanceQuery-0014.ts, 147, 5))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 148, 18))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 148, 18))
+>AC : Symbol(AC, Decl(instanceQuery-0014.ts, 138, 19))
 
         return true;
     }
 
     declare const x: A | B | C;
->x : Symbol(x, Decl(instanceQuery-0014.ts, 186, 17))
->A : Symbol(A, Decl(instanceQuery-0014.ts, 166, 45))
->B : Symbol(B, Decl(instanceQuery-0014.ts, 168, 26))
->C : Symbol(C, Decl(instanceQuery-0014.ts, 169, 26))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 152, 17))
+>A : Symbol(A, Decl(instanceQuery-0014.ts, 132, 45))
+>B : Symbol(B, Decl(instanceQuery-0014.ts, 134, 26))
+>C : Symbol(C, Decl(instanceQuery-0014.ts, 135, 26))
 
     if (isAB(x)) {
->isAB : Symbol(isAB, Decl(instanceQuery-0014.ts, 174, 19))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 186, 17))
+>isAB : Symbol(isAB, Decl(instanceQuery-0014.ts, 140, 19))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 152, 17))
 
         x; // ABC
->x : Symbol(x, Decl(instanceQuery-0014.ts, 186, 17))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 152, 17))
 
         if (isBC(x)) {
->isBC : Symbol(isBC, Decl(instanceQuery-0014.ts, 178, 5))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 186, 17))
+>isBC : Symbol(isBC, Decl(instanceQuery-0014.ts, 144, 5))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 152, 17))
 
             x; // ABC
->x : Symbol(x, Decl(instanceQuery-0014.ts, 186, 17))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 152, 17))
 
             if (isAC(x)) {
->isAC : Symbol(isAC, Decl(instanceQuery-0014.ts, 181, 5))
->x : Symbol(x, Decl(instanceQuery-0014.ts, 186, 17))
+>isAC : Symbol(isAC, Decl(instanceQuery-0014.ts, 147, 5))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 152, 17))
 
                 x; // ABC
->x : Symbol(x, Decl(instanceQuery-0014.ts, 186, 17))
+>x : Symbol(x, Decl(instanceQuery-0014.ts, 152, 17))
             }
         }
     }

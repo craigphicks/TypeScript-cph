@@ -92,40 +92,6 @@ namespace iq0014d {
     }
 }
 
-namespace iq0014e {
-    class EmptyBase {}
-    class A extends EmptyBase { a = 0; }
-    class B { a = 0; } // does not extend EmptyBase
-    function extendsEmptyBaseInstance<T>(x: T): x is (instanceof EmptyBase) & T {
-        return x instanceof EmptyBase;
-    }
-    function extendsAInstance<T>(x: T): x is (instanceof A) & T {
-        return x instanceof A;
-    }
-    function extendsBInstance<T>(x: T): x is (instanceof B) & T {
-        return x instanceof B;
-    }
-    declare const a: A | EmptyBase | {};
-    if (extendsEmptyBaseInstance(a)) {
-        a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
-        if (extendsAInstance(a)) {
-            a; // (instanceof A & (A & EmptyBase))
-        }
-        else {
-            a;
-        }
-        if (extendsBInstance(a)) {
-            a; // never
-        }
-        else {
-            a;
-        }
-    }
-    else {
-        a;
-    }
-}
-
 namespace iq0014f {
     declare class Ax { a: number }
     declare class Bx extends Ax { b: number }

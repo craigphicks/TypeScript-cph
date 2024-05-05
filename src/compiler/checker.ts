@@ -14805,13 +14805,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (structuredTypeContainsInstanceof(type)){
             IDebug.ilog(()=>`getReducedType: structuredTypeContainsInstanceof`, loggerLevel);
             if (type.flags & TypeFlags.Union){
-                return ((type as UnionType).resolvedReducedType ??= (()=>{
-                    const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(type as UnionType);
-                    return getUnionType(map(arrdecomposed, ([constructorSymbol, typeSet])=>{
-                        if (!constructorSymbol) return getReducedType(getUnionType(Array.from(typeSet)));
-                        return createInstanceofTypeFromConstructorSymbol(constructorSymbol, getReducedType(getUnionType(Array.from(typeSet))) as StructuredType);
-                    }));
-                })());
+                return simplifyUnionContainingInstanceof(type as UnionType,getReducedType);
+                // return ((type as UnionType).resolvedReducedType ??= (()=>{
+                //     const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(type as UnionType);
+                //     return getUnionType(map(arrdecomposed, ([constructorSymbol, typeSet])=>{
+                //         if (!constructorSymbol) return getReducedType(getUnionType(Array.from(typeSet)));
+                //         return createInstanceofTypeFromConstructorSymbol(constructorSymbol, getReducedType(getUnionType(Array.from(typeSet))) as StructuredType);
+                //     }));
+                // })());
             }
             else if (type.flags & TypeFlags.Intersection) {
                 return simplifyIntersectionContainingInstanceof(type as IntersectionType, getReducedType);
@@ -16621,13 +16622,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
     }
 
-
-
-
-    function decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(type: UnionType): [constructorSymbol: Symbol | undefined, typeSet: Set<Type>][] {
+    function decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(setOfTypes: Set<Type>): [constructorSymbol: Symbol | undefined, typeSet: Set<Type>][] {
         let noSymbolSet: Set<Type> | undefined;
         const bin = new Map<Symbol, Set<Type>>
-        for (const t of type.types){
+        for (const t of setOfTypes){
             if (!(t as ObjectType).instanceof) {
                 (noSymbolSet ??= new Set()).add(t);
             }
@@ -16645,6 +16643,31 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         return ret;
     }
+
+    function simplifyUnionContainingInstanceof(type: UnionType, f: typeof getNormalizedType | typeof getReducedType, writing?: boolean): Type {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`simplifyUnionContainingInstanceof[in]: type: ${IDebug.dbgs.dbgTypeToString(type)}, f: ${f===getNormalizedType?"getNormailzedType":"getReducedType"}`, loggerLevel )
+        const fn = (typeSet: Set<Type>) => {
+            if (f===getNormalizedType) return getNormalizedType(getUnionType(Array.from(typeSet)), writing!);
+            else return getReducedType(getUnionType(Array.from(typeSet)));
+        }
+        const ret = (type as UnionType).resolvedReducedType ??= (()=>{
+            let setOfTypes = new Set<Type>();
+            for (const t of (type as UnionType).types){
+                if ((t as ObjectType).instanceof) setOfTypes.add(t);
+                else if (f===getNormalizedType) setOfTypes.add(getNormalizedType(t,writing!));
+                else setOfTypes.add(getReducedType(t));
+            }
+            const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(setOfTypes);
+            return getUnionType(map(arrdecomposed, ([constructorSymbol, typeSet])=>{
+                if (!constructorSymbol) return fn(typeSet);
+                return createInstanceofTypeFromConstructorSymbol(constructorSymbol, fn(typeSet) as StructuredType);
+            }));
+        })();
+        IDebug.ilogGroupEnd(()=>`simplifyUnionContainingInstanceof[in]: ret: ${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel )
+        return ret;
+    }
+
 
     /**
      * Reduces an intersection of instanceof types to a single instanceof type.
@@ -21552,17 +21575,17 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 return applyToInstanceofStructuredType(type as ObjectType, (x: StructuredType)=>getNormalizedType(x, writing) as StructuredType);
             }
             else if (type.flags & TypeFlags.Union) {
-                return ((type as UnionType).resolvedReducedType ??= (()=>{
-                    const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(type as UnionType);
-                    return getUnionType(map(arrdecomposed, ([constructorSymbol, typeSet])=>{
-                        if (!constructorSymbol) return getNormalizedType(getUnionType(Array.from(typeSet)),writing);
-                        return createInstanceofTypeFromConstructorSymbol(constructorSymbol, getNormalizedType(getUnionType(Array.from(typeSet)),writing) as StructuredType);
-                    }));
-                })());
-                //return getUnionType(map((type as UnionType).types, t => getNormalizedType(t, writing) as StructuredType));
+                return simplifyUnionContainingInstanceof(type as UnionType,getNormalizedType,writing);
+                // return ((type as UnionType).resolvedReducedType ??= (()=>{
+                //     const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(type as UnionType);
+                //     return getUnionType(map(arrdecomposed, ([constructorSymbol, typeSet])=>{
+                //         if (!constructorSymbol) return getNormalizedType(getUnionType(Array.from(typeSet)),writing);
+                //         return createInstanceofTypeFromConstructorSymbol(constructorSymbol, getNormalizedType(getUnionType(Array.from(typeSet)),writing) as StructuredType);
+                //     }));
+                // })());
             }
             else if (type.flags & TypeFlags.Intersection) {
-                return simplifyIntersectionContainingInstanceof(type as IntersectionType, getNormalizedType, writing);
+                return simplifyIntersectionContainingInstanceof(type as IntersectionType,getNormalizedType,writing);
                 // const decomposed = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
                 // if (!decomposed) return neverType;
                 // const {constructorSymbol, intersectionTypeElements } = decomposed;

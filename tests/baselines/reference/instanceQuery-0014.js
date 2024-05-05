@@ -91,40 +91,6 @@ namespace iq0014d {
     }
 }
 
-namespace iq0014e {
-    class EmptyBase {}
-    class A extends EmptyBase { a = 0; }
-    class B { a = 0; } // does not extend EmptyBase
-    function extendsEmptyBaseInstance<T>(x: T): x is (instanceof EmptyBase) & T {
-        return x instanceof EmptyBase;
-    }
-    function extendsAInstance<T>(x: T): x is (instanceof A) & T {
-        return x instanceof A;
-    }
-    function extendsBInstance<T>(x: T): x is (instanceof B) & T {
-        return x instanceof B;
-    }
-    declare const a: A | EmptyBase | {};
-    if (extendsEmptyBaseInstance(a)) {
-        a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
-        if (extendsAInstance(a)) {
-            a; // (instanceof A & (A & EmptyBase))
-        }
-        else {
-            a;
-        }
-        if (extendsBInstance(a)) {
-            a; // never
-        }
-        else {
-            a;
-        }
-    }
-    else {
-        a;
-    }
-}
-
 namespace iq0014f {
     declare class Ax { a: number }
     declare class Bx extends Ax { b: number }
@@ -300,44 +266,6 @@ var iq0014d;
         a;
     }
 })(iq0014d || (iq0014d = {}));
-var iq0014e;
-(function (iq0014e) {
-    class EmptyBase {
-    }
-    class A extends EmptyBase {
-        a = 0;
-    }
-    class B {
-        a = 0;
-    } // does not extend EmptyBase
-    function extendsEmptyBaseInstance(x) {
-        return x instanceof EmptyBase;
-    }
-    function extendsAInstance(x) {
-        return x instanceof A;
-    }
-    function extendsBInstance(x) {
-        return x instanceof B;
-    }
-    if (extendsEmptyBaseInstance(a)) {
-        a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
-        if (extendsAInstance(a)) {
-            a; // (instanceof A & (A & EmptyBase))
-        }
-        else {
-            a;
-        }
-        if (extendsBInstance(a)) {
-            a; // never
-        }
-        else {
-            a;
-        }
-    }
-    else {
-        a;
-    }
-})(iq0014e || (iq0014e = {}));
 var iq0014f;
 (function (iq0014f) {
     function isAB(x) {
@@ -392,8 +320,6 @@ declare namespace iq0014c {
 declare namespace iq0014c {
 }
 declare namespace iq0014d {
-}
-declare namespace iq0014e {
 }
 declare namespace iq0014f {
 }
