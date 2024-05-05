@@ -1,0 +1,131 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0015.ts] ////
+
+=== instanceQuery-0015.ts ===
+namespace iq0a {
+>iq0a : typeof iq0a
+>     : ^^^^^^^^^^^
+
+/**
+ * Object is included in the heirarch of all classes
+ */
+
+const x = new Object() as instanceof Object;
+>x : (instanceof Object & Object)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new Object() as instanceof Object : (instanceof Object & Object)
+>                                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new Object() : Object
+>             : ^^^^^^
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+x satisfies instanceof Object;
+>x satisfies instanceof Object : (instanceof Object & Object)
+>                              : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof Object & Object)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+class A {};
+>A : A
+>  : ^
+
+new A() as instanceof A satisfies instanceof Object; // OK
+>new A() as instanceof A satisfies instanceof Object : (instanceof A & A)
+>                                                    : ^^^^^^^^^^^^^^^^^^
+>new A() as instanceof A : (instanceof A & A)
+>                        : ^^^^^^^^^^^^^^^^^^
+>new A() : A
+>        : ^
+>A : typeof A
+>  : ^^^^^^^^
+
+}
+
+namespace iq1a {
+>iq1a : typeof iq1a
+>     : ^^^^^^^^^^^
+
+/**
+ * Properties pass through the instanceof operator
+ */
+
+    class A { a=2; }
+>A : A
+>  : ^
+>a : number
+>  : ^^^^^^
+>2 : 2
+>  : ^
+
+    type TA = { [k in keyof A]: A[k] };
+>TA : TA
+>   : ^^
+
+    type IA = instanceof A;
+>IA : (instanceof A & A)
+>   : ^^^^^^^^^^^^^^^^^^
+
+    type TIA = { [k in keyof IA]: IA[k] };
+>TIA : TIA
+>    : ^^^
+
+    const x : TIA["a"] = 3;
+>x : number
+>  : ^^^^^^
+>3 : 3
+>  : ^
+
+    (0 as any as IA) satisfies A;
+>(0 as any as IA) satisfies A : (instanceof A & A)
+>                             : ^^^^^^^^^^^^^^^^^^
+>(0 as any as IA) : (instanceof A & A)
+>                 : ^^^^^^^^^^^^^^^^^^
+>0 as any as IA : (instanceof A & A)
+>               : ^^^^^^^^^^^^^^^^^^
+>0 as any : any
+>0 : 0
+>  : ^
+
+    (0 as any as IA) satisfies TA;
+>(0 as any as IA) satisfies TA : (instanceof A & A)
+>                              : ^^^^^^^^^^^^^^^^^^
+>(0 as any as IA) : (instanceof A & A)
+>                 : ^^^^^^^^^^^^^^^^^^
+>0 as any as IA : (instanceof A & A)
+>               : ^^^^^^^^^^^^^^^^^^
+>0 as any : any
+>0 : 0
+>  : ^
+
+    (0 as any as IA) satisfies TIA;
+>(0 as any as IA) satisfies TIA : (instanceof A & A)
+>                               : ^^^^^^^^^^^^^^^^^^
+>(0 as any as IA) : (instanceof A & A)
+>                 : ^^^^^^^^^^^^^^^^^^
+>0 as any as IA : (instanceof A & A)
+>               : ^^^^^^^^^^^^^^^^^^
+>0 as any : any
+>0 : 0
+>  : ^
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

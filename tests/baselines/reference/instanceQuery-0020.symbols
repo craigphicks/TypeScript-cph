@@ -1,0 +1,110 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0020.ts] ////
+
+=== instanceQuery-0020.ts ===
+namespace iq0020a {
+>iq0020a : Symbol(iq0020a, Decl(instanceQuery-0020.ts, 0, 0))
+
+/**
+ * An interface type cannot extend an intanceQuery type.
+ * That is because of possible amibiguities:
+ * 1. The user intended to create an interface type `(instanceof A & A) & {extra: number}`.
+ * 2. The user (incorrectly) intended to create an instanceQuery type corresponding to a derived class with type `(instanceof Ambiuous & Ambigous)`
+ * The latter (2.) is not possible because:
+ * a.  The interface type `Ambiguous` might not have a constructor signature (although we could check for that).
+ * b.  The contructor of `Ambiguous` (if it exists) might not call the super constructor for the intended inherited constructor `A`.
+ * For purpose (1.), `type` can be used instead, so to avoid the ambiguity an compile error is generated.
+ *
+ * Incidentally, the following syntax could be considered to allow the functionality of (2.):
+ * ```
+ * interface Ambiguous extends InstanceOfA {
+ *     new(): AlsoInstanceOfA inherits A;
+ * }
+ * ```
+ * where the return type qualifies `inherits A` indicates that the constructor of `Ambiguous` calls the constructor of `A`.
+ */
+class A {};
+>A : Symbol(A, Decl(instanceQuery-0020.ts, 0, 19))
+
+type InstanceOfA = instanceof A;
+>InstanceOfA : Symbol(InstanceOfA, Decl(instanceQuery-0020.ts, 20, 11))
+
+interface Ambiguous extends InstanceOfA { extra: number } // should be error
+>Ambiguous : Symbol(Ambiguous, Decl(instanceQuery-0020.ts, 21, 32))
+>InstanceOfA : Symbol(InstanceOfA, Decl(instanceQuery-0020.ts, 20, 11))
+>extra : Symbol(Ambiguous.extra, Decl(instanceQuery-0020.ts, 22, 41))
+
+}
+
+namespace iq0020b {
+>iq0020b : Symbol(iq0020b, Decl(instanceQuery-0020.ts, 24, 1))
+
+    class A extends Object {
+>A : Symbol(A, Decl(instanceQuery-0020.ts, 26, 19))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+        constructor() {
+            super();
+>super : Symbol(ObjectConstructor, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2019.object.d.ts, --, --), Decl(lib.es2022.object.d.ts, --, --) ... and 1 more)
+        }
+    }
+    const InstanceofA = A as any as { new(): instanceof A };
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0020.ts, 33, 9))
+>A : Symbol(A, Decl(instanceQuery-0020.ts, 26, 19))
+
+    const instanceOfAInstance = new InstanceofA();
+>instanceOfAInstance : Symbol(instanceOfAInstance, Decl(instanceQuery-0020.ts, 35, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0020.ts, 33, 9))
+
+    instanceOfAInstance satisfies instanceof Object;
+>instanceOfAInstance : Symbol(instanceOfAInstance, Decl(instanceQuery-0020.ts, 35, 9))
+
+
+}
+
+
+namespace iq0020c {
+>iq0020c : Symbol(iq0020c, Decl(instanceQuery-0020.ts, 39, 1))
+
+    /**
+     * The above code in iq0020b has no errors.
+     * But it would be convient to be able to write:
+     * ```
+     * class InstanceofA extends InstanceObject {...}
+     * ```
+     * to avoid writing
+     * ```
+     * const InstanceofA = A as any as { new(): instanceof A };
+     * ```
+     * which would be required for every class in a hierarchy of classes with instanceQuery types.
+     *
+     * In the following code only the `InstanceofObject` requires a cast to an instanceQuery type.
+     * All dervied class inherit without the need for a cast. (This required some additional code changes to the compiler)
+     */
+
+
+const InstanceofObject = Object as any as { new(): instanceof Object };
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0020.ts, 61, 5))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+const instanceofInstanceofObject = new InstanceofObject();
+>instanceofInstanceofObject : Symbol(instanceofInstanceofObject, Decl(instanceQuery-0020.ts, 63, 5))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0020.ts, 61, 5))
+
+class InstanceofA extends InstanceofObject {
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0020.ts, 63, 58))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0020.ts, 61, 5))
+
+    constructor() {
+        super();
+>super : Symbol(__type, Decl(instanceQuery-0020.ts, 61, 41))
+    }
+}
+const instanceOfAInstance = new InstanceofA();
+>instanceOfAInstance : Symbol(instanceOfAInstance, Decl(instanceQuery-0020.ts, 70, 5))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0020.ts, 63, 58))
+
+instanceOfAInstance satisfies instanceof Object;
+>instanceOfAInstance : Symbol(instanceOfAInstance, Decl(instanceQuery-0020.ts, 70, 5))
+
+}
+

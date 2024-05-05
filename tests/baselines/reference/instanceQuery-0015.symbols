@@ -1,0 +1,90 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0015.ts] ////
+
+=== instanceQuery-0015.ts ===
+namespace iq0a {
+>iq0a : Symbol(iq0a, Decl(instanceQuery-0015.ts, 0, 0))
+
+/**
+ * Object is included in the heirarch of all classes
+ */
+
+const x = new Object() as instanceof Object;
+>x : Symbol(x, Decl(instanceQuery-0015.ts, 5, 5))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+x satisfies instanceof Object;
+>x : Symbol(x, Decl(instanceQuery-0015.ts, 5, 5))
+
+
+class A {};
+>A : Symbol(A, Decl(instanceQuery-0015.ts, 6, 30))
+
+new A() as instanceof A satisfies instanceof Object; // OK
+>A : Symbol(A, Decl(instanceQuery-0015.ts, 6, 30))
+
+}
+
+namespace iq1a {
+>iq1a : Symbol(iq1a, Decl(instanceQuery-0015.ts, 12, 1))
+
+/**
+ * Properties pass through the instanceof operator
+ */
+
+    class A { a=2; }
+>A : Symbol(A, Decl(instanceQuery-0015.ts, 14, 16))
+>a : Symbol(A.a, Decl(instanceQuery-0015.ts, 20, 13))
+
+    type TA = { [k in keyof A]: A[k] };
+>TA : Symbol(TA, Decl(instanceQuery-0015.ts, 20, 20))
+>k : Symbol(k, Decl(instanceQuery-0015.ts, 21, 17))
+>A : Symbol(A, Decl(instanceQuery-0015.ts, 14, 16))
+>A : Symbol(A, Decl(instanceQuery-0015.ts, 14, 16))
+>k : Symbol(k, Decl(instanceQuery-0015.ts, 21, 17))
+
+    type IA = instanceof A;
+>IA : Symbol(IA, Decl(instanceQuery-0015.ts, 21, 39))
+
+    type TIA = { [k in keyof IA]: IA[k] };
+>TIA : Symbol(TIA, Decl(instanceQuery-0015.ts, 22, 27))
+>k : Symbol(k, Decl(instanceQuery-0015.ts, 23, 18))
+>IA : Symbol(IA, Decl(instanceQuery-0015.ts, 21, 39))
+>IA : Symbol(IA, Decl(instanceQuery-0015.ts, 21, 39))
+>k : Symbol(k, Decl(instanceQuery-0015.ts, 23, 18))
+
+    const x : TIA["a"] = 3;
+>x : Symbol(x, Decl(instanceQuery-0015.ts, 25, 9))
+>TIA : Symbol(TIA, Decl(instanceQuery-0015.ts, 22, 27))
+
+    (0 as any as IA) satisfies A;
+>IA : Symbol(IA, Decl(instanceQuery-0015.ts, 21, 39))
+>A : Symbol(A, Decl(instanceQuery-0015.ts, 14, 16))
+
+    (0 as any as IA) satisfies TA;
+>IA : Symbol(IA, Decl(instanceQuery-0015.ts, 21, 39))
+>TA : Symbol(TA, Decl(instanceQuery-0015.ts, 20, 20))
+
+    (0 as any as IA) satisfies TIA;
+>IA : Symbol(IA, Decl(instanceQuery-0015.ts, 21, 39))
+>TIA : Symbol(TIA, Decl(instanceQuery-0015.ts, 22, 27))
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

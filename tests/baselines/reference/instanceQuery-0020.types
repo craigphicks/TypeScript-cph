@@ -1,0 +1,154 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0020.ts] ////
+
+=== instanceQuery-0020.ts ===
+namespace iq0020a {
+>iq0020a : typeof iq0020a
+>        : ^^^^^^^^^^^^^^
+
+/**
+ * An interface type cannot extend an intanceQuery type.
+ * That is because of possible amibiguities:
+ * 1. The user intended to create an interface type `(instanceof A & A) & {extra: number}`.
+ * 2. The user (incorrectly) intended to create an instanceQuery type corresponding to a derived class with type `(instanceof Ambiuous & Ambigous)`
+ * The latter (2.) is not possible because:
+ * a.  The interface type `Ambiguous` might not have a constructor signature (although we could check for that).
+ * b.  The contructor of `Ambiguous` (if it exists) might not call the super constructor for the intended inherited constructor `A`.
+ * For purpose (1.), `type` can be used instead, so to avoid the ambiguity an compile error is generated.
+ *
+ * Incidentally, the following syntax could be considered to allow the functionality of (2.):
+ * ```
+ * interface Ambiguous extends InstanceOfA {
+ *     new(): AlsoInstanceOfA inherits A;
+ * }
+ * ```
+ * where the return type qualifies `inherits A` indicates that the constructor of `Ambiguous` calls the constructor of `A`.
+ */
+class A {};
+>A : A
+>  : ^
+
+type InstanceOfA = instanceof A;
+>InstanceOfA : (instanceof A & A)
+>            : ^^^^^^^^^^^^^^^^^^
+
+interface Ambiguous extends InstanceOfA { extra: number } // should be error
+>extra : number
+>      : ^^^^^^
+
+}
+
+namespace iq0020b {
+>iq0020b : typeof iq0020b
+>        : ^^^^^^^^^^^^^^
+
+    class A extends Object {
+>A : A
+>  : ^
+>Object : Object
+>       : ^^^^^^
+
+        constructor() {
+            super();
+>super() : void
+>        : ^^^^
+>super : ObjectConstructor
+>      : ^^^^^^^^^^^^^^^^^
+        }
+    }
+    const InstanceofA = A as any as { new(): instanceof A };
+>InstanceofA : new () => instanceof A
+>            : ^^^^^^^^^^            
+>A as any as { new(): instanceof A } : new () => instanceof A
+>                                    : ^^^^^^^^^^            
+>A as any : any
+>         : ^^^
+>A : typeof A
+>  : ^^^^^^^^
+
+    const instanceOfAInstance = new InstanceofA();
+>instanceOfAInstance : (instanceof A & A)
+>                    : ^^^^^^^^^^^^^^^^^^
+>new InstanceofA() : (instanceof A & A)
+>                  : ^^^^^^^^^^^^^^^^^^
+>InstanceofA : new () => (instanceof A & A)
+>            : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    instanceOfAInstance satisfies instanceof Object;
+>instanceOfAInstance satisfies instanceof Object : (instanceof A & A)
+>                                                : ^^^^^^^^^^^^^^^^^^
+>instanceOfAInstance : (instanceof A & A)
+>                    : ^^^^^^^^^^^^^^^^^^
+
+
+}
+
+
+namespace iq0020c {
+>iq0020c : typeof iq0020c
+>        : ^^^^^^^^^^^^^^
+
+    /**
+     * The above code in iq0020b has no errors.
+     * But it would be convient to be able to write:
+     * ```
+     * class InstanceofA extends InstanceObject {...}
+     * ```
+     * to avoid writing
+     * ```
+     * const InstanceofA = A as any as { new(): instanceof A };
+     * ```
+     * which would be required for every class in a hierarchy of classes with instanceQuery types.
+     *
+     * In the following code only the `InstanceofObject` requires a cast to an instanceQuery type.
+     * All dervied class inherit without the need for a cast. (This required some additional code changes to the compiler)
+     */
+
+
+const InstanceofObject = Object as any as { new(): instanceof Object };
+>InstanceofObject : new () => instanceof Object
+>                 : ^^^^^^^^^^                 
+>Object as any as { new(): instanceof Object } : new () => instanceof Object
+>                                              : ^^^^^^^^^^                 
+>Object as any : any
+>              : ^^^
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+const instanceofInstanceofObject = new InstanceofObject();
+>instanceofInstanceofObject : (instanceof Object & Object)
+>                           : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new InstanceofObject() : (instanceof Object & Object)
+>                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofObject : new () => (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+class InstanceofA extends InstanceofObject {
+>InstanceofA : (instanceof InstanceofA & InstanceofA)
+>            : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofObject : (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    constructor() {
+        super();
+>super() : void
+>        : ^^^^
+>super : new () => (instanceof Object & Object)
+>      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    }
+}
+const instanceOfAInstance = new InstanceofA();
+>instanceOfAInstance : (instanceof InstanceofA & InstanceofA)
+>                    : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new InstanceofA() : (instanceof InstanceofA & InstanceofA)
+>                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofA : typeof InstanceofA
+>            : ^^^^^^^^^^^^^^^^^^
+
+instanceOfAInstance satisfies instanceof Object;
+>instanceOfAInstance satisfies instanceof Object : (instanceof InstanceofA & InstanceofA)
+>                                                : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>instanceOfAInstance : (instanceof InstanceofA & InstanceofA)
+>                    : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+}
+

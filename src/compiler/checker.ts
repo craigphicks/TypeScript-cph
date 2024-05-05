@@ -12216,6 +12216,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * * an object type with at least one construct signature.
      */
     function getBaseConstructorTypeOfClass(type: InterfaceType): Type {
+        if ((type as ObjectType).instanceof) {
+            return getBaseConstructorTypeOfClass(getInstanceofStructuredType(type as ObjectType) as InterfaceType);
+        }
         if (!type.resolvedBaseConstructorType) {
             const decl = getClassLikeDeclarationOfSymbol(type.symbol);
             const extended = decl && getEffectiveBaseTypeNode(decl);
@@ -12289,6 +12292,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getBaseTypes(type: InterfaceType): BaseType[] {
+        if ((type as ObjectType).instanceof) return getBaseTypes(getInstanceofStructuredType(type as ObjectType) as InterfaceType);
         if (!type.baseTypesResolved) {
             if (pushTypeResolution(type, TypeSystemPropertyName.ResolvedBaseTypes)) {
                 if (type.objectFlags & ObjectFlags.Tuple) {
@@ -12469,7 +12473,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return true;
     }
 
-    function getDeclaredTypeOfClassOrInterface(symbol: Symbol): InterfaceType {
+    function getDeclaredTypeOfClassOrInterface(symbol: Symbol, isInstanceof?: boolean): InterfaceType {
         let links = getSymbolLinks(symbol);
         const originalLinks = links;
         if (!links.declaredType) {
@@ -12501,6 +12505,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 type.thisType = createTypeParameter(symbol);
                 type.thisType.isThisType = true;
                 type.thisType.constraint = type;
+            }
+            if (isInstanceof){
+                originalLinks.declaredType = links.declaredType = createInstanceofTypeFromConstructorSymbol(symbol, type);
             }
         }
         return links.declaredType as InterfaceType;
@@ -13018,7 +13025,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getTypeWithThisArgument(type: Type, thisArgument?: Type, needApparentType?: boolean): Type {
         if (getObjectFlags(type) & ObjectFlags.Reference) {
             if ((type as ObjectType).instanceof) {
-                return getInstanceofStructuredType(type as ObjectType);
+                const tmp = getTypeWithThisArgument(getInstanceofStructuredType(type as ObjectType), thisArgument, needApparentType);
+                if (tmp===getInstanceofStructuredType(type as ObjectType)) return type;
+                return createInstanceofTypeFromConstructorSymbol((type as ObjectType).instanceof!.symbol, tmp as StructuredType);
             }
             const target = (type as TypeReference).target;
             const typeArguments = getTypeArguments(type as TypeReference);
@@ -45673,7 +45682,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function checkClassDeclaration(node: ClassDeclaration) {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`checkClassDeclaration[in]: node:${IDebug.dbgs.dbgNodeToString(node)}`, loggerLevel);
         const firstDecorator = find(node.modifiers, isDecorator);
+
         if (legacyDecorators && firstDecorator && some(node.members, p => hasStaticModifier(p) && isPrivateIdentifierClassElementDeclaration(p))) {
             grammarErrorOnNode(firstDecorator, Diagnostics.Class_decorators_can_t_be_used_with_static_private_identifier_Consider_removing_the_experimental_decorator);
         }
@@ -45684,18 +45696,36 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         forEach(node.members, checkSourceElement);
 
         registerForUnusedIdentifiersCheck(node);
+        ;
+        IDebug.ilogGroupEnd(()=>`checkClassDeclaration[out]:`, loggerLevel);
+        //IDebug.ilogGroupEnd(()=>`checkCLassDeclaration[out]: type of node ${IDebug.dbgs.dbgTypeToString(getTypeOfSymbolAtLocation(getResolvedSymbol(node)))}`)
     }
 
     function checkClassLikeDeclaration(node: ClassLikeDeclaration) {
+        const loggerLevel = 2;
+        IDebug.ilogGroup(()=>`checkClassLikeDeclaration[in]: node:${IDebug.dbgs.dbgNodeToString(node)}`, loggerLevel);
         checkGrammarClassLikeDeclaration(node);
         checkDecorators(node);
         checkCollisionsForDeclarationName(node, node.name);
         checkTypeParameters(getEffectiveTypeParameterDeclarations(node));
         checkExportsOnMergedDeclarations(node);
+        {
+            if (node.heritageClauses){
+
+            }
+        }
         const symbol = getSymbolOfDeclaration(node);
-        const type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
-        const typeWithThis = getTypeWithThisArgument(type);
-        const staticType = getTypeOfSymbol(symbol) as ObjectType;
+        let type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
+        let typeWithThis: Type | undefined; // = getTypeWithThisArgument(type);
+        let staticType: ObjectType | undefined; // = getTypeOfSymbol(symbol) as ObjectType;
+
+        if (IDebug.isActive(loggerLevel)){
+            IDebug.ilog(()=>`symbol: ${IDebug.dbgs.dbgSymbolToString(symbol)}`, loggerLevel);
+            IDebug.ilog(()=>`type: ${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+            // IDebug.ilog(()=>`typeWithThis: ${IDebug.dbgs.dbgTypeToString(typeWithThis)}`, loggerLevel);
+            // IDebug.ilog(()=>`staticType: ${IDebug.dbgs.dbgTypeToString(staticType)}`, loggerLevel);
+        }
+
         checkTypeParameterListsIdentical(symbol);
         checkFunctionOrConstructorSymbol(symbol);
         checkClassForDuplicateDeclarations(node);
@@ -45719,11 +45749,49 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
             const baseTypes = getBaseTypes(type);
+            if ((baseTypes[0] as ObjectType)?.instanceof) {
+                const links = getSymbolLinks(symbol);
+                // what about originalLinks ? (c.f. getDeclaredTypeOfClassOrInterface)
+                {
+                    const innerSymbol = cloneSymbol(symbol, true);
+                    innerSymbol.escapedName = `${innerSymbol.escapedName}*` as __String;
+                    const innerLinks = getSymbolLinks(innerSymbol);
+                    innerLinks.type = links.type;
+                    innerLinks.declaredType = links.declaredType;
+                    links.declaredType = createInstanceofTypeFromConstructorSymbol(symbol, links.declaredType as StructuredType);
+                    type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
+                }
+                if (IDebug.isActive(loggerLevel)){
+                    const symbol = getSymbolOfDeclaration(node);
+                    const type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
+                    const typeWithThis = getTypeWithThisArgument(type);
+                    const staticType = getTypeOfSymbol(symbol) as ObjectType;
+
+                    IDebug.ilog(()=>`[cvtToInstanceof] symbol: ${IDebug.dbgs.dbgSymbolToString(symbol)}`, loggerLevel);
+                    IDebug.ilog(()=>`[cvtToInstanceof] type: ${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+                    IDebug.ilog(()=>`[cvtToInstanceof] typeWithThis: ${IDebug.dbgs.dbgTypeToString(typeWithThis)}`, loggerLevel);
+                    IDebug.ilog(()=>`[cvtToInstanceof] staticType: ${IDebug.dbgs.dbgTypeToString(staticType)}`, loggerLevel);
+                }
+
+            }
+            // typeWithThis = getTypeWithThisArgument(type);
+            // staticType = getTypeOfSymbol(symbol) as ObjectType;
+
             if (baseTypes.length) {
                 addLazyDiagnostic(() => {
                     const baseType = baseTypes[0];
                     const baseConstructorType = getBaseConstructorTypeOfClass(type);
                     const staticBaseType = getApparentType(baseConstructorType);
+                    if (IDebug.isActive(loggerLevel)){
+                        //IDebug.ilog(()=>`baseTypes[0]: ${IDebug.dbgs.dbgTypeToString(baseType)}`, loggerLevel);
+                        baseTypes.forEach((t,i)=>IDebug.ilog(()=>`baseTypes[${i}]: ${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
+                        IDebug.ilog(()=>`baseConstructorType: ${IDebug.dbgs.dbgTypeToString(baseConstructorType)}`, loggerLevel);
+                        IDebug.ilog(()=>`staticBaseType: ${IDebug.dbgs.dbgTypeToString(staticBaseType)}`, loggerLevel);
+                    }
+                    if ((baseType as ObjectType).instanceof){
+                        const links = getSymbolLinks(symbol);
+                        const x = 1;
+                    }
                     checkBaseTypeAccessibility(staticBaseType, baseTypeNode);
                     checkSourceElement(baseTypeNode.expression);
                     if (some(baseTypeNode.typeArguments)) {
@@ -45734,15 +45802,19 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             }
                         }
                     }
+
+                    typeWithThis ||= getTypeWithThisArgument(type);
                     const baseWithThis = getTypeWithThisArgument(baseType, type.thisType);
                     if (!checkTypeAssignableTo(typeWithThis, baseWithThis, /*errorNode*/ undefined)) {
                         issueMemberSpecificError(node, typeWithThis, baseWithThis, Diagnostics.Class_0_incorrectly_extends_base_class_1);
                     }
                     else {
+                        staticType ||= getTypeOfSymbol(symbol) as ObjectType;
                         // Report static side error only when instance type is assignable
                         checkTypeAssignableTo(staticType, getTypeWithoutSignatures(staticBaseType), node.name || node, Diagnostics.Class_static_side_0_incorrectly_extends_base_class_static_side_1);
                     }
                     if (baseConstructorType.flags & TypeFlags.TypeVariable) {
+                        staticType ||= getTypeOfSymbol(symbol) as ObjectType;
                         if (!isMixinConstructorType(staticType)) {
                             error(node.name || node, Diagnostics.A_mixin_class_must_have_a_constructor_with_a_single_rest_parameter_of_type_any);
                         }
@@ -45766,6 +45838,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 });
             }
         }
+        typeWithThis ||= getTypeWithThisArgument(type);
+        staticType ||= getTypeOfSymbol(symbol) as ObjectType;
 
         checkMembersForOverrideModifier(node, type, typeWithThis, staticType);
 
@@ -45782,10 +45856,25 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         addLazyDiagnostic(() => {
             checkIndexConstraints(type, symbol);
-            checkIndexConstraints(staticType, symbol, /*isStaticIndex*/ true);
+            checkIndexConstraints(staticType!, symbol, /*isStaticIndex*/ true);
             checkTypeForDuplicateIndexSignatures(node);
             checkPropertyInitialization(node);
         });
+
+        if (IDebug.isActive(loggerLevel)){
+            const symbol = getSymbolOfDeclaration(node);
+            const type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
+            const typeWithThis = getTypeWithThisArgument(type);
+            const staticType = getTypeOfSymbol(symbol) as ObjectType;
+
+            IDebug.ilog(()=>`[final] symbol: ${IDebug.dbgs.dbgSymbolToString(symbol)}`, loggerLevel);
+            IDebug.ilog(()=>`[final] type: ${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+            IDebug.ilog(()=>`[final] typeWithThis: ${IDebug.dbgs.dbgTypeToString(typeWithThis)}`, loggerLevel);
+            IDebug.ilog(()=>`[final] staticType: ${IDebug.dbgs.dbgTypeToString(staticType)}`, loggerLevel);
+        }
+
+        IDebug.ilogGroupEnd(()=>`checkClassDeclaration[out]:`, loggerLevel);
+
 
         function createImplementsDiagnostics(typeRefNode: ExpressionWithTypeArguments) {
             return () => {
@@ -45796,8 +45885,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                             Diagnostics.Class_0_incorrectly_implements_class_1_Did_you_mean_to_extend_1_and_inherit_its_members_as_a_subclass :
                             Diagnostics.Class_0_incorrectly_implements_interface_1;
                         const baseWithThis = getTypeWithThisArgument(t, type.thisType);
-                        if (!checkTypeAssignableTo(typeWithThis, baseWithThis, /*errorNode*/ undefined)) {
-                            issueMemberSpecificError(node, typeWithThis, baseWithThis, genericDiag);
+                        if (!checkTypeAssignableTo(typeWithThis!, baseWithThis, /*errorNode*/ undefined)) {
+                            issueMemberSpecificError(node, typeWithThis!, baseWithThis, genericDiag);
                         }
                     }
                     else {
@@ -46097,6 +46186,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // derived class instance member variables and accessors, but not by other kinds of members.
 
         // NOTE: assignability is checked in checkClassDeclaration
+        /**
+         * type.symbol is accessed directly, so check for type.instanceof
+         */
+        if ((type as ObjectType).instanceof){
+            return checkKindsOfPropertyMemberOverrides(getInstanceofStructuredType(type as ObjectType) as InterfaceType,baseType);
+        }
         const baseProperties = getPropertiesOfType(baseType);
 
         interface MemberInfo {
@@ -46395,7 +46490,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         if (!checkGrammarModifiers(node)) checkGrammarInterfaceDeclaration(node);
 
         checkTypeParameters(node.typeParameters);
-        let hadInstanceQueryError = false;
         addLazyDiagnostic(() => {
             checkTypeNameIsReserved(node.name, Diagnostics.Interface_name_cannot_be_0);
 
@@ -46424,7 +46518,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
             checkObjectTypeForDuplicateDeclarations(node);
         });
-        if (hadInstanceQueryError) return;
         forEach(getInterfaceBaseTypeNodes(node), heritageElement => {
             if (!isEntityNameExpression(heritageElement.expression) || isOptionalChain(heritageElement.expression)) {
                 error(heritageElement.expression, Diagnostics.An_interface_can_only_extend_an_identifier_Slashqualified_name_with_optional_type_arguments);
