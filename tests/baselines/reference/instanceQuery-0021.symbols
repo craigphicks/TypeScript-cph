@@ -112,7 +112,6 @@ namespace instanceQuery21b_3 {
 
             this.a=1;
 >this.a : Symbol(InstanceofA.a, Decl(instanceQuery-0021.ts, 50, 48))
->this : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 49, 75))
 >a : Symbol(InstanceofA.a, Decl(instanceQuery-0021.ts, 50, 48))
         }
     };

@@ -185,8 +185,8 @@ namespace instanceQuery21b_3 {
 >         : ^
 >this.a : number
 >       : ^^^^^^
->this : InstanceofA
->     : ^^^^^^^^^^^
+>this : (instanceof InstanceofA & InstanceofA)
+>     : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : number
 >  : ^^^^^^
 >1 : 1

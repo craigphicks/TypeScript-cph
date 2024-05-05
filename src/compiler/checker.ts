@@ -30521,7 +30521,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (isStatic(container)) return getFlowTypeOfReference(node, getTypeOfSymbol(symbol));
             const declaredType = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
             let type: Type;
-            if ((declaredType as ObjectType).instanceof) type = getInstanceofStructuredType(declaredType as ObjectType);
+            if ((declaredType as ObjectType).instanceof) type = declaredType; //getInstanceofStructuredType(declaredType as ObjectType);
             else type = declaredType.thisType!;
             TSDebug.assert(type);
             return getFlowTypeOfReference(node, type);
