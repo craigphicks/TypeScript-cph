@@ -12191,7 +12191,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getBaseTypeNodeOfClass(type: InterfaceType): ExpressionWithTypeArguments | undefined {
-        const decl = getClassLikeDeclarationOfSymbol(type.symbol);
+        const decl = getClassLikeDeclarationOfSymbol(type.symbol ?? (type as ObjectType).instanceof?.symbol);
         return decl && getEffectiveBaseTypeNode(decl);
     }
 
@@ -13210,7 +13210,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getDefaultConstructSignatures(classType: InterfaceType): Signature[] {
         const baseConstructorType = getBaseConstructorTypeOfClass(classType);
         const baseSignatures = getSignaturesOfType(baseConstructorType, SignatureKind.Construct);
-        const declaration = getClassLikeDeclarationOfSymbol(classType.symbol);
+        const declaration = getClassLikeDeclarationOfSymbol(classType.symbol ?? (classType as ObjectType).instanceof!.symbol);
         const isAbstract = !!declaration && hasSyntacticModifier(declaration, ModifierFlags.Abstract);
         if (baseSignatures.length === 0) {
             return [createSignature(/*declaration*/ undefined, classType.localTypeParameters, /*thisParameter*/ undefined, emptyArray, classType, /*resolvedTypePredicate*/ undefined, 0, isAbstract ? SignatureFlags.Abstract : SignatureFlags.None)];
@@ -16541,6 +16541,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         IDebug.ilogGroup(()=>`getConstructorSymbolChain[in]: ${IDebug.dbgs.dbgSymbolToString(constructorSymbol)}`,loggerLevel);
         const arrs = [constructorSymbol];
         let constructorType: Type | undefined = getTypeOfSymbol(constructorSymbol);
+        IDebug.ilog(()=>`getConstructorSymbolChain: initial constructorType:${IDebug.dbgs.dbgTypeToString(constructorType)}`,loggerLevel);
         while (constructorType && constructorType !== undefinedType) {
             const protoProp = getPropertyOfType(constructorType, "prototype" as __String);
 
@@ -16549,7 +16550,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
             TSDebug.assert(protoProp, "constructorType does not have prototype", ()=>`${IDebug.dbgs.dbgTypeToString(constructorType)}`);
             const type = getTypeOfSymbol(protoProp);
-            /**
+            IDebug.ilog(()=>`getConstructorSymbolChain: (type  of prototypw) type:${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+                /**
              * ```
              *
              * ```
@@ -30516,7 +30518,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
         if (isClassLike(container.parent)) {
             const symbol = getSymbolOfDeclaration(container.parent);
-            const type = isStatic(container) ? getTypeOfSymbol(symbol) : (getDeclaredTypeOfSymbol(symbol) as InterfaceType).thisType!;
+            if (isStatic(container)) return getFlowTypeOfReference(node, getTypeOfSymbol(symbol));
+            const declaredType = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
+            let type: Type;
+            if ((declaredType as ObjectType).instanceof) type = getInstanceofStructuredType(declaredType as ObjectType);
+            else type = declaredType.thisType!;
+            TSDebug.assert(type);
             return getFlowTypeOfReference(node, type);
         }
 

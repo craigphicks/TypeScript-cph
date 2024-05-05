@@ -1,0 +1,301 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0021.ts] ////
+
+=== instanceQuery-0021.ts ===
+/**
+ * instanceQuery types cannot be automatically generated for every `new XXX()`
+ * because that would break back compatibility with existing code.
+ * However, any class inherting from the constructor value `Object` cast as type `{ new(): instanceof Object }`
+ * will automatically generate instanceQuery types.
+ * That is the workaround to avoid casting every desired `new XXX()` to `new XXX() as instsanceof XXX`
+ */
+
+namespace instanceQuery21a {
+>instanceQuery21a : typeof instanceQuery21a
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^
+
+declare class InstanceofA extends (Object as any as { new(): instanceof Object } ){ a: number };
+>InstanceofA : (instanceof InstanceofA & InstanceofA)
+>            : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>(Object as any as { new(): instanceof Object } ) : (instanceof Object & Object)
+>                                                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>Object as any as { new(): instanceof Object } : new () => instanceof Object
+>                                              : ^^^^^^^^^^                 
+>Object as any : any
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+>a : number
+>  : ^^^^^^
+
+const x = new InstanceofA();
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new InstanceofA() : (instanceof InstanceofA & InstanceofA)
+>                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofA : typeof InstanceofA
+>            : ^^^^^^^^^^^^^^^^^^
+
+x satisfies instanceof Object; // OK
+>x satisfies instanceof Object : (instanceof InstanceofA & InstanceofA)
+>                              : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+x satisfies InstanceofA; // OK
+>x satisfies InstanceofA : (instanceof InstanceofA & InstanceofA)
+>                        : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+}
+
+namespace instanceQuery21b {
+>instanceQuery21b : typeof instanceQuery21b
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^
+
+const InstanceofObject = Object as any as { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : new () => instanceof Object
+>                 : ^^^^^^^^^^                 
+>Object as any as { new(): instanceof Object } : new () => instanceof Object
+>                                              : ^^^^^^^^^^                 
+>Object as any : any
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+class InstanceofA extends InstanceofObject {
+>InstanceofA : (instanceof InstanceofA & InstanceofA)
+>            : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofObject : (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    constructor(){
+        super();
+>super() : void
+>        : ^^^^
+>super : new () => (instanceof Object & Object)
+>      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    }
+};
+const x = new InstanceofA();
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new InstanceofA() : (instanceof InstanceofA & InstanceofA)
+>                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofA : typeof InstanceofA
+>            : ^^^^^^^^^^^^^^^^^^
+
+x satisfies instanceof Object; // OK
+>x satisfies instanceof Object : (instanceof InstanceofA & InstanceofA)
+>                              : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+x satisfies InstanceofA; // OK
+>x satisfies InstanceofA : (instanceof InstanceofA & InstanceofA)
+>                        : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+}
+
+namespace instanceQuery21b_2 {
+>instanceQuery21b_2 : typeof instanceQuery21b_2
+>                   : ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    const InstanceofObject = Object as any as { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : new () => instanceof Object
+>                 : ^^^^^^^^^^                 
+>Object as any as { new(): instanceof Object } : new () => instanceof Object
+>                                              : ^^^^^^^^^^                 
+>Object as any : any
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+    class InstanceofA extends InstanceofObject {
+>InstanceofA : (instanceof InstanceofA & InstanceofA)
+>            : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofObject : (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        a: any;
+>a : any
+
+        constructor(){
+            super();
+>super() : void
+>        : ^^^^
+>super : new () => (instanceof Object & Object)
+>      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        }
+    };
+    const x = new InstanceofA();
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new InstanceofA() : (instanceof InstanceofA & InstanceofA)
+>                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofA : typeof InstanceofA
+>            : ^^^^^^^^^^^^^^^^^^
+
+    x satisfies instanceof Object; // OK
+>x satisfies instanceof Object : (instanceof InstanceofA & InstanceofA)
+>                              : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    x satisfies InstanceofA; // OK
+>x satisfies InstanceofA : (instanceof InstanceofA & InstanceofA)
+>                        : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+}
+
+namespace instanceQuery21b_3 {
+>instanceQuery21b_3 : typeof instanceQuery21b_3
+>                   : ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    const InstanceofObject = Object as any as { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : new () => instanceof Object
+>                 : ^^^^^^^^^^                 
+>Object as any as { new(): instanceof Object } : new () => instanceof Object
+>                                              : ^^^^^^^^^^                 
+>Object as any : any
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+    class InstanceofA extends InstanceofObject {
+>InstanceofA : (instanceof InstanceofA & InstanceofA)
+>            : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofObject : (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        a: number;
+>a : number
+>  : ^^^^^^
+
+        constructor(){
+            super();
+>super() : void
+>        : ^^^^
+>super : new () => (instanceof Object & Object)
+>      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+            this.a=1;
+>this.a=1 : 1
+>         : ^
+>this.a : number
+>       : ^^^^^^
+>this : InstanceofA
+>     : ^^^^^^^^^^^
+>a : number
+>  : ^^^^^^
+>1 : 1
+>  : ^
+        }
+    };
+    const x = new InstanceofA();
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new InstanceofA() : (instanceof InstanceofA & InstanceofA)
+>                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofA : typeof InstanceofA
+>            : ^^^^^^^^^^^^^^^^^^
+
+    x satisfies instanceof Object; // OK
+>x satisfies instanceof Object : (instanceof InstanceofA & InstanceofA)
+>                              : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    x satisfies InstanceofA; // OK
+>x satisfies InstanceofA : (instanceof InstanceofA & InstanceofA)
+>                        : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+}
+
+namespace instanceQuery21c {
+>instanceQuery21c : typeof instanceQuery21c
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^
+
+    const InstanceofObject = Object as any as { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : new () => instanceof Object
+>                 : ^^^^^^^^^^                 
+>Object as any as { new(): instanceof Object } : new () => instanceof Object
+>                                              : ^^^^^^^^^^                 
+>Object as any : any
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+    class InstanceofA extends InstanceofObject {
+>InstanceofA : (instanceof InstanceofA & InstanceofA)
+>            : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofObject : (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        // default constructor OK
+        // constructor(){
+        //     super();
+        // }
+    };
+    const x = new InstanceofA();
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new InstanceofA() : (instanceof InstanceofA & InstanceofA)
+>                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofA : typeof InstanceofA
+>            : ^^^^^^^^^^^^^^^^^^
+
+    x satisfies instanceof Object; // OK
+>x satisfies instanceof Object : (instanceof InstanceofA & InstanceofA)
+>                              : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    x satisfies InstanceofA; // OK
+>x satisfies InstanceofA : (instanceof InstanceofA & InstanceofA)
+>                        : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+}
+
+namespace instanceQuery21d {
+>instanceQuery21d : typeof instanceQuery21d
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^
+
+    declare const InstanceofObject: { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : new () => instanceof Object
+>                 : ^^^^^^^^^^                 
+
+    declare class InstanceofA extends InstanceofObject {};
+>InstanceofA : (instanceof InstanceofA & InstanceofA)
+>            : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofObject : (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    const x = new InstanceofA();
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>new InstanceofA() : (instanceof InstanceofA & InstanceofA)
+>                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>InstanceofA : typeof InstanceofA
+>            : ^^^^^^^^^^^^^^^^^^
+
+    x satisfies instanceof Object; // OK
+>x satisfies instanceof Object : (instanceof InstanceofA & InstanceofA)
+>                              : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    x satisfies InstanceofA; // OK
+>x satisfies InstanceofA : (instanceof InstanceofA & InstanceofA)
+>                        : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof InstanceofA & InstanceofA)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+}
+
+

@@ -1,0 +1,185 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0021.ts] ////
+
+=== instanceQuery-0021.ts ===
+/**
+ * instanceQuery types cannot be automatically generated for every `new XXX()`
+ * because that would break back compatibility with existing code.
+ * However, any class inherting from the constructor value `Object` cast as type `{ new(): instanceof Object }`
+ * will automatically generate instanceQuery types.
+ * That is the workaround to avoid casting every desired `new XXX()` to `new XXX() as instsanceof XXX`
+ */
+
+namespace instanceQuery21a {
+>instanceQuery21a : Symbol(instanceQuery21a, Decl(instanceQuery-0021.ts, 0, 0))
+
+declare class InstanceofA extends (Object as any as { new(): instanceof Object } ){ a: number };
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 8, 28))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>a : Symbol(InstanceofA.a, Decl(instanceQuery-0021.ts, 10, 83))
+
+const x = new InstanceofA();
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 11, 5))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 8, 28))
+
+x satisfies instanceof Object; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 11, 5))
+
+x satisfies InstanceofA; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 11, 5))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 8, 28))
+
+}
+
+namespace instanceQuery21b {
+>instanceQuery21b : Symbol(instanceQuery21b, Decl(instanceQuery-0021.ts, 15, 1))
+
+const InstanceofObject = Object as any as { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 19, 5))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+class InstanceofA extends InstanceofObject {
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 19, 71))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 19, 5))
+
+    constructor(){
+        super();
+>super : Symbol(__type, Decl(instanceQuery-0021.ts, 19, 41))
+    }
+};
+const x = new InstanceofA();
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 25, 5))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 19, 71))
+
+x satisfies instanceof Object; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 25, 5))
+
+x satisfies InstanceofA; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 25, 5))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 19, 71))
+
+
+}
+
+namespace instanceQuery21b_2 {
+>instanceQuery21b_2 : Symbol(instanceQuery21b_2, Decl(instanceQuery-0021.ts, 30, 1))
+
+    const InstanceofObject = Object as any as { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 34, 9))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+    class InstanceofA extends InstanceofObject {
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 34, 75))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 34, 9))
+
+        a: any;
+>a : Symbol(InstanceofA.a, Decl(instanceQuery-0021.ts, 35, 48))
+
+        constructor(){
+            super();
+>super : Symbol(__type, Decl(instanceQuery-0021.ts, 34, 45))
+        }
+    };
+    const x = new InstanceofA();
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 41, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 34, 75))
+
+    x satisfies instanceof Object; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 41, 9))
+
+    x satisfies InstanceofA; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 41, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 34, 75))
+
+}
+
+namespace instanceQuery21b_3 {
+>instanceQuery21b_3 : Symbol(instanceQuery21b_3, Decl(instanceQuery-0021.ts, 45, 1))
+
+    const InstanceofObject = Object as any as { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 49, 9))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+    class InstanceofA extends InstanceofObject {
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 49, 75))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 49, 9))
+
+        a: number;
+>a : Symbol(InstanceofA.a, Decl(instanceQuery-0021.ts, 50, 48))
+
+        constructor(){
+            super();
+>super : Symbol(__type, Decl(instanceQuery-0021.ts, 49, 45))
+
+            this.a=1;
+>this.a : Symbol(InstanceofA.a, Decl(instanceQuery-0021.ts, 50, 48))
+>this : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 49, 75))
+>a : Symbol(InstanceofA.a, Decl(instanceQuery-0021.ts, 50, 48))
+        }
+    };
+    const x = new InstanceofA();
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 57, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 49, 75))
+
+    x satisfies instanceof Object; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 57, 9))
+
+    x satisfies InstanceofA; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 57, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 49, 75))
+
+}
+
+namespace instanceQuery21c {
+>instanceQuery21c : Symbol(instanceQuery21c, Decl(instanceQuery-0021.ts, 61, 1))
+
+    const InstanceofObject = Object as any as { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 65, 9))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+    class InstanceofA extends InstanceofObject {
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 65, 75))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 65, 9))
+
+        // default constructor OK
+        // constructor(){
+        //     super();
+        // }
+    };
+    const x = new InstanceofA();
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 72, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 65, 75))
+
+    x satisfies instanceof Object; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 72, 9))
+
+    x satisfies InstanceofA; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 72, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 65, 75))
+
+
+}
+
+namespace instanceQuery21d {
+>instanceQuery21d : Symbol(instanceQuery21d, Decl(instanceQuery-0021.ts, 77, 1))
+
+    declare const InstanceofObject: { new(): instanceof Object }; // the only cast required to generate instanceQuery constructors
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 81, 17))
+
+    declare class InstanceofA extends InstanceofObject {};
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 81, 65))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0021.ts, 81, 17))
+
+    const x = new InstanceofA();
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 83, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 81, 65))
+
+    x satisfies instanceof Object; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 83, 9))
+
+    x satisfies InstanceofA; // OK
+>x : Symbol(x, Decl(instanceQuery-0021.ts, 83, 9))
+>InstanceofA : Symbol(InstanceofA, Decl(instanceQuery-0021.ts, 81, 65))
+
+}
+
+
