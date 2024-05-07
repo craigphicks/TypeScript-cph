@@ -16624,26 +16624,55 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return createInstanceofTypeFromConstructorSymbol(constructorSymbol, reducedInstersectionType as StructuredType);
     }
 
-    function decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(setOfTypes: Set<Type>): [constructorSymbol: Symbol | undefined, typeSet: Set<Type>][] {
+    function decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(setOfTypes: Set<Type>):
+    [constructorSymbol: Symbol | undefined, typeSet: Set<Type> | undefined, originalInstanceQueryType?: ObjectType | undefined][] {
         let noSymbolSet: Set<Type> | undefined;
-        const bin = new Map<Symbol, Set<Type>>
+        const bin = new Map<Symbol, [typeSet: Set<Type>, originalInstanceQuery: ObjectType | undefined]>();
         for (const t of setOfTypes){
             if (!(t as ObjectType).instanceof) {
                 (noSymbolSet ??= new Set()).add(t);
             }
             else {
-                let typeset = bin.get((t as ObjectType).instanceof!.symbol) || bin.set((t as ObjectType).instanceof!.symbol, new Set()).get((t as ObjectType).instanceof!.symbol)!;
-                typeset.add((t as ObjectType).instanceof!.structuredType!);
+                let got = bin.get((t as ObjectType).instanceof!.symbol);
+                if (!got) {
+                    got = [new Set([(t as ObjectType).instanceof!.structuredType]), t as ObjectType];
+                    bin.set((t as ObjectType).instanceof!.symbol, got);
+                }
+                else {
+                    if (t===got[1]) continue; // already added
+                    if (got[0].size===1 && got[0].has((t as ObjectType).instanceof!.structuredType)){
+                        // different but equivalent type.
+                        TSDebug.assert(got[1]);
+                        if (t.id<got[1]!.id) got[1] = t as ObjectType;
+                    }
+                    else {
+                        got[0].add((t as ObjectType).instanceof!.structuredType);
+                        got[1] = undefined;
+                    }
+                }
+                // bin.set((t as ObjectType).instanceof!.symbol, [ new Set(), undefined ]).get((t as ObjectType).instanceof!.symbol)!;
+                // let typeset = bin.get((t as ObjectType).instanceof!.symbol) || bin.set((t as ObjectType).instanceof!.symbol, new Set()).get((t as ObjectType).instanceof!.symbol)!;
+                // typeset.add((t as ObjectType).instanceof!.structuredType!);
             }
         }
-        const ret: [constructorSymbol: Symbol | undefined, typeSet: Set<Type>][] = [];
+        const ret: [constructorSymbol: Symbol | undefined, typeSet: Set<Type> | undefined, originalInstanceQueryType?: ObjectType | undefined][] = [];
         if (noSymbolSet) {
             ret.push([undefined,noSymbolSet]);
         }
-        for (const [symbol, typeset] of bin) {
-            ret.push([symbol, typeset]);
+        for (const [symbol, [typeSet, originalInstanceQuery]] of bin) {
+            ret.push([symbol, originalInstanceQuery ? undefined: typeSet, originalInstanceQuery]);
         }
         return ret;
+    }
+    function getUnionTypeHelperForQueryTypes(types: ObjectType[], unionReduction: UnionReduction): ObjectType[] {
+        TSDebug.assert(types.length);
+        TSDebug.assert(types.every(t=>t.instanceof));
+        const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(new Set(types));
+        TSDebug.assert(arrdecomposed.length);
+        return map(arrdecomposed, ([constructorSymbol, typeSet, originalInstanceQueryType])=>{
+            TSDebug.assert(constructorSymbol && (typeSet || originalInstanceQueryType),"unexpected");
+            return originalInstanceQueryType ?? createInstanceofTypeFromConstructorSymbol(constructorSymbol!, getUnionType(Array.from(typeSet!), unionReduction) as StructuredType);
+        });
     }
 
     function simplifyUnionContainingInstanceof(type: UnionType, f: typeof getNormalizedType | typeof getReducedType, writing?: boolean): Type {
@@ -16661,9 +16690,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 else setOfTypes.add(getReducedType(t));
             }
             const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(setOfTypes);
-            return getUnionType(map(arrdecomposed, ([constructorSymbol, typeSet])=>{
-                if (!constructorSymbol) return fn(typeSet);
-                return createInstanceofTypeFromConstructorSymbol(constructorSymbol, fn(typeSet) as StructuredType);
+            return getUnionType(map(arrdecomposed, ([constructorSymbol, typeSet, originalInstanceQueryType])=>{
+                if (!constructorSymbol) return fn(typeSet!);
+                return originalInstanceQueryType ?? createInstanceofTypeFromConstructorSymbol(constructorSymbol, fn(typeSet!) as StructuredType);
             }));
         })();
         IDebug.ilogGroupEnd(()=>`simplifyUnionContainingInstanceof[in]: ret: ${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel )
@@ -17352,7 +17381,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return false;
     }
 
-    function addTypeToUnion(typeSet: Type[], includes: TypeFlags, type: Type) {
+    function addTypeToUnion(typeSet: Type[], includes: TypeFlags, type: Type, instanceQueriesOut: ObjectType[]) {
         const flags = type.flags;
         // We ignore 'never' types in unions
         if (!(flags & TypeFlags.Never)) {
@@ -17362,6 +17391,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (type === wildcardType) includes |= TypeFlags.IncludesWildcard;
             if (!strictNullChecks && flags & TypeFlags.Nullable) {
                 if (!(getObjectFlags(type) & ObjectFlags.ContainsWideningType)) includes |= TypeFlags.IncludesNonWideningType;
+            }
+            else if ((type as ObjectType).instanceof || type.flags & TypeFlags.Intersection && structuredTypeContainsInstanceof(type)) {
+                instanceQueriesOut.push(type as ObjectType);
             }
             else {
                 const len = typeSet.length;
@@ -17376,7 +17408,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     // Add the given types to the given type set. Order is preserved, duplicates are removed,
     // and nested types of the given kind are flattened into the set.
-    function addTypesToUnion(typeSet: Type[], includes: TypeFlags, types: readonly Type[]): TypeFlags {
+    function addTypesToUnion(typeSet: Type[], includes: TypeFlags, types: readonly Type[], instanceQueriesOut: ObjectType[]): TypeFlags {
         let lastType: Type | undefined;
         for (const type of types) {
             // We skip the type if it is the same as the last type we processed. This simple test particularly
@@ -17384,8 +17416,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             // where A and B are large union types.
             if (type !== lastType) {
                 includes = type.flags & TypeFlags.Union ?
-                    addTypesToUnion(typeSet, includes | (isNamedUnionType(type) ? TypeFlags.Union : 0), (type as UnionType).types) :
-                    addTypeToUnion(typeSet, includes, type);
+                    addTypesToUnion(typeSet, includes | (isNamedUnionType(type) ? TypeFlags.Union : 0), (type as UnionType).types, instanceQueriesOut) :
+                    addTypeToUnion(typeSet, includes, type, instanceQueriesOut);
                 lastType = type;
             }
         }
@@ -17607,7 +17639,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function getUnionTypeWorker(types: readonly Type[], unionReduction: UnionReduction, aliasSymbol: Symbol | undefined, aliasTypeArguments: readonly Type[] | undefined, origin: Type | undefined): Type {
         let typeSet: Type[] | undefined = [];
-        const includes = addTypesToUnion(typeSet, 0 as TypeFlags, types);
+        let instanceQueries: ObjectType[] = [];
+        const includes = addTypesToUnion(typeSet, 0 as TypeFlags, types, instanceQueries);
         if (unionReduction !== UnionReduction.None) {
             if (includes & TypeFlags.AnyOrUnknown) {
                 return includes & TypeFlags.Any ?
@@ -17635,11 +17668,34 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     return errorType;
                 }
             }
-            if (typeSet.length === 0) {
+            if (typeSet.length === 0 && instanceQueries.length === 0) {
                 return includes & TypeFlags.Null ? includes & TypeFlags.IncludesNonWideningType ? nullType : nullWideningType :
                     includes & TypeFlags.Undefined ? includes & TypeFlags.IncludesNonWideningType ? undefinedType : undefinedWideningType :
                     neverType;
             }
+        }
+        if (instanceQueries){
+            instanceQueries = getUnionTypeHelperForQueryTypes(instanceQueries, unionReduction);
+            TSDebug.assert(instanceQueries.slice(1).every((t, i) => t.id > instanceQueries[i].id), "instanceQueries not sorted");
+            //TSDebug.assert(false, "TODO: instanceQueries");
+            if (typeSet.length===0){
+                let t: Type | undefined;
+                if (t=includes & TypeFlags.Null ? includes & TypeFlags.IncludesNonWideningType ? nullType : nullWideningType :
+                    includes & TypeFlags.Undefined ? includes & TypeFlags.IncludesNonWideningType ? undefinedType : undefinedWideningType : undefined) {
+                    typeSet.push(t);
+                }
+            }
+            TSDebug.assert(typeSet && typeSet.slice(1).every((t, i) => t.id > typeSet![i].id), "instanceQueries not sorted");
+            let iqidx = 0;
+            let tidx = 0;
+            const merged: Type[] = [];
+            while (iqidx<instanceQueries.length && tidx<typeSet.length){
+                if (instanceQueries[iqidx].id < typeSet[tidx].id) merged.push(instanceQueries[iqidx++]);
+                else merged.push(typeSet[tidx++]);
+            }
+            while (iqidx<instanceQueries.length) merged.push(instanceQueries[iqidx++]);
+            while (tidx<typeSet.length) merged.push(typeSet[tidx++]);
+            typeSet = merged;
         }
         if (!origin && includes & TypeFlags.Union) {
             const namedUnions: Type[] = [];

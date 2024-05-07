@@ -90,10 +90,10 @@ namespace iq11d {
     declare class A {
         a: number;
     }
-    declare class B extends A { // treated as though might be extends C
+    declare class B extends A { // treated as though could be `extends A, C`
         b: number;
     }
-    declare class C extends A { // treated as though might be extends B
+    declare class C extends A { // treated as though could be `extends A, B`
         c: number;
     }
     declare const x: A | B | C;
