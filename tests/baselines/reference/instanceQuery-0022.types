@@ -1,0 +1,550 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0022.ts] ////
+
+=== instanceQuery-0022.ts ===
+namespace instanceQuery22a {
+>instanceQuery22a : typeof instanceQuery22a
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^
+
+    class A {
+>A : A
+>  : ^
+
+        a = 2;
+>a : number
+>  : ^^^^^^
+>2 : 2
+>  : ^
+    }
+    class B extends A { // treated as though could be `extends A, C`
+>B : B
+>  : ^
+>A : A
+>  : ^
+
+        b = 3;
+>b : number
+>  : ^^^^^^
+>3 : 3
+>  : ^
+    }
+    class C extends A { // treated as though could be `extends A, B`
+>C : C
+>  : ^
+>A : A
+>  : ^
+
+        c = 4 ;
+>c : number
+>  : ^^^^^^
+>4 : 4
+>  : ^
+    }
+    type IsNeverType<T> = [T] extends [never] ? true : false;
+>IsNeverType : IsNeverType<T>
+>            : ^^^^^^^^^^^^^^
+>true : true
+>     : ^^^^
+>false : false
+>      : ^^^^^
+
+    const q = Math.random();
+>q : number
+>  : ^^^^^^
+>Math.random() : number
+>              : ^^^^^^
+>Math.random : () => number
+>            : ^^^^^^^^^^^^
+>Math : Math
+>     : ^^^^
+>random : () => number
+>       : ^^^^^^^^^^^^
+
+    const x = q < 0.33 ? new A() : q < 0.66 ? new B() : new C();
+>x : A
+>  : ^
+>q < 0.33 ? new A() : q < 0.66 ? new B() : new C() : A
+>                                                  : ^
+>q < 0.33 : boolean
+>         : ^^^^^^^
+>q : number
+>  : ^^^^^^
+>0.33 : 0.33
+>     : ^^^^
+>new A() : A
+>        : ^
+>A : typeof A
+>  : ^^^^^^^^
+>q < 0.66 ? new B() : new C() : B | C
+>                             : ^^^^^
+>q < 0.66 : boolean
+>         : ^^^^^^^
+>q : number
+>  : ^^^^^^
+>0.66 : 0.66
+>     : ^^^^
+>new B() : B
+>        : ^
+>B : typeof B
+>  : ^^^^^^^^
+>new C() : C
+>        : ^
+>C : typeof C
+>  : ^^^^^^^^
+
+    if (x instanceof A) {
+>x instanceof A : boolean
+>               : ^^^^^^^
+>x : A
+>  : ^
+>A : typeof A
+>  : ^^^^^^^^
+
+        if (x instanceof B) {
+>x instanceof B : boolean
+>               : ^^^^^^^
+>x : A
+>  : ^
+>B : typeof B
+>  : ^^^^^^^^
+
+            x; // B
+>x : B
+>  : ^
+
+            console.log("B" + x.b);
+>console.log("B" + x.b) : void
+>                       : ^^^^
+>console.log : (...data: any[]) => void
+>            : ^^^^    ^^     ^^^^^^^^^
+>console : Console
+>        : ^^^^^^^
+>log : (...data: any[]) => void
+>    : ^^^^    ^^     ^^^^^^^^^
+>"B" + x.b : string
+>          : ^^^^^^
+>"B" : "B"
+>    : ^^^
+>x.b : number
+>    : ^^^^^^
+>x : B
+>  : ^
+>b : number
+>  : ^^^^^^
+
+            if (x instanceof C) {
+>x instanceof C : boolean
+>               : ^^^^^^^
+>x : B
+>  : ^
+>C : typeof C
+>  : ^^^^^^^^
+
+                true satisfies IsNeverType<typeof x>; // will fail
+>true satisfies IsNeverType<typeof x> : true
+>                                     : ^^^^
+>true : true
+>     : ^^^^
+>x : B & C
+>  : ^^^^^
+
+                x; // B & C (runtime impossible)
+>x : B & C
+>  : ^^^^^
+            }
+        }
+    }
+
+}
+
+
+namespace instanceQuery22b {
+>instanceQuery22b : typeof instanceQuery22b
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^
+
+const InstanceofObject = Object as any as { new(): instanceof Object }
+>InstanceofObject : new () => instanceof Object
+>                 : ^^^^^^^^^^                 
+>Object as any as { new(): instanceof Object } : new () => instanceof Object
+>                                              : ^^^^^^^^^^                 
+>Object as any : any
+>              : ^^^
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+class A extends InstanceofObject {
+>A : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
+>InstanceofObject : (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    a = 2;
+>a : number
+>  : ^^^^^^
+>2 : 2
+>  : ^
+}
+class B extends A { // treated as though could be `extends A, C`
+>B : (instanceof B & B)
+>  : ^^^^^^^^^^^^^^^^^^
+>A : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
+
+    b = 3;
+>b : number
+>  : ^^^^^^
+>3 : 3
+>  : ^
+}
+class C extends A { // treated as though could be `extends A, B`
+>C : (instanceof C & C)
+>  : ^^^^^^^^^^^^^^^^^^
+>A : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
+
+    c = 4 ;
+>c : number
+>  : ^^^^^^
+>4 : 4
+>  : ^
+}
+
+function isInstanceofA(x: any): x is A {
+>isInstanceofA : (x: any) => x is A
+>              : ^ ^^   ^^^^^      
+>x : any
+>  : ^^^
+
+    return x instanceof A;
+>x instanceof A : boolean
+>               : ^^^^^^^
+>x : any
+>  : ^^^
+>A : typeof A
+>  : ^^^^^^^^
+}
+function isInstanceofB(x: any): x is B {
+>isInstanceofB : (x: any) => x is B
+>              : ^ ^^   ^^^^^      
+>x : any
+>  : ^^^
+
+    return x instanceof B;
+>x instanceof B : boolean
+>               : ^^^^^^^
+>x : any
+>  : ^^^
+>B : typeof B
+>  : ^^^^^^^^
+}
+function isInstanceofC(x: any): x is C {
+>isInstanceofC : (x: any) => x is C
+>              : ^ ^^   ^^^^^      
+>x : any
+>  : ^^^
+
+    return x instanceof C;
+>x instanceof C : boolean
+>               : ^^^^^^^
+>x : any
+>  : ^^^
+>C : typeof C
+>  : ^^^^^^^^
+}
+// function isInstanceOf<I extends Object, CTor extends { new(): I }>(x:any,ctor:CTor): x is I {
+//     return x instanceof ctor;
+// }
+
+type IsNeverType<T> = [T] extends [never] ? true : false;
+>IsNeverType : IsNeverType<T>
+>            : ^^^^^^^^^^^^^^
+>true : true
+>     : ^^^^
+>false : false
+>      : ^^^^^
+
+const q = Math.random();
+>q : number
+>  : ^^^^^^
+>Math.random() : number
+>              : ^^^^^^
+>Math.random : () => number
+>            : ^^^^^^^^^^^^
+>Math : Math
+>     : ^^^^
+>random : () => number
+>       : ^^^^^^^^^^^^
+
+const x = q < 0.33 ? new A() : q < 0.66 ? new B() : new C(); //  ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>q < 0.33 ? new A() : q < 0.66 ? new B() : new C() : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>                                                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>q < 0.33 : boolean
+>         : ^^^^^^^
+>q : number
+>  : ^^^^^^
+>0.33 : 0.33
+>     : ^^^^
+>new A() : (instanceof A & A)
+>        : ^^^^^^^^^^^^^^^^^^
+>A : typeof A
+>  : ^^^^^^^^
+>q < 0.66 ? new B() : new C() : ((instanceof B & B)) | ((instanceof C & C))
+>                             : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>q < 0.66 : boolean
+>         : ^^^^^^^
+>q : number
+>  : ^^^^^^
+>0.66 : 0.66
+>     : ^^^^
+>new B() : (instanceof B & B)
+>        : ^^^^^^^^^^^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+>new C() : (instanceof C & C)
+>        : ^^^^^^^^^^^^^^^^^^
+>C : typeof C
+>  : ^^^^^^^^
+
+if (isInstanceofA(x)) {
+>isInstanceofA(x) : boolean
+>                 : ^^^^^^^
+>isInstanceofA : (x: any) => x is (instanceof A & A)
+>              : ^ ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    x; // ((instanceof A & A))
+>x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    if (isInstanceofB(x)) {
+>isInstanceofB(x) : boolean
+>                 : ^^^^^^^
+>isInstanceofB : (x: any) => x is (instanceof B & B)
+>              : ^ ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        x; // (instanceof B & B)
+>x : (instanceof B & B)
+>  : ^^^^^^^^^^^^^^^^^^
+
+        if (isInstanceofC(x)) {
+>isInstanceofC(x) : boolean
+>                 : ^^^^^^^
+>isInstanceofC : (x: any) => x is (instanceof C & C)
+>              : ^ ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof B & B)
+>  : ^^^^^^^^^^^^^^^^^^
+
+            true satisfies IsNeverType<typeof x>;
+>true satisfies IsNeverType<typeof x> : true
+>                                     : ^^^^
+>true : true
+>     : ^^^^
+>x : never
+>  : ^^^^^
+        }
+    }
+}
+
+
+}
+
+
+
+namespace instanceQuery22b {
+>instanceQuery22b : typeof instanceQuery22b
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^
+
+    const InstanceofObject = Object as any as { new(): instanceof Object }
+>InstanceofObject : new () => instanceof Object
+>                 : ^^^^^^^^^^                 
+>Object as any as { new(): instanceof Object } : new () => instanceof Object
+>                                              : ^^^^^^^^^^                 
+>Object as any : any
+>              : ^^^
+>Object : ObjectConstructor
+>       : ^^^^^^^^^^^^^^^^^
+
+    class A extends InstanceofObject {
+>A : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
+>InstanceofObject : (instanceof Object & Object)
+>                 : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        a = 2;
+>a : number
+>  : ^^^^^^
+>2 : 2
+>  : ^
+    }
+    class B extends A { // treated as though could be `extends A, C`
+>B : (instanceof B & B)
+>  : ^^^^^^^^^^^^^^^^^^
+>A : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
+
+        b = 3;
+>b : number
+>  : ^^^^^^
+>3 : 3
+>  : ^
+    }
+    class C extends A { // treated as though could be `extends A, B`
+>C : (instanceof C & C)
+>  : ^^^^^^^^^^^^^^^^^^
+>A : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
+
+        c = 4 ;
+>c : number
+>  : ^^^^^^
+>4 : 4
+>  : ^
+    }
+
+    function isInstanceofA<T>(x: T): x is A & T{
+>isInstanceofA : <T>(x: T) => x is A & T
+>              : ^ ^^ ^^ ^^^^^          
+>x : T
+>  : ^
+
+        return x instanceof A;
+>x instanceof A : boolean
+>               : ^^^^^^^
+>x : T
+>  : ^
+>A : typeof A
+>  : ^^^^^^^^
+    }
+    function isInstanceofB<T>(x: T): x is B & T{
+>isInstanceofB : <T>(x: T) => x is B & T
+>              : ^ ^^ ^^ ^^^^^          
+>x : T
+>  : ^
+
+        return x instanceof B;
+>x instanceof B : boolean
+>               : ^^^^^^^
+>x : T
+>  : ^
+>B : typeof B
+>  : ^^^^^^^^
+    }
+    function isInstanceofC<T>(x: T): x is C & T{
+>isInstanceofC : <T>(x: T) => x is C & T
+>              : ^ ^^ ^^ ^^^^^          
+>x : T
+>  : ^
+
+        return x instanceof C;
+>x instanceof C : boolean
+>               : ^^^^^^^
+>x : T
+>  : ^
+>C : typeof C
+>  : ^^^^^^^^
+    }
+    // function isInstanceOf<I extends Object, CTor extends { new(): I }>(x:any,ctor:CTor): x is I {
+    //     return x instanceof ctor;
+    // }
+
+    type IsNeverType<T> = [T] extends [never] ? true : false;
+>IsNeverType : IsNeverType<T>
+>            : ^^^^^^^^^^^^^^
+>true : true
+>     : ^^^^
+>false : false
+>      : ^^^^^
+
+    const q = Math.random();
+>q : number
+>  : ^^^^^^
+>Math.random() : number
+>              : ^^^^^^
+>Math.random : () => number
+>            : ^^^^^^^^^^^^
+>Math : Math
+>     : ^^^^
+>random : () => number
+>       : ^^^^^^^^^^^^
+
+    const x = q < 0.33 ? new A() : q < 0.66 ? new B() : new C(); //  ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>q < 0.33 ? new A() : q < 0.66 ? new B() : new C() : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>                                                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>q < 0.33 : boolean
+>         : ^^^^^^^
+>q : number
+>  : ^^^^^^
+>0.33 : 0.33
+>     : ^^^^
+>new A() : (instanceof A & A)
+>        : ^^^^^^^^^^^^^^^^^^
+>A : typeof A
+>  : ^^^^^^^^
+>q < 0.66 ? new B() : new C() : ((instanceof B & B)) | ((instanceof C & C))
+>                             : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>q < 0.66 : boolean
+>         : ^^^^^^^
+>q : number
+>  : ^^^^^^
+>0.66 : 0.66
+>     : ^^^^
+>new B() : (instanceof B & B)
+>        : ^^^^^^^^^^^^^^^^^^
+>B : typeof B
+>  : ^^^^^^^^
+>new C() : (instanceof C & C)
+>        : ^^^^^^^^^^^^^^^^^^
+>C : typeof C
+>  : ^^^^^^^^
+
+    if (isInstanceofA(x)) {
+>isInstanceofA(x) : boolean
+>                 : ^^^^^^^
+>isInstanceofA : <T>(x: T) => x is ((instanceof A & A)) & T
+>              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        x; // ((instanceof A & A))
+>x : ((instanceof A & A)) | ((instanceof B & (B | (A & B)))) | ((instanceof C & (C | (A & C))))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        if (isInstanceofB(x)) {
+>isInstanceofB(x) : boolean
+>                 : ^^^^^^^
+>isInstanceofB : <T>(x: T) => x is ((instanceof B & B)) & T
+>              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : ((instanceof A & A)) | ((instanceof B & (B | (A & B)))) | ((instanceof C & (C | (A & C))))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+            x; // (instanceof B & B)
+>x : (instanceof B & (B | (A & B) | (B & A)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+            if (isInstanceofC(x)) {
+>isInstanceofC(x) : boolean
+>                 : ^^^^^^^
+>isInstanceofC : <T>(x: T) => x is ((instanceof C & C)) & T
+>              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof B & (B | (A & B) | (B & A)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+                true satisfies IsNeverType<typeof x>;
+>true satisfies IsNeverType<typeof x> : true
+>                                     : ^^^^
+>true : true
+>     : ^^^^
+>x : never
+>  : ^^^^^
+            }
+        }
+    }
+
+
+    }

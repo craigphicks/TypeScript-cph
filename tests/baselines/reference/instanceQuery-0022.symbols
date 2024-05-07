@@ -1,0 +1,311 @@
+//// [tests/cases/conformance/-instanceQuery/instanceQuery-0022.ts] ////
+
+=== instanceQuery-0022.ts ===
+namespace instanceQuery22a {
+>instanceQuery22a : Symbol(instanceQuery22a, Decl(instanceQuery-0022.ts, 0, 0))
+
+    class A {
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 0, 28))
+
+        a = 2;
+>a : Symbol(A.a, Decl(instanceQuery-0022.ts, 2, 13))
+    }
+    class B extends A { // treated as though could be `extends A, C`
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 4, 5))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 0, 28))
+
+        b = 3;
+>b : Symbol(B.b, Decl(instanceQuery-0022.ts, 5, 23))
+    }
+    class C extends A { // treated as though could be `extends A, B`
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 7, 5))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 0, 28))
+
+        c = 4 ;
+>c : Symbol(C.c, Decl(instanceQuery-0022.ts, 8, 23))
+    }
+    type IsNeverType<T> = [T] extends [never] ? true : false;
+>IsNeverType : Symbol(IsNeverType, Decl(instanceQuery-0022.ts, 10, 5))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 11, 21))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 11, 21))
+
+    const q = Math.random();
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 13, 9))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+    const x = q < 0.33 ? new A() : q < 0.66 ? new B() : new C();
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 14, 9))
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 13, 9))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 0, 28))
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 13, 9))
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 4, 5))
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 7, 5))
+
+    if (x instanceof A) {
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 14, 9))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 0, 28))
+
+        if (x instanceof B) {
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 14, 9))
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 4, 5))
+
+            x; // B
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 14, 9))
+
+            console.log("B" + x.b);
+>console.log : Symbol(Console.log, Decl(lib.dom.d.ts, --, --))
+>console : Symbol(console, Decl(lib.dom.d.ts, --, --))
+>log : Symbol(Console.log, Decl(lib.dom.d.ts, --, --))
+>x.b : Symbol(B.b, Decl(instanceQuery-0022.ts, 5, 23))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 14, 9))
+>b : Symbol(B.b, Decl(instanceQuery-0022.ts, 5, 23))
+
+            if (x instanceof C) {
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 14, 9))
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 7, 5))
+
+                true satisfies IsNeverType<typeof x>; // will fail
+>IsNeverType : Symbol(IsNeverType, Decl(instanceQuery-0022.ts, 10, 5))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 14, 9))
+
+                x; // B & C (runtime impossible)
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 14, 9))
+            }
+        }
+    }
+
+}
+
+
+namespace instanceQuery22b {
+>instanceQuery22b : Symbol(instanceQuery22b, Decl(instanceQuery-0022.ts, 26, 1), Decl(instanceQuery-0022.ts, 71, 1))
+
+const InstanceofObject = Object as any as { new(): instanceof Object }
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0022.ts, 31, 5))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+class A extends InstanceofObject {
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 31, 70))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0022.ts, 31, 5))
+
+    a = 2;
+>a : Symbol(A.a, Decl(instanceQuery-0022.ts, 33, 34))
+}
+class B extends A { // treated as though could be `extends A, C`
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 35, 1))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 31, 70))
+
+    b = 3;
+>b : Symbol(B.b, Decl(instanceQuery-0022.ts, 36, 19))
+}
+class C extends A { // treated as though could be `extends A, B`
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 38, 1))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 31, 70))
+
+    c = 4 ;
+>c : Symbol(C.c, Decl(instanceQuery-0022.ts, 39, 19))
+}
+
+function isInstanceofA(x: any): x is A {
+>isInstanceofA : Symbol(isInstanceofA, Decl(instanceQuery-0022.ts, 41, 1))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 43, 23))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 43, 23))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 31, 70))
+
+    return x instanceof A;
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 43, 23))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 31, 70))
+}
+function isInstanceofB(x: any): x is B {
+>isInstanceofB : Symbol(isInstanceofB, Decl(instanceQuery-0022.ts, 45, 1))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 46, 23))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 46, 23))
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 35, 1))
+
+    return x instanceof B;
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 46, 23))
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 35, 1))
+}
+function isInstanceofC(x: any): x is C {
+>isInstanceofC : Symbol(isInstanceofC, Decl(instanceQuery-0022.ts, 48, 1))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 49, 23))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 49, 23))
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 38, 1))
+
+    return x instanceof C;
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 49, 23))
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 38, 1))
+}
+// function isInstanceOf<I extends Object, CTor extends { new(): I }>(x:any,ctor:CTor): x is I {
+//     return x instanceof ctor;
+// }
+
+type IsNeverType<T> = [T] extends [never] ? true : false;
+>IsNeverType : Symbol(IsNeverType, Decl(instanceQuery-0022.ts, 51, 1))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 56, 17))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 56, 17))
+
+const q = Math.random();
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 58, 5))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+const x = q < 0.33 ? new A() : q < 0.66 ? new B() : new C(); //  ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 59, 5))
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 58, 5))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 31, 70))
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 58, 5))
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 35, 1))
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 38, 1))
+
+if (isInstanceofA(x)) {
+>isInstanceofA : Symbol(isInstanceofA, Decl(instanceQuery-0022.ts, 41, 1))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 59, 5))
+
+    x; // ((instanceof A & A))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 59, 5))
+
+    if (isInstanceofB(x)) {
+>isInstanceofB : Symbol(isInstanceofB, Decl(instanceQuery-0022.ts, 45, 1))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 59, 5))
+
+        x; // (instanceof B & B)
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 59, 5))
+
+        if (isInstanceofC(x)) {
+>isInstanceofC : Symbol(isInstanceofC, Decl(instanceQuery-0022.ts, 48, 1))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 59, 5))
+
+            true satisfies IsNeverType<typeof x>;
+>IsNeverType : Symbol(IsNeverType, Decl(instanceQuery-0022.ts, 51, 1))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 59, 5))
+        }
+    }
+}
+
+
+}
+
+
+
+namespace instanceQuery22b {
+>instanceQuery22b : Symbol(instanceQuery22b, Decl(instanceQuery-0022.ts, 26, 1), Decl(instanceQuery-0022.ts, 71, 1))
+
+    const InstanceofObject = Object as any as { new(): instanceof Object }
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0022.ts, 77, 9))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+    class A extends InstanceofObject {
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 77, 74))
+>InstanceofObject : Symbol(InstanceofObject, Decl(instanceQuery-0022.ts, 77, 9))
+
+        a = 2;
+>a : Symbol(A.a, Decl(instanceQuery-0022.ts, 79, 38))
+    }
+    class B extends A { // treated as though could be `extends A, C`
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 81, 5))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 77, 74))
+
+        b = 3;
+>b : Symbol(B.b, Decl(instanceQuery-0022.ts, 82, 23))
+    }
+    class C extends A { // treated as though could be `extends A, B`
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 84, 5))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 77, 74))
+
+        c = 4 ;
+>c : Symbol(C.c, Decl(instanceQuery-0022.ts, 85, 23))
+    }
+
+    function isInstanceofA<T>(x: T): x is A & T{
+>isInstanceofA : Symbol(isInstanceofA, Decl(instanceQuery-0022.ts, 87, 5))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 89, 27))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 89, 30))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 89, 27))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 89, 30))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 77, 74))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 89, 27))
+
+        return x instanceof A;
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 89, 30))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 77, 74))
+    }
+    function isInstanceofB<T>(x: T): x is B & T{
+>isInstanceofB : Symbol(isInstanceofB, Decl(instanceQuery-0022.ts, 91, 5))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 92, 27))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 92, 30))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 92, 27))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 92, 30))
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 81, 5))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 92, 27))
+
+        return x instanceof B;
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 92, 30))
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 81, 5))
+    }
+    function isInstanceofC<T>(x: T): x is C & T{
+>isInstanceofC : Symbol(isInstanceofC, Decl(instanceQuery-0022.ts, 94, 5))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 95, 27))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 95, 30))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 95, 27))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 95, 30))
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 84, 5))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 95, 27))
+
+        return x instanceof C;
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 95, 30))
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 84, 5))
+    }
+    // function isInstanceOf<I extends Object, CTor extends { new(): I }>(x:any,ctor:CTor): x is I {
+    //     return x instanceof ctor;
+    // }
+
+    type IsNeverType<T> = [T] extends [never] ? true : false;
+>IsNeverType : Symbol(IsNeverType, Decl(instanceQuery-0022.ts, 97, 5))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 102, 21))
+>T : Symbol(T, Decl(instanceQuery-0022.ts, 102, 21))
+
+    const q = Math.random();
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 104, 9))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+    const x = q < 0.33 ? new A() : q < 0.66 ? new B() : new C(); //  ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 105, 9))
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 104, 9))
+>A : Symbol(A, Decl(instanceQuery-0022.ts, 77, 74))
+>q : Symbol(q, Decl(instanceQuery-0022.ts, 104, 9))
+>B : Symbol(B, Decl(instanceQuery-0022.ts, 81, 5))
+>C : Symbol(C, Decl(instanceQuery-0022.ts, 84, 5))
+
+    if (isInstanceofA(x)) {
+>isInstanceofA : Symbol(isInstanceofA, Decl(instanceQuery-0022.ts, 87, 5))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 105, 9))
+
+        x; // ((instanceof A & A))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 105, 9))
+
+        if (isInstanceofB(x)) {
+>isInstanceofB : Symbol(isInstanceofB, Decl(instanceQuery-0022.ts, 91, 5))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 105, 9))
+
+            x; // (instanceof B & B)
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 105, 9))
+
+            if (isInstanceofC(x)) {
+>isInstanceofC : Symbol(isInstanceofC, Decl(instanceQuery-0022.ts, 94, 5))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 105, 9))
+
+                true satisfies IsNeverType<typeof x>;
+>IsNeverType : Symbol(IsNeverType, Decl(instanceQuery-0022.ts, 97, 5))
+>x : Symbol(x, Decl(instanceQuery-0022.ts, 105, 9))
+            }
+        }
+    }
+
+
+    }

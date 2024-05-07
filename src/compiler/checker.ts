@@ -16688,7 +16688,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         return ret;
     }
+
     function getUnionTypeHelperForInstanceQueryTypes(types: Type[], unionReduction: UnionReduction): Type[] {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getUnionTypeHelperForInstanceQueryTypes[in]:`, loggerLevel);
+    if (IDebug.isActive(loggerLevel)){
+        types.forEach((t,i)=>IDebug.ilogGroup(()=>`getUnionTypeHelperForInstanceQueryTypes:(input) types[${i}]:${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
+    }
+    const ret = (()=>{
         TSDebug.assert(types.length);
         const types2: ObjectType[] = [];
         let needsSort = false;
@@ -16703,21 +16710,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
         }
         if (needsSort) types2.sort((a,b)=>a.id-b.id);
-        //TSDebug.assert(types2.every(t=>t.instanceof)); could have intersection with generic variables
         if (!types2.length) return [];
         const arrdecomposed = decomposeUnionToInstanceoConstructorSymbolAndStructureTypeElements(new Set(types2));
         TSDebug.assert(arrdecomposed.length);
         return map(arrdecomposed, ([constructorSymbol, typeSet, originalInstanceQueryType])=>{
             TSDebug.assert(originalInstanceQueryType || typeSet,"unexpected");
-            // if (originalInstanceQueryType) return originalInstanceQueryType;
-            // return constructorSymbol
-            // ? createInstanceofTypeFromConstructorSymbol(constructorSymbol!, getUnionType(Array.from(typeSet!), unionReduction) as StructuredType)
-            // : getUnionType(Array.from(typeSet!), unionReduction);
-
             return originalInstanceQueryType ?? (constructorSymbol
                     ? createInstanceofTypeFromConstructorSymbol(constructorSymbol!, getUnionType(Array.from(typeSet!), unionReduction) as StructuredType)
                     : getUnionType(Array.from(typeSet!), unionReduction));
         });
+    })();
+    if (IDebug.isActive(loggerLevel)){
+        ret.forEach((t,i)=>IDebug.ilogGroup(()=>`getUnionTypeHelperForInstanceQueryTypes:(output) types[${i}]:${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
+    }
+    IDebug.ilogGroup(()=>`getUnionTypeHelperForInstanceQueryTypes[out]:`, loggerLevel);
+    return ret;
     }
 
     function simplifyUnionContainingInstanceof(type: UnionType, f: typeof getNormalizedType | typeof getReducedType, writing?: boolean): Type {
