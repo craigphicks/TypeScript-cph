@@ -66,22 +66,22 @@ namespace iq0014b {
 >  : ^
 
         const x = (0 as any as (instanceof EmptyBase) & T);
->x : (instanceof EmptyBase & (EmptyBase & T))
+>x : ((instanceof EmptyBase & EmptyBase)) & T
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->(0 as any as (instanceof EmptyBase) & T) : (instanceof EmptyBase & (EmptyBase & T))
+>(0 as any as (instanceof EmptyBase) & T) : ((instanceof EmptyBase & EmptyBase)) & T
 >                                         : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->0 as any as (instanceof EmptyBase) & T : (instanceof EmptyBase & (EmptyBase & T))
+>0 as any as (instanceof EmptyBase) & T : ((instanceof EmptyBase & EmptyBase)) & T
 >                                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >0 as any : any
 >0 : 0
 >  : ^
 
         t = x;
->t = x : (instanceof EmptyBase & (EmptyBase & T))
+>t = x : ((instanceof EmptyBase & EmptyBase)) & T
 >      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >t : T
 >  : ^
->x : (instanceof EmptyBase & (EmptyBase & T))
+>x : ((instanceof EmptyBase & EmptyBase)) & T
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     }
 }
@@ -123,7 +123,7 @@ namespace iq0014c {
     if (extendsEmptyBaseInstance(a)) {
 >extendsEmptyBaseInstance(a) : boolean
 >                            : ^^^^^^^
->extendsEmptyBaseInstance : <T extends Object>(x: T) => x is (instanceof EmptyBase & (EmptyBase & T))
+>extendsEmptyBaseInstance : <T extends Object>(x: T) => x is ((instanceof EmptyBase & EmptyBase)) & T
 >                         : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : {} | EmptyBase | A
 >  : ^^^^^^^^^^^^^^^^^^
@@ -178,7 +178,7 @@ namespace iq0014c {
     if (extendsAInstance(a)) {
 >extendsAInstance(a) : boolean
 >                    : ^^^^^^^
->extendsAInstance : <T extends Object>(x: T) => x is (instanceof A & (A & T))
+>extendsAInstance : <T extends Object>(x: T) => x is ((instanceof A & A)) & T
 >                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : (instanceof EmptyBase & EmptyBase)
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -270,7 +270,7 @@ namespace iq0014d {
     if (extendsEmptyBaseInstance(a)) {
 >extendsEmptyBaseInstance(a) : boolean
 >                            : ^^^^^^^
->extendsEmptyBaseInstance : <T extends Object>(x: T) => x is (instanceof EmptyBase & (EmptyBase & T))
+>extendsEmptyBaseInstance : <T extends Object>(x: T) => x is ((instanceof EmptyBase & EmptyBase)) & T
 >                         : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : {} | EmptyBase | A
 >  : ^^^^^^^^^^^^^^^^^^
@@ -282,7 +282,7 @@ namespace iq0014d {
         if (extendsAInstance(a)) {
 >extendsAInstance(a) : boolean
 >                    : ^^^^^^^
->extendsAInstance : <T extends Object>(x: T) => x is (instanceof A & (A & T))
+>extendsAInstance : <T extends Object>(x: T) => x is ((instanceof A & A)) & T
 >                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -299,10 +299,10 @@ namespace iq0014d {
         if (extendsBInstance(a)) {
 >extendsBInstance(a) : boolean
 >                    : ^^^^^^^
->extendsBInstance : <T extends Object>(x: T) => x is (instanceof B & (B & T))
+>extendsBInstance : <T extends Object>(x: T) => x is ((instanceof B & B)) & T
 >                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ((instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))) | ((instanceof A & (A & EmptyBase)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             a; // never
 >a : never
@@ -310,8 +310,8 @@ namespace iq0014d {
         }
         else {
             a;
->a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ((instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))) | ((instanceof A & (A & EmptyBase)))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
     }
     else {
