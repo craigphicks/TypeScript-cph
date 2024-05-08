@@ -512,28 +512,28 @@ namespace instanceQuery22b {
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         x; // ((instanceof A & A))
->x : ((instanceof A & A)) | ((instanceof B & (B | (A & B)))) | ((instanceof C & (C | (A & C))))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         if (isInstanceofB(x)) {
 >isInstanceofB(x) : boolean
 >                 : ^^^^^^^
 >isInstanceofB : <T>(x: T) => x is ((instanceof B & B)) & T
 >              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->x : ((instanceof A & A)) | ((instanceof B & (B | (A & B)))) | ((instanceof C & (C | (A & C))))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             x; // (instanceof B & B)
->x : (instanceof B & (B | (A & B) | (B & A)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof B & B)
+>  : ^^^^^^^^^^^^^^^^^^
 
             if (isInstanceofC(x)) {
 >isInstanceofC(x) : boolean
 >                 : ^^^^^^^
 >isInstanceofC : <T>(x: T) => x is ((instanceof C & C)) & T
 >              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->x : (instanceof B & (B | (A & B) | (B & A)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof B & B)
+>  : ^^^^^^^^^^^^^^^^^^
 
                 true satisfies IsNeverType<typeof x>;
 >true satisfies IsNeverType<typeof x> : true

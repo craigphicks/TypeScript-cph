@@ -129,8 +129,8 @@ namespace iq0014c {
 >  : ^^^^^^^^^^^^^^^^^^
 
         a;
->a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     }
     else {
         a;
@@ -276,33 +276,33 @@ namespace iq0014d {
 >  : ^^^^^^^^^^^^^^^^^^
 
         a; // ((instanceof EmptyBase & EmptyBase)) | ((instanceof EmptyBase & A)))
->a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         if (extendsAInstance(a)) {
 >extendsAInstance(a) : boolean
 >                    : ^^^^^^^
 >extendsAInstance : <T extends Object>(x: T) => x is ((instanceof A & A)) & T
 >                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             a; // (instanceof A & (A & EmptyBase))
->a : (instanceof A & (A & EmptyBase))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
         }
         else {
             a;
->a : (instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
         if (extendsBInstance(a)) {
 >extendsBInstance(a) : boolean
 >                    : ^^^^^^^
 >extendsBInstance : <T extends Object>(x: T) => x is ((instanceof B & B)) & T
 >                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->a : ((instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))) | ((instanceof A & (A & EmptyBase)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof A & A))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             a; // never
 >a : never
@@ -310,8 +310,8 @@ namespace iq0014d {
         }
         else {
             a;
->a : ((instanceof EmptyBase & (EmptyBase | (EmptyBase & A)))) | ((instanceof A & (A & EmptyBase)))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof A & A))
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
     }
     else {

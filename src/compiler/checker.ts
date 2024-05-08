@@ -16693,7 +16693,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     const loggerLevel = 2;
     IDebug.ilogGroup(()=>`getUnionTypeHelperForInstanceQueryTypes[in]:`, loggerLevel);
     if (IDebug.isActive(loggerLevel)){
-        types.forEach((t,i)=>IDebug.ilogGroup(()=>`getUnionTypeHelperForInstanceQueryTypes:(input) types[${i}]:${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
+        types.forEach((t,i)=>IDebug.ilog(()=>`getUnionTypeHelperForInstanceQueryTypes:(input) types[${i}]:${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
     }
     const ret = (()=>{
         TSDebug.assert(types.length);
@@ -16716,14 +16716,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return map(arrdecomposed, ([constructorSymbol, typeSet, originalInstanceQueryType])=>{
             TSDebug.assert(originalInstanceQueryType || typeSet,"unexpected");
             return originalInstanceQueryType ?? (constructorSymbol
-                    ? createInstanceofTypeFromConstructorSymbol(constructorSymbol!, getUnionType(Array.from(typeSet!), unionReduction) as StructuredType)
-                    : getUnionType(Array.from(typeSet!), unionReduction));
+                    ? createInstanceofTypeFromConstructorSymbol(constructorSymbol!, getUnionType(Array.from(typeSet!), /*unionReduction*/ UnionReduction.Subtype) as StructuredType)
+                    : getUnionType(Array.from(typeSet!), /*unionReduction*/ UnionReduction.Subtype));
         });
     })();
     if (IDebug.isActive(loggerLevel)){
-        ret.forEach((t,i)=>IDebug.ilogGroup(()=>`getUnionTypeHelperForInstanceQueryTypes:(output) types[${i}]:${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
+        ret.forEach((t,i)=>IDebug.ilog(()=>`getUnionTypeHelperForInstanceQueryTypes:(output) types[${i}]:${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
     }
-    IDebug.ilogGroup(()=>`getUnionTypeHelperForInstanceQueryTypes[out]:`, loggerLevel);
+    IDebug.ilogGroupEnd(()=>`getUnionTypeHelperForInstanceQueryTypes[out]:`, loggerLevel);
     return ret;
     }
 
@@ -17668,6 +17668,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // circularly reference themselves and therefore cannot be subtype reduced during their declaration.
     // For example, "type Item = string | (() => Item" is a named type that circularly references itself.
     function getUnionType(types: readonly Type[], unionReduction: UnionReduction = UnionReduction.Literal, aliasSymbol?: Symbol, aliasTypeArguments?: readonly Type[], origin?: Type): Type {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getUnionType[in]: ${unionReduction}`, loggerLevel);
+    if (IDebug.isActive(loggerLevel)){
+        types.forEach((t,i)=>IDebug.ilog(()=>`[${i}]${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
+    }
+    const ret = (()=>{
         if (types.length === 0) {
             return neverType;
         }
@@ -17687,6 +17693,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             return type;
         }
         return getUnionTypeWorker(types, unionReduction, aliasSymbol, aliasTypeArguments, origin);
+    })();
+    IDebug.ilogGroupEnd(()=>`getUnionType[out]: returns ${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel);
+    return ret;
     }
 
     function getUnionTypeWorker(types: readonly Type[], unionReduction: UnionReduction, aliasSymbol: Symbol | undefined, aliasTypeArguments: readonly Type[] | undefined, origin: Type | undefined): Type {
