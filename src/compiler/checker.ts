@@ -16580,10 +16580,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return protoProp ? getTypeOfSymbol(protoProp) : undefined;
     }
 
-    /**
-     *
-     * const {constructorSymbol, intersectionTypeElements } = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type);
-     */
     function decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type: IntersectionType): {
         constructorSymbol: Symbol | undefined, intersectionTypeElements: Type[], genericTypeVariables?: Type[], constructorSymbolChain: Symbol[] | undefined } /*| undefined*/ {
         const instanceofSymbols: Symbol[] = [];
@@ -16600,7 +16596,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             else intersectionTypeElements.push(t);
         }
         const symbolInfo = reduceInstanceofNominalSymbols(instanceofSymbols);
-        //if (!symbolInfo && genericTypesVariables.length===0) return undefined;
         let ret: ReturnType<typeof decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements> = {
             constructorSymbol: symbolInfo?.constructorSymbol, intersectionTypeElements, constructorSymbolChain: symbolInfo?.constructorSymbolChain };
         if (genericTypesVariables.length) ret.genericTypeVariables = genericTypesVariables;
@@ -16618,10 +16613,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (!genericTypeVariables) return neverType;
             return getIntersectionType(genericTypeVariables);
         }
-        // if (genericTypeVariables && !constructorSymbol){
-        //     const ret = getIntersectionType(genericTypeVariables);
-        // }
-        // // Filter any members of intersectionTypeElements which are ancestor constructor types of the constructorSymbol constructor type.
+        //  Filter any members of intersectionTypeElements which are ancestor constructor types of the constructorSymbol constructor type.
         let filtered = intersectionTypeElements
         let maxhier = -1;
         const hiermap = new Map(map(constructorSymbolChain, (cs,index)=>[getConstructorPrototypeFromConstructorSymbol(cs),index] as [Type,number]));
@@ -16715,9 +16707,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         TSDebug.assert(arrdecomposed.length);
         return map(arrdecomposed, ([constructorSymbol, typeSet, originalInstanceQueryType])=>{
             TSDebug.assert(originalInstanceQueryType || typeSet,"unexpected");
-            return originalInstanceQueryType ?? (constructorSymbol
-                    ? createInstanceofTypeFromConstructorSymbol(constructorSymbol!, getUnionType(Array.from(typeSet!), /*unionReduction*/ UnionReduction.Subtype) as StructuredType)
-                    : getUnionType(Array.from(typeSet!), /*unionReduction*/ UnionReduction.Subtype));
+            if (originalInstanceQueryType) return originalInstanceQueryType;
+            // TODO: We first could use heirarchy filtering independently on each member of the structured union as in `simplifyIntersectionContainingInstanceof`
+            const structuredType = getUnionType(Array.from(typeSet!), /*unionReduction*/ UnionReduction.Subtype);
+            return constructorSymbol
+                    ? createInstanceofTypeFromConstructorSymbol(constructorSymbol!, structuredType as StructuredType)
+                    : structuredType;
         });
     })();
     if (IDebug.isActive(loggerLevel)){
