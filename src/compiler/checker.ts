@@ -16449,7 +16449,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return typeInstanceofConstructor;
     }
 
-    // Note: getInstanceTypeForInstanceQuery differs from getInstanceType under inner scope of getFlowTypeOfReference.
+    // Note: getInstanceQueryType differs from getInstanceType under inner scope of getFlowTypeOfReference.
     function getInstanceQueryType(constructorVariableSymbol: Symbol, constructorType: Type): Type {
         const prototypeProp = getPropertyOfType(constructorType, "prototype" as __String);
         const constructSignatures = (constructorType as ResolvedType).constructSignatures;
@@ -16503,7 +16503,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 else {
                     instanceQueryType = getInstanceQueryType(constructorVariableSymbol, instantiatedConstructorType);
                     IDebug.ilog(()=>`getTypeFromInstanceQueryNode[dbg] instanceQueryType: ${IDebug.dbgs.dbgTypeToString(instanceQueryType)}`, loggerLevel);
-                    links.resolvedType = instanceQueryType;
+                    links.resolvedType = getIntersectionType([instanceQueryType, instantiatedConstructorType]);
                 }
             }
             else {
@@ -16580,61 +16580,101 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return protoProp ? getTypeOfSymbol(protoProp) : undefined;
     }
 
-    function decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type: IntersectionType): {
-        constructorSymbol: Symbol | undefined, intersectionTypeElements: Type[], genericTypeVariables?: Type[], constructorSymbolChain: Symbol[] | undefined } /*| undefined*/ {
-        const instanceofSymbols: Symbol[] = [];
-        const intersectionTypeElements: Type[] = [];
-        const genericTypesVariables: Type[] = [];
-        for (const t of type.types) {
-            if (t.flags & TypeFlags.TypeVariable) {
-                genericTypesVariables.push(t);
+    // function decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type: IntersectionType): {
+    //     constructorSymbol: Symbol | undefined, intersectionTypeElements: Type[], genericTypeVariables?: Type[], constructorSymbolChain: Symbol[] | undefined } /*| undefined*/ {
+    //     const instanceofSymbols: Symbol[] = [];
+    //     const intersectionTypeElements: Type[] = [];
+    //     const genericTypesVariables: Type[] = [];
+    //     for (const t of type.types) {
+    //         if (t.flags & TypeFlags.TypeVariable) {
+    //             genericTypesVariables.push(t);
+    //         }
+    //         else if (t.flags & TypeFlags.Object && (t as ObjectType).instanceof) {
+    //             instanceofSymbols.push((t as ObjectType).instanceof!.symbol);
+    //             //intersectionTypeElements.push((t as ObjectType).instanceof!.structuredType);
+    //         }
+    //         else intersectionTypeElements.push(t);
+    //     }
+    //     const symbolInfo = reduceInstanceofNominalSymbols(instanceofSymbols);
+    //     let ret: ReturnType<typeof decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements> = {
+    //         constructorSymbol: symbolInfo?.constructorSymbol, intersectionTypeElements, constructorSymbolChain: symbolInfo?.constructorSymbolChain };
+    //     if (genericTypesVariables.length) ret.genericTypeVariables = genericTypesVariables;
+    //     return ret;
+    // }
+
+    function filterInstanceQuerySubTypesFromStructuredType(type: UnionOrIntersectionType, typesToFilter: Set<Type>, visited: Set<Type>): Type[] | undefined {
+        if (visited.has(type)) return undefined; // no change
+        visited.add(type);
+        const types = type.types;
+        let typesOut: Type[] | undefined;
+        let type1: Type;
+        for (let i = 0; i!==types.length && (type1=types[i]); ++i){
+            if ((type1 as ObjectType).instanceof && typesToFilter.has((type1 as ObjectType).instanceof!.structuredType) || typesToFilter.has(type1)) {
+                if (!typesOut) typesOut = types.slice(0,i);
+                continue;
             }
-            else if (t.flags & TypeFlags.Object && (t as ObjectType).instanceof) {
-                instanceofSymbols.push((t as ObjectType).instanceof!.symbol);
-                intersectionTypeElements.push((t as ObjectType).instanceof!.structuredType);
+            else if (type1.flags & TypeFlags.Union) {
+                const utypes = filterInstanceQuerySubTypesFromStructuredType(type1 as UnionType, typesToFilter, visited) as Type[] | undefined;
+                if (utypes) {
+                    if (!typesOut) typesOut = types.slice(0,i);
+                    typesOut.push(getUnionType(utypes));
+                }
             }
-            else intersectionTypeElements.push(t);
+            else if (type1.flags & TypeFlags.Intersection) {
+                const utypes = filterInstanceQuerySubTypesFromStructuredType(type1 as IntersectionType, typesToFilter, visited) as Type[] | undefined;
+                if (utypes) {
+                    if (!typesOut) typesOut = types.slice(0,i);
+                    typesOut.push(getUnionType(utypes));
+                }
+            } else if (typesOut) typesOut.push(type1);
         }
-        const symbolInfo = reduceInstanceofNominalSymbols(instanceofSymbols);
-        let ret: ReturnType<typeof decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements> = {
-            constructorSymbol: symbolInfo?.constructorSymbol, intersectionTypeElements, constructorSymbolChain: symbolInfo?.constructorSymbolChain };
-        if (genericTypesVariables.length) ret.genericTypeVariables = genericTypesVariables;
-        return ret;
+        return typesOut;
+    }
+    function partition2<T>(a: T[], f: (t: T)=>boolean): [true:T[], false:T[]] {
+        let trues: T[] = [];
+        let falses: T[] = [];
+        for (const t of a) if (f(t)) trues.push(t); else falses.push(t);
+        return [trues, falses];
     }
 
     function simplifyIntersectionContainingInstanceof(type: IntersectionType, f: typeof getNormalizedType | typeof getReducedType, writing?: boolean): Type {
     const loggerLevel = 2;
     IDebug.ilogGroup(()=>`simplifyIntersectionContainingInstanceof[in]: ${IDebug.dbgs.dbgTypeToString(type)}, f: ${((f as any).symbol as Symbol)?.escapedName}`, loggerLevel);
     const ret = (()=>{
-        if (every(type.types, t=>!!(t.flags & TypeFlags.TypeVariable))) return type;
-        const decomposed = decomposeIntersectionToInstanceoConstructorSymbolAndStructureTypeElements(type as IntersectionType);
-        const {constructorSymbol, intersectionTypeElements, constructorSymbolChain, genericTypeVariables } = decomposed;
-        if (!constructorSymbol) {
-            if (!genericTypeVariables) return neverType;
-            return getIntersectionType(genericTypeVariables);
+        const instanceQuerySymbols: Symbol[] = map(type.types,t=>(t as ObjectType).instanceof!.symbol);
+        TSDebug.assert(instanceQuerySymbols.length!==0);
+        const symbolInfo = reduceInstanceofNominalSymbols(instanceQuerySymbols);
+        if (!symbolInfo) {
+            // collapse to never
+            return neverType;
         }
-        //  Filter any members of intersectionTypeElements which are ancestor constructor types of the constructorSymbol constructor type.
-        let filtered = intersectionTypeElements
-        let maxhier = -1;
-        const hiermap = new Map(map(constructorSymbolChain, (cs,index)=>[getConstructorPrototypeFromConstructorSymbol(cs),index] as [Type,number]));
-        for (const elt of intersectionTypeElements){
-            let idx: number | undefined;
-            if (((idx = hiermap.get(elt)) !== undefined) && idx > maxhier) maxhier = idx;
+        // recursively filter (over any union elements) subsets implied by elements of the constructorSymbolChain because that is an efficient way to reduce.
+        const typesIn = type.types;
+        let types = typesIn;
+        if (symbolInfo.constructorSymbolChain.length>1) {
+            const filterableTypes = new Set(symbolInfo.constructorSymbolChain.slice(1).map(s=>getConstructorPrototypeFromConstructorSymbol(s)!));
+            const filtered = filterInstanceQuerySubTypesFromStructuredType(type, filterableTypes, new Set<Type>([type]));
+            if (filtered) types = filtered;
         }
-        if (maxhier!==-1){
-            filtered = filter(intersectionTypeElements, elt => {
-                let idx: number | undefined;
-                return ((idx = hiermap.get(elt)) === undefined) || (idx === maxhier);
-            });
-        }
-        let reducedInstersectionType = (f===getNormalizedType)
-            ? getNormalizedType(getIntersectionType(filtered), writing!)
-            : getReducedType(getIntersectionType(filtered));
-        let ret = createInstanceofTypeFromConstructorSymbol(constructorSymbol!, reducedInstersectionType as StructuredType) as Type;
-        if (genericTypeVariables) {
-            ret = getIntersectionType([ret, ...genericTypeVariables]);
-        }
-        return ret;
+        if (types===typesIn) return type; // no change
+        // call f wihout the instanceQueryTypes
+        let [iqtypes,otypes] = partition2(types, t=>!!(t as ObjectType).instanceof);
+        let iqtype: ObjectType;
+        if (iqtypes.length===1) iqtype = iqtypes[0] as ObjectType;
+        else iqtype = find(iqtypes, t=>(t as ObjectType).instanceof!.symbol===symbolInfo.constructorSymbol) as ObjectType;
+        TSDebug.assert(iqtype, "unexpected iqtype is undefined");
+        TSDebug.assert(otypes.length); // type corresponding to the constructorSymbol cannot have been filtered.
+        const otype = createIntersectionType(otypes, ObjectFlags.None);
+
+        let otypeSimplified = (f===getNormalizedType)
+            ? getNormalizedType(otype, writing!)
+            : getReducedType(otype);
+
+        return createIntersectionType([
+            iqtype,
+            ...((otypeSimplified.flags & TypeFlags.Intersection) ? (otypeSimplified as IntersectionType).types : [otypeSimplified])],
+            ObjectFlags.None
+        );
     })();
     IDebug.ilogGroupEnd(()=>`simplifyIntersectionContainingInstanceof[out]: returns ${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel);
     return ret;
@@ -16750,7 +16790,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     /**
      * Reduces an intersection of instanceof types to a single instanceof type.
      * returns undefined if the common instance of is just "instanceof Object"
-     * TODO: finding common ancestors for differening symbols
+     * IWOZERE !!! TODO: This is currently wrong!  start with the longest length chain of instanceof types, and check that shorter lengths are all contained the longest length chain
      */
     function reduceInstanceofNominalSymbols(symbols: Symbol[]): { constructorSymbol: Symbol, constructorSymbolChain: Symbol[] } | undefined {
         if (symbols.length===0) return undefined;
