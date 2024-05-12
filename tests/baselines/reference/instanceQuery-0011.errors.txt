@@ -1,11 +1,10 @@
 instanceQuery-0011.ts(21,8): error TS1360: Type '(instanceof A1 & A1)' does not satisfy the expected type '(instanceof A2 & A2)'.
   'new A1() instanceof A2' would evaluate as 'false'
-instanceQuery-0011.ts(27,8): error TS1360: Type '(instanceof A3 & A3)' does not satisfy the expected type 'never'.
-instanceQuery-0011.ts(28,8): error TS1360: Type '(instanceof B3 & B3)' does not satisfy the expected type 'never'.
-instanceQuery-0011.ts(38,8): error TS1360: Type '(instanceof A2 & A2)' does not satisfy the expected type 'AP'.
-  Type 'A2' is not assignable to type 'AP'.
-    Types of property 'a' are incompatible.
-      Type 'number' is not assignable to type '1'.
+instanceQuery-0011.ts(27,8): error TS1360: Type 'A3' does not satisfy the expected type 'never'.
+instanceQuery-0011.ts(28,8): error TS1360: Type 'B3' does not satisfy the expected type 'never'.
+instanceQuery-0011.ts(38,8): error TS1360: Type 'A2' does not satisfy the expected type 'AP'.
+  Types of property 'a' are incompatible.
+    Type 'number' is not assignable to type '1'.
 
 
 ==== instanceQuery-0011.ts (4 errors) ====
@@ -40,10 +39,10 @@ instanceQuery-0011.ts(38,8): error TS1360: Type '(instanceof A2 & A2)' does not 
         type ANope = instanceof A3 & instanceof B3;
         a3 satisfies ANope; // error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A3 & A3)' does not satisfy the expected type 'never'.
+!!! error TS1360: Type 'A3' does not satisfy the expected type 'never'.
         b3 satisfies ANope; // error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof B3 & B3)' does not satisfy the expected type 'never'.
+!!! error TS1360: Type 'B3' does not satisfy the expected type 'never'.
     
     
         class AP  extends A2 {
@@ -55,10 +54,9 @@ instanceQuery-0011.ts(38,8): error TS1360: Type '(instanceof A2 & A2)' does not 
         declare const aq: AQ;
         aq satisfies AP; // structure error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A2 & A2)' does not satisfy the expected type 'AP'.
-!!! error TS1360:   Type 'A2' is not assignable to type 'AP'.
-!!! error TS1360:     Types of property 'a' are incompatible.
-!!! error TS1360:       Type 'number' is not assignable to type '1'.
+!!! error TS1360: Type 'A2' does not satisfy the expected type 'AP'.
+!!! error TS1360:   Types of property 'a' are incompatible.
+!!! error TS1360:     Type 'number' is not assignable to type '1'.
     
         declare const ap: instanceof AP;
         ap satisfies AQ; // no error

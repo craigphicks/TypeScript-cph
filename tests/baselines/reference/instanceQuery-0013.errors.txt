@@ -1,19 +1,13 @@
 instanceQuery-0013.ts(3,29): error TS18060: The operand of an instanceof query must be an identifier representing a constructor variable
-instanceQuery-0013.ts(29,8): error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-  Type 'A1<string>' is not assignable to type 'A1<number>'.
-    Type 'string' is not assignable to type 'number'.
-instanceQuery-0013.ts(30,8): error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-  Type 'A1<string>' is not assignable to type 'A1<number>'.
-instanceQuery-0013.ts(59,8): error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-  Type 'A1<string>' is not assignable to type 'A1<number>'.
-    Type 'string' is not assignable to type 'number'.
-instanceQuery-0013.ts(60,8): error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-  Type 'A1<string>' is not assignable to type 'A1<number>'.
-instanceQuery-0013.ts(86,8): error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-  Type 'A1<string>' is not assignable to type 'A1<number>'.
-    Type 'string' is not assignable to type 'number'.
-instanceQuery-0013.ts(87,8): error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-  Type 'A1<string>' is not assignable to type 'A1<number>'.
+instanceQuery-0013.ts(29,8): error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
+  Type 'string' is not assignable to type 'number'.
+instanceQuery-0013.ts(30,8): error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
+instanceQuery-0013.ts(59,8): error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
+  Type 'string' is not assignable to type 'number'.
+instanceQuery-0013.ts(60,8): error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
+instanceQuery-0013.ts(86,8): error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
+  Type 'string' is not assignable to type 'number'.
+instanceQuery-0013.ts(87,8): error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
 
 
 ==== instanceQuery-0013.ts (7 errors) ====
@@ -49,13 +43,11 @@ instanceQuery-0013.ts(87,8): error TS1360: Type '(instanceof A1 & A1<string>)' d
         as satisfies instanceof A1; // no error
         as satisfies instanceof A1<number>; // error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
-!!! error TS1360:     Type 'string' is not assignable to type 'number'.
+!!! error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
+!!! error TS1360:   Type 'string' is not assignable to type 'number'.
         as satisfies instanceof ANumVar; // error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+!!! error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
     
     }
     
@@ -86,13 +78,11 @@ instanceQuery-0013.ts(87,8): error TS1360: Type '(instanceof A1 & A1<string>)' d
         as satisfies instanceof A1; // no error
         as satisfies instanceof A1<number>; // error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
-!!! error TS1360:     Type 'string' is not assignable to type 'number'.
+!!! error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
+!!! error TS1360:   Type 'string' is not assignable to type 'number'.
         as satisfies instanceof ANumVar; // error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+!!! error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
     
     }
     
@@ -120,12 +110,10 @@ instanceQuery-0013.ts(87,8): error TS1360: Type '(instanceof A1 & A1<string>)' d
         as satisfies instanceof A1; // no error
         as satisfies instanceof A1<number>; // error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
-!!! error TS1360:     Type 'string' is not assignable to type 'number'.
+!!! error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
+!!! error TS1360:   Type 'string' is not assignable to type 'number'.
         as satisfies instanceof ANumVar; // error
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A1 & A1<string>)' does not satisfy the expected type '(instanceof A1 & A1<number>)'.
-!!! error TS1360:   Type 'A1<string>' is not assignable to type 'A1<number>'.
+!!! error TS1360: Type 'A1<string>' does not satisfy the expected type 'A1<number>'.
     
     }

@@ -1,10 +1,13 @@
 instanceQuery-0001.ts(7,5): error TS2322: Type 'ArrayBuffer' is not assignable to type '(instanceof ArrayBuffer & ArrayBuffer)'.
-  Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof ArrayBuffer & ArrayBuffer)
+  Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
 instanceQuery-0001.ts(18,5): error TS2322: Type 'ArrayBuffer' is not assignable to type '(instanceof ArrayBuffer & ArrayBuffer)'.
+  Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
 instanceQuery-0001.ts(31,18): error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type '(instanceof ArrayBuffer & ArrayBuffer)'.
+  Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
 instanceQuery-0001.ts(41,18): error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type '(instanceof ArrayBuffer & ArrayBuffer)'.
+  Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
 instanceQuery-0001.ts(43,9): error TS2322: Type 'Uint8Array' is not assignable to type '(instanceof ArrayBuffer & ArrayBuffer)'.
-  Object type Uint8Array is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof ArrayBuffer & ArrayBuffer)
+  Object type Uint8Array is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
 instanceQuery-0001.ts(46,9): error TS2322: Type '(instanceof Uint8Array & Uint8Array)' is not assignable to type '(instanceof ArrayBuffer & ArrayBuffer)'.
   'new Uint8Array() instanceof ArrayBuffer' would evaluate as 'false'
 
@@ -19,7 +22,7 @@ instanceQuery-0001.ts(46,9): error TS2322: Type '(instanceof Uint8Array & Uint8A
         b = a; // should Error
         ~
 !!! error TS2322: Type 'ArrayBuffer' is not assignable to type '(instanceof ArrayBuffer & ArrayBuffer)'.
-!!! error TS2322:   Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof ArrayBuffer & ArrayBuffer)
+!!! error TS2322:   Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
     
     }
     namespace instof0003 {
@@ -33,6 +36,7 @@ instanceQuery-0001.ts(46,9): error TS2322: Type '(instanceof Uint8Array & Uint8A
         b = a ; // should Error
         ~
 !!! error TS2322: Type 'ArrayBuffer' is not assignable to type '(instanceof ArrayBuffer & ArrayBuffer)'.
+!!! error TS2322:   Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
     }
     namespace instof005 {
         declare let a: instanceof ArrayBuffer;
@@ -48,6 +52,7 @@ instanceQuery-0001.ts(46,9): error TS2322: Type '(instanceof Uint8Array & Uint8A
         safeDataView(new ArrayBuffer(0)); // should error
                      ~~~~~~~~~~~~~~~~~~
 !!! error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type '(instanceof ArrayBuffer & ArrayBuffer)'.
+!!! error TS2345:   Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
     
         safeDataView(new ArrayBuffer(0) as instanceof ArrayBuffer); // should not error
     
@@ -60,11 +65,12 @@ instanceQuery-0001.ts(46,9): error TS2322: Type '(instanceof Uint8Array & Uint8A
         safeDataView(a); // should error
                      ~
 !!! error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type '(instanceof ArrayBuffer & ArrayBuffer)'.
+!!! error TS2345:   Object type ArrayBuffer is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
     
         let b: instanceof ArrayBuffer = new Uint8Array(); // now the error is here
             ~
 !!! error TS2322: Type 'Uint8Array' is not assignable to type '(instanceof ArrayBuffer & ArrayBuffer)'.
-!!! error TS2322:   Object type Uint8Array is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type (instanceof ArrayBuffer & ArrayBuffer)
+!!! error TS2322:   Object type Uint8Array is not an instanceQuery type (i.e., has no 'instanceof') and therefore is not assignable to the instanceQuery type instanceof ArrayBuffer
         safeDataView(b); // should not error
     
         let c: instanceof ArrayBuffer = new Uint8Array() as instanceof Uint8Array; // still error, but better error explanation
