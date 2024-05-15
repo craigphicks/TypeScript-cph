@@ -1,4 +1,4 @@
-instanceQuery-0011.ts(21,8): error TS1360: Type '(instanceof A1 & A1)' does not satisfy the expected type '(instanceof A2 & A2)'.
+instanceQuery-0011.ts(21,8): error TS1360: Type '(instanceof A1 & A1)' does not satisfy the expected type 'AQ'.
   'new A1() instanceof A2' would evaluate as 'false'
 instanceQuery-0011.ts(27,8): error TS1360: Type 'A3' does not satisfy the expected type 'never'.
 instanceQuery-0011.ts(28,8): error TS1360: Type 'B3' does not satisfy the expected type 'never'.
@@ -30,7 +30,7 @@ instanceQuery-0011.ts(38,8): error TS1360: Type 'A2' does not satisfy the expect
     
         a1 satisfies AQ; // error (because (typeof A1).constructor < (typeof A2).constructor)
            ~~~~~~~~~
-!!! error TS1360: Type '(instanceof A1 & A1)' does not satisfy the expected type '(instanceof A2 & A2)'.
+!!! error TS1360: Type '(instanceof A1 & A1)' does not satisfy the expected type 'AQ'.
 !!! error TS1360:   'new A1() instanceof A2' would evaluate as 'false'
         a2 satisfies AQ; // no error
         a3 satisfies AQ; // no error

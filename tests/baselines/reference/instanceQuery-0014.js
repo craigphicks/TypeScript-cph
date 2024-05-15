@@ -25,7 +25,7 @@ namespace iq0014b {
     }
 }
 
-namespace iq0014c {
+namespace iq0014c1 {
     class EmptyBase {}
     class A { a = 0; }
     function extendsEmptyBaseInstance<T extends Object>(x: T): x is ((instanceof EmptyBase) & T) {
@@ -40,7 +40,7 @@ namespace iq0014c {
     }
 }
 
-namespace iq0014c {
+namespace iq0014c2 {
     class EmptyBase {}
     class A extends EmptyBase{ a = 0; }
 
@@ -195,8 +195,8 @@ var iq0014b;
         t = x;
     }
 })(iq0014b || (iq0014b = {}));
-var iq0014c;
-(function (iq0014c) {
+var iq0014c1;
+(function (iq0014c1) {
     class EmptyBase {
     }
     class A {
@@ -211,8 +211,9 @@ var iq0014c;
     else {
         a;
     }
-})(iq0014c || (iq0014c = {}));
-(function (iq0014c) {
+})(iq0014c1 || (iq0014c1 = {}));
+var iq0014c2;
+(function (iq0014c2) {
     class EmptyBase {
     }
     class A extends EmptyBase {
@@ -227,7 +228,7 @@ var iq0014c;
     else {
         a;
     }
-})(iq0014c || (iq0014c = {}));
+})(iq0014c2 || (iq0014c2 = {}));
 var iq0014d;
 (function (iq0014d) {
     class EmptyBase {
@@ -315,9 +316,9 @@ declare namespace iq0014a {
 }
 declare namespace iq0014b {
 }
-declare namespace iq0014c {
+declare namespace iq0014c1 {
 }
-declare namespace iq0014c {
+declare namespace iq0014c2 {
 }
 declare namespace iq0014d {
 }

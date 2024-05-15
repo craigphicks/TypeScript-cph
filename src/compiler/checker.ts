@@ -16543,6 +16543,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         // TODO: would prefer to use flags forwarded to Structured Type
         return !everyContainedType(type, t=>!(t as ObjectType).instanceof);
     }
+    function isInstanceQueryType(type: Type): boolean {
+        return !!(type as ObjectType).instanceof;
+    }
     function applyToInstanceofStructuredType(type: ObjectType, f: (type: StructuredType) => StructuredType): ObjectType {
         TSDebug.assert(type.instanceof);
         const newType = f(type.instanceof.structuredType);
@@ -16957,6 +16960,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     if (type.types[i+1] === (t as ObjectType).instanceof!.structuredType) i++;
                 }
             }
+            if (typesOut.length===1) return typesOut[0];
             return createIntersectionType(typesOut, ObjectFlags.None);
         }
         return type;
@@ -17645,10 +17649,14 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return false;
     }
 
-    function addTypeToUnion(typeSet: Type[], includes: TypeFlags, type: Type, instanceQueriesOut: Type[]) {
+    function addTypeToUnion(typeSet: Type[], includes: TypeFlags, type: Type, instanceQueriesOut?: Type[]) {
         const flags = type.flags;
         // We ignore 'never' types in unions
         if (!(flags & TypeFlags.Never)) {
+            if (instanceQueriesOut && structuredTypeContainsInstanceof(type)) {
+                instanceQueriesOut.push(type);
+                return includes;
+            }
             includes |= flags & TypeFlags.IncludesMask;
             if (flags & TypeFlags.Instantiable) includes |= TypeFlags.IncludesInstantiable;
             if (flags & TypeFlags.Intersection && getObjectFlags(type) & ObjectFlags.IsConstrainedTypeVariable) includes |= TypeFlags.IncludesConstrainedTypeVariable;
@@ -17898,7 +17906,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         // We optimize for the common case of unioning a union type with some other type (such as `undefined`).
         if (types.length === 2 && !origin && (types[0].flags & TypeFlags.Union || types[1].flags & TypeFlags.Union)) {
-            TSDebug.assert(!((types[0] as ObjectType).instanceof && (types[1] as ObjectType).instanceof)); // shouldn't be possible without at least on e structured type
+            //TSDebug.assert(!((types[0] as ObjectType).instanceof && (types[1] as ObjectType).instanceof)); // shouldn't be possible without at least on e structured type
             const infix = unionReduction === UnionReduction.None ? "N" : unionReduction === UnionReduction.Subtype ? "S" : "L";
             const index = types[0].id < types[1].id ? 0 : 1;
             const id = types[index].id + infix + types[1 - index].id + getAliasId(aliasSymbol, aliasTypeArguments);
@@ -17923,7 +17931,30 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function getUnionTypeWorker(types: readonly Type[], unionReduction: UnionReduction, aliasSymbol: Symbol | undefined, aliasTypeArguments: readonly Type[] | undefined, origin: Type | undefined): Type {
         let typeSet: Type[] | undefined = [];
         let instanceQueries: Type[] = []; // can include not reducable intersections with type variables
-        const includes = addTypesToUnion(typeSet, 0 as TypeFlags, types, instanceQueries);
+        let includes = addTypesToUnion(typeSet, 0 as TypeFlags, types, instanceQueries);
+        if (instanceQueries.length > 0) {
+            // if (instanceQueries.length === 1){
+            //     includes = addTypeToUnion(typeSet, includes, instanceQueries[0], undefined);
+            // }
+            //else
+            {
+                const iqset = new Map<ObjectType, Type[]>();
+                for (const iq of instanceQueries){
+                    TSDebug.assert(iq.flags & TypeFlags.Intersection);
+                    const part = partition2((iq as IntersectionType).types, t=>isInstanceQueryType(t));
+                    if (part[0].length !==1) TSDebug.assert(false, "TODO");
+                    let got = iqset.get(part[0][0] as ObjectType);
+                    if (!got) iqset.set(part[0][0] as ObjectType, got = []);
+                    got.push(...part[1]);
+                }
+                for (const [iq, parts] of iqset){
+                    const ut = parts.length === 1 ? parts[0] : getUnionType(parts, UnionReduction.Subtype);
+                    const it = getIntersectionType([iq, ut]);
+                    includes = addTypeToUnion(typeSet, includes, it, undefined);
+                }
+            }
+        }
+
         if (unionReduction !== UnionReduction.None) {
             if (includes & TypeFlags.AnyOrUnknown) {
                 return includes & TypeFlags.Any ?
@@ -17954,7 +17985,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     return errorType;
                 }
             }
-            if (typeSet.length === 0 && instanceQueries.length === 0) {
+            if (typeSet.length === 0 /*&& instanceQueries.length === 0*/) {
                 return includes & TypeFlags.Null ? includes & TypeFlags.IncludesNonWideningType ? nullType : nullWideningType :
                     includes & TypeFlags.Undefined ? includes & TypeFlags.IncludesNonWideningType ? undefinedType : undefinedWideningType :
                     neverType;
@@ -18058,10 +18089,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return links.resolvedType;
     }
 
-    function addTypeToIntersection(typeSet: Map<string, Type>, includes: TypeFlags, type: Type) {
+    function addTypeToIntersection(typeSet: Map<string, Type>, includes: TypeFlags, type: Type, refInstanceQueryTypes: [Set<ObjectType>|undefined]) {
         const flags = type.flags;
         if (flags & TypeFlags.Intersection) {
-            return addTypesToIntersection(typeSet, includes, (type as IntersectionType).types);
+            return addTypesToIntersection(typeSet, includes, (type as IntersectionType).types, refInstanceQueryTypes);
         }
         if (isEmptyAnonymousObjectType(type)) {
             if (!(includes & TypeFlags.IncludesEmptyObject)) {
@@ -18094,9 +18125,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     // Add the given types to the given type set. Order is preserved, freshness is removed from literal
     // types, duplicates are removed, and nested types of the given kind are flattened into the set.
-    function addTypesToIntersection(typeSet: Map<string, Type>, includes: TypeFlags, types: readonly Type[]) {
+    function addTypesToIntersection(typeSet: Map<string, Type>, includes: TypeFlags, types: readonly Type[], refInstanceQueryTypes: [Set<ObjectType>|undefined]) {
         for (const type of types) {
-            includes = addTypeToIntersection(typeSet, includes, getRegularTypeOfLiteralType(type));
+            if (isInstanceQueryType(type)){
+                (refInstanceQueryTypes[0] ??= new Set()).add(type as ObjectType);
+                continue;
+            }
+            includes = addTypeToIntersection(typeSet, includes, getRegularTypeOfLiteralType(type), refInstanceQueryTypes);
         }
         return includes;
     }
@@ -18233,97 +18268,188 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     // Also, unlike union types, the order of the constituent types is preserved in order that overload resolution
     // for intersections of types with signatures can be deterministic.
     function getIntersectionType(types: readonly Type[], aliasSymbol?: Symbol, aliasTypeArguments?: readonly Type[], noSupertypeReduction?: boolean): Type {
-        const typeMembershipMap = new Map<string, Type>();
-        const includes = addTypesToIntersection(typeMembershipMap, 0 as TypeFlags, types);
-        const typeSet: Type[] = arrayFrom(typeMembershipMap.values());
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getIntersectionType[in]: aliasSymbol: ${IDebug.dbgs.dbgSymbolToString(aliasSymbol)}, noSupertypeReduction:${noSupertypeReduction}`, loggerLevel);
+    if (IDebug.isActive(loggerLevel)) {
+        types.forEach((t,i)=>IDebug.ilog(()=>`getIntersectionType begin: types[${i}]: ${IDebug.dbgs.dbgTypeToString(t)}`, loggerLevel));
+    }
+
         let objectFlags = ObjectFlags.None;
-        // An intersection type is considered empty if it contains
-        // the type never, or
-        // more than one unit type or,
-        // an object type and a nullable type (null or undefined), or
-        // a string-like type and a type known to be non-string-like, or
-        // a number-like type and a type known to be non-number-like, or
-        // a symbol-like type and a type known to be non-symbol-like, or
-        // a void-like type and a type known to be non-void-like, or
-        // a non-primitive type and a type known to be primitive.
-        if (includes & TypeFlags.Never) {
-            return contains(typeSet, silentNeverType) ? silentNeverType : neverType;
-        }
-        if (
-            strictNullChecks && includes & TypeFlags.Nullable && includes & (TypeFlags.Object | TypeFlags.NonPrimitive | TypeFlags.IncludesEmptyObject) ||
-            includes & TypeFlags.NonPrimitive && includes & (TypeFlags.DisjointDomains & ~TypeFlags.NonPrimitive) ||
-            includes & TypeFlags.StringLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.StringLike) ||
-            includes & TypeFlags.NumberLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.NumberLike) ||
-            includes & TypeFlags.BigIntLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.BigIntLike) ||
-            includes & TypeFlags.ESSymbolLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.ESSymbolLike) ||
-            includes & TypeFlags.VoidLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.VoidLike)
-        ) {
-            return neverType;
-        }
-        if (includes & (TypeFlags.TemplateLiteral | TypeFlags.StringMapping) && includes & TypeFlags.StringLiteral && extractRedundantTemplateLiterals(typeSet)) {
-            return neverType;
-        }
-        if (includes & TypeFlags.Any) {
-            return includes & TypeFlags.IncludesWildcard ? wildcardType : anyType;
-        }
-        if (!strictNullChecks && includes & TypeFlags.Nullable) {
-            return includes & TypeFlags.IncludesEmptyObject ? neverType : includes & TypeFlags.Undefined ? undefinedType : nullType;
-        }
-        if (
-            includes & TypeFlags.String && includes & (TypeFlags.StringLiteral | TypeFlags.TemplateLiteral | TypeFlags.StringMapping) ||
-            includes & TypeFlags.Number && includes & TypeFlags.NumberLiteral ||
-            includes & TypeFlags.BigInt && includes & TypeFlags.BigIntLiteral ||
-            includes & TypeFlags.ESSymbol && includes & TypeFlags.UniqueESSymbol ||
-            includes & TypeFlags.Void && includes & TypeFlags.Undefined ||
-            includes & TypeFlags.IncludesEmptyObject && includes & TypeFlags.DefinitelyNonNullable
-        ) {
-            if (!noSupertypeReduction) removeRedundantSupertypes(typeSet, includes);
-        }
-        if (includes & TypeFlags.IncludesMissingType) {
-            typeSet[typeSet.indexOf(undefinedType)] = missingType;
-        }
-        if (typeSet.length === 0) {
-            return unknownType;
-        }
-        if (typeSet.length === 1) {
-            return typeSet[0];
-        }
-        if (typeSet.length === 2) {
-            const typeVarIndex = typeSet[0].flags & TypeFlags.TypeVariable ? 0 : 1;
-            const typeVariable = typeSet[typeVarIndex];
-            const primitiveType = typeSet[1 - typeVarIndex];
-            if (
-                typeVariable.flags & TypeFlags.TypeVariable &&
-                (primitiveType.flags & (TypeFlags.Primitive | TypeFlags.NonPrimitive) && !isGenericStringLikeType(primitiveType) || includes & TypeFlags.IncludesEmptyObject)
-            ) {
-                // We have an intersection T & P or P & T, where T is a type variable and P is a primitive type, the object type, or {}.
-                const constraint = getBaseConstraintOfType(typeVariable);
-                // Check that T's constraint is similarly composed of primitive types, the object type, or {}.
-                if (constraint && everyType(constraint, t => !!(t.flags & (TypeFlags.Primitive | TypeFlags.NonPrimitive)) || isEmptyAnonymousObjectType(t))) {
-                    // If T's constraint is a subtype of P, simply return T. For example, given `T extends "a" | "b"`,
-                    // the intersection `T & string` reduces to just T.
-                    if (isTypeStrictSubtypeOf(constraint, primitiveType)) {
-                        return typeVariable;
-                    }
-                    if (!(constraint.flags & TypeFlags.Union && someType(constraint, c => isTypeStrictSubtypeOf(c, primitiveType)))) {
-                        // No constituent of T's constraint is a subtype of P. If P is also not a subtype of T's constraint,
-                        // then the constraint and P are unrelated, and the intersection reduces to never. For example, given
-                        // `T extends "a" | "b"`, the intersection `T & number` reduces to never.
-                        if (!isTypeStrictSubtypeOf(primitiveType, constraint)) {
-                            return neverType;
-                        }
-                    }
-                    // Some constituent of T's constraint is a subtype of P, or P is a subtype of T's constraint. Thus,
-                    // the intersection further constrains the type variable. For example, given `T extends string | number`,
-                    // the intersection `T & "a"` is marked as a constrained type variable. Likewise, given `T extends "a" | 1`,
-                    // the intersection `T & number` is marked as a constrained type variable.
-                    objectFlags = ObjectFlags.IsConstrainedTypeVariable;
-                }
+        let includes = 0 as TypeFlags;
+        let typeSet: Type[]; // | undefined;
+
+    const ret = (()=>{
+        const refInstanceQueryTypes: [Set<ObjectType> | undefined] = [undefined];
+        let instanceQueryType: Type | undefined; // could be never type;
+        const typeMembershipMap = new Map<string, Type>();
+        includes = addTypesToIntersection(typeMembershipMap, 0 as TypeFlags, types, refInstanceQueryTypes);
+        typeSet = arrayFrom(typeMembershipMap.values());
+
+        if (refInstanceQueryTypes[0]?.size){
+            if (refInstanceQueryTypes[0]!.size===1) instanceQueryType = refInstanceQueryTypes[0]!.values().next().value;
+            else {
+                // simplfyIntersectionWithInstanceQueryTypes not really optimal because it can expect ordinary types as well.
+                instanceQueryType = simplfyIntersectionWithInstanceQueryTypes(createIntersectionType(Array.from(refInstanceQueryTypes[0]), ObjectFlags.None));
+                if (instanceQueryType===neverType) return neverType;
+                TSDebug.assert(isInstanceQueryType(instanceQueryType)); // should not be an intersection type
             }
         }
-        const id = getTypeListId(typeSet) + getAliasId(aliasSymbol, aliasTypeArguments);
-        let result = intersectionTypes.get(id);
-        if (!result) {
+
+        let result: Type | undefined;
+        if (!instanceQueryType){
+            result = getIntersectionTypeWorkerPart1();
+            if (result) return result;
+            const id = getTypeListId(typeSet) + getAliasId(aliasSymbol, aliasTypeArguments);
+            if (result = intersectionTypes.get(id)) return result;
+            result = getIntersectionTypeWorkerPart2();
+            intersectionTypes.set(id, result);
+            return result;
+        }
+        else {
+            result = getIntersectionTypeWorkerPart1();
+            if (result) {
+                result = addInstanceQueryTypeToIntersection(instanceQueryType as ObjectType, result);
+                return result;
+            }
+            const id = getTypeListId([instanceQueryType, ...typeSet]) + getAliasId(aliasSymbol, aliasTypeArguments);
+            if (result = intersectionTypes.get(id)) return result;
+            let [saveAliasTypeArguments,saveAliasSymbol] = [aliasTypeArguments, aliasSymbol];
+            [aliasTypeArguments, aliasSymbol] = [undefined, undefined];
+            result = getIntersectionTypeWorkerPart2();
+            [aliasTypeArguments, aliasSymbol] = [saveAliasTypeArguments, saveAliasSymbol];
+            result = addInstanceQueryTypeToIntersection(instanceQueryType as ObjectType, result);
+            if (IDebug.isActive(loggerLevel)){
+                IDebug.ilog(()=>`getIntersectionType: intersectionTypes.set(${id}, ${IDebug.dbgs.dbgTypeToString(result)})`, loggerLevel);
+            }
+            intersectionTypes.set(id, result);
+            return result;
+        }
+    })();
+    IDebug.ilogGroupEnd(()=>`getIntersectionType[out]: returns ${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel);
+    return ret;
+
+        function addInstanceQueryTypeToIntersection(instanceQueryType: ObjectType, result: Type): Type {
+            if (result.flags & (TypeFlags.Never)) return result;
+            if (result.flags & (TypeFlags.Any)) return instanceQueryType; // this should probably not happen ?
+            if (result.flags & TypeFlags.Intersection) {
+                const toptype = (instanceQueryType as ObjectType).instanceof!.structuredType;
+                let btype: Type = toptype;
+                const bases: Type[] = [];
+                while (true) {
+                    const btypes = getBaseTypes(btype as InterfaceType);
+                    if (IDebug.isActive(loggerLevel)) {
+                        IDebug.ilog(()=>`getIntersectionType: (iqfilt a): ${IDebug.dbgs.dbgTypeToString(btype)}`,loggerLevel)
+                        btypes.forEach((t,i)=>IDebug.ilog(()=>`getIntersectionType: (iqfilt b): [${i}]${IDebug.dbgs.dbgTypeToString(t)}`,loggerLevel));
+                    }
+                    if (btypes.length===0) break;
+                    TSDebug.assert(btypes.length===1);
+                    btype = btypes[0];
+                    bases.push(btype);
+                }
+
+                const filteredTypes = filter((result as IntersectionType).types, t=>!bases.includes(t));
+
+                return createIntersectionType([instanceQueryType, ...filteredTypes], objectFlags, aliasSymbol, aliasTypeArguments);
+            }
+            if (result.flags & TypeFlags.Union) {
+                const tmpUnion = getUnionType((result as UnionType).types, UnionReduction.Subtype);
+                return createIntersectionType([instanceQueryType, tmpUnion], objectFlags, aliasSymbol, aliasTypeArguments);
+            }
+            if (result.flags & TypeFlags.Object) {
+                TSDebug.assert(!(result as Type).aliasSymbol || (result as Type).aliasSymbol !== aliasSymbol);
+                return createIntersectionType([instanceQueryType, result], objectFlags, aliasSymbol, aliasTypeArguments);
+            }
+            TSDebug.assert(false, "unexpected");
+        }
+
+        function getIntersectionTypeWorkerPart1(): Type | undefined{
+            // An intersection type is considered empty if it contains
+            // the type never, or
+            // more than one unit type or,
+            // an object type and a nullable type (null or undefined), or
+            // a string-like type and a type known to be non-string-like, or
+            // a number-like type and a type known to be non-number-like, or
+            // a symbol-like type and a type known to be non-symbol-like, or
+            // a void-like type and a type known to be non-void-like, or
+            // a non-primitive type and a type known to be primitive.
+            if (includes & TypeFlags.Never) {
+                return contains(typeSet, silentNeverType) ? silentNeverType : neverType;
+            }
+            if (
+                strictNullChecks && includes & TypeFlags.Nullable && includes & (TypeFlags.Object | TypeFlags.NonPrimitive | TypeFlags.IncludesEmptyObject) ||
+                includes & TypeFlags.NonPrimitive && includes & (TypeFlags.DisjointDomains & ~TypeFlags.NonPrimitive) ||
+                includes & TypeFlags.StringLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.StringLike) ||
+                includes & TypeFlags.NumberLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.NumberLike) ||
+                includes & TypeFlags.BigIntLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.BigIntLike) ||
+                includes & TypeFlags.ESSymbolLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.ESSymbolLike) ||
+                includes & TypeFlags.VoidLike && includes & (TypeFlags.DisjointDomains & ~TypeFlags.VoidLike)
+            ) {
+                return neverType;
+            }
+            if (includes & (TypeFlags.TemplateLiteral | TypeFlags.StringMapping) && includes & TypeFlags.StringLiteral && extractRedundantTemplateLiterals(typeSet)) {
+                return neverType;
+            }
+            if (includes & TypeFlags.Any) {
+                return includes & TypeFlags.IncludesWildcard ? wildcardType : anyType;
+            }
+            if (!strictNullChecks && includes & TypeFlags.Nullable) {
+                return includes & TypeFlags.IncludesEmptyObject ? neverType : includes & TypeFlags.Undefined ? undefinedType : nullType;
+            }
+            if (
+                includes & TypeFlags.String && includes & (TypeFlags.StringLiteral | TypeFlags.TemplateLiteral | TypeFlags.StringMapping) ||
+                includes & TypeFlags.Number && includes & TypeFlags.NumberLiteral ||
+                includes & TypeFlags.BigInt && includes & TypeFlags.BigIntLiteral ||
+                includes & TypeFlags.ESSymbol && includes & TypeFlags.UniqueESSymbol ||
+                includes & TypeFlags.Void && includes & TypeFlags.Undefined ||
+                includes & TypeFlags.IncludesEmptyObject && includes & TypeFlags.DefinitelyNonNullable
+            ) {
+                if (!noSupertypeReduction) removeRedundantSupertypes(typeSet, includes);
+            }
+            if (includes & TypeFlags.IncludesMissingType) {
+                typeSet[typeSet.indexOf(undefinedType)] = missingType;
+            }
+            if (typeSet.length === 0) {
+                return unknownType;
+            }
+            if (typeSet.length === 1) {
+                return typeSet[0];
+            }
+            if (typeSet.length === 2) {
+                const typeVarIndex = typeSet[0].flags & TypeFlags.TypeVariable ? 0 : 1;
+                const typeVariable = typeSet[typeVarIndex];
+                const primitiveType = typeSet[1 - typeVarIndex];
+                if (
+                    typeVariable.flags & TypeFlags.TypeVariable &&
+                    (primitiveType.flags & (TypeFlags.Primitive | TypeFlags.NonPrimitive) && !isGenericStringLikeType(primitiveType) || includes & TypeFlags.IncludesEmptyObject)
+                ) {
+                    // We have an intersection T & P or P & T, where T is a type variable and P is a primitive type, the object type, or {}.
+                    const constraint = getBaseConstraintOfType(typeVariable);
+                    // Check that T's constraint is similarly composed of primitive types, the object type, or {}.
+                    if (constraint && everyType(constraint, t => !!(t.flags & (TypeFlags.Primitive | TypeFlags.NonPrimitive)) || isEmptyAnonymousObjectType(t))) {
+                        // If T's constraint is a subtype of P, simply return T. For example, given `T extends "a" | "b"`,
+                        // the intersection `T & string` reduces to just T.
+                        if (isTypeStrictSubtypeOf(constraint, primitiveType)) {
+                            return typeVariable;
+                        }
+                        if (!(constraint.flags & TypeFlags.Union && someType(constraint, c => isTypeStrictSubtypeOf(c, primitiveType)))) {
+                            // No constituent of T's constraint is a subtype of P. If P is also not a subtype of T's constraint,
+                            // then the constraint and P are unrelated, and the intersection reduces to never. For example, given
+                            // `T extends "a" | "b"`, the intersection `T & number` reduces to never.
+                            if (!isTypeStrictSubtypeOf(primitiveType, constraint)) {
+                                return neverType;
+                            }
+                        }
+                        // Some constituent of T's constraint is a subtype of P, or P is a subtype of T's constraint. Thus,
+                        // the intersection further constrains the type variable. For example, given `T extends string | number`,
+                        // the intersection `T & "a"` is marked as a constrained type variable. Likewise, given `T extends "a" | 1`,
+                        // the intersection `T & number` is marked as a constrained type variable.
+                        objectFlags = ObjectFlags.IsConstrainedTypeVariable;
+                    }
+                }
+            }
+        } // getIntersectionTypeWorkerPart1
+        function getIntersectionTypeWorkerPart2(): Type {
+            let result: Type;
             if (includes & TypeFlags.Union) {
                 if (intersectUnionsOfPrimitiveTypes(typeSet)) {
                     // When the intersection creates a reduced set (which might mean that *all* union types have
@@ -18366,10 +18492,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             else {
                 result = createIntersectionType(typeSet, objectFlags, aliasSymbol, aliasTypeArguments);
             }
-            intersectionTypes.set(id, result);
-        }
-        return result;
-    }
+            return result;
+        } // getIntersectionTypeWorkerPart2
+    } // getIntersectionType
 
     function getCrossProductUnionSize(types: readonly Type[]) {
         return reduceLeft(types, (n, t) => t.flags & TypeFlags.Union ? n * (t as UnionType).types.length : t.flags & TypeFlags.Never ? 0 : n, 1);

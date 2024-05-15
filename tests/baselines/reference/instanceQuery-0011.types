@@ -58,8 +58,8 @@ namespace iq0011b {
 >  : ^
     }
     type AQ = instanceof A1 & instanceof A2;
->AQ : (instanceof A2 & A2)
->   : ^^^^^^^^^^^^^^^^^^^^
+>AQ : AQ
+>   : ^^
 
     declare let a1: instanceof A1;
 >a1 : (instanceof A1 & A1)
@@ -143,14 +143,14 @@ namespace iq0011b {
 >   : ^^^^^^^^^
 
     declare const aq: AQ;
->aq : (instanceof A2 & A2)
->   : ^^^^^^^^^^^^^^^^^^^^
+>aq : AQ
+>   : ^^
 
     aq satisfies AP; // structure error
->aq satisfies AP : (instanceof A2 & A2)
->                : ^^^^^^^^^^^^^^^^^^^^
->aq : (instanceof A2 & A2)
->   : ^^^^^^^^^^^^^^^^^^^^
+>aq satisfies AP : AQ
+>                : ^^
+>aq : AQ
+>   : ^^
 
     declare const ap: instanceof AP;
 >ap : (instanceof AP & AP)

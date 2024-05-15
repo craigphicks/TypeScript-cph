@@ -65,11 +65,11 @@ namespace iq0014b {
     }
 }
 
-namespace iq0014c {
->iq0014c : Symbol(iq0014c, Decl(instanceQuery-0014.ts, 22, 1), Decl(instanceQuery-0014.ts, 37, 1))
+namespace iq0014c1 {
+>iq0014c1 : Symbol(iq0014c1, Decl(instanceQuery-0014.ts, 22, 1))
 
     class EmptyBase {}
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 24, 19))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 24, 20))
 
     class A { a = 0; }
 >A : Symbol(A, Decl(instanceQuery-0014.ts, 25, 22))
@@ -86,12 +86,12 @@ namespace iq0014c {
 
         return x instanceof EmptyBase;
 >x : Symbol(x, Decl(instanceQuery-0014.ts, 27, 56))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 24, 19))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 24, 20))
     }
     declare const a: A | EmptyBase | {};
 >a : Symbol(a, Decl(instanceQuery-0014.ts, 30, 17))
 >A : Symbol(A, Decl(instanceQuery-0014.ts, 25, 22))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 24, 19))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 24, 20))
 
     if (extendsEmptyBaseInstance(a)) {
 >extendsEmptyBaseInstance : Symbol(extendsEmptyBaseInstance, Decl(instanceQuery-0014.ts, 26, 22))
@@ -106,15 +106,15 @@ namespace iq0014c {
     }
 }
 
-namespace iq0014c {
->iq0014c : Symbol(iq0014c, Decl(instanceQuery-0014.ts, 22, 1), Decl(instanceQuery-0014.ts, 37, 1))
+namespace iq0014c2 {
+>iq0014c2 : Symbol(iq0014c2, Decl(instanceQuery-0014.ts, 37, 1))
 
     class EmptyBase {}
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 39, 19))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 39, 20))
 
     class A extends EmptyBase{ a = 0; }
 >A : Symbol(A, Decl(instanceQuery-0014.ts, 40, 22))
->EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 39, 19))
+>EmptyBase : Symbol(EmptyBase, Decl(instanceQuery-0014.ts, 39, 20))
 >a : Symbol(A.a, Decl(instanceQuery-0014.ts, 41, 30))
 
     function extendsAInstance<T extends Object>(x: T): x is (instanceof A) & T {

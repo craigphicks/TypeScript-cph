@@ -66,29 +66,29 @@ namespace iq0014b {
 >  : ^
 
         const x = (0 as any as (instanceof EmptyBase) & T);
->x : ((instanceof EmptyBase & EmptyBase)) & T
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->(0 as any as (instanceof EmptyBase) & T) : ((instanceof EmptyBase & EmptyBase)) & T
->                                         : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->0 as any as (instanceof EmptyBase) & T : ((instanceof EmptyBase & EmptyBase)) & T
->                                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof EmptyBase & EmptyBase & T)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>(0 as any as (instanceof EmptyBase) & T) : (instanceof EmptyBase & EmptyBase & T)
+>                                         : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>0 as any as (instanceof EmptyBase) & T : (instanceof EmptyBase & EmptyBase & T)
+>                                       : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >0 as any : any
 >0 : 0
 >  : ^
 
         t = x;
->t = x : ((instanceof EmptyBase & EmptyBase)) & T
->      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>t = x : (instanceof EmptyBase & EmptyBase & T)
+>      : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >t : T
 >  : ^
->x : ((instanceof EmptyBase & EmptyBase)) & T
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof EmptyBase & EmptyBase & T)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     }
 }
 
-namespace iq0014c {
->iq0014c : typeof iq0014c
->        : ^^^^^^^^^^^^^^
+namespace iq0014c1 {
+>iq0014c1 : typeof iq0014c1
+>         : ^^^^^^^^^^^^^^^
 
     class EmptyBase {}
 >EmptyBase : EmptyBase
@@ -123,8 +123,8 @@ namespace iq0014c {
     if (extendsEmptyBaseInstance(a)) {
 >extendsEmptyBaseInstance(a) : boolean
 >                            : ^^^^^^^
->extendsEmptyBaseInstance : <T extends Object>(x: T) => x is ((instanceof EmptyBase & EmptyBase)) & T
->                         : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>extendsEmptyBaseInstance : <T extends Object>(x: T) => x is (instanceof EmptyBase & EmptyBase & T)
+>                         : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : {} | EmptyBase | A
 >  : ^^^^^^^^^^^^^^^^^^
 
@@ -139,9 +139,9 @@ namespace iq0014c {
     }
 }
 
-namespace iq0014c {
->iq0014c : typeof iq0014c
->        : ^^^^^^^^^^^^^^
+namespace iq0014c2 {
+>iq0014c2 : typeof iq0014c2
+>         : ^^^^^^^^^^^^^^^
 
     class EmptyBase {}
 >EmptyBase : EmptyBase
@@ -178,8 +178,8 @@ namespace iq0014c {
     if (extendsAInstance(a)) {
 >extendsAInstance(a) : boolean
 >                    : ^^^^^^^
->extendsAInstance : <T extends Object>(x: T) => x is ((instanceof A & A)) & T
->                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>extendsAInstance : <T extends Object>(x: T) => x is (instanceof A & A & T)
+>                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : (instanceof EmptyBase & EmptyBase)
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -270,8 +270,8 @@ namespace iq0014d {
     if (extendsEmptyBaseInstance(a)) {
 >extendsEmptyBaseInstance(a) : boolean
 >                            : ^^^^^^^
->extendsEmptyBaseInstance : <T extends Object>(x: T) => x is ((instanceof EmptyBase & EmptyBase)) & T
->                         : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>extendsEmptyBaseInstance : <T extends Object>(x: T) => x is (instanceof EmptyBase & EmptyBase & T)
+>                         : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : {} | EmptyBase | A
 >  : ^^^^^^^^^^^^^^^^^^
 
@@ -282,8 +282,8 @@ namespace iq0014d {
         if (extendsAInstance(a)) {
 >extendsAInstance(a) : boolean
 >                    : ^^^^^^^
->extendsAInstance : <T extends Object>(x: T) => x is ((instanceof A & A)) & T
->                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>extendsAInstance : <T extends Object>(x: T) => x is (instanceof A & A & T)
+>                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >a : (instanceof EmptyBase & EmptyBase)
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -299,10 +299,10 @@ namespace iq0014d {
         if (extendsBInstance(a)) {
 >extendsBInstance(a) : boolean
 >                    : ^^^^^^^
->extendsBInstance : <T extends Object>(x: T) => x is ((instanceof B & B)) & T
->                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof A & A))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>extendsBInstance : <T extends Object>(x: T) => x is (instanceof B & B & T)
+>                 : ^ ^^^^^^^^^^^^^^^^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             a; // never
 >a : never
@@ -310,8 +310,8 @@ namespace iq0014d {
         }
         else {
             a;
->a : ((instanceof EmptyBase & EmptyBase)) | ((instanceof A & A))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>a : (instanceof EmptyBase & EmptyBase)
+>  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
     }
     else {
@@ -485,16 +485,16 @@ namespace iq0014g {
 >  : ^^^^^^^^^^^^^^^^^^^^
 
     type AB = A & B
->AB : (instanceof Bx & Bx)
->   : ^^^^^^^^^^^^^^^^^^^^
+>AB : AB
+>   : ^^
 
     type AC = A & C
->AC : (instanceof Cx & Cx)
->   : ^^^^^^^^^^^^^^^^^^^^
+>AC : AC
+>   : ^^
 
     type BC = B & C
->BC : (instanceof Cx & Cx)
->   : ^^^^^^^^^^^^^^^^^^^^
+>BC : BC
+>   : ^^
 
     function isAB(x: any): x is AB {
 >isAB : (x: any) => x is AB
@@ -531,8 +531,8 @@ namespace iq0014g {
     if (isAB(x)) {
 >isAB(x) : boolean
 >        : ^^^^^^^
->isAB : (x: any) => x is (instanceof Bx & Bx)
->     : ^ ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>isAB : (x: any) => x is AB
+>     : ^ ^^   ^^^^^^^^^^^^
 >x : ((instanceof Ax & Ax)) | ((instanceof Bx & Bx)) | ((instanceof Cx & Cx))
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -543,8 +543,8 @@ namespace iq0014g {
         if (isBC(x)) {
 >isBC(x) : boolean
 >        : ^^^^^^^
->isBC : (x: any) => x is (instanceof Cx & Cx)
->     : ^ ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>isBC : (x: any) => x is BC
+>     : ^ ^^   ^^^^^^^^^^^^
 >x : ((instanceof Bx & Bx)) | ((instanceof Cx & Cx))
 >  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -555,8 +555,8 @@ namespace iq0014g {
             if (isAC(x)) {
 >isAC(x) : boolean
 >        : ^^^^^^^
->isAC : (x: any) => x is (instanceof Cx & Cx)
->     : ^ ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>isAC : (x: any) => x is AC
+>     : ^ ^^   ^^^^^^^^^^^^
 >x : (instanceof Cx & Cx)
 >  : ^^^^^^^^^^^^^^^^^^^^
 

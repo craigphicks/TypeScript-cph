@@ -26,7 +26,7 @@ namespace iq0014b {
     }
 }
 
-namespace iq0014c {
+namespace iq0014c1 {
     class EmptyBase {}
     class A { a = 0; }
     function extendsEmptyBaseInstance<T extends Object>(x: T): x is ((instanceof EmptyBase) & T) {
@@ -41,7 +41,7 @@ namespace iq0014c {
     }
 }
 
-namespace iq0014c {
+namespace iq0014c2 {
     class EmptyBase {}
     class A extends EmptyBase{ a = 0; }
 
