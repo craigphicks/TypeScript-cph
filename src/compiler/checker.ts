@@ -12030,14 +12030,21 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return check(type);
         function check(type: Type): boolean {
             if ((type as ObjectType).instanceof) {
-                TSDebug.assert(false);
                 //return check(getInstanceofStructuredType(type as ObjectType));
+                TSDebug.assert(false);
+                //error("An_interface_cannot_inherit_from_an_instanceQuery_type_Colon_0_18061", )
+                //return check((type as ObjectType).instanceof!.structuredType);
+                //return true;
             }
             if (getObjectFlags(type) & (ObjectFlags.ClassOrInterface | ObjectFlags.Reference)) {
                 const target = getTargetType(type) as InterfaceType;
                 return target === checkBase || some(getBaseTypes(target), check);
             }
             else if (type.flags & TypeFlags.Intersection) {
+                if (structuredTypeContainsInstanceof(type)){
+                    //assertInstanceofQueryClass(type);
+                    return check(getInstanceofQueryClassStructuredType(type as StructuredType));
+                }
                 return some((type as IntersectionType).types, check);
             }
             return false;
@@ -12218,9 +12225,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
      * * an object type with at least one construct signature.
      */
     function getBaseConstructorTypeOfClass(type: InterfaceType): Type {
-        if ((type as ObjectType).instanceof) {
-            TSDebug.assert(false);
-            //return getBaseConstructorTypeOfClass(getInstanceofStructuredType(type as ObjectType) as InterfaceType);
+        if (structuredTypeContainsInstanceof(type)) {
+            assertInstanceofQueryClass(type);
+            //TSDebug.assert(false);
+            return getBaseConstructorTypeOfClass(getInstanceofQueryClassStructuredType(type) as InterfaceType);
         }
         if (!type.resolvedBaseConstructorType) {
             const decl = getClassLikeDeclarationOfSymbol(type.symbol);
@@ -12295,9 +12303,8 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getBaseTypes(type: InterfaceType): BaseType[] {
-        if ((type as ObjectType).instanceof) {
-            TSDebug.assert(false);
-            //return getBaseTypes(getInstanceofStructuredType(type as ObjectType) as InterfaceType);
+        if (structuredTypeContainsInstanceof(type)) {
+            return getBaseTypes(getInstanceofQueryClassStructuredType(type as ObjectType) as InterfaceType);
         }
         if (!type.baseTypesResolved) {
             if (pushTypeResolution(type, TypeSystemPropertyName.ResolvedBaseTypes)) {
@@ -13029,12 +13036,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getTypeWithThisArgument(type: Type, thisArgument?: Type, needApparentType?: boolean): Type {
+    const loggerLevel = 2;
+    IDebug.ilogGroup(()=>`getTypeWithThisArgument[in]: type: ${IDebug.dbgs.dbgTypeToString(type)}, thisType: ${IDebug.dbgs.dbgTypeToString(thisArgument)}, needApparentType: ${needApparentType}`, loggerLevel)
+    const ret = (()=>{
         if (getObjectFlags(type) & ObjectFlags.Reference) {
-            if ((type as ObjectType).instanceof) {
+            if (isInstanceQueryType(type)) {
                 TSDebug.assert(false);
-                // const tmp = getTypeWithThisArgument(getInstanceofStructuredType(type as ObjectType), thisArgument, needApparentType);
-                // if (tmp===getInstanceofStructuredType(type as ObjectType)) return type;
-                // return createInstanceofTypeFromConstructorSymbol((type as ObjectType).instanceof!.symbol, tmp as StructuredType);
+                //return getTypeWithThisArgument(getInstanceofStructuredType(type as ObjectType), thisArgument, needApparentType);
             }
             const target = (type as TypeReference).target;
             const typeArguments = getTypeArguments(type as TypeReference);
@@ -13042,12 +13050,19 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         }
         else if (type.flags & TypeFlags.Intersection) {
             if (structuredTypeContainsInstanceof(type)){
-                return getIntersectionType(map(filter((type as IntersectionType).types, t => !(t as ObjectType).instanceof), t => getTypeWithThisArgument(t, thisArgument, needApparentType)));
+                const [instanceQueryType,interfaceType] = getInstanceofQueryClassParts(type as StructuredType);
+                IDebug.ilog(()=>`getTypeWithThisArgument: instanceQueryType: ${IDebug.dbgs.dbgTypeToString(instanceQueryType)}, interfaceType: ${IDebug.dbgs.dbgTypeToString(interfaceType)}`, loggerLevel);
+                const tmp = getTypeWithThisArgument(interfaceType, thisArgument);
+                if (tmp===interfaceType) return type;
+                return getIntersectionType([instanceQueryType,tmp]);
             }
             const types = sameMap((type as IntersectionType).types, t => getTypeWithThisArgument(t, thisArgument, needApparentType));
             return types !== (type as IntersectionType).types ? getIntersectionType(types) : type;
         }
         return needApparentType ? getApparentType(type) : type;
+    })();
+    IDebug.ilogGroupEnd(()=>`getTypeWithThisArgument[out]: returns ${IDebug.dbgs.dbgTypeToString(ret)}`, loggerLevel)
+    return ret;
     }
 
     function resolveObjectTypeMembers(type: ObjectType, source: InterfaceTypeWithDeclaredMembers, typeParameters: readonly TypeParameter[], typeArguments: readonly Type[]) {
@@ -13218,6 +13233,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     }
 
     function getDefaultConstructSignatures(classType: InterfaceType): Signature[] {
+        if (structuredTypeContainsInstanceof(classType)) {
+            const structuredType = getInstanceofQueryClassStructuredType(classType);
+            const inner = getDefaultConstructSignatures(structuredType);
+            TSDebug.assert(inner.length===1);
+            inner[0].resolvedReturnType = classType; // contains instanceof
+            return inner;
+        }
         const baseConstructorType = getBaseConstructorTypeOfClass(classType);
         const baseSignatures = getSignaturesOfType(baseConstructorType, SignatureKind.Construct);
         const declaration = getClassLikeDeclarationOfSymbol(classType.symbol ?? (classType as ObjectType).instanceof!.symbol);
@@ -13508,6 +13530,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     function resolveIntersectionTypeMembers(type: IntersectionType) {
         // The members and properties collections are empty for intersection types. To get all properties of an
         // intersection type use getPropertiesOfType (only the language service uses this).
+        if (structuredTypeContainsInstanceof(type)){
+            TSDebug.assert(false);
+            // const filtered = filter(type.types, t => !isInstanceQueryType(t));
+            // resolveIntersectionTypeMembers(getIntersectionType(filtered));
+        }
         let callSignatures: Signature[] | undefined;
         let constructSignatures: Signature[] | undefined;
         let indexInfos: IndexInfo[] | undefined;
@@ -13992,8 +14019,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
 
     function resolveStructuredTypeMembers(type: StructuredType): ResolvedType {
         if (!(type as ResolvedType).members) {
-            if ((type as ObjectType).instanceof){
-                TSDebug.assert(false);
+            if (structuredTypeContainsInstanceof(type)){
+                TSDebug.assert(type.flags & TypeFlags.Intersection);
+                const aniq = getNonInstanceQueryTypesFromIntersectionType(type);
+                if (aniq.length === 1) return resolveStructuredTypeMembers(aniq[0] as StructuredType);
+                else return resolveStructuredTypeMembers(getIntersectionType(aniq) as StructuredType);
 
                 /**
                  * call resolveStructuredTypeMembers on the constructor return type.
@@ -14002,7 +14032,9 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                 //return resolveStructuredTypeMembers(getInstanceofStructuredType(type));
             }
             if (type.flags & TypeFlags.Object) {
-                if ((type as ObjectType).instanceof) {}
+                if ((type as ObjectType).instanceof) {
+                    TSDebug.assert(false);
+                }
                 if ((type as ObjectType).objectFlags & ObjectFlags.Reference) {
                     resolveTypeReferenceMembers(type as TypeReference);
                 }
@@ -16435,9 +16467,30 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         return links.resolvedType;
     }
     ///////////////////////////////////////////////////////////////////////////////////////
+    function assertInstanceofQueryClass(type: Type): void {
+        if (!(type.flags & TypeFlags.Intersection) && (type as IntersectionType).types.length===2 && isInstanceQueryType((type as IntersectionType).types[0])) {
+            TSDebug.assert(false);
+        }
+    }
+    function getInstanceofQueryClassStructuredType(type: InterfaceType | StructuredType): InterfaceType {
+        assertInstanceofQueryClass(type);
+        return (type as IntersectionType).types[1] as InterfaceType;
+    }
+    function getInstanceofQueryClassInstanceofQueryType(type: InterfaceType | StructuredType): ObjectType {
+        assertInstanceofQueryClass(type);
+        return (type as IntersectionType).types[0] as ObjectType;
+    }
+    function getInstanceofQueryClassParts(type: InterfaceType | StructuredType): [instanceofTypeQuery: ObjectType, interfaceType: InterfaceType] {
+        assertInstanceofQueryClass(type);
+        return (type as IntersectionType).types as [ObjectType,InterfaceType];
+    }
     function getInstanceofStructuredType(type: ObjectType): StructuredType {
         return type.instanceof!.structuredType;
     }
+    function getNonInstanceQueryTypesFromIntersectionType(type: StructuredType): Type[] {
+        return filter((type as IntersectionType).types, t=>!isInstanceQueryType(t));
+    }
+
     // function getInstanceofConstructorSymbol(type: ObjectType): Symbol {
     //     return type.instanceof!.symbol;
     // }
@@ -18343,7 +18396,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     }
                     if (btypes.length===0) break;
                     TSDebug.assert(btypes.length===1);
-                    btype = btypes[0];
+                    if (btypes[0].flags & TypeFlags.Intersection){
+                        btype = getInstanceofQueryClassStructuredType(btypes[0] as IntersectionType);
+                    }
+                    else {
+                        btype = btypes[0];
+                    }
                     bases.push(btype);
                 }
 
@@ -31017,9 +31075,11 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (isStatic(container)) return getFlowTypeOfReference(node, getTypeOfSymbol(symbol));
             const declaredType = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
             let type: Type;
-            if ((declaredType as ObjectType).instanceof) type = declaredType; //getInstanceofStructuredType(declaredType as ObjectType);
+            if (structuredTypeContainsInstanceof(declaredType)){
+                type = declaredType; //getInstanceofQueryClassStructuredType(declaredType).thisType!;
+                TSDebug.assert(type);
+            }
             else type = declaredType.thisType!;
-            TSDebug.assert(type);
             return getFlowTypeOfReference(node, type);
         }
 
@@ -46275,28 +46335,30 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             }
 
             const baseTypes = getBaseTypes(type);
-            if ((baseTypes[0] as ObjectType)?.instanceof) {
+            if (baseTypes.length===1 && structuredTypeContainsInstanceof(baseTypes[0])) {
                 const links = getSymbolLinks(symbol);
                 // what about originalLinks ? (c.f. getDeclaredTypeOfClassOrInterface)
                 {
-                    const innerSymbol = cloneSymbol(symbol, true);
+                    const innerSymbol = cloneSymbol(symbol, /*dontMerge*/true);
                     innerSymbol.escapedName = `${innerSymbol.escapedName}*` as __String;
                     const innerLinks = getSymbolLinks(innerSymbol);
                     innerLinks.type = links.type;
                     innerLinks.declaredType = links.declaredType;
-                    links.declaredType = createInstanceofTypeFromConstructorSymbol(symbol, links.declaredType as StructuredType);
+                    const instanceQueryType = createInstanceofTypeFromConstructorSymbol(symbol, links.declaredType as StructuredType);
+                    links.declaredType = getIntersectionType([instanceQueryType, (instanceQueryType as ObjectType).instanceof!.structuredType])
                     type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
                 }
                 if (IDebug.isActive(loggerLevel)){
                     const symbol = getSymbolOfDeclaration(node);
-                    const type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
-                    const typeWithThis = getTypeWithThisArgument(type);
-                    const staticType = getTypeOfSymbol(symbol) as ObjectType;
-
                     IDebug.ilog(()=>`[cvtToInstanceof] symbol: ${IDebug.dbgs.dbgSymbolToString(symbol)}`, loggerLevel);
+                    const type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
                     IDebug.ilog(()=>`[cvtToInstanceof] type: ${IDebug.dbgs.dbgTypeToString(type)}`, loggerLevel);
+                    const typeWithThis = getTypeWithThisArgument(type);
                     IDebug.ilog(()=>`[cvtToInstanceof] typeWithThis: ${IDebug.dbgs.dbgTypeToString(typeWithThis)}`, loggerLevel);
+                    const staticType = getTypeOfSymbol(symbol) as ObjectType;
                     IDebug.ilog(()=>`[cvtToInstanceof] staticType: ${IDebug.dbgs.dbgTypeToString(staticType)}`, loggerLevel);
+                    const x = 1;
+
                 }
 
             }
@@ -47030,9 +47092,10 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             if (node === firstInterfaceDecl) {
                 const type = getDeclaredTypeOfSymbol(symbol) as InterfaceType;
                 forEach(getBaseTypes(type), (t,heritageIndex)=>{
-                    if ((t as ObjectType).instanceof) {
+                    if (structuredTypeContainsInstanceof(t)) {
+                        const iq = isInstanceQueryType(t) ? t : find((t as UnionOrIntersectionType).types, tt=>isInstanceQueryType(tt))
                         error(node.heritageClauses?.[Math.min(heritageIndex,node.heritageClauses?.length??0)]??node,
-                            Diagnostics.An_interface_cannot_inherit_from_an_instanceQuery_type_Colon_0, typeToString(t));
+                            Diagnostics.To_avoid_ambiguity_an_interface_cannot_inherit_from_an_instanceQuery_type_Colon_0, typeToString(iq??t));
                         hadInstanceQueryInheritError = true;
                     }
                 });

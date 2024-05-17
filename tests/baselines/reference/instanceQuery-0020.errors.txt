@@ -1,4 +1,4 @@
-instanceQuery-0020.ts(23,21): error TS18061: An interface cannot inherit from an instanceQuery type: (instanceof A & A)
+instanceQuery-0020.ts(23,21): error TS18061: To avoid ambiguity, an interface cannot inherit from an instanceQuery type: instanceof A
 
 
 ==== instanceQuery-0020.ts (1 errors) ====
@@ -26,7 +26,7 @@ instanceQuery-0020.ts(23,21): error TS18061: An interface cannot inherit from an
     type InstanceOfA = instanceof A;
     interface Ambiguous extends InstanceOfA { extra: number } // should be error
                         ~~~~~~~~~~~~~~~~~~~
-!!! error TS18061: An interface cannot inherit from an instanceQuery type: (instanceof A & A)
+!!! error TS18061: To avoid ambiguity, an interface cannot inherit from an instanceQuery type: instanceof A
     
     }
     

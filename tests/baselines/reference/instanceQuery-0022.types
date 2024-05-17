@@ -275,10 +275,10 @@ const q = Math.random();
 >       : ^^^^^^^^^^^^
 
 const x = q < 0.33 ? new A() : q < 0.66 ? new B() : new C(); //  ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->q < 0.33 ? new A() : q < 0.66 ? new B() : new C() : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->                                                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
+>q < 0.33 ? new A() : q < 0.66 ? new B() : new C() : (instanceof A & A)
+>                                                  : ^^^^^^^^^^^^^^^^^^
 >q < 0.33 : boolean
 >         : ^^^^^^^
 >q : number
@@ -311,20 +311,20 @@ if (isInstanceofA(x)) {
 >                 : ^^^^^^^
 >isInstanceofA : (x: any) => x is (instanceof A & A)
 >              : ^ ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
 
     x; // ((instanceof A & A))
->x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
 
     if (isInstanceofB(x)) {
 >isInstanceofB(x) : boolean
 >                 : ^^^^^^^
 >isInstanceofB : (x: any) => x is (instanceof B & B)
 >              : ^ ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
 
         x; // (instanceof B & B)
 >x : (instanceof B & B)
@@ -472,10 +472,10 @@ namespace instanceQuery22b {
 >       : ^^^^^^^^^^^^
 
     const x = q < 0.33 ? new A() : q < 0.66 ? new B() : new C(); //  ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->q < 0.33 ? new A() : q < 0.66 ? new B() : new C() : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->                                                  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
+>q < 0.33 ? new A() : q < 0.66 ? new B() : new C() : (instanceof A & A)
+>                                                  : ^^^^^^^^^^^^^^^^^^
 >q < 0.33 : boolean
 >         : ^^^^^^^
 >q : number
@@ -506,22 +506,22 @@ namespace instanceQuery22b {
     if (isInstanceofA(x)) {
 >isInstanceofA(x) : boolean
 >                 : ^^^^^^^
->isInstanceofA : <T>(x: T) => x is ((instanceof A & A)) & T
->              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>isInstanceofA : <T>(x: T) => x is (instanceof A & A & T)
+>              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
 
         x; // ((instanceof A & A))
->x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
 
         if (isInstanceofB(x)) {
 >isInstanceofB(x) : boolean
 >                 : ^^^^^^^
->isInstanceofB : <T>(x: T) => x is ((instanceof B & B)) & T
->              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->x : ((instanceof A & A)) | ((instanceof B & B)) | ((instanceof C & C))
->  : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>isInstanceofB : <T>(x: T) => x is (instanceof B & B & T)
+>              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>x : (instanceof A & A)
+>  : ^^^^^^^^^^^^^^^^^^
 
             x; // (instanceof B & B)
 >x : (instanceof B & B)
@@ -530,8 +530,8 @@ namespace instanceQuery22b {
             if (isInstanceofC(x)) {
 >isInstanceofC(x) : boolean
 >                 : ^^^^^^^
->isInstanceofC : <T>(x: T) => x is ((instanceof C & C)) & T
->              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>isInstanceofC : <T>(x: T) => x is (instanceof C & C & T)
+>              : ^ ^^ ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 >x : (instanceof B & B)
 >  : ^^^^^^^^^^^^^^^^^^
 

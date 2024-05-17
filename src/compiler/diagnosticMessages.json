@@ -8013,7 +8013,7 @@
         "category": "Error",
         "code": 18060
     },
-    "An interface cannot inherit from an instanceQuery type: {0}": {
+    "To avoid ambiguity, an interface cannot inherit from an instanceQuery type: {0}": {
         "category": "Error",
         "code": 18061
     }
