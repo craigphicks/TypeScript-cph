@@ -6596,7 +6596,10 @@ declare namespace ts {
     }
     interface ObjectType extends Type {
         objectFlags: ObjectFlags;
-        instanceof?: Symbol | undefined;
+        instanceof?: {
+            symbol: Symbol;
+            structuredType: StructuredType;
+        };
     }
     /** Class and interface types (ObjectFlags.Class and ObjectFlags.Interface). */
     interface InterfaceType extends ObjectType {

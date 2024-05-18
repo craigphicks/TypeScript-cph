@@ -1,0 +1,3 @@
+compiler tests compiler tests for tests/cases/compiler/typeGuardConstructorNarrowAny.ts Correct type/symbol baselines for tests/cases/compiler/typeGuardConstructorNarrowAny.ts
+conformance tests conformance tests for tests/cases/conformance/expressions/typeGuards/TypeGuardWithArrayUnion.ts Correct type/symbol baselines for tests/cases/conformance/expressions/typeGuards/TypeGuardWithArrayUnion.ts
+unittests:: Public APIs for the language service and compiler should be acknowledged when they change
