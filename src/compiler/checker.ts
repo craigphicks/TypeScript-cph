@@ -14762,11 +14762,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
     const loggerLevel = 2;
     IDebug.ilogGroup(()=>`getUnionOrIntersectionProperty[in]:${IDebug.dbgs.dbgTypeToString(type)}, ${name})`,loggerLevel);
     const ret = (()=>{
-        // if (structuredTypeContainsInstanceof(type)){
-        //     if (type.flags & TypeFlags.Union){
-        //         getUnionType(map(type.types, t=>getInstanceofStructuredType(t)))
-        //     }
-        // }
+        if (structuredTypeContainsInstanceof(type)){
+            TSDebug.assert(type.flags & TypeFlags.Intersection);
+            const nqtype = getIntersectionType(getNonInstanceQueryTypesFromIntersectionType(type));
+            if (nqtype.flags & TypeFlags.Intersection)  return getUnionOrIntersectionProperty(nqtype as IntersectionType,name,skipObjectFunctionPropertyAugment);
+            return getPropertyOfType(nqtype,name,skipObjectFunctionPropertyAugment);
+        }
         let property = skipObjectFunctionPropertyAugment ?
             type.propertyCacheWithoutObjectFunctionPropertyAugment?.get(name) :
             type.propertyCache?.get(name);
