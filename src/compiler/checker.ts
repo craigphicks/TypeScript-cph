@@ -14838,6 +14838,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     type = simplfyIntersectionWithInstanceQueryTypes(type as IntersectionType);
                     if (type===neverType) return type;
                     TSDebug.assert(type.flags & TypeFlags.Intersection);
+                    if ((type as IntersectionType).types.length===2) return type;
                 }
                 (type as IntersectionType).objectFlags |= ObjectFlags.IsNeverIntersectionComputed
                     | ((some(getPropertiesOfUnionOrIntersectionType(type as IntersectionType), isNeverReducedProperty))
