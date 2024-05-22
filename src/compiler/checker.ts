@@ -16436,8 +16436,13 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
         assertInstanceofQueryClass(type);
         return (type as IntersectionType).types as [ObjectType,InterfaceType];
     }
-    function getInstanceofStructuredType(type: ObjectType): StructuredType {
+    function getInstanceofStructuredType(type: ObjectType): Type {
         return type.instanceof!.structuredType;
+        // const constructorType = getTypeOfSymbol(getInstanceofSymbol(type)) as InterfaceType;
+        // const prototypeProp = getPropertyOfType(constructorType, "prototype" as __String);
+        // TSDebug.assert(prototypeProp);
+        // const protoType =  getTypeOfSymbol(prototypeProp);
+        // return protoType;
     }
     function getInstanceofSymbol(type: ObjectType): Symbol {
         return type.instanceof!.symbol;
