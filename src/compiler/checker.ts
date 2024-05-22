@@ -37159,31 +37159,12 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     hasSignatures ||= resolved.callSignatures.length !== 0 || resolved.constructSignatures.length !== 0;
                     hasApplicableSignature ||= callSignatures.length !== 0 || constructSignatures.length !== 0;
                     if (callSignatures !== resolved.callSignatures || constructSignatures !== resolved.constructSignatures) {
-                        // let members = resolved.members;
-                        // let prototypeProp: Symbol | undefined;
-                        // let originalPrototypeProp: Symbol | undefined;
-                        // if (resolved.constructSignatures.length && constructSignatures !== resolved.constructSignatures && members.has("prototype" as __String)){
-                        //     originalPrototypeProp = members.get("prototype" as __String)!;
-                        //     prototypeProp = cloneSymbol(originalPrototypeProp, /*doNotMerge*/true);
-                        //     prototypeProp.parent = originalPrototypeProp.parent; // vs. prototypeProp.parent = result.symbol;
-                        //     members = new Map(members);
-                        //     members.set("prototype" as __String, prototypeProp);
-                        // }
                         const result = createAnonymousType(createSymbol(SymbolFlags.None, InternalSymbolName.InstantiationExpression), resolved.members, callSignatures, constructSignatures, resolved.indexInfos) as ResolvedType & InstantiationExpressionType;
-                        if (resolved.constructSignatures.length && constructSignatures !== resolved.constructSignatures && result.members.has("prototype" as __String)){
-                            const originalPrototypeProp = result.members.get("prototype" as __String)!;
-                            const prototypeProp = cloneSymbol(originalPrototypeProp, /*doNotMerge*/true);
-                            prototypeProp.parent = originalPrototypeProp.parent; // vs. prototypeProp.parent = result.symbol; which would show "__instantiationExpression"
-                            resolved.members.set("prototype" as __String, prototypeProp);
-                        }
-
-                        // if (prototypeProp){
-                        //     const resultSymbolLinks = getSymbolLinks(result.symbol);
-                        //     resultSymbolLinks.type = result; not needed ?
-                        //     Debug.assert(members.get("prototype" as __String) === prototypeProp);
-                        //     const prototypeLinks = getSymbolLinks(prototypeProp);
-                        //     (prototypeLinks as any).constructorType = result; // Used in ...
-                        //     setTypeOfSymbolDeferredPrototype(prototypeProp, result);
+                        // if (resolved.constructSignatures.length && constructSignatures !== resolved.constructSignatures && result.members.has("prototype" as __String)){
+                        //     const originalPrototypeProp = result.members.get("prototype" as __String)!;
+                        //     const prototypeProp = cloneSymbol(originalPrototypeProp, /*doNotMerge*/true);
+                        //     prototypeProp.parent = originalPrototypeProp.parent; // vs. prototypeProp.parent = result.symbol; which would show "__instantiationExpression"
+                        //     resolved.members.set("prototype" as __String, prototypeProp);
                         // }
                         result.objectFlags |= ObjectFlags.InstantiationExpressionType;
                         result.node = node;
